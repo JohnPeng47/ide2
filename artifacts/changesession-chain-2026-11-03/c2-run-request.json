@@ -1,0 +1,22 @@
+{
+  "requestId": "e289f5a1-ea8d-40e7-933c-42b800106043",
+  "workflow": "alternatives",
+  "prompts": [
+    {
+      "promptId": "0ca16834-bf5e-4b6e-bdca-4ac7c62818c7",
+      "version": 2
+    }
+  ],
+  "inputs": {
+    "context": {
+      "agentContextId": "saved-agent-context-b4df6a6c-83f6-428f-9247-7bd2f2548e7c"
+    }
+  },
+  "previous": [
+    "representation-516c5392-d7c7-42c0-99a6-6e7f8423b9b3",
+    "representation-31262644-00e7-4c82-95da-38ad013036ac"
+  ],
+  "passes": 1,
+  "model": "gpt-6-astra",
+  "effort": "high"
+}

@@ -8,6 +8,11 @@ import type { StorageChange } from '../../core/storage/storageService';
 import { deserializeWorkspace } from './mappingWorkspaceCodec';
 import type { MappingDocumentSnapshot, MappingWorkspaceSnapshot, MappingCanvasState } from './mappingWorkspace';
 
+/** Lightweight view index; excludes checkpoint bodies and diagram revisions. */
+export interface WorkspaceViewHeader {
+  documentId: string; type?: import('../../core/diagrams/canvasType').CanvasType;
+  canvasViews?: CanvasHistoryRecord['canvasViews'];
+}
 export type WorkspaceRecords = Record<string, unknown>;
 export interface WorkspaceIndex { projectId: string; documentIds: string[]; activeDocumentId?: string; transfers: NonNullable<MappingWorkspaceSnapshot['transfers']> }
 export interface WorkspaceBatch { requestId: string; expectedRevision: number; changes: StorageChange[] }

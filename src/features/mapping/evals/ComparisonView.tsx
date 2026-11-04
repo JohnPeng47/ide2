@@ -1,13 +1,12 @@
-import { Component, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { Component, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { compareDiagramLabels, compareSteps, type CompareCanvasCopy, type ComparePageSession } from '../../../../domain/mapping/compare/comparePageSession';
 import type { EvalPrompt } from '../../../../domain/mapping/evals/evalPrompt';
 import { evalWorkflows } from '../../../../domain/mapping/evals/evalWorkflows';
 import { lineDiff } from '../../../../domain/mapping/evals/lineDiff';
-import { CompareCanvasPane } from './CompareCanvasPane';
-import { DiagramPane } from './DiagramPane';
+import { CompareCanvas, CompareDiagrams } from './CompareBlocks';
 import { Drawer } from './Drawer';
 import { LayoutProvenance } from './LayoutTemplates';
-import { errorMessage, promptLabel, provenanceDetail } from './evalsFormat';
+import { errorMessage, promptLabel } from './evalsFormat';
 
 class ComparisonBoundary extends Component<{ children: ReactNode }, { error?: string }> {
   state: { error?: string } = {};
@@ -18,10 +17,8 @@ class ComparisonBoundary extends Component<{ children: ReactNode }, { error?: st
 export function ComparisonView({ session, prompts }: { session: ComparePageSession; prompts: EvalPrompt[] }) {
   const diagramLabels = useMemo(() => compareDiagramLabels(session), [session]);
   const steps = useMemo(() => compareSteps(session), [session]);
-  const [position, setPosition] = useState(0), [split, setSplit] = useState(50);
-  const [expanded, setExpanded] = useState(true), [rail, setRail] = useState(true), [notes, setNotes] = useState(true), [diff, setDiff] = useState(false);
-  const splitRoot = useRef<HTMLDivElement>(null);
-  useEffect(() => setExpanded(true), [position]);
+  const [position, setPosition] = useState(0);
+  const [rail, setRail] = useState(true), [notes, setNotes] = useState(true), [diff, setDiff] = useState(false);
   useEffect(() => {
     const navigate = (event: KeyboardEvent) => {
       if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight' || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || event.isComposing) return;
@@ -38,12 +35,6 @@ export function ComparisonView({ session, prompts }: { session: ComparePageSessi
   if (!comparison) return <p className="evals-message">This session has no comparisons.</p>;
   const copyFor = (side: 'A' | 'B') => session.canvases.find(copy => copy.id === comparison[side].canvasCopyId)!;
   const focusFor = (side: 'A' | 'B') => step.point ? copyFor(side).view.cameraViews?.find(camera => camera.id === step.point![side]) : undefined;
-  const renderPane = (side: 'A' | 'B') => {
-    const pane = comparison[side], copy = copyFor(side), detail = provenanceDetail(copy.view.name, copy.generated);
-    return pane.kind === 'diagram'
-      ? <DiagramPane key={`${session.id}:${comparison.id}:${side}`} side={side} copy={copy} pane={pane} expanded={expanded} detail={detail} label={diagramLabels.get(`${copy.id}:${pane.diagramId}`)} />
-      : <CompareCanvasPane side={side} copy={copy} camera={pane.camera} focus={focusFor(side)} detail={detail} fitContent={!!copy.generated} />;
-  };
   const A = copyFor('A'), B = copyFor('B');
   const promptA = A.generated?.prompt, promptB = B.generated?.prompt;
   const diffable = !!promptA && !!promptB && (promptA.id !== promptB.id || promptA.version !== promptB.version);
@@ -51,7 +42,6 @@ export function ComparisonView({ session, prompts }: { session: ComparePageSessi
   return <div className={`comparison-view${rail ? ' has-rail' : ''}`}>
     <header className="comparison-toolbar">
       <div className="comparison-title"><strong>{session.title}</strong><span title={step.point?.title ?? comparison.title}>{step.point?.title ?? comparison.title}</span></div>
-      {diagramMode && <button type="button" aria-pressed={expanded} onClick={() => setExpanded(value => !value)}>{expanded ? 'Show compared slices' : 'Show full diagrams'}</button>}
       {diffable && <button type="button" onClick={() => setDiff(true)}>Prompt diff A ↔ B</button>}
       <div className="comparison-stepper">
         <button type="button" title="Previous comparison step (←)" aria-keyshortcuts="ArrowLeft" disabled={position === 0} onClick={() => setPosition(position - 1)}>Previous</button>
@@ -63,19 +53,8 @@ export function ComparisonView({ session, prompts }: { session: ComparePageSessi
     <div className="comparison-body">
       <div className="comparison-main">
         <ComparisonBoundary key={`${session.id}:${comparison.id}`}>
-          <div className="evals-split" ref={splitRoot} style={{ gridTemplateColumns: `minmax(0, ${split}fr) 7px minmax(0, ${100 - split}fr)` }}>
-            {renderPane('A')}
-            <div role="separator" aria-label="Resize comparison panes" aria-orientation="vertical" aria-valuemin={20} aria-valuemax={80} aria-valuenow={Math.round(split)}
-              tabIndex={0} className="evals-divider" onDoubleClick={() => setSplit(50)}
-              onKeyDown={event => { if (event.key === 'ArrowLeft' || event.key === 'ArrowRight' || event.key === 'Home') {
-                event.preventDefault(); setSplit(value => event.key === 'Home' ? 50 : Math.max(20, Math.min(80, value + (event.key === 'ArrowLeft' ? -2 : 2))));
-              } }}
-              onPointerDown={event => { if (event.button === 0) { event.preventDefault(); event.currentTarget.setPointerCapture(event.pointerId); } }}
-              onPointerMove={event => { if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
-                const bounds = splitRoot.current!.getBoundingClientRect(); setSplit(Math.max(20, Math.min(80, (event.clientX - bounds.left) / bounds.width * 100)));
-              }} onPointerUp={event => { if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId); }} />
-            {renderPane('B')}
-          </div>
+          {diagramMode ? <CompareDiagrams key={comparison.id} spec={comparison} canvases={session.canvases} labels={diagramLabels} />
+            : <CompareCanvas spec={comparison} canvases={session.canvases} focuses={{ A: focusFor('A'), B: focusFor('B') }} fitGenerated />}
         </ComparisonBoundary>
         {comparison.explanation && <section className={`comparison-notes${notes ? '' : ' is-collapsed'}`} aria-label="Comparison explanation">
           <button type="button" className="comparison-notes-toggle" aria-expanded={notes} onClick={() => setNotes(value => !value)}>

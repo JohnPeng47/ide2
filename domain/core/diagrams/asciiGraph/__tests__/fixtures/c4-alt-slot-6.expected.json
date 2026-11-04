@@ -1,0 +1,186 @@
+{
+ "boxes": [
+  {
+   "id": "1:1-1:35",
+   "text": "[D] Controller edits / agent access",
+   "rect": {
+    "line1": 1,
+    "col1": 1,
+    "line2": 1,
+    "col2": 35
+   }
+  },
+  {
+   "id": "3:1-3:11",
+   "text": "UI commands",
+   "rect": {
+    "line1": 3,
+    "col1": 1,
+    "line2": 3,
+    "col2": 11
+   }
+  },
+  {
+   "id": "3:41-5:76",
+   "text": "Agent bridge\nregister -> poll -> handle -> reply\nlive selections over WebSocket",
+   "rect": {
+    "line1": 3,
+    "col1": 41,
+    "line2": 5,
+    "col2": 76
+   }
+  },
+  {
+   "id": "7:32-10:69",
+   "text": "MappingPage.handleAgentCommand\ncontext -> version + nodes + edges\nsnapshot -> state + exported history\napply -> cached requestId receipt",
+   "rect": {
+    "line1": 7,
+    "col1": 32,
+    "line2": 10,
+    "col2": 69
+   }
+  },
+  {
+   "id": "13:1-15:66",
+   "text": "MappingDocumentController\napplyUpdate(expectedVersion, operations) <- transact MCP adapter\nversion match + 1..100 operations -> clone -> stage in order",
+   "rect": {
+    "line1": 13,
+    "col1": 1,
+    "line2": 15,
+    "col2": 66
+   }
+  },
+  {
+   "id": "19:1-23:18",
+   "text": "Content operations\ncreate / insert\nreplace / patch\nmappings / jumps\napply revision",
+   "rect": {
+    "line1": 19,
+    "col1": 1,
+    "line2": 23,
+    "col2": 18
+   }
+  },
+  {
+   "id": "19:25-23:45",
+   "text": "Document operations\nedges create/update\nedges remove\ngroup / remove\ndelete-diagrams",
+   "rect": {
+    "line1": 19,
+    "col1": 25,
+    "line2": 23,
+    "col2": 45
+   }
+  },
+  {
+   "id": "19:49-23:73",
+   "text": "Presentation operations\ngrid move -> cells\nfloating move -> pixels\ncollapse box or subtree\nremove floating subtree",
+   "rect": {
+    "line1": 19,
+    "col1": 49,
+    "line2": 23,
+    "col2": 73
+   }
+  },
+  {
+   "id": "26:1-28:20",
+   "text": "DiagramService\nrevise staged base\ntrack node IDs",
+   "rect": {
+    "line1": 26,
+    "col1": 1,
+    "line2": 28,
+    "col2": 20
+   }
+  },
+  {
+   "id": "26:25-28:45",
+   "text": "Grid layout\nupdate + push right\nvalidate anchors",
+   "rect": {
+    "line1": 26,
+    "col1": 25,
+    "line2": 28,
+    "col2": 45
+   }
+  },
+  {
+   "id": "26:49-28:75",
+   "text": "DisplayState / diagramViews\nnormalize folded views\nresolve floating geometry",
+   "rect": {
+    "line1": 26,
+    "col1": 49,
+    "line2": 28,
+    "col2": 75
+   }
+  },
+  {
+   "id": "29:3-29:70",
+   "text": "patch -> rebase edge anchors, jumps, sections and collapsed node IDs",
+   "rect": {
+    "line1": 29,
+    "col1": 3,
+    "line2": 29,
+    "col2": 70
+   }
+  },
+  {
+   "id": "32:1-39:74",
+   "text": "History commit\nupdateSnapshot -> append(document, canvas, correspondence)\nrefresh issued diagram references -> checkpoint + version -> subscribers\nCanvasSession publishes stores; nodes() returns cloned read projection\nselect() records; updateCanvas() defaults to unrecorded\nlayout / endpoint measurements do not advance history\napply-diagram-revision via receiver -> persistence.sync -> storage.flush\ncopy-document -> fork history; clear selection/controls + pending chat",
+   "rect": {
+    "line1": 32,
+    "col1": 1,
+    "line2": 39,
+    "col2": 74
+   }
+  }
+ ],
+ "edges": [
+  {
+   "from": "3:1-3:11",
+   "to": "13:1-15:66",
+   "direction": "->"
+  },
+  {
+   "from": "7:32-10:69",
+   "to": "13:1-15:66",
+   "direction": "->"
+  },
+  {
+   "from": "3:41-5:76",
+   "to": "7:32-10:69",
+   "direction": "--"
+  },
+  {
+   "from": "13:1-15:66",
+   "to": "19:1-23:18",
+   "direction": "->"
+  },
+  {
+   "from": "13:1-15:66",
+   "to": "19:25-23:45",
+   "direction": "->"
+  },
+  {
+   "from": "13:1-15:66",
+   "to": "19:49-23:73",
+   "direction": "->"
+  },
+  {
+   "from": "19:1-23:18",
+   "to": "26:1-28:20",
+   "direction": "->"
+  },
+  {
+   "from": "19:25-23:45",
+   "to": "26:25-28:45",
+   "direction": "->"
+  },
+  {
+   "from": "19:49-23:73",
+   "to": "26:49-28:75",
+   "direction": "->"
+  },
+  {
+   "from": "29:3-29:70",
+   "to": "32:1-39:74",
+   "direction": "->"
+  }
+ ]
+}

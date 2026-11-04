@@ -23,7 +23,7 @@ export function promptLabel(prompt?: { name: string; version?: number }) {
 /** One-line provenance shown on preview and comparison panes. */
 export function provenance(generated?: GeneratedCanvas) {
   if (!generated) return undefined;
-  return [promptLabel(generated.prompt), generated.pass ? `pass ${generated.pass}` : '', generated.stage === 'legacy' ? 'legacy' : generated.stage]
+  return [promptLabel(generated.prompt), generated.pass ? `sample ${generated.pass}` : '', generated.stage === 'legacy' ? 'legacy' : generated.stage]
     .filter(Boolean).join(' · ');
 }
 /** Provenance worth showing under a title; omitted when the canvas name already says it. */

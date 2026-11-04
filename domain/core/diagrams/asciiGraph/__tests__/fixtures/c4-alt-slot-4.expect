@@ -1,0 +1,40 @@
+[B] Diagram
+Diagram identities
++ diagramId -> stable service identity
++ revisionId -> issued service revision
++ id -> local canvas content key; revision -> integer >= 0
+DiagramContent
++ revisionId = id:revision
++ ascii + asciiSha256
++ structure
+  diagram
+  tree
+  + parserVersion
+  + ascii-tree-1 / ascii-tree-2
+  + rootIds + nodes[id]
+  + label / line / branchColumn
+  + startColumn / endColumn
+  + parentId? / childIds / foldRanges
+^ DiagramSourceContext
++ contentHash = hash(ascii)
++ binding? -> source identity
++ mappings[] -> evidence joins
++ evidence[entityId]
+Content folding
++ visibleContentLines(content, collapsedIds)
++ hide fold ranges; unknown node -> STALE_CONTENT_NODE
+Source evidence join
++ mapping.entityId -> evidence entry -> sourceRanges[index]
++ sourceRangeId? must match range.id
++ relative path + start/endLine + originalLines
++ binding = sourceId + repositoryIdentity + corpus + profile
++ source-code <-> git-worktree; document <-> filesystem-documents
++ diagramSource -> entries / forSelection / search / mappings
+Validation
++ canonical content rebuild + hashes + local mappings + evidence
++ jumps? validated against content; source binding checked
++ nonblank ASCII, 1..20000 chars, printable characters + LF
+
+edge "Diagram identities" -> "DiagramContent"
+edge "Diagram identities" -> "DiagramSourceContext"
+edge "DiagramContent" -> "Content folding"

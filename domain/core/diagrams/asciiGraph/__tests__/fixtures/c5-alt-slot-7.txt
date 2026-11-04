@@ -1,0 +1,63 @@
+[E] CanvasHistoryService / coordinated revisions
+===========================================================================
+MappingDocumentController
+  context: CanvasEditingContext {contextId} -- runtime handle only
+       |
+       v
+DefaultCanvasHistoryService
+  WeakMap<CanvasEditingContext, CanvasHistory>
+  object handles isolate viewers of the same persisted context
+       |
+       +-> openContext(document, view, history?) -> frozen handle
+       +-> state -> checkpointId, document, view, canUndo, canRedo
+       +-> document -> resolved document
+       +-> resolve(context, diagramId) -> DiagramView
+       +-> append(document, view, correspondence?) -> history.append
+       +-> navigate(redo?) / reset
+       |     linked transfer -> reject local navigate
+       |     "Use workspace undo/redo for a canvas transfer."
+       +-> exportContext / forkContext / adopt
+       +-> persistenceChanges(since?) / retireTransactions(ids)
+       +-> prepareTransfer / transferBoundary / prepareTransferNavigation
+LOCAL COMMIT
+  controller append -> new checkpoint ID -> CanvasSession.onCommit
+       |
+       v
+  CanvasWorkspace.onPersist(ids) -> WorkspacePersistence.sync(ids)
+       |
+       +-> per-session cursor -> controller.persistenceChanges(cursor)
+       +-> historyChanges(id, delta) -> revision/ + checkpoint/ records
+       |   new session: remove obsolete graph records in same batch
+       +-> metadata + baseline + canvas + viewport + workspace index
+       |   viewState.captureDisplay / captureCamera at persistence boundary
+       v
+  RecordStorage.batch(changes)
+    synchronous cache + pending changes coalesced by key
+    -> scheduled pump -> {requestId, expectedRevision, changes}
+    -> WorkspaceStorage worker -> /api/mapping/workspace/records
+    -> acknowledged revision; flush waits for captured sequence
+
+COORDINATED COPY / MOVE
+  MappingPage.beginTransfer -> source canvasRevisionId + selected IDs
+       |
+       v
+  busy guard + source checkpoint check + capture workspace
+  runWorkspaceTask('transfer', source/destination histories, input)
+       |
+       v
+  prepared source + destination states + transaction
+  assemble workspace.documents + workspace.transfers
+       |
+       v
+  publishTransfer -> WorkspaceStorage.save(workspace)
+    flush -> worker project(snapshot) -> RecordStorage.commit(changes)
+    definitive REJECTED -> restore prior cache; operation throws
+    ambiguous response -> retry identical request/ID
+       |
+       v
+  acknowledgement -> installWorkspace -> sessions + active destination
+  undo/redo: boundary -> prepareTransferNavigation for both contexts
+    newer overlapping transfers block undo; both canvases required
+    update both states + transaction -> same publishTransfer path
+Sources: canvasHistoryService.ts, MappingPage.tsx, canvasSession.ts,
+         workspacePersistence.ts, recordStorage.ts, workspaceStorage.ts

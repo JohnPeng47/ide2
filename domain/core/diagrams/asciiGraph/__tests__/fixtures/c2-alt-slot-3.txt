@@ -1,0 +1,23 @@
+[A] GridBox / LineGridScene
+=====================================================
+LineGridScene
+  +-- contents[contentId] -----------------> Diagram
+  '-- root: GridBox
+       +-- id, position{column,row}, minimumSize?
+       +-- collapsed, collapsedContentId?
+       '-- kind
+            +-- diagram -> contentId
+            '-- container -> children: GridBox[]
+                 '-- layout{push-right, gap}
+                         |
+updateGridBox (immutable) v
+layoutScene(scene, changedId)
+  anchor changed subtree at each ancestor
+  settle siblings in spatial order -> push right
+                         |
+resolveScene -> absolute bounds + visible children
+  collapsed -> summary content; ignore minimumSize
+  cells: zero-based; right/bottom exclusive
+composeScene -> ASCII     hitTest -> box + local cell
+projectMapping -> 1-based mapping to scene cells
+Source: lineGrid.ts

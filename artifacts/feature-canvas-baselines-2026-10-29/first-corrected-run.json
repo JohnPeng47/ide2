@@ -1,0 +1,70 @@
+{
+  "createdAt": "2026-10-29T02:03:08.345Z",
+  "agentContextId": "saved-agent-context-0fb4f926-6c16-4e8c-a5c6-40f47caea0f3",
+  "contentHash": "c2d927a9011ab8b86de16eed8a7cba09cbee3693c4f96c83175c2fcbb5d98515",
+  "createRequestId": "11e219aa-bfd6-43b3-a035-f119ae311001",
+  "viewRequestId": "9c4308b2-8733-476e-bcda-bed432354087",
+  "generationRequestId": "4f11dca5-6775-4bd0-805c-c783fea4ffe7",
+  "workspaceId": "ed822361-bf20-4b6f-b5ed-fb7d1c5c8b5f",
+  "attachment": {
+    "sessionId": "fc2403c6-6d9f-4d04-9c82-7e6f9a897344",
+    "canvasId": "ed822361-bf20-4b6f-b5ed-fb7d1c5c8b5f",
+    "documentId": "draft-250e5b08-0775-4d65-aebd-9c5fbf529174",
+    "repositoryId": "repo-ce67f2af4410036fce1ce12f",
+    "version": 0
+  },
+  "baseRequest": {
+    "sessionId": "fc2403c6-6d9f-4d04-9c82-7e6f9a897344",
+    "requestId": "9c4308b2-8733-476e-bcda-bed432354087",
+    "expectedVersion": 0,
+    "operation": "create",
+    "name": "Blank baseline"
+  },
+  "baseViewId": "canvas-view-601a2617-6c5f-4fad-af09-c495c2f235c5",
+  "input": {
+    "canvas": {
+      "workspaceInstanceId": "ed822361-bf20-4b6f-b5ed-fb7d1c5c8b5f",
+      "documentId": "draft-250e5b08-0775-4d65-aebd-9c5fbf529174"
+    },
+    "viewId": "canvas-view-601a2617-6c5f-4fad-af09-c495c2f235c5",
+    "agentContextId": "saved-agent-context-0fb4f926-6c16-4e8c-a5c6-40f47caea0f3",
+    "prompt": "## Task\nGenerate the central ascii tree diagram for the layout\n\n## Layout\nThis section will contain details on the high-level layout of the data\nFor now, we will use a single layout to display the data\nThis layout uses a single central ascii tree diagram and then some diagrams on the side\n\n## General\nI want you to use CanvasView to create a view that explains this current feature. The following are some guidelines:\n- relations\n  - edges\n    - obvious -> just the edge\n    - less obvious -> edge + edge text\n      > \"inherits\", \"imports\", \"MCP API call\", etc..\n    - less less obvious\n      > creating an \"anchor\" node / tree at the source or target or both\n- tree-diagrams\n  - tree are best to depict nested, hierarchals arrangements of the data\n    > their strength lies in their ability to segment non-adjacent levels of the data-space\n  - while uniformity / flat levels are good, I suspect this is not always the case and not always the best use of trees\n- highlighting\n  - can be used to mark nodes as important\n",
+    "alternatives": [
+      {
+        "name": "Central ASCII tree - corrected prompt",
+        "prompt": "Feature 1: Saved CanvasViews and branching\n\nCover: Creating, saving, reopening and forking views; retaining unsaved working copies; keeping or discarding alternative branches; saved checkpoints and ancestry.\n\nGenerate only the single central ASCII tree diagram for this feature, using the supplied AgentContext. Replace the starter diagram; do not add side diagrams."
+      }
+    ],
+    "requestId": "4f11dca5-6775-4bd0-805c-c783fea4ffe7"
+  },
+  "generation": {
+    "requestId": "4f11dca5-6775-4bd0-805c-c783fea4ffe7",
+    "runId": "d3700417-c18c-4c3b-a08d-521c6a7fa77e",
+    "candidates": [
+      {
+        "viewId": "canvas-view-22424506-8d79-4725-be18-0d0d8a2917b1",
+        "chatId": "4de7ca1c-6e38-488e-9033-96b4bf562f49",
+        "name": "Central ASCII tree - corrected prompt"
+      }
+    ]
+  },
+  "openRequest": {
+    "sessionId": "fc2403c6-6d9f-4d04-9c82-7e6f9a897344",
+    "requestId": "26d8d590-ddb0-4613-8914-1e0a1cadd028",
+    "expectedVersion": 1,
+    "operation": "open",
+    "viewId": "canvas-view-22424506-8d79-4725-be18-0d0d8a2917b1"
+  },
+  "opened": true,
+  "verified": {
+    "at": "2026-10-29T02:04:40.933Z",
+    "diagramCount": 1,
+    "structureKind": "tree",
+    "lines": 48
+  },
+  "persistedVerification": {
+    "checkpointId": "canvas-revision-fbd5e8b6-dfd3-49e2-a89e-202f340efb99",
+    "revisionId": "diagram-revision-a849b15f-57a6-426b-92dc-62e17d22034e",
+    "contextHash": "c2d927a9011ab8b86de16eed8a7cba09cbee3693c4f96c83175c2fcbb5d98515"
+  }
+}

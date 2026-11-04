@@ -1,0 +1,39 @@
+[D] Controller edits / agent access
+===============================================================================
+Agent bridge
+  register canvasId + stableWorkspaceId -> poll -> handle -> reply
+  non-context receipts cached (max 200); live selections via WebSocket
+MappingPage.handleAgentCommand
+  context -> version + nodes + edges; document-state -> document
+  snapshot -> controller state + history + metadata
+  apply -> documentId:requestId receipt -> applyUpdate
+  apply-diagram-revision -> receiver -> persistence.sync + storage.flush
+  create-document / copy-document -> workspace drafts
+Shared edit boundary
+  UI commands / transact(MCP batch) -> MappingDocumentController.applyUpdate
+  expectedVersion must match; 1..100 operations
+  clone snapshot -> stage operations in order
+  |
+  +-- content: create / insert / replace / patch / source mappings / jumps
+  |     DiagramService -> issued revisions + node correspondence
+  |     received revision -> expectedRevisionId check
+  +-- grid: move / group / collapse / remove / delete-diagrams
+  |     cell coordinates -> layoutScene; summary for collapsed boxes
+  +-- subtree collapse -> canvas.diagramViews
+  +-- floating: move / collapse / remove
+  |     pixels; explicit move sets manual placement
+  +-- edges: create / update / remove -> validate anchors
+  |
+  v
+Publish completed edit
+  projectCanvasSnapshot -> updateSnapshot(record=true)
+  reconcile connections + rebase jumps + validate connections
+  normalize diagramViews -> resolve floating geometry
+  append(document, canvas, node correspondence) -> CanvasHistoryService
+  freeze issued content references -> snapshot + version -> subscribers
+  return {version, nodes}
+Other update paths
+  updateCanvas(record=false) -> transient by default
+  select(command) -> recorded selection update
+  configureLayout / endpoint measurements -> geometry without history
+  undo/redo -> history navigation -> restore document + canvas view

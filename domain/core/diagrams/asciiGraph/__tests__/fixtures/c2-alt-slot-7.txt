@@ -1,0 +1,67 @@
+[E] CanvasHistoryService / coordinated revisions
+===========================================================================
+CanvasHistoryService: history + storage boundary
+  |
+  +-- openContext(document, view, record?) -> frozen {contextId}
+  |    '-- WeakMap<CanvasEditingContext, CanvasHistory>
+  |         runtime object handles; isolated viewers; GC on close
+  +-- state -> checkpointId / document / view / canUndo / canRedo
+  +-- resolve(context, diagramId) -> DiagramView
+  +-- document(context) -> ResolvedCanvasDocument
+  +-- append(document, view, correspondence?) -> history.append
+  +-- navigate / reset -> move or reset history head
+  |    '-- linked transaction? navigate rejects; use workspace undo
+  '-- exportContext / forkContext / adopt / persistenceChanges
+       retireTransactions / prepareTransfer / transferBoundary
+
+MappingDocumentController
+  document edits + canvas view + node correspondence
+             |
+             v
+  CanvasHistoryService.append -> checkpointId
+             |
+             v
+  CanvasSession: canvasRevisionId changed -> onCommit
+             |
+  CanvasWorkspace.onPersist(documentIds)
+             |
+             v
+  WorkspacePersistence.sync(ids)
+    +-- per-session cursor -> persistenceChanges(since)
+    +-- historyChanges -> revision/* + checkpoint/* records
+    +-- metadata + baseline + canvas + viewport
+    +-- workspace index: project / document IDs / active / transfers
+    '-- SourcePaneViewState.captureDisplay + captureCamera
+             |
+             v
+  RecordStorage.batch -> cache + pending changes by key
+    debounce 150ms; pending wait capped at 1000ms
+             |
+  flush -> one in-flight batch{requestId, expectedRevision, changes}
+             |
+  WorkspaceStorage -> one worker per workspace
+             |
+  /api/mapping/workspace/records -> acknowledged revision
+
+COORDINATED COPY / MOVE + LINKED UNDO
+  MappingPage: selectedIds + captured source canvasRevisionId
+    |
+    +-- pause persistence / mark busy / check source unchanged
+    +-- capture workspace + source/destination history
+    +-- runWorkspaceTask(transfer) -> prepared states + transaction
+    |    move: source + destination updated; copy: source deselected
+    '-- publishTransfer(workspace)
+         storage.save -> flush -> project -> records.commit
+           rejection -> restore cache; ambiguous -> retry same ID
+                         |
+                    acknowledgement
+                         v
+         installWorkspace -> sessions + transfers + activeId
+
+  undo/redo: boundary -> prepareTransferNavigation(source,destination)
+    require both canvases; undo newer related transfers first
+    restore both states + transaction; created destination hidden on undo
+    -> publishTransfer -> storage acknowledgement -> installWorkspace
+Sources: canvasHistoryService.ts; MappingPage.tsx;
+canvasSession.ts; workspacePersistence.ts; recordStorage.ts;
+workspaceStorage.ts

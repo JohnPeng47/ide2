@@ -1,0 +1,178 @@
+[
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "application/core/diagrams/generateDiagram.ts",
+    "startLine": 1,
+    "endLine": 13,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "application/mapping/agent/agentContextLibrary.ts",
+    "startLine": 1,
+    "endLine": 65,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "application/mapping/agent/agentContextService.ts",
+    "startLine": 1,
+    "endLine": 52,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "application/mapping/agent/diagramEditService.ts",
+    "startLine": 1,
+    "endLine": 293,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "domain/core/agents/agentContext.ts",
+    "startLine": 1,
+    "endLine": 177,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "domain/core/agents/agentContextSource.ts",
+    "startLine": 1,
+    "endLine": 30,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "domain/core/agents/savedAgentContext.ts",
+    "startLine": 1,
+    "endLine": 27,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "domain/core/diagrams/diagramAgentContext.ts",
+    "startLine": 1,
+    "endLine": 85,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "domain/core/diagrams/diagramRevisionReview.ts",
+    "startLine": 1,
+    "endLine": 195,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "domain/core/diagrams/diagramRevisionStore.ts",
+    "startLine": 1,
+    "endLine": 33,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "domain/core/diagrams/submitDiagramEdit.ts",
+    "startLine": 1,
+    "endLine": 34,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "domain/mapping/agent/diagramEdit.ts",
+    "startLine": 1,
+    "endLine": 85,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "domain/mapping/workspace/diagramAlternatives.ts",
+    "startLine": 1,
+    "endLine": 79,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "infrastructure/core/agents/agentRuntime.ts",
+    "startLine": 1,
+    "endLine": 70,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "infrastructure/core/persistence/fileAgentContextRepository.ts",
+    "startLine": 1,
+    "endLine": 48,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "infrastructure/core/persistence/fileAgentContextSources.ts",
+    "startLine": 1,
+    "endLine": 117,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "infrastructure/core/persistence/fileDiagramAgentContextStore.ts",
+    "startLine": 1,
+    "endLine": 16,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "src/features/mapping/prompt-composer/PromptComposer.tsx",
+    "startLine": 1,
+    "endLine": 314,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "src/features/mapping/prompt-composer/VariantReview.tsx",
+    "startLine": 1,
+    "endLine": 51,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "src/features/mapping/tldraw/DiagramAlternativeControls.tsx",
+    "startLine": 1,
+    "endLine": 48,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "src/features/mapping/tldraw/DiagramSidePanelContent.tsx",
+    "startLine": 1,
+    "endLine": 58,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "src/server/app/bootstrap.ts",
+    "startLine": 1,
+    "endLine": 132,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  }
+]

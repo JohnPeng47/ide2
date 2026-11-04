@@ -1,0 +1,26 @@
+[C] FloatingBox variants
+=========================================================
+DisplayState: rootIds + nodes[id]: FloatingPane
+  |
+  +-- selection: captured region / source ASCII + revision
+  |    rect / selectedIds / stacked|chained / activeChildId
+  +-- projection: title / source + target revision IDs
+  |    content = call-tree | compaction
+  |            | source-code | code-panel
+  +-- conversation: thread / draft / canvasAnchor
+  |    presentation = compact | floating | docked
+  '-- detail: title / ascii / sectionId?
+       |
+       '-- DisplayNodeBase
+            id / childIds / expansion / expandedGeometry?
+            position{x,y} / bounds{width,height}
+            coordinateSpace = canvas | viewport
+            geometryPolicy = automatic|manual, content|fixed
+FloatingBox = FloatingPane + FloatingBoxArrow
+  document.edges --drawEdge--> arrow (derived, not stored)
+canvasDisplayNodes -> floating:* pixel geometry + placement
+  selection(auto) -> grid-region; projection(auto) -> parent
+  conversation -> anchor + presentation; other -> stored
+add/removeDisplayNode -> ownership tree; remove descendants
+setExpansion -> save/restore expandedGeometry
+Sources: displayModel.ts; canvasDisplayNode.ts

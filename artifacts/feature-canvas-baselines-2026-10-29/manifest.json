@@ -1,0 +1,2415 @@
+{
+  "createdAt": "2026-10-29T01:36:30.035Z",
+  "root": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax",
+  "head": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e",
+  "parentChatId": "08c6af0f-796e-4fda-b715-16efc834be09",
+  "repositoryId": "repo-ce67f2af4410036fce1ce12f",
+  "workspaceId": "a15d1dc6-7bbc-49dd-ada1-0344fc83511b",
+  "stableWorkspaceId": "7858471a-deb5-4d30-892b-69979b8e02b0",
+  "originalDocumentIds": [
+    "representation-b697fd11-5c8d-49e7-a6b5-b12030f2f79a",
+    "representation-60532c3a-39f7-4392-9c66-a3f85c84f58b",
+    "representation-00e20688-1815-4518-a617-932a4e6cd233",
+    "representation-74feeeae-7381-43ca-a707-9c90cfe01ee1",
+    "representation-c7177725-a7dd-4caa-9ac5-a1c702f3350d",
+    "representation-ed88e035-9f51-4e09-9174-15605cfe63d6",
+    "representation-8d528230-94b4-4e16-97d4-eab812b1ad7e",
+    "draft-34cb3bd6-8fc0-41b4-8246-2fb76f0bdabc",
+    "representation-b6b47084-b633-4479-83ca-c951738fcab5"
+  ],
+  "sharedPrompt": "## Layout\nThis section will contain details on the high-level layout of the data\nFor now, we will use a single layout to display the data\nThis layout uses a single central diagram and then some diagrams on the side\n\n## General\nI want you to use CanvasView to create a view that explains this current feature. The following are some guidelines:\n- relations\n  - edges\n    - obvious -> just the edge\n    - less obvious -> edge + edge text\n      > \"inherits\", \"imports\", \"MCP API call\", etc..\n    - less less obvious\n      > creating an \"anchor\" node / tree at the source or target or both\n- tree-diagrams\n  - tree are best to depict nested, hierarchals arrangements of the data\n    > their strength lies in their ability to segment non-adjacent levels of the data-space\n  - while uniformity / flat levels are good, I suspect this is not always the case and not always the best use of trees\n- highlighting\n  - can be used to mark nodes as important\n\n## This experiment: central diagram only\nGenerate ONLY the central diagram for the assigned feature. The saved AgentContext contains the feature brief and exact current source evidence. Explain the implemented high-level feature and its important relationships using that evidence.\nThe final canvas must contain exactly ONE meaningful diagram. Do not generate side diagrams, side panels, additional alternatives, or additional canvases. Replace the starter diagram in-place if one exists. Do not leave a blank placeholder beside the result. Connections within the central ASCII diagram are fine; do not create dangling external edges.\nThe application has already created your CanvasView and bound an isolated generation canvas. Edit that bound canvas directly; the application saves the resulting CanvasView automatically. Do not fork or create another view, and do not call gen-alternatives.\nUse the canvas/diagram tools, not filesystem edits. Do not change application source code. If you add source mappings, use accurate captured file ranges; do not fabricate evidence. Before completing, reread the bound canvas and verify that it has exactly one diagram and that its content covers the assigned feature.\n",
+  "proposals": [
+    {
+      "number": 1,
+      "title": "Saved CanvasViews and branching",
+      "features": "Creating, saving, reopening and forking views; retaining unsaved working copies; keeping or discarding alternative branches; saved checkpoints and ancestry.",
+      "ranges": [
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "domain/core/diagrams/canvasView.ts",
+          "startLine": 1,
+          "endLine": 61,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "c7350aede014190ea5f8ca6612da9c058b5cbfafbb37af5dc7ef40ff1b6d502b"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "domain/core/diagrams/canvasHistory.ts",
+          "startLine": 1,
+          "endLine": 616,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "4d64bdf3e0f5ad93f4458e73c186d3af6cd9817ddb5954fa0ed4466c110baa53"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "src/features/mapping/canvas-views/CanvasViewControls.tsx",
+          "startLine": 1,
+          "endLine": 202,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "89b85bd5ca0b38b188e09e75bbf4a94e5380679a06c5ed8519b0df43d627e028"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "src/features/mapping/canvas-views/canvasViewReceiver.ts",
+          "startLine": 1,
+          "endLine": 35,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "f8528c33855052238a51c3a3bd033c2fb94c0064f29d2b1275302cf6538c1a5a"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "src/features/mapping/canvas-views/CanvasViewDiffPreview.tsx",
+          "startLine": 1,
+          "endLine": 34,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "9d92975c0696e89c4f282613d43a013ed4058933801c4f2facd5efc3a893e331"
+          }
+        }
+      ],
+      "contextFile": "contexts/01.json",
+      "contextRequestId": "0fb4f926-6c16-4e8c-a5c6-40f47caea0f3",
+      "createRequestId": "3845c6be-bb90-41e1-965b-9a6cfd6f4231",
+      "viewRequestId": "67aa3a86-1fe8-417f-8faf-8fac670912d8",
+      "generationRequestId": "cd5f3feb-eda3-480f-a62b-1edd06f3bf59",
+      "candidatePrompt": "Feature 1: Saved CanvasViews and branching\n\nCover: Creating, saving, reopening and forking views; retaining unsaved working copies; keeping or discarding alternative branches; saved checkpoints and ancestry.\n\nProduce the single central diagram only, using the supplied AgentContext.",
+      "canvasName": "01 - Saved CanvasViews and branching",
+      "context": {
+        "agentContextId": "saved-agent-context-0fb4f926-6c16-4e8c-a5c6-40f47caea0f3",
+        "name": "Saved CanvasViews and branching - source baseline",
+        "description": "Feature 1/12. Exact working-tree source snapshots for the central-diagram prompt experiment.",
+        "createdAt": "2026-10-29T01:36:35.054Z",
+        "contentHash": "c2d927a9011ab8b86de16eed8a7cba09cbee3693c4f96c83175c2fcbb5d98515",
+        "messageCount": 1,
+        "source": {
+          "agentType": "saved-context",
+          "sourceSessionId": "0fb4f926-6c16-4e8c-a5c6-40f47caea0f3",
+          "format": "messages-v1"
+        }
+      },
+      "contextVerified": true,
+      "attachment": {
+        "sessionId": "ddbd222d-7303-4511-936a-bc458c39ef68",
+        "canvasId": "a15d1dc6-7bbc-49dd-ada1-0344fc83511b",
+        "documentId": "draft-66e5e07b-7849-4737-9e1e-a9b855d238aa",
+        "repositoryId": "repo-ce67f2af4410036fce1ce12f",
+        "version": 0
+      },
+      "baseViewRequest": {
+        "operation": "create",
+        "name": "Blank baseline",
+        "sessionId": "ddbd222d-7303-4511-936a-bc458c39ef68",
+        "expectedVersion": 0,
+        "requestId": "67aa3a86-1fe8-417f-8faf-8fac670912d8"
+      },
+      "baseViewId": "canvas-view-532b0337-ac1e-4096-88bf-8f3df613cb63",
+      "generationInput": {
+        "canvas": {
+          "workspaceInstanceId": "a15d1dc6-7bbc-49dd-ada1-0344fc83511b",
+          "documentId": "draft-66e5e07b-7849-4737-9e1e-a9b855d238aa"
+        },
+        "viewId": "canvas-view-532b0337-ac1e-4096-88bf-8f3df613cb63",
+        "agentContextId": "saved-agent-context-0fb4f926-6c16-4e8c-a5c6-40f47caea0f3",
+        "prompt": "## Layout\nThis section will contain details on the high-level layout of the data\nFor now, we will use a single layout to display the data\nThis layout uses a single central diagram and then some diagrams on the side\n\n## General\nI want you to use CanvasView to create a view that explains this current feature. The following are some guidelines:\n- relations\n  - edges\n    - obvious -> just the edge\n    - less obvious -> edge + edge text\n      > \"inherits\", \"imports\", \"MCP API call\", etc..\n    - less less obvious\n      > creating an \"anchor\" node / tree at the source or target or both\n- tree-diagrams\n  - tree are best to depict nested, hierarchals arrangements of the data\n    > their strength lies in their ability to segment non-adjacent levels of the data-space\n  - while uniformity / flat levels are good, I suspect this is not always the case and not always the best use of trees\n- highlighting\n  - can be used to mark nodes as important\n\n## This experiment: central diagram only\nGenerate ONLY the central diagram for the assigned feature. The saved AgentContext contains the feature brief and exact current source evidence. Explain the implemented high-level feature and its important relationships using that evidence.\nThe final canvas must contain exactly ONE meaningful diagram. Do not generate side diagrams, side panels, additional alternatives, or additional canvases. Replace the starter diagram in-place if one exists. Do not leave a blank placeholder beside the result. Connections within the central ASCII diagram are fine; do not create dangling external edges.\nThe application has already created your CanvasView and bound an isolated generation canvas. Edit that bound canvas directly; the application saves the resulting CanvasView automatically. Do not fork or create another view, and do not call gen-alternatives.\nUse the canvas/diagram tools, not filesystem edits. Do not change application source code. If you add source mappings, use accurate captured file ranges; do not fabricate evidence. Before completing, reread the bound canvas and verify that it has exactly one diagram and that its content covers the assigned feature.\n",
+        "alternatives": [
+          {
+            "name": "Central diagram - baseline prompt",
+            "prompt": "Feature 1: Saved CanvasViews and branching\n\nCover: Creating, saving, reopening and forking views; retaining unsaved working copies; keeping or discarding alternative branches; saved checkpoints and ancestry.\n\nProduce the single central diagram only, using the supplied AgentContext."
+          }
+        ],
+        "requestId": "cd5f3feb-eda3-480f-a62b-1edd06f3bf59"
+      },
+      "generation": {
+        "requestId": "cd5f3feb-eda3-480f-a62b-1edd06f3bf59",
+        "runId": "d0d3548d-1b92-4a1e-8865-92c2795c8fd9",
+        "candidates": [
+          {
+            "viewId": "canvas-view-0754c3b2-cd73-467b-af0e-643dacb95b5d",
+            "chatId": "96f884a1-b768-4756-bf45-48b202f5631a",
+            "name": "Central diagram - baseline prompt"
+          }
+        ]
+      },
+      "status": {
+        "chatStatus": "idle",
+        "generationStatus": "finished",
+        "error": null,
+        "pending": [],
+        "completedAt": "2026-10-29T01:38:17.446Z"
+      },
+      "openRequest": {
+        "sessionId": "ddbd222d-7303-4511-936a-bc458c39ef68",
+        "requestId": "04c4b637-1b78-480f-b755-ee91185f2fc6",
+        "expectedVersion": 1,
+        "operation": "open",
+        "viewId": "canvas-view-0754c3b2-cd73-467b-af0e-643dacb95b5d"
+      },
+      "verified": {
+        "at": "2026-10-29T01:38:36.825Z",
+        "viewId": "canvas-view-0754c3b2-cd73-467b-af0e-643dacb95b5d",
+        "diagramCount": 1,
+        "lines": 57,
+        "characters": 3795,
+        "edges": 0,
+        "textFile": "diagrams/01.txt",
+        "generation": {
+          "viewId": "canvas-view-0754c3b2-cd73-467b-af0e-643dacb95b5d",
+          "runId": "d0d3548d-1b92-4a1e-8865-92c2795c8fd9",
+          "chatId": "96f884a1-b768-4756-bf45-48b202f5631a",
+          "parentChatId": "08c6af0f-796e-4fda-b715-16efc834be09",
+          "parentTurnId": "01a17e2d-9e82-7de3-ab56-ceb5aa003572",
+          "triggerPrompt": "## Layout\nThis section will contain details on the high-level layout of the data\nFor now, we will use a single layout to display the data\nThis layout uses a single central diagram and then some diagrams on the side\n\n## General\nI want you to use CanvasView to create a view that explains this current feature. The following are some guidelines:\n- relations\n  - edges\n    - obvious -> just the edge\n    - less obvious -> edge + edge text\n      > \"inherits\", \"imports\", \"MCP API call\", etc..\n    - less less obvious\n      > creating an \"anchor\" node / tree at the source or target or both\n- tree-diagrams\n  - tree are best to depict nested, hierarchals arrangements of the data\n    > their strength lies in their ability to segment non-adjacent levels of the data-space\n  - while uniformity / flat levels are good, I suspect this is not always the case and not always the best use of trees\n- highlighting\n  - can be used to mark nodes as important\n\n## This experiment: central diagram only\nGenerate ONLY the central diagram for the assigned feature. The saved AgentContext contains the feature brief and exact current source evidence. Explain the implemented high-level feature and its important relationships using that evidence.\nThe final canvas must contain exactly ONE meaningful diagram. Do not generate side diagrams, side panels, additional alternatives, or additional canvases. Replace the starter diagram in-place if one exists. Do not leave a blank placeholder beside the result. Connections within the central ASCII diagram are fine; do not create dangling external edges.\nThe application has already created your CanvasView and bound an isolated generation canvas. Edit that bound canvas directly; the application saves the resulting CanvasView automatically. Do not fork or create another view, and do not call gen-alternatives.\nUse the canvas/diagram tools, not filesystem edits. Do not change application source code. If you add source mappings, use accurate captured file ranges; do not fabricate evidence. Before completing, reread the bound canvas and verify that it has exactly one diagram and that its content covers the assigned feature.",
+          "taskPrompt": "## Layout\nThis section will contain details on the high-level layout of the data\nFor now, we will use a single layout to display the data\nThis layout uses a single central diagram and then some diagrams on the side\n\n## General\nI want you to use CanvasView to create a view that explains this current feature. The following are some guidelines:\n- relations\n  - edges\n    - obvious -> just the edge\n    - less obvious -> edge + edge text\n      > \"inherits\", \"imports\", \"MCP API call\", etc..\n    - less less obvious\n      > creating an \"anchor\" node / tree at the source or target or both\n- tree-diagrams\n  - tree are best to depict nested, hierarchals arrangements of the data\n    > their strength lies in their ability to segment non-adjacent levels of the data-space\n  - while uniformity / flat levels are good, I suspect this is not always the case and not always the best use of trees\n- highlighting\n  - can be used to mark nodes as important\n\n## This experiment: central diagram only\nGenerate ONLY the central diagram for the assigned feature. The saved AgentContext contains the feature brief and exact current source evidence. Explain the implemented high-level feature and its important relationships using that evidence.\nThe final canvas must contain exactly ONE meaningful diagram. Do not generate side diagrams, side panels, additional alternatives, or additional canvases. Replace the starter diagram in-place if one exists. Do not leave a blank placeholder beside the result. Connections within the central ASCII diagram are fine; do not create dangling external edges.\nThe application has already created your CanvasView and bound an isolated generation canvas. Edit that bound canvas directly; the application saves the resulting CanvasView automatically. Do not fork or create another view, and do not call gen-alternatives.\nUse the canvas/diagram tools, not filesystem edits. Do not change application source code. If you add source mappings, use accurate captured file ranges; do not fabricate evidence. Before completing, reread the bound canvas and verify that it has exactly one diagram and that its content covers the assigned feature.",
+          "prompt": "Feature 1: Saved CanvasViews and branching\n\nCover: Creating, saving, reopening and forking views; retaining unsaved working copies; keeping or discarding alternative branches; saved checkpoints and ancestry.\n\nProduce the single central diagram only, using the supplied AgentContext.",
+          "model": "gpt-6-astra",
+          "effort": "high",
+          "agentContextId": "saved-agent-context-0fb4f926-6c16-4e8c-a5c6-40f47caea0f3",
+          "agentContextHash": "c2d927a9011ab8b86de16eed8a7cba09cbee3693c4f96c83175c2fcbb5d98515",
+          "status": "finished",
+          "startedAt": "2026-10-29T01:37:14.156Z",
+          "usage": {
+            "totalTokens": 306041,
+            "inputTokens": 305007,
+            "cachedInputTokens": 250496,
+            "outputTokens": 1034,
+            "reasoningOutputTokens": 104
+          },
+          "completedAt": "2026-10-29T01:38:17.447Z",
+          "durationMs": 63291,
+          "pendingSave": false,
+          "waitingForInput": false
+        }
+      },
+      "persistedVerification": {
+        "at": "2026-10-29T01:40:08.952Z",
+        "checkpointId": "canvas-revision-a8f094e6-b6d7-4919-8012-6cf9ec8a29ff",
+        "revisionId": "diagram-revision-7d77b25e-9262-4714-a1aa-8609d24dd823"
+      }
+    },
+    {
+      "number": 2,
+      "title": "Managed generation of canvas alternatives",
+      "features": "Generating independent candidates from one saved checkpoint; shared and candidate-specific prompts; isolated child canvases and chats; inherited model or saved context; progress, cancellation and persisted results.",
+      "ranges": [
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "domain/core/diagrams/canvasGeneration.ts",
+          "startLine": 1,
+          "endLine": 26,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "f69a4bea070ecbdb97ee61524f9d8bf452d7b3a04c0c285dcac1440ff2271fe6"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "application/mapping/agent-chat/agentChatService.ts",
+          "startLine": 1,
+          "endLine": 590,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "97578805b856cef83d4ca3fbac7b79ed764c09c8b862dc187cc2097d98256615"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "application/mapping/agent-chat/generationCanvasBridge.ts",
+          "startLine": 1,
+          "endLine": 94,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "534df8d2e9fa75148b9c4bdc0243385085e9a0019143b47b0f6fd3461386c453"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "src/features/mapping/canvas-views/GenerateAlternatives.tsx",
+          "startLine": 1,
+          "endLine": 98,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "8b7b77422468218d4c1965451236037a991876aa5df15f72fd03f106bd299b0e"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "domain/core/diagrams/canvasHistory.ts",
+          "startLine": 1,
+          "endLine": 616,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "4d64bdf3e0f5ad93f4458e73c186d3af6cd9817ddb5954fa0ed4466c110baa53"
+          }
+        }
+      ],
+      "contextFile": "contexts/02.json",
+      "contextRequestId": "e40470bb-d8f6-4493-832a-963f53d84dd5",
+      "createRequestId": "c099ab11-d285-43b9-b648-02273a41dc1b",
+      "viewRequestId": "d4382e2b-f2a7-42be-b473-2400a2ab2670",
+      "generationRequestId": "696e36cb-7800-4fc6-a91a-e05049edbec7",
+      "candidatePrompt": "Feature 2: Managed generation of canvas alternatives\n\nCover: Generating independent candidates from one saved checkpoint; shared and candidate-specific prompts; isolated child canvases and chats; inherited model or saved context; progress, cancellation and persisted results.\n\nProduce the single central diagram only, using the supplied AgentContext.",
+      "canvasName": "02 - Managed generation of canvas alternatives",
+      "context": {
+        "agentContextId": "saved-agent-context-e40470bb-d8f6-4493-832a-963f53d84dd5",
+        "name": "Managed generation of canvas alternatives - source baseline",
+        "description": "Feature 2/12. Exact working-tree source snapshots for the central-diagram prompt experiment.",
+        "createdAt": "2026-10-29T01:36:35.157Z",
+        "contentHash": "ae34aa3c4e9f10021cad037e925c0b76e4c063afe28704f5db1d5a9a208ec5fe",
+        "messageCount": 1,
+        "source": {
+          "agentType": "saved-context",
+          "sourceSessionId": "e40470bb-d8f6-4493-832a-963f53d84dd5",
+          "format": "messages-v1"
+        }
+      },
+      "contextVerified": true,
+      "attachment": {
+        "sessionId": "75dcb556-f299-4ff2-9f9d-652f57b8048d",
+        "canvasId": "a15d1dc6-7bbc-49dd-ada1-0344fc83511b",
+        "documentId": "draft-cf75d701-2679-4ef7-bbb3-9018f70e2f20",
+        "repositoryId": "repo-ce67f2af4410036fce1ce12f",
+        "version": 0
+      },
+      "baseViewRequest": {
+        "operation": "create",
+        "name": "Blank baseline",
+        "sessionId": "75dcb556-f299-4ff2-9f9d-652f57b8048d",
+        "expectedVersion": 0,
+        "requestId": "d4382e2b-f2a7-42be-b473-2400a2ab2670"
+      },
+      "baseViewId": "canvas-view-f917afa7-797b-4257-9102-5d8babc48a51",
+      "generationInput": {
+        "canvas": {
+          "workspaceInstanceId": "a15d1dc6-7bbc-49dd-ada1-0344fc83511b",
+          "documentId": "draft-cf75d701-2679-4ef7-bbb3-9018f70e2f20"
+        },
+        "viewId": "canvas-view-f917afa7-797b-4257-9102-5d8babc48a51",
+        "agentContextId": "saved-agent-context-e40470bb-d8f6-4493-832a-963f53d84dd5",
+        "prompt": "## Layout\nThis section will contain details on the high-level layout of the data\nFor now, we will use a single layout to display the data\nThis layout uses a single central diagram and then some diagrams on the side\n\n## General\nI want you to use CanvasView to create a view that explains this current feature. The following are some guidelines:\n- relations\n  - edges\n    - obvious -> just the edge\n    - less obvious -> edge + edge text\n      > \"inherits\", \"imports\", \"MCP API call\", etc..\n    - less less obvious\n      > creating an \"anchor\" node / tree at the source or target or both\n- tree-diagrams\n  - tree are best to depict nested, hierarchals arrangements of the data\n    > their strength lies in their ability to segment non-adjacent levels of the data-space\n  - while uniformity / flat levels are good, I suspect this is not always the case and not always the best use of trees\n- highlighting\n  - can be used to mark nodes as important\n\n## This experiment: central diagram only\nGenerate ONLY the central diagram for the assigned feature. The saved AgentContext contains the feature brief and exact current source evidence. Explain the implemented high-level feature and its important relationships using that evidence.\nThe final canvas must contain exactly ONE meaningful diagram. Do not generate side diagrams, side panels, additional alternatives, or additional canvases. Replace the starter diagram in-place if one exists. Do not leave a blank placeholder beside the result. Connections within the central ASCII diagram are fine; do not create dangling external edges.\nThe application has already created your CanvasView and bound an isolated generation canvas. Edit that bound canvas directly; the application saves the resulting CanvasView automatically. Do not fork or create another view, and do not call gen-alternatives.\nUse the canvas/diagram tools, not filesystem edits. Do not change application source code. If you add source mappings, use accurate captured file ranges; do not fabricate evidence. Before completing, reread the bound canvas and verify that it has exactly one diagram and that its content covers the assigned feature.\n",
+        "alternatives": [
+          {
+            "name": "Central diagram - baseline prompt",
+            "prompt": "Feature 2: Managed generation of canvas alternatives\n\nCover: Generating independent candidates from one saved checkpoint; shared and candidate-specific prompts; isolated child canvases and chats; inherited model or saved context; progress, cancellation and persisted results.\n\nProduce the single central diagram only, using the supplied AgentContext."
+          }
+        ],
+        "requestId": "696e36cb-7800-4fc6-a91a-e05049edbec7"
+      },
+      "generation": {
+        "requestId": "696e36cb-7800-4fc6-a91a-e05049edbec7",
+        "runId": "5d42d88d-c64e-45e6-9695-0c95cc09a79e",
+        "candidates": [
+          {
+            "viewId": "canvas-view-107565d1-f895-48d3-ad1f-68b750ce0686",
+            "chatId": "2f8fec5a-d775-48de-81e8-7e08bb44e3f5",
+            "name": "Central diagram - baseline prompt"
+          }
+        ]
+      },
+      "status": {
+        "chatStatus": "running",
+        "generationStatus": "generating",
+        "error": null,
+        "pending": [],
+        "completedAt": null
+      },
+      "openRequest": {
+        "sessionId": "75dcb556-f299-4ff2-9f9d-652f57b8048d",
+        "requestId": "12b978c0-2c99-4303-8cc1-a28712d38e9d",
+        "expectedVersion": 1,
+        "operation": "open",
+        "viewId": "canvas-view-107565d1-f895-48d3-ad1f-68b750ce0686"
+      },
+      "verified": {
+        "at": "2026-10-29T01:39:26.510Z",
+        "viewId": "canvas-view-107565d1-f895-48d3-ad1f-68b750ce0686",
+        "diagramCount": 1,
+        "lines": 67,
+        "characters": 5632,
+        "edges": 0,
+        "textFile": "diagrams/02.txt",
+        "generation": {
+          "viewId": "canvas-view-107565d1-f895-48d3-ad1f-68b750ce0686",
+          "runId": "5d42d88d-c64e-45e6-9695-0c95cc09a79e",
+          "chatId": "2f8fec5a-d775-48de-81e8-7e08bb44e3f5",
+          "parentChatId": "08c6af0f-796e-4fda-b715-16efc834be09",
+          "parentTurnId": "01a17e2d-9e82-7de3-ab56-ceb5aa003572",
+          "triggerPrompt": "## Layout\nThis section will contain details on the high-level layout of the data\nFor now, we will use a single layout to display the data\nThis layout uses a single central diagram and then some diagrams on the side\n\n## General\nI want you to use CanvasView to create a view that explains this current feature. The following are some guidelines:\n- relations\n  - edges\n    - obvious -> just the edge\n    - less obvious -> edge + edge text\n      > \"inherits\", \"imports\", \"MCP API call\", etc..\n    - less less obvious\n      > creating an \"anchor\" node / tree at the source or target or both\n- tree-diagrams\n  - tree are best to depict nested, hierarchals arrangements of the data\n    > their strength lies in their ability to segment non-adjacent levels of the data-space\n  - while uniformity / flat levels are good, I suspect this is not always the case and not always the best use of trees\n- highlighting\n  - can be used to mark nodes as important\n\n## This experiment: central diagram only\nGenerate ONLY the central diagram for the assigned feature. The saved AgentContext contains the feature brief and exact current source evidence. Explain the implemented high-level feature and its important relationships using that evidence.\nThe final canvas must contain exactly ONE meaningful diagram. Do not generate side diagrams, side panels, additional alternatives, or additional canvases. Replace the starter diagram in-place if one exists. Do not leave a blank placeholder beside the result. Connections within the central ASCII diagram are fine; do not create dangling external edges.\nThe application has already created your CanvasView and bound an isolated generation canvas. Edit that bound canvas directly; the application saves the resulting CanvasView automatically. Do not fork or create another view, and do not call gen-alternatives.\nUse the canvas/diagram tools, not filesystem edits. Do not change application source code. If you add source mappings, use accurate captured file ranges; do not fabricate evidence. Before completing, reread the bound canvas and verify that it has exactly one diagram and that its content covers the assigned feature.",
+          "taskPrompt": "## Layout\nThis section will contain details on the high-level layout of the data\nFor now, we will use a single layout to display the data\nThis layout uses a single central diagram and then some diagrams on the side\n\n## General\nI want you to use CanvasView to create a view that explains this current feature. The following are some guidelines:\n- relations\n  - edges\n    - obvious -> just the edge\n    - less obvious -> edge + edge text\n      > \"inherits\", \"imports\", \"MCP API call\", etc..\n    - less less obvious\n      > creating an \"anchor\" node / tree at the source or target or both\n- tree-diagrams\n  - tree are best to depict nested, hierarchals arrangements of the data\n    > their strength lies in their ability to segment non-adjacent levels of the data-space\n  - while uniformity / flat levels are good, I suspect this is not always the case and not always the best use of trees\n- highlighting\n  - can be used to mark nodes as important\n\n## This experiment: central diagram only\nGenerate ONLY the central diagram for the assigned feature. The saved AgentContext contains the feature brief and exact current source evidence. Explain the implemented high-level feature and its important relationships using that evidence.\nThe final canvas must contain exactly ONE meaningful diagram. Do not generate side diagrams, side panels, additional alternatives, or additional canvases. Replace the starter diagram in-place if one exists. Do not leave a blank placeholder beside the result. Connections within the central ASCII diagram are fine; do not create dangling external edges.\nThe application has already created your CanvasView and bound an isolated generation canvas. Edit that bound canvas directly; the application saves the resulting CanvasView automatically. Do not fork or create another view, and do not call gen-alternatives.\nUse the canvas/diagram tools, not filesystem edits. Do not change application source code. If you add source mappings, use accurate captured file ranges; do not fabricate evidence. Before completing, reread the bound canvas and verify that it has exactly one diagram and that its content covers the assigned feature.",
+          "prompt": "Feature 2: Managed generation of canvas alternatives\n\nCover: Generating independent candidates from one saved checkpoint; shared and candidate-specific prompts; isolated child canvases and chats; inherited model or saved context; progress, cancellation and persisted results.\n\nProduce the single central diagram only, using the supplied AgentContext.",
+          "model": "gpt-6-astra",
+          "effort": "high",
+          "agentContextId": "saved-agent-context-e40470bb-d8f6-4493-832a-963f53d84dd5",
+          "agentContextHash": "ae34aa3c4e9f10021cad037e925c0b76e4c063afe28704f5db1d5a9a208ec5fe",
+          "status": "finished",
+          "startedAt": "2026-10-29T01:37:14.402Z",
+          "usage": {
+            "totalTokens": 295861,
+            "inputTokens": 293990,
+            "cachedInputTokens": 232832,
+            "outputTokens": 1871,
+            "reasoningOutputTokens": 720
+          },
+          "completedAt": "2026-10-29T01:39:03.234Z",
+          "durationMs": 108832,
+          "pendingSave": false,
+          "waitingForInput": false
+        }
+      },
+      "persistedVerification": {
+        "at": "2026-10-29T01:40:08.952Z",
+        "checkpointId": "canvas-revision-9439bed1-3cbe-40e0-911f-5e4f99d32891",
+        "revisionId": "diagram-revision-5106ea35-c3e1-4f10-a8a8-5c6520baccde"
+      }
+    },
+    {
+      "number": 3,
+      "title": "Reusable AgentContexts and pinned source evidence",
+      "features": "Saving reusable contexts across chats and canvases; diagram-bound source context; immutable source references; lazy source loading; source snapshots and portable exports.",
+      "ranges": [
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "domain/core/agents/savedAgentContext.ts",
+          "startLine": 1,
+          "endLine": 27,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "147a5218e505825a1474fd72450e21f0b24b3685b67e6093fbdc3c9579b6d604"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "domain/core/agents/agentContext.ts",
+          "startLine": 1,
+          "endLine": 177,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "0febae15be30fb1e091ba1601afcd10fb330c98ce8c08e1813606c9489aaeac2"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "domain/core/agents/agentContextSource.ts",
+          "startLine": 1,
+          "endLine": 30,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "0a26a31458562b14992d828baa16b9a56d5f4a2e740beae138e0a2695f26c2f5"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "application/mapping/agent/agentContextLibrary.ts",
+          "startLine": 1,
+          "endLine": 65,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "4a74d1dbe96d2099361024cfc6f31b867721fdf026144ba8ccb4893336eb8a4d"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "application/mapping/agent/agentContextService.ts",
+          "startLine": 1,
+          "endLine": 52,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "e5169887db2f5cecbc485d15399e531eb927aade8409ddebe453f31438fbf36f"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "infrastructure/core/persistence/fileAgentContextSources.ts",
+          "startLine": 1,
+          "endLine": 117,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "8dc80474585d0e5c5937c02510a9434e8ae2cc8d6bf27802587f4e0a0be523e0"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "infrastructure/core/persistence/fileAgentContextRepository.ts",
+          "startLine": 1,
+          "endLine": 48,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "0c66393a5bbc0c69f09fd7e81c9ea6b00b93233f025c4c3678f92c2053d46b0c"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "domain/core/diagrams/diagramAgentContext.ts",
+          "startLine": 1,
+          "endLine": 85,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "df15e38eb9769dc4fa1d060fe77ebe0afef7ebff3a7577defb637ef6833c9fa5"
+          }
+        }
+      ],
+      "contextFile": "contexts/03.json",
+      "contextRequestId": "9546a968-d3af-4860-8d83-589bff85fca0",
+      "createRequestId": "0203e032-c9b7-408d-ae90-42c7a1bda720",
+      "viewRequestId": "4bc8eb86-b053-4d76-bc95-594da76da5ce",
+      "generationRequestId": "a35e05f5-9971-4ad3-b694-41607ffe5cba",
+      "candidatePrompt": "Feature 3: Reusable AgentContexts and pinned source evidence\n\nCover: Saving reusable contexts across chats and canvases; diagram-bound source context; immutable source references; lazy source loading; source snapshots and portable exports.\n\nProduce the single central diagram only, using the supplied AgentContext.",
+      "canvasName": "03 - Reusable AgentContexts and pinned source evidence",
+      "context": {
+        "agentContextId": "saved-agent-context-9546a968-d3af-4860-8d83-589bff85fca0",
+        "name": "Reusable AgentContexts and pinned source evidence - source baseline",
+        "description": "Feature 3/12. Exact working-tree source snapshots for the central-diagram prompt experiment.",
+        "createdAt": "2026-10-29T01:36:35.267Z",
+        "contentHash": "03e548bf4c3e316e3061a8884718237cc26f3e09890922741b212e11aecf938a",
+        "messageCount": 1,
+        "source": {
+          "agentType": "saved-context",
+          "sourceSessionId": "9546a968-d3af-4860-8d83-589bff85fca0",
+          "format": "messages-v1"
+        }
+      },
+      "contextVerified": true,
+      "attachment": {
+        "sessionId": "1c329def-da7f-4fd5-8d1e-8547fd99fe81",
+        "canvasId": "a15d1dc6-7bbc-49dd-ada1-0344fc83511b",
+        "documentId": "draft-321ab6be-42ba-48c4-aac4-eb0f810c0f39",
+        "repositoryId": "repo-ce67f2af4410036fce1ce12f",
+        "version": 0
+      },
+      "baseViewRequest": {
+        "operation": "create",
+        "name": "Blank baseline",
+        "sessionId": "1c329def-da7f-4fd5-8d1e-8547fd99fe81",
+        "expectedVersion": 0,
+        "requestId": "4bc8eb86-b053-4d76-bc95-594da76da5ce"
+      },
+      "baseViewId": "canvas-view-b657d65e-633d-450c-bf4c-07e9a5376e9d",
+      "generationInput": {
+        "canvas": {
+          "workspaceInstanceId": "a15d1dc6-7bbc-49dd-ada1-0344fc83511b",
+          "documentId": "draft-321ab6be-42ba-48c4-aac4-eb0f810c0f39"
+        },
+        "viewId": "canvas-view-b657d65e-633d-450c-bf4c-07e9a5376e9d",
+        "agentContextId": "saved-agent-context-9546a968-d3af-4860-8d83-589bff85fca0",
+        "prompt": "## Layout\nThis section will contain details on the high-level layout of the data\nFor now, we will use a single layout to display the data\nThis layout uses a single central diagram and then some diagrams on the side\n\n## General\nI want you to use CanvasView to create a view that explains this current feature. The following are some guidelines:\n- relations\n  - edges\n    - obvious -> just the edge\n    - less obvious -> edge + edge text\n      > \"inherits\", \"imports\", \"MCP API call\", etc..\n    - less less obvious\n      > creating an \"anchor\" node / tree at the source or target or both\n- tree-diagrams\n  - tree are best to depict nested, hierarchals arrangements of the data\n    > their strength lies in their ability to segment non-adjacent levels of the data-space\n  - while uniformity / flat levels are good, I suspect this is not always the case and not always the best use of trees\n- highlighting\n  - can be used to mark nodes as important\n\n## This experiment: central diagram only\nGenerate ONLY the central diagram for the assigned feature. The saved AgentContext contains the feature brief and exact current source evidence. Explain the implemented high-level feature and its important relationships using that evidence.\nThe final canvas must contain exactly ONE meaningful diagram. Do not generate side diagrams, side panels, additional alternatives, or additional canvases. Replace the starter diagram in-place if one exists. Do not leave a blank placeholder beside the result. Connections within the central ASCII diagram are fine; do not create dangling external edges.\nThe application has already created your CanvasView and bound an isolated generation canvas. Edit that bound canvas directly; the application saves the resulting CanvasView automatically. Do not fork or create another view, and do not call gen-alternatives.\nUse the canvas/diagram tools, not filesystem edits. Do not change application source code. If you add source mappings, use accurate captured file ranges; do not fabricate evidence. Before completing, reread the bound canvas and verify that it has exactly one diagram and that its content covers the assigned feature.\n",
+        "alternatives": [
+          {
+            "name": "Central diagram - baseline prompt",
+            "prompt": "Feature 3: Reusable AgentContexts and pinned source evidence\n\nCover: Saving reusable contexts across chats and canvases; diagram-bound source context; immutable source references; lazy source loading; source snapshots and portable exports.\n\nProduce the single central diagram only, using the supplied AgentContext."
+          }
+        ],
+        "requestId": "a35e05f5-9971-4ad3-b694-41607ffe5cba"
+      },
+      "generation": {
+        "requestId": "a35e05f5-9971-4ad3-b694-41607ffe5cba",
+        "runId": "e7a0e9f3-c92f-4e8e-8204-9a227869d33a",
+        "candidates": [
+          {
+            "viewId": "canvas-view-c1ee24eb-a64c-40d3-9615-00c681dfd248",
+            "chatId": "311af368-76a5-4295-a616-b3f945fd14e6",
+            "name": "Central diagram - baseline prompt"
+          }
+        ]
+      },
+      "status": {
+        "chatStatus": "running",
+        "generationStatus": "generating",
+        "error": null,
+        "pending": [],
+        "completedAt": null
+      },
+      "openRequest": {
+        "sessionId": "1c329def-da7f-4fd5-8d1e-8547fd99fe81",
+        "requestId": "e4b72562-a85a-4db6-8979-f9678d49f219",
+        "expectedVersion": 1,
+        "operation": "open",
+        "viewId": "canvas-view-c1ee24eb-a64c-40d3-9615-00c681dfd248"
+      },
+      "verified": {
+        "at": "2026-10-29T01:39:27.527Z",
+        "viewId": "canvas-view-c1ee24eb-a64c-40d3-9615-00c681dfd248",
+        "diagramCount": 1,
+        "lines": 56,
+        "characters": 5019,
+        "edges": 0,
+        "textFile": "diagrams/03.txt",
+        "generation": {
+          "viewId": "canvas-view-c1ee24eb-a64c-40d3-9615-00c681dfd248",
+          "runId": "e7a0e9f3-c92f-4e8e-8204-9a227869d33a",
+          "chatId": "311af368-76a5-4295-a616-b3f945fd14e6",
+          "parentChatId": "08c6af0f-796e-4fda-b715-16efc834be09",
+          "parentTurnId": "01a17e2d-9e82-7de3-ab56-ceb5aa003572",
+          "triggerPrompt": "## Layout\nThis section will contain details on the high-level layout of the data\nFor now, we will use a single layout to display the data\nThis layout uses a single central diagram and then some diagrams on the side\n\n## General\nI want you to use CanvasView to create a view that explains this current feature. The following are some guidelines:\n- relations\n  - edges\n    - obvious -> just the edge\n    - less obvious -> edge + edge text\n      > \"inherits\", \"imports\", \"MCP API call\", etc..\n    - less less obvious\n      > creating an \"anchor\" node / tree at the source or target or both\n- tree-diagrams\n  - tree are best to depict nested, hierarchals arrangements of the data\n    > their strength lies in their ability to segment non-adjacent levels of the data-space\n  - while uniformity / flat levels are good, I suspect this is not always the case and not always the best use of trees\n- highlighting\n  - can be used to mark nodes as important\n\n## This experiment: central diagram only\nGenerate ONLY the central diagram for the assigned feature. The saved AgentContext contains the feature brief and exact current source evidence. Explain the implemented high-level feature and its important relationships using that evidence.\nThe final canvas must contain exactly ONE meaningful diagram. Do not generate side diagrams, side panels, additional alternatives, or additional canvases. Replace the starter diagram in-place if one exists. Do not leave a blank placeholder beside the result. Connections within the central ASCII diagram are fine; do not create dangling external edges.\nThe application has already created your CanvasView and bound an isolated generation canvas. Edit that bound canvas directly; the application saves the resulting CanvasView automatically. Do not fork or create another view, and do not call gen-alternatives.\nUse the canvas/diagram tools, not filesystem edits. Do not change application source code. If you add source mappings, use accurate captured file ranges; do not fabricate evidence. Before completing, reread the bound canvas and verify that it has exactly one diagram and that its content covers the assigned feature.",
+          "taskPrompt": "## Layout\nThis section will contain details on the high-level layout of the data\nFor now, we will use a single layout to display the data\nThis layout uses a single central diagram and then some diagrams on the side\n\n## General\nI want you to use CanvasView to create a view that explains this current feature. The following are some guidelines:\n- relations\n  - edges\n    - obvious -> just the edge\n    - less obvious -> edge + edge text\n      > \"inherits\", \"imports\", \"MCP API call\", etc..\n    - less less obvious\n      > creating an \"anchor\" node / tree at the source or target or both\n- tree-diagrams\n  - tree are best to depict nested, hierarchals arrangements of the data\n    > their strength lies in their ability to segment non-adjacent levels of the data-space\n  - while uniformity / flat levels are good, I suspect this is not always the case and not always the best use of trees\n- highlighting\n  - can be used to mark nodes as important\n\n## This experiment: central diagram only\nGenerate ONLY the central diagram for the assigned feature. The saved AgentContext contains the feature brief and exact current source evidence. Explain the implemented high-level feature and its important relationships using that evidence.\nThe final canvas must contain exactly ONE meaningful diagram. Do not generate side diagrams, side panels, additional alternatives, or additional canvases. Replace the starter diagram in-place if one exists. Do not leave a blank placeholder beside the result. Connections within the central ASCII diagram are fine; do not create dangling external edges.\nThe application has already created your CanvasView and bound an isolated generation canvas. Edit that bound canvas directly; the application saves the resulting CanvasView automatically. Do not fork or create another view, and do not call gen-alternatives.\nUse the canvas/diagram tools, not filesystem edits. Do not change application source code. If you add source mappings, use accurate captured file ranges; do not fabricate evidence. Before completing, reread the bound canvas and verify that it has exactly one diagram and that its content covers the assigned feature.",
+          "prompt": "Feature 3: Reusable AgentContexts and pinned source evidence\n\nCover: Saving reusable contexts across chats and canvases; diagram-bound source context; immutable source references; lazy source loading; source snapshots and portable exports.\n\nProduce the single central diagram only, using the supplied AgentContext.",
+          "model": "gpt-6-astra",
+          "effort": "high",
+          "agentContextId": "saved-agent-context-9546a968-d3af-4860-8d83-589bff85fca0",
+          "agentContextHash": "03e548bf4c3e316e3061a8884718237cc26f3e09890922741b212e11aecf938a",
+          "status": "finished",
+          "startedAt": "2026-10-29T01:37:14.722Z",
+          "usage": {
+            "totalTokens": 561996,
+            "inputTokens": 559660,
+            "cachedInputTokens": 506752,
+            "outputTokens": 2336,
+            "reasoningOutputTokens": 393
+          },
+          "completedAt": "2026-10-29T01:39:04.995Z",
+          "durationMs": 110273,
+          "pendingSave": false,
+          "waitingForInput": false
+        }
+      },
+      "persistedVerification": {
+        "at": "2026-10-29T01:40:08.952Z",
+        "checkpointId": "canvas-revision-ff756b6e-1049-42d1-8b62-e479e6b12413",
+        "revisionId": "diagram-revision-0860817c-1a07-4dd0-a511-1a423d8b5e66"
+      }
+    },
+    {
+      "number": 4,
+      "title": "Scoped diagram authoring and alternative review",
+      "features": "Structured prompts and pinned references; whole-diagram or subtree edits; generating variants; reviewing changes; inline alternative swaps and side-panel inspection. Explain the authoring and interaction workflow, preserving the distinction between presentation selection and applying a revision.",
+      "ranges": [
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "src/features/mapping/prompt-composer/PromptComposer.tsx",
+          "startLine": 1,
+          "endLine": 314,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "7f189cbeb1b4a9fa2c7c2402c2c3dcab9431f5b72f91c4162861813fa2bc90e5"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "application/mapping/agent/diagramEditService.ts",
+          "startLine": 1,
+          "endLine": 293,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "f71636fc72ae7981a942c1682fbcadaf5704a778081839845847c77035947da5"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "domain/mapping/agent/diagramEdit.ts",
+          "startLine": 1,
+          "endLine": 85,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "0d883e623477d93341bcffe54a72003767d717d6a3bdb970201eb2e85ec0ee5d"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "src/features/mapping/prompt-composer/VariantReview.tsx",
+          "startLine": 1,
+          "endLine": 51,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "dc5d98b8529e541f292849abf3f8d9dad4ab39bb78bd0e4fd4a6e7a457c82044"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "domain/core/diagrams/diagramRevisionReview.ts",
+          "startLine": 1,
+          "endLine": 195,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "6691ae05ba528745105fd31447446ba62ae0dc41464a75c113007b9743a21ee1"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "src/features/mapping/tldraw/DiagramAlternativeControls.tsx",
+          "startLine": 1,
+          "endLine": 48,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "fb6f177d0334deb6fdacb8d3e44b840b068605f3e78705ba229da4287c57c536"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "src/features/mapping/tldraw/DiagramSidePanelContent.tsx",
+          "startLine": 1,
+          "endLine": 58,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "11617114ab0887a794079c1cc32ecef61a71ee4d4b41c6dbbc0a589957909de2"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "domain/mapping/workspace/diagramAlternatives.ts",
+          "startLine": 1,
+          "endLine": 79,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "778347826b1e80b16f22e74fd572fdcef72008e41938b4af7bcbe822824b40cd"
+          }
+        }
+      ],
+      "contextFile": "contexts/04.json",
+      "contextRequestId": "0422e99b-9634-4cb3-83ec-5b2271fa15df",
+      "createRequestId": "cad93a32-4fe4-46dc-b5e7-606e17071de5",
+      "viewRequestId": "f2557fda-0900-475e-8eb1-ee362c02ce1e",
+      "generationRequestId": "5c2fd92f-4c2b-4408-ad2e-1a2ef3079345",
+      "candidatePrompt": "Feature 4: Scoped diagram authoring and alternative review\n\nCover: Structured prompts and pinned references; whole-diagram or subtree edits; generating variants; reviewing changes; inline alternative swaps and side-panel inspection. Explain the authoring and interaction workflow, preserving the distinction between presentation selection and applying a revision.\n\nProduce the single central diagram only, using the supplied AgentContext.",
+      "canvasName": "04 - Scoped diagram authoring and alternative review",
+      "context": {
+        "agentContextId": "saved-agent-context-0422e99b-9634-4cb3-83ec-5b2271fa15df",
+        "name": "Scoped diagram authoring and alternative review - source baseline",
+        "description": "Feature 4/12. Exact working-tree source snapshots for the central-diagram prompt experiment.",
+        "createdAt": "2026-10-29T01:36:35.348Z",
+        "contentHash": "4c0797f2ece71738a50b61e8d7546d613b676f5ac239a661fd2d891d7e32b3fd",
+        "messageCount": 1,
+        "source": {
+          "agentType": "saved-context",
+          "sourceSessionId": "0422e99b-9634-4cb3-83ec-5b2271fa15df",
+          "format": "messages-v1"
+        }
+      },
+      "contextVerified": true,
+      "attachment": {
+        "sessionId": "a197adaa-ffa2-4c9f-87a3-e44bf9c9e5c0",
+        "canvasId": "a15d1dc6-7bbc-49dd-ada1-0344fc83511b",
+        "documentId": "draft-a59cb59a-0032-4e17-8be1-6e686d698bf0",
+        "repositoryId": "repo-ce67f2af4410036fce1ce12f",
+        "version": 0
+      },
+      "baseViewRequest": {
+        "operation": "create",
+        "name": "Blank baseline",
+        "sessionId": "a197adaa-ffa2-4c9f-87a3-e44bf9c9e5c0",
+        "expectedVersion": 0,
+        "requestId": "f2557fda-0900-475e-8eb1-ee362c02ce1e"
+      },
+      "baseViewId": "canvas-view-fd89641a-52c2-4deb-930e-f659c1d3c2ab",
+      "generationInput": {
+        "canvas": {
+          "workspaceInstanceId": "a15d1dc6-7bbc-49dd-ada1-0344fc83511b",
+          "documentId": "draft-a59cb59a-0032-4e17-8be1-6e686d698bf0"
+        },
+        "viewId": "canvas-view-fd89641a-52c2-4deb-930e-f659c1d3c2ab",
+        "agentContextId": "saved-agent-context-0422e99b-9634-4cb3-83ec-5b2271fa15df",
+        "prompt": "## Layout\nThis section will contain details on the high-level layout of the data\nFor now, we will use a single layout to display the data\nThis layout uses a single central diagram and then some diagrams on the side\n\n## General\nI want you to use CanvasView to create a view that explains this current feature. The following are some guidelines:\n- relations\n  - edges\n    - obvious -> just the edge\n    - less obvious -> edge + edge text\n      > \"inherits\", \"imports\", \"MCP API call\", etc..\n    - less less obvious\n      > creating an \"anchor\" node / tree at the source or target or both\n- tree-diagrams\n  - tree are best to depict nested, hierarchals arrangements of the data\n    > their strength lies in their ability to segment non-adjacent levels of the data-space\n  - while uniformity / flat levels are good, I suspect this is not always the case and not always the best use of trees\n- highlighting\n  - can be used to mark nodes as important\n\n## This experiment: central diagram only\nGenerate ONLY the central diagram for the assigned feature. The saved AgentContext contains the feature brief and exact current source evidence. Explain the implemented high-level feature and its important relationships using that evidence.\nThe final canvas must contain exactly ONE meaningful diagram. Do not generate side diagrams, side panels, additional alternatives, or additional canvases. Replace the starter diagram in-place if one exists. Do not leave a blank placeholder beside the result. Connections within the central ASCII diagram are fine; do not create dangling external edges.\nThe application has already created your CanvasView and bound an isolated generation canvas. Edit that bound canvas directly; the application saves the resulting CanvasView automatically. Do not fork or create another view, and do not call gen-alternatives.\nUse the canvas/diagram tools, not filesystem edits. Do not change application source code. If you add source mappings, use accurate captured file ranges; do not fabricate evidence. Before completing, reread the bound canvas and verify that it has exactly one diagram and that its content covers the assigned feature.\n",
+        "alternatives": [
+          {
+            "name": "Central diagram - baseline prompt",
+            "prompt": "Feature 4: Scoped diagram authoring and alternative review\n\nCover: Structured prompts and pinned references; whole-diagram or subtree edits; generating variants; reviewing changes; inline alternative swaps and side-panel inspection. Explain the authoring and interaction workflow, preserving the distinction between presentation selection and applying a revision.\n\nProduce the single central diagram only, using the supplied AgentContext."
+          }
+        ],
+        "requestId": "5c2fd92f-4c2b-4408-ad2e-1a2ef3079345"
+      },
+      "generation": {
+        "requestId": "5c2fd92f-4c2b-4408-ad2e-1a2ef3079345",
+        "runId": "9f6578b8-f182-497c-9ef7-87723f05f355",
+        "candidates": [
+          {
+            "viewId": "canvas-view-ad91b5e3-92c6-4d7e-b59f-1f643cb183dc",
+            "chatId": "03faee2d-61d4-4a3a-aaab-cdeb559a4bf4",
+            "name": "Central diagram - baseline prompt"
+          }
+        ]
+      },
+      "status": {
+        "chatStatus": "idle",
+        "generationStatus": "finished",
+        "error": null,
+        "pending": [],
+        "completedAt": "2026-10-29T01:38:52.781Z"
+      },
+      "openRequest": {
+        "sessionId": "a197adaa-ffa2-4c9f-87a3-e44bf9c9e5c0",
+        "requestId": "e00b194e-9cb1-433c-96f3-aa337bf61c4c",
+        "expectedVersion": 1,
+        "operation": "open",
+        "viewId": "canvas-view-ad91b5e3-92c6-4d7e-b59f-1f643cb183dc"
+      },
+      "verified": {
+        "at": "2026-10-29T01:39:28.324Z",
+        "viewId": "canvas-view-ad91b5e3-92c6-4d7e-b59f-1f643cb183dc",
+        "diagramCount": 1,
+        "lines": 68,
+        "characters": 6458,
+        "edges": 0,
+        "textFile": "diagrams/04.txt",
+        "generation": {
+          "viewId": "canvas-view-ad91b5e3-92c6-4d7e-b59f-1f643cb183dc",
+          "runId": "9f6578b8-f182-497c-9ef7-87723f05f355",
+          "chatId": "03faee2d-61d4-4a3a-aaab-cdeb559a4bf4",
+          "parentChatId": "08c6af0f-796e-4fda-b715-16efc834be09",
+          "parentTurnId": "01a17e2d-9e82-7de3-ab56-ceb5aa003572",
+          "triggerPrompt": "## Layout\nThis section will contain details on the high-level layout of the data\nFor now, we will use a single layout to display the data\nThis layout uses a single central diagram and then some diagrams on the side\n\n## General\nI want you to use CanvasView to create a view that explains this current feature. The following are some guidelines:\n- relations\n  - edges\n    - obvious -> just the edge\n    - less obvious -> edge + edge text\n      > \"inherits\", \"imports\", \"MCP API call\", etc..\n    - less less obvious\n      > creating an \"anchor\" node / tree at the source or target or both\n- tree-diagrams\n  - tree are best to depict nested, hierarchals arrangements of the data\n    > their strength lies in their ability to segment non-adjacent levels of the data-space\n  - while uniformity / flat levels are good, I suspect this is not always the case and not always the best use of trees\n- highlighting\n  - can be used to mark nodes as important\n\n## This experiment: central diagram only\nGenerate ONLY the central diagram for the assigned feature. The saved AgentContext contains the feature brief and exact current source evidence. Explain the implemented high-level feature and its important relationships using that evidence.\nThe final canvas must contain exactly ONE meaningful diagram. Do not generate side diagrams, side panels, additional alternatives, or additional canvases. Replace the starter diagram in-place if one exists. Do not leave a blank placeholder beside the result. Connections within the central ASCII diagram are fine; do not create dangling external edges.\nThe application has already created your CanvasView and bound an isolated generation canvas. Edit that bound canvas directly; the application saves the resulting CanvasView automatically. Do not fork or create another view, and do not call gen-alternatives.\nUse the canvas/diagram tools, not filesystem edits. Do not change application source code. If you add source mappings, use accurate captured file ranges; do not fabricate evidence. Before completing, reread the bound canvas and verify that it has exactly one diagram and that its content covers the assigned feature.",
+          "taskPrompt": "## Layout\nThis section will contain details on the high-level layout of the data\nFor now, we will use a single layout to display the data\nThis layout uses a single central diagram and then some diagrams on the side\n\n## General\nI want you to use CanvasView to create a view that explains this current feature. The following are some guidelines:\n- relations\n  - edges\n    - obvious -> just the edge\n    - less obvious -> edge + edge text\n      > \"inherits\", \"imports\", \"MCP API call\", etc..\n    - less less obvious\n      > creating an \"anchor\" node / tree at the source or target or both\n- tree-diagrams\n  - tree are best to depict nested, hierarchals arrangements of the data\n    > their strength lies in their ability to segment non-adjacent levels of the data-space\n  - while uniformity / flat levels are good, I suspect this is not always the case and not always the best use of trees\n- highlighting\n  - can be used to mark nodes as important\n\n## This experiment: central diagram only\nGenerate ONLY the central diagram for the assigned feature. The saved AgentContext contains the feature brief and exact current source evidence. Explain the implemented high-level feature and its important relationships using that evidence.\nThe final canvas must contain exactly ONE meaningful diagram. Do not generate side diagrams, side panels, additional alternatives, or additional canvases. Replace the starter diagram in-place if one exists. Do not leave a blank placeholder beside the result. Connections within the central ASCII diagram are fine; do not create dangling external edges.\nThe application has already created your CanvasView and bound an isolated generation canvas. Edit that bound canvas directly; the application saves the resulting CanvasView automatically. Do not fork or create another view, and do not call gen-alternatives.\nUse the canvas/diagram tools, not filesystem edits. Do not change application source code. If you add source mappings, use accurate captured file ranges; do not fabricate evidence. Before completing, reread the bound canvas and verify that it has exactly one diagram and that its content covers the assigned feature.",
+          "prompt": "Feature 4: Scoped diagram authoring and alternative review\n\nCover: Structured prompts and pinned references; whole-diagram or subtree edits; generating variants; reviewing changes; inline alternative swaps and side-panel inspection. Explain the authoring and interaction workflow, preserving the distinction between presentation selection and applying a revision.\n\nProduce the single central diagram only, using the supplied AgentContext.",
+          "model": "gpt-6-astra",
+          "effort": "high",
+          "agentContextId": "saved-agent-context-0422e99b-9634-4cb3-83ec-5b2271fa15df",
+          "agentContextHash": "4c0797f2ece71738a50b61e8d7546d613b676f5ac239a661fd2d891d7e32b3fd",
+          "status": "finished",
+          "startedAt": "2026-10-29T01:37:16.891Z",
+          "usage": {
+            "totalTokens": 401149,
+            "inputTokens": 398787,
+            "cachedInputTokens": 338688,
+            "outputTokens": 2362,
+            "reasoningOutputTokens": 696
+          },
+          "completedAt": "2026-10-29T01:38:52.782Z",
+          "durationMs": 95891,
+          "pendingSave": false,
+          "waitingForInput": false
+        }
+      },
+      "persistedVerification": {
+        "at": "2026-10-29T01:40:08.952Z",
+        "checkpointId": "canvas-revision-9d8b912e-a6f9-450e-b3b2-c30a4f81d2fe",
+        "revisionId": "diagram-revision-5cde588f-5a59-4b93-887f-ddaf5d55f5df"
+      }
+    },
+    {
+      "number": 5,
+      "title": "Agent Chat sessions and direct diagram actions",
+      "features": "Creating and resuming conversations; capturing canvas references for a turn; streaming responses; answering agent requests; persisting conversations; submitting supplied diagram edits directly, including atomic multi-diagram submissions.",
+      "ranges": [
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "application/mapping/agent-chat/agentChatService.ts",
+          "startLine": 1,
+          "endLine": 590,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "97578805b856cef83d4ca3fbac7b79ed764c09c8b862dc187cc2097d98256615"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "application/mapping/agent-chat/chatDiagramTools.ts",
+          "startLine": 1,
+          "endLine": 269,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "4a4b6501d9b8291703cb2f9e81dfc2fe49489364fd23e224ef3559fea844489c"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "application/mapping/agent/diagramBatchService.ts",
+          "startLine": 1,
+          "endLine": 111,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "98241cd7af3674703e08ead942eaccb2095d66580b867701e481ba02717d0f79"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "domain/mapping/agent/diagramBatch.ts",
+          "startLine": 1,
+          "endLine": 45,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "2d4a507d2b6689aa7a5141c727ca249fc567e04d133c5af26350dc34177bf706"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "domain/mapping/agent-chat/agentChat.ts",
+          "startLine": 1,
+          "endLine": 144,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "4a636ae3856da5afd08d05469e2a3fc949d5f418225809b8aa51c800a228d148"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "infrastructure/mapping/agent-chat/chatStore.ts",
+          "startLine": 1,
+          "endLine": 25,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "1f186df22094c6c0ba641979f12bf5ed2ff53306d2b30cdeb963531ee5278c58"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "src/features/mapping/agent-chat/AgentChatPanel.tsx",
+          "startLine": 1,
+          "endLine": 316,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "baa60c3613a5ae0ae21ff8180fbcccda396474136891ad09970ba11a5f88966f"
+          }
+        }
+      ],
+      "contextFile": "contexts/05.json",
+      "contextRequestId": "c83d0459-b3fa-4ec6-9b87-99675eea947f",
+      "createRequestId": "f20d0cc1-1b55-4690-ba30-c6d5fcabb550",
+      "viewRequestId": "a345cf8b-4507-4670-b0d9-1e16e5d2574c",
+      "generationRequestId": "2ce2e5d3-9566-44a6-a574-1c0cebd2dddd",
+      "candidatePrompt": "Feature 5: Agent Chat sessions and direct diagram actions\n\nCover: Creating and resuming conversations; capturing canvas references for a turn; streaming responses; answering agent requests; persisting conversations; submitting supplied diagram edits directly, including atomic multi-diagram submissions.\n\nProduce the single central diagram only, using the supplied AgentContext.",
+      "canvasName": "05 - Agent Chat sessions and direct diagram actions",
+      "context": {
+        "agentContextId": "saved-agent-context-c83d0459-b3fa-4ec6-9b87-99675eea947f",
+        "name": "Agent Chat sessions and direct diagram actions - source baseline",
+        "description": "Feature 5/12. Exact working-tree source snapshots for the central-diagram prompt experiment.",
+        "createdAt": "2026-10-29T01:36:35.444Z",
+        "contentHash": "04ec1bc4824dd2defd98cd4a8dcc280cd39a0fc8bbd38bf6557bf7e378053cc4",
+        "messageCount": 1,
+        "source": {
+          "agentType": "saved-context",
+          "sourceSessionId": "c83d0459-b3fa-4ec6-9b87-99675eea947f",
+          "format": "messages-v1"
+        }
+      },
+      "contextVerified": true,
+      "attachment": {
+        "sessionId": "a44441ae-af53-4888-a78f-3fd01ff2bc22",
+        "canvasId": "a15d1dc6-7bbc-49dd-ada1-0344fc83511b",
+        "documentId": "draft-fc659a87-c50d-4252-aa57-952f450a0a75",
+        "repositoryId": "repo-ce67f2af4410036fce1ce12f",
+        "version": 0
+      },
+      "baseViewRequest": {
+        "operation": "create",
+        "name": "Blank baseline",
+        "sessionId": "a44441ae-af53-4888-a78f-3fd01ff2bc22",
+        "expectedVersion": 0,
+        "requestId": "a345cf8b-4507-4670-b0d9-1e16e5d2574c"
+      },
+      "baseViewId": "canvas-view-219fad54-afd6-40b1-9c88-f92f03ac3f30",
+      "generationInput": {
+        "canvas": {
+          "workspaceInstanceId": "a15d1dc6-7bbc-49dd-ada1-0344fc83511b",
+          "documentId": "draft-fc659a87-c50d-4252-aa57-952f450a0a75"
+        },
+        "viewId": "canvas-view-219fad54-afd6-40b1-9c88-f92f03ac3f30",
+        "agentContextId": "saved-agent-context-c83d0459-b3fa-4ec6-9b87-99675eea947f",
+        "prompt": "## Layout\nThis section will contain details on the high-level layout of the data\nFor now, we will use a single layout to display the data\nThis layout uses a single central diagram and then some diagrams on the side\n\n## General\nI want you to use CanvasView to create a view that explains this current feature. The following are some guidelines:\n- relations\n  - edges\n    - obvious -> just the edge\n    - less obvious -> edge + edge text\n      > \"inherits\", \"imports\", \"MCP API call\", etc..\n    - less less obvious\n      > creating an \"anchor\" node / tree at the source or target or both\n- tree-diagrams\n  - tree are best to depict nested, hierarchals arrangements of the data\n    > their strength lies in their ability to segment non-adjacent levels of the data-space\n  - while uniformity / flat levels are good, I suspect this is not always the case and not always the best use of trees\n- highlighting\n  - can be used to mark nodes as important\n\n## This experiment: central diagram only\nGenerate ONLY the central diagram for the assigned feature. The saved AgentContext contains the feature brief and exact current source evidence. Explain the implemented high-level feature and its important relationships using that evidence.\nThe final canvas must contain exactly ONE meaningful diagram. Do not generate side diagrams, side panels, additional alternatives, or additional canvases. Replace the starter diagram in-place if one exists. Do not leave a blank placeholder beside the result. Connections within the central ASCII diagram are fine; do not create dangling external edges.\nThe application has already created your CanvasView and bound an isolated generation canvas. Edit that bound canvas directly; the application saves the resulting CanvasView automatically. Do not fork or create another view, and do not call gen-alternatives.\nUse the canvas/diagram tools, not filesystem edits. Do not change application source code. If you add source mappings, use accurate captured file ranges; do not fabricate evidence. Before completing, reread the bound canvas and verify that it has exactly one diagram and that its content covers the assigned feature.\n",
+        "alternatives": [
+          {
+            "name": "Central diagram - baseline prompt",
+            "prompt": "Feature 5: Agent Chat sessions and direct diagram actions\n\nCover: Creating and resuming conversations; capturing canvas references for a turn; streaming responses; answering agent requests; persisting conversations; submitting supplied diagram edits directly, including atomic multi-diagram submissions.\n\nProduce the single central diagram only, using the supplied AgentContext."
+          }
+        ],
+        "requestId": "2ce2e5d3-9566-44a6-a574-1c0cebd2dddd"
+      },
+      "generation": {
+        "requestId": "2ce2e5d3-9566-44a6-a574-1c0cebd2dddd",
+        "runId": "67091dc3-ef31-46e4-a8bc-1c5fec0c10d1",
+        "candidates": [
+          {
+            "viewId": "canvas-view-f55d7a1d-da32-4837-85bb-b6516a92748b",
+            "chatId": "612fa74f-4701-449e-8a6c-95d8dd02d1b4",
+            "name": "Central diagram - baseline prompt"
+          }
+        ]
+      },
+      "status": {
+        "chatStatus": "running",
+        "generationStatus": "generating",
+        "error": null,
+        "pending": [],
+        "completedAt": null
+      },
+      "openRequest": {
+        "sessionId": "a44441ae-af53-4888-a78f-3fd01ff2bc22",
+        "requestId": "a8630461-53e2-48ad-9a70-aa2e56730b92",
+        "expectedVersion": 1,
+        "operation": "open",
+        "viewId": "canvas-view-f55d7a1d-da32-4837-85bb-b6516a92748b"
+      },
+      "verified": {
+        "at": "2026-10-29T01:39:52.417Z",
+        "viewId": "canvas-view-f55d7a1d-da32-4837-85bb-b6516a92748b",
+        "diagramCount": 1,
+        "lines": 72,
+        "characters": 7206,
+        "edges": 0,
+        "textFile": "diagrams/05.txt",
+        "generation": {
+          "viewId": "canvas-view-f55d7a1d-da32-4837-85bb-b6516a92748b",
+          "runId": "67091dc3-ef31-46e4-a8bc-1c5fec0c10d1",
+          "chatId": "612fa74f-4701-449e-8a6c-95d8dd02d1b4",
+          "parentChatId": "08c6af0f-796e-4fda-b715-16efc834be09",
+          "parentTurnId": "01a17e2d-9e82-7de3-ab56-ceb5aa003572",
+          "triggerPrompt": "## Layout\nThis section will contain details on the high-level layout of the data\nFor now, we will use a single layout to display the data\nThis layout uses a single central diagram and then some diagrams on the side\n\n## General\nI want you to use CanvasView to create a view that explains this current feature. The following are some guidelines:\n- relations\n  - edges\n    - obvious -> just the edge\n    - less obvious -> edge + edge text\n      > \"inherits\", \"imports\", \"MCP API call\", etc..\n    - less less obvious\n      > creating an \"anchor\" node / tree at the source or target or both\n- tree-diagrams\n  - tree are best to depict nested, hierarchals arrangements of the data\n    > their strength lies in their ability to segment non-adjacent levels of the data-space\n  - while uniformity / flat levels are good, I suspect this is not always the case and not always the best use of trees\n- highlighting\n  - can be used to mark nodes as important\n\n## This experiment: central diagram only\nGenerate ONLY the central diagram for the assigned feature. The saved AgentContext contains the feature brief and exact current source evidence. Explain the implemented high-level feature and its important relationships using that evidence.\nThe final canvas must contain exactly ONE meaningful diagram. Do not generate side diagrams, side panels, additional alternatives, or additional canvases. Replace the starter diagram in-place if one exists. Do not leave a blank placeholder beside the result. Connections within the central ASCII diagram are fine; do not create dangling external edges.\nThe application has already created your CanvasView and bound an isolated generation canvas. Edit that bound canvas directly; the application saves the resulting CanvasView automatically. Do not fork or create another view, and do not call gen-alternatives.\nUse the canvas/diagram tools, not filesystem edits. Do not change application source code. If you add source mappings, use accurate captured file ranges; do not fabricate evidence. Before completing, reread the bound canvas and verify that it has exactly one diagram and that its content covers the assigned feature.",
+          "taskPrompt": "## Layout\nThis section will contain details on the high-level layout of the data\nFor now, we will use a single layout to display the data\nThis layout uses a single central diagram and then some diagrams on the side\n\n## General\nI want you to use CanvasView to create a view that explains this current feature. The following are some guidelines:\n- relations\n  - edges\n    - obvious -> just the edge\n    - less obvious -> edge + edge text\n      > \"inherits\", \"imports\", \"MCP API call\", etc..\n    - less less obvious\n      > creating an \"anchor\" node / tree at the source or target or both\n- tree-diagrams\n  - tree are best to depict nested, hierarchals arrangements of the data\n    > their strength lies in their ability to segment non-adjacent levels of the data-space\n  - while uniformity / flat levels are good, I suspect this is not always the case and not always the best use of trees\n- highlighting\n  - can be used to mark nodes as important\n\n## This experiment: central diagram only\nGenerate ONLY the central diagram for the assigned feature. The saved AgentContext contains the feature brief and exact current source evidence. Explain the implemented high-level feature and its important relationships using that evidence.\nThe final canvas must contain exactly ONE meaningful diagram. Do not generate side diagrams, side panels, additional alternatives, or additional canvases. Replace the starter diagram in-place if one exists. Do not leave a blank placeholder beside the result. Connections within the central ASCII diagram are fine; do not create dangling external edges.\nThe application has already created your CanvasView and bound an isolated generation canvas. Edit that bound canvas directly; the application saves the resulting CanvasView automatically. Do not fork or create another view, and do not call gen-alternatives.\nUse the canvas/diagram tools, not filesystem edits. Do not change application source code. If you add source mappings, use accurate captured file ranges; do not fabricate evidence. Before completing, reread the bound canvas and verify that it has exactly one diagram and that its content covers the assigned feature.",
+          "prompt": "Feature 5: Agent Chat sessions and direct diagram actions\n\nCover: Creating and resuming conversations; capturing canvas references for a turn; streaming responses; answering agent requests; persisting conversations; submitting supplied diagram edits directly, including atomic multi-diagram submissions.\n\nProduce the single central diagram only, using the supplied AgentContext.",
+          "model": "gpt-6-astra",
+          "effort": "high",
+          "agentContextId": "saved-agent-context-c83d0459-b3fa-4ec6-9b87-99675eea947f",
+          "agentContextHash": "04ec1bc4824dd2defd98cd4a8dcc280cd39a0fc8bbd38bf6557bf7e378053cc4",
+          "status": "finished",
+          "startedAt": "2026-10-29T01:37:17.327Z",
+          "usage": {
+            "totalTokens": 520551,
+            "inputTokens": 517381,
+            "cachedInputTokens": 476160,
+            "outputTokens": 3170,
+            "reasoningOutputTokens": 614
+          },
+          "completedAt": "2026-10-29T01:39:37.336Z",
+          "durationMs": 140009,
+          "pendingSave": false,
+          "waitingForInput": false
+        }
+      },
+      "persistedVerification": {
+        "at": "2026-10-29T01:40:08.952Z",
+        "checkpointId": "canvas-revision-b5f7608e-bd40-4ca8-bcd6-c3317919bfb1",
+        "revisionId": "diagram-revision-0fe367c0-a987-4690-86da-b4cad80f3c21"
+      }
+    },
+    {
+      "number": 6,
+      "title": "Bound Canvas API connections and batched edits",
+      "features": "Persistent canvas binding; compact current-state reads; batching consecutive mutations; flush boundaries; version checks; retry receipts and failure behavior. Correct the obsolete notion that every exec mutation necessarily commits separately.",
+      "ranges": [
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "application/mapping/agent/sessionService.ts",
+          "startLine": 1,
+          "endLine": 712,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "7327517844382fd6ac03039106814bc19de76312ccb44bede4eb2f045b36047b"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "infrastructure/mapping/mcp/server.ts",
+          "startLine": 1,
+          "endLine": 113,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "3b88958da54731746af72685733c8d3d74d56b749177f53df9dd6872a52c52ce"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "domain/mapping/agent/contracts.ts",
+          "startLine": 1,
+          "endLine": 95,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "9cc0b5761ce2441bddca8cb580db277187f928daa0f9169f5d6d1fa2ca13e43a"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "domain/mapping/agent/currentCanvasRead.ts",
+          "startLine": 1,
+          "endLine": 56,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "1ae78b7c0646206691ae5b0c6d6c38ab7f9df2e42b68aa842e82b755583cb401"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "domain/mapping/agent/mutationReceipt.ts",
+          "startLine": 1,
+          "endLine": 35,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "5b8bda2427bfc2dea628e510a1ef1b96a8666f53f0ca2429713b2acef188fe3e"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "application/mapping/agent/chatBindings.ts",
+          "startLine": 1,
+          "endLine": 22,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "85f3b41aab8a98221a644dd0db3f062b9019d2d3bab5c9158990aa486523f058"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "infrastructure/mapping/agent/execRuntime.ts",
+          "startLine": 1,
+          "endLine": 29,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "38e3e2879bbf4fe15b13e832d58e620660fee0020e9c3217d3b54d6e94281a0f"
+          }
+        }
+      ],
+      "contextFile": "contexts/06.json",
+      "contextRequestId": "90efc41f-d3dd-4c23-baea-bdb9557c53c7",
+      "createRequestId": "24588a80-2b20-41cd-8d4a-2decaca26389",
+      "viewRequestId": "d7e91d80-0cf9-468e-860f-e8e71f93c31d",
+      "generationRequestId": "e3a38121-3054-4d7d-96f7-1861e296c8aa",
+      "candidatePrompt": "Feature 6: Bound Canvas API connections and batched edits\n\nCover: Persistent canvas binding; compact current-state reads; batching consecutive mutations; flush boundaries; version checks; retry receipts and failure behavior. Correct the obsolete notion that every exec mutation necessarily commits separately.\n\nProduce the single central diagram only, using the supplied AgentContext.",
+      "canvasName": "06 - Bound Canvas API connections and batched edits",
+      "context": {
+        "agentContextId": "saved-agent-context-90efc41f-d3dd-4c23-baea-bdb9557c53c7",
+        "name": "Bound Canvas API connections and batched edits - source baseline",
+        "description": "Feature 6/12. Exact working-tree source snapshots for the central-diagram prompt experiment.",
+        "createdAt": "2026-10-29T01:36:35.557Z",
+        "contentHash": "bda961716101a6d1bbdfcaa82d9e841e382bea7a9ecf438303fd43730af033a3",
+        "messageCount": 1,
+        "source": {
+          "agentType": "saved-context",
+          "sourceSessionId": "90efc41f-d3dd-4c23-baea-bdb9557c53c7",
+          "format": "messages-v1"
+        }
+      },
+      "contextVerified": true,
+      "attachment": {
+        "sessionId": "d61e602f-3dab-414e-a43a-4e6ba90c4df1",
+        "canvasId": "a15d1dc6-7bbc-49dd-ada1-0344fc83511b",
+        "documentId": "draft-4ed07fac-65f3-40c9-a9d7-69b9761244f4",
+        "repositoryId": "repo-ce67f2af4410036fce1ce12f",
+        "version": 0
+      },
+      "baseViewRequest": {
+        "operation": "create",
+        "name": "Blank baseline",
+        "sessionId": "d61e602f-3dab-414e-a43a-4e6ba90c4df1",
+        "expectedVersion": 0,
+        "requestId": "d7e91d80-0cf9-468e-860f-e8e71f93c31d"
+      },
+      "baseViewId": "canvas-view-28e2ed48-43eb-4ad7-a3d9-2555d66761c0",
+      "generationInput": {
+        "canvas": {
+          "workspaceInstanceId": "a15d1dc6-7bbc-49dd-ada1-0344fc83511b",
+          "documentId": "draft-4ed07fac-65f3-40c9-a9d7-69b9761244f4"
+        },
+        "viewId": "canvas-view-28e2ed48-43eb-4ad7-a3d9-2555d66761c0",
+        "agentContextId": "saved-agent-context-90efc41f-d3dd-4c23-baea-bdb9557c53c7",
+        "prompt": "## Layout\nThis section will contain details on the high-level layout of the data\nFor now, we will use a single layout to display the data\nThis layout uses a single central diagram and then some diagrams on the side\n\n## General\nI want you to use CanvasView to create a view that explains this current feature. The following are some guidelines:\n- relations\n  - edges\n    - obvious -> just the edge\n    - less obvious -> edge + edge text\n      > \"inherits\", \"imports\", \"MCP API call\", etc..\n    - less less obvious\n      > creating an \"anchor\" node / tree at the source or target or both\n- tree-diagrams\n  - tree are best to depict nested, hierarchals arrangements of the data\n    > their strength lies in their ability to segment non-adjacent levels of the data-space\n  - while uniformity / flat levels are good, I suspect this is not always the case and not always the best use of trees\n- highlighting\n  - can be used to mark nodes as important\n\n## This experiment: central diagram only\nGenerate ONLY the central diagram for the assigned feature. The saved AgentContext contains the feature brief and exact current source evidence. Explain the implemented high-level feature and its important relationships using that evidence.\nThe final canvas must contain exactly ONE meaningful diagram. Do not generate side diagrams, side panels, additional alternatives, or additional canvases. Replace the starter diagram in-place if one exists. Do not leave a blank placeholder beside the result. Connections within the central ASCII diagram are fine; do not create dangling external edges.\nThe application has already created your CanvasView and bound an isolated generation canvas. Edit that bound canvas directly; the application saves the resulting CanvasView automatically. Do not fork or create another view, and do not call gen-alternatives.\nUse the canvas/diagram tools, not filesystem edits. Do not change application source code. If you add source mappings, use accurate captured file ranges; do not fabricate evidence. Before completing, reread the bound canvas and verify that it has exactly one diagram and that its content covers the assigned feature.\n",
+        "alternatives": [
+          {
+            "name": "Central diagram - baseline prompt",
+            "prompt": "Feature 6: Bound Canvas API connections and batched edits\n\nCover: Persistent canvas binding; compact current-state reads; batching consecutive mutations; flush boundaries; version checks; retry receipts and failure behavior. Correct the obsolete notion that every exec mutation necessarily commits separately.\n\nProduce the single central diagram only, using the supplied AgentContext."
+          }
+        ],
+        "requestId": "e3a38121-3054-4d7d-96f7-1861e296c8aa"
+      },
+      "generation": {
+        "requestId": "e3a38121-3054-4d7d-96f7-1861e296c8aa",
+        "runId": "2f7a82ad-9882-4f02-84a1-50eb7b1e0722",
+        "candidates": [
+          {
+            "viewId": "canvas-view-a78645d4-2917-4ad2-8e50-6b2332332be5",
+            "chatId": "59bf0ed6-1b7c-4730-ba1a-ade8bf39b0c3",
+            "name": "Central diagram - baseline prompt"
+          }
+        ]
+      },
+      "status": {
+        "chatStatus": "idle",
+        "generationStatus": "finished",
+        "error": null,
+        "pending": [],
+        "completedAt": "2026-10-29T01:38:19.768Z"
+      },
+      "openRequest": {
+        "sessionId": "d61e602f-3dab-414e-a43a-4e6ba90c4df1",
+        "requestId": "09bb8bef-b446-4acb-a74b-52f650a3dbc1",
+        "expectedVersion": 1,
+        "operation": "open",
+        "viewId": "canvas-view-a78645d4-2917-4ad2-8e50-6b2332332be5"
+      },
+      "verified": {
+        "at": "2026-10-29T01:38:38.524Z",
+        "viewId": "canvas-view-a78645d4-2917-4ad2-8e50-6b2332332be5",
+        "diagramCount": 1,
+        "lines": 85,
+        "characters": 5358,
+        "edges": 0,
+        "textFile": "diagrams/06.txt",
+        "generation": {
+          "viewId": "canvas-view-a78645d4-2917-4ad2-8e50-6b2332332be5",
+          "runId": "2f7a82ad-9882-4f02-84a1-50eb7b1e0722",
+          "chatId": "59bf0ed6-1b7c-4730-ba1a-ade8bf39b0c3",
+          "parentChatId": "08c6af0f-796e-4fda-b715-16efc834be09",
+          "parentTurnId": "01a17e2d-9e82-7de3-ab56-ceb5aa003572",
+          "triggerPrompt": "## Layout\nThis section will contain details on the high-level layout of the data\nFor now, we will use a single layout to display the data\nThis layout uses a single central diagram and then some diagrams on the side\n\n## General\nI want you to use CanvasView to create a view that explains this current feature. The following are some guidelines:\n- relations\n  - edges\n    - obvious -> just the edge\n    - less obvious -> edge + edge text\n      > \"inherits\", \"imports\", \"MCP API call\", etc..\n    - less less obvious\n      > creating an \"anchor\" node / tree at the source or target or both\n- tree-diagrams\n  - tree are best to depict nested, hierarchals arrangements of the data\n    > their strength lies in their ability to segment non-adjacent levels of the data-space\n  - while uniformity / flat levels are good, I suspect this is not always the case and not always the best use of trees\n- highlighting\n  - can be used to mark nodes as important\n\n## This experiment: central diagram only\nGenerate ONLY the central diagram for the assigned feature. The saved AgentContext contains the feature brief and exact current source evidence. Explain the implemented high-level feature and its important relationships using that evidence.\nThe final canvas must contain exactly ONE meaningful diagram. Do not generate side diagrams, side panels, additional alternatives, or additional canvases. Replace the starter diagram in-place if one exists. Do not leave a blank placeholder beside the result. Connections within the central ASCII diagram are fine; do not create dangling external edges.\nThe application has already created your CanvasView and bound an isolated generation canvas. Edit that bound canvas directly; the application saves the resulting CanvasView automatically. Do not fork or create another view, and do not call gen-alternatives.\nUse the canvas/diagram tools, not filesystem edits. Do not change application source code. If you add source mappings, use accurate captured file ranges; do not fabricate evidence. Before completing, reread the bound canvas and verify that it has exactly one diagram and that its content covers the assigned feature.",
+          "taskPrompt": "## Layout\nThis section will contain details on the high-level layout of the data\nFor now, we will use a single layout to display the data\nThis layout uses a single central diagram and then some diagrams on the side\n\n## General\nI want you to use CanvasView to create a view that explains this current feature. The following are some guidelines:\n- relations\n  - edges\n    - obvious -> just the edge\n    - less obvious -> edge + edge text\n      > \"inherits\", \"imports\", \"MCP API call\", etc..\n    - less less obvious\n      > creating an \"anchor\" node / tree at the source or target or both\n- tree-diagrams\n  - tree are best to depict nested, hierarchals arrangements of the data\n    > their strength lies in their ability to segment non-adjacent levels of the data-space\n  - while uniformity / flat levels are good, I suspect this is not always the case and not always the best use of trees\n- highlighting\n  - can be used to mark nodes as important\n\n## This experiment: central diagram only\nGenerate ONLY the central diagram for the assigned feature. The saved AgentContext contains the feature brief and exact current source evidence. Explain the implemented high-level feature and its important relationships using that evidence.\nThe final canvas must contain exactly ONE meaningful diagram. Do not generate side diagrams, side panels, additional alternatives, or additional canvases. Replace the starter diagram in-place if one exists. Do not leave a blank placeholder beside the result. Connections within the central ASCII diagram are fine; do not create dangling external edges.\nThe application has already created your CanvasView and bound an isolated generation canvas. Edit that bound canvas directly; the application saves the resulting CanvasView automatically. Do not fork or create another view, and do not call gen-alternatives.\nUse the canvas/diagram tools, not filesystem edits. Do not change application source code. If you add source mappings, use accurate captured file ranges; do not fabricate evidence. Before completing, reread the bound canvas and verify that it has exactly one diagram and that its content covers the assigned feature.",
+          "prompt": "Feature 6: Bound Canvas API connections and batched edits\n\nCover: Persistent canvas binding; compact current-state reads; batching consecutive mutations; flush boundaries; version checks; retry receipts and failure behavior. Correct the obsolete notion that every exec mutation necessarily commits separately.\n\nProduce the single central diagram only, using the supplied AgentContext.",
+          "model": "gpt-6-astra",
+          "effort": "high",
+          "agentContextId": "saved-agent-context-90efc41f-d3dd-4c23-baea-bdb9557c53c7",
+          "agentContextHash": "bda961716101a6d1bbdfcaa82d9e841e382bea7a9ecf438303fd43730af033a3",
+          "status": "finished",
+          "startedAt": "2026-10-29T01:37:17.877Z",
+          "usage": {
+            "totalTokens": 288745,
+            "inputTokens": 287442,
+            "cachedInputTokens": 227328,
+            "outputTokens": 1303,
+            "reasoningOutputTokens": 87
+          },
+          "completedAt": "2026-10-29T01:38:19.769Z",
+          "durationMs": 61892,
+          "pendingSave": false,
+          "waitingForInput": false
+        }
+      },
+      "persistedVerification": {
+        "at": "2026-10-29T01:40:08.952Z",
+        "checkpointId": "canvas-revision-e7f7da3b-bc09-41ce-af42-5a66b0a98ff6",
+        "revisionId": "diagram-revision-5ab40f9e-2d02-4ce8-8330-3da4b509812e"
+      }
+    },
+    {
+      "number": 7,
+      "title": "Mapping integration with tldraw",
+      "features": "How native gestures become domain edits; native versus semantic selection ownership; undo/redo restoring domain checkpoints; granular diagram updates, local anchors and connection routing. Focus on this application integration, not generic tldraw internals.",
+      "ranges": [
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "src/features/mapping/tldraw/MappingEditorRuntime.ts",
+          "startLine": 1,
+          "endLine": 207,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "2d82f224feceeb73746053c127b27d81b03feeadaf57076459d42724dfc0de8f"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "src/features/mapping/tldraw/CanvasRuntimeContext.tsx",
+          "startLine": 1,
+          "endLine": 185,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "33ad789343bf15a5499755ff241e1489d2e61fee9d19799af401f6a5c97874c7"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "src/features/mapping/tldraw/MappingEditorCanvas.tsx",
+          "startLine": 1,
+          "endLine": 173,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "f2d8503ebe2ff3f014fa3a86ee23541ab390dcb5d1ecd098ab098392fa2369b1"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "src/features/mapping/tldraw/NativeRoutingStore.ts",
+          "startLine": 1,
+          "endLine": 75,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "e9d7a785699ca6968cd7a7873cbbb6075225d80b7cb0b8a9a2ae8139110ec523"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "src/features/mapping/tldraw/ConnectionFocus.tsx",
+          "startLine": 1,
+          "endLine": 110,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "cba67caad1f3306669cf738ec200cc7fb0c25feade0dd7cbb375016950392822"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "src/features/mapping/tldraw/SelectionTools.ts",
+          "startLine": 1,
+          "endLine": 49,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "c3deba7e017aac6b7cbfa735fb743b4ee5aedb721ab2de38375e3f06f712ab23"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "src/features/mapping/tldraw/shapeProjection.ts",
+          "startLine": 1,
+          "endLine": 54,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "0c866230301ffb0585929cf491acdf9b2e27dcef95e40e024d79dbb5bafbfdff"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "src/features/mapping/tldraw/LocalAnchorStore.ts",
+          "startLine": 1,
+          "endLine": 34,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "3746689233e9cbd183c2705f1c66944090404aaa8442e35475ccbfd9de9231e9"
+          }
+        }
+      ],
+      "contextFile": "contexts/07.json",
+      "contextRequestId": "4d5861d9-da27-434a-b89f-d3af6a5a274b",
+      "createRequestId": "52a8ebb1-0b5e-41ec-8327-56fb3a7326a7",
+      "viewRequestId": "a642c0b4-1d4a-4240-96bd-b3381c0a3aa4",
+      "generationRequestId": "b19f0373-82e8-416f-884c-1c5a4b677cba",
+      "candidatePrompt": "Feature 7: Mapping integration with tldraw\n\nCover: How native gestures become domain edits; native versus semantic selection ownership; undo/redo restoring domain checkpoints; granular diagram updates, local anchors and connection routing. Focus on this application integration, not generic tldraw internals.\n\nProduce the single central diagram only, using the supplied AgentContext.",
+      "canvasName": "07 - Mapping integration with tldraw",
+      "context": {
+        "agentContextId": "saved-agent-context-4d5861d9-da27-434a-b89f-d3af6a5a274b",
+        "name": "Mapping integration with tldraw - source baseline",
+        "description": "Feature 7/12. Exact working-tree source snapshots for the central-diagram prompt experiment.",
+        "createdAt": "2026-10-29T01:36:35.668Z",
+        "contentHash": "62c32010cd731716b75ac4c1874e15b765ba89d47cc9f6fefa629e17fc3db714",
+        "messageCount": 1,
+        "source": {
+          "agentType": "saved-context",
+          "sourceSessionId": "4d5861d9-da27-434a-b89f-d3af6a5a274b",
+          "format": "messages-v1"
+        }
+      },
+      "contextVerified": true,
+      "attachment": {
+        "sessionId": "2dee63e6-74c7-4481-a432-93d06cb5dec9",
+        "canvasId": "a15d1dc6-7bbc-49dd-ada1-0344fc83511b",
+        "documentId": "draft-b44d03ef-a801-46e7-828a-ce53afc32dba",
+        "repositoryId": "repo-ce67f2af4410036fce1ce12f",
+        "version": 0
+      },
+      "baseViewRequest": {
+        "operation": "create",
+        "name": "Blank baseline",
+        "sessionId": "2dee63e6-74c7-4481-a432-93d06cb5dec9",
+        "expectedVersion": 0,
+        "requestId": "a642c0b4-1d4a-4240-96bd-b3381c0a3aa4"
+      },
+      "baseViewId": "canvas-view-9438d113-de51-4b5a-9387-2fc1b73c82bc",
+      "generationInput": {
+        "canvas": {
+          "workspaceInstanceId": "a15d1dc6-7bbc-49dd-ada1-0344fc83511b",
+          "documentId": "draft-b44d03ef-a801-46e7-828a-ce53afc32dba"
+        },
+        "viewId": "canvas-view-9438d113-de51-4b5a-9387-2fc1b73c82bc",
+        "agentContextId": "saved-agent-context-4d5861d9-da27-434a-b89f-d3af6a5a274b",
+        "prompt": "## Layout\nThis section will contain details on the high-level layout of the data\nFor now, we will use a single layout to display the data\nThis layout uses a single central diagram and then some diagrams on the side\n\n## General\nI want you to use CanvasView to create a view that explains this current feature. The following are some guidelines:\n- relations\n  - edges\n    - obvious -> just the edge\n    - less obvious -> edge + edge text\n      > \"inherits\", \"imports\", \"MCP API call\", etc..\n    - less less obvious\n      > creating an \"anchor\" node / tree at the source or target or both\n- tree-diagrams\n  - tree are best to depict nested, hierarchals arrangements of the data\n    > their strength lies in their ability to segment non-adjacent levels of the data-space\n  - while uniformity / flat levels are good, I suspect this is not always the case and not always the best use of trees\n- highlighting\n  - can be used to mark nodes as important\n\n## This experiment: central diagram only\nGenerate ONLY the central diagram for the assigned feature. The saved AgentContext contains the feature brief and exact current source evidence. Explain the implemented high-level feature and its important relationships using that evidence.\nThe final canvas must contain exactly ONE meaningful diagram. Do not generate side diagrams, side panels, additional alternatives, or additional canvases. Replace the starter diagram in-place if one exists. Do not leave a blank placeholder beside the result. Connections within the central ASCII diagram are fine; do not create dangling external edges.\nThe application has already created your CanvasView and bound an isolated generation canvas. Edit that bound canvas directly; the application saves the resulting CanvasView automatically. Do not fork or create another view, and do not call gen-alternatives.\nUse the canvas/diagram tools, not filesystem edits. Do not change application source code. If you add source mappings, use accurate captured file ranges; do not fabricate evidence. Before completing, reread the bound canvas and verify that it has exactly one diagram and that its content covers the assigned feature.\n",
+        "alternatives": [
+          {
+            "name": "Central diagram - baseline prompt",
+            "prompt": "Feature 7: Mapping integration with tldraw\n\nCover: How native gestures become domain edits; native versus semantic selection ownership; undo/redo restoring domain checkpoints; granular diagram updates, local anchors and connection routing. Focus on this application integration, not generic tldraw internals.\n\nProduce the single central diagram only, using the supplied AgentContext."
+          }
+        ],
+        "requestId": "b19f0373-82e8-416f-884c-1c5a4b677cba"
+      },
+      "generation": {
+        "requestId": "b19f0373-82e8-416f-884c-1c5a4b677cba",
+        "runId": "a711c94d-0b0e-4ade-a918-5ba4b15f36d2",
+        "candidates": [
+          {
+            "viewId": "canvas-view-1e151110-68da-4096-b766-adbe79dd046b",
+            "chatId": "284325ed-bd61-4265-bfe8-769961bdc240",
+            "name": "Central diagram - baseline prompt"
+          }
+        ]
+      },
+      "status": {
+        "chatStatus": "idle",
+        "generationStatus": "finished",
+        "error": null,
+        "pending": [],
+        "completedAt": "2026-10-29T01:38:59.212Z"
+      },
+      "openRequest": {
+        "sessionId": "2dee63e6-74c7-4481-a432-93d06cb5dec9",
+        "requestId": "9f60610f-2121-49a5-ae9e-c220c357ac2d",
+        "expectedVersion": 1,
+        "operation": "open",
+        "viewId": "canvas-view-1e151110-68da-4096-b766-adbe79dd046b"
+      },
+      "verified": {
+        "at": "2026-10-29T01:39:29.068Z",
+        "viewId": "canvas-view-1e151110-68da-4096-b766-adbe79dd046b",
+        "diagramCount": 1,
+        "lines": 74,
+        "characters": 5391,
+        "edges": 0,
+        "textFile": "diagrams/07.txt",
+        "generation": {
+          "viewId": "canvas-view-1e151110-68da-4096-b766-adbe79dd046b",
+          "runId": "a711c94d-0b0e-4ade-a918-5ba4b15f36d2",
+          "chatId": "284325ed-bd61-4265-bfe8-769961bdc240",
+          "parentChatId": "08c6af0f-796e-4fda-b715-16efc834be09",
+          "parentTurnId": "01a17e2d-9e82-7de3-ab56-ceb5aa003572",
+          "triggerPrompt": "## Layout\nThis section will contain details on the high-level layout of the data\nFor now, we will use a single layout to display the data\nThis layout uses a single central diagram and then some diagrams on the side\n\n## General\nI want you to use CanvasView to create a view that explains this current feature. The following are some guidelines:\n- relations\n  - edges\n    - obvious -> just the edge\n    - less obvious -> edge + edge text\n      > \"inherits\", \"imports\", \"MCP API call\", etc..\n    - less less obvious\n      > creating an \"anchor\" node / tree at the source or target or both\n- tree-diagrams\n  - tree are best to depict nested, hierarchals arrangements of the data\n    > their strength lies in their ability to segment non-adjacent levels of the data-space\n  - while uniformity / flat levels are good, I suspect this is not always the case and not always the best use of trees\n- highlighting\n  - can be used to mark nodes as important\n\n## This experiment: central diagram only\nGenerate ONLY the central diagram for the assigned feature. The saved AgentContext contains the feature brief and exact current source evidence. Explain the implemented high-level feature and its important relationships using that evidence.\nThe final canvas must contain exactly ONE meaningful diagram. Do not generate side diagrams, side panels, additional alternatives, or additional canvases. Replace the starter diagram in-place if one exists. Do not leave a blank placeholder beside the result. Connections within the central ASCII diagram are fine; do not create dangling external edges.\nThe application has already created your CanvasView and bound an isolated generation canvas. Edit that bound canvas directly; the application saves the resulting CanvasView automatically. Do not fork or create another view, and do not call gen-alternatives.\nUse the canvas/diagram tools, not filesystem edits. Do not change application source code. If you add source mappings, use accurate captured file ranges; do not fabricate evidence. Before completing, reread the bound canvas and verify that it has exactly one diagram and that its content covers the assigned feature.",
+          "taskPrompt": "## Layout\nThis section will contain details on the high-level layout of the data\nFor now, we will use a single layout to display the data\nThis layout uses a single central diagram and then some diagrams on the side\n\n## General\nI want you to use CanvasView to create a view that explains this current feature. The following are some guidelines:\n- relations\n  - edges\n    - obvious -> just the edge\n    - less obvious -> edge + edge text\n      > \"inherits\", \"imports\", \"MCP API call\", etc..\n    - less less obvious\n      > creating an \"anchor\" node / tree at the source or target or both\n- tree-diagrams\n  - tree are best to depict nested, hierarchals arrangements of the data\n    > their strength lies in their ability to segment non-adjacent levels of the data-space\n  - while uniformity / flat levels are good, I suspect this is not always the case and not always the best use of trees\n- highlighting\n  - can be used to mark nodes as important\n\n## This experiment: central diagram only\nGenerate ONLY the central diagram for the assigned feature. The saved AgentContext contains the feature brief and exact current source evidence. Explain the implemented high-level feature and its important relationships using that evidence.\nThe final canvas must contain exactly ONE meaningful diagram. Do not generate side diagrams, side panels, additional alternatives, or additional canvases. Replace the starter diagram in-place if one exists. Do not leave a blank placeholder beside the result. Connections within the central ASCII diagram are fine; do not create dangling external edges.\nThe application has already created your CanvasView and bound an isolated generation canvas. Edit that bound canvas directly; the application saves the resulting CanvasView automatically. Do not fork or create another view, and do not call gen-alternatives.\nUse the canvas/diagram tools, not filesystem edits. Do not change application source code. If you add source mappings, use accurate captured file ranges; do not fabricate evidence. Before completing, reread the bound canvas and verify that it has exactly one diagram and that its content covers the assigned feature.",
+          "prompt": "Feature 7: Mapping integration with tldraw\n\nCover: How native gestures become domain edits; native versus semantic selection ownership; undo/redo restoring domain checkpoints; granular diagram updates, local anchors and connection routing. Focus on this application integration, not generic tldraw internals.\n\nProduce the single central diagram only, using the supplied AgentContext.",
+          "model": "gpt-6-astra",
+          "effort": "high",
+          "agentContextId": "saved-agent-context-4d5861d9-da27-434a-b89f-d3af6a5a274b",
+          "agentContextHash": "62c32010cd731716b75ac4c1874e15b765ba89d47cc9f6fefa629e17fc3db714",
+          "status": "finished",
+          "startedAt": "2026-10-29T01:37:19.040Z",
+          "usage": {
+            "totalTokens": 348661,
+            "inputTokens": 346763,
+            "cachedInputTokens": 294144,
+            "outputTokens": 1898,
+            "reasoningOutputTokens": 377
+          },
+          "completedAt": "2026-10-29T01:38:59.213Z",
+          "durationMs": 100173,
+          "pendingSave": false,
+          "waitingForInput": false
+        }
+      },
+      "persistedVerification": {
+        "at": "2026-10-29T01:40:08.952Z",
+        "checkpointId": "canvas-revision-d0079120-bfad-4e3b-868b-d0c2fa97035b",
+        "revisionId": "diagram-revision-b2c5904f-1051-40f2-932b-220b0f3c8854"
+      }
+    },
+    {
+      "number": 8,
+      "title": "Git changes to generated ChangeSessions and review",
+      "features": "Pinning commits and hunks; generating isolated proposals from repository changes or pushes; mapping DiffTree entries to hunks and diagram destinations; navigating review and explicit acceptance.",
+      "ranges": [
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "domain/mapping/changes/diffTree.ts",
+          "startLine": 1,
+          "endLine": 89,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "9d1cd2ed86ef0fba44a97d53a7faddca5ffc5c423cd67383e06b93a9c30d0012"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "application/mapping/changes/diffSessionWorkflowService.ts",
+          "startLine": 1,
+          "endLine": 109,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "ce1a54e10f23ac4be569b8d85b6d0c2342714dcf9507b12bfe42ba298f7a7343"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "application/mapping/changes/diffSessionWorkflow.ts",
+          "startLine": 1,
+          "endLine": 47,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "5478f839ca375d532a6eb6e6ba0ca35860fae4577fc48ebecdd3acbad2d16a4b"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "application/mapping/changes/diffSessionTools.ts",
+          "startLine": 1,
+          "endLine": 89,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "1d40d5d5298f49c9b0d38212796168b783cd4afa9ce02ef5868ec30f28f3fc80"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "application/core/integrations/pushIntegrationService.ts",
+          "startLine": 1,
+          "endLine": 104,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "d92119e357b77fc9c80f8061c555d3b10403c142c4b529b855fc96dd2bf0e7ec"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "application/mapping/changes/changeSessionService.ts",
+          "startLine": 1,
+          "endLine": 441,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "b5b2d2ef3bfde6d52524355a1992b2faf5a30c5087674fb12157721b2a2f1459"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "src/features/mapping/changes/DiffTreePanel.tsx",
+          "startLine": 1,
+          "endLine": 189,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "0dfda00499c0d2f7e27d2968004546ec0d23d00c1f3cd2269629c7feedf8ddea"
+          }
+        }
+      ],
+      "contextFile": "contexts/08.json",
+      "contextRequestId": "d61d1b0f-3adf-4b42-a809-957614a46f7b",
+      "createRequestId": "76111fb8-0a85-4853-8351-b416e009c35d",
+      "viewRequestId": "5360fb2a-975c-4b95-9b47-0f1dcfe73e2e",
+      "generationRequestId": "81385f39-4f62-4895-bb1f-31357e4e4c48",
+      "candidatePrompt": "Feature 8: Git changes to generated ChangeSessions and review\n\nCover: Pinning commits and hunks; generating isolated proposals from repository changes or pushes; mapping DiffTree entries to hunks and diagram destinations; navigating review and explicit acceptance.\n\nProduce the single central diagram only, using the supplied AgentContext.",
+      "canvasName": "08 - Git changes to generated ChangeSessions and review",
+      "context": {
+        "agentContextId": "saved-agent-context-d61d1b0f-3adf-4b42-a809-957614a46f7b",
+        "name": "Git changes to generated ChangeSessions and review - source baseline",
+        "description": "Feature 8/12. Exact working-tree source snapshots for the central-diagram prompt experiment.",
+        "createdAt": "2026-10-29T01:36:35.747Z",
+        "contentHash": "72a9c200a9e5d475cfca26f96610cd2a2246fb4d2e5af15e2b9d94ec69bfbc0b",
+        "messageCount": 1,
+        "source": {
+          "agentType": "saved-context",
+          "sourceSessionId": "d61d1b0f-3adf-4b42-a809-957614a46f7b",
+          "format": "messages-v1"
+        }
+      },
+      "contextVerified": true,
+      "attachment": {
+        "sessionId": "91c32655-2731-42cf-b95a-71813455f0c1",
+        "canvasId": "a15d1dc6-7bbc-49dd-ada1-0344fc83511b",
+        "documentId": "draft-18f7fa02-38c8-48cd-8842-6bfb8314dd69",
+        "repositoryId": "repo-ce67f2af4410036fce1ce12f",
+        "version": 0
+      },
+      "baseViewRequest": {
+        "operation": "create",
+        "name": "Blank baseline",
+        "sessionId": "91c32655-2731-42cf-b95a-71813455f0c1",
+        "expectedVersion": 0,
+        "requestId": "5360fb2a-975c-4b95-9b47-0f1dcfe73e2e"
+      },
+      "baseViewId": "canvas-view-18fbeff4-a943-4b62-a142-09bd74a0c8a8",
+      "generationInput": {
+        "canvas": {
+          "workspaceInstanceId": "a15d1dc6-7bbc-49dd-ada1-0344fc83511b",
+          "documentId": "draft-18f7fa02-38c8-48cd-8842-6bfb8314dd69"
+        },
+        "viewId": "canvas-view-18fbeff4-a943-4b62-a142-09bd74a0c8a8",
+        "agentContextId": "saved-agent-context-d61d1b0f-3adf-4b42-a809-957614a46f7b",
+        "prompt": "## Layout\nThis section will contain details on the high-level layout of the data\nFor now, we will use a single layout to display the data\nThis layout uses a single central diagram and then some diagrams on the side\n\n## General\nI want you to use CanvasView to create a view that explains this current feature. The following are some guidelines:\n- relations\n  - edges\n    - obvious -> just the edge\n    - less obvious -> edge + edge text\n      > \"inherits\", \"imports\", \"MCP API call\", etc..\n    - less less obvious\n      > creating an \"anchor\" node / tree at the source or target or both\n- tree-diagrams\n  - tree are best to depict nested, hierarchals arrangements of the data\n    > their strength lies in their ability to segment non-adjacent levels of the data-space\n  - while uniformity / flat levels are good, I suspect this is not always the case and not always the best use of trees\n- highlighting\n  - can be used to mark nodes as important\n\n## This experiment: central diagram only\nGenerate ONLY the central diagram for the assigned feature. The saved AgentContext contains the feature brief and exact current source evidence. Explain the implemented high-level feature and its important relationships using that evidence.\nThe final canvas must contain exactly ONE meaningful diagram. Do not generate side diagrams, side panels, additional alternatives, or additional canvases. Replace the starter diagram in-place if one exists. Do not leave a blank placeholder beside the result. Connections within the central ASCII diagram are fine; do not create dangling external edges.\nThe application has already created your CanvasView and bound an isolated generation canvas. Edit that bound canvas directly; the application saves the resulting CanvasView automatically. Do not fork or create another view, and do not call gen-alternatives.\nUse the canvas/diagram tools, not filesystem edits. Do not change application source code. If you add source mappings, use accurate captured file ranges; do not fabricate evidence. Before completing, reread the bound canvas and verify that it has exactly one diagram and that its content covers the assigned feature.\n",
+        "alternatives": [
+          {
+            "name": "Central diagram - baseline prompt",
+            "prompt": "Feature 8: Git changes to generated ChangeSessions and review\n\nCover: Pinning commits and hunks; generating isolated proposals from repository changes or pushes; mapping DiffTree entries to hunks and diagram destinations; navigating review and explicit acceptance.\n\nProduce the single central diagram only, using the supplied AgentContext."
+          }
+        ],
+        "requestId": "81385f39-4f62-4895-bb1f-31357e4e4c48"
+      },
+      "generation": {
+        "requestId": "81385f39-4f62-4895-bb1f-31357e4e4c48",
+        "runId": "32ad4fc0-c52a-4842-8f07-1145d43c5db6",
+        "candidates": [
+          {
+            "viewId": "canvas-view-3fe12660-4dc8-45da-9f79-eade422871f3",
+            "chatId": "c99de6ee-e66b-45a6-9e91-a08daae88567",
+            "name": "Central diagram - baseline prompt"
+          }
+        ]
+      },
+      "status": {
+        "chatStatus": "running",
+        "generationStatus": "generating",
+        "error": null,
+        "pending": [],
+        "completedAt": null
+      },
+      "openRequest": {
+        "sessionId": "91c32655-2731-42cf-b95a-71813455f0c1",
+        "requestId": "6c7e4fb0-419d-48bd-ba47-73814bd00a1e",
+        "expectedVersion": 1,
+        "operation": "open",
+        "viewId": "canvas-view-3fe12660-4dc8-45da-9f79-eade422871f3"
+      },
+      "verified": {
+        "at": "2026-10-29T01:39:29.883Z",
+        "viewId": "canvas-view-3fe12660-4dc8-45da-9f79-eade422871f3",
+        "diagramCount": 1,
+        "lines": 81,
+        "characters": 7255,
+        "edges": 0,
+        "textFile": "diagrams/08.txt",
+        "generation": {
+          "viewId": "canvas-view-3fe12660-4dc8-45da-9f79-eade422871f3",
+          "runId": "32ad4fc0-c52a-4842-8f07-1145d43c5db6",
+          "chatId": "c99de6ee-e66b-45a6-9e91-a08daae88567",
+          "parentChatId": "08c6af0f-796e-4fda-b715-16efc834be09",
+          "parentTurnId": "01a17e2d-9e82-7de3-ab56-ceb5aa003572",
+          "triggerPrompt": "## Layout\nThis section will contain details on the high-level layout of the data\nFor now, we will use a single layout to display the data\nThis layout uses a single central diagram and then some diagrams on the side\n\n## General\nI want you to use CanvasView to create a view that explains this current feature. The following are some guidelines:\n- relations\n  - edges\n    - obvious -> just the edge\n    - less obvious -> edge + edge text\n      > \"inherits\", \"imports\", \"MCP API call\", etc..\n    - less less obvious\n      > creating an \"anchor\" node / tree at the source or target or both\n- tree-diagrams\n  - tree are best to depict nested, hierarchals arrangements of the data\n    > their strength lies in their ability to segment non-adjacent levels of the data-space\n  - while uniformity / flat levels are good, I suspect this is not always the case and not always the best use of trees\n- highlighting\n  - can be used to mark nodes as important\n\n## This experiment: central diagram only\nGenerate ONLY the central diagram for the assigned feature. The saved AgentContext contains the feature brief and exact current source evidence. Explain the implemented high-level feature and its important relationships using that evidence.\nThe final canvas must contain exactly ONE meaningful diagram. Do not generate side diagrams, side panels, additional alternatives, or additional canvases. Replace the starter diagram in-place if one exists. Do not leave a blank placeholder beside the result. Connections within the central ASCII diagram are fine; do not create dangling external edges.\nThe application has already created your CanvasView and bound an isolated generation canvas. Edit that bound canvas directly; the application saves the resulting CanvasView automatically. Do not fork or create another view, and do not call gen-alternatives.\nUse the canvas/diagram tools, not filesystem edits. Do not change application source code. If you add source mappings, use accurate captured file ranges; do not fabricate evidence. Before completing, reread the bound canvas and verify that it has exactly one diagram and that its content covers the assigned feature.",
+          "taskPrompt": "## Layout\nThis section will contain details on the high-level layout of the data\nFor now, we will use a single layout to display the data\nThis layout uses a single central diagram and then some diagrams on the side\n\n## General\nI want you to use CanvasView to create a view that explains this current feature. The following are some guidelines:\n- relations\n  - edges\n    - obvious -> just the edge\n    - less obvious -> edge + edge text\n      > \"inherits\", \"imports\", \"MCP API call\", etc..\n    - less less obvious\n      > creating an \"anchor\" node / tree at the source or target or both\n- tree-diagrams\n  - tree are best to depict nested, hierarchals arrangements of the data\n    > their strength lies in their ability to segment non-adjacent levels of the data-space\n  - while uniformity / flat levels are good, I suspect this is not always the case and not always the best use of trees\n- highlighting\n  - can be used to mark nodes as important\n\n## This experiment: central diagram only\nGenerate ONLY the central diagram for the assigned feature. The saved AgentContext contains the feature brief and exact current source evidence. Explain the implemented high-level feature and its important relationships using that evidence.\nThe final canvas must contain exactly ONE meaningful diagram. Do not generate side diagrams, side panels, additional alternatives, or additional canvases. Replace the starter diagram in-place if one exists. Do not leave a blank placeholder beside the result. Connections within the central ASCII diagram are fine; do not create dangling external edges.\nThe application has already created your CanvasView and bound an isolated generation canvas. Edit that bound canvas directly; the application saves the resulting CanvasView automatically. Do not fork or create another view, and do not call gen-alternatives.\nUse the canvas/diagram tools, not filesystem edits. Do not change application source code. If you add source mappings, use accurate captured file ranges; do not fabricate evidence. Before completing, reread the bound canvas and verify that it has exactly one diagram and that its content covers the assigned feature.",
+          "prompt": "Feature 8: Git changes to generated ChangeSessions and review\n\nCover: Pinning commits and hunks; generating isolated proposals from repository changes or pushes; mapping DiffTree entries to hunks and diagram destinations; navigating review and explicit acceptance.\n\nProduce the single central diagram only, using the supplied AgentContext.",
+          "model": "gpt-6-astra",
+          "effort": "high",
+          "agentContextId": "saved-agent-context-d61d1b0f-3adf-4b42-a809-957614a46f7b",
+          "agentContextHash": "72a9c200a9e5d475cfca26f96610cd2a2246fb4d2e5af15e2b9d94ec69bfbc0b",
+          "status": "finished",
+          "startedAt": "2026-10-29T01:37:19.764Z",
+          "usage": {
+            "totalTokens": 364914,
+            "inputTokens": 363457,
+            "cachedInputTokens": 259456,
+            "outputTokens": 1457,
+            "reasoningOutputTokens": 115
+          },
+          "completedAt": "2026-10-29T01:39:04.458Z",
+          "durationMs": 104694,
+          "pendingSave": false,
+          "waitingForInput": false
+        }
+      },
+      "persistedVerification": {
+        "at": "2026-10-29T01:40:08.952Z",
+        "checkpointId": "canvas-revision-122a0c29-f063-458e-8a49-aa95b96376c3",
+        "revisionId": "diagram-revision-287c5964-de84-4401-a4b3-2908747432d6"
+      }
+    },
+    {
+      "number": 9,
+      "title": "Diagram search and mapped-source navigation",
+      "features": "Search across canvases and proposals; click symbols to search; reveal matches; open mapped source in a resizable workspace panel. Include source identity and stale-result protection where they explain user-visible behavior.",
+      "ranges": [
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "domain/mapping/search/diagramSearch.ts",
+          "startLine": 1,
+          "endLine": 84,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "6166462565372e53ddcd67a00e4464739e7a0d9811ef3d9a9f08460cc4ff6088"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "src/features/mapping/search/diagramSearchService.ts",
+          "startLine": 1,
+          "endLine": 82,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "01e51b9e7fb7c511d04c0f899d32b49ba395e529b00161e7c0d35be1abadf7dd"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "src/features/mapping/search/diagramSearch.worker.ts",
+          "startLine": 1,
+          "endLine": 18,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "6c4ccb4f32e0967cfc84aedd855f59e517b2039a23a71691915a7154182da649"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "src/features/mapping/search/DiagramSearchPanel.tsx",
+          "startLine": 1,
+          "endLine": 150,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "c1ab991a040ba537ad442000c258f93c4463bc081e04a8847bc5fb1d8fff08a4"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "src/features/mapping/search/revealSearchMatches.ts",
+          "startLine": 1,
+          "endLine": 33,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "45467303cfdba6bf1aec2eb9b47d66323bac648d3515f701de9d16401ecbb9f5"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "src/features/mapping/search/useDiagramSymbolSearch.ts",
+          "startLine": 1,
+          "endLine": 37,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "74e872529ee642687c90335361276b1e7359ab40b9a99ca0c30c298b6c53a5b9"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "src/features/mapping/source-pane/SourceWindowPanel.tsx",
+          "startLine": 1,
+          "endLine": 59,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "7085748eeb5e2baf476544d0d72245da198f0fb9fa48da0e1a631b46aa606ca2"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "src/features/mapping/source-pane/SourceCodePane.tsx",
+          "startLine": 1,
+          "endLine": 141,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "6a0af57855525cf40aed567fe24a27c9f16fa73c5d94a243df54f8e2f4fed700"
+          }
+        }
+      ],
+      "contextFile": "contexts/09.json",
+      "contextRequestId": "b78101f2-cd52-4a97-8ff1-d271282dacb3",
+      "createRequestId": "d7164e80-d67c-46e3-86d7-1c76972d7693",
+      "viewRequestId": "9496c398-f22d-4216-b304-5e15ff8d4d42",
+      "generationRequestId": "88b97a84-3a44-4ef5-9a20-451bf12f2ef3",
+      "candidatePrompt": "Feature 9: Diagram search and mapped-source navigation\n\nCover: Search across canvases and proposals; click symbols to search; reveal matches; open mapped source in a resizable workspace panel. Include source identity and stale-result protection where they explain user-visible behavior.\n\nProduce the single central diagram only, using the supplied AgentContext.",
+      "canvasName": "09 - Diagram search and mapped-source navigation",
+      "context": {
+        "agentContextId": "saved-agent-context-b78101f2-cd52-4a97-8ff1-d271282dacb3",
+        "name": "Diagram search and mapped-source navigation - source baseline",
+        "description": "Feature 9/12. Exact working-tree source snapshots for the central-diagram prompt experiment.",
+        "createdAt": "2026-10-29T01:36:35.823Z",
+        "contentHash": "7e12238ef01757c147657d9299e0d638e9a49bdca329b919e9f34ce543d2ad8d",
+        "messageCount": 1,
+        "source": {
+          "agentType": "saved-context",
+          "sourceSessionId": "b78101f2-cd52-4a97-8ff1-d271282dacb3",
+          "format": "messages-v1"
+        }
+      },
+      "contextVerified": true,
+      "attachment": {
+        "sessionId": "dd1bad93-79ed-4044-9870-b833dd5a3073",
+        "canvasId": "a15d1dc6-7bbc-49dd-ada1-0344fc83511b",
+        "documentId": "draft-aa09def9-6331-4a61-a6da-4d8a95905109",
+        "repositoryId": "repo-ce67f2af4410036fce1ce12f",
+        "version": 0
+      },
+      "baseViewRequest": {
+        "operation": "create",
+        "name": "Blank baseline",
+        "sessionId": "dd1bad93-79ed-4044-9870-b833dd5a3073",
+        "expectedVersion": 0,
+        "requestId": "9496c398-f22d-4216-b304-5e15ff8d4d42"
+      },
+      "baseViewId": "canvas-view-7fa19d0f-9831-4eae-9fe2-24e3d89ac595",
+      "generationInput": {
+        "canvas": {
+          "workspaceInstanceId": "a15d1dc6-7bbc-49dd-ada1-0344fc83511b",
+          "documentId": "draft-aa09def9-6331-4a61-a6da-4d8a95905109"
+        },
+        "viewId": "canvas-view-7fa19d0f-9831-4eae-9fe2-24e3d89ac595",
+        "agentContextId": "saved-agent-context-b78101f2-cd52-4a97-8ff1-d271282dacb3",
+        "prompt": "## Layout\nThis section will contain details on the high-level layout of the data\nFor now, we will use a single layout to display the data\nThis layout uses a single central diagram and then some diagrams on the side\n\n## General\nI want you to use CanvasView to create a view that explains this current feature. The following are some guidelines:\n- relations\n  - edges\n    - obvious -> just the edge\n    - less obvious -> edge + edge text\n      > \"inherits\", \"imports\", \"MCP API call\", etc..\n    - less less obvious\n      > creating an \"anchor\" node / tree at the source or target or both\n- tree-diagrams\n  - tree are best to depict nested, hierarchals arrangements of the data\n    > their strength lies in their ability to segment non-adjacent levels of the data-space\n  - while uniformity / flat levels are good, I suspect this is not always the case and not always the best use of trees\n- highlighting\n  - can be used to mark nodes as important\n\n## This experiment: central diagram only\nGenerate ONLY the central diagram for the assigned feature. The saved AgentContext contains the feature brief and exact current source evidence. Explain the implemented high-level feature and its important relationships using that evidence.\nThe final canvas must contain exactly ONE meaningful diagram. Do not generate side diagrams, side panels, additional alternatives, or additional canvases. Replace the starter diagram in-place if one exists. Do not leave a blank placeholder beside the result. Connections within the central ASCII diagram are fine; do not create dangling external edges.\nThe application has already created your CanvasView and bound an isolated generation canvas. Edit that bound canvas directly; the application saves the resulting CanvasView automatically. Do not fork or create another view, and do not call gen-alternatives.\nUse the canvas/diagram tools, not filesystem edits. Do not change application source code. If you add source mappings, use accurate captured file ranges; do not fabricate evidence. Before completing, reread the bound canvas and verify that it has exactly one diagram and that its content covers the assigned feature.\n",
+        "alternatives": [
+          {
+            "name": "Central diagram - baseline prompt",
+            "prompt": "Feature 9: Diagram search and mapped-source navigation\n\nCover: Search across canvases and proposals; click symbols to search; reveal matches; open mapped source in a resizable workspace panel. Include source identity and stale-result protection where they explain user-visible behavior.\n\nProduce the single central diagram only, using the supplied AgentContext."
+          }
+        ],
+        "requestId": "88b97a84-3a44-4ef5-9a20-451bf12f2ef3"
+      },
+      "generation": {
+        "requestId": "88b97a84-3a44-4ef5-9a20-451bf12f2ef3",
+        "runId": "985d1c69-f0ec-4997-bac3-e25391bf6bb4",
+        "candidates": [
+          {
+            "viewId": "canvas-view-89d7c78d-770d-467c-834d-6bcd6add940d",
+            "chatId": "45dbb372-7b82-4ec5-8a61-18df791dd281",
+            "name": "Central diagram - baseline prompt"
+          }
+        ]
+      },
+      "status": {
+        "chatStatus": "running",
+        "generationStatus": "generating",
+        "error": null,
+        "pending": [],
+        "completedAt": null
+      },
+      "openRequest": {
+        "sessionId": "dd1bad93-79ed-4044-9870-b833dd5a3073",
+        "requestId": "f1f11cf8-dcd6-4f0d-a98c-c64a3f9aff92",
+        "expectedVersion": 1,
+        "operation": "open",
+        "viewId": "canvas-view-89d7c78d-770d-467c-834d-6bcd6add940d"
+      },
+      "verified": {
+        "at": "2026-10-29T01:39:30.743Z",
+        "viewId": "canvas-view-89d7c78d-770d-467c-834d-6bcd6add940d",
+        "diagramCount": 1,
+        "lines": 49,
+        "characters": 4929,
+        "edges": 0,
+        "textFile": "diagrams/09.txt",
+        "generation": {
+          "viewId": "canvas-view-89d7c78d-770d-467c-834d-6bcd6add940d",
+          "runId": "985d1c69-f0ec-4997-bac3-e25391bf6bb4",
+          "chatId": "45dbb372-7b82-4ec5-8a61-18df791dd281",
+          "parentChatId": "08c6af0f-796e-4fda-b715-16efc834be09",
+          "parentTurnId": "01a17e2d-9e82-7de3-ab56-ceb5aa003572",
+          "triggerPrompt": "## Layout\nThis section will contain details on the high-level layout of the data\nFor now, we will use a single layout to display the data\nThis layout uses a single central diagram and then some diagrams on the side\n\n## General\nI want you to use CanvasView to create a view that explains this current feature. The following are some guidelines:\n- relations\n  - edges\n    - obvious -> just the edge\n    - less obvious -> edge + edge text\n      > \"inherits\", \"imports\", \"MCP API call\", etc..\n    - less less obvious\n      > creating an \"anchor\" node / tree at the source or target or both\n- tree-diagrams\n  - tree are best to depict nested, hierarchals arrangements of the data\n    > their strength lies in their ability to segment non-adjacent levels of the data-space\n  - while uniformity / flat levels are good, I suspect this is not always the case and not always the best use of trees\n- highlighting\n  - can be used to mark nodes as important\n\n## This experiment: central diagram only\nGenerate ONLY the central diagram for the assigned feature. The saved AgentContext contains the feature brief and exact current source evidence. Explain the implemented high-level feature and its important relationships using that evidence.\nThe final canvas must contain exactly ONE meaningful diagram. Do not generate side diagrams, side panels, additional alternatives, or additional canvases. Replace the starter diagram in-place if one exists. Do not leave a blank placeholder beside the result. Connections within the central ASCII diagram are fine; do not create dangling external edges.\nThe application has already created your CanvasView and bound an isolated generation canvas. Edit that bound canvas directly; the application saves the resulting CanvasView automatically. Do not fork or create another view, and do not call gen-alternatives.\nUse the canvas/diagram tools, not filesystem edits. Do not change application source code. If you add source mappings, use accurate captured file ranges; do not fabricate evidence. Before completing, reread the bound canvas and verify that it has exactly one diagram and that its content covers the assigned feature.",
+          "taskPrompt": "## Layout\nThis section will contain details on the high-level layout of the data\nFor now, we will use a single layout to display the data\nThis layout uses a single central diagram and then some diagrams on the side\n\n## General\nI want you to use CanvasView to create a view that explains this current feature. The following are some guidelines:\n- relations\n  - edges\n    - obvious -> just the edge\n    - less obvious -> edge + edge text\n      > \"inherits\", \"imports\", \"MCP API call\", etc..\n    - less less obvious\n      > creating an \"anchor\" node / tree at the source or target or both\n- tree-diagrams\n  - tree are best to depict nested, hierarchals arrangements of the data\n    > their strength lies in their ability to segment non-adjacent levels of the data-space\n  - while uniformity / flat levels are good, I suspect this is not always the case and not always the best use of trees\n- highlighting\n  - can be used to mark nodes as important\n\n## This experiment: central diagram only\nGenerate ONLY the central diagram for the assigned feature. The saved AgentContext contains the feature brief and exact current source evidence. Explain the implemented high-level feature and its important relationships using that evidence.\nThe final canvas must contain exactly ONE meaningful diagram. Do not generate side diagrams, side panels, additional alternatives, or additional canvases. Replace the starter diagram in-place if one exists. Do not leave a blank placeholder beside the result. Connections within the central ASCII diagram are fine; do not create dangling external edges.\nThe application has already created your CanvasView and bound an isolated generation canvas. Edit that bound canvas directly; the application saves the resulting CanvasView automatically. Do not fork or create another view, and do not call gen-alternatives.\nUse the canvas/diagram tools, not filesystem edits. Do not change application source code. If you add source mappings, use accurate captured file ranges; do not fabricate evidence. Before completing, reread the bound canvas and verify that it has exactly one diagram and that its content covers the assigned feature.",
+          "prompt": "Feature 9: Diagram search and mapped-source navigation\n\nCover: Search across canvases and proposals; click symbols to search; reveal matches; open mapped source in a resizable workspace panel. Include source identity and stale-result protection where they explain user-visible behavior.\n\nProduce the single central diagram only, using the supplied AgentContext.",
+          "model": "gpt-6-astra",
+          "effort": "high",
+          "agentContextId": "saved-agent-context-b78101f2-cd52-4a97-8ff1-d271282dacb3",
+          "agentContextHash": "7e12238ef01757c147657d9299e0d638e9a49bdca329b919e9f34ce543d2ad8d",
+          "status": "finished",
+          "startedAt": "2026-10-29T01:37:20.351Z",
+          "usage": {
+            "totalTokens": 304672,
+            "inputTokens": 302254,
+            "cachedInputTokens": 256640,
+            "outputTokens": 2418,
+            "reasoningOutputTokens": 312
+          },
+          "completedAt": "2026-10-29T01:39:07.270Z",
+          "durationMs": 106919,
+          "pendingSave": false,
+          "waitingForInput": false
+        }
+      },
+      "persistedVerification": {
+        "at": "2026-10-29T01:40:08.952Z",
+        "checkpointId": "canvas-revision-60c3f10e-7283-45d1-be28-cf1a7700ce46",
+        "revisionId": "diagram-revision-806be96c-2f30-431b-9e8a-6b9b793743ce"
+      }
+    },
+    {
+      "number": 10,
+      "title": "Source coverage and change treemaps",
+      "features": "Measure mapped source coverage; distribute overlapping source ranges without double-counting; identify unresolved mappings; visualize changed-code coverage; navigate from coverage results to diagrams.",
+      "ranges": [
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "domain/mapping/treemap/canvasTreemap.ts",
+          "startLine": 1,
+          "endLine": 127,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "e56d93e4684592816e269f1708d53750a8630327248b7da72a273cd4e425beb4"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "domain/mapping/changes/changeTreemap.ts",
+          "startLine": 1,
+          "endLine": 170,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "e058dae5847f33e06a2b54bee6bb281ac44b9cb9ecf107c2ff40140af4477a94"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "src/features/mapping/treemap/CanvasTreemapContent.tsx",
+          "startLine": 1,
+          "endLine": 68,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "e587ca29ad21794179676dda29ce123d8283c3be880f64b357bc97c483be6c21"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "src/features/mapping/changes/ChangeTreemapContent.tsx",
+          "startLine": 1,
+          "endLine": 35,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "f8c27297850edc021f030885cd3fb8a2020ef7c61c11cc0c7d8d5bcab5d05453"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "src/features/mapping/changes/treemapLayout.ts",
+          "startLine": 1,
+          "endLine": 23,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "a05cb3c701d4cf8548b757466cfe12d6169ab918dc4c54e9e9f7f0bc61bd215b"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "src/features/mapping/treemap/useTreemapRegionSelection.ts",
+          "startLine": 1,
+          "endLine": 45,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "fd02ae3e1e9ae4aec7a327d05773fed8f8c94cbf57578adcc9cdcc6e67bdbb7b"
+          }
+        }
+      ],
+      "contextFile": "contexts/10.json",
+      "contextRequestId": "dc2babbf-e67b-4e17-abe3-33460a086a63",
+      "createRequestId": "a5cfd18a-15fd-49a6-8005-019d1ac1269e",
+      "viewRequestId": "ac7f6b21-5d3c-48c6-92ca-8372b29f1d90",
+      "generationRequestId": "35363d5d-829d-4a92-8931-5ff9ebb8a719",
+      "candidatePrompt": "Feature 10: Source coverage and change treemaps\n\nCover: Measure mapped source coverage; distribute overlapping source ranges without double-counting; identify unresolved mappings; visualize changed-code coverage; navigate from coverage results to diagrams.\n\nProduce the single central diagram only, using the supplied AgentContext.",
+      "canvasName": "10 - Source coverage and change treemaps",
+      "context": {
+        "agentContextId": "saved-agent-context-dc2babbf-e67b-4e17-abe3-33460a086a63",
+        "name": "Source coverage and change treemaps - source baseline",
+        "description": "Feature 10/12. Exact working-tree source snapshots for the central-diagram prompt experiment.",
+        "createdAt": "2026-10-29T01:36:35.876Z",
+        "contentHash": "fdfe08054136a0f76f2c08c47d48d421e368ccfbf7eaef204fe4b97f61f0fc04",
+        "messageCount": 1,
+        "source": {
+          "agentType": "saved-context",
+          "sourceSessionId": "dc2babbf-e67b-4e17-abe3-33460a086a63",
+          "format": "messages-v1"
+        }
+      },
+      "contextVerified": true,
+      "attachment": {
+        "sessionId": "486b27f4-a76a-4451-8f31-616fb3525f66",
+        "canvasId": "a15d1dc6-7bbc-49dd-ada1-0344fc83511b",
+        "documentId": "draft-3076826f-7299-47cc-9b98-1efcfd8989eb",
+        "repositoryId": "repo-ce67f2af4410036fce1ce12f",
+        "version": 0
+      },
+      "baseViewRequest": {
+        "operation": "create",
+        "name": "Blank baseline",
+        "sessionId": "486b27f4-a76a-4451-8f31-616fb3525f66",
+        "expectedVersion": 0,
+        "requestId": "ac7f6b21-5d3c-48c6-92ca-8372b29f1d90"
+      },
+      "baseViewId": "canvas-view-a4af4a9e-6b69-4885-b77d-4d1bd6b8fb88",
+      "generationInput": {
+        "canvas": {
+          "workspaceInstanceId": "a15d1dc6-7bbc-49dd-ada1-0344fc83511b",
+          "documentId": "draft-3076826f-7299-47cc-9b98-1efcfd8989eb"
+        },
+        "viewId": "canvas-view-a4af4a9e-6b69-4885-b77d-4d1bd6b8fb88",
+        "agentContextId": "saved-agent-context-dc2babbf-e67b-4e17-abe3-33460a086a63",
+        "prompt": "## Layout\nThis section will contain details on the high-level layout of the data\nFor now, we will use a single layout to display the data\nThis layout uses a single central diagram and then some diagrams on the side\n\n## General\nI want you to use CanvasView to create a view that explains this current feature. The following are some guidelines:\n- relations\n  - edges\n    - obvious -> just the edge\n    - less obvious -> edge + edge text\n      > \"inherits\", \"imports\", \"MCP API call\", etc..\n    - less less obvious\n      > creating an \"anchor\" node / tree at the source or target or both\n- tree-diagrams\n  - tree are best to depict nested, hierarchals arrangements of the data\n    > their strength lies in their ability to segment non-adjacent levels of the data-space\n  - while uniformity / flat levels are good, I suspect this is not always the case and not always the best use of trees\n- highlighting\n  - can be used to mark nodes as important\n\n## This experiment: central diagram only\nGenerate ONLY the central diagram for the assigned feature. The saved AgentContext contains the feature brief and exact current source evidence. Explain the implemented high-level feature and its important relationships using that evidence.\nThe final canvas must contain exactly ONE meaningful diagram. Do not generate side diagrams, side panels, additional alternatives, or additional canvases. Replace the starter diagram in-place if one exists. Do not leave a blank placeholder beside the result. Connections within the central ASCII diagram are fine; do not create dangling external edges.\nThe application has already created your CanvasView and bound an isolated generation canvas. Edit that bound canvas directly; the application saves the resulting CanvasView automatically. Do not fork or create another view, and do not call gen-alternatives.\nUse the canvas/diagram tools, not filesystem edits. Do not change application source code. If you add source mappings, use accurate captured file ranges; do not fabricate evidence. Before completing, reread the bound canvas and verify that it has exactly one diagram and that its content covers the assigned feature.\n",
+        "alternatives": [
+          {
+            "name": "Central diagram - baseline prompt",
+            "prompt": "Feature 10: Source coverage and change treemaps\n\nCover: Measure mapped source coverage; distribute overlapping source ranges without double-counting; identify unresolved mappings; visualize changed-code coverage; navigate from coverage results to diagrams.\n\nProduce the single central diagram only, using the supplied AgentContext."
+          }
+        ],
+        "requestId": "35363d5d-829d-4a92-8931-5ff9ebb8a719"
+      },
+      "generation": {
+        "requestId": "35363d5d-829d-4a92-8931-5ff9ebb8a719",
+        "runId": "8c44a0e9-386b-42dd-ab79-bdc90b63c7f1",
+        "candidates": [
+          {
+            "viewId": "canvas-view-9154b268-33bd-4667-80e2-0d425d11598f",
+            "chatId": "ce592ffc-2627-4c10-9b69-e9a135657c45",
+            "name": "Central diagram - baseline prompt"
+          }
+        ]
+      },
+      "status": {
+        "chatStatus": "idle",
+        "generationStatus": "finished",
+        "error": null,
+        "pending": [],
+        "completedAt": "2026-10-29T01:38:38.067Z"
+      },
+      "openRequest": {
+        "sessionId": "486b27f4-a76a-4451-8f31-616fb3525f66",
+        "requestId": "96de6f7d-0ac4-43b3-8e26-ec9ff38648c4",
+        "expectedVersion": 1,
+        "operation": "open",
+        "viewId": "canvas-view-9154b268-33bd-4667-80e2-0d425d11598f"
+      },
+      "verified": {
+        "at": "2026-10-29T01:38:39.652Z",
+        "viewId": "canvas-view-9154b268-33bd-4667-80e2-0d425d11598f",
+        "diagramCount": 1,
+        "lines": 53,
+        "characters": 5009,
+        "edges": 0,
+        "textFile": "diagrams/10.txt",
+        "generation": {
+          "viewId": "canvas-view-9154b268-33bd-4667-80e2-0d425d11598f",
+          "runId": "8c44a0e9-386b-42dd-ab79-bdc90b63c7f1",
+          "chatId": "ce592ffc-2627-4c10-9b69-e9a135657c45",
+          "parentChatId": "08c6af0f-796e-4fda-b715-16efc834be09",
+          "parentTurnId": "01a17e2d-9e82-7de3-ab56-ceb5aa003572",
+          "triggerPrompt": "## Layout\nThis section will contain details on the high-level layout of the data\nFor now, we will use a single layout to display the data\nThis layout uses a single central diagram and then some diagrams on the side\n\n## General\nI want you to use CanvasView to create a view that explains this current feature. The following are some guidelines:\n- relations\n  - edges\n    - obvious -> just the edge\n    - less obvious -> edge + edge text\n      > \"inherits\", \"imports\", \"MCP API call\", etc..\n    - less less obvious\n      > creating an \"anchor\" node / tree at the source or target or both\n- tree-diagrams\n  - tree are best to depict nested, hierarchals arrangements of the data\n    > their strength lies in their ability to segment non-adjacent levels of the data-space\n  - while uniformity / flat levels are good, I suspect this is not always the case and not always the best use of trees\n- highlighting\n  - can be used to mark nodes as important\n\n## This experiment: central diagram only\nGenerate ONLY the central diagram for the assigned feature. The saved AgentContext contains the feature brief and exact current source evidence. Explain the implemented high-level feature and its important relationships using that evidence.\nThe final canvas must contain exactly ONE meaningful diagram. Do not generate side diagrams, side panels, additional alternatives, or additional canvases. Replace the starter diagram in-place if one exists. Do not leave a blank placeholder beside the result. Connections within the central ASCII diagram are fine; do not create dangling external edges.\nThe application has already created your CanvasView and bound an isolated generation canvas. Edit that bound canvas directly; the application saves the resulting CanvasView automatically. Do not fork or create another view, and do not call gen-alternatives.\nUse the canvas/diagram tools, not filesystem edits. Do not change application source code. If you add source mappings, use accurate captured file ranges; do not fabricate evidence. Before completing, reread the bound canvas and verify that it has exactly one diagram and that its content covers the assigned feature.",
+          "taskPrompt": "## Layout\nThis section will contain details on the high-level layout of the data\nFor now, we will use a single layout to display the data\nThis layout uses a single central diagram and then some diagrams on the side\n\n## General\nI want you to use CanvasView to create a view that explains this current feature. The following are some guidelines:\n- relations\n  - edges\n    - obvious -> just the edge\n    - less obvious -> edge + edge text\n      > \"inherits\", \"imports\", \"MCP API call\", etc..\n    - less less obvious\n      > creating an \"anchor\" node / tree at the source or target or both\n- tree-diagrams\n  - tree are best to depict nested, hierarchals arrangements of the data\n    > their strength lies in their ability to segment non-adjacent levels of the data-space\n  - while uniformity / flat levels are good, I suspect this is not always the case and not always the best use of trees\n- highlighting\n  - can be used to mark nodes as important\n\n## This experiment: central diagram only\nGenerate ONLY the central diagram for the assigned feature. The saved AgentContext contains the feature brief and exact current source evidence. Explain the implemented high-level feature and its important relationships using that evidence.\nThe final canvas must contain exactly ONE meaningful diagram. Do not generate side diagrams, side panels, additional alternatives, or additional canvases. Replace the starter diagram in-place if one exists. Do not leave a blank placeholder beside the result. Connections within the central ASCII diagram are fine; do not create dangling external edges.\nThe application has already created your CanvasView and bound an isolated generation canvas. Edit that bound canvas directly; the application saves the resulting CanvasView automatically. Do not fork or create another view, and do not call gen-alternatives.\nUse the canvas/diagram tools, not filesystem edits. Do not change application source code. If you add source mappings, use accurate captured file ranges; do not fabricate evidence. Before completing, reread the bound canvas and verify that it has exactly one diagram and that its content covers the assigned feature.",
+          "prompt": "Feature 10: Source coverage and change treemaps\n\nCover: Measure mapped source coverage; distribute overlapping source ranges without double-counting; identify unresolved mappings; visualize changed-code coverage; navigate from coverage results to diagrams.\n\nProduce the single central diagram only, using the supplied AgentContext.",
+          "model": "gpt-6-astra",
+          "effort": "high",
+          "agentContextId": "saved-agent-context-dc2babbf-e67b-4e17-abe3-33460a086a63",
+          "agentContextHash": "fdfe08054136a0f76f2c08c47d48d421e368ccfbf7eaef204fe4b97f61f0fc04",
+          "status": "finished",
+          "startedAt": "2026-10-29T01:37:20.723Z",
+          "usage": {
+            "totalTokens": 281130,
+            "inputTokens": 279695,
+            "cachedInputTokens": 236928,
+            "outputTokens": 1435,
+            "reasoningOutputTokens": 147
+          },
+          "completedAt": "2026-10-29T01:38:38.068Z",
+          "durationMs": 77345,
+          "pendingSave": false,
+          "waitingForInput": false
+        }
+      },
+      "persistedVerification": {
+        "at": "2026-10-29T01:40:08.952Z",
+        "checkpointId": "canvas-revision-59ed6ff7-e965-46b1-be23-6d28107e78ef",
+        "revisionId": "diagram-revision-8193f3f9-7d8f-47c1-a23b-d046deb384c5"
+      }
+    },
+    {
+      "number": 11,
+      "title": "Focused canvases from selected or highlighted diagrams",
+      "features": "Create a derived canvas from selected or highlighted diagrams; preserve source provenance; adjust its arrangement; save and undo layout changes. Describe the implemented projection feature rather than the contents of an existing canvas named Projection.",
+      "ranges": [
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "domain/core/diagrams/highlightProjection.ts",
+          "startLine": 1,
+          "endLine": 232,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "51e313ed1bc65207b320be21da43c0f0b3a615016960565c4216e683ca573249"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "domain/core/diagrams/canvasTransfer.ts",
+          "startLine": 1,
+          "endLine": 209,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "7f0b35d262bf2bacf9eef24af328d5611bed33e55a6bd3ab73ca7130982d02a7"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "src/features/mapping/workspace/ProjectionLayoutPanel.tsx",
+          "startLine": 1,
+          "endLine": 71,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "595b276c8fd35e93134b873588642748a1ebe6a5c3c5a7881a139c2538063d55"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "src/features/mapping/workspace/workspaceTask.ts",
+          "startLine": 1,
+          "endLine": 19,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "82e5c0f45388e0ea47265b178da697738f3315debebfa0e4dc3cda2b5665472f"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "src/features/mapping/workspace/runWorkspaceTask.ts",
+          "startLine": 1,
+          "endLine": 20,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "02754da89a8c343dd1107333dfeecac9de73f558424af38a50e3a39b4a069fc2"
+          }
+        }
+      ],
+      "contextFile": "contexts/11.json",
+      "contextRequestId": "9f6aaf22-bc7d-4b97-b93e-e8b7f5855dcd",
+      "createRequestId": "65ccfe97-18ba-4f7b-a7e6-f80c7261448b",
+      "viewRequestId": "88a7ce98-67ce-4cd6-93fa-ce2d8af13eee",
+      "generationRequestId": "1d41e6c3-2116-4887-847d-2120e0555ae6",
+      "candidatePrompt": "Feature 11: Focused canvases from selected or highlighted diagrams\n\nCover: Create a derived canvas from selected or highlighted diagrams; preserve source provenance; adjust its arrangement; save and undo layout changes. Describe the implemented projection feature rather than the contents of an existing canvas named Projection.\n\nProduce the single central diagram only, using the supplied AgentContext.",
+      "canvasName": "11 - Focused canvases from selected or highlighted diagrams",
+      "context": {
+        "agentContextId": "saved-agent-context-9f6aaf22-bc7d-4b97-b93e-e8b7f5855dcd",
+        "name": "Focused canvases from selected or highlighted diagrams - source baseline",
+        "description": "Feature 11/12. Exact working-tree source snapshots for the central-diagram prompt experiment.",
+        "createdAt": "2026-10-29T01:36:35.927Z",
+        "contentHash": "09c53d9409369a1f93225b9e943a2e452d529266de5a45515e7fc3617f26131d",
+        "messageCount": 1,
+        "source": {
+          "agentType": "saved-context",
+          "sourceSessionId": "9f6aaf22-bc7d-4b97-b93e-e8b7f5855dcd",
+          "format": "messages-v1"
+        }
+      },
+      "contextVerified": true,
+      "attachment": {
+        "sessionId": "35207a84-d175-408f-9b11-29462c4fa1ef",
+        "canvasId": "a15d1dc6-7bbc-49dd-ada1-0344fc83511b",
+        "documentId": "draft-1df4da33-74d9-4ae3-9108-84bf169f477f",
+        "repositoryId": "repo-ce67f2af4410036fce1ce12f",
+        "version": 0
+      },
+      "baseViewRequest": {
+        "operation": "create",
+        "name": "Blank baseline",
+        "sessionId": "35207a84-d175-408f-9b11-29462c4fa1ef",
+        "expectedVersion": 0,
+        "requestId": "88a7ce98-67ce-4cd6-93fa-ce2d8af13eee"
+      },
+      "baseViewId": "canvas-view-582032df-00ed-4d98-afde-018f8dd13e31",
+      "generationInput": {
+        "canvas": {
+          "workspaceInstanceId": "a15d1dc6-7bbc-49dd-ada1-0344fc83511b",
+          "documentId": "draft-1df4da33-74d9-4ae3-9108-84bf169f477f"
+        },
+        "viewId": "canvas-view-582032df-00ed-4d98-afde-018f8dd13e31",
+        "agentContextId": "saved-agent-context-9f6aaf22-bc7d-4b97-b93e-e8b7f5855dcd",
+        "prompt": "## Layout\nThis section will contain details on the high-level layout of the data\nFor now, we will use a single layout to display the data\nThis layout uses a single central diagram and then some diagrams on the side\n\n## General\nI want you to use CanvasView to create a view that explains this current feature. The following are some guidelines:\n- relations\n  - edges\n    - obvious -> just the edge\n    - less obvious -> edge + edge text\n      > \"inherits\", \"imports\", \"MCP API call\", etc..\n    - less less obvious\n      > creating an \"anchor\" node / tree at the source or target or both\n- tree-diagrams\n  - tree are best to depict nested, hierarchals arrangements of the data\n    > their strength lies in their ability to segment non-adjacent levels of the data-space\n  - while uniformity / flat levels are good, I suspect this is not always the case and not always the best use of trees\n- highlighting\n  - can be used to mark nodes as important\n\n## This experiment: central diagram only\nGenerate ONLY the central diagram for the assigned feature. The saved AgentContext contains the feature brief and exact current source evidence. Explain the implemented high-level feature and its important relationships using that evidence.\nThe final canvas must contain exactly ONE meaningful diagram. Do not generate side diagrams, side panels, additional alternatives, or additional canvases. Replace the starter diagram in-place if one exists. Do not leave a blank placeholder beside the result. Connections within the central ASCII diagram are fine; do not create dangling external edges.\nThe application has already created your CanvasView and bound an isolated generation canvas. Edit that bound canvas directly; the application saves the resulting CanvasView automatically. Do not fork or create another view, and do not call gen-alternatives.\nUse the canvas/diagram tools, not filesystem edits. Do not change application source code. If you add source mappings, use accurate captured file ranges; do not fabricate evidence. Before completing, reread the bound canvas and verify that it has exactly one diagram and that its content covers the assigned feature.\n",
+        "alternatives": [
+          {
+            "name": "Central diagram - baseline prompt",
+            "prompt": "Feature 11: Focused canvases from selected or highlighted diagrams\n\nCover: Create a derived canvas from selected or highlighted diagrams; preserve source provenance; adjust its arrangement; save and undo layout changes. Describe the implemented projection feature rather than the contents of an existing canvas named Projection.\n\nProduce the single central diagram only, using the supplied AgentContext."
+          }
+        ],
+        "requestId": "1d41e6c3-2116-4887-847d-2120e0555ae6"
+      },
+      "generation": {
+        "requestId": "1d41e6c3-2116-4887-847d-2120e0555ae6",
+        "runId": "0f3ded5f-fea2-49c1-b2f2-59261f681bff",
+        "candidates": [
+          {
+            "viewId": "canvas-view-7eca48ef-055e-4d66-86f9-a46ab891d047",
+            "chatId": "85c909da-6f3b-4105-a6fc-f73e96fddbd9",
+            "name": "Central diagram - baseline prompt"
+          }
+        ]
+      },
+      "status": {
+        "chatStatus": "idle",
+        "generationStatus": "finished",
+        "error": null,
+        "pending": [],
+        "completedAt": "2026-10-29T01:38:40.350Z"
+      },
+      "openRequest": {
+        "sessionId": "35207a84-d175-408f-9b11-29462c4fa1ef",
+        "requestId": "0c866e53-05b6-48fd-b5aa-a7d895495e8a",
+        "expectedVersion": 1,
+        "operation": "open",
+        "viewId": "canvas-view-7eca48ef-055e-4d66-86f9-a46ab891d047"
+      },
+      "verified": {
+        "at": "2026-10-29T01:39:33.173Z",
+        "viewId": "canvas-view-7eca48ef-055e-4d66-86f9-a46ab891d047",
+        "diagramCount": 1,
+        "lines": 50,
+        "characters": 3373,
+        "edges": 0,
+        "textFile": "diagrams/11.txt",
+        "generation": {
+          "viewId": "canvas-view-7eca48ef-055e-4d66-86f9-a46ab891d047",
+          "runId": "0f3ded5f-fea2-49c1-b2f2-59261f681bff",
+          "chatId": "85c909da-6f3b-4105-a6fc-f73e96fddbd9",
+          "parentChatId": "08c6af0f-796e-4fda-b715-16efc834be09",
+          "parentTurnId": "01a17e2d-9e82-7de3-ab56-ceb5aa003572",
+          "triggerPrompt": "## Layout\nThis section will contain details on the high-level layout of the data\nFor now, we will use a single layout to display the data\nThis layout uses a single central diagram and then some diagrams on the side\n\n## General\nI want you to use CanvasView to create a view that explains this current feature. The following are some guidelines:\n- relations\n  - edges\n    - obvious -> just the edge\n    - less obvious -> edge + edge text\n      > \"inherits\", \"imports\", \"MCP API call\", etc..\n    - less less obvious\n      > creating an \"anchor\" node / tree at the source or target or both\n- tree-diagrams\n  - tree are best to depict nested, hierarchals arrangements of the data\n    > their strength lies in their ability to segment non-adjacent levels of the data-space\n  - while uniformity / flat levels are good, I suspect this is not always the case and not always the best use of trees\n- highlighting\n  - can be used to mark nodes as important\n\n## This experiment: central diagram only\nGenerate ONLY the central diagram for the assigned feature. The saved AgentContext contains the feature brief and exact current source evidence. Explain the implemented high-level feature and its important relationships using that evidence.\nThe final canvas must contain exactly ONE meaningful diagram. Do not generate side diagrams, side panels, additional alternatives, or additional canvases. Replace the starter diagram in-place if one exists. Do not leave a blank placeholder beside the result. Connections within the central ASCII diagram are fine; do not create dangling external edges.\nThe application has already created your CanvasView and bound an isolated generation canvas. Edit that bound canvas directly; the application saves the resulting CanvasView automatically. Do not fork or create another view, and do not call gen-alternatives.\nUse the canvas/diagram tools, not filesystem edits. Do not change application source code. If you add source mappings, use accurate captured file ranges; do not fabricate evidence. Before completing, reread the bound canvas and verify that it has exactly one diagram and that its content covers the assigned feature.",
+          "taskPrompt": "## Layout\nThis section will contain details on the high-level layout of the data\nFor now, we will use a single layout to display the data\nThis layout uses a single central diagram and then some diagrams on the side\n\n## General\nI want you to use CanvasView to create a view that explains this current feature. The following are some guidelines:\n- relations\n  - edges\n    - obvious -> just the edge\n    - less obvious -> edge + edge text\n      > \"inherits\", \"imports\", \"MCP API call\", etc..\n    - less less obvious\n      > creating an \"anchor\" node / tree at the source or target or both\n- tree-diagrams\n  - tree are best to depict nested, hierarchals arrangements of the data\n    > their strength lies in their ability to segment non-adjacent levels of the data-space\n  - while uniformity / flat levels are good, I suspect this is not always the case and not always the best use of trees\n- highlighting\n  - can be used to mark nodes as important\n\n## This experiment: central diagram only\nGenerate ONLY the central diagram for the assigned feature. The saved AgentContext contains the feature brief and exact current source evidence. Explain the implemented high-level feature and its important relationships using that evidence.\nThe final canvas must contain exactly ONE meaningful diagram. Do not generate side diagrams, side panels, additional alternatives, or additional canvases. Replace the starter diagram in-place if one exists. Do not leave a blank placeholder beside the result. Connections within the central ASCII diagram are fine; do not create dangling external edges.\nThe application has already created your CanvasView and bound an isolated generation canvas. Edit that bound canvas directly; the application saves the resulting CanvasView automatically. Do not fork or create another view, and do not call gen-alternatives.\nUse the canvas/diagram tools, not filesystem edits. Do not change application source code. If you add source mappings, use accurate captured file ranges; do not fabricate evidence. Before completing, reread the bound canvas and verify that it has exactly one diagram and that its content covers the assigned feature.",
+          "prompt": "Feature 11: Focused canvases from selected or highlighted diagrams\n\nCover: Create a derived canvas from selected or highlighted diagrams; preserve source provenance; adjust its arrangement; save and undo layout changes. Describe the implemented projection feature rather than the contents of an existing canvas named Projection.\n\nProduce the single central diagram only, using the supplied AgentContext.",
+          "model": "gpt-6-astra",
+          "effort": "high",
+          "agentContextId": "saved-agent-context-9f6aaf22-bc7d-4b97-b93e-e8b7f5855dcd",
+          "agentContextHash": "09c53d9409369a1f93225b9e943a2e452d529266de5a45515e7fc3617f26131d",
+          "status": "finished",
+          "startedAt": "2026-10-29T01:37:21.337Z",
+          "usage": {
+            "totalTokens": 413697,
+            "inputTokens": 411894,
+            "cachedInputTokens": 362624,
+            "outputTokens": 1803,
+            "reasoningOutputTokens": 197
+          },
+          "completedAt": "2026-10-29T01:38:40.350Z",
+          "durationMs": 79013,
+          "pendingSave": false,
+          "waitingForInput": false
+        }
+      },
+      "persistedVerification": {
+        "at": "2026-10-29T01:40:08.952Z",
+        "checkpointId": "canvas-revision-3020d5b3-7155-4009-a108-4a806dc6564c",
+        "revisionId": "diagram-revision-1a3d840e-82e1-4813-ad95-24b383c5565b"
+      }
+    },
+    {
+      "number": 12,
+      "title": "Incremental persistence and durable recovery",
+      "features": "Deduplicated history records; saving only changed records; coalesced writes; uncertain-write retries; durable manifest publication and restoration. Explain current reliability and performance behavior beyond the older component overview.",
+      "ranges": [
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "domain/mapping/workspace/workspaceRecords.ts",
+          "startLine": 1,
+          "endLine": 142,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "44d609bc4a709b799ea3445abfe0b8b689206c4b2849713e90cff70b2959027d"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "src/features/mapping/workspace/workspacePersistence.ts",
+          "startLine": 1,
+          "endLine": 94,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "cd799c96093bc1aff079d3ffabb0ed88b1673880a8d327b11c9d3475d6c20a8d"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "src/features/mapping/workspace/recordStorage.ts",
+          "startLine": 1,
+          "endLine": 103,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "6f0afffb7c7d38bc23d77b3d46ed98635f58cd1bc9be040342d58ffe6b9fdbac"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "src/features/mapping/workspace/workspaceStorage.ts",
+          "startLine": 1,
+          "endLine": 69,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "7d6e6befc3161be2ccdba43935e42238b442b4cc1fb0626050bf3d42de221887"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "src/features/mapping/workspace/workspaceStorage.worker.ts",
+          "startLine": 1,
+          "endLine": 55,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "d4ab6703f5bf7c621d87cb107e5eb6883fcb7a30e32e125045ab3f2c061c6142"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "infrastructure/mapping/persistence/workspace/workspaceRecordStore.ts",
+          "startLine": 1,
+          "endLine": 184,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "5259db9e650ab4874f07c131b6f0a7e79df6038a3c0113eb663cc73d12c723ea"
+          }
+        },
+        {
+          "type": "sourceRange",
+          "sourceId": "repo-ce67f2af4410036fce1ce12f",
+          "path": "domain/core/diagrams/canvasHistory.ts",
+          "startLine": 1,
+          "endLine": 616,
+          "version": {
+            "kind": "snapshot",
+            "contentHash": "4d64bdf3e0f5ad93f4458e73c186d3af6cd9817ddb5954fa0ed4466c110baa53"
+          }
+        }
+      ],
+      "contextFile": "contexts/12.json",
+      "contextRequestId": "861d1eb3-b715-403f-8c2c-6b31e1cd2837",
+      "createRequestId": "3864975f-cae7-4ed7-91b2-0d2eab754db4",
+      "viewRequestId": "55e22636-131f-48e0-a26c-94615c735d56",
+      "generationRequestId": "2b6cf45d-c7e0-4229-a567-684197ecfded",
+      "candidatePrompt": "Feature 12: Incremental persistence and durable recovery\n\nCover: Deduplicated history records; saving only changed records; coalesced writes; uncertain-write retries; durable manifest publication and restoration. Explain current reliability and performance behavior beyond the older component overview.\n\nProduce the single central diagram only, using the supplied AgentContext.",
+      "canvasName": "12 - Incremental persistence and durable recovery",
+      "context": {
+        "agentContextId": "saved-agent-context-861d1eb3-b715-403f-8c2c-6b31e1cd2837",
+        "name": "Incremental persistence and durable recovery - source baseline",
+        "description": "Feature 12/12. Exact working-tree source snapshots for the central-diagram prompt experiment.",
+        "createdAt": "2026-10-29T01:36:35.993Z",
+        "contentHash": "7865d286c100c260973cb1d400e6f6d41dda21e12046b2fa74c425b258e12bfe",
+        "messageCount": 1,
+        "source": {
+          "agentType": "saved-context",
+          "sourceSessionId": "861d1eb3-b715-403f-8c2c-6b31e1cd2837",
+          "format": "messages-v1"
+        }
+      },
+      "contextVerified": true,
+      "attachment": {
+        "sessionId": "cdb00795-761a-4537-a5ad-d02f7751f2b2",
+        "canvasId": "a15d1dc6-7bbc-49dd-ada1-0344fc83511b",
+        "documentId": "draft-d18d4918-7493-48d7-b149-b869cf3d403d",
+        "repositoryId": "repo-ce67f2af4410036fce1ce12f",
+        "version": 0
+      },
+      "baseViewRequest": {
+        "operation": "create",
+        "name": "Blank baseline",
+        "sessionId": "cdb00795-761a-4537-a5ad-d02f7751f2b2",
+        "expectedVersion": 0,
+        "requestId": "55e22636-131f-48e0-a26c-94615c735d56"
+      },
+      "baseViewId": "canvas-view-03b3d0b7-8210-4c8f-a8b2-9d567ad5ff6c",
+      "generationInput": {
+        "canvas": {
+          "workspaceInstanceId": "a15d1dc6-7bbc-49dd-ada1-0344fc83511b",
+          "documentId": "draft-d18d4918-7493-48d7-b149-b869cf3d403d"
+        },
+        "viewId": "canvas-view-03b3d0b7-8210-4c8f-a8b2-9d567ad5ff6c",
+        "agentContextId": "saved-agent-context-861d1eb3-b715-403f-8c2c-6b31e1cd2837",
+        "prompt": "## Layout\nThis section will contain details on the high-level layout of the data\nFor now, we will use a single layout to display the data\nThis layout uses a single central diagram and then some diagrams on the side\n\n## General\nI want you to use CanvasView to create a view that explains this current feature. The following are some guidelines:\n- relations\n  - edges\n    - obvious -> just the edge\n    - less obvious -> edge + edge text\n      > \"inherits\", \"imports\", \"MCP API call\", etc..\n    - less less obvious\n      > creating an \"anchor\" node / tree at the source or target or both\n- tree-diagrams\n  - tree are best to depict nested, hierarchals arrangements of the data\n    > their strength lies in their ability to segment non-adjacent levels of the data-space\n  - while uniformity / flat levels are good, I suspect this is not always the case and not always the best use of trees\n- highlighting\n  - can be used to mark nodes as important\n\n## This experiment: central diagram only\nGenerate ONLY the central diagram for the assigned feature. The saved AgentContext contains the feature brief and exact current source evidence. Explain the implemented high-level feature and its important relationships using that evidence.\nThe final canvas must contain exactly ONE meaningful diagram. Do not generate side diagrams, side panels, additional alternatives, or additional canvases. Replace the starter diagram in-place if one exists. Do not leave a blank placeholder beside the result. Connections within the central ASCII diagram are fine; do not create dangling external edges.\nThe application has already created your CanvasView and bound an isolated generation canvas. Edit that bound canvas directly; the application saves the resulting CanvasView automatically. Do not fork or create another view, and do not call gen-alternatives.\nUse the canvas/diagram tools, not filesystem edits. Do not change application source code. If you add source mappings, use accurate captured file ranges; do not fabricate evidence. Before completing, reread the bound canvas and verify that it has exactly one diagram and that its content covers the assigned feature.\n",
+        "alternatives": [
+          {
+            "name": "Central diagram - baseline prompt",
+            "prompt": "Feature 12: Incremental persistence and durable recovery\n\nCover: Deduplicated history records; saving only changed records; coalesced writes; uncertain-write retries; durable manifest publication and restoration. Explain current reliability and performance behavior beyond the older component overview.\n\nProduce the single central diagram only, using the supplied AgentContext."
+          }
+        ],
+        "requestId": "2b6cf45d-c7e0-4229-a567-684197ecfded"
+      },
+      "generation": {
+        "requestId": "2b6cf45d-c7e0-4229-a567-684197ecfded",
+        "runId": "062c7abc-2c47-4621-8104-8a3e7de28a85",
+        "candidates": [
+          {
+            "viewId": "canvas-view-9c5e389e-6bcf-4d69-ae2e-834b37b22dff",
+            "chatId": "4646fc62-4b2a-491a-a1e9-45b1c1a772f2",
+            "name": "Central diagram - baseline prompt"
+          }
+        ]
+      },
+      "status": {
+        "chatStatus": "running",
+        "generationStatus": "generating",
+        "error": null,
+        "pending": [],
+        "completedAt": null
+      },
+      "openRequest": {
+        "sessionId": "cdb00795-761a-4537-a5ad-d02f7751f2b2",
+        "requestId": "e0f3442f-0dd4-4047-8622-bf7b0ef98b48",
+        "expectedVersion": 1,
+        "operation": "open",
+        "viewId": "canvas-view-9c5e389e-6bcf-4d69-ae2e-834b37b22dff"
+      },
+      "verified": {
+        "at": "2026-10-29T01:39:33.961Z",
+        "viewId": "canvas-view-9c5e389e-6bcf-4d69-ae2e-834b37b22dff",
+        "diagramCount": 1,
+        "lines": 80,
+        "characters": 6596,
+        "edges": 0,
+        "textFile": "diagrams/12.txt",
+        "generation": {
+          "viewId": "canvas-view-9c5e389e-6bcf-4d69-ae2e-834b37b22dff",
+          "runId": "062c7abc-2c47-4621-8104-8a3e7de28a85",
+          "chatId": "4646fc62-4b2a-491a-a1e9-45b1c1a772f2",
+          "parentChatId": "08c6af0f-796e-4fda-b715-16efc834be09",
+          "parentTurnId": "01a17e2d-9e82-7de3-ab56-ceb5aa003572",
+          "triggerPrompt": "## Layout\nThis section will contain details on the high-level layout of the data\nFor now, we will use a single layout to display the data\nThis layout uses a single central diagram and then some diagrams on the side\n\n## General\nI want you to use CanvasView to create a view that explains this current feature. The following are some guidelines:\n- relations\n  - edges\n    - obvious -> just the edge\n    - less obvious -> edge + edge text\n      > \"inherits\", \"imports\", \"MCP API call\", etc..\n    - less less obvious\n      > creating an \"anchor\" node / tree at the source or target or both\n- tree-diagrams\n  - tree are best to depict nested, hierarchals arrangements of the data\n    > their strength lies in their ability to segment non-adjacent levels of the data-space\n  - while uniformity / flat levels are good, I suspect this is not always the case and not always the best use of trees\n- highlighting\n  - can be used to mark nodes as important\n\n## This experiment: central diagram only\nGenerate ONLY the central diagram for the assigned feature. The saved AgentContext contains the feature brief and exact current source evidence. Explain the implemented high-level feature and its important relationships using that evidence.\nThe final canvas must contain exactly ONE meaningful diagram. Do not generate side diagrams, side panels, additional alternatives, or additional canvases. Replace the starter diagram in-place if one exists. Do not leave a blank placeholder beside the result. Connections within the central ASCII diagram are fine; do not create dangling external edges.\nThe application has already created your CanvasView and bound an isolated generation canvas. Edit that bound canvas directly; the application saves the resulting CanvasView automatically. Do not fork or create another view, and do not call gen-alternatives.\nUse the canvas/diagram tools, not filesystem edits. Do not change application source code. If you add source mappings, use accurate captured file ranges; do not fabricate evidence. Before completing, reread the bound canvas and verify that it has exactly one diagram and that its content covers the assigned feature.",
+          "taskPrompt": "## Layout\nThis section will contain details on the high-level layout of the data\nFor now, we will use a single layout to display the data\nThis layout uses a single central diagram and then some diagrams on the side\n\n## General\nI want you to use CanvasView to create a view that explains this current feature. The following are some guidelines:\n- relations\n  - edges\n    - obvious -> just the edge\n    - less obvious -> edge + edge text\n      > \"inherits\", \"imports\", \"MCP API call\", etc..\n    - less less obvious\n      > creating an \"anchor\" node / tree at the source or target or both\n- tree-diagrams\n  - tree are best to depict nested, hierarchals arrangements of the data\n    > their strength lies in their ability to segment non-adjacent levels of the data-space\n  - while uniformity / flat levels are good, I suspect this is not always the case and not always the best use of trees\n- highlighting\n  - can be used to mark nodes as important\n\n## This experiment: central diagram only\nGenerate ONLY the central diagram for the assigned feature. The saved AgentContext contains the feature brief and exact current source evidence. Explain the implemented high-level feature and its important relationships using that evidence.\nThe final canvas must contain exactly ONE meaningful diagram. Do not generate side diagrams, side panels, additional alternatives, or additional canvases. Replace the starter diagram in-place if one exists. Do not leave a blank placeholder beside the result. Connections within the central ASCII diagram are fine; do not create dangling external edges.\nThe application has already created your CanvasView and bound an isolated generation canvas. Edit that bound canvas directly; the application saves the resulting CanvasView automatically. Do not fork or create another view, and do not call gen-alternatives.\nUse the canvas/diagram tools, not filesystem edits. Do not change application source code. If you add source mappings, use accurate captured file ranges; do not fabricate evidence. Before completing, reread the bound canvas and verify that it has exactly one diagram and that its content covers the assigned feature.",
+          "prompt": "Feature 12: Incremental persistence and durable recovery\n\nCover: Deduplicated history records; saving only changed records; coalesced writes; uncertain-write retries; durable manifest publication and restoration. Explain current reliability and performance behavior beyond the older component overview.\n\nProduce the single central diagram only, using the supplied AgentContext.",
+          "model": "gpt-6-astra",
+          "effort": "high",
+          "agentContextId": "saved-agent-context-861d1eb3-b715-403f-8c2c-6b31e1cd2837",
+          "agentContextHash": "7865d286c100c260973cb1d400e6f6d41dda21e12046b2fa74c425b258e12bfe",
+          "status": "finished",
+          "startedAt": "2026-10-29T01:37:21.937Z",
+          "usage": {
+            "totalTokens": 381872,
+            "inputTokens": 380047,
+            "cachedInputTokens": 322688,
+            "outputTokens": 1825,
+            "reasoningOutputTokens": 280
+          },
+          "completedAt": "2026-10-29T01:39:04.818Z",
+          "durationMs": 102881,
+          "pendingSave": false,
+          "waitingForInput": false
+        }
+      },
+      "persistedVerification": {
+        "at": "2026-10-29T01:40:08.952Z",
+        "checkpointId": "canvas-revision-08db621d-cdb2-4b7b-a6a4-ea4ca0acb434",
+        "revisionId": "diagram-revision-f7e0cde0-36a9-4ec4-a389-2aa85f97f2ac"
+      }
+    }
+  ],
+  "completedAt": "2026-10-29T01:40:08.952Z"
+}

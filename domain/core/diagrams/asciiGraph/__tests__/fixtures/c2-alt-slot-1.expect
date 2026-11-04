@@ -1,0 +1,92 @@
+MappingPage
+baseline 03f2168, before tldraw
+MappingPocPage(services)
+MappingServicesContext.Provider
+  diagrams: DiagramService
+  canvasHistory: CanvasHistoryService
+  workspaceStorage?
+[G]
+[E] @L8 #E8
+WorkspaceStorage
+MappingWorkspacePage
+  PAGE COORDINATION
+    activeId / mountedDocuments / workspaceEpoch
+    project catalog / search / changeMode / diagramEdits
+    pendingTransfer / transfers / busy + save + delete status
+    drafts = useStore(workspace.store)
+  CanvasWorkspace: registry + session lifetimes
+    drafts[documentId]: CanvasDraft
+      metadata: name, savedName, representationId, revisionId
+      baseline: savedScene, savedEdges
+      hidden, busy, viewport, focusBox
+      session: CanvasSession
+    controllers: Map<documentId, MappingDocumentController>
+    + seed -> create session; replace/remove -> dispose session
+  CanvasSession: controller-owned state, readable stores
+    MappingDocumentController
+    ^ [D] @L33 #D33
+      document: MappingGridDocument
+        scene: LineGridScene
+        ^ [A]
+          root: GridBox ownership tree
+          contents[contentId]: Diagram
+          ^ [B]
+        edges: DiagramConnection[]
+        sections[contentId]
+        jumps?: CanvasJump[]
+      canvas: MappingCanvasState
+        selection.items: whole instances / regions
+        diagramViews: per-instance subtree folds
+        display: DisplayState
+        ^ [C]
+          rootIds + nodes: floating ownership tree
+        controls: activeBoxId / focus / thread / surfaces
+    synchronous publication after controller change
+      document      -> document consumers / search / explorer
+      presentation  -> display + diagramViews
+      selection     -> membership + order
+      controls      -> action surfaces + focus
+      geometry      -> cell / endpointBounds / version
+      status        -> dirty flags / canUndo / canRedo
+  DISPLAY READ MODEL: controller.nodes()
+    canvasDisplayNodes(document, canvas, version, cell, bounds)
+      grid:*      cells  <- scene boxes + diagram content
+      floating:*  pixels <- canvas.display.nodes
+      arrows      pixels <- document.edges via drawEdge
+      + readonly cloned registry; geometry has one owner
+  RENDERED WORKSPACE
+    DraggableDiagramCanvas: camera + focus
+      MappingPocSelectionCanvas(session)
+        edit / transfer / undo / jump callbacks
+    FloatingPane -> MappingDiagramExplorer
+    DiagramSearchPanel <-> DiagramSearchService
+    ChangeSessionPreview: proposal / accepted canvas
+    DiagramEditComposer <-> DiagramEditCoordinator
+  SourcePaneViewState
+    live source scroll + cameras; sampled on capture
+    captureDisplay / captureCamera -> persisted view
+  useAgentCanvasBridge -> handleAgentCommand
+  ^ [D] @L79 #D79
+  DURABILITY + PUBLICATION
+    session.onCommit -> workspace.onPersist(ids)
+      WorkspacePersistence -> RecordStorage
+      ^ [E] @L83 #E83
+    save project diagram: captured scene + edges + history
+      acknowledgement updates captured saved baseline
+    capture(): MappingWorkspaceSnapshot, schemaVersion: 3
+      projectId, activeDocumentId, documents[], transfers[]
+    transfer / linked undo: storage.save -> installWorkspace
+Sources: MappingPage.tsx; canvasWorkspace.ts; canvasSession.ts;
++ mappingGrid.ts; mappingWorkspace.ts; canvasDisplayNode.ts
+
+edge "MappingPocPage(services)" -> "MappingServicesContext.Provider"
+edge "diagrams: DiagramService" -> "[G]"
+edge "canvasHistory: CanvasHistoryService" -> #E8
+edge "workspaceStorage?" -> "WorkspaceStorage"
+edge "MappingServicesContext.Provider" -> "MappingWorkspacePage"
+edge "MappingDocumentController" -> #D33
+edge "scene: LineGridScene" -> "[A]"
+edge "contents[contentId]: Diagram" -> "[B]"
+edge "display: DisplayState" -> "[C]"
+edge "useAgentCanvasBridge -> handleAgentCommand" -> #D79
+edge "WorkspacePersistence -> RecordStorage" -> #E83

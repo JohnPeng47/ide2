@@ -1,0 +1,23 @@
+## Task
+Generate the central ascii tree diagram for the layout
+
+## Layout
+This section will contain details on the high-level layout of the data
+For now, we will use a single layout to display the data
+This layout uses a single central ascii tree diagram and then some diagrams on the side
+
+## General
+I want you to use CanvasView to create a view that explains this current feature. The following are some guidelines:
+- relations
+  - edges
+    - obvious -> just the edge
+    - less obvious -> edge + edge text
+      > "inherits", "imports", "MCP API call", etc..
+    - less less obvious
+      > creating an "anchor" node / tree at the source or target or both
+- tree-diagrams
+  - tree are best to depict nested, hierarchals arrangements of the data
+    > their strength lies in their ability to segment non-adjacent levels of the data-space
+  - while uniformity / flat levels are good, I suspect this is not always the case and not always the best use of trees
+- highlighting
+  - can be used to mark nodes as important

@@ -1,0 +1,200 @@
+{
+ "boxes": [
+  {
+   "id": "1:1-1:27",
+   "text": "[A] GridBox / LineGridScene",
+   "rect": {
+    "line1": 1,
+    "col1": 1,
+    "line2": 1,
+    "col2": 27
+   }
+  },
+  {
+   "id": "3:1-3:13",
+   "text": "LineGridScene",
+   "rect": {
+    "line1": 3,
+    "col1": 1,
+    "line2": 3,
+    "col2": 13
+   }
+  },
+  {
+   "id": "4:7-4:25",
+   "text": "contents[contentId]",
+   "rect": {
+    "line1": 4,
+    "col1": 7,
+    "line2": 4,
+    "col2": 25
+   },
+   "parent": "3:1-3:13"
+  },
+  {
+   "id": "4:46-4:52",
+   "text": "Diagram",
+   "rect": {
+    "line1": 4,
+    "col1": 46,
+    "line2": 4,
+    "col2": 52
+   }
+  },
+  {
+   "id": "5:7-5:19",
+   "text": "root: GridBox",
+   "rect": {
+    "line1": 5,
+    "col1": 7,
+    "line2": 5,
+    "col2": 19
+   },
+   "parent": "3:1-3:13"
+  },
+  {
+   "id": "6:12-6:49",
+   "text": "id, position{column,row}, minimumSize?",
+   "rect": {
+    "line1": 6,
+    "col1": 12,
+    "line2": 6,
+    "col2": 49
+   },
+   "parent": "5:7-5:19"
+  },
+  {
+   "id": "7:12-7:41",
+   "text": "collapsed, collapsedContentId?",
+   "rect": {
+    "line1": 7,
+    "col1": 12,
+    "line2": 7,
+    "col2": 41
+   },
+   "parent": "5:7-5:19"
+  },
+  {
+   "id": "8:12-8:15",
+   "text": "kind",
+   "rect": {
+    "line1": 8,
+    "col1": 12,
+    "line2": 8,
+    "col2": 15
+   },
+   "parent": "5:7-5:19"
+  },
+  {
+   "id": "9:17-9:36",
+   "text": "diagram -> contentId",
+   "rect": {
+    "line1": 9,
+    "col1": 17,
+    "line2": 9,
+    "col2": 36
+   },
+   "parent": "8:12-8:15"
+  },
+  {
+   "id": "10:17-10:48",
+   "text": "container -> children: GridBox[]",
+   "rect": {
+    "line1": 10,
+    "col1": 17,
+    "line2": 10,
+    "col2": 48
+   },
+   "parent": "8:12-8:15"
+  },
+  {
+   "id": "11:22-11:44",
+   "text": "layout{push-right, gap}",
+   "rect": {
+    "line1": 11,
+    "col1": 22,
+    "line2": 11,
+    "col2": 44
+   },
+   "parent": "10:17-10:48"
+  },
+  {
+   "id": "14:1-16:48",
+   "text": "layoutScene(scene, changedId)\nanchor changed subtree at each ancestor\nsettle siblings in spatial order -> push right",
+   "rect": {
+    "line1": 14,
+    "col1": 1,
+    "line2": 16,
+    "col2": 48
+   }
+  },
+  {
+   "id": "18:1-20:50",
+   "text": "resolveScene -> absolute bounds + visible children\ncollapsed -> summary content; ignore minimumSize\ncells: zero-based; right/bottom exclusive",
+   "rect": {
+    "line1": 18,
+    "col1": 1,
+    "line2": 20,
+    "col2": 50
+   }
+  },
+  {
+   "id": "21:1-21:21",
+   "text": "composeScene -> ASCII",
+   "rect": {
+    "line1": 21,
+    "col1": 1,
+    "line2": 21,
+    "col2": 21
+   }
+  },
+  {
+   "id": "21:27-21:53",
+   "text": "hitTest -> box + local cell",
+   "rect": {
+    "line1": 21,
+    "col1": 27,
+    "line2": 21,
+    "col2": 53
+   }
+  },
+  {
+   "id": "22:1-22:48",
+   "text": "projectMapping -> 1-based mapping to scene cells",
+   "rect": {
+    "line1": 22,
+    "col1": 1,
+    "line2": 22,
+    "col2": 48
+   }
+  },
+  {
+   "id": "23:1-23:19",
+   "text": "Source: lineGrid.ts",
+   "rect": {
+    "line1": 23,
+    "col1": 1,
+    "line2": 23,
+    "col2": 19
+   }
+  }
+ ],
+ "edges": [
+  {
+   "from": "4:7-4:25",
+   "to": "4:46-4:52",
+   "direction": "->"
+  },
+  {
+   "from": "3:1-3:13",
+   "to": "14:1-16:48",
+   "direction": "->",
+   "label": "updateGridBox (immutable)"
+  },
+  {
+   "from": "14:1-16:48",
+   "to": "18:1-20:50",
+   "direction": "--"
+  }
+ ]
+}

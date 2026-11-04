@@ -2,8 +2,9 @@ import { z } from 'zod';
 import { flattenGrid, measureContent, type GridBounds, type GridPoint, type ResolvedGridBox } from './lineGrid';
 
 const coordinate = z.number().int().min(0).max(20000);
+export const layoutDescriptionSchema = z.string().trim().max(2000);
 export const layoutPointSchema = z.object({ column: coordinate, row: coordinate }).strict();
-const slotSchema = z.object({ id: z.string().regex(/^slot-[1-9][0-9]*$/), position: layoutPointSchema,
+const slotSchema = z.object({ id: z.string().regex(/^slot-[1-9][0-9]*$/), title: z.string().trim().min(1).max(160).optional(), description: layoutDescriptionSchema.optional(), position: layoutPointSchema,
   size: z.object({ columns: z.number().int().min(1).max(20000), rows: z.number().int().min(1).max(20000) }).strict() }).strict();
 export const layoutGeometrySchema = z.object({ format: z.literal('layout-template-v1'),
   placement: z.object({ version: z.union([z.literal(1), z.literal(2)]), gap: z.literal(3) }).strict(),

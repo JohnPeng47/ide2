@@ -34,7 +34,15 @@ try {
   page.on('console', message => { if (message.type() === 'error' && !message.location().url.endsWith('/favicon.ico')) errors.push(message.text()); });
   const nav = page.getByRole('navigation', { name: 'Evals' });
   const tree = nav.getByRole('tree', { name: 'Evals outputs' });
-  page.on('dialog', dialog => void dialog.accept());
+  let expectedTemplateDialog;
+  page.on('dialog', dialog => {
+    if (expectedTemplateDialog === 'leave-mapping' && dialog.type() === 'beforeunload'
+      || expectedTemplateDialog === 'delete-template' && dialog.type() === 'confirm'
+        && dialog.message() === 'Delete layout template “Saved arrangement”? Pinned runs keep their copy.') {
+      void dialog.accept(); return;
+    }
+    errors.push(`Unexpected browser dialog: ${dialog.message()}`); void dialog.dismiss();
+  });
 
   await page.goto(`${url}/evals`);
   await expect(page.getByRole('heading', { name: 'Generate, then compare' })).toBeVisible();
@@ -43,6 +51,16 @@ try {
   // Prompt editor: template validation, variable insertion, preview, create.
   await page.getByRole('button', { name: 'Prompts ▾' }).click();
   await expect(page.getByRole('menu', { name: 'Prompts' }).getByRole('menuitem', { name: /Default alternative/ })).toBeVisible();
+  await page.getByRole('menuitem', { name: /Template alternative/ }).click();
+  await expect(page.getByLabel('Alternative instructions')).toHaveValue(/Read layout-template\.json\./);
+  await expect(page.getByLabel('Alternative instructions')).toHaveValue(/template-slots-v1/);
+  await expect(page.getByRole('button', { name: 'Insert {{task}}', exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Show full prompt preview' }).click();
+  await expect(page.getByLabel('Full prompt preview')).toContainText('Read layout-template.json.');
+  await shot(page, '01-template-prompt');
+  await page.reload();
+  await expect(page.getByLabel('Alternative instructions')).toHaveValue(/Read layout-template\.json\./);
+  await page.getByRole('button', { name: 'Prompts ▾' }).click();
   await page.getByRole('menuitem', { name: '+ New roll-up prompt' }).click();
   await page.getByLabel('Prompt name').fill('Terse roll-up');
   const r2 = page.getByLabel('r2 · Roll up instructions');
@@ -56,8 +74,8 @@ try {
   await page.getByRole('tab', { name: /g2/ }).click();
   await page.getByLabel('g2 · Attach instructions').fill('Attach tersely. Pass {{pass}} of {{passes}}.');
   await page.getByRole('button', { name: 'Show full prompt preview' }).click();
-  await expect(page.getByLabel('Full prompt preview')).toContainText('Pass 1 of 2');
-  await expect(page.getByLabel('Full prompt preview')).toContainText('<output format>');
+  await expect(page.getByLabel('Full prompt preview')).toContainText('Pass 1 of 1');
+  await expect(page.getByLabel('Full prompt preview')).toHaveText('Attach tersely. Pass 1 of 1.');
   await page.getByRole('button', { name: 'Create prompt' }).click();
   await expect(page.getByLabel('Prompt version')).toBeVisible();
 
@@ -110,17 +128,18 @@ try {
   await drawer.getByRole('button', { name: '⇅ Swap child and parent' }).click();
   const slots = drawer.getByRole('region', { name: 'Prompt context' });
   await expect(slots.locator('.prompt-context-slot').first()).toContainText('First view');
-  await drawer.getByLabel('Passes').fill('1');
+  await drawer.getByLabel('Samples').fill('1');
   await expect(drawer.getByText('= 4 canvases')).toBeVisible();
   await shot(page, '04-roll-up-tree');
   await drawer.getByRole('button', { name: 'Start run' }).click();
-  // Runs are tree nodes: prompt · pass groups hold the r2 and g2 outputs.
+  // Runs are tree nodes: prompt · sample groups hold the r2 and g2 outputs.
   const runRow = (name) => tree.locator('.evals-tree-row', { hasText: name });
   await expect(runRow('Run #1 ·')).toContainText('4/4', { timeout: 30000 });
+  await tree.getByRole('button', { name: 'Expand Run #1 · Default roll-up v1, Terse roll-up v2' }).click();
   const stageLeaf = (group, stage) => tree.getByRole('treeitem').filter({ hasText: group }).last().getByRole('button', { name: stage, exact: true });
-  await stageLeaf('Terse roll-up v2 · pass 1', 'g2').click();
+  await stageLeaf('Terse roll-up v2 · sample 1', 'g2').click();
   // The output includes collapsible generation details and native canvas tools.
-  const output = page.getByRole('region', { name: 'Canvas Terse roll-up v2 · pass 1 · g2' });
+  const output = page.getByRole('region', { name: 'Canvas Terse roll-up v2 · sample 1 · g2' });
   const node = output.locator('[data-native-node]').first();
   await expect(node).toBeVisible({ timeout: 15000 });
   await expect(output.getByRole('button', { name: 'Fit' })).toBeVisible();
@@ -134,7 +153,7 @@ try {
   let last = NaN, stable = 0;
   await expect.poll(async () => { const x = Math.round((await node.boundingBox()).x); stable = x === last ? stable + 1 : 0; last = x; return stable; }).toBeGreaterThanOrEqual(2);
   const panned = await node.boundingBox();
-  await tree.getByRole('checkbox', { name: 'Select Terse roll-up v2 · pass 1 · r2 for comparison' }).check();
+  await tree.getByRole('checkbox', { name: 'Select Terse roll-up v2 · sample 1 · r2 for comparison' }).check();
   await page.waitForTimeout(500);
   const after = await node.boundingBox();
   assert.ok(Math.abs(after.x - panned.x) < 2, `Re-rendering the page must not reset the camera (${start.x} → ${panned.x} → ${after.x})`);
@@ -148,8 +167,7 @@ try {
   await expect(alt.getByText('Tick an AgentContext in the tree.')).toBeVisible();
   await alt.getByLabel('Filter AgentContexts').fill('roll-up');
   await alt.getByRole('tree', { name: 'AgentContexts' }).getByRole('checkbox', { name: /^Roll-up: First view/ }).check();
-  await alt.getByLabel('Task', { exact: true }).fill('Group by layer');
-  await alt.getByLabel('Passes').fill('2');
+  await alt.getByLabel('Samples').fill('2');
   await alt.getByRole('button', { name: 'Start run' }).click();
   await expect(runRow('Run #2 ·')).toContainText('2/2', { timeout: 30000 });
 
@@ -160,22 +178,22 @@ try {
   const contexts = next.getByRole('tree', { name: 'AgentContexts' });
   await expect(contexts.getByRole('button', { name: 'Collapse Roll-up: First view' })).toBeVisible();
   await contexts.getByRole('button', { name: /Expand Run #2/ }).click();
-  await contexts.getByRole('checkbox', { name: /^Default alternative v1 · pass 1/ }).check();
+  await contexts.getByRole('checkbox', { name: /^Default alternative v1 · sample 1/ }).check();
   await expect(contexts.getByRole('checkbox', { name: /^Roll-up: First view/ })).toBeChecked();
   await expect(next.getByRole('region', { name: 'Prompt context' })).toContainText('previous-1.json');
   await shot(page, '06-alternatives-tree');
   await page.keyboard.press('Escape');
 
-  // Sidebar tree: workflow → AgentContext → run → outputs, collapsible and resizable.
+  // Sidebar tree: date → workflow → AgentContext → run → outputs, collapsible and resizable.
+  await expect(tree.locator(':scope > li > .evals-tree-row').first()).toContainText(/\d{4}-\d{2}-\d{2}/);
   const rollUps = tree.getByRole('treeitem', { name: /Roll-ups/ }).first();
   await expect(tree.getByRole('button', { name: /^Run #2 · Default alternative v1/ })).toBeVisible();
-  await tree.getByRole('button', { name: 'Expand Run #1 · Default roll-up v1, Terse roll-up v2' }).click();
-  await expect(stageLeaf('Default roll-up v1 · pass 1', 'r2')).toBeVisible();
+  await expect(stageLeaf('Default roll-up v1 · sample 1', 'r2')).toBeVisible();
   await tree.getByRole('button', { name: 'Collapse Roll-ups' }).click();
   await expect(tree.getByRole('button', { name: /^Run #1 ·/ })).toBeHidden();
   await tree.getByRole('button', { name: 'Expand Roll-ups' }).click();
-  await stageLeaf('Default roll-up v1 · pass 1', 'r2').click();
-  await expect(page.getByRole('region', { name: 'Canvas Default roll-up v1 · pass 1 · r2' })).toBeVisible();
+  await stageLeaf('Default roll-up v1 · sample 1', 'r2').click();
+  await expect(page.getByRole('region', { name: 'Canvas Default roll-up v1 · sample 1 · r2' })).toBeVisible();
   const divider = page.getByRole('separator', { name: 'Resize sidebar' });
   const before = (await nav.boundingBox()).width;
   await divider.focus(); await page.keyboard.press('ArrowRight'); await page.keyboard.press('ArrowRight');
@@ -195,11 +213,11 @@ try {
   await shot(page, '06b-sidebar-tree');
 
   // Tick outputs in the tree to compare them side by side, with provenance and prompt diff.
-  await tree.getByRole('checkbox', { name: 'Select Default roll-up v1 · pass 1 · g2 for comparison' }).check();
-  await tree.getByRole('checkbox', { name: 'Select Terse roll-up v2 · pass 1 · g2 for comparison' }).check();
+  await tree.getByRole('checkbox', { name: 'Select Default roll-up v1 · sample 1 · g2 for comparison' }).check();
+  await tree.getByRole('checkbox', { name: 'Select Terse roll-up v2 · sample 1 · g2 for comparison' }).check();
   await nav.getByRole('region', { name: 'Compare selected outputs' }).getByRole('button', { name: 'Side by side' }).click();
-  await expect(page.getByRole('region', { name: 'Comparison pane A' }).locator('.compare-pane-heading strong')).toHaveText('Default roll-up v1 · pass 1 · g2');
-  await expect(page.getByRole('region', { name: 'Comparison pane B' }).locator('.compare-pane-heading strong')).toHaveText('Terse roll-up v2 · pass 1 · g2');
+  await expect(page.getByRole('region', { name: 'Comparison pane A' }).locator('.compare-pane-heading strong')).toHaveText('Default roll-up v1 · sample 1 · g2');
+  await expect(page.getByRole('region', { name: 'Comparison pane B' }).locator('.compare-pane-heading strong')).toHaveText('Terse roll-up v2 · sample 1 · g2');
   await shot(page, '07-compare');
   await page.getByRole('button', { name: 'Prompt diff A ↔ B' }).click();
   await expect(page.getByRole('dialog', { name: 'Prompt diff' }).locator('.is-added').first()).toBeVisible();
@@ -208,35 +226,43 @@ try {
 
   // LLM comparison of two alternatives.
   await tree.getByRole('button', { name: 'Expand Run #2 · Default alternative v1' }).click();
-  for (const pass of [1, 2]) await tree.getByRole('checkbox', { name: `Select Default alternative v1 · pass ${pass} for comparison` }).check();
+  for (const pass of [1, 2]) await tree.getByRole('checkbox', { name: `Select Default alternative v1 · sample ${pass} for comparison` }).check();
   await nav.getByRole('region', { name: 'Compare selected outputs' }).getByRole('button', { name: 'LLM comparison' }).click();
-  // Comparisons are filed under the AgentContext of the canvases they compare.
-  const llm = tree.getByRole('button', { name: 'Roll-up: First view · LLM comparison', exact: true });
-  // The row is a placeholder until the comparison finishes generating.
-  await expect(async () => {
-    await llm.click();
-    await expect(page.getByRole('region', { name: 'Comparison explanation' })).toBeVisible({ timeout: 1000 });
-  }).toPass({ timeout: 30000 });
-  await expect(tree.getByRole('treeitem', { name: /Alternatives/ }).first().getByRole('button', { name: 'Roll-up: First view · LLM comparison', exact: true })).toBeVisible();
+  // One Judgements entry opens a pane directly under the evaluated run.
+  const judgedRun = tree.getByRole('treeitem').filter({ has: page.getByRole('button', { name: /^Run #2 ·/ }) }).last();
+  const llm = judgedRun.getByRole('button', { name: 'Judgements', exact: true });
+  await llm.click();
+  await expect(page.getByRole('region', { name: 'Comparison explanation' })).toBeVisible({ timeout: 30000 });
+  await expect(judgedRun.getByRole('button', { name: 'Collapse Judgements', exact: true })).toBeVisible();
   await shot(page, '09-llm-compare');
   // Delete icons: an output, then a comparison.
-  await tree.getByRole('button', { name: 'Delete output Default alternative v1 · pass 2' }).click();
-  await expect(tree.getByRole('button', { name: 'Default alternative v1 · pass 2', exact: true })).toHaveCount(0);
-  await tree.getByRole('button', { name: 'Delete comparison Roll-up: First view · LLM comparison' }).click();
+  const deleteOutput = tree.getByRole('button', { name: 'Delete output Default alternative v1 · sample 2' });
+  await deleteOutput.click();
+  const confirmation = page.getByRole('dialog', { name: 'Delete output' });
+  await expect(confirmation.getByRole('button', { name: 'Cancel', exact: true })).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(confirmation).toHaveCount(0); await expect(deleteOutput).toBeFocused();
+  await expect(tree.getByRole('button', { name: 'Default alternative v1 · sample 2', exact: true })).toBeVisible();
+  await deleteOutput.click();
+  await shot(page, '09a-delete-modal');
+  await confirmation.getByRole('button', { name: 'Delete', exact: true }).click();
+  await expect(tree.getByRole('button', { name: 'Default alternative v1 · sample 2', exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Delete judgement', exact: true }).click();
+  await page.getByRole('dialog', { name: 'Confirm deletion' }).getByRole('button', { name: 'Delete', exact: true }).click();
   await expect(llm).toHaveCount(0);
-  await expect(page.getByRole('heading', { name: 'Generate, then compare' })).toBeVisible();
+  await expect(page.getByText('No judgements are attached.', { exact: true })).toBeVisible();
 
   // Rerun fills the launcher from the run and files the new run under it.
   await tree.getByRole('button', { name: /^Run #2 ·/ }).click({ button: 'right' });
   await page.getByRole('menuitem', { name: 'Rerun…' }).click();
   const rerun = page.getByRole('dialog', { name: 'Rerun #2' });
-  await expect(rerun.getByLabel('Task', { exact: true })).toHaveValue('Group by layer');
-  await expect(rerun.getByLabel('Passes')).toHaveValue('2');
+  await expect(rerun.getByLabel('Task', { exact: true })).toHaveCount(0);
+  await expect(rerun.getByLabel('Samples')).toHaveValue('2');
   await expect(rerun.getByRole('checkbox', { name: 'Default alternative', exact: true })).toBeChecked();
   await expect(rerun.getByRole('tree', { name: 'AgentContexts' }).getByRole('checkbox', { name: /^Roll-up: First view/ })).toBeChecked();
   await expect(rerun.getByRole('radio', { name: 'Roll-up' })).toBeDisabled();
   await shot(page, '09b-rerun');
-  await rerun.getByLabel('Passes').fill('1');
+  await rerun.getByLabel('Samples').fill('1');
   await rerun.getByRole('button', { name: 'Start rerun' }).click();
   const original = tree.getByRole('treeitem').filter({ has: page.getByRole('button', { name: /^Run #2 ·/ }) }).last();
   await expect(original.getByRole('button', { name: /^Rerun #3 · Default alternative v1/ })).toBeVisible();
@@ -253,8 +279,8 @@ try {
   await expect(tree.getByRole('button', { name: 'Rerun #3 · Layered retry', exact: true })).toBeVisible();
 
   // Cross-workflow prompt diffs include B's alternative stage and survive reload.
-  await tree.getByRole('checkbox', { name: 'Select Default roll-up v1 · pass 1 · r2 for comparison' }).check();
-  await tree.getByRole('checkbox', { name: 'Select Default alternative v1 · pass 1 for comparison' }).first().check();
+  await tree.getByRole('checkbox', { name: 'Select Default roll-up v1 · sample 1 · r2 for comparison' }).check();
+  await tree.getByRole('checkbox', { name: 'Select Default alternative v1 · sample 1 for comparison' }).first().check();
   await nav.getByRole('region', { name: 'Compare selected outputs' }).getByRole('button', { name: 'Side by side' }).click();
   await page.getByRole('button', { name: 'Prompt diff A ↔ B' }).click();
   for (const stage of ['r2', 'g2', 'alternative']) await expect(page.getByRole('region', { name: `Stage ${stage} diff`, exact: true })).toBeVisible();
@@ -264,17 +290,57 @@ try {
   await page.getByRole('button', { name: 'Prompt diff A ↔ B' }).click();
   await expect(page.getByRole('region', { name: 'Stage alternative diff', exact: true })).toContainText('Earlier alternatives');
   await page.keyboard.press('Escape');
-  await expect(tree.getByRole('button', { name: 'Cross-context and other comparisons', exact: true })).toBeVisible();
+  await expect(tree.getByRole('button', { name: 'Judgements', exact: true }).first()).toBeVisible();
+
+  // References: select part of a diagram with the Mapping selection tools and save the copied ASCII.
+  await nav.getByRole('tab', { name: /References/ }).click();
+  await nav.getByRole('button', { name: '+ New' }).click();
+  const picker = page.getByLabel('Canvas', { exact: true });
+  await picker.selectOption({ index: 1 });
+  const grid = page.locator('.reference-canvas [data-grid-box]').first();
+  await expect(grid).toBeVisible({ timeout: 15000 });
+  const box = await grid.boundingBox(), columns = Number(await grid.getAttribute('data-grid-columns')), rows = Number(await grid.getAttribute('data-grid-rows'));
+  const cell = (column, row) => ({ x: box.x + (column + .5) * box.width / columns, y: box.y + (row + .5) * box.height / rows });
+  const from = cell(0, 0), to = cell(Math.min(columns - 1, 12), Math.min(rows - 1, 1));
+  await page.keyboard.down('Control');
+  await page.mouse.move(from.x, from.y); await page.mouse.down(); await page.mouse.move(to.x, to.y, { steps: 5 }); await page.mouse.up();
+  await page.keyboard.up('Control');
+  await expect(page.getByLabel('Excerpt preview')).toBeVisible();
+  const excerpt = await page.getByLabel('Excerpt preview').textContent();
+  assert.ok(excerpt.trim().length > 0 && excerpt.split('\n').length <= 2, `excerpt: ${excerpt}`);
+  await shot(page, '09c-new-reference');
+  await page.getByRole('complementary', { name: 'Reference draft' }).getByLabel('Reference name').fill('Overview top');
+  await page.getByRole('button', { name: 'Save reference' }).click();
+  await expect(page.getByText('{{ref:overview-top}}').first()).toBeVisible();
+  assert.equal(await page.getByLabel('Reference text').textContent(), excerpt);
+  await expect(nav.getByRole('button', { name: /^Overview top/ })).toBeVisible();
+  // Prompts cite it from the References picker; the preview shows the frozen text in place.
+  await page.getByRole('button', { name: 'Prompts ▾' }).click();
+  await page.getByRole('menuitem', { name: '+ New alternatives prompt' }).click();
+  const instructions = page.getByLabel('Alternative instructions');
+  await instructions.click(); await page.keyboard.press('Control+End'); await page.keyboard.type('\nMatch this shape:\n');
+  await page.getByRole('button', { name: 'Insert reference Overview top' }).click();
+  await expect(instructions).toHaveValue(/Match this shape:\n\{\{ref:overview-top\}\}$/);
+  await page.getByRole('button', { name: 'Show full prompt preview' }).click();
+  await expect(page.getByLabel('Full prompt preview')).toContainText('Match this shape:\n```text\n' + excerpt.trimEnd() + '\n```');
+  await instructions.press('End'); await page.keyboard.type(' {{ref:missing}}');
+  await expect(page.locator('.prompt-issues')).toContainText('Unknown reference {{ref:missing}}');
+  for (let i = 0; i < 16; i++) await page.keyboard.press('Backspace');
+  await shot(page, '09d-prompt-reference');
+  await page.getByRole('button', { name: 'Create prompt' }).click();
+  await nav.getByRole('button', { name: /^Overview top/ }).click();
+  await expect(page.locator('.reference-facts')).toContainText('New alternatives prompt');
+  await nav.getByRole('tab', { name: 'Experiments' }).click();
 
   // Manual comparisons can pick generated canvases; Mapping links to Evals.
   await page.getByRole('button', { name: 'New comparison', exact: true }).click();
-  await expect(page.getByRole('dialog', { name: 'New comparison' }).getByLabel('View A')).toContainText('Terse roll-up v2 · pass 1 · g2');
+  await expect(page.getByRole('dialog', { name: 'New comparison' }).getByLabel('View A')).toContainText('Terse roll-up v2 · sample 1 · g2');
   await page.keyboard.press('Escape');
   await page.goto(url);
   await page.getByRole('tab', { name: 'Canvas', exact: true }).click();
   await expect(page.getByRole('link', { name: /Generate and compare in Evals/ })).toBeVisible({ timeout: 15000 });
   await shot(page, '10-mapping-canvas-tab');
-  await page.getByRole('list', { name: 'Recent generated canvases' }).getByRole('button', { name: /Default alternative v1 · pass 1/ }).first().click();
+  await page.getByRole('list', { name: 'Recent generated canvases' }).getByRole('button', { name: /Default alternative v1 · sample 1/ }).first().click();
   await expect(page.locator('[data-native-node]').filter({ hasText: 'Overview' }).first()).toBeVisible();
   // Capture the currently rendered Mapping canvas, without sending its text or edges.
   await page.getByRole('button', { name: 'Menu', exact: true }).click();
@@ -284,13 +350,24 @@ try {
   const slotCount = await saveLayout.locator('[data-layout-slot]').count();
   assert.equal(slotCount, 2);
   await saveLayout.getByLabel('Template name').fill('Reusable arrangement');
+  await saveLayout.getByLabel('Slot 1 description').fill('System overview\nShow the main components.');
+  await expect(saveLayout.getByLabel('Slot 2 description')).toHaveValue('');
   await shot(page, '11-template-save');
   await saveLayout.getByRole('button', { name: 'Save template', exact: true }).click();
   await expect(saveLayout).toHaveCount(0);
+  expectedTemplateDialog = 'leave-mapping';
   await page.goto(`${url}/evals`);
+  expectedTemplateDialog = undefined;
   await page.getByRole('button', { name: 'Layout templates', exact: true }).click();
   const manager = page.getByRole('dialog', { name: 'Layout templates' });
   await expect(manager.getByRole('heading', { name: 'Reusable arrangement' })).toBeVisible();
+  await expect(manager.locator('dd')).toHaveText(['System overview\nShow the main components.']);
+  await manager.getByRole('button', { name: 'Edit descriptions', exact: true }).click();
+  await expect(manager.getByLabel('Slot 1 description')).toHaveValue('System overview\nShow the main components.');
+  await manager.getByLabel('Slot 1 description').fill('');
+  await manager.getByLabel('Slot 2 description').fill('Request flow\nTrace a request through the system.');
+  await manager.getByRole('button', { name: 'Save descriptions', exact: true }).click();
+  await expect(manager.locator('dd')).toHaveText(['Request flow\nTrace a request through the system.']);
   await manager.getByRole('button', { name: 'Rename', exact: true }).click();
   await manager.getByLabel('New template name').fill('Saved arrangement');
   await manager.getByRole('button', { name: 'Save name' }).click();
@@ -300,12 +377,12 @@ try {
   await page.getByRole('button', { name: 'New run', exact: true }).click();
   const templateRun = page.getByRole('dialog', { name: 'New run' });
   await templateRun.getByText('Alternatives', { exact: true }).click();
-  await templateRun.getByRole('checkbox', { name: 'Default alternative', exact: true }).check();
+  await templateRun.getByRole('checkbox', { name: 'Template alternative', exact: true }).check();
   await templateRun.getByRole('tree', { name: 'AgentContexts' }).getByRole('checkbox', { name: /^Roll-up: First view/ }).check();
-  await templateRun.getByLabel('Task', { exact: true }).fill('Fresh diagrams in the saved arrangement');
-  await templateRun.getByLabel('Passes').fill('2');
+  await templateRun.getByLabel('Samples').fill('2');
   await templateRun.getByRole('combobox', { name: 'Layout template', exact: true }).selectOption({ label: 'Saved arrangement' });
   await expect(templateRun.locator('[data-layout-slot]')).toHaveCount(slotCount);
+  await expect(templateRun.locator('dd')).toHaveText(['Request flow\nTrace a request through the system.']);
   await shot(page, '12-template-launch');
   await templateRun.getByRole('button', { name: 'Start run', exact: true }).click();
   await expect(runRow('Run #4 ·')).toContainText('2/2', { timeout: 30000 });
@@ -318,8 +395,10 @@ try {
   await page.getByText(/^Layout template: Saved arrangement/).click();
   // Deleting the library template must not invalidate the pinned rerun.
   await page.getByRole('button', { name: 'Layout templates', exact: true }).click();
+  expectedTemplateDialog = 'delete-template';
   await manager.getByRole('button', { name: 'Delete template', exact: true }).click();
   await expect(manager.getByText('No layout templates yet.')).toBeVisible();
+  expectedTemplateDialog = undefined;
   await page.keyboard.press('Escape');
   await page.reload();
   await tree.getByRole('button', { name: /^Run #4 ·/ }).click({ button: 'right' });
@@ -327,7 +406,8 @@ try {
   const pinnedRerun = page.getByRole('dialog', { name: 'Rerun #4' });
   await expect(pinnedRerun.getByRole('combobox', { name: 'Layout template', exact: true }).locator('option:checked')).toContainText('Saved arrangement');
   await expect(pinnedRerun.locator('[data-layout-slot]')).toHaveCount(slotCount);
-  await pinnedRerun.getByLabel('Passes').fill('1');
+  await expect(pinnedRerun.locator('dd')).toHaveText(['Request flow\nTrace a request through the system.']);
+  await pinnedRerun.getByLabel('Samples').fill('1');
   await pinnedRerun.getByRole('button', { name: 'Start rerun' }).click();
   await expect(runRow('Rerun #5 ·')).toContainText('1/1', { timeout: 30000 });
   await shot(page, '15-template-rerun');

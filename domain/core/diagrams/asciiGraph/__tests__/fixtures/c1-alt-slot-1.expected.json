@@ -1,0 +1,626 @@
+{
+ "boxes": [
+  {
+   "id": "1:1-1:11",
+   "text": "MappingPage",
+   "rect": {
+    "line1": 1,
+    "col1": 1,
+    "line2": 1,
+    "col2": 11
+   }
+  },
+  {
+   "id": "1:37-1:67",
+   "text": "baseline 03f2168, before tldraw",
+   "rect": {
+    "line1": 1,
+    "col1": 37,
+    "line2": 1,
+    "col2": 67
+   }
+  },
+  {
+   "id": "3:1-3:24",
+   "text": "MappingPocPage(services)",
+   "rect": {
+    "line1": 3,
+    "col1": 1,
+    "line2": 3,
+    "col2": 24
+   }
+  },
+  {
+   "id": "6:1-6:31",
+   "text": "MappingServicesContext.Provider",
+   "rect": {
+    "line1": 6,
+    "col1": 1,
+    "line2": 6,
+    "col2": 31
+   }
+  },
+  {
+   "id": "7:7-7:14",
+   "text": "diagrams",
+   "rect": {
+    "line1": 7,
+    "col1": 7,
+    "line2": 7,
+    "col2": 14
+   },
+   "parent": "6:1-6:31"
+  },
+  {
+   "id": "8:7-8:19",
+   "text": "canvasHistory",
+   "rect": {
+    "line1": 8,
+    "col1": 7,
+    "line2": 8,
+    "col2": 19
+   },
+   "parent": "6:1-6:31"
+  },
+  {
+   "id": "9:7-9:23",
+   "text": "workspaceStorage?",
+   "rect": {
+    "line1": 9,
+    "col1": 7,
+    "line2": 9,
+    "col2": 23
+   },
+   "parent": "6:1-6:31"
+  },
+  {
+   "id": "7:41-7:54",
+   "text": "DiagramService",
+   "rect": {
+    "line1": 7,
+    "col1": 41,
+    "line2": 7,
+    "col2": 54
+   }
+  },
+  {
+   "id": "8:41-8:60",
+   "text": "CanvasHistoryService",
+   "rect": {
+    "line1": 8,
+    "col1": 41,
+    "line2": 8,
+    "col2": 60
+   }
+  },
+  {
+   "id": "9:41-9:68",
+   "text": "injected or WorkspaceStorage",
+   "rect": {
+    "line1": 9,
+    "col1": 41,
+    "line2": 9,
+    "col2": 68
+   }
+  },
+  {
+   "id": "12:1-12:20",
+   "text": "MappingWorkspacePage",
+   "rect": {
+    "line1": 12,
+    "col1": 1,
+    "line2": 12,
+    "col2": 20
+   }
+  },
+  {
+   "id": "13:7-13:50",
+   "text": "activeId / mountedDocuments / workspaceEpoch",
+   "rect": {
+    "line1": 13,
+    "col1": 7,
+    "line2": 13,
+    "col2": 50
+   },
+   "parent": "12:1-12:20"
+  },
+  {
+   "id": "14:7-14:41",
+   "text": "catalog representations + revisions",
+   "rect": {
+    "line1": 14,
+    "col1": 7,
+    "line2": 14,
+    "col2": 41
+   },
+   "parent": "12:1-12:20"
+  },
+  {
+   "id": "15:7-15:49",
+   "text": "pendingTransfer / transfers / workspaceBusy",
+   "rect": {
+    "line1": 15,
+    "col1": 7,
+    "line2": 15,
+    "col2": 49
+   },
+   "parent": "12:1-12:20"
+  },
+  {
+   "id": "16:7-16:53",
+   "text": "search / change preview / diagram edit composer",
+   "rect": {
+    "line1": 16,
+    "col1": 7,
+    "line2": 16,
+    "col2": 53
+   },
+   "parent": "12:1-12:20"
+  },
+  {
+   "id": "19:1-25:71",
+   "text": "CanvasWorkspace\ndrafts[documentId] = metadata + CanvasSession\ncontrollers = Map<documentId, MappingDocumentController>\nmetadata: name / savedName / savedScene / savedEdges\nrevisionId / representationId? / hidden? / busy / viewport?\nsetDrafts(seed) -> new session; replacement -> dispose old session\ncopyDocument -> forkHistory; clear selection + controls",
+   "rect": {
+    "line1": 19,
+    "col1": 1,
+    "line2": 25,
+    "col2": 71
+   }
+  },
+  {
+   "id": "28:1-29:45",
+   "text": "CanvasSession\nowns controller; publishes read-only stores",
+   "rect": {
+    "line1": 28,
+    "col1": 1,
+    "line2": 29,
+    "col2": 45
+   }
+  },
+  {
+   "id": "32:1-35:62",
+   "text": "MappingDocumentController\nControllerSnapshot\ncontextId / canvasRevisionId / version / canUndo / canRedo\ncell? / endpointBounds?",
+   "rect": {
+    "line1": 32,
+    "col1": 1,
+    "line2": 35,
+    "col2": 62
+   }
+  },
+  {
+   "id": "39:1-44:28",
+   "text": "MappingGridDocument\nscene\nroot: GridBox\ncontents: Diagram map\nedges: DiagramConnection[]\nsections / jumps?",
+   "rect": {
+    "line1": 39,
+    "col1": 1,
+    "line2": 44,
+    "col2": 28
+   }
+  },
+  {
+   "id": "46:1-54:59",
+   "text": "MappingCanvasState\nselection.items: ordered membership\nwhole instance OR captured region\nregion = source content/revision/ASCII + rect + IDs\ndiagramViews: per-instance contentRevisionId + folded IDs\ndisplay: DisplayState\nrootIds + nodes: floating pane ownership\ncontrols: activeBoxId / selectionFocusId / activeThreadId\nsurfaces: actions / prompt / ask / presentation",
+   "rect": {
+    "line1": 46,
+    "col1": 1,
+    "line2": 54,
+    "col2": 59
+   }
+  },
+  {
+   "id": "56:1-57:61",
+   "text": "CanvasDisplayNode registry\ncanvasDisplayNodes(document, canvas, version, cell, bounds)",
+   "rect": {
+    "line1": 56,
+    "col1": 1,
+    "line2": 57,
+    "col2": 61
+   }
+  },
+  {
+   "id": "58:9-58:13",
+   "text": "scene",
+   "rect": {
+    "line1": 58,
+    "col1": 9,
+    "line2": 58,
+    "col2": 13
+   },
+   "parent": "56:1-57:61"
+  },
+  {
+   "id": "59:9-59:15",
+   "text": "display",
+   "rect": {
+    "line1": 59,
+    "col1": 9,
+    "line2": 59,
+    "col2": 15
+   },
+   "parent": "56:1-57:61"
+  },
+  {
+   "id": "60:9-60:13",
+   "text": "edges",
+   "rect": {
+    "line1": 60,
+    "col1": 9,
+    "line2": 60,
+    "col2": 13
+   },
+   "parent": "56:1-57:61"
+  },
+  {
+   "id": "61:3-62:57",
+   "text": "childIds / expansion / collapsible subtrees / content\ncloned read model; geometry remains in its owning store",
+   "rect": {
+    "line1": 61,
+    "col1": 3,
+    "line2": 62,
+    "col2": 57
+   },
+   "parent": "56:1-57:61"
+  },
+  {
+   "id": "58:24-58:62",
+   "text": "grid:<boxId> / diagram or group / cells",
+   "rect": {
+    "line1": 58,
+    "col1": 24,
+    "line2": 58,
+    "col2": 62
+   }
+  },
+  {
+   "id": "59:24-59:56",
+   "text": "floating:<id> / pane / CSS pixels",
+   "rect": {
+    "line1": 59,
+    "col1": 24,
+    "line2": 59,
+    "col2": 56
+   }
+  },
+  {
+   "id": "60:24-60:56",
+   "text": "floating arrow / derived geometry",
+   "rect": {
+    "line1": 60,
+    "col1": 24,
+    "line2": 60,
+    "col2": 56
+   }
+  },
+  {
+   "id": "64:1-65:58",
+   "text": "Session publications\ncontroller.subscribe -> synchronous immutable references",
+   "rect": {
+    "line1": 64,
+    "col1": 1,
+    "line2": 65,
+    "col2": 58
+   }
+  },
+  {
+   "id": "66:9-66:16",
+   "text": "document",
+   "rect": {
+    "line1": 66,
+    "col1": 9,
+    "line2": 66,
+    "col2": 16
+   },
+   "parent": "64:1-65:58"
+  },
+  {
+   "id": "67:9-67:20",
+   "text": "presentation",
+   "rect": {
+    "line1": 67,
+    "col1": 9,
+    "line2": 67,
+    "col2": 20
+   },
+   "parent": "64:1-65:58"
+  },
+  {
+   "id": "68:9-68:17",
+   "text": "selection",
+   "rect": {
+    "line1": 68,
+    "col1": 9,
+    "line2": 68,
+    "col2": 17
+   },
+   "parent": "64:1-65:58"
+  },
+  {
+   "id": "69:9-69:16",
+   "text": "controls",
+   "rect": {
+    "line1": 69,
+    "col1": 9,
+    "line2": 69,
+    "col2": 16
+   },
+   "parent": "64:1-65:58"
+  },
+  {
+   "id": "70:9-70:16",
+   "text": "geometry",
+   "rect": {
+    "line1": 70,
+    "col1": 9,
+    "line2": 70,
+    "col2": 16
+   },
+   "parent": "64:1-65:58"
+  },
+  {
+   "id": "71:9-71:14",
+   "text": "status",
+   "rect": {
+    "line1": 71,
+    "col1": 9,
+    "line2": 71,
+    "col2": 14
+   },
+   "parent": "64:1-65:58"
+  },
+  {
+   "id": "72:3-72:61",
+   "text": "canvasRevisionId changes -> onCommit -> workspace.onPersist",
+   "rect": {
+    "line1": 72,
+    "col1": 3,
+    "line2": 72,
+    "col2": 61
+   },
+   "parent": "64:1-65:58"
+  },
+  {
+   "id": "66:32-66:48",
+   "text": "search / explorer",
+   "rect": {
+    "line1": 66,
+    "col1": 32,
+    "line2": 66,
+    "col2": 48
+   }
+  },
+  {
+   "id": "67:32-67:53",
+   "text": "display + diagramViews",
+   "rect": {
+    "line1": 67,
+    "col1": 32,
+    "line2": 67,
+    "col2": 53
+   }
+  },
+  {
+   "id": "68:32-68:41",
+   "text": "membership",
+   "rect": {
+    "line1": 68,
+    "col1": 32,
+    "line2": 68,
+    "col2": 41
+   }
+  },
+  {
+   "id": "69:32-69:54",
+   "text": "focus + action surfaces",
+   "rect": {
+    "line1": 69,
+    "col1": 32,
+    "line2": 69,
+    "col2": 54
+   }
+  },
+  {
+   "id": "70:32-70:62",
+   "text": "endpointBounds + cell + version",
+   "rect": {
+    "line1": 70,
+    "col1": 32,
+    "line2": 70,
+    "col2": 62
+   }
+  },
+  {
+   "id": "71:32-71:61",
+   "text": "dirty + sceneDirty + undo/redo",
+   "rect": {
+    "line1": 71,
+    "col1": 32,
+    "line2": 71,
+    "col2": 61
+   }
+  },
+  {
+   "id": "74:1-76:26",
+   "text": "Mounted document rendering\nDraggableDiagramCanvas\ncamera + focusBox",
+   "rect": {
+    "line1": 74,
+    "col1": 1,
+    "line2": 76,
+    "col2": 26
+   }
+  },
+  {
+   "id": "77:9-79:65",
+   "text": "MappingPocSelectionCanvas(session)\nupdate -> DiagramEditCoordinator -> DiagramEditComposer\ntransfer / undo / jump -> MappingWorkspacePage",
+   "rect": {
+    "line1": 77,
+    "col1": 9,
+    "line2": 79,
+    "col2": 65
+   },
+   "parent": "74:1-76:26"
+  },
+  {
+   "id": "80:3-82:63",
+   "text": "MappingDiagramExplorer -> open / focus / transfer destination\nDiagramSearchService -> matches + focus\nChangeSessionPreview -> change review",
+   "rect": {
+    "line1": 80,
+    "col1": 3,
+    "line2": 82,
+    "col2": 63
+   },
+   "parent": "74:1-76:26"
+  },
+  {
+   "id": "83:1-85:63",
+   "text": "SourcePaneViewState\nlive source scroll + camera -> captureDisplay / captureCamera\ndocument-scoped; sampled outside the React display tree",
+   "rect": {
+    "line1": 83,
+    "col1": 1,
+    "line2": 85,
+    "col2": 63
+   }
+  },
+  {
+   "id": "87:1-88:58",
+   "text": "Agent access\nuseAgentCanvasBridge -> handleAgentCommand -> controller",
+   "rect": {
+    "line1": 87,
+    "col1": 1,
+    "line2": 88,
+    "col2": 58
+   }
+  },
+  {
+   "id": "89:1-93:77",
+   "text": "Workspace persistence\nsession commits -> WorkspacePersistence -> RecordStorage\nWorkspaceStorage -> worker -> workspace records API\ncapture -> schemaVersion 3 / projectId / activeDocumentId\ntransfers + documents[metadata,document,canvas,history,viewport]",
+   "rect": {
+    "line1": 89,
+    "col1": 1,
+    "line2": 93,
+    "col2": 77
+   }
+  },
+  {
+   "id": "94:1-95:70",
+   "text": "Coordinated transfer\ncopy/move or linked undo/redo -> prepare -> save -> installWorkspace",
+   "rect": {
+    "line1": 94,
+    "col1": 1,
+    "line2": 95,
+    "col2": 70
+   }
+  },
+  {
+   "id": "96:1-97:64",
+   "text": "Project save\nsaveMappingProjectDiagram -> catalog + captured saved baseline",
+   "rect": {
+    "line1": 96,
+    "col1": 1,
+    "line2": 97,
+    "col2": 64
+   }
+  }
+ ],
+ "edges": [
+  {
+   "from": "3:1-3:24",
+   "to": "6:1-6:31",
+   "direction": "->"
+  },
+  {
+   "from": "7:7-7:14",
+   "to": "7:41-7:54",
+   "direction": "->"
+  },
+  {
+   "from": "8:7-8:19",
+   "to": "8:41-8:60",
+   "direction": "->"
+  },
+  {
+   "from": "9:7-9:23",
+   "to": "9:41-9:68",
+   "direction": "->"
+  },
+  {
+   "from": "6:1-6:31",
+   "to": "12:1-12:20",
+   "direction": "->"
+  },
+  {
+   "from": "12:1-12:20",
+   "to": "19:1-25:71",
+   "direction": "->"
+  },
+  {
+   "from": "19:1-25:71",
+   "to": "28:1-29:45",
+   "direction": "->"
+  },
+  {
+   "from": "28:1-29:45",
+   "to": "32:1-35:62",
+   "direction": "->"
+  },
+  {
+   "from": "32:1-35:62",
+   "to": "39:1-44:28",
+   "direction": "--"
+  },
+  {
+   "from": "32:1-35:62",
+   "to": "46:1-54:59",
+   "direction": "->"
+  },
+  {
+   "from": "32:1-35:62",
+   "to": "56:1-57:61",
+   "direction": "--"
+  },
+  {
+   "from": "58:9-58:13",
+   "to": "58:24-58:62",
+   "direction": "->"
+  },
+  {
+   "from": "59:9-59:15",
+   "to": "59:24-59:56",
+   "direction": "->"
+  },
+  {
+   "from": "60:9-60:13",
+   "to": "60:24-60:56",
+   "direction": "->"
+  },
+  {
+   "from": "66:9-66:16",
+   "to": "66:32-66:48",
+   "direction": "->"
+  },
+  {
+   "from": "67:9-67:20",
+   "to": "67:32-67:53",
+   "direction": "->"
+  },
+  {
+   "from": "68:9-68:17",
+   "to": "68:32-68:41",
+   "direction": "->"
+  },
+  {
+   "from": "69:9-69:16",
+   "to": "69:32-69:54",
+   "direction": "->"
+  },
+  {
+   "from": "70:9-70:16",
+   "to": "70:32-70:62",
+   "direction": "->"
+  },
+  {
+   "from": "71:9-71:14",
+   "to": "71:32-71:61",
+   "direction": "->"
+  }
+ ]
+}

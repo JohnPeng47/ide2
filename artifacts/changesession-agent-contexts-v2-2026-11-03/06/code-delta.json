@@ -1,0 +1,414 @@
+[
+  {
+    "path": "application/core/diagrams/generateDiagram.ts",
+    "status": "added",
+    "hunks": [
+      {
+        "oldStart": 0,
+        "oldLines": 0,
+        "newStart": 1,
+        "newLines": 13,
+        "heading": "",
+        "oldSideExcerpt": ""
+      }
+    ]
+  },
+  {
+    "path": "application/mapping/agent/agentContextLibrary.ts",
+    "status": "added",
+    "hunks": [
+      {
+        "oldStart": 0,
+        "oldLines": 0,
+        "newStart": 1,
+        "newLines": 65,
+        "heading": "",
+        "oldSideExcerpt": ""
+      }
+    ]
+  },
+  {
+    "path": "application/mapping/agent/agentContextService.ts",
+    "status": "modified",
+    "hunks": [
+      {
+        "oldStart": 1,
+        "oldLines": 3,
+        "newStart": 1,
+        "newLines": 4,
+        "heading": "",
+        "oldSideExcerpt": "import { randomUUID } from 'node:crypto';\nimport { AgentContext, type AgentContextSnapshot } from '../../../domain/core/agents/agentContext';\n"
+      },
+      {
+        "oldStart": 14,
+        "oldLines": 7,
+        "newStart": 15,
+        "newLines": 7,
+        "heading": " export class AgentContextService {",
+        "oldSideExcerpt": "  private records = new Map<string, { scope: string; context: AgentContext; receipt: AgentContextReceipt }>();\n  private requests = new Map<string, string>();\n  private bytes = 0;\n  constructor(private readonly limits = { count: 100, bytes: 32 * 1024 * 1024 }) {}\n\n  upload(scope: AgentContextScope, requestId: string, trajectory: unknown): AgentContextReceipt {\n    const context = AgentContext.fromTrajectory(trajectory), scopeKey = this.scopeKey(scope);"
+      },
+      {
+        "oldStart": 42,
+        "oldLines": 5,
+        "newStart": 43,
+        "newLines": 10,
+        "heading": " export class AgentContextService {",
+        "oldSideExcerpt": "      throw new AgentContextError('AGENT_CONTEXT_NOT_FOUND', 'Context is unavailable for this workspace and document');\n    return record.context.toSnapshot();\n  }\n  private scopeKey(scope: AgentContextScope) { return JSON.stringify([scope.workspaceInstanceId, scope.documentId]); }\n}"
+      }
+    ]
+  },
+  {
+    "path": "application/mapping/agent/diagramEditService.ts",
+    "status": "modified",
+    "hunks": [
+      {
+        "oldStart": 1,
+        "oldLines": 51,
+        "newStart": 1,
+        "newLines": 96,
+        "heading": "",
+        "oldSideExcerpt": "import { AgentContext, type AgentContextSnapshot } from '../../../domain/core/agents/agentContext';\nimport { randomUUID } from 'node:crypto';\nimport { CanvasHistory } from '../../../domain/core/diagrams/canvasHistory';\nimport type { DiagramService, DiagramRevisionResult } from '../../../domain/core/diagrams/diagramService';\nimport type { LiveDocumentSnapshot } from '../../../domain/mapping/agent/contracts';\nimport type { DiagramEditRun, DiagramRevisionApplication, EditDiagramInput } from '../../../domain/mapping/agent/diagramEdit';\nimport { findBox } from '../../../domain/mapping/workspace/canvasDisplayNode';\n\nexport interface DiagramEditCanvasPort {\n  snapshot(sessionId: string): Promise<LiveDocumentSnapshot>;\n  apply(sessionId: string, input: DiagramRevisionApplication): Promise<{ version: number; unresolvedEdgeIds: string[] }>;\n}\ninterface Run {\n  agentContext?: AgentContextSnapshot;\n  input: EditDiagramInput;\n  signature: string;\n  state: DiagramEditRun;\n  abort: AbortController;\n  revision?: DiagramRevisionResult;\n  pending?: Promise<void>;\n}\n\n/** A request owns both generation and installation; retries never rerun the model. */\nexport class DiagramEditService {\n  private runs = new Map<string, Run>();\n  private requests = new Map<string, string>();\n  constructor(private readonly diagrams: DiagramService, private readonly canvas: DiagramEditCanvasPort) {}\n\n  start(input: EditDiagramInput, suppliedContext?: AgentContextSnapshot): DiagramEditRun {\n    const agentContext = suppliedContext ? AgentContext.fromSnapshot(suppliedContext).toSnapshot() : undefined;\n    if (input.agentContextId && !agentContext) throw Error('AGENT_CONTEXT_NOT_FOUND: resolve context before starting the edit');\n    const key = JSON.stringify([input.sessionId, input.requestId]);\n    const signature = JSON.stringify({ input, agentContextHash: agentContext?.contentHash });\n    const existing = this.requests.get(key);\n    if (existing) {\n      const run = this.runs.get(existing)!;\n      if (run.signature !== signature) throw Error('REQUEST_ID_CONFLICT: edit request differs');\n      if (run.state.status === 'awaiting-acknowledgement' && !run.pending) this.launch(run, () => this.apply(run));\n      return structuredClone(run.state);\n    }\n    if (this.runs.size >= 500) throw Error('Diagram edit run capacity reached; restart the backend');\n    const run: Run = { agentContext, input: structuredClone(input), signature, abort: new AbortController(), state: {\n      runId: `diagram-edit-${randomUUID()}`, status: 'generating', nodeId: input.nodeId, baseRevisionId: input.baseRevisionId\n    } };\n    this.runs.set(run.state.runId, run); this.requests.set(key, run.state.runId);\n    this.launch(run, () => this.generate(run));\n    return structuredClone(run.state);\n  }\n  get(id: string) {\n    const run = this.runs.get(id); if (!run) throw Error('Diagram edit run not found');\n    return structuredClone(run.state);"
+      },
+      {
+        "oldStart": 67,
+        "oldLines": 39,
+        "newStart": 112,
+        "newLines": 182,
+        "heading": " export class DiagramEditService {",
+        "oldSideExcerpt": "      run.state.error = message;\n    }).finally(() => { run.pending = undefined; });\n  }\n  private async generate(run: Run) {\n    const { input, abort } = run;\n    const snapshot = await this.canvas.snapshot(input.sessionId);\n    abort.signal.throwIfAborted();\n    if (snapshot.version !== input.expectedVersion) throw Error('VERSION_CONFLICT: read the canvas again');\n    const box = input.nodeId.startsWith('grid:') && findBox(snapshot.document.scene.root, input.nodeId.slice(5));\n    if (!box || box.kind !== 'diagram') throw Error('Expected diagram GridBox');\n    const base = snapshot.document.scene.contents[box.contentId];\n    if (base.revisionId !== input.baseRevisionId) throw Error('VERSION_CONFLICT: diagram base is no longer current');\n    if (!snapshot.history) throw Error('Canvas history is required for diagram generation');\n    // Validated portable history imports the exact browser-issued revision identities.\n    new CanvasHistory(snapshot.document, snapshot.canvas, snapshot.history, 'current');\n    const lines = base.content.ascii.split('\\n');\n    run.revision = await this.diagrams.generate({ input: { id: base.id, structureKind: base.content.structure.kind,\n      source: base.sourceContext.binding, evidence: base.sourceContext.evidence },\n      instruction: input.prompt, agentContext: run.agentContext, baseRevisionId: base.revisionId,\n      context: { diagram: base, selection: { startLine: 1, endLine: lines.length, startColumn: 1,\n        endColumn: Math.max(1, ...lines.map(line => line.length)) }, connections: snapshot.document.edges }\n    }, { signal: abort.signal, onProgress: message => { if (run.state.status === 'generating') run.state.message = message; } });\n    abort.signal.throwIfAborted();\n    run.state.generated = { diagramId: run.revision.diagram.diagramId, revisionId: run.revision.revision.id,\n      ascii: run.revision.diagram.content.ascii };\n    await this.apply(run);\n  }\n  private async apply(run: Run) {\n    run.state.status = 'applying'; delete run.state.error;\n    const revision = run.revision!.revision, input = run.input;\n    // The controller checks both versions at the mutation boundary, after generation.\n    const result = await this.canvas.apply(input.sessionId, { requestId: run.state.runId,\n      expectedVersion: input.expectedVersion, nodeId: input.nodeId, baseRevisionId: input.baseRevisionId, revision });\n    run.state.result = { diagramId: revision.diagramId, previousRevisionId: input.baseRevisionId,\n      revisionId: revision.id, documentVersion: result.version, unresolvedEdgeIds: result.unresolvedEdgeIds };\n    run.state.status = 'completed'; run.state.message = 'Diagram revision installed and workspace persisted';\n  }\n  dispose() { for (const run of this.runs.values()) this.cancel(run.state.runId); }\n}"
+      }
+    ]
+  },
+  {
+    "path": "domain/core/agents/agentContext.ts",
+    "status": "modified",
+    "hunks": [
+      {
+        "oldStart": 1,
+        "oldLines": 16,
+        "newStart": 1,
+        "newLines": 18,
+        "heading": "",
+        "oldSideExcerpt": "import { z } from 'zod';\nimport { sha256 } from '../sha256';\n\nexport const AGENT_CONTEXT_MAX_BYTES = 2 * 1024 * 1024;\nconst id = z.string().min(1).max(200);\nconst text = z.object({ type: z.literal('text'), text: z.string().max(1_000_000) }).strict();\nconst toolCall = z.object({ type: z.literal('toolCall'), id, name: id, arguments: z.record(z.string(), z.json()) }).strict();\nconst timestamp = z.number().int().nonnegative().default(0);\nexport const agentContextMessageSchema = z.discriminatedUnion('role', [\n  z.object({ role: z.literal('user'), content: z.array(text).min(1).max(1000), timestamp }).strict(),\n  z.object({ role: z.literal('assistant'), content: z.array(z.union([text, toolCall])).min(1).max(1000), timestamp }).strict(),\n  z.object({ role: z.literal('toolResult'), toolCallId: id, toolName: id,\n    content: z.array(text).min(1).max(1000), isError: z.boolean().default(false), timestamp }).strict()\n]);\nexport type AgentContextMessage = z.infer<typeof agentContextMessageSchema>;\nconst entrySchema = z.object({ id, parentId: id.nullable(), message: agentContextMessageSchema }).strict();"
+      },
+      {
+        "oldStart": 21,
+        "oldLines": 12,
+        "newStart": 23,
+        "newLines": 13,
+        "heading": " export const agentTrajectorySchema = z.object({",
+        "oldSideExcerpt": "}).strict();\nexport type AgentTrajectoryInput = z.input<typeof agentTrajectorySchema>;\nconst snapshotDataSchema = z.object({\n  version: z.literal(1),\n  source: agentTrajectorySchema.pick({ agentType: true, sourceSessionId: true, format: true }),\n  range: agentTrajectorySchema.pick({ fromEntryId: true, throughEntryId: true }),\n  messages: z.array(agentContextMessageSchema).min(1).max(2000)\n}).strict();\nexport const agentContextSnapshotSchema = snapshotDataSchema.extend({ contentHash: z.string().regex(/^[a-f0-9]{64}$/) });\nexport type AgentContextSnapshot = z.infer<typeof agentContextSnapshotSchema>;\n\n/** Canonical JSON also stabilizes tool arguments whose object key order differs. */"
+      },
+      {
+        "oldStart": 83,
+        "oldLines": 16,
+        "newStart": 86,
+        "newLines": 33,
+        "heading": " export class AgentContext {",
+        "oldSideExcerpt": "    if (cursor !== input.fromEntryId) throw Error('INVALID_AGENT_CONTEXT: range is not on one branch');\n    const messages = selected.reverse();\n    validateMessages(messages);\n    const data = snapshotDataSchema.parse({ version: 1,\n      source: { agentType: input.agentType, sourceSessionId: input.sourceSessionId, format: input.format },\n      range: { fromEntryId: input.fromEntryId, throughEntryId: input.throughEntryId }, messages });\n    return new AgentContext({ ...data, contentHash: sha256(canonical(data)) });\n  }\n\n  static fromSnapshot(raw: unknown): AgentContext {\n    bounded(raw);\n    const snapshot = agentContextSnapshotSchema.parse(raw);\n    const { contentHash, ...data } = snapshot;\n    if (contentHash !== sha256(canonical(data))) throw Error('INVALID_AGENT_CONTEXT: content hash mismatch');\n    validateMessages(snapshot.messages);\n    return new AgentContext(snapshot);"
+      },
+      {
+        "oldStart": 100,
+        "oldLines": 8,
+        "newStart": 120,
+        "newLines": 52,
+        "heading": " export class AgentContext {",
+        "oldSideExcerpt": "\n  toSnapshot(): AgentContextSnapshot { return structuredClone(this.#snapshot); }\n\n  toPiMessages() {\n    return this.toSnapshot().messages.map(message => {\n      if (message.role !== 'assistant') return message;\n      // Synthetic provenance marks imported history; it never selects the run's model.\n      return { ...message, api: 'openai-responses' as const, provider: 'agent-context', model: this.#snapshot.source.agentType,"
+      }
+    ]
+  },
+  {
+    "path": "domain/core/agents/agentContextSource.ts",
+    "status": "added",
+    "hunks": [
+      {
+        "oldStart": 0,
+        "oldLines": 0,
+        "newStart": 1,
+        "newLines": 30,
+        "heading": "",
+        "oldSideExcerpt": ""
+      }
+    ]
+  },
+  {
+    "path": "domain/core/agents/savedAgentContext.ts",
+    "status": "added",
+    "hunks": [
+      {
+        "oldStart": 0,
+        "oldLines": 0,
+        "newStart": 1,
+        "newLines": 27,
+        "heading": "",
+        "oldSideExcerpt": ""
+      }
+    ]
+  },
+  {
+    "path": "domain/core/diagrams/diagramAgentContext.ts",
+    "status": "added",
+    "hunks": [
+      {
+        "oldStart": 0,
+        "oldLines": 0,
+        "newStart": 1,
+        "newLines": 85,
+        "heading": "",
+        "oldSideExcerpt": ""
+      }
+    ]
+  },
+  {
+    "path": "domain/core/diagrams/diagramRevisionReview.ts",
+    "status": "added",
+    "hunks": [
+      {
+        "oldStart": 0,
+        "oldLines": 0,
+        "newStart": 1,
+        "newLines": 195,
+        "heading": "",
+        "oldSideExcerpt": ""
+      }
+    ]
+  },
+  {
+    "path": "domain/core/diagrams/diagramRevisionStore.ts",
+    "status": "added",
+    "hunks": [
+      {
+        "oldStart": 0,
+        "oldLines": 0,
+        "newStart": 1,
+        "newLines": 33,
+        "heading": "",
+        "oldSideExcerpt": ""
+      }
+    ]
+  },
+  {
+    "path": "domain/core/diagrams/submitDiagramEdit.ts",
+    "status": "added",
+    "hunks": [
+      {
+        "oldStart": 0,
+        "oldLines": 0,
+        "newStart": 1,
+        "newLines": 34,
+        "heading": "",
+        "oldSideExcerpt": ""
+      }
+    ]
+  },
+  {
+    "path": "domain/mapping/agent/diagramEdit.ts",
+    "status": "modified",
+    "hunks": [
+      {
+        "oldStart": 1,
+        "oldLines": 22,
+        "newStart": 1,
+        "newLines": 78,
+        "heading": "",
+        "oldSideExcerpt": "import { z } from 'zod';\nimport type { DiagramRevision } from '../../core/diagrams/diagramRevisionEditor';\n\nconst id = z.string().min(1).max(200);\nexport const editDiagramSchema = z.object({\n  sessionId: id, nodeId: id, expectedVersion: z.number().int().nonnegative(),\n  baseRevisionId: id, agentContextId: id.optional(), prompt: z.string().trim().min(1).max(20000), requestId: id\n}).strict();\nexport const diagramEditRunSchema = z.object({ runId: id }).strict();\nexport type EditDiagramInput = z.infer<typeof editDiagramSchema>;\nexport interface DiagramRevisionApplication {\n  requestId: string;\n  expectedVersion: number;\n  nodeId: string;\n  baseRevisionId: string;\n  revision: DiagramRevision;\n}\nexport interface DiagramEditRun {\n  runId: string;\n  status: 'generating' | 'applying' | 'completed' | 'conflict' | 'failed' | 'cancelled' | 'awaiting-acknowledgement';\n  nodeId: string;\n  baseRevisionId: string;"
+      },
+      {
+        "oldStart": 24,
+        "oldLines": 4,
+        "newStart": 80,
+        "newLines": 6,
+        "heading": " export interface DiagramEditRun {",
+        "oldSideExcerpt": "  error?: string;\n  generated?: { diagramId: string; revisionId: string; ascii: string };\n  result?: { diagramId: string; previousRevisionId: string; revisionId: string; documentVersion: number; unresolvedEdgeIds: string[] };\n}"
+      }
+    ]
+  },
+  {
+    "path": "domain/mapping/workspace/diagramAlternatives.ts",
+    "status": "added",
+    "hunks": [
+      {
+        "oldStart": 0,
+        "oldLines": 0,
+        "newStart": 1,
+        "newLines": 79,
+        "heading": "",
+        "oldSideExcerpt": ""
+      }
+    ]
+  },
+  {
+    "path": "infrastructure/core/agents/agentRuntime.ts",
+    "status": "modified",
+    "hunks": [
+      {
+        "oldStart": 1,
+        "oldLines": 3,
+        "newStart": 1,
+        "newLines": 4,
+        "heading": "",
+        "oldSideExcerpt": "import type { AgentContext } from '../../../domain/core/agents/agentContext';\nimport { type Model } from \"@earendil-works/pi-ai\";\nimport { createAgentSession, SessionManager, type CreateAgentSessionOptions, ModelRuntime, type AgentSessionEvent } from \"@earendil-works/pi-coding-agent\";"
+      },
+      {
+        "oldStart": 17,
+        "oldLines": 14,
+        "newStart": 18,
+        "newLines": 23,
+        "heading": " export function progressFor(event: AgentSessionEvent, model: string, sessionId:",
+        "oldSideExcerpt": "  }\n  return undefined;\n}\nexport class PiAgentRuntime {\n\n  protected modelRuntime?: Promise<ModelRuntime>;\n\n  protected readonly sessions = new Set<{ abort(): Promise<void>; dispose(): void }>();\n\n  protected async createSession(configuration: Omit<CreateAgentSessionOptions, 'sessionManager'>, context?: AgentContext) {\n    const sessionManager = SessionManager.inMemory(configuration.cwd);\n    for (const message of context?.toPiMessages() ?? []) sessionManager.appendMessage(message);\n    const result = await createAgentSession({ ...configuration, sessionManager });\n    this.sessions.add(result.session);"
+      },
+      {
+        "oldStart": 32,
+        "oldLines": 6,
+        "newStart": 42,
+        "newLines": 7,
+        "heading": " export class PiAgentRuntime {",
+        "oldSideExcerpt": "  }\n\n  protected runtime(): Promise<ModelRuntime> {\n    this.modelRuntime ??= ModelRuntime.create({ allowModelNetwork: false });\n    return this.modelRuntime;\n  }"
+      }
+    ]
+  },
+  {
+    "path": "infrastructure/core/persistence/fileAgentContextRepository.ts",
+    "status": "added",
+    "hunks": [
+      {
+        "oldStart": 0,
+        "oldLines": 0,
+        "newStart": 1,
+        "newLines": 48,
+        "heading": "",
+        "oldSideExcerpt": ""
+      }
+    ]
+  },
+  {
+    "path": "infrastructure/core/persistence/fileAgentContextSources.ts",
+    "status": "added",
+    "hunks": [
+      {
+        "oldStart": 0,
+        "oldLines": 0,
+        "newStart": 1,
+        "newLines": 117,
+        "heading": "",
+        "oldSideExcerpt": ""
+      }
+    ]
+  },
+  {
+    "path": "infrastructure/core/persistence/fileDiagramAgentContextStore.ts",
+    "status": "added",
+    "hunks": [
+      {
+        "oldStart": 0,
+        "oldLines": 0,
+        "newStart": 1,
+        "newLines": 16,
+        "heading": "",
+        "oldSideExcerpt": ""
+      }
+    ]
+  },
+  {
+    "path": "src/features/mapping/prompt-composer/PromptComposer.tsx",
+    "status": "added",
+    "hunks": [
+      {
+        "oldStart": 0,
+        "oldLines": 0,
+        "newStart": 1,
+        "newLines": 314,
+        "heading": "",
+        "oldSideExcerpt": ""
+      }
+    ]
+  },
+  {
+    "path": "src/features/mapping/prompt-composer/VariantReview.tsx",
+    "status": "added",
+    "hunks": [
+      {
+        "oldStart": 0,
+        "oldLines": 0,
+        "newStart": 1,
+        "newLines": 51,
+        "heading": "",
+        "oldSideExcerpt": ""
+      }
+    ]
+  },
+  {
+    "path": "src/features/mapping/tldraw/DiagramAlternativeControls.tsx",
+    "status": "added",
+    "hunks": [
+      {
+        "oldStart": 0,
+        "oldLines": 0,
+        "newStart": 1,
+        "newLines": 48,
+        "heading": "",
+        "oldSideExcerpt": ""
+      }
+    ]
+  },
+  {
+    "path": "src/features/mapping/tldraw/DiagramSidePanelContent.tsx",
+    "status": "added",
+    "hunks": [
+      {
+        "oldStart": 0,
+        "oldLines": 0,
+        "newStart": 1,
+        "newLines": 58,
+        "heading": "",
+        "oldSideExcerpt": ""
+      }
+    ]
+  },
+  {
+    "path": "src/server/app/bootstrap.ts",
+    "status": "modified",
+    "hunks": [
+      {
+        "oldStart": 1,
+        "oldLines": 6,
+        "newStart": 1,
+        "newLines": 23,
+        "heading": "",
+        "oldSideExcerpt": "import { AgentContextService } from '../../../application/mapping/agent/agentContextService';\nimport { LiveCanvasService } from '../../../application/mapping/agent/liveCanvasService';\nimport { RevisionedDiagramService } from '../../../domain/core/diagrams/diagramService';\nimport { FakeDiagramEditRuntime, PiDiagramEditRuntime } from '../../../infrastructure/mapping/agents/diagram-edit/diagramEditRuntime';\nimport { CoreApplication } from \"../../../application/core/application\";\nimport { AgentDiagrammingSessionService } from '../../../application/mapping/agent/sessionService';"
+      },
+      {
+        "oldStart": 13,
+        "oldLines": 6,
+        "newStart": 30,
+        "newLines": 7,
+        "heading": " import { QuickJsAgentRuntime } from '../../../infrastructure/mapping/agent/execR",
+        "oldSideExcerpt": "import { DiagramChangeSessionStore } from '../../../infrastructure/mapping/changes/diagramChangeSessionStore';\n\nimport { DiagramStore } from \"../../../infrastructure/core/persistence/store\";\nimport { CodexLocalChatRuntime, FakeLocalChatRuntime } from \"../../../infrastructure/mapping/agents/chat/localChatRuntime\";\nimport { FakeFileCompactionRuntime, PiFileCompactionRuntime } from \"../../../infrastructure/mapping/agents/compaction/fileCompactionRuntime\";\nimport { FakeMappingAgentRuntime, PiMappingAgentRuntime } from \"../../../infrastructure/mapping/agents/selection/agentRuntime\";"
+      },
+      {
+        "oldStart": 34,
+        "oldLines": 6,
+        "newStart": 52,
+        "newLines": 9,
+        "heading": " import { resolveFileCompactionSettings } from '../../../infrastructure/mapping/a",
+        "oldSideExcerpt": "import { loadFileCompactionPrompts } from '../../../infrastructure/mapping/agents/compaction/prompts';\nimport { FileCompactionStore } from '../../../infrastructure/mapping/persistence/compactionStore';\nimport { MappingWorkspaceStore } from '../../../infrastructure/mapping/persistence/workspace/mappingWorkspaceStore';\n\nexport const corpusAccess: CorpusAccess = {\n  provider: corpusProvider, readDocumentLines: readCorpusDocumentLines, discover: discoverDomainCorpus"
+      },
+      {
+        "oldStart": 50,
+        "oldLines": 22,
+        "newStart": 71,
+        "newLines": 43,
+        "heading": " export function createFileCompactionService(core: CoreApplication, runtime: File",
+        "oldSideExcerpt": "\n/** The only production module that chooses and connects concrete integrations. */\nexport function createBackend(projectRoot: string, diagramsDirectory: string, configuredDomainProfileId: BuiltInDomainProfileId | undefined,\n  mappingPocSourceRoot: string, options: { lspEnabled?: boolean }) {\n  const fake = process.env.NEW_DIAGRAM_AGENT === \"fake\";\n  const chatRuntime = fake ? new FakeLocalChatRuntime() : new CodexLocalChatRuntime();\n  const mappingRuntime = fake ? new FakeMappingAgentRuntime() : new PiMappingAgentRuntime();\n  const diagramEditRuntime = fake ? new FakeDiagramEditRuntime() : new PiDiagramEditRuntime(mappingPocSourceRoot);\n  const store = new DiagramStore(projectRoot, diagramsDirectory);\n  const core = createCoreApplication(store);\n  const compactionService = createFileCompactionService(core, fake ? new FakeFileCompactionRuntime() : new PiFileCompactionRuntime());\n  const languageService = options.lspEnabled === true ? new ProjectLanguageService() : undefined;\n  const diagrams = new MappingDiagramService(store, corpusAccess, projectRoot, configuredDomainProfileId);\n  const canvasBridge = new CanvasSessionBridge();\n  const agentContexts = new AgentContextService();\n  const liveCanvas = new LiveCanvasService(() => canvasBridge.list(), async (workspaceInstanceId, documentId) =>\n    await canvasBridge.dispatch(workspaceInstanceId, { method: 'context', documentId }) as import('../../../domain/mapping/agent/liveCanvasStatus').LiveCanvasContext, agentContexts);\n  const agent = new AgentDiagrammingSessionService(canvasBridge, diagrams, store, new QuickJsAgentRuntime(),\n    new ChangeSessionService(new DiagramChangeSessionStore(store.storeRoot, undefined, true), store, canvasBridge), new RevisionedDiagramService(diagramEditRuntime), agentContexts);\n  const routes = {\n    core: createCoreRoutes({\n      application: core,"
+      },
+      {
+        "oldStart": 74,
+        "oldLines": 14,
+        "newStart": 116,
+        "newLines": 16,
+        "heading": " export function createBackend(projectRoot: string, diagramsDirectory: string, co",
+        "oldSideExcerpt": "    }),\n    mapping: createMappingRoutes({\n      selection: new SelectionService(store, mappingRuntime, mappingPocSourceRoot),\n      diagrams, agent, liveCanvas,\n      workspace: new MappingWorkspaceService(store, new MappingWorkspaceStore(store.storeRoot, store.diagramPersistence)),\n      chat: new LocalChatService(store, corpusAccess, chatRuntime, mappingPocSourceRoot),\n      compactionService\n    })\n  };\n  return {\n    routes, liveCanvas, dispose() {\n      agent.dispose(); diagramEditRuntime.dispose(); canvasBridge.dispose(); languageService?.dispose(); mappingRuntime.dispose(); chatRuntime.dispose(); compactionService.dispose();\n    }\n  };"
+      }
+    ]
+  }
+]

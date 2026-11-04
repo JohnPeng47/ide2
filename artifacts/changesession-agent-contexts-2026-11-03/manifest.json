@@ -1,0 +1,347 @@
+{
+  "schemaVersion": 1,
+  "promptVersion": 1,
+  "createdAt": "2026-11-03T19:22:26.967461+00:00",
+  "repositoryId": "repo-ce67f2af4410036fce1ce12f",
+  "comparisonBase": "03f2168deba364103c2450ca9b8168cd1fc9ddc5",
+  "head": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e",
+  "commits": [
+    "7d44fa04bfee6bb4a2af171fe43e5e55a0c1f140",
+    "4cfd462c50351ef95846152d5a6d0a62b4a3a971",
+    "e0c9e7641c073c9ba433d5c13277532eed2cfc26",
+    "3726186d98be8495cda98460eb9b308fe83bdd52",
+    "b3ae534e19b79cb3f32c3a4b930ff9612c6a70e8",
+    "bb64b7939944584167347b28b30507179d787a46",
+    "6fc824d148f4ba4737c245d9db1faa9c812184c1",
+    "9c811283281b3ae4370b3a6b82d9ef1cc66c130b",
+    "9278ea1df4b88d19045c79dc8bbeea994f4f8712",
+    "ff5ce571e61bab2b541433cbe55368c8ebbec99a",
+    "6df4e3abf30c64408820e04c2adafa8edd70d34f",
+    "586df6dc338d8c2b5cd085cb4028acda9fc3314a",
+    "a0809e3394857b089e121d7cdf4a92601b369edc",
+    "695dcfc6e561a4a9c0600c3fbc17a9a9639b4554",
+    "ccdb867c40e9a9727b353728a7f9e3f8cf2f763f",
+    "d4e9fba91c0f077b03a0b69504f41074b32bf745",
+    "ecb39cea74985f320386b8c432c642a4eaaf1b93",
+    "6e4425f21727d9e683c713b1239fd6820fe1e388",
+    "bace01806dad099ecd6eb1e9c00806538e48feca",
+    "de7f8d03d01d17318efd5f0fba73b7db3bddb72b",
+    "22e15f8efc03be2c5235f74fe163dab66bfaf846",
+    "0ec9ec96770d778603755b81260ad873152d3248",
+    "9370145641edd66bb94e7e3749ab4bc2802f837d",
+    "25578d0624a7527fd7fa891da8b4330ba5e1b6ee",
+    "b974563d03a7456e3387d23079ce06b27a47a231",
+    "eb01bcf86b41d5b4be5a6b8b59033a840aceb3ec",
+    "4bafd68b1da1aa97aca7c630d08be54173b9de9b",
+    "681b818634dbaaa80a67bb93c75defabcf4527fe",
+    "78c9072cb74709faa4a78ce096913fa9ef7f7ed0",
+    "5c5ed23c3ecc6139bf3a9e84202badc88b289b7f",
+    "032bc3f494edd1932d7c0db408d0a11b9bd37119",
+    "936f7b72afef2f9b736180d57c1d42281b3063e4",
+    "808aca3615203866939d876644ebd539f37d66d4",
+    "14ff49fd386d09334b23199672af61b3aa81e6f5",
+    "907e69135e4df498fc2a44d362a58a0a73a0f994",
+    "32acfd7eb3bd095c8f47d62e1d5eaead5e3d1607",
+    "6c15ecece45db34f3f045c0eee8ef524b0b7b6ea",
+    "d24849dda9448a271b0e735dfab2f232d6a48d51",
+    "132c2b7a4887c4f3171d7fbca6e10ece727d1a13",
+    "2a87e7cba2845c0a7915316ab3c9e20b27fa7d08",
+    "c35511e8a50812fb02e8c626420915ef4e7c8353",
+    "a61074311d05870f2a713b75e59a60e12c13b9fb",
+    "a3450a4268415219d34771ab3a7b1551ce4d4634",
+    "ff1f7a4620d2cbeedb6501a7c747f315b4162973",
+    "71a2fa5e0b6fea2c9c55b666039be3052b727747",
+    "ff45e4250aa502e3ea8ecd3d1478775c08ca12a3",
+    "b321abcf792ac36961052bb6001385a8376678e5",
+    "2adef44426b08f81a1808bf0861dd7a104862841",
+    "b95869f49511678d65c1e8c5bf8d96bec02599e7",
+    "da8cf3de7828762ad13ef67521e9d700f0456886",
+    "b2396bda2a56e7c920868d75d32e338b449e9a3d",
+    "1d400af18af96b936b31f45f55d6420e6bc27561",
+    "3708170229e3ff6b8312bfda078ee0439b866d61",
+    "5a54118ede914a28bafc9ae4b12c699f7e5e50fc",
+    "b054943aef9f21281cb7d0ee35fe5c0aa700cb15",
+    "8ce5b7ad91eca83d1dacabed8377386f1387b8a4",
+    "7a99539d34d242bb00fa138541ae3cccc5264b45",
+    "258ccc1c4a8200bda6b63ec9c192f7ceabf927ff",
+    "622adb3fcb44f79d78a83dd73fb6c2179a7f8d01",
+    "5e926a69a55465bcb7469d35fd88ff4a10477531",
+    "7fa6f6f3196875b3c9405fb7eaf279b8525025d6",
+    "f0be561fef85be748b38601af7da0bfbac7cefd5",
+    "0066e1126de6f72aae3b295a1e7266665d30929f",
+    "507de3e99902a2a0673d13d556e0929a870f8375",
+    "3a6c0d6447eba7f849a08953f419d1c9f4016733",
+    "f4d7beac7b3beefd16ffef02462a773a7b10814a",
+    "cfdc11b85c747af837eb4e2a294659bcd2e96302",
+    "caf0883dc7b1fe9cf68cf278f7c0de4f2c64798c",
+    "0a8716edcdb41408902c1fdcbe71516d66b4c188",
+    "fd7244080388f0c98455e19620ed743c21355b49",
+    "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  ],
+  "observedCurrentHead": "b8869671a44998287678f72704d56918a24a15eb",
+  "group": "ChangeSession evals - 03f2168 to 81f05a2b",
+  "ownership": [
+    {
+      "key": "C00",
+      "documentId": "representation-b697fd11-5c8d-49e7-a6b5-b12030f2f79a",
+      "name": "Canvas domain model - baseline 03f2168 (before tldraw)",
+      "owner": "01"
+    },
+    {
+      "key": "C01",
+      "documentId": "representation-60532c3a-39f7-4392-9c66-a3f85c84f58b",
+      "name": "Unified selection - state, gestures and WebSocket",
+      "owner": "01"
+    },
+    {
+      "key": "C02",
+      "documentId": "representation-00e20688-1815-4518-a617-932a4e6cd233",
+      "name": "AgentContext - implemented call flow and domain models (03f2168)",
+      "owner": "02"
+    },
+    {
+      "key": "C03",
+      "documentId": "representation-74feeeae-7381-43ca-a707-9c90cfe01ee1",
+      "name": "Mapping page - MCP and HTTP API",
+      "owner": "02"
+    },
+    {
+      "key": "C04",
+      "documentId": "representation-c7177725-a7dd-4caa-9ac5-a1c702f3350d",
+      "name": "PersistentLayer",
+      "owner": "03"
+    },
+    {
+      "key": "C05",
+      "documentId": "representation-ed88e035-9f51-4e09-9174-15605cfe63d6",
+      "name": "ChangeSession - domain model and call tree",
+      "owner": "01"
+    },
+    {
+      "key": "C06",
+      "documentId": "representation-8d528230-94b4-4e16-97d4-eab812b1ad7e",
+      "name": "Workspace persistence flow",
+      "owner": "03"
+    },
+    {
+      "key": "C07",
+      "documentId": "draft-34cb3bd6-8fc0-41b4-8246-2fb76f0bdabc",
+      "name": "Canvas domain model - baseline 03f2168 (before tldraw) · Projection",
+      "owner": "01"
+    },
+    {
+      "key": "C08",
+      "documentId": "representation-b6b47084-b633-4479-83ca-c951738fcab5",
+      "name": "tldraw - Editor, Store, History and Snapshots",
+      "owner": "read-only"
+    },
+    {
+      "key": "C09",
+      "documentId": "draft-250e5b08-0775-4d65-aebd-9c5fbf529174",
+      "name": "01 - Saved CanvasViews and branching",
+      "owner": "read-only"
+    },
+    {
+      "key": "C10",
+      "documentId": "representation-9e361d7b-431c-4032-a145-0730a24d4a13",
+      "name": "Roll-up 1 · r2 · Proposal 1 - Content, revisions, and alternatives",
+      "owner": "read-only"
+    },
+    {
+      "key": "C11",
+      "documentId": "representation-50bca2cb-366e-4798-af9d-31d5ded0c37a",
+      "name": "Central and side diagrams - Attempt 2",
+      "owner": "read-only"
+    },
+    {
+      "key": "C12",
+      "documentId": "representation-037cbe86-6bcf-4188-a78e-e8eb1b1ac9e4",
+      "name": "Roll-up 1 · g2 · Canvas domain model - baseline 03f2168 (before tldraw)",
+      "owner": "01"
+    },
+    {
+      "key": "C13",
+      "documentId": "representation-24833e06-0c3c-424c-bd7a-d1b657093538",
+      "name": "Roll-up 2 · r2 · Proposal 1 - Content, revisions, and alternatives",
+      "owner": "read-only"
+    },
+    {
+      "key": "C14",
+      "documentId": "representation-4aa021f3-23ff-41b8-9d8d-0e773dcddff1",
+      "name": "Roll-up 2 · g2 · Canvas domain model - baseline 03f2168 (before tldraw)",
+      "owner": "01"
+    },
+    {
+      "key": "C15",
+      "documentId": "representation-e2eed78b-ccfb-4fa7-8bf9-c8531e141ed8",
+      "name": "Roll-up 2 · r2 · Proposal 1 - Content, revisions, and alternatives",
+      "owner": "read-only"
+    }
+  ],
+  "migrations": [
+    {
+      "id": "M1",
+      "kind": "responsibility-transfer",
+      "owner": "01",
+      "source": {
+        "canvas": 0,
+        "diagram": 6
+      },
+      "destination": {
+        "canvas": 7,
+        "diagram": 1
+      },
+      "meaning": "Removed DiagramService responsibilities are split into pure revision operations, retention, generation and publication. Annotate both diagrams; preserve already accurate destination content."
+    },
+    {
+      "id": "M2",
+      "kind": "shared-code-extraction",
+      "owner": "01",
+      "source": {
+        "canvas": 5,
+        "diagram": 4
+      },
+      "destination": {
+        "canvas": 7,
+        "diagram": 2
+      },
+      "meaning": "ChangeSession preview uses shared core diagram diff and row projection also consumed by alternative/side-panel presentation. This does not merge review/acceptance semantics."
+    },
+    {
+      "id": "M3",
+      "kind": "rendering-responsibility-transfer",
+      "owner": "01",
+      "source": {
+        "canvas": 0,
+        "diagram": 3
+      },
+      "destination": {
+        "canvas": 0,
+        "diagram": 0
+      },
+      "meaning": "Source/code panel rendering belongs to SourceWindowPanel under MappingPage. Logical retained panel records still exist. The two locations are different diagrams in the same canvas."
+    }
+  ],
+  "groups": [
+    {
+      "key": "01",
+      "title": "Canvas interaction, presentation and change review",
+      "owned": [
+        0,
+        1,
+        5,
+        7,
+        12,
+        14
+      ],
+      "features": [
+        1,
+        4,
+        7,
+        8,
+        9,
+        10,
+        11
+      ],
+      "new": [
+        "N1",
+        "N4",
+        "N5",
+        "N6",
+        "N7",
+        "N8"
+      ],
+      "migrations": [
+        "M1",
+        "M2",
+        "M3"
+      ],
+      "requestId": "ce5f5f9c-3501-4065-94db-90a807c00f22",
+      "agentContextId": "saved-agent-context-ce5f5f9c-3501-4065-94db-90a807c00f22",
+      "ownedDocumentIds": [
+        "representation-b697fd11-5c8d-49e7-a6b5-b12030f2f79a",
+        "representation-60532c3a-39f7-4392-9c66-a3f85c84f58b",
+        "representation-ed88e035-9f51-4e09-9174-15605cfe63d6",
+        "draft-34cb3bd6-8fc0-41b4-8246-2fb76f0bdabc",
+        "representation-037cbe86-6bcf-4188-a78e-e8eb1b1ac9e4",
+        "representation-4aa021f3-23ff-41b8-9d8d-0e773dcddff1"
+      ],
+      "sourceFiles": 67,
+      "estimatedResolvedBytes": 1111877,
+      "deletedSourceFiles": [
+        "domain/core/diagrams/diagramService.ts"
+      ],
+      "createRequestFile": "01/create-request.json",
+      "promptFile": "01/prompt-v1.txt",
+      "contentHash": "69ebcfee89acda8808d90addb3e4a386963b721089f2275694c2140c4f28bf05",
+      "savedAt": "2026-11-03T19:23:19.110Z",
+      "verified": true,
+      "resolvedBytes": 1146135
+    },
+    {
+      "key": "02",
+      "title": "Agent authoring, saved contexts and API orchestration",
+      "owned": [
+        2,
+        3
+      ],
+      "features": [
+        2,
+        3,
+        5,
+        6
+      ],
+      "new": [
+        "N2",
+        "N3"
+      ],
+      "migrations": [],
+      "requestId": "34dfbd10-aa3e-4675-8c91-73d2a3d79952",
+      "agentContextId": "saved-agent-context-34dfbd10-aa3e-4675-8c91-73d2a3d79952",
+      "ownedDocumentIds": [
+        "representation-00e20688-1815-4518-a617-932a4e6cd233",
+        "representation-74feeeae-7381-43ca-a707-9c90cfe01ee1"
+      ],
+      "sourceFiles": 37,
+      "estimatedResolvedBytes": 657208,
+      "deletedSourceFiles": [],
+      "createRequestFile": "02/create-request.json",
+      "promptFile": "02/prompt-v1.txt",
+      "contentHash": "309a2b05a6a3256bd487ebd2e7b25cb71c12ce2ed6d65d983cc3d4c758fb9312",
+      "savedAt": "2026-11-03T19:23:28.205Z",
+      "verified": true,
+      "resolvedBytes": 676289
+    },
+    {
+      "key": "03",
+      "title": "Persistence, checkpoints and durable application state",
+      "owned": [
+        4,
+        6
+      ],
+      "features": [
+        12
+      ],
+      "new": [],
+      "migrations": [],
+      "requestId": "09a43aa1-2358-4bee-a9fc-1c4cddbdd018",
+      "agentContextId": "saved-agent-context-09a43aa1-2358-4bee-a9fc-1c4cddbdd018",
+      "ownedDocumentIds": [
+        "representation-c7177725-a7dd-4caa-9ac5-a1c702f3350d",
+        "representation-8d528230-94b4-4e16-97d4-eab812b1ad7e"
+      ],
+      "sourceFiles": 18,
+      "estimatedResolvedBytes": 392318,
+      "deletedSourceFiles": [],
+      "createRequestFile": "03/create-request.json",
+      "promptFile": "03/prompt-v1.txt",
+      "contentHash": "0ed314da95bed7f4c2e90a487c441f4b3048d08c5db436251fade340086a1caa",
+      "savedAt": "2026-11-03T19:23:32.641Z",
+      "verified": true,
+      "resolvedBytes": 405836
+    }
+  ],
+  "limitations": [
+    "Full-range MCP hunk discovery exceeds 8 MiB due unrelated investigation dumps; scoped Git evidence is supplied without fabricated API hunk IDs."
+  ]
+}

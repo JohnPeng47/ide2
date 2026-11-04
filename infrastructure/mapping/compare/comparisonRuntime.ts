@@ -1,3 +1,4 @@
+import { comparisonManifest, generatedReportSchema, sourceKey } from '../../../domain/mapping/compare/comparisonReport';
 import { spawn } from 'node:child_process';
 import { mkdtemp, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -7,6 +8,17 @@ import { requireAiEnabled } from '../../../application/core/errors';
 import type { ComparisonRuntime } from '../../../application/mapping/compare/comparisonGenerationService';
 import { comparisonPrompt, generatedComparisonsSchema } from '../../../domain/mapping/compare/comparisonGeneration';
 
+/** Strict structured outputs accept anyOf, while Zod emits oneOf for tagged unions. */
+export function comparisonOutputJsonSchema(experiment: boolean) {
+  const schema = z.toJSONSchema(experiment ? generatedReportSchema : generatedComparisonsSchema);
+  const normalize = (value: unknown): unknown => {
+    if (Array.isArray(value)) return value.map(normalize);
+    if (!value || typeof value !== 'object') return value;
+    return Object.fromEntries(Object.entries(value).filter(([key]) => key !== 'discriminator').map(([key, child]) => [key === 'oneOf' ? 'anyOf' : key, normalize(child)]));
+  };
+  return normalize(schema);
+}
+
 /** An isolated ASCII-only working directory prevents inherited repository/chat context. */
 export class CodexComparisonRuntime implements ComparisonRuntime {
   constructor(private enabled: boolean) {}
@@ -15,8 +27,9 @@ export class CodexComparisonRuntime implements ComparisonRuntime {
     const directory = await mkdtemp(path.join(tmpdir(), 'diagram-comparison-'));
     try {
       await Promise.all(input.diagrams.map(diagram => writeFile(path.join(directory, `${diagram.id}.txt`), diagram.ascii, { mode: 0o600 })));
+      if (input.experiment) await writeFile(path.join(directory, 'canvases.json'), JSON.stringify(comparisonManifest(input.canvases!, input.experiment), null, 2));
       const schema = path.join(directory, 'output-schema.json');
-      await writeFile(schema, JSON.stringify(z.toJSONSchema(generatedComparisonsSchema)));
+      await writeFile(schema, JSON.stringify(comparisonOutputJsonSchema(!!input.experiment)));
       input.signal.throwIfAborted();
       return await new Promise((resolve, reject) => {
         const child = spawn(process.env.NEW_DIAGRAM_CODEX_BIN || 'codex', ['exec', '--model', input.model,
@@ -53,15 +66,32 @@ export class CodexComparisonRuntime implements ComparisonRuntime {
           clearTimeout(forceKill); consume(buffer);
           finish(failure || code !== 0 || !reply.trim() ? Error(failure || `Comparison agent exited ${code} without a result. Check model access and authentication.`) : undefined);
         });
-        if (input.signal.aborted) abort(); else child.stdin.end(comparisonPrompt(input.diagrams));
+        if (input.signal.aborted) abort(); else child.stdin.end(input.evaluationPrompt ?? comparisonPrompt(input.diagrams));
       });
     } finally { await rm(directory, { recursive: true, force: true }); }
   }
 }
 
 export class FakeComparisonRuntime implements ComparisonRuntime {
-  async generate({ diagrams, signal }: Parameters<ComparisonRuntime['generate']>[0]) {
+  async generate({ diagrams, signal, experiment, canvases }: Parameters<ComparisonRuntime['generate']>[0]) {
     signal.throwIfAborted();
+    const groupId = (group: 'baseline' | 'prompted') => `C${(canvases ?? []).findIndex(copy => experiment![group].some(source => sourceKey(source) === sourceKey(copy.source))) + 1}`;
+    if (experiment) {
+      const opinion = { level: 'moderate', attributionConfidence: 'low', rationale: 'The difference is material, but one sample cannot establish attribution.' };
+      const A = diagrams.find(d => d.canvasCopyId === canvases![Number(groupId('baseline').slice(1)) - 1].id)!;
+      const B = diagrams.find(d => d.canvasCopyId === canvases![Number(groupId('prompted').slice(1)) - 1].id)!;
+      return { output: { scale: { kind: 'default' }, summary: 'Tentative prompt differences in the supplied outputs.',
+        limitations: 'n=m=1: recurrence and within-group variability cannot be assessed.',
+        comparisonSummary: experiment.maxComparisons ? 'Tentative illustrations; no causal attribution.' : 'No comparisons selected: the requested maximum is zero.',
+        comparisons: [
+          { kind: 'canvas', opinion, title: 'State responsibility', explanation: 'The prompted tree makes responsibility explicit.',
+            A: { canvas: groupId('baseline'), camera: { transform: { offset: { x: -70, y: 20 }, scale: .6 } } },
+            B: { canvas: groupId('prompted'), camera: { transform: { offset: { x: -30, y: 10 }, scale: .8 } } } },
+          { kind: 'diagram', opinion: { ...opinion, level: 'small' }, title: 'Corresponding tree details', explanation: 'Paired excerpts expose the content difference.',
+            A: { diagram: A.id, ranges: [{ startLine: 1, endLine: 1 }] },
+            B: { diagram: B.id, ranges: [{ startLine: Math.min(2, B.ascii.split('\n').length), endLine: Math.min(3, B.ascii.split('\n').length) }] } }
+        ].slice(0, experiment.maxComparisons) } };
+    }
     const selected = [...new Map(diagrams.map(d => [d.canvasCopyId, d])).values()];
     const side = (d: typeof selected[number]) => ({ diagram: d.id, ranges: [{ startLine: 1, endLine: 1 },
       ...(d.ascii.split('\n').length >= 3 ? [{ startLine: 3, endLine: 3 }] : [])] });

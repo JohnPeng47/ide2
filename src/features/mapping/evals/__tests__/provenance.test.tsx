@@ -14,11 +14,11 @@ it('renders a rerun with pinned v2 text when the cached catalog only has v1, or 
   const prompt: EvalPrompt = { schemaVersion: 1, id: 'prompt', projectId: 'p', name: 'Example', workflow: 'alternatives', createdAt: '', updatedAt: '',
     versions: [{ version: 1, createdAt: '', stages: { alternative: 'Old text' } }] };
   const run = { id: 'run', projectId: 'p', workflow: 'alternatives', createdAt: '', inputs: {},
-    prompts: [{ promptId: 'prompt', name: 'Example', version: 2, stages: { alternative: 'Pinned {{task}}' } }],
+    prompts: [{ promptId: 'prompt', name: 'Example', version: 2, stages: { alternative: 'Pinned explicit instructions' } }],
     request: { prompts: [{ promptId: 'prompt', version: 2 }], inputs: {}, passes: 1, model: 'model', effort: 'high' } } as unknown as EvalRunSummary;
   for (const prompts of [[prompt], []]) {
     const html = renderToStaticMarkup(<RunLauncher prompts={prompts} runs={[run]} initial={{ workflow: 'alternatives', rerun: run }} onClose={() => {}} onStarted={() => {}} />);
-    expect(html).toContain('v2'); expect(html).toContain('aria-label="Task"');
+    expect(html).toContain('v2'); expect(html).not.toContain('aria-label="Task"');
   }
 });
 

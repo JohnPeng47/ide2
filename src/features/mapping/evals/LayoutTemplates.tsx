@@ -3,7 +3,7 @@ import type { LayoutCapture, LayoutGeometry, LayoutPlacement, LayoutTemplate } f
 import type { CompareCandidate, CompareSource } from '../../../../domain/mapping/compare/comparePageSession';
 import { candidateKey, CanvasPicker, sourceOf } from './CanvasPicker';
 import { listCompareCandidates } from './compareApi';
-import { captureLayoutTemplate, deleteLayoutTemplate, listLayoutTemplates, renameLayoutTemplate, saveLayoutTemplate } from './evalsApi';
+import { captureLayoutTemplate, deleteLayoutTemplate, listLayoutTemplates, renameLayoutTemplate, saveLayoutTemplate, updateLayoutDescriptions } from './evalsApi';
 import { Drawer } from './Drawer';
 import { errorMessage } from './evalsFormat';
 import './evals.css';
@@ -16,12 +16,27 @@ export function LayoutPreview({ geometry, placements }: { geometry: LayoutGeomet
     <svg role="img" aria-label={placements ? 'Generated layout positions' : 'Empty layout template slots'} viewBox={`-8 -8 ${width + 16} ${height + 16}`}>
       {boxes.map((box, i) => <g key={box.id} data-layout-slot={box.id} data-moved={box.moved || undefined}>
         <rect x={box.column * 8.4} y={box.row * 18} width={box.columns * 8.4} height={box.rows * 18} />
-        <text x={box.column * 8.4 + 3} y={box.row * 18 + 12} fontSize={10}>Slot {i + 1}</text>
+        <text x={box.column * 8.4 + 3} y={box.row * 18 + 12} fontSize={10}>{geometry.slots.find(slot => slot.id === box.id)?.title ?? `Slot ${i + 1}`}</text>
         <title>{box.id}: column {box.column}, row {box.row}; {box.columns} × {box.rows}{box.moved ? ' · adjusted' : ''}</title>
       </g>)}
     </svg>
     <figcaption>{boxes.length} {boxes.length === 1 ? 'slot' : 'slots'} · {placements ? 'Final generated positions' : 'Visible diagrams only; original text and edges excluded'}</figcaption>
+    {geometry.slots.some(slot => slot.description) && <dl className="layout-slot-descriptions">
+      {geometry.slots.map((slot, i) => slot.description && <div key={slot.id}><dt>Slot {i + 1}</dt><dd>{slot.description}</dd></div>)}
+    </dl>}
   </figure>;
+}
+
+function LayoutDescriptionFields({ geometry, onChange, disabled }: {
+  geometry: LayoutGeometry; onChange: (geometry: LayoutGeometry) => void; disabled: boolean;
+}) {
+  return <fieldset disabled={disabled} className="layout-description-fields"><legend>Diagram descriptions (optional)</legend>
+    <p className="evals-muted">Describe what each numbered slot should show. These descriptions guide generation.</p>
+    {geometry.slots.map((slot, i) => <label key={slot.id}>Slot {i + 1} description
+      <textarea rows={2} maxLength={2000} value={slot.description ?? ''} placeholder="What should this diagram show?"
+        onChange={event => onChange({ ...geometry, slots: geometry.slots.map(item => item.id === slot.id ? { ...item, description: event.target.value } : item) })} />
+    </label>)}
+  </fieldset>;
 }
 
 export function LayoutProvenance({ template, placements }: { template: LayoutTemplate; placements?: LayoutPlacement[] }) {
@@ -70,6 +85,7 @@ export function SaveLayoutTemplate({ initial, source, onClose, onSaved }: {
       {!initial && !source && (candidates ? <CanvasPicker label="Source canvas or view" candidates={candidates} value={picked} onChange={setPicked} disabled={busy} /> : <p role="status">Loading canvases…</p>)}
       <label>Template name<input aria-label="Template name" required maxLength={120} value={name} onChange={event => setName(event.target.value)} disabled={busy} /></label>
       {capture ? <LayoutPreview geometry={capture.geometry} /> : (source || picked) && !error ? <p role="status">Capturing layout…</p> : null}
+      {capture && <LayoutDescriptionFields geometry={capture.geometry} disabled={busy} onChange={geometry => setCapture({ ...capture, geometry })} />}
       <p className="evals-muted">Only visible diagram positions and size guidance are captured. New diagrams may expand right/down to avoid overlap.</p>
       {error && <p className="evals-error" role="alert">{error}</p>}
       <div className="evals-actions"><button type="button" onClick={onClose}>Cancel</button>
@@ -81,10 +97,11 @@ export function SaveLayoutTemplate({ initial, source, onClose, onSaved }: {
 export function LayoutTemplates({ onClose }: { onClose: () => void }) {
   const [items, setItems] = useState<LayoutTemplate[]>(), [error, setError] = useState(''), [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<string>(), [name, setName] = useState(''), [busy, setBusy] = useState(false);
+  const [describing, setDescribing] = useState<{ id: string; geometry: LayoutGeometry }>();
   const refresh = () => listLayoutTemplates().then(setItems).catch(error => setError(errorMessage(error)));
   useEffect(() => { void refresh(); }, []);
   const mutate = async (operation: () => Promise<unknown>) => {
-    setBusy(true); setError(''); try { await operation(); setEditing(undefined); await refresh(); }
+    setBusy(true); setError(''); try { await operation(); setEditing(undefined); setDescribing(undefined); await refresh(); }
     catch (error) { setError(errorMessage(error)); } finally { setBusy(false); }
   };
   if (creating) return <SaveLayoutTemplate onClose={() => setCreating(false)} onSaved={() => void refresh()} />;
@@ -93,10 +110,16 @@ export function LayoutTemplates({ onClose }: { onClose: () => void }) {
     {error && <p role="alert" className="evals-error">{error}</p>}
     {!items ? <p role="status">Loading templates…</p> : !items.length ? <p>No layout templates yet.</p> : items.map(item => <section className="layout-template-card" key={item.id}>
       <h3>{item.name}</h3><LayoutPreview geometry={item.geometry} />
-      {editing === item.id ? <form onSubmit={event => { event.preventDefault(); if (name.trim()) void mutate(() => renameLayoutTemplate(item.id, name.trim())); }}>
+      {describing?.id === item.id ? <form className="evals-form" onSubmit={event => { event.preventDefault(); if (!busy) void mutate(() => updateLayoutDescriptions(item.id,
+        Object.fromEntries(describing.geometry.slots.map(slot => [slot.id, slot.description ?? ''])))); }}>
+        <LayoutDescriptionFields geometry={describing.geometry} disabled={busy} onChange={geometry => setDescribing({ id: item.id, geometry })} />
+        <div className="evals-actions"><button disabled={busy}>{busy ? 'Saving…' : 'Save descriptions'}</button>
+          <button type="button" disabled={busy} onClick={() => setDescribing(undefined)}>Cancel</button></div>
+      </form> : editing === item.id ? <form onSubmit={event => { event.preventDefault(); if (name.trim()) void mutate(() => renameLayoutTemplate(item.id, name.trim())); }}>
         <input aria-label="New template name" value={name} maxLength={120} onChange={event => setName(event.target.value)} />
         <button disabled={busy || !name.trim()}>Save name</button><button type="button" onClick={() => setEditing(undefined)}>Cancel</button>
-      </form> : <div className="evals-actions"><button disabled={busy} onClick={() => { setEditing(item.id); setName(item.name); }}>Rename</button>
+      </form> : <div className="evals-actions"><button disabled={busy} onClick={() => { setDescribing(undefined); setEditing(item.id); setName(item.name); }}>Rename</button>
+        <button disabled={busy} onClick={() => { setEditing(undefined); setDescribing({ id: item.id, geometry: item.geometry }); }}>Edit descriptions</button>
         <button disabled={busy} onClick={() => { if (confirm(`Delete layout template “${item.name}”? Pinned runs keep their copy.`)) void mutate(() => deleteLayoutTemplate(item.id)); }}>Delete template</button></div>}
     </section>)}
   </Drawer>;

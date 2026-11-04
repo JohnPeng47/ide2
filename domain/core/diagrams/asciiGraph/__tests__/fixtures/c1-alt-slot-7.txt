@@ -1,0 +1,63 @@
+[E] CanvasHistoryService / coordinated revisions
+===========================================================================
+DefaultCanvasHistoryService
+  openContext(resolved document, view, optional history record)
+    -> CanvasHistory
+    -> frozen CanvasEditingContext {contextId}
+  WeakMap<handle, CanvasHistory>: runtime ownership
+    distinct handles isolate viewers of the same persisted context
+    service and handle stay outside saved canvases
+History boundary
+  append(document, view, correspondence) -> history.append
+  state -> checkpointId / document / view / canUndo / canRedo
+  document -> resolved document; resolve(diagramId) -> DiagramView
+  navigate(redo?) -> ordinary undo/redo
+    linked transaction -> error: use workspace undo/redo
+  reset / forkContext / adopt / retireTransactions
+  exportContext -> CanvasHistoryRecord
+  persistenceChanges(since?) -> HistoryChanges
+===========================================================================
+Transfer preparation
+  MappingPage.beginTransfer -> selected IDs + source checkpoint
+  pause persistence + block edits -> recheck source checkpoint
+  capture workspace + source/destination history
+  runWorkspaceTask(type: transfer)
+    -> prepared source + destination + transaction
+  move -> source document/history/view replaced
+  copy -> source retained; selection cleared
+  destination -> prepared document/history/view
+  transfers -> discard unapplied branch + append transaction
+Acknowledged publication
+  publishTransfer(workspace)
+    -> await WorkspaceStorage.save(workspace)
+    -> installWorkspace
+         replace sessions / activeId / transfers / viewState
+Linked undo and redo
+  transferBoundary -> find transaction at participant head
+  require both source and destination controllers
+  undo: newer applied transfer on either participant blocks
+  prepareTransferNavigation -> both states + transaction
+  created destination -> hidden on undo; visible on redo
+  activeId -> source on undo; destination on redo
+  publishTransfer -> same save-before-install path
+===========================================================================
+Incremental persistence
+  CanvasSession.onCommit -> CanvasWorkspace.onPersist(ids)
+  WorkspacePersistence.sync(ids)
+    per-session cursor -> controller.persistenceChanges(cursor)
+    historyChanges -> revision/ + checkpoint/ records
+    metadata + baseline + canvas + viewport + workspace index
+    SourcePaneViewState -> captureDisplay + captureCamera
+    first cursor -> remove obsolete graph in same batch
+    reuse immutable revision records already in storage
+RecordStorage
+  batch(changes) -> synchronous cache + coalesced pending changes
+  flush -> requestId + expectedRevision + changes
+    -> persistent worker -> records API -> acknowledged revision
+  commit -> flush pending -> submit changes -> wait for ACK
+    REJECTED -> restore prior cache; discard abandoned request
+    ambiguous failure -> retry identical request/ID
+WorkspaceStorage
+  one worker per opened workspace
+  save(snapshot) -> flush -> project(snapshot) -> commit
+  load / restore / flush / dispose

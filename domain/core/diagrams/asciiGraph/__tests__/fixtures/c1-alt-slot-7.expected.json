@@ -1,0 +1,95 @@
+{
+ "boxes": [
+  {
+   "id": "1:1-1:48",
+   "text": "[E] CanvasHistoryService / coordinated revisions",
+   "rect": {
+    "line1": 1,
+    "col1": 1,
+    "line2": 1,
+    "col2": 48
+   }
+  },
+  {
+   "id": "3:1-9:66",
+   "text": "DefaultCanvasHistoryService\nopenContext(resolved document, view, optional history record)\n-> CanvasHistory\n-> frozen CanvasEditingContext {contextId}\nWeakMap<handle, CanvasHistory>: runtime ownership\ndistinct handles isolate viewers of the same persisted context\nservice and handle stay outside saved canvases",
+   "rect": {
+    "line1": 3,
+    "col1": 1,
+    "line2": 9,
+    "col2": 66
+   }
+  },
+  {
+   "id": "10:1-18:66",
+   "text": "History boundary\nappend(document, view, correspondence) -> history.append\nstate -> checkpointId / document / view / canUndo / canRedo\ndocument -> resolved document; resolve(diagramId) -> DiagramView\nnavigate(redo?) -> ordinary undo/redo\nlinked transaction -> error: use workspace undo/redo\nreset / forkContext / adopt / retireTransactions\nexportContext -> CanvasHistoryRecord\npersistenceChanges(since?) -> HistoryChanges",
+   "rect": {
+    "line1": 10,
+    "col1": 1,
+    "line2": 18,
+    "col2": 66
+   }
+  },
+  {
+   "id": "20:1-29:63",
+   "text": "Transfer preparation\nMappingPage.beginTransfer -> selected IDs + source checkpoint\npause persistence + block edits -> recheck source checkpoint\ncapture workspace + source/destination history\nrunWorkspaceTask(type: transfer)\n-> prepared source + destination + transaction\nmove -> source document/history/view replaced\ncopy -> source retained; selection cleared\ndestination -> prepared document/history/view\ntransfers -> discard unapplied branch + append transaction",
+   "rect": {
+    "line1": 20,
+    "col1": 1,
+    "line2": 29,
+    "col2": 63
+   }
+  },
+  {
+   "id": "30:1-34:60",
+   "text": "Acknowledged publication\npublishTransfer(workspace)\n-> await WorkspaceStorage.save(workspace)\n-> installWorkspace\nreplace sessions / activeId / transfers / viewState",
+   "rect": {
+    "line1": 30,
+    "col1": 1,
+    "line2": 34,
+    "col2": 60
+   }
+  },
+  {
+   "id": "35:1-42:59",
+   "text": "Linked undo and redo\ntransferBoundary -> find transaction at participant head\nrequire both source and destination controllers\nundo: newer applied transfer on either participant blocks\nprepareTransferNavigation -> both states + transaction\ncreated destination -> hidden on undo; visible on redo\nactiveId -> source on undo; destination on redo\npublishTransfer -> same save-before-install path",
+   "rect": {
+    "line1": 35,
+    "col1": 1,
+    "line2": 42,
+    "col2": 59
+   }
+  },
+  {
+   "id": "44:1-52:63",
+   "text": "Incremental persistence\nCanvasSession.onCommit -> CanvasWorkspace.onPersist(ids)\nWorkspacePersistence.sync(ids)\nper-session cursor -> controller.persistenceChanges(cursor)\nhistoryChanges -> revision/ + checkpoint/ records\nmetadata + baseline + canvas + viewport + workspace index\nSourcePaneViewState -> captureDisplay + captureCamera\nfirst cursor -> remove obsolete graph in same batch\nreuse immutable revision records already in storage",
+   "rect": {
+    "line1": 44,
+    "col1": 1,
+    "line2": 52,
+    "col2": 63
+   }
+  },
+  {
+   "id": "53:1-59:65",
+   "text": "RecordStorage\nbatch(changes) -> synchronous cache + coalesced pending changes\nflush -> requestId + expectedRevision + changes\n-> persistent worker -> records API -> acknowledged revision\ncommit -> flush pending -> submit changes -> wait for ACK\nREJECTED -> restore prior cache; discard abandoned request\nambiguous failure -> retry identical request/ID",
+   "rect": {
+    "line1": 53,
+    "col1": 1,
+    "line2": 59,
+    "col2": 65
+   }
+  },
+  {
+   "id": "60:1-63:56",
+   "text": "WorkspaceStorage\none worker per opened workspace\nsave(snapshot) -> flush -> project(snapshot) -> commit\nload / restore / flush / dispose",
+   "rect": {
+    "line1": 60,
+    "col1": 1,
+    "line2": 63,
+    "col2": 56
+   }
+  }
+ ],
+ "edges": []
+}

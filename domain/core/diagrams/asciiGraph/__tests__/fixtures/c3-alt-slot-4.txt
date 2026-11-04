@@ -1,0 +1,38 @@
+[B] Diagram
+=============================================================
+[Diagram]
+  diagramId   stable service identity
+  revisionId  issued service revision
+  id          local scene content key
+  revision    nonnegative integer
+    |
+    +-- content: DiagramContent
+    |     revisionId = id:revision
+    |     ascii + asciiSha256
+    |     structure
+    |       +-- diagram
+    |       '-- tree: parserVersion + rootIds + nodes[id]
+    |             ascii-tree-1 / ascii-tree-2
+    |             label, line, branchColumn,
+    |             startColumn, endColumn,
+    |             parentId?, childIds, foldRanges
+    |
+[DiagramSourceContext]
+    | contentHash = hash(content.ascii)
+    | binding?: sourceId + repositoryIdentity
+    |           corpus + domainProfileId
+    | mappings[] -- entityId + sourceRangeIndex --+
+    | evidence[entityId].sourceRanges[] <---------+
+    |   range: id, path, startLine, endLine, originalLines
+    |
+    '-- jumps?: DiagramJump[]  (on Diagram)
+             |
+[Validation and queries]
+  buildDiagramContent --> canonical parse + hash
+  printable ASCII + LF; 1-20000 characters
+  validateDiagram --> identities / canonical content
+    binding / jumps / local mappings / evidence joins
+  diagramSource --> entries / forSelection / search
+  visibleContentLines --> exclude tree fold ranges
+    unknown collapsed ID --> STALE_CONTENT_NODE
+Sources: diagram.ts; diagramContent.ts

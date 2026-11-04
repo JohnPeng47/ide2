@@ -64,7 +64,7 @@ export function compareDiagramLabels(session: ComparePageSession) {
   }
   return labels;
 }
-export interface CompareSessionOrigin { agentContextId: string; contextName: string; workflow: 'roll-up' | 'alternatives'; runId?: string; canvasId: string }
+export interface CompareSessionOrigin { agentContextId: string; contextName: string; workflow: import('../evals/evalWorkflows').EvalWorkflowId; runId?: string; canvasId: string }
 /** `origins` lists the generated canvases compared, so sessions can be filed under their AgentContext. */
 export type CompareSessionSummary = Pick<ComparePageSession, 'id' | 'title' | 'createdAt'> & { compareCount: number; mixedOrigins?: boolean; origins: CompareSessionOrigin[] };
 export function compareSessionSummary(session: ComparePageSession): CompareSessionSummary {

@@ -1,0 +1,956 @@
+{
+  "repositoryId": "repo-ce67f2af4410036fce1ce12f",
+  "comparisonBase": "03f2168deba364103c2450ca9b8168cd1fc9ddc5",
+  "head": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e",
+  "commits": [
+    "7d44fa04bfee6bb4a2af171fe43e5e55a0c1f140",
+    "4cfd462c50351ef95846152d5a6d0a62b4a3a971",
+    "e0c9e7641c073c9ba433d5c13277532eed2cfc26",
+    "3726186d98be8495cda98460eb9b308fe83bdd52",
+    "b3ae534e19b79cb3f32c3a4b930ff9612c6a70e8",
+    "bb64b7939944584167347b28b30507179d787a46",
+    "6fc824d148f4ba4737c245d9db1faa9c812184c1",
+    "9c811283281b3ae4370b3a6b82d9ef1cc66c130b",
+    "9278ea1df4b88d19045c79dc8bbeea994f4f8712",
+    "ff5ce571e61bab2b541433cbe55368c8ebbec99a",
+    "6df4e3abf30c64408820e04c2adafa8edd70d34f",
+    "586df6dc338d8c2b5cd085cb4028acda9fc3314a",
+    "a0809e3394857b089e121d7cdf4a92601b369edc",
+    "695dcfc6e561a4a9c0600c3fbc17a9a9639b4554",
+    "ccdb867c40e9a9727b353728a7f9e3f8cf2f763f",
+    "d4e9fba91c0f077b03a0b69504f41074b32bf745",
+    "ecb39cea74985f320386b8c432c642a4eaaf1b93",
+    "6e4425f21727d9e683c713b1239fd6820fe1e388",
+    "bace01806dad099ecd6eb1e9c00806538e48feca",
+    "de7f8d03d01d17318efd5f0fba73b7db3bddb72b",
+    "22e15f8efc03be2c5235f74fe163dab66bfaf846",
+    "0ec9ec96770d778603755b81260ad873152d3248",
+    "9370145641edd66bb94e7e3749ab4bc2802f837d",
+    "25578d0624a7527fd7fa891da8b4330ba5e1b6ee",
+    "b974563d03a7456e3387d23079ce06b27a47a231",
+    "eb01bcf86b41d5b4be5a6b8b59033a840aceb3ec",
+    "4bafd68b1da1aa97aca7c630d08be54173b9de9b",
+    "681b818634dbaaa80a67bb93c75defabcf4527fe",
+    "78c9072cb74709faa4a78ce096913fa9ef7f7ed0",
+    "5c5ed23c3ecc6139bf3a9e84202badc88b289b7f",
+    "032bc3f494edd1932d7c0db408d0a11b9bd37119",
+    "936f7b72afef2f9b736180d57c1d42281b3063e4",
+    "808aca3615203866939d876644ebd539f37d66d4",
+    "14ff49fd386d09334b23199672af61b3aa81e6f5",
+    "907e69135e4df498fc2a44d362a58a0a73a0f994",
+    "32acfd7eb3bd095c8f47d62e1d5eaead5e3d1607",
+    "6c15ecece45db34f3f045c0eee8ef524b0b7b6ea",
+    "d24849dda9448a271b0e735dfab2f232d6a48d51",
+    "132c2b7a4887c4f3171d7fbca6e10ece727d1a13",
+    "2a87e7cba2845c0a7915316ab3c9e20b27fa7d08",
+    "c35511e8a50812fb02e8c626420915ef4e7c8353",
+    "a61074311d05870f2a713b75e59a60e12c13b9fb",
+    "a3450a4268415219d34771ab3a7b1551ce4d4634",
+    "ff1f7a4620d2cbeedb6501a7c747f315b4162973",
+    "71a2fa5e0b6fea2c9c55b666039be3052b727747",
+    "ff45e4250aa502e3ea8ecd3d1478775c08ca12a3",
+    "b321abcf792ac36961052bb6001385a8376678e5",
+    "2adef44426b08f81a1808bf0861dd7a104862841",
+    "b95869f49511678d65c1e8c5bf8d96bec02599e7",
+    "da8cf3de7828762ad13ef67521e9d700f0456886",
+    "b2396bda2a56e7c920868d75d32e338b449e9a3d",
+    "1d400af18af96b936b31f45f55d6420e6bc27561",
+    "3708170229e3ff6b8312bfda078ee0439b866d61",
+    "5a54118ede914a28bafc9ae4b12c699f7e5e50fc",
+    "b054943aef9f21281cb7d0ee35fe5c0aa700cb15",
+    "8ce5b7ad91eca83d1dacabed8377386f1387b8a4",
+    "7a99539d34d242bb00fa138541ae3cccc5264b45",
+    "258ccc1c4a8200bda6b63ec9c192f7ceabf927ff",
+    "622adb3fcb44f79d78a83dd73fb6c2179a7f8d01",
+    "5e926a69a55465bcb7469d35fd88ff4a10477531",
+    "7fa6f6f3196875b3c9405fb7eaf279b8525025d6",
+    "f0be561fef85be748b38601af7da0bfbac7cefd5",
+    "0066e1126de6f72aae3b295a1e7266665d30929f",
+    "507de3e99902a2a0673d13d556e0929a870f8375",
+    "3a6c0d6447eba7f849a08953f419d1c9f4016733",
+    "f4d7beac7b3beefd16ffef02462a773a7b10814a",
+    "cfdc11b85c747af837eb4e2a294659bcd2e96302",
+    "caf0883dc7b1fe9cf68cf278f7c0de4f2c64798c",
+    "0a8716edcdb41408902c1fdcbe71516d66b4c188",
+    "fd7244080388f0c98455e19620ed743c21355b49",
+    "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  ],
+  "schemaVersion": 2,
+  "promptVersion": 2,
+  "createdAt": "2026-11-03T19:28:07.593208+00:00",
+  "group": "ChangeSession evals v2 - 7 contexts",
+  "supersedes": [
+    "saved-agent-context-ce5f5f9c-3501-4065-94db-90a807c00f22",
+    "saved-agent-context-34dfbd10-aa3e-4675-8c91-73d2a3d79952",
+    "saved-agent-context-09a43aa1-2358-4bee-a9fc-1c4cddbdd018"
+  ],
+  "ownership": [
+    {
+      "key": "C00/D00",
+      "documentId": "representation-b697fd11-5c8d-49e7-a6b5-b12030f2f79a",
+      "title": "MappingPage                              baseline 03f2168, before tldraw",
+      "asciiSha256": "388fd8bd90a36b366d3dc91047b58f0d2028d2e6a1a0093b2e48874b94f71498",
+      "owner": "01"
+    },
+    {
+      "key": "C00/D01",
+      "documentId": "representation-b697fd11-5c8d-49e7-a6b5-b12030f2f79a",
+      "title": "[A] GridBox / LineGridScene",
+      "asciiSha256": "7fe349d1e6bc793c8977a99f36316c74b0194e427d5fd3d342fc4a2ad12d99f7",
+      "owner": "02"
+    },
+    {
+      "key": "C00/D02",
+      "documentId": "representation-b697fd11-5c8d-49e7-a6b5-b12030f2f79a",
+      "title": "[B] Diagram",
+      "asciiSha256": "ba3cf06dc8b6440e9c26ee8a56cca318e269b648327e85d08306176bb0ed3ccf",
+      "owner": "03"
+    },
+    {
+      "key": "C00/D03",
+      "documentId": "representation-b697fd11-5c8d-49e7-a6b5-b12030f2f79a",
+      "title": "[C] FloatingBox variants",
+      "asciiSha256": "f531a2aefa7f91e79d5d6c55ca17276bbaf936a0bb4ecdaa01270766ca95ec19",
+      "owner": "01"
+    },
+    {
+      "key": "C00/D04",
+      "documentId": "representation-b697fd11-5c8d-49e7-a6b5-b12030f2f79a",
+      "title": "[D] Controller edits / agent access",
+      "asciiSha256": "62f2d1b92ffd5c4aa7b254bcb1203ae8d049e39ec51d35abb67a3e75e6926f86",
+      "owner": "02"
+    },
+    {
+      "key": "C00/D05",
+      "documentId": "representation-b697fd11-5c8d-49e7-a6b5-b12030f2f79a",
+      "title": "[E] CanvasHistoryService / coordinated revisions",
+      "asciiSha256": "47a00378dc43e9fa5233cb32191906bc80ae433602a358ba5d6e0befd7834bdc",
+      "owner": "03"
+    },
+    {
+      "key": "C00/D06",
+      "documentId": "representation-b697fd11-5c8d-49e7-a6b5-b12030f2f79a",
+      "title": "[G] DiagramService",
+      "asciiSha256": "ce436f28c022ee51324a235c74f2fb7766dee810f058eff0dc1be122e4fa974d",
+      "owner": "03"
+    },
+    {
+      "key": "C01/D00",
+      "documentId": "representation-60532c3a-39f7-4392-9c66-a3f85c84f58b",
+      "title": "CanvasSession",
+      "asciiSha256": "909dc7371bab60e730aa38767c730378feb47c84ed63382be216b7655f000f55",
+      "owner": "02"
+    },
+    {
+      "key": "C02/D00",
+      "documentId": "representation-00e20688-1815-4518-a617-932a4e6cd233",
+      "title": "[New diagram]",
+      "asciiSha256": "5f7cf77a4f13a255f62c125d5cec8f8e3c93ef11bcbb435ef6fea74e4ca6e57a",
+      "owner": "06"
+    },
+    {
+      "key": "C02/D01",
+      "documentId": "representation-00e20688-1815-4518-a617-932a4e6cd233",
+      "title": "(O) Edit diagram with AgentContext - baseline 03f2168",
+      "asciiSha256": "ad388305f7b566a9abd14c8a5ed9843c386ba41a5507da23d83e20114e7d25f8",
+      "owner": "06"
+    },
+    {
+      "key": "C02/D02",
+      "documentId": "representation-00e20688-1815-4518-a617-932a4e6cd233",
+      "title": "[D1] EditDiagramInput - request domain",
+      "asciiSha256": "aff8a846138c601809c984271fd0df6b8c10c81de7ba6ee1253b4546f3a8050e",
+      "owner": "06"
+    },
+    {
+      "key": "C02/D03",
+      "documentId": "representation-00e20688-1815-4518-a617-932a4e6cd233",
+      "title": "[D2] Diagram edit run - asynchronous execution",
+      "asciiSha256": "a9f2ff6b9e565ee6db0542c53d4cfaee100e0945a3557e80b5a52747d6827f14",
+      "owner": "06"
+    },
+    {
+      "key": "C02/D04",
+      "documentId": "representation-00e20688-1815-4518-a617-932a4e6cd233",
+      "title": "[D3] AgentContext - implemented domain object and adapter",
+      "asciiSha256": "24774236758d97acf07e8763e52733396fe5c7f890d39853addedb4a67ca66c7",
+      "owner": "06"
+    },
+    {
+      "key": "C02/D05",
+      "documentId": "representation-00e20688-1815-4518-a617-932a4e6cd233",
+      "title": "[D4] Diagram-edit agent session - runtime model",
+      "asciiSha256": "453544fa94acc805408ce5d3fba525d1519d6fa1f81818a8b79975f804277577",
+      "owner": "06"
+    },
+    {
+      "key": "C02/D06",
+      "documentId": "representation-00e20688-1815-4518-a617-932a4e6cd233",
+      "title": "[D5] Revision and canvas bindings - output domain",
+      "asciiSha256": "e77d9f93ca0ecf68d6bb60c64bc20139a7a8f69a726a17adf5b1dc312dcd9f3f",
+      "owner": "06"
+    },
+    {
+      "key": "C03/D00",
+      "documentId": "representation-74feeeae-7381-43ca-a707-9c90cfe01ee1",
+      "title": "Mapping page: exposed interfaces at 03f2168",
+      "asciiSha256": "526ca7966451cbe8e2a1a2299d2c8923f1b611578d7a0d799c2a56be6ed9181c",
+      "owner": "05"
+    },
+    {
+      "key": "C03/D01",
+      "documentId": "representation-74feeeae-7381-43ca-a707-9c90cfe01ee1",
+      "title": "Mapping backend: grouped responsibilities (03f2168)",
+      "asciiSha256": "a49cd0a3b7396db3df910f7ef294bdae5d2964c3a07917f30a7087facc64560c",
+      "owner": "05"
+    },
+    {
+      "key": "C04/D00",
+      "documentId": "representation-c7177725-a7dd-4caa-9ac5-a1c702f3350d",
+      "title": "PersistentLayer",
+      "asciiSha256": "eb180220db4d3379a056ff084b0a216a84662e42257f2d2db7288cdfd68ea104",
+      "owner": "07"
+    },
+    {
+      "key": "C05/D00",
+      "documentId": "representation-ed88e035-9f51-4e09-9174-15605cfe63d6",
+      "title": "[MODEL] ChangeSession ownership",
+      "asciiSha256": "dc6a6e5821f54a1446d828acf78a069b7256cdf552c2be6bac90b7aa2da2ba91",
+      "owner": "04"
+    },
+    {
+      "key": "C05/D01",
+      "documentId": "representation-ed88e035-9f51-4e09-9174-15605cfe63d6",
+      "title": "[CALLS] ChangeSession operations",
+      "asciiSha256": "7da5672e684963a805ba4dbc32237ee2e763b736837aed6687428b8626b03e8b",
+      "owner": "04"
+    },
+    {
+      "key": "C05/D02",
+      "documentId": "representation-ed88e035-9f51-4e09-9174-15605cfe63d6",
+      "title": "[H] Isolated history and undo/redo",
+      "asciiSha256": "89f05f6db65fc34582f1df4908e4705b64691527a98e9acd6044e80e47f02d33",
+      "owner": "04"
+    },
+    {
+      "key": "C05/D03",
+      "documentId": "representation-ed88e035-9f51-4e09-9174-15605cfe63d6",
+      "title": "[P] Session persistence and reopening",
+      "asciiSha256": "0602df5a445d2b63cc1d873950af71ec61b0f79c7a377bbb7cd04e9f300fd999",
+      "owner": "04"
+    },
+    {
+      "key": "C05/D04",
+      "documentId": "representation-ed88e035-9f51-4e09-9174-15605cfe63d6",
+      "title": "[D] Baseline/proposed -> unified review",
+      "asciiSha256": "5d6a76ce5e0bdc6586e99ac76ce61b4ee16277892f317c05120f161c98ff13b0",
+      "owner": "04"
+    },
+    {
+      "key": "C05/D05",
+      "documentId": "representation-ed88e035-9f51-4e09-9174-15605cfe63d6",
+      "title": "[A] Ready validation and atomic acceptance",
+      "asciiSha256": "ccbf08afbdd2b64d415d5b4130a3c4631ecd80dbcf95d8505085dca470ac3c9d",
+      "owner": "04"
+    },
+    {
+      "key": "C06/D00",
+      "documentId": "representation-8d528230-94b4-4e16-97d4-eab812b1ad7e",
+      "title": "Workspace persistence flow - baseline 03f2168",
+      "asciiSha256": "cf9bf4d8fbf10c9ff186415be5339aa7aaf160936c93992012f518c10fead290",
+      "owner": "07"
+    },
+    {
+      "key": "C07/D00",
+      "documentId": "draft-34cb3bd6-8fc0-41b4-8246-2fb76f0bdabc",
+      "title": "[B] Diagram - immutable content and presentation",
+      "asciiSha256": "767e626f12bfe6e6afe7a79f8989d4ed5d3dbdaf8f8e19ae2cea318a7084426b",
+      "owner": "03"
+    },
+    {
+      "key": "C07/D01",
+      "documentId": "draft-34cb3bd6-8fc0-41b4-8246-2fb76f0bdabc",
+      "title": "[G] Revision operations, retention, and generation",
+      "asciiSha256": "2d102910540e4071679af9a8db18a2834bc7e013bb0738d231934e5b44be2544",
+      "owner": "03"
+    },
+    {
+      "key": "C07/D02",
+      "documentId": "draft-34cb3bd6-8fc0-41b4-8246-2fb76f0bdabc",
+      "title": "[P1] Presentation alternatives - choose what a placement shows",
+      "asciiSha256": "59073b80dbd5d8a51bd5569d17b9dc9e38e6ed39ce62ee954324cad665c340c3",
+      "owner": "04"
+    },
+    {
+      "key": "C07/D03",
+      "documentId": "draft-34cb3bd6-8fc0-41b4-8246-2fb76f0bdabc",
+      "title": "[P2] Review versus presentation - two independent operations",
+      "asciiSha256": "c32b431a4904ccf5939c4d528593cc3b0242b6d29e60bb5c271d2a2ee83843da",
+      "owner": "04"
+    },
+    {
+      "key": "C08/D00",
+      "documentId": "representation-b6b47084-b633-4479-83ca-c951738fcab5",
+      "title": "Editor - central canvas runtime",
+      "asciiSha256": "475a6f03a629cd2c5048fb02c535e9001f5cffa2b320b6b256d16291fbf2414f",
+      "owner": "read-only"
+    },
+    {
+      "key": "C08/D01",
+      "documentId": "representation-b6b47084-b633-4479-83ca-c951738fcab5",
+      "title": "Tldraw - React composition",
+      "asciiSha256": "b7020f85fcd59f542f299e14217c258de7bfea38482be5e4092494aa1d5f038c",
+      "owner": "read-only"
+    },
+    {
+      "key": "C08/D02",
+      "documentId": "representation-b6b47084-b633-4479-83ca-c951738fcab5",
+      "title": "DefaultCanvas - input and rendering",
+      "asciiSha256": "a23062d10fa30e98353322e1661a7e485cc6cb8af36e71a3599874d35f9e910f",
+      "owner": "read-only"
+    },
+    {
+      "key": "C08/D03",
+      "documentId": "representation-b6b47084-b633-4479-83ca-c951738fcab5",
+      "title": "T1a - Store records and scopes",
+      "asciiSha256": "1ea6412b1e6e19759530556fea432c9dd4612cc3cca4f70c5a525ab9afcb8c3c",
+      "owner": "read-only"
+    },
+    {
+      "key": "C08/D04",
+      "documentId": "representation-b6b47084-b633-4479-83ca-c951738fcab5",
+      "title": "T2a - Runtime undo history",
+      "asciiSha256": "8827ae21ad0ac7e6b9631d6cdb5232a9403c368494d2f916f52aea679aad3f63",
+      "owner": "read-only"
+    },
+    {
+      "key": "C08/D05",
+      "documentId": "representation-b6b47084-b633-4479-83ca-c951738fcab5",
+      "title": "T7a - Snapshot contract",
+      "asciiSha256": "b3aa06f90a47bfd19d063e9903c53e22ef637452835e22a0439c5e902372a027",
+      "owner": "read-only"
+    },
+    {
+      "key": "C08/D06",
+      "documentId": "representation-b6b47084-b633-4479-83ca-c951738fcab5",
+      "title": "T1b - From mutation to observers",
+      "asciiSha256": "d7f6d39f07ec33bae372b80b7fc6a6d74ecd149b5c099a93cb21bfa7e66b1d91",
+      "owner": "read-only"
+    },
+    {
+      "key": "C08/D07",
+      "documentId": "representation-b6b47084-b633-4479-83ca-c951738fcab5",
+      "title": "T2b - Recording and history boundaries",
+      "asciiSha256": "d958bad11f00ebd6fe3377d4b43da3fa27c7cec346d67924fa7c559caec33135",
+      "owner": "read-only"
+    },
+    {
+      "key": "C08/D08",
+      "documentId": "representation-b6b47084-b633-4479-83ca-c951738fcab5",
+      "title": "T7b - Schema registration and migration",
+      "asciiSha256": "f474e9e13eacab56a6ba089c408c93a12e5e88b32292e3958ed2b0358e80c7a5",
+      "owner": "read-only"
+    },
+    {
+      "key": "C08/D09",
+      "documentId": "representation-b6b47084-b633-4479-83ca-c951738fcab5",
+      "title": "T2c - Drag, cancel, undo and redo",
+      "asciiSha256": "4f246521eeec4f08e1233cd0ff60b7e09aa5aac0bac1c5eb1fc1b0c939bd20f3",
+      "owner": "read-only"
+    },
+    {
+      "key": "C08/D10",
+      "documentId": "representation-b6b47084-b633-4479-83ca-c951738fcab5",
+      "title": "T7c - Snapshot capture and restoration",
+      "asciiSha256": "3f895c3eb15ca671cc4e7d380ed92bd5bb711af8a4b93bcbdd3d99248e5de536",
+      "owner": "read-only"
+    },
+    {
+      "key": "C09/D00",
+      "documentId": "draft-250e5b08-0775-4d65-aebd-9c5fbf529174",
+      "title": "Saved CanvasViews and branching",
+      "asciiSha256": "92702a5571d95ab26fee901c9d418464d0ebe1e97aeb80ff7c9749dc48e2369f",
+      "owner": "read-only"
+    },
+    {
+      "key": "C10/D00",
+      "documentId": "representation-9e361d7b-431c-4032-a145-0730a24d4a13",
+      "title": "[R] Immutable content and revision lifecycle",
+      "asciiSha256": "43dafbf8211f410b35db5fdaf37d22cf02515940d4c180c42ae6ca95635e9493",
+      "owner": "read-only"
+    },
+    {
+      "key": "C10/D01",
+      "documentId": "representation-9e361d7b-431c-4032-a145-0730a24d4a13",
+      "title": "[P1] Presentation alternatives",
+      "asciiSha256": "f505d2c086b1de06f9184b7cb46f9df2d65ef3ea32699ff4c07470302cd099aa",
+      "owner": "read-only"
+    },
+    {
+      "key": "C10/D02",
+      "documentId": "representation-9e361d7b-431c-4032-a145-0730a24d4a13",
+      "title": "[P2] Review and presentation are separate",
+      "asciiSha256": "03cdf5ff2893746064e4cfa1c029fdb4123df5749bd273fc04cadd47988a4ea5",
+      "owner": "read-only"
+    },
+    {
+      "key": "C11/D00",
+      "documentId": "representation-50bca2cb-366e-4798-af9d-31d5ded0c37a",
+      "title": "DIAGRAM REVISIONS + PRESENTATION CHOICES",
+      "asciiSha256": "71167e3f86b95bfb70d75cb444203254358c87e3c43bef40406c729f63ca69a8",
+      "owner": "read-only"
+    },
+    {
+      "key": "C11/D01",
+      "documentId": "representation-50bca2cb-366e-4798-af9d-31d5ded0c37a",
+      "title": "1  CONTENT ARCHIVE",
+      "asciiSha256": "e094b9978d4e542bf6ba268fed911da7ccb08eb5e312b0ee226d12d3cd08bbdf",
+      "owner": "read-only"
+    },
+    {
+      "key": "C11/D02",
+      "documentId": "representation-50bca2cb-366e-4798-af9d-31d5ded0c37a",
+      "title": "2  PRESENTATION ALTERNATIVES",
+      "asciiSha256": "dc5fc89080415d3e5ea27c09ed8547ce4c97eab95d040465d171c61fda48e1fb",
+      "owner": "read-only"
+    },
+    {
+      "key": "C11/D03",
+      "documentId": "representation-50bca2cb-366e-4798-af9d-31d5ded0c37a",
+      "title": "3  OPTIONAL REVIEW AND APPLICATION",
+      "asciiSha256": "d0038d7ef415c6d529242a5ae848cb94fa5dd9b85f19ead097f0269e2d72f38f",
+      "owner": "read-only"
+    },
+    {
+      "key": "C11/D04",
+      "documentId": "representation-50bca2cb-366e-4798-af9d-31d5ded0c37a",
+      "title": "4  FROM SUPPLIED EDIT TO SAVED CANVAS",
+      "asciiSha256": "4b3d0cf219a4e6d74828e5fe121e280ef3546da1efbd0441a6fc69931933cb6e",
+      "owner": "read-only"
+    },
+    {
+      "key": "C12/D00",
+      "documentId": "representation-037cbe86-6bcf-4188-a78e-e8eb1b1ac9e4",
+      "title": "MappingPage                              baseline 03f2168, before tldraw",
+      "asciiSha256": "388fd8bd90a36b366d3dc91047b58f0d2028d2e6a1a0093b2e48874b94f71498",
+      "owner": "01"
+    },
+    {
+      "key": "C12/D01",
+      "documentId": "representation-037cbe86-6bcf-4188-a78e-e8eb1b1ac9e4",
+      "title": "[A] GridBox / LineGridScene",
+      "asciiSha256": "7fe349d1e6bc793c8977a99f36316c74b0194e427d5fd3d342fc4a2ad12d99f7",
+      "owner": "02"
+    },
+    {
+      "key": "C12/D02",
+      "documentId": "representation-037cbe86-6bcf-4188-a78e-e8eb1b1ac9e4",
+      "title": "[B] Diagram",
+      "asciiSha256": "ba3cf06dc8b6440e9c26ee8a56cca318e269b648327e85d08306176bb0ed3ccf",
+      "owner": "03"
+    },
+    {
+      "key": "C12/D03",
+      "documentId": "representation-037cbe86-6bcf-4188-a78e-e8eb1b1ac9e4",
+      "title": "[C] FloatingBox variants",
+      "asciiSha256": "f531a2aefa7f91e79d5d6c55ca17276bbaf936a0bb4ecdaa01270766ca95ec19",
+      "owner": "01"
+    },
+    {
+      "key": "C12/D04",
+      "documentId": "representation-037cbe86-6bcf-4188-a78e-e8eb1b1ac9e4",
+      "title": "[D] Controller edits / agent access",
+      "asciiSha256": "62f2d1b92ffd5c4aa7b254bcb1203ae8d049e39ec51d35abb67a3e75e6926f86",
+      "owner": "02"
+    },
+    {
+      "key": "C12/D05",
+      "documentId": "representation-037cbe86-6bcf-4188-a78e-e8eb1b1ac9e4",
+      "title": "[E] CanvasHistoryService / coordinated revisions",
+      "asciiSha256": "47a00378dc43e9fa5233cb32191906bc80ae433602a358ba5d6e0befd7834bdc",
+      "owner": "03"
+    },
+    {
+      "key": "C12/D06",
+      "documentId": "representation-037cbe86-6bcf-4188-a78e-e8eb1b1ac9e4",
+      "title": "[G] DiagramService",
+      "asciiSha256": "ce436f28c022ee51324a235c74f2fb7766dee810f058eff0dc1be122e4fa974d",
+      "owner": "03"
+    },
+    {
+      "key": "C12/D07",
+      "documentId": "representation-037cbe86-6bcf-4188-a78e-e8eb1b1ac9e4",
+      "title": "[R] Immutable content and revision lifecycle",
+      "asciiSha256": "43dafbf8211f410b35db5fdaf37d22cf02515940d4c180c42ae6ca95635e9493",
+      "owner": "03"
+    },
+    {
+      "key": "C12/D08",
+      "documentId": "representation-037cbe86-6bcf-4188-a78e-e8eb1b1ac9e4",
+      "title": "[P1] Presentation alternatives",
+      "asciiSha256": "f505d2c086b1de06f9184b7cb46f9df2d65ef3ea32699ff4c07470302cd099aa",
+      "owner": "04"
+    },
+    {
+      "key": "C12/D09",
+      "documentId": "representation-037cbe86-6bcf-4188-a78e-e8eb1b1ac9e4",
+      "title": "[P2] Review and presentation are separate",
+      "asciiSha256": "03cdf5ff2893746064e4cfa1c029fdb4123df5749bd273fc04cadd47988a4ea5",
+      "owner": "04"
+    },
+    {
+      "key": "C13/D00",
+      "documentId": "representation-24833e06-0c3c-424c-bd7a-d1b657093538",
+      "title": "[R] Content revisions and publication",
+      "asciiSha256": "4da114915c6d9abead77620502fd6dede19e76a62664ec9dc80fa9777ee998b0",
+      "owner": "read-only"
+    },
+    {
+      "key": "C13/D01",
+      "documentId": "representation-24833e06-0c3c-424c-bd7a-d1b657093538",
+      "title": "[P] Placement choices and revision review",
+      "asciiSha256": "e3955a20928da2c9e76e4a526cb66f0808c666597202ea6a1cf3abfa42663455",
+      "owner": "read-only"
+    },
+    {
+      "key": "C14/D00",
+      "documentId": "representation-4aa021f3-23ff-41b8-9d8d-0e773dcddff1",
+      "title": "MappingPage                              baseline 03f2168, before tldraw",
+      "asciiSha256": "388fd8bd90a36b366d3dc91047b58f0d2028d2e6a1a0093b2e48874b94f71498",
+      "owner": "01"
+    },
+    {
+      "key": "C14/D01",
+      "documentId": "representation-4aa021f3-23ff-41b8-9d8d-0e773dcddff1",
+      "title": "[A] GridBox / LineGridScene",
+      "asciiSha256": "7fe349d1e6bc793c8977a99f36316c74b0194e427d5fd3d342fc4a2ad12d99f7",
+      "owner": "02"
+    },
+    {
+      "key": "C14/D02",
+      "documentId": "representation-4aa021f3-23ff-41b8-9d8d-0e773dcddff1",
+      "title": "[B] Diagram",
+      "asciiSha256": "ba3cf06dc8b6440e9c26ee8a56cca318e269b648327e85d08306176bb0ed3ccf",
+      "owner": "03"
+    },
+    {
+      "key": "C14/D03",
+      "documentId": "representation-4aa021f3-23ff-41b8-9d8d-0e773dcddff1",
+      "title": "[C] FloatingBox variants",
+      "asciiSha256": "f531a2aefa7f91e79d5d6c55ca17276bbaf936a0bb4ecdaa01270766ca95ec19",
+      "owner": "01"
+    },
+    {
+      "key": "C14/D04",
+      "documentId": "representation-4aa021f3-23ff-41b8-9d8d-0e773dcddff1",
+      "title": "[D] Controller edits / agent access",
+      "asciiSha256": "62f2d1b92ffd5c4aa7b254bcb1203ae8d049e39ec51d35abb67a3e75e6926f86",
+      "owner": "02"
+    },
+    {
+      "key": "C14/D05",
+      "documentId": "representation-4aa021f3-23ff-41b8-9d8d-0e773dcddff1",
+      "title": "[E] CanvasHistoryService / coordinated revisions",
+      "asciiSha256": "47a00378dc43e9fa5233cb32191906bc80ae433602a358ba5d6e0befd7834bdc",
+      "owner": "03"
+    },
+    {
+      "key": "C14/D06",
+      "documentId": "representation-4aa021f3-23ff-41b8-9d8d-0e773dcddff1",
+      "title": "[G] DiagramService",
+      "asciiSha256": "ce436f28c022ee51324a235c74f2fb7766dee810f058eff0dc1be122e4fa974d",
+      "owner": "03"
+    },
+    {
+      "key": "C14/D07",
+      "documentId": "representation-4aa021f3-23ff-41b8-9d8d-0e773dcddff1",
+      "title": "[R] Content revisions and publication",
+      "asciiSha256": "4da114915c6d9abead77620502fd6dede19e76a62664ec9dc80fa9777ee998b0",
+      "owner": "03"
+    },
+    {
+      "key": "C14/D08",
+      "documentId": "representation-4aa021f3-23ff-41b8-9d8d-0e773dcddff1",
+      "title": "[P] Placement choices and revision review",
+      "asciiSha256": "e3955a20928da2c9e76e4a526cb66f0808c666597202ea6a1cf3abfa42663455",
+      "owner": "04"
+    },
+    {
+      "key": "C15/D00",
+      "documentId": "representation-e2eed78b-ccfb-4fa7-8bf9-c8531e141ed8",
+      "title": "[P1] Content revisions, alternatives, and review",
+      "asciiSha256": "1d101630877ca5b5368ff0b8cd918edfc0b92c4f462d740fd29b73a5e3ae0466",
+      "owner": "read-only"
+    }
+  ],
+  "migrations": [
+    {
+      "id": "M1",
+      "kind": "responsibility-transfer",
+      "owner": "03",
+      "source": {
+        "canvas": 0,
+        "diagram": 6
+      },
+      "destination": {
+        "canvas": 7,
+        "diagram": 1
+      },
+      "meaning": "Removed DiagramService responsibilities are split into pure revision operations, retention, generation and publication. Annotate both diagrams; preserve already accurate destination content."
+    },
+    {
+      "id": "M2",
+      "kind": "shared-code-extraction",
+      "owner": "04",
+      "source": {
+        "canvas": 5,
+        "diagram": 4
+      },
+      "destination": {
+        "canvas": 7,
+        "diagram": 2
+      },
+      "meaning": "ChangeSession preview uses shared core diagram diff and row projection also consumed by alternative/side-panel presentation. This does not merge review/acceptance semantics."
+    },
+    {
+      "id": "M3",
+      "kind": "rendering-responsibility-transfer",
+      "owner": "01",
+      "source": {
+        "canvas": 0,
+        "diagram": 3
+      },
+      "destination": {
+        "canvas": 0,
+        "diagram": 0
+      },
+      "meaning": "Source/code panel rendering belongs to SourceWindowPanel under MappingPage. Logical retained panel records still exist. The two locations are different diagrams in the same canvas."
+    }
+  ],
+  "sharedCanvases": [
+    {
+      "canvas": "C00",
+      "documentId": "representation-b697fd11-5c8d-49e7-a6b5-b12030f2f79a",
+      "owners": [
+        "01",
+        "02",
+        "03"
+      ]
+    },
+    {
+      "canvas": "C07",
+      "documentId": "draft-34cb3bd6-8fc0-41b4-8246-2fb76f0bdabc",
+      "owners": [
+        "03",
+        "04"
+      ]
+    },
+    {
+      "canvas": "C12",
+      "documentId": "representation-037cbe86-6bcf-4188-a78e-e8eb1b1ac9e4",
+      "owners": [
+        "01",
+        "02",
+        "03",
+        "04"
+      ]
+    },
+    {
+      "canvas": "C14",
+      "documentId": "representation-4aa021f3-23ff-41b8-9d8d-0e773dcddff1",
+      "owners": [
+        "01",
+        "02",
+        "03",
+        "04"
+      ]
+    }
+  ],
+  "groups": [
+    {
+      "key": "01",
+      "title": "Canvas workspace, authoring and navigation",
+      "owned": [
+        "C00/D00",
+        "C00/D03",
+        "C12/D00",
+        "C12/D03",
+        "C14/D00",
+        "C14/D03"
+      ],
+      "primary": [
+        4,
+        9,
+        10,
+        11
+      ],
+      "features": [
+        4,
+        9,
+        10,
+        11
+      ],
+      "new": [
+        "N4",
+        "N6",
+        "N7",
+        "N8"
+      ],
+      "migrations": [
+        "M3"
+      ],
+      "requestId": "16ba6214-8c1a-4617-b165-3242ac53e23b",
+      "agentContextId": "saved-agent-context-16ba6214-8c1a-4617-b165-3242ac53e23b",
+      "ownedDocumentIds": [
+        "representation-037cbe86-6bcf-4188-a78e-e8eb1b1ac9e4",
+        "representation-4aa021f3-23ff-41b8-9d8d-0e773dcddff1",
+        "representation-b697fd11-5c8d-49e7-a6b5-b12030f2f79a"
+      ],
+      "sourceFiles": 32,
+      "estimatedResolvedBytes": 607806,
+      "createRequestFile": "01/create-request.json",
+      "promptFile": "01/prompt-v2.txt",
+      "contentHash": "552ea9469cc2b027ce7cb8f9f1b7d8de7c42863b48ea0267c9e0cb033e00618d",
+      "savedAt": "2026-11-03T19:28:39.757Z",
+      "verified": true,
+      "resolvedBytes": 630092
+    },
+    {
+      "key": "02",
+      "title": "Tldraw runtime, selection and controller edits",
+      "owned": [
+        "C00/D01",
+        "C00/D04",
+        "C12/D01",
+        "C12/D04",
+        "C14/D01",
+        "C14/D04",
+        "C01/D00"
+      ],
+      "primary": [
+        7
+      ],
+      "features": [
+        6,
+        7
+      ],
+      "new": [
+        "N1"
+      ],
+      "migrations": [],
+      "requestId": "db04f7f1-5aa5-4159-8466-79d0799722b0",
+      "agentContextId": "saved-agent-context-db04f7f1-5aa5-4159-8466-79d0799722b0",
+      "ownedDocumentIds": [
+        "representation-037cbe86-6bcf-4188-a78e-e8eb1b1ac9e4",
+        "representation-4aa021f3-23ff-41b8-9d8d-0e773dcddff1",
+        "representation-60532c3a-39f7-4392-9c66-a3f85c84f58b",
+        "representation-b697fd11-5c8d-49e7-a6b5-b12030f2f79a"
+      ],
+      "sourceFiles": 21,
+      "estimatedResolvedBytes": 537470,
+      "createRequestFile": "02/create-request.json",
+      "promptFile": "02/prompt-v2.txt",
+      "contentHash": "5c9a0e457d2e8ed370cbfa605e472c62c54f714bca773b4c85b30f7ca5e340fa",
+      "savedAt": "2026-11-03T19:28:45.623Z",
+      "verified": true,
+      "resolvedBytes": 556253
+    },
+    {
+      "key": "03",
+      "title": "Revisions, history and saved CanvasViews",
+      "owned": [
+        "C00/D02",
+        "C00/D05",
+        "C00/D06",
+        "C12/D02",
+        "C12/D05",
+        "C12/D06",
+        "C14/D02",
+        "C14/D05",
+        "C14/D06",
+        "C07/D00",
+        "C07/D01",
+        "C12/D07",
+        "C14/D07"
+      ],
+      "primary": [
+        1
+      ],
+      "features": [
+        1
+      ],
+      "new": [],
+      "migrations": [
+        "M1"
+      ],
+      "requestId": "6e3d2462-84a5-4c3a-8d8d-b065c8c0e521",
+      "agentContextId": "saved-agent-context-6e3d2462-84a5-4c3a-8d8d-b065c8c0e521",
+      "ownedDocumentIds": [
+        "draft-34cb3bd6-8fc0-41b4-8246-2fb76f0bdabc",
+        "representation-037cbe86-6bcf-4188-a78e-e8eb1b1ac9e4",
+        "representation-4aa021f3-23ff-41b8-9d8d-0e773dcddff1",
+        "representation-b697fd11-5c8d-49e7-a6b5-b12030f2f79a"
+      ],
+      "sourceFiles": 12,
+      "estimatedResolvedBytes": 400454,
+      "createRequestFile": "03/create-request.json",
+      "promptFile": "03/prompt-v2.txt",
+      "contentHash": "331929dbcd77fd6b487de5d3f9d2319322414093b2fab2aeed60d3d78ed7a4b9",
+      "savedAt": "2026-11-03T19:28:48.148Z",
+      "verified": true,
+      "resolvedBytes": 416905
+    },
+    {
+      "key": "04",
+      "title": "Alternatives and ChangeSession review",
+      "owned": [
+        "C05/D00",
+        "C05/D01",
+        "C05/D02",
+        "C05/D03",
+        "C05/D04",
+        "C05/D05",
+        "C07/D02",
+        "C07/D03",
+        "C12/D08",
+        "C12/D09",
+        "C14/D08"
+      ],
+      "primary": [
+        8
+      ],
+      "features": [
+        4,
+        8
+      ],
+      "new": [
+        "N5"
+      ],
+      "migrations": [
+        "M2"
+      ],
+      "requestId": "911f0ae2-d2c6-4ce6-bd26-dc91590bd709",
+      "agentContextId": "saved-agent-context-911f0ae2-d2c6-4ce6-bd26-dc91590bd709",
+      "ownedDocumentIds": [
+        "draft-34cb3bd6-8fc0-41b4-8246-2fb76f0bdabc",
+        "representation-037cbe86-6bcf-4188-a78e-e8eb1b1ac9e4",
+        "representation-4aa021f3-23ff-41b8-9d8d-0e773dcddff1",
+        "representation-ed88e035-9f51-4e09-9174-15605cfe63d6"
+      ],
+      "sourceFiles": 22,
+      "estimatedResolvedBytes": 457188,
+      "createRequestFile": "04/create-request.json",
+      "promptFile": "04/prompt-v2.txt",
+      "contentHash": "269fec17c77e511b89f6295cca36bd37af58faefe10f4f17b3d5a4805026df1c",
+      "savedAt": "2026-11-03T19:28:51.546Z",
+      "verified": true,
+      "resolvedBytes": 475485
+    },
+    {
+      "key": "05",
+      "title": "AgentChat, generation and Canvas API",
+      "owned": [
+        "C03/D00",
+        "C03/D01"
+      ],
+      "primary": [
+        2,
+        5,
+        6
+      ],
+      "features": [
+        2,
+        5,
+        6
+      ],
+      "new": [
+        "N2"
+      ],
+      "migrations": [],
+      "requestId": "b4df6a6c-83f6-428f-9247-7bd2f2548e7c",
+      "agentContextId": "saved-agent-context-b4df6a6c-83f6-428f-9247-7bd2f2548e7c",
+      "ownedDocumentIds": [
+        "representation-74feeeae-7381-43ca-a707-9c90cfe01ee1"
+      ],
+      "sourceFiles": 25,
+      "estimatedResolvedBytes": 599747,
+      "createRequestFile": "05/create-request.json",
+      "promptFile": "05/prompt-v2.txt",
+      "contentHash": "a82096318fdb465f19ee0370ccc90a10b7f1bac7de80d39acdafb8bcf4af2566",
+      "savedAt": "2026-11-03T19:28:56.472Z",
+      "verified": true,
+      "resolvedBytes": 616791
+    },
+    {
+      "key": "06",
+      "title": "Saved AgentContexts and source evidence",
+      "owned": [
+        "C02/D00",
+        "C02/D01",
+        "C02/D02",
+        "C02/D03",
+        "C02/D04",
+        "C02/D05",
+        "C02/D06"
+      ],
+      "primary": [
+        3
+      ],
+      "features": [
+        3,
+        4
+      ],
+      "new": [
+        "N3"
+      ],
+      "migrations": [],
+      "requestId": "c002f3b1-d0c5-4f6b-aa22-43fd518afe51",
+      "agentContextId": "saved-agent-context-c002f3b1-d0c5-4f6b-aa22-43fd518afe51",
+      "ownedDocumentIds": [
+        "representation-00e20688-1815-4518-a617-932a4e6cd233"
+      ],
+      "sourceFiles": 22,
+      "estimatedResolvedBytes": 308733,
+      "createRequestFile": "06/create-request.json",
+      "promptFile": "06/prompt-v2.txt",
+      "contentHash": "0ab380f7d18b5d13fb2df66ae51ea017e17de2dff835a261b0ace267ac0a9087",
+      "savedAt": "2026-11-03T19:29:00.638Z",
+      "verified": true,
+      "resolvedBytes": 321658
+    },
+    {
+      "key": "07",
+      "title": "Persistence and durable storage",
+      "owned": [
+        "C04/D00",
+        "C06/D00"
+      ],
+      "primary": [
+        12
+      ],
+      "features": [
+        12
+      ],
+      "new": [],
+      "migrations": [],
+      "requestId": "3cc6fe05-807a-40e6-98aa-df864234bb8e",
+      "agentContextId": "saved-agent-context-3cc6fe05-807a-40e6-98aa-df864234bb8e",
+      "ownedDocumentIds": [
+        "representation-8d528230-94b4-4e16-97d4-eab812b1ad7e",
+        "representation-c7177725-a7dd-4caa-9ac5-a1c702f3350d"
+      ],
+      "sourceFiles": 18,
+      "estimatedResolvedBytes": 397109,
+      "createRequestFile": "07/create-request.json",
+      "promptFile": "07/prompt-v2.txt",
+      "contentHash": "5bf775fbd29e845fb95ccd4a9857dbe8863df46549401d134a788795350a672f",
+      "savedAt": "2026-11-03T19:29:03.328Z",
+      "verified": true,
+      "resolvedBytes": 411175
+    }
+  ],
+  "limitations": [
+    "Full-range MCP hunk discovery exceeds 8 MiB due unrelated investigation dumps; scoped Git evidence is supplied without fabricated API hunk IDs.",
+    "Shared-canvas proposals require combined integration or explicit rebase before acceptance."
+  ]
+}

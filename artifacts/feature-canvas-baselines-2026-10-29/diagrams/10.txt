@@ -1,0 +1,53 @@
+SOURCE COVERAGE AND CHANGE TREEMAPS
+Two inputs -> conserved LOC area -> file and diagram views -> navigate to diagrams
+
++----------------------------------------------------+    +----------------------------------------------------+
+| LIVE SOURCE COVERAGE                               |    | CHANGED-CODE COVERAGE                              |
+| Canvas diagram instances, including folded ones    |    | Captured DiffTree hunks + preview documents        |
+|   -> source mappings + owning diagram/node         |    |   -> direct hunk links on DiffTree nodes           |
+|   -> read referenced source files                  |    |   -> nearest ancestor with diagram destinations    |
+|                                                    |    |                                                    |
+| Validate ranges against current file lines         |    | Resolve destinations in proposed/baseline content  |
+|   Bounds, captured length, exact text must match   |    |   Diagram or content node receives linked hunks    |
+|   Stale / unresolved mappings: exclude + report    |    |   Previous revision destinations stay inspectable  |
+|   Unavailable / binary files: exclude + report     |    |   Missing destinations: report unresolved count    |
+|                                                    |    |                                                    |
+| Sweep valid range boundaries per source file       |    | Count added + deleted lines from captured hunks    |
+|   Separate checkout/revision = separate universe   |    |   Context lines do not contribute                  |
+|   Count each covered physical line once            |    |   Binary / metadata hunks: counted, no LOC area    |
+|   Share its weight equally among distinct owners   |    |   Count distinct resolved destinations per hunk    |
+|   Duplicate mappings to one owner add no weight    |    |   Divide hunk LOC equally across destinations      |
+|                                                    |    |                                                    |
+| Example: 10 lines mapped to A and B                |    | Example: 10 changed LOC linked to A and B          |
+|   Covered = 10; A = 5; B = 5; extra overlap = 10   |    |   Covered = 10; A = 5; B = 5; raw mapped = 20      |
+|                                                    |    |                                                    |
+| Scope: Mapped ranges | Referenced files            |    | Unassigned hunks remain in Unmapped                |
+|   Mapped: area = uniquely covered lines            |    |   Actual = covered + unmapped changed LOC          |
+|   Files: area = readable referenced file LOC       |    |   Raw mapped counts each destination's full LOC    |
+|          remaining lines become Unmapped           |    |   Extra = raw mapped - covered                     |
+|   Coverage % = mapped / readable file LOC          |    |   Parent totals do not become extra destinations   |
+|   Refresh sources manually or on window focus      |    |   Poll updates; stop when accepted or archived     |
++----------------------------------------------------+    +----------------------------------------------------+
+                           |                                                         |
+                           +---------------------------+-----------------------------+
+                                                       v
+                            +----------------------------------------------------+
+                            | SHARED TREEMAP PRESENTATION                        |
+                            | File tree: directories -> files                    |
+                            | Diagram tree: [change canvas] -> diagram -> nodes  |
+                            | Direct parent weight: 'Directly mapped here'       |
+                            | Sum children; omit zero-area regions               |
+                            | Balanced partition preserves area                  |
+                            | Publish diagram colors to the canvas               |
+                            +----------------------------------------------------+
+                                                       |
+                                                       v
+                            +----------------------------------------------------+
+                            | FROM COVERAGE RESULTS BACK TO DIAGRAMS             |
+                            | Result target -> canvas / diagram / content node   |
+                            | Source: navigate with the diagram jump target      |
+                            | Changes: navigate within the ChangeSession         |
+                            | Canvas tinted regions can select matching tiles    |
+                            | Pointer movement > 4px cancels region selection    |
+                            | Buttons, links and other controls keep their use   |
+                            +----------------------------------------------------+

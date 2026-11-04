@@ -1,4 +1,5 @@
 import { generateDiagram } from '../services/diagramGenerator';
+import { contentNodeRect } from '../../../../domain/core/diagrams/contentNodeGeometry';
 import { CopyDiagramAsciiButton } from '../../../shared/diagrams/CopyDiagramAsciiButton';
 import { completeMarquee } from '../../../../domain/mapping/selection/completeMarquee';
 import type { SelectionHit, SelectionPolicy } from '../../../../domain/mapping/selection/selectionGesture';
@@ -113,6 +114,8 @@ export function MappingPocSelectionCanvas(props: {
   onUpdateDiagram?: (nodeId: string) => void;
   /** References are captured here, at the moment of the action, from the exact displayed revision. */
   onReference?: (references: PromptReference[], mode: 'copy' | 'insert', nodeId: string) => void;
+  /** Receives exactly what Copy ASCII + code refs would copy, whenever the selection changes (Evals saves it as a prompt reference). */
+  onSelectionText?: (ascii: string | null) => void;
   /** While set, a click on the canvas places something at that grid point instead of selecting. */
   placement?: { onPlace: (point: ScenePoint) => void };
   onTransfer?: (mode: 'copy' | 'move', selectedIds: string[]) => void;
@@ -327,6 +330,10 @@ export function MappingPocSelectionCanvas(props: {
       setStatusMessage(`Copy failed: ${error instanceof Error ? error.message : "Clipboard access was denied"}`);
     }
   }, [content, selectionRect, selectedNodeIds, selectedSourceRangeCount, focusedItem]);
+  const selectionText = useMemo(() => props.onSelectionText && selectionRect ? selectionClipboardText(content, selectionRect, selectedNodeIds, focusedItem?.region?.contentNodeIds) : null,
+    [props.onSelectionText, content, selectionRect, selectedNodeIds, focusedItem]);
+  const onSelectionText = useRef(props.onSelectionText); onSelectionText.current = props.onSelectionText;
+  useEffect(() => { onSelectionText.current?.(selectionText); }, [selectionText]);
   const selectedEvidenceIds = useMemo(() => [...new Set(diagramSource(content).mappings()
     .filter((mapping) => selectedNodeIdSet.has(`${content.id}:${mapping.id}`))
     .map((mapping) => exportedEvidenceId(scene, content.id, mapping.entityId)))], [scene, content, selectedNodeIdSet]);
@@ -534,7 +541,7 @@ export function MappingPocSelectionCanvas(props: {
     const node = diagramContentNodes(diagram.content).find(node => node.id === hit.nodeId);
     if (node) {
       finishMarquee({ diagramIds: [], regions: [{ boxId: box!.box.id,
-        rect: { startLine: node.line, endLine: node.line, startColumn: node.startColumn, endColumn: node.endColumn } }] }, policy, baseline);
+        rect: contentNodeRect(node) }] }, policy, baseline);
       nativeRuntime?.focusNode(hit.diagramId, node.id, hit.revision);
     }
   };

@@ -1,0 +1,21 @@
+{
+  "requestId": "a6aa88bd-5275-4441-abf7-cbfd8322ba09",
+  "workflow": "alternatives",
+  "prompts": [
+    {
+      "promptId": "26e340b0-da3a-4897-8d1f-ecd329f47698",
+      "version": 2
+    }
+  ],
+  "inputs": {
+    "context": {
+      "agentContextId": "saved-agent-context-b4df6a6c-83f6-428f-9247-7bd2f2548e7c"
+    }
+  },
+  "previous": [
+    "representation-516c5392-d7c7-42c0-99a6-6e7f8423b9b3"
+  ],
+  "passes": 1,
+  "model": "gpt-6-astra",
+  "effort": "high"
+}

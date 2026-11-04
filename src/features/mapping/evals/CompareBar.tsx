@@ -1,3 +1,4 @@
+import { PromptComparisonLauncher } from './PromptComparisonLauncher';
 import { useRef, useState } from 'react';
 import type { ComparePageSession } from '../../../../domain/mapping/compare/comparePageSession';
 import type { ComparisonRunSummary } from '../../../../domain/mapping/compare/comparisonGeneration';
@@ -13,6 +14,7 @@ export function CompareBar({ picked, runs, onClear, onSession, onComparisonStart
   picked: PickedOutput[]; runs: EvalRunSummary[]; onClear: () => void;
   onSession: (session: ComparePageSession) => void; onComparisonStarted: (run: ComparisonRunSummary) => void;
 }) {
+  const [experiment, setExperiment] = useState(false);
   const [busy, setBusy] = useState(false), [error, setError] = useState('');
   const pending = useRef<{ signature: string; requestId: string }>(undefined);
   const once = (signature: string) => {
@@ -47,7 +49,9 @@ export function CompareBar({ picked, runs, onClear, onSession, onComparisonStart
         title={picked.length > MAX_SIDE_BY_SIDE ? `Select at most ${MAX_SIDE_BY_SIDE}` : 'Every selected pair, side by side'} onClick={() => void sideBySide()}>Side by side</button>
       <button type="button" className="is-primary" disabled={busy || picked.length < 2 || picked.length > MAX_LLM}
         title="An LLM picks corresponding diagram slices" onClick={() => void llm()}>LLM comparison</button>
+      <button type="button" disabled={busy || picked.length < 2 || picked.length > MAX_LLM} onClick={() => setExperiment(true)}>Judge prompt effect</button>
       <button type="button" onClick={onClear}>Clear</button>
     </div>
+    {experiment && <PromptComparisonLauncher picked={picked} onClose={() => setExperiment(false)} onStarted={run => { onComparisonStarted(run); onClear(); }} />}
   </div>;
 }

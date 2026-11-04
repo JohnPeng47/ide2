@@ -1,0 +1,22 @@
+[C] FloatingBox variants
+FloatingBox
+  FloatingPane -> stored in DisplayState.nodes
+    selection: captured sourceBoxId/contentId,
+    + ASCII, revision?, rect, selectedIds
+    + displayMode: stacked | chained
+    projection: title, revision/projection IDs?
+    + content: call-tree | compaction
+    + source-code | code-panel
+    conversation: thread, draft, canvasAnchor
+    + presentation: compact | floating | docked
+    detail: title, ascii, sectionId?
+  arrow: drawEdge(document.edges) -> derived only
+DisplayNodeBase
++ id, childIds, expansion, expandedGeometry?
++ position {x,y}, bounds {width,height}: CSS pixels
++ coordinateSpace: canvas | viewport
++ geometryPolicy: automatic/manual + content/fixed
+  add/remove ownership tree; recursive removal
+  collapse saves geometry; expand restores it
+SelectionState owns membership; pane captures context.
+Sources: displayModel.ts, canvasDisplayNode.ts

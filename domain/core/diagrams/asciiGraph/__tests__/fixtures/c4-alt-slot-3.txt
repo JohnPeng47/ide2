@@ -1,0 +1,23 @@
+[A] GridBox / LineGridScene
+=====================================================
+LineGridScene
+  contents[contentId] -> Diagram       root -> GridBox
+                                              |
+GridBox                                       v
+  id + position(column,row) + minimumSize?
+  collapsed + collapsedContentId?
+  +-- diagram   -> contentId
+  +-- container -> children[] + push-right layout/gap
+                   |
+                   v
+ResolvedGridBox
+  resolveScene -> absolute bounds + contentId? + children
+  zero-based cells; right and bottom are exclusive
+  collapsed -> summary content; no resolved children
+  expanded -> content/children extents + minimumSize
+                   |
+Immutable layout
+  updateGridBox -> layoutScene -> composeScene
+  anchor changed subtree; settle siblings; push right
+  compose rejects collisions and excessive allocation
+  hitTest -> local cells; projectMapping -> grid bounds

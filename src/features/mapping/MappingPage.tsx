@@ -617,7 +617,7 @@ function MappingWorkspacePage() {
     const url = new URL(location.href); url.searchParams.set('diagram', selectedRepresentationId ?? selectedId); history.replaceState({}, '', url);
   };
 
-  const restore = (workspace: MappingWorkspaceSnapshot, data = snapshot) => {
+  const restore = (workspace: MappingWorkspaceSnapshot, data = snapshot, preferRequested = false) => {
     if (workspace.projectId !== data?.project?.id) throw new Error("Workspace belongs to another project");
     const retained = new Set(workspace.documents.filter(doc => {
       const savedId = doc.savedRepresentationId ?? (doc.representationId.startsWith('draft-') ? undefined : doc.representationId);
@@ -633,7 +633,12 @@ function MappingWorkspacePage() {
         repositoryId: doc.repositoryId ?? data?.catalog?.representations[doc.savedRepresentationId ?? doc.representationId]?.repositoryId
           ?? inferRepositoryId(doc.document.scene, data?.project?.repositories ?? []), busy: false }];
     })));
-    const id = documents.some(doc => !doc.hidden && doc.representationId === workspace.activeDocumentId)
+    // A link to a specific canvas (e.g. from Evals) wins over the restored active document.
+    const requested = preferRequested ? new URL(location.href).searchParams.get('diagram') : null;
+    const requestedDoc = requested ? documents.find(doc => !doc.hidden && (doc.representationId === requested || doc.savedRepresentationId === requested)) : undefined;
+    const id = requestedDoc ? requestedDoc.representationId
+      : requested && data?.catalog?.representations[requested]?.status === 'settled' ? requested
+      : documents.some(doc => !doc.hidden && doc.representationId === workspace.activeDocumentId)
       ? workspace.activeDocumentId : documents.find(doc => !doc.hidden)?.representationId
         ?? Object.values(data?.catalog?.representations ?? {}).find(diagram => diagram.status === "settled")?.id;
     setActiveId(id); setWorkspaceEpoch(value => value + 1); setCreating(false);
@@ -856,7 +861,7 @@ function MappingWorkspacePage() {
         const [data, { workspace, restoreError }] = await startup.current;
         if (cancelled) return;
         setSnapshot(data);
-        if (workspace && workspace.documents.length) restore(workspace, data);
+        if (workspace && workspace.documents.length) restore(workspace, data, true);
         else {
           const requestedId = new URL(location.href).searchParams.get('diagram');
           const id = requestedId && data.catalog?.representations[requestedId]?.status === 'settled' ? requestedId

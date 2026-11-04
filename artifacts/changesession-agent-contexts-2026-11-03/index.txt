@@ -1,0 +1,53 @@
+ChangeSession AgentContexts - input set v1
+
+Library group: ChangeSession evals - 03f2168 to 81f05a2b
+Pinned code comparison: 03f2168deba364103c2450ca9b8168cd1fc9ddc5 .. 81f05a2bf9efa2334985d2298dcbd7b044dc4c1e
+
+Three saved contexts have disjoint whole-canvas write ownership. The broader boundary preserves parent-diagram ownership and matches ChangeSession acceptance granularity. Shared source evidence and read-only diagram references are intentional.
+
+01 - Canvas interaction, presentation and change review
+saved-agent-context-ce5f5f9c-3501-4065-94db-90a807c00f22
+Owned existing canvases:
+  Canvas domain model - baseline 03f2168 (before tldraw) [representation-b697fd11-5c8d-49e7-a6b5-b12030f2f79a]
+  Unified selection - state, gestures and WebSocket [representation-60532c3a-39f7-4392-9c66-a3f85c84f58b]
+  ChangeSession - domain model and call tree [representation-ed88e035-9f51-4e09-9174-15605cfe63d6]
+  Canvas domain model - baseline 03f2168 (before tldraw) · Projection [draft-34cb3bd6-8fc0-41b4-8246-2fb76f0bdabc]
+  Roll-up 1 · g2 · Canvas domain model - baseline 03f2168 (before tldraw) [representation-037cbe86-6bcf-4188-a78e-e8eb1b1ac9e4]
+  Roll-up 2 · g2 · Canvas domain model - baseline 03f2168 (before tldraw) [representation-4aa021f3-23ff-41b8-9d8d-0e773dcddff1]
+New-detail specifications: N1, N4, N5, N6, N7, N8
+Assigned migrations: M1, M2, M3
+
+02 - Agent authoring, saved contexts and API orchestration
+saved-agent-context-34dfbd10-aa3e-4675-8c91-73d2a3d79952
+Owned existing canvases:
+  AgentContext - implemented call flow and domain models (03f2168) [representation-00e20688-1815-4518-a617-932a4e6cd233]
+  Mapping page - MCP and HTTP API [representation-74feeeae-7381-43ca-a707-9c90cfe01ee1]
+New-detail specifications: N2, N3
+Assigned migrations: none
+
+03 - Persistence, checkpoints and durable application state
+saved-agent-context-09a43aa1-2358-4bee-a9fc-1c4cddbdd018
+Owned existing canvases:
+  PersistentLayer [representation-c7177725-a7dd-4caa-9ac5-a1c702f3350d]
+  Workspace persistence flow [representation-8d528230-94b4-4e16-97d4-eab812b1ad7e]
+New-detail specifications: none
+Assigned migrations: none
+
+Usage
+Select a saved context in the AgentContext library/Evals. Its complete visible prompt is in XX/prompt-v1.txt and included verbatim in the immutable context. It specifies owned parents, read-only context, source inputs and generation constraints. No model run or ChangeSession acceptance was performed when creating this input set.
+
+The eval output remains the prior requested format: modified existing diagrams plus high-level missing-detail specifications and an ASCII recap. New missing diagrams are not generated. No expected-answer ASCII is included.
+
+Validation
+ownership.json: complete partition of all 16 canvases; six already-current/library canvases are read-only.
+validation.json: 12 feature areas covered, 8 missing-detail proposals assigned once, 3 migrations with colocated endpoints, all original diagram ASCII preserved as captured input.
+saved-context-verification.json: server readback, immutable hashes, every source pin and resolved text checked against exact Git objects.
+manifest.json: saved IDs, hashes and input provenance.
+inputs/live-reads.json: complete captured source evidence and short API handles, which must be refreshed before use.
+XX/code-diff.patch: full path-scoped source diff; the saved context itself includes target files and before excerpts/changed line ranges.
+
+Known integration limit
+The entire repository range includes unrelated investigation dumps and exceeds get_repository_diff_hunks' 8 MiB cap. These contexts retain the relevant code change evidence without fabricating server hunk IDs. Full-range DiffTree generation needs narrower supported capture or an API improvement; plain isolated proposals can still use the supplied evidence.
+
+Reproduction
+build.py regenerates requests from the frozen inputs and pinned Git objects. It preserves request UUIDs; do not change a request payload and retry its old UUID. save-and-verify.mjs submits the exact saved request files through MCP and verifies their persisted snapshots. No application source files were edited.

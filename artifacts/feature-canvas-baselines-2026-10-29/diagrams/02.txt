@@ -1,0 +1,67 @@
+                             MANAGED GENERATION OF CANVAS ALTERNATIVES
+            One saved checkpoint -> independent parallel candidates -> persisted results
+
++----------------------------------------------+    +----------------------------------------------+
+| SAVED PARENT CANVASVIEW                      |    | SOURCE AGENTCHAT                             |
+| Pins one saved checkpoint for every candidate |    | Always inherits model, effort and tools      |
+| Uses saved state, not unsaved live edits     |    | Context: chat history OR saved AgentContext  |
++----------------------------------------------+    +----------------------------------------------+
+                        |                                                   |
+                        +-------------------------+-------------------------+
+                                                  v
+         +--------------------------------------------------------------------------------+
+         | GENERATION REQUEST  [UI form or gen-alternatives]                              |
+         | Parent view + shared task prompt + 1-8 unique names and candidate prompts      |
+         | Optional saved AgentContext is immutable; replaces inherited chat history      |
+         | Workspace access required; same requestId + arguments reuse the same run       |
+         +--------------------------------------------------------------------------------+
+                                                 |
+                                                 v
+         +--------------------------------------------------------------------------------+
+         | MANAGED COORDINATOR  [AgentChatService + CanvasHistory]                        |
+         | Pin the parent's saved checkpoint; create one alternative group                |
+         | Persist child chats and queued metadata, then launch all candidates            |
+         | Each child gets its own thread, MCP binding and canvas controller              |
+         +--------------------------------------------------------------------------------+
+                                                  |
+                +---------------------------------+---------------------------------+
+                v                                 v                                 v
++------------------------------+  +------------------------------+  +------------------------------+
+| CANDIDATE A                  |  | CANDIDATE B                  |  | CANDIDATE ... (up to 8)      |
+| Shared prompt + A prompt     |  | Shared prompt + B prompt     |  | Shared prompt + own prompt   |
+| Child chat A / thread A      |  | Child chat B / thread B      |  | Own child chat / thread      |
+| Isolated canvas A            |  | Isolated canvas B            |  | Own isolated canvas          |
++------------------------------+  +------------------------------+  +------------------------------+
+                |                                 |                                 |
+                +---------------------------------+---------------------------------+
+                                                  |
+          Each candidate edits its own copy; parent and sibling canvases stay independent
+                       One managed turn per candidate; generation cannot nest
+                                                 |
+                                                 v
+         +--------------------------------------------------------------------------------+
+         | PER-CANDIDATE LIFECYCLE & OBSERVABILITY                                        |
+         | queued --> generating --> finished | failed | cancelled                        |
+         | Inspect status, prompts, model, effort, elapsed time and token usage           |
+         | Needs input is surfaced; open child/source chat for details                    |
+         | Cancel a candidate; interrupting the parent cancels its running children       |
+         | Restart marks unfinished generation failed; start a new run to retry           |
+         +--------------------------------------------------------------------------------+
+                                                 |
+                                                 v
+         +--------------------------------------------------------------------------------+
+         | SETTLE & PERSIST                                                               |
+         | Retain child chat, generation metadata and isolated history                    |
+         | Finished: publish validated result as the candidate's saved checkpoint         |
+         | Failed / cancelled: settle status without publishing generated edits           |
+         | If source canvas is unavailable, retain result and retry on reconnect          |
+         +--------------------------------------------------------------------------------+
+                                                 |
+                                                 v
+         +--------------------------------------------------------------------------------+
+         | REVIEW SAVED ALTERNATIVES                                                      |
+         | Finished results stay available as independent child CanvasViews               |
+         | Parent canvas is not automatically replaced                                    |
+         | After generation settles: open a candidate, keep it or discard it              |
+         | Keep saves the chosen view and archives its group siblings + descendants       |
+         +--------------------------------------------------------------------------------+

@@ -1,0 +1,2036 @@
+diff --git a/application/core/diagrams/generateDiagram.ts b/application/core/diagrams/generateDiagram.ts
+new file mode 100644
+index 00000000..2df8a924
+--- /dev/null
++++ b/application/core/diagrams/generateDiagram.ts
+@@ -0,0 +1,13 @@
++import type { DiagramGenerationRequest, DiagramGenerator, GenerationOptions } from '../../../domain/core/diagrams/diagramGeneration';
++import { getDiagramRevision, submitStoredDiagramEdit } from '../../../domain/core/diagrams/diagramRevisionStore';
++
++/** Runs an agent; domain validation and revision publication happen only after success. */
++export async function generateDiagram(generator: DiagramGenerator, request: DiagramGenerationRequest, options: GenerationOptions = {}) {
++  options.signal?.throwIfAborted();
++  const base = request.baseRevisionId ? getDiagramRevision(request.baseRevisionId) : undefined;
++  if (base && base.diagram.id !== request.input.id) throw Error('Generation base belongs to another diagram');
++  const raw = await generator.generate(structuredClone({ ...request, nodeRefs: base?.nodeRefs ?? {} }), options);
++  options.signal?.throwIfAborted();
++  return submitStoredDiagramEdit(request, { ascii: raw.ascii, structureKind: raw.structureKind ?? request.input.structureKind ?? 'diagram',
++    mappings: raw.mappings ? [...raw.mappings] : undefined, replacementRanges: raw.replacementRanges }, raw.nodeCorrespondence);
++}
+diff --git a/application/mapping/agent/agentContextLibrary.ts b/application/mapping/agent/agentContextLibrary.ts
+new file mode 100644
+index 00000000..06f5f6b8
+--- /dev/null
++++ b/application/mapping/agent/agentContextLibrary.ts
+@@ -0,0 +1,65 @@
++import type { AgentContextSources } from '../../core/ports/agentContextSources';
++import type { AgentContextRepository } from '../../core/ports/agentContextRepository';
++import { AgentContext } from '../../../domain/core/agents/agentContext';
++import { createAgentContextSchema, listAgentContextsSchema, readAgentContextSchema, summarizeAgentContext } from '../../../domain/core/agents/savedAgentContext';
++import { sha256 } from '../../../domain/core/sha256';
++
++export class AgentContextLibrary {
++  constructor(private readonly store: AgentContextRepository, private readonly sources?: AgentContextSources) {}
++  async create(raw: unknown) {
++    const input = createAgentContextSchema.parse(raw);
++    const constituentRequestHash = Array.isArray(input.context) ? sha256(JSON.stringify([input.name, input.description, input.context])) : undefined;
++    if (constituentRequestHash) {
++      const previous = await this.store.read(`saved-agent-context-${input.requestId}`);
++      if (previous) {
++        if (previous.requestHash !== constituentRequestHash) throw Error('REQUEST_ID_CONFLICT: this UUID identifies a different saved context');
++        return summarizeAgentContext(previous);
++      }
++    }
++    let content: import('../../../domain/core/agents/agentContext').AgentContextMessage['content'] | undefined;
++    if (typeof input.context === 'string') content = [{ type: 'text', text: input.context }];
++    else if (Array.isArray(input.context)) {
++      content = [];
++      // Bound peak capture memory even for many file constituents.
++      for (const block of input.context) {
++        if (block.type === 'text') content.push(block);
++        else {
++          if (!this.sources) throw Error('AGENT_CONTEXT_SOURCE_UNAVAILABLE');
++          content.push(await this.sources.capture(block));
++        }
++      }
++    }
++    const context = content ? AgentContext.fromTrajectory({
++      agentType: 'saved-context', sourceSessionId: input.requestId, format: 'messages-v1', fromEntryId: 'context', throughEntryId: 'context',
++      entries: [{ id: 'context', parentId: null, message: { role: 'user', content, timestamp: 0 } }]
++    }) : AgentContext.fromSnapshot(input.context);
++    const requestHash = constituentRequestHash ?? sha256(JSON.stringify([input.name, input.description, context.contentHash]));
++    if (!constituentRequestHash) {
++      const previous = await this.store.read(`saved-agent-context-${input.requestId}`);
++      if (previous) {
++        if (previous.requestHash !== requestHash) throw Error('REQUEST_ID_CONFLICT: this UUID identifies a different saved context');
++        return summarizeAgentContext(previous);
++      }
++    }
++    const snapshot = this.sources ? await this.sources.persist(context.toSnapshot()) : context.toSnapshot();
++    const record = await this.store.create({ schemaVersion: 1, agentContextId: `saved-agent-context-${input.requestId}`,
++      name: input.name, description: input.description, createdAt: new Date().toISOString(), snapshot,
++      requestHash });
++    return summarizeAgentContext(record);
++  }
++  async read(id: string, resolveSources = true) {
++    readAgentContextSchema.parse({ agentContextId: id });
++    const record = await this.store.read(id);
++    if (!record) throw Error('AGENT_CONTEXT_NOT_FOUND: saved context is unavailable');
++    const snapshot = AgentContext.fromSnapshot(record.snapshot).toSnapshot();
++    const resolvedSnapshot = resolveSources && snapshot.messages.some(m => m.content.some(b => b.type === 'sourceRange'))
++      ? (await AgentContext.fromSnapshot(snapshot).resolveSources(this.sources ? ref => this.sources!.read(ref) : undefined)).toSnapshot() : undefined;
++    return { ...summarizeAgentContext(record), snapshot, ...(resolvedSnapshot ? { resolvedSnapshot } : {}) };
++  }
++  async list(raw: unknown = {}) {
++    const { query, offset, limit } = listAgentContextsSchema.parse(raw);
++    const items = (await this.store.summaries()).filter(item => `${item.name}\n${item.description}`.toLowerCase().includes(query.toLowerCase()))
++      .sort((a, b) => b.createdAt.localeCompare(a.createdAt) || a.agentContextId.localeCompare(b.agentContextId));
++    return { items: items.slice(offset, offset + limit), nextOffset: offset + limit < items.length ? offset + limit : null };
++  }
++}
+diff --git a/application/mapping/agent/agentContextService.ts b/application/mapping/agent/agentContextService.ts
+index 29f60011..6697ad6f 100644
+--- a/application/mapping/agent/agentContextService.ts
++++ b/application/mapping/agent/agentContextService.ts
+@@ -1,3 +1,4 @@
++import type { AgentContextLibrary } from './agentContextLibrary';
+ import { randomUUID } from 'node:crypto';
+ import { AgentContext, type AgentContextSnapshot } from '../../../domain/core/agents/agentContext';
+ 
+@@ -14,7 +15,7 @@ export class AgentContextService {
+   private records = new Map<string, { scope: string; context: AgentContext; receipt: AgentContextReceipt }>();
+   private requests = new Map<string, string>();
+   private bytes = 0;
+-  constructor(private readonly limits = { count: 100, bytes: 32 * 1024 * 1024 }) {}
++  constructor(private readonly limits = { count: 100, bytes: 32 * 1024 * 1024 }, readonly library?: AgentContextLibrary) {}
+ 
+   upload(scope: AgentContextScope, requestId: string, trajectory: unknown): AgentContextReceipt {
+     const context = AgentContext.fromTrajectory(trajectory), scopeKey = this.scopeKey(scope);
+@@ -42,5 +43,10 @@ export class AgentContextService {
+       throw new AgentContextError('AGENT_CONTEXT_NOT_FOUND', 'Context is unavailable for this workspace and document');
+     return record.context.toSnapshot();
+   }
++  async resolve(scope: AgentContextScope, id: string): Promise<AgentContextSnapshot> {
++    if (!id.startsWith('saved-agent-context-')) return this.get(scope, id);
++    if (!this.library) throw Error('AGENT_CONTEXT_UNAVAILABLE: saved context library is unavailable');
++    return (await this.library.read(id, false)).snapshot;
++  }
+   private scopeKey(scope: AgentContextScope) { return JSON.stringify([scope.workspaceInstanceId, scope.documentId]); }
+ }
+diff --git a/application/mapping/agent/diagramEditService.ts b/application/mapping/agent/diagramEditService.ts
+index fb233441..4c2b91cf 100644
+--- a/application/mapping/agent/diagramEditService.ts
++++ b/application/mapping/agent/diagramEditService.ts
+@@ -1,51 +1,96 @@
++import { ownerScope } from '../../../domain/core/presentation/diagramAlternative';
++import { generateDiagram } from '../../core/diagrams/generateDiagram';
++import { createStoredDiagram, importDiagramRevision, getDiagramRevision, submitStoredDiagramEdit } from '../../../domain/core/diagrams/diagramRevisionStore';
++import type { GeneratedDiagramEdit } from '../../../domain/core/diagrams/generatedDiagramEdit';
++import { selectionExcerpt } from '../../../domain/mapping/workspace/selectionClipboard';
++import { diagramContentNodes } from '../../../domain/core/diagrams/diagramContentNodes';
++import { diagramReplacementRanges } from '../../../domain/core/diagrams/diagramSubtreeEdit';
++import { revisionScope, reviewRevisionIds, validateRevisionReview, type DiagramRevisionReview } from '../../../domain/core/diagrams/diagramRevisionReview';
++import { validateConnectionAnchor } from '../../../domain/core/diagrams/diagramConnection';
+ import { AgentContext, type AgentContextSnapshot } from '../../../domain/core/agents/agentContext';
++import { diagramContextSourceFingerprint, loadDiagramAgentContext, type DiagramAgentContextStore } from '../../../domain/core/diagrams/diagramAgentContext';
+ import { randomUUID } from 'node:crypto';
+-import { CanvasHistory } from '../../../domain/core/diagrams/canvasHistory';
+-import type { DiagramService, DiagramRevisionResult } from '../../../domain/core/diagrams/diagramService';
++import { CanvasHistory, type CanvasHistoryRecord } from '../../../domain/core/diagrams/canvasHistory';
++import type { DiagramGenerator } from '../../../domain/core/diagrams/diagramGeneration';
++import type { DiagramRevisionResult, DiagramRevision } from '../../../domain/core/diagrams/diagramRevision';
++import type { GridBox } from '../../../domain/core/diagrams/lineGrid';
+ import type { LiveDocumentSnapshot } from '../../../domain/mapping/agent/contracts';
+-import type { DiagramEditRun, DiagramRevisionApplication, EditDiagramInput } from '../../../domain/mapping/agent/diagramEdit';
++import { editDiagramSchema } from '../../../domain/mapping/agent/diagramEdit';
++import type { CreateDiagramInput, DiagramCreation, DiagramEditRun, DiagramRevisionApplication, EditDiagramInput, PromptReference } from '../../../domain/mapping/agent/diagramEdit';
++import { defaultTemplateSelection, resolvePromptTemplate, type PromptOperation } from '../../../domain/mapping/agent/promptTemplates';
+ import { findBox } from '../../../domain/mapping/workspace/canvasDisplayNode';
++import { diagramSelectionNodes } from '../../../domain/mapping/workspace/mappingDocument';
+ 
+ export interface DiagramEditCanvasPort {
+-  snapshot(sessionId: string): Promise<LiveDocumentSnapshot>;
++  snapshot(sessionId: string, revisionIds?: string[]): Promise<LiveDocumentSnapshot>;
+   apply(sessionId: string, input: DiagramRevisionApplication): Promise<{ version: number; unresolvedEdgeIds: string[] }>;
++  /** Idempotent per requestId. Optional: runtimes without it reject create-diagram. */
++  create?(sessionId: string, input: { requestId: string; expectedVersion: number; diagrams: DiagramCreation[] }): Promise<{ version: number }>;
+ }
+ interface Run {
++  variants?: DiagramRevisionApplication['variants'];
++  submission?: GeneratedDiagramEdit;
+   agentContext?: AgentContextSnapshot;
+-  input: EditDiagramInput;
++  nextAgentContext?: AgentContextSnapshot;
++  input: CreateDiagramInput;
+   signature: string;
+   state: DiagramEditRun;
+   abort: AbortController;
+   revision?: DiagramRevisionResult;
++  created?: DiagramRevisionResult[];
+   pending?: Promise<void>;
+ }
++/** A reference as the model receives it: the pinned revision's text, never the live canvas. */
++export type ResolvedPromptReference = { ref: number; kind: PromptReference['kind']; label: string; diagramId: string; revisionId: string }
++  & ({ kind: 'diagram'; ascii: string } | { kind: 'nodes'; range: Extract<PromptReference, { kind: 'nodes' }>['range']; excerpt: string; nodes: { id: string; label: string }[] });
+ 
+ /** A request owns both generation and installation; retries never rerun the model. */
+ export class DiagramEditService {
+   private runs = new Map<string, Run>();
+   private requests = new Map<string, string>();
+-  constructor(private readonly diagrams: DiagramService, private readonly canvas: DiagramEditCanvasPort) {}
++  constructor(private readonly diagrams: DiagramGenerator, private readonly canvas: DiagramEditCanvasPort,
++    private readonly diagramContexts?: DiagramAgentContextStore) {}
+ 
+-  start(input: EditDiagramInput, suppliedContext?: AgentContextSnapshot): DiagramEditRun {
+-    const agentContext = suppliedContext ? AgentContext.fromSnapshot(suppliedContext).toSnapshot() : undefined;
++  start(input: EditDiagramInput | CreateDiagramInput, suppliedContext?: AgentContextSnapshot, operation: PromptOperation = 'edit-diagram', submission?: GeneratedDiagramEdit): DiagramEditRun {
++    if (input['presentation-alternative'] && (operation !== 'edit-diagram' || input['edit-mode'] !== 'variant')) throw Error('presentation-alternative requires edit-diagram with edit-mode variant');
++    if (operation === 'edit-diagram' && 'count' in input && input.count !== undefined) throw Error('count applies only to create-diagram');
++    if (operation === 'edit-diagram') input = editDiagramSchema.parse(input);
++    if (input.agentContext && (input.agentContextId || suppliedContext)) throw Error('Provide only one agent context source');
++    if (input.agentContext && !input.llmSessionId) throw Error('Panel context requires llmSessionId');
++    const rawContext = input.agentContext ?? suppliedContext;
++    const agentContext = rawContext ? AgentContext.fromSnapshot(rawContext).toSnapshot() : undefined;
++    if (input.llmSessionId && agentContext && !input.agentContextId?.startsWith('saved-agent-context-') && agentContext.source.sourceSessionId !== input.llmSessionId)
++      throw Error('AGENT_CONTEXT_SESSION_MISMATCH: context belongs to another panel');
+     if (input.agentContextId && !agentContext) throw Error('AGENT_CONTEXT_NOT_FOUND: resolve context before starting the edit');
++    if (operation !== 'edit-diagram' && !this.canvas.create) throw Error('Diagram creation UNAVAILABLE in this runtime');
++    if (input.variant && operation !== 'edit-diagram') throw Error('Variants require edit-diagram');
++    if (input['edit-mode'] !== undefined && operation !== 'edit-diagram') throw Error('edit-mode applies only to edit-diagram');
++    if (input['edit-mode'] === 'in-place' && input.variant) throw Error('in-place mode cannot include variant options');
++    if (operation !== 'edit-diagram' && (input['replace-mode'] || input.subtree || input.subtrees)) throw Error('Replacement scope applies only to edit-diagram');
++    if (submission && (input.variant && input.variant.count !== 1 || 'count' in input && input.count && input.count !== 1)) throw Error('Use one batch operation per submitted diagram or variant');
++    if (input.variant?.variantId && input.variant.count !== 1) throw Error('Refine one existing variant at a time');
++    if (operation === 'extend-diagram' && (!input.origin || !input.sources?.length)) throw Error('Extend requires a selection and a canvas origin');
++    // Fail fast on an unknown template or invalid options instead of after a model call.
++    resolvePromptTemplate(input.template ?? defaultTemplateSelection(operation), operation);
+     const key = JSON.stringify([input.sessionId, input.requestId]);
+-    const signature = JSON.stringify({ input, agentContextHash: agentContext?.contentHash });
++    const signature = JSON.stringify({ operation, input, submission, agentContextHash: agentContext?.contentHash });
+     const existing = this.requests.get(key);
+     if (existing) {
+       const run = this.runs.get(existing)!;
+       if (run.signature !== signature) throw Error('REQUEST_ID_CONFLICT: edit request differs');
+-      if (run.state.status === 'awaiting-acknowledgement' && !run.pending) this.launch(run, () => this.apply(run));
++      if (run.state.status === 'awaiting-acknowledgement' && !run.pending) this.launch(run, () => this.install(run));
+       return structuredClone(run.state);
+     }
+     if (this.runs.size >= 500) throw Error('Diagram edit run capacity reached; restart the backend');
+-    const run: Run = { agentContext, input: structuredClone(input), signature, abort: new AbortController(), state: {
+-      runId: `diagram-edit-${randomUUID()}`, status: 'generating', nodeId: input.nodeId, baseRevisionId: input.baseRevisionId
++    const run: Run = { submission, agentContext, input: structuredClone(input), signature, abort: new AbortController(), state: {
++      ...(input.agentContextId ? { agentContextId: input.agentContextId, agentContextHash: agentContext!.contentHash } : {}),
++      runId: `diagram-edit-${randomUUID()}`, operation, status: 'generating', nodeId: input.nodeId, baseRevisionId: input.baseRevisionId
+     } };
+     this.runs.set(run.state.runId, run); this.requests.set(key, run.state.runId);
+     this.launch(run, () => this.generate(run));
+     return structuredClone(run.state);
+   }
++  async wait(id: string) { const run = this.runs.get(id); if (!run) throw Error('Diagram edit run not found'); await run.pending; return this.get(id); }
+   get(id: string) {
+     const run = this.runs.get(id); if (!run) throw Error('Diagram edit run not found');
+     return structuredClone(run.state);
+@@ -67,39 +112,182 @@ export class DiagramEditService {
+       run.state.error = message;
+     }).finally(() => { run.pending = undefined; });
+   }
++  private install(run: Run) { return run.state.operation !== 'edit-diagram' ? this.place(run) : this.apply(run); }
+   private async generate(run: Run) {
+-    const { input, abort } = run;
+-    const snapshot = await this.canvas.snapshot(input.sessionId);
++    const { input, abort } = run, operation = run.state.operation;
++    const snapshot = await this.canvas.snapshot(input.sessionId, [...(input.baseRevisionId && input.baseRevisionId !== 'canvas' ? [input.baseRevisionId] : []), ...(input.references ?? []).map(ref => ref.revisionId)]);
+     abort.signal.throwIfAborted();
+     if (snapshot.version !== input.expectedVersion) throw Error('VERSION_CONFLICT: read the canvas again');
+     const box = input.nodeId.startsWith('grid:') && findBox(snapshot.document.scene.root, input.nodeId.slice(5));
+-    if (!box || box.kind !== 'diagram') throw Error('Expected diagram GridBox');
+-    const base = snapshot.document.scene.contents[box.contentId];
+-    if (base.revisionId !== input.baseRevisionId) throw Error('VERSION_CONFLICT: diagram base is no longer current');
+-    if (!snapshot.history) throw Error('Canvas history is required for diagram generation');
+-    // Validated portable history imports the exact browser-issued revision identities.
+-    new CanvasHistory(snapshot.document, snapshot.canvas, snapshot.history, 'current');
++    const unanchored = operation === 'create-diagram' && input.nodeId === 'canvas';
++    if (!unanchored && (!box || box.kind !== 'diagram')) throw Error('Expected diagram GridBox');
++    let base = box && box.kind === 'diagram' ? snapshot.document.scene.contents[box.contentId]
++      : createStoredDiagram({ id: `context-${randomUUID()}`, revision: 0, ascii: '[New diagram]' }).diagram;
++    if (!unanchored && base.revisionId !== input.baseRevisionId) throw Error('VERSION_CONFLICT: diagram base is no longer current');
++    if (!run.submission && !run.agentContext && operation === 'edit-diagram') {
++      const bound = snapshot.document.diagramContexts?.[base.diagramId];
++      if (bound && bound.sourceFingerprint === diagramContextSourceFingerprint(base))
++        run.agentContext = await loadDiagramAgentContext(bound, this.diagramContexts);
++    }
++    // Import only the exact target/reference revisions, including their logical node identities.
++    for (const revision of snapshot.revisions ?? []) importDiagramRevision(revision);
++    // Compatibility for in-process adapters that still supply a history record.
++    if (!snapshot.revisions && snapshot.history) new CanvasHistory(snapshot.document, snapshot.canvas, snapshot.history, 'current');
++    const existing = input.variant?.variantId ? snapshot.document.revisionReviews?.[input.variant.variantId] : undefined;
++    if (input.variant?.variantId && !existing) throw Error('Variant not found');
++    if (existing) {
++      if (existing.diagramId !== base.diagramId) throw Error('Variant belongs to another diagram');
++      const retained = await this.canvas.snapshot(input.sessionId, reviewRevisionIds(existing));
++      for (const revision of retained.revisions ?? []) importDiagramRevision(revision);
++      if (retained.version !== input.expectedVersion) throw Error('VERSION_CONFLICT: canvas changed');
++      base = getDiagramRevision(existing.headRevisionId).diagram;
++    }
++    const template = resolvePromptTemplate(input.template ?? defaultTemplateSelection(operation), operation);
++    const references = this.resolveReferences(input.references ?? [], snapshot.history);
+     const lines = base.content.ascii.split('\n');
+-    run.revision = await this.diagrams.generate({ input: { id: base.id, structureKind: base.content.structure.kind,
+-      source: base.sourceContext.binding, evidence: base.sourceContext.evidence },
+-      instruction: input.prompt, agentContext: run.agentContext, baseRevisionId: base.revisionId,
++    const editRanges = operation === 'edit-diagram'
++      ? existing ? (() => {
++        if (input.subtree || input.subtrees) throw Error('Refinement uses the saved variant scope; omit subtree targets');
++        if (existing.replacementScope) {
++          if (input['replace-mode'] !== existing.replacementScope.mode) throw Error('replace-mode must match the saved variant scope');
++          if (existing.replacementScope.ranges.some(range => range.endLine < range.startLine)) throw Error('The saved replacement scope was deleted; select new targets for a new edit');
++          return existing.replacementScope.ranges;
++        }
++        const range = existing.ownerNodeId === 'root' ? undefined : revisionScope(getDiagramRevision(base.revisionId), existing.ownerNodeId);
++        if (input['replace-mode'] !== (range ? 'subnode-single' : 'diagram')) throw Error('replace-mode must match the saved variant scope');
++        return range ? [range] : [];
++      })() : diagramReplacementRanges(base, input['replace-mode']!, input.subtree, input.subtrees)
++      : [];
++    const editRange = editRanges.length === 1 ? editRanges[0] : undefined;
++    if (operation === 'extend-diagram') for (const source of input.sources!) validateConnectionAnchor(snapshot.document.scene, source);
++    const request = { operation, sourceMappings: input['source-mappings'] ?? false, editRange, editRanges, instruction: input.prompt, agentContext: run.agentContext, llmSessionId: input.llmSessionId,
++      prompt: { markdown: template.markdown, options: template.options, parameters: template.definition.parameters, references },
+       context: { diagram: base, selection: { startLine: 1, endLine: lines.length, startColumn: 1,
+-        endColumn: Math.max(1, ...lines.map(line => line.length)) }, connections: snapshot.document.edges }
+-    }, { signal: abort.signal, onProgress: message => { if (run.state.status === 'generating') run.state.message = message; } });
++        endColumn: Math.max(1, ...lines.map(line => line.length)) }, connections: snapshot.document.edges } };
++    const options = { signal: abort.signal, onAgentSession: (id: string) => { run.state.agentSessionId = id; },
++      onAgentContext: (context: AgentContextSnapshot) => {
++        const next = AgentContext.fromSnapshot(context).toSnapshot();
++        if (next.source.sourceSessionId !== input.llmSessionId) throw Error('AGENT_CONTEXT_SESSION_MISMATCH');
++        run.nextAgentContext = next;
++      }, onProgress: (message: string) => { if (run.state.status === 'generating') run.state.message = message; } };
++    const produce = (request: Parameters<DiagramGenerator['generate']>[0], options: Parameters<DiagramGenerator['generate']>[1]) =>
++      run.submission ? Promise.resolve(submitStoredDiagramEdit(request, run.submission)) : generateDiagram(this.diagrams, request, options);
++    if (operation !== 'edit-diagram') {
++      run.created = [];
++      for (let index = 0; index < (operation === 'extend-diagram' ? 1 : input.count ?? 1); index++) {
++        if (input.count && input.count > 1) options.onProgress(`Generating diagram ${index + 1} of ${input.count}…`);
++        run.created.push(await produce({ ...request, agentContext: run.nextAgentContext ?? run.agentContext, input: { id: `diagram-${randomUUID()}`, structureKind: base.content.structure.kind,
++          source: base.sourceContext.binding, evidence: base.sourceContext.evidence } }, options));
++        abort.signal.throwIfAborted();
++      }
++      await this.place(run);
++      return;
++    }
++    // Keep the existing panel's variant creation/refinement contract supported.
++    const variantOptions = input['edit-mode'] === 'variant' ? input.variant ?? { name: 'Alternative', count: 1 } : undefined;
++    if (variantOptions) {
++      run.variants = [];
++      const ownerNodeId = existing?.ownerNodeId ?? (input.subtree ? getDiagramRevision(base.revisionId).nodeRefs[input.subtree.contentNodeId] : 'root');
++      if (!ownerNodeId) throw Error('STALE_SUBTREE: select a current subtree');
++      for (let index = 0; index < variantOptions.count; index++) {
++        options.onProgress(`Generating variant ${index + 1} of ${variantOptions.count}…`);
++        const generated = await produce({ ...request,
++          instruction: input.prompt + (variantOptions.count > 1 ? `\nProduce alternative ${index + 1} of ${variantOptions.count}; explore a distinct approach.` : ''),
++          baseRevisionId: base.revisionId, input: { id: base.id, structureKind: base.content.structure.kind,
++            source: base.sourceContext.binding, evidence: base.sourceContext.evidence } }, options);
++        abort.signal.throwIfAborted();
++        const variant: DiagramRevisionReview = { ...existing, id: existing?.id ?? `variant-${randomUUID()}`,
++          name: variantOptions.name + (variantOptions.count > 1 ? ` ${index + 1}` : ''), diagramId: base.diagramId, contentId: base.id,
++          ...(input['replace-mode'] === 'multi-contiguous' || input['replace-mode'] === 'multi-disjoint'
++            ? { replacementScope: { mode: input['replace-mode'], ranges: generated.replacementRanges! } } : {}),
++          ownerNodeId, baseRevisionId: existing?.baseRevisionId ?? base.revisionId, headRevisionId: generated.revision.id,
++          revisionIds: [...(existing?.revisionIds ?? []), generated.revision.id], prompt: input.prompt, decisions: {} };
++        validateRevisionReview(variant, id => getDiagramRevision(id));
++        const promotion = input['presentation-alternative'];
++        const targets = input.subtrees ?? (input.subtree ? [input.subtree] : []);
++        const owners = targets.length ? targets.map(target => getDiagramRevision(base.revisionId).nodeRefs[target.contentNodeId]) : ['root'];
++        run.variants.push({ variant, revision: generated.revision, ...(promotion ? {
++          alternative: { id: `alternative-${randomUUID()}`, name: promotion.name + (variantOptions.count > 1 ? ` ${index + 1}` : ''),
++            diagramId: base.diagramId, presentationId: input.nodeId, reviewId: variant.id,
++            parts: owners.map(owner => ({ target: ownerScope(owner), source: { revisionId: generated.revision.id, scope: ownerScope(owner) }, baseRevisionId: base.revisionId })) },
++          selectAlternative: promotion.select && index === 0 } : {}) });
++        run.revision = generated;
++      }
++      await this.apply(run); return;
++    }
++    run.revision = await produce({ ...request, baseRevisionId: base.revisionId, input: { id: base.id,
++      structureKind: base.content.structure.kind, source: base.sourceContext.binding, evidence: base.sourceContext.evidence } }, options);
+     abort.signal.throwIfAborted();
+     run.state.generated = { diagramId: run.revision.diagram.diagramId, revisionId: run.revision.revision.id,
+       ascii: run.revision.diagram.content.ascii };
+     await this.apply(run);
+   }
++  /** References resolve against the canvas's own revision history first; the service registry covers revisions it issued. */
++  private resolveReferences(references: readonly PromptReference[], history?: CanvasHistoryRecord): ResolvedPromptReference[] {
++    return references.map((reference, index) => {
++      const ref = index + 1;
++      let revision: DiagramRevision | undefined = history?.diagramRevisions[reference.revisionId];
++      if (!revision) try { revision = getDiagramRevision(reference.revisionId); } catch { /* reported below */ }
++      if (!revision || revision.diagramId !== reference.diagramId) throw Error(`PROMPT_REFERENCE_NOT_FOUND: [ref ${ref}] ${reference.label} is not available`);
++      const common = { ref, label: reference.label, diagramId: reference.diagramId, revisionId: reference.revisionId };
++      if (reference.kind === 'diagram') return { ...common, kind: 'diagram', ascii: revision.diagram.content.ascii };
++      const lines = revision.diagram.content.ascii.split('\n'), range = reference.range;
++      if (range.endLine > lines.length) throw Error(`PROMPT_REFERENCE_INVALID: [ref ${ref}] range is outside its revision`);
++      const known = new Map([...diagramSelectionNodes(revision.diagram), ...diagramContentNodes(revision.diagram.content)].map(node => [node.id, node.label]));
++      const unknown = reference.nodeIds.find(id => !known.has(id));
++      if (unknown) throw Error(`PROMPT_REFERENCE_INVALID: [ref ${ref}] node ${unknown} is not in its revision`);
++      return { ...common, kind: 'nodes', range,
++        excerpt: reference.nodeIds.length && reference.nodeIds.every(id => diagramContentNodes(revision.diagram.content).some(node => node.id === id))
++          ? selectionExcerpt(revision.diagram, range, reference.nodeIds)
++          : lines.slice(range.startLine - 1, range.endLine).map(line => line.slice(range.startColumn - 1, range.endColumn).trimEnd()).join('\n'),
++        nodes: reference.nodeIds.map(id => ({ id, label: known.get(id)! })) };
++    });
++  }
+   private async apply(run: Run) {
+     run.state.status = 'applying'; delete run.state.error;
+     const revision = run.revision!.revision, input = run.input;
+     // The controller checks both versions at the mutation boundary, after generation.
+     const result = await this.canvas.apply(input.sessionId, { requestId: run.state.runId,
+-      expectedVersion: input.expectedVersion, nodeId: input.nodeId, baseRevisionId: input.baseRevisionId, revision });
++      expectedVersion: input.expectedVersion, nodeId: input.nodeId, baseRevisionId: input.baseRevisionId, revision,
++      ...(run.variants ? { variants: run.variants } : {}) });
++    if (run.variants) run.state.variants = run.variants.map(({ variant, alternative }) => ({ id: variant.id, name: variant.name, revisionId: variant.headRevisionId, ...(alternative ? { alternativeId: alternative.id } : {}) }));
+     run.state.result = { diagramId: revision.diagramId, previousRevisionId: input.baseRevisionId,
+       revisionId: revision.id, documentVersion: result.version, unresolvedEdgeIds: result.unresolvedEdgeIds };
+-    run.state.status = 'completed'; run.state.message = 'Diagram revision installed and workspace persisted';
++    run.state.agentContext = run.nextAgentContext;
++    run.state.status = 'completed'; run.state.message = run.variants
++      ? 'Diagram variants saved and workspace persisted' : 'Diagram revision installed and workspace persisted';
++  }
++  /** New diagrams never conflict with canvas edits: placement reads the latest version and sits beside the anchor. */
++  private async place(run: Run) {
++    run.state.status = 'applying'; delete run.state.error;
++    for (let attempt = 1; ; attempt++) {
++      try { return await this.placeOnce(run); }
++      catch (error) { if (attempt >= 3 || !String(error).includes('VERSION_CONFLICT')) throw error; }
++    }
++  }
++  private async placeOnce(run: Run) {
++    const snapshot = await this.canvas.snapshot(run.input.sessionId);
++    if (run.state.operation === 'extend-diagram') for (const source of run.input.sources!) validateConnectionAnchor(snapshot.document.scene, source);
++    const anchorId = run.input.nodeId.slice(5), parent = findParent(snapshot.document.scene.root, anchorId);
++    const anchor = parent?.children.find(child => child.id === anchorId);
++    const width = (ascii: string) => Math.max(1, ...ascii.split('\n').map(line => line.length)) + 2;
++    let column = anchor ? anchor.position.column + width(anchor.kind === 'diagram' ? snapshot.document.scene.contents[anchor.contentId]?.content.ascii ?? '' : '') + 4 : 0;
++    const diagrams = run.created!.map(created => {
++      const { diagram } = created, position = run.input.origin ?? { column, row: anchor?.position.row ?? 0 };
++      column += width(diagram.content.ascii) + 4;
++      return { id: diagram.id, position, ...(run.state.operation === 'extend-diagram' ? { sources: run.input.sources } : {}), ...(run.input.origin ? {} : parent && parent.id !== snapshot.document.scene.root.id ? { parentId: `grid:${parent.id}` } : {}),
++        content: { ascii: diagram.content.ascii, structureKind: diagram.content.structure.kind, mappings: diagram.sourceContext.mappings,
++          evidence: diagram.sourceContext.evidence, source: diagram.sourceContext.binding } } as DiagramCreation;
++    });
++    const result = await this.canvas.create!(run.input.sessionId, { requestId: run.state.runId, expectedVersion: snapshot.version, diagrams });
++    run.state.created = { documentVersion: result.version, nodeIds: diagrams.map(diagram => `grid:${diagram.id}`) };
++    run.state.agentContext = run.nextAgentContext;
++    run.state.status = 'completed'; run.state.message = `${diagrams.length === 1 ? 'Diagram' : `${diagrams.length} diagrams`} created beside the anchor`;
+   }
+   dispose() { for (const run of this.runs.values()) this.cancel(run.state.runId); }
+ }
++
++function findParent(box: GridBox, id: string): Extract<GridBox, { kind: 'container' }> | undefined {
++  if (box.kind !== 'container') return undefined;
++  return box.children.some(child => child.id === id) ? box : box.children.map(child => findParent(child, id)).find(Boolean);
++}
+diff --git a/domain/core/agents/agentContext.ts b/domain/core/agents/agentContext.ts
+index 95c135b5..55428b91 100644
+--- a/domain/core/agents/agentContext.ts
++++ b/domain/core/agents/agentContext.ts
+@@ -1,16 +1,18 @@
+ import { z } from 'zod';
+ import { sha256 } from '../sha256';
++import { sourceRangeSchema, sourceFileSchema, sourceFileHash, sourceRangeText, type AgentContextSourceRange } from './agentContextSource';
+ 
+ export const AGENT_CONTEXT_MAX_BYTES = 2 * 1024 * 1024;
+ const id = z.string().min(1).max(200);
+ const text = z.object({ type: z.literal('text'), text: z.string().max(1_000_000) }).strict();
++const constituent = z.union([text, sourceRangeSchema]);
+ const toolCall = z.object({ type: z.literal('toolCall'), id, name: id, arguments: z.record(z.string(), z.json()) }).strict();
+ const timestamp = z.number().int().nonnegative().default(0);
+ export const agentContextMessageSchema = z.discriminatedUnion('role', [
+-  z.object({ role: z.literal('user'), content: z.array(text).min(1).max(1000), timestamp }).strict(),
+-  z.object({ role: z.literal('assistant'), content: z.array(z.union([text, toolCall])).min(1).max(1000), timestamp }).strict(),
++  z.object({ role: z.literal('user'), content: z.array(constituent).min(1).max(1000), timestamp }).strict(),
++  z.object({ role: z.literal('assistant'), content: z.array(z.union([constituent, toolCall])).min(1).max(1000), timestamp }).strict(),
+   z.object({ role: z.literal('toolResult'), toolCallId: id, toolName: id,
+-    content: z.array(text).min(1).max(1000), isError: z.boolean().default(false), timestamp }).strict()
++    content: z.array(constituent).min(1).max(1000), isError: z.boolean().default(false), timestamp }).strict()
+ ]);
+ export type AgentContextMessage = z.infer<typeof agentContextMessageSchema>;
+ const entrySchema = z.object({ id, parentId: id.nullable(), message: agentContextMessageSchema }).strict();
+@@ -21,12 +23,13 @@ export const agentTrajectorySchema = z.object({
+ }).strict();
+ export type AgentTrajectoryInput = z.input<typeof agentTrajectorySchema>;
+ const snapshotDataSchema = z.object({
+-  version: z.literal(1),
++  version: z.union([z.literal(1), z.literal(2)]),
+   source: agentTrajectorySchema.pick({ agentType: true, sourceSessionId: true, format: true }),
+   range: agentTrajectorySchema.pick({ fromEntryId: true, throughEntryId: true }),
+   messages: z.array(agentContextMessageSchema).min(1).max(2000)
+ }).strict();
+-export const agentContextSnapshotSchema = snapshotDataSchema.extend({ contentHash: z.string().regex(/^[a-f0-9]{64}$/) });
++export const agentContextSnapshotSchema = snapshotDataSchema.extend({ contentHash: z.string().regex(/^[a-f0-9]{64}$/),
++  sourceFiles: z.record(z.string().regex(/^[a-f0-9]{64}$/), sourceFileSchema).optional() });
+ export type AgentContextSnapshot = z.infer<typeof agentContextSnapshotSchema>;
+ 
+ /** Canonical JSON also stabilizes tool arguments whose object key order differs. */
+@@ -83,16 +86,33 @@ export class AgentContext {
+     if (cursor !== input.fromEntryId) throw Error('INVALID_AGENT_CONTEXT: range is not on one branch');
+     const messages = selected.reverse();
+     validateMessages(messages);
+-    const data = snapshotDataSchema.parse({ version: 1,
++    const data = snapshotDataSchema.parse({ version: messages.some(m => m.content.some(b => b.type === 'sourceRange')) ? 2 : 1,
+       source: { agentType: input.agentType, sourceSessionId: input.sourceSessionId, format: input.format },
+       range: { fromEntryId: input.fromEntryId, throughEntryId: input.throughEntryId }, messages });
+     return new AgentContext({ ...data, contentHash: sha256(canonical(data)) });
+   }
+ 
++  /** Capture a complete conversation while retaining its panel-owned identity. */
++  static fromMessages(sourceSessionId: string, messages: readonly AgentContextMessage[]): AgentContext {
++    return AgentContext.fromTrajectory({ agentType: 'diagram-composer', sourceSessionId, format: 'messages-v1',
++      fromEntryId: 'message-0', throughEntryId: `message-${messages.length - 1}`,
++      entries: messages.map((message, index) => ({ id: `message-${index}`, parentId: index ? `message-${index - 1}` : null, message })) });
++  }
++
+   static fromSnapshot(raw: unknown): AgentContext {
+     bounded(raw);
+     const snapshot = agentContextSnapshotSchema.parse(raw);
+-    const { contentHash, ...data } = snapshot;
++    const { contentHash, sourceFiles, ...data } = snapshot;
++    const references: AgentContextSourceRange[] = [];
++    for (const message of snapshot.messages) for (const block of message.content) if (block.type === 'sourceRange') references.push(block);
++    if (references.length && snapshot.version !== 2) throw Error('INVALID_AGENT_CONTEXT: source ranges require version 2');
++    for (const [hash, file] of Object.entries(sourceFiles ?? {})) {
++      if (sourceFileHash(file) !== hash) throw Error('INVALID_AGENT_CONTEXT: source file hash mismatch');
++      if (!references.some(ref => ref.version.kind === 'snapshot' && ref.version.contentHash === hash))
++        throw Error('INVALID_AGENT_CONTEXT: unreferenced source file');
++    }
++    for (const ref of references) if (ref.version.kind === 'snapshot' && sourceFiles?.[ref.version.contentHash])
++      sourceRangeText(ref, sourceFiles[ref.version.contentHash]);
+     if (contentHash !== sha256(canonical(data))) throw Error('INVALID_AGENT_CONTEXT: content hash mismatch');
+     validateMessages(snapshot.messages);
+     return new AgentContext(snapshot);
+@@ -100,8 +120,52 @@ export class AgentContext {
+ 
+   toSnapshot(): AgentContextSnapshot { return structuredClone(this.#snapshot); }
+ 
++  /** Source attachments are portable transport data, excluded from the immutable descriptor hash. */
++  withoutSourceFiles(): AgentContextSnapshot {
++    const { sourceFiles: _, ...snapshot } = this.toSnapshot(); return snapshot;
++  }
++
++  withMessages(messages: unknown, sourceFiles?: AgentContextSnapshot['sourceFiles']): AgentContext {
++    const parsed = z.array(agentContextMessageSchema).parse(messages);
++    const data = snapshotDataSchema.parse({ version: parsed.some(m => m.content.some(b => b.type === 'sourceRange')) ? 2 : 1,
++      source: this.#snapshot.source, range: this.#snapshot.range, messages: parsed });
++    return AgentContext.fromSnapshot({ ...data, contentHash: sha256(canonical(data)), ...(sourceFiles && Object.keys(sourceFiles).length ? { sourceFiles } : {}) });
++  }
++
++  async resolveSources(read?: (reference: AgentContextSourceRange) => Promise<string>): Promise<AgentContext> {
++    const snapshot = this.toSnapshot(), cache = new Map<string, Promise<string>>();
++    const messages = [];
++    let bytes = 0;
++    for (const message of snapshot.messages) {
++      const content = [];
++      for (const block of message.content) {
++        if (block.type !== 'sourceRange') { content.push(block); continue; }
++        const key = canonical(block);
++        let pending = cache.get(key);
++        if (!pending) {
++          const file = block.version.kind === 'snapshot' ? snapshot.sourceFiles?.[block.version.contentHash] : undefined;
++          pending = file ? Promise.resolve(sourceRangeText(block, file)) : read ? read(block) : Promise.reject(Error('AGENT_CONTEXT_SOURCE_UNAVAILABLE'));
++          cache.set(key, pending);
++        }
++        const text = await pending;
++        bytes += new TextEncoder().encode(text).byteLength;
++        if (bytes > AGENT_CONTEXT_MAX_BYTES) throw Error('AGENT_CONTEXT_TOO_LARGE: expanded sources exceed 2 MiB');
++        for (let offset = 0; offset < text.length || offset === 0; offset += 1_000_000)
++          content.push({ type: 'text' as const, text: text.slice(offset, offset + 1_000_000) });
++      }
++      messages.push({ ...message, content });
++    }
++    const data = snapshotDataSchema.parse({ version: 1, source: snapshot.source, range: snapshot.range, messages });
++    return AgentContext.fromSnapshot({ ...data, contentHash: sha256(canonical(data)) });
++  }
++
+   toPiMessages() {
+-    return this.toSnapshot().messages.map(message => {
++    return this.toSnapshot().messages.map(original => {
++      const content = original.content.map(block => {
++        if (block.type === 'sourceRange') throw Error('AGENT_CONTEXT_UNRESOLVED: resolve source ranges before model conversion');
++        return block;
++      });
++      const message = original.role === 'assistant' ? { ...original, content } : { ...original, content: content.filter(block => block.type === 'text') };
+       if (message.role !== 'assistant') return message;
+       // Synthetic provenance marks imported history; it never selects the run's model.
+       return { ...message, api: 'openai-responses' as const, provider: 'agent-context', model: this.#snapshot.source.agentType,
+diff --git a/domain/core/agents/agentContextSource.ts b/domain/core/agents/agentContextSource.ts
+new file mode 100644
+index 00000000..5e24974c
+--- /dev/null
++++ b/domain/core/agents/agentContextSource.ts
+@@ -0,0 +1,30 @@
++import { z } from 'zod';
++import { sha256 } from '../sha256';
++
++const hash = z.string().regex(/^[a-f0-9]{64}$/);
++export const sourcePathSchema = z.string().min(1).max(1000).refine(path =>
++  !/^[\\/]|^[A-Za-z]:|[\\\0]/.test(path) && path.split('/').every(part => part && part !== '.' && part !== '..'), 'Expected a relative source path');
++export const sourceRangeSchema = z.object({
++  type: z.literal('sourceRange'), sourceId: z.string().min(1).max(200), path: sourcePathSchema,
++  startLine: z.number().int().positive(), endLine: z.number().int().positive(),
++  version: z.discriminatedUnion('kind', [
++    z.object({ kind: z.literal('git'), commit: z.string().regex(/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/) }).strict(),
++    z.object({ kind: z.literal('snapshot'), contentHash: hash }).strict()
++  ])
++}).strict().refine(value => value.endLine >= value.startLine, 'Invalid source range');
++export type AgentContextSourceRange = z.infer<typeof sourceRangeSchema>;
++/** A captured file, or an existing evidence slice whose original line offset is retained. */
++export const sourceFileSchema = z.object({ startLine: z.number().int().positive(), lines: z.array(z.string()).min(1) }).strict();
++export type AgentContextSourceFile = z.infer<typeof sourceFileSchema>;
++export function sourceFileHash(file: AgentContextSourceFile) { return sha256(JSON.stringify({ startLine: file.startLine, lines: file.lines })); }
++export function sourceRangeText(reference: AgentContextSourceRange, file: AgentContextSourceFile) {
++  const start = reference.startLine - file.startLine, end = reference.endLine - file.startLine + 1;
++  if (start < 0 || end > file.lines.length) throw Error('AGENT_CONTEXT_SOURCE_RANGE: range is outside the pinned source');
++  return `${reference.path}:${reference.startLine}-${reference.endLine}\n${file.lines.slice(start, end).join('\n')}`;
++}
++export const captureSourceRangeSchema = z.object({
++  type: z.literal('sourceFile'), sourceId: z.string().min(1).max(200), path: sourcePathSchema,
++  startLine: z.number().int().positive().default(1), endLine: z.number().int().positive().optional(),
++  revision: z.string().min(1).max(200).optional()
++}).strict().refine(value => value.endLine === undefined || value.endLine >= value.startLine, 'Invalid source range');
++export type CaptureSourceRange = z.infer<typeof captureSourceRangeSchema>;
+diff --git a/domain/core/agents/savedAgentContext.ts b/domain/core/agents/savedAgentContext.ts
+new file mode 100644
+index 00000000..0c6c1bdb
+--- /dev/null
++++ b/domain/core/agents/savedAgentContext.ts
+@@ -0,0 +1,27 @@
++import { z } from 'zod';
++import { captureSourceRangeSchema } from './agentContextSource';
++import { agentContextSnapshotSchema } from './agentContext';
++
++export const savedAgentContextIdSchema = z.string().regex(/^saved-agent-context-[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/);
++export const createAgentContextSchema = z.object({
++  requestId: z.string().uuid().toLowerCase(), name: z.string().trim().min(1).max(120),
++  description: z.string().trim().max(2000).default(''),
++  context: z.union([z.string().trim().min(1).max(1_000_000), agentContextSnapshotSchema, z.array(z.union([z.object({ type: z.literal('text'), text: z.string().min(1).max(1_000_000) }).strict(), captureSourceRangeSchema])).min(1).max(1000)])
++}).strict();
++export const readAgentContextSchema = z.object({ agentContextId: savedAgentContextIdSchema }).strict();
++export const listAgentContextsSchema = z.object({ query: z.string().max(200).default(''), offset: z.number().int().nonnegative().default(0), limit: z.number().int().min(1).max(100).default(20) }).strict();
++export const savedAgentContextSchema = z.object({
++  schemaVersion: z.literal(1), agentContextId: savedAgentContextIdSchema,
++  name: z.string(), description: z.string(), createdAt: z.string().datetime(), requestHash: z.string(),
++  snapshot: agentContextSnapshotSchema
++}).strict();
++export type SavedAgentContext = z.infer<typeof savedAgentContextSchema>;
++export function summarizeAgentContext(record: SavedAgentContext) {
++  return { agentContextId: record.agentContextId, name: record.name, description: record.description, createdAt: record.createdAt,
++    contentHash: record.snapshot.contentHash, messageCount: record.snapshot.messages.length, source: record.snapshot.source };
++}
++export const agentContextToolDefinitions = [
++  { name: 'create-agent-context' as const, schema: createAgentContextSchema, description: 'Save immutable reusable context to disk and return its global agentContextId and contentHash. Supply name, optional description, context (plain text, a validated AgentContextSnapshot, or an array of text/sourceFile constituents). A sourceFile specifies a registered sourceId, relative path, optional 1-based inclusive startLine/endLine, and optional Git revision. Files are pinned at creation and resolved lazily; unchanged Git files need no copied source blob, and a unique UUID requestId. Context is explicit: this does not capture the current chat automatically. IDs work across canvases and chats in this application store and survive restarts. Retry the same arguments/requestId after an uncertain outcome. Requires Workspace access.' },
++  { name: 'list-agent-contexts' as const, schema: listAgentContextsSchema, description: 'Browse saved AgentContexts by name/description with query, offset and limit. Returns summaries and nextOffset, without loading conversation text into the chat. IDs can be passed to gen-alternatives or prompt-driven diagram generation.' },
++  { name: 'read-agent-context' as const, schema: readAgentContextSchema, description: 'Read one immutable saved AgentContext by global agentContextId, including its compact snapshot and contentHash. Source references are expanded separately in resolvedSnapshot when present; the saved snapshot and its hash remain unchanged. This does not change the current conversation or launch a model.' }
++];
+diff --git a/domain/core/diagrams/diagramAgentContext.ts b/domain/core/diagrams/diagramAgentContext.ts
+new file mode 100644
+index 00000000..04a99449
+--- /dev/null
++++ b/domain/core/diagrams/diagramAgentContext.ts
+@@ -0,0 +1,85 @@
++import { AgentContext, type AgentContextSnapshot } from '../agents/agentContext';
++import { sourceFileHash, type AgentContextSourceFile, type AgentContextSourceRange } from '../agents/agentContextSource';
++import { sha256 } from '../sha256';
++import type { Diagram } from './diagram';
++
++export interface DiagramAgentContextStore {
++  put(snapshot: AgentContextSnapshot): Promise<string>;
++  get(recordId: string): Promise<unknown>;
++  portable?(snapshot: AgentContextSnapshot): Promise<AgentContextSnapshot>;
++  resolve?(snapshot: AgentContextSnapshot): Promise<AgentContextSnapshot>;
++}
++
++interface DiagramAgentContextIdentity {
++  diagramId: string;
++  compiledFromRevisionId: string;
++  sourceFingerprint: string;
++}
++
++export type StoredDiagramAgentContext = DiagramAgentContextIdentity & {
++  backingRecordId: string; contentHash: string; snapshot?: never;
++};
++export type InlineDiagramAgentContext = DiagramAgentContextIdentity & {
++  snapshot: AgentContextSnapshot; contentHash?: string; backingRecordId?: never;
++};
++/** The diagram carries a small disk reference. Inline snapshots remain valid for old workspaces and portable exports. */
++export type DiagramAgentContext = StoredDiagramAgentContext | InlineDiagramAgentContext;
++
++export function diagramContextSourceFingerprint(diagram: Diagram): string {
++  return sha256(JSON.stringify({ binding: diagram.sourceContext.binding ?? null, evidence: diagram.sourceContext.evidence }));
++}
++
++/** Capture stable source evidence once; the current diagram is supplied by each later generation request. */
++export function compileDiagramAgentContext(diagram: Diagram): InlineDiagramAgentContext {
++  const sourceFingerprint = diagramContextSourceFingerprint(diagram);
++  const sourceFiles: Record<string, AgentContextSourceFile> = {};
++  const references: AgentContextSourceRange[] = [];
++  const evidence = Object.fromEntries(Object.entries(diagram.sourceContext.evidence).map(([id, entry]) => [id, {
++    ...entry, sourceRanges: entry.sourceRanges.map(({ originalLines, ...range }) => {
++      const file = { startLine: range.startLine, lines: [...originalLines] }, contentHash = sourceFileHash(file);
++      sourceFiles[contentHash] = file;
++      const reference: AgentContextSourceRange = { type: 'sourceRange', sourceId: entry.sourceId ?? diagram.sourceContext.binding?.sourceId ?? diagram.diagramId,
++        path: range.path, startLine: range.startLine, endLine: range.endLine, version: { kind: 'snapshot', contentHash } };
++      references.push(reference);
++      return { ...range, source: reference };
++    })
++  }]));
++  const context = AgentContext.fromTrajectory({ agentType: 'diagram-context', sourceSessionId: diagram.diagramId,
++    format: 'messages-v1', fromEntryId: 'source', throughEntryId: 'source', entries: [{ id: 'source', parentId: null,
++      message: { role: 'user', timestamp: 0, content: [{ type: 'text', text: `Source evidence for diagram ${diagram.diagramId}. This is background captured at revision ${diagram.revisionId}; use the current diagram supplied with each edit request as the authoritative content.\n${JSON.stringify({ binding: diagram.sourceContext.binding ?? null, evidence })}` }, ...references] } }] });
++  return { diagramId: diagram.diagramId, compiledFromRevisionId: diagram.revisionId, sourceFingerprint,
++    contentHash: context.contentHash, snapshot: AgentContext.fromSnapshot({ ...context.toSnapshot(), ...(references.length ? { sourceFiles } : {}) }).toSnapshot() };
++}
++
++export async function storeDiagramAgentContext(value: DiagramAgentContext, store: DiagramAgentContextStore): Promise<StoredDiagramAgentContext> {
++  validateDiagramAgentContext(value);
++  if (!value.snapshot) return value as StoredDiagramAgentContext;
++  const backingRecordId = await store.put(value.snapshot);
++  if (!/^[a-f0-9]{64}$/.test(backingRecordId)) throw Error('Invalid diagram context backing record');
++  return { diagramId: value.diagramId, compiledFromRevisionId: value.compiledFromRevisionId,
++    sourceFingerprint: value.sourceFingerprint, contentHash: value.snapshot.contentHash, backingRecordId };
++}
++
++export async function loadDiagramAgentContext(value: DiagramAgentContext, store?: DiagramAgentContextStore): Promise<AgentContextSnapshot> {
++  validateDiagramAgentContext(value);
++  const raw = value.snapshot ?? (store && value.backingRecordId ? await store.get(value.backingRecordId) : undefined);
++  if (!raw) throw Error('AGENT_CONTEXT_STORAGE_UNAVAILABLE: diagram context backing record cannot be loaded');
++  const snapshot = AgentContext.fromSnapshot(raw).toSnapshot();
++  if ((value.contentHash && snapshot.contentHash !== value.contentHash) || snapshot.source.agentType !== 'diagram-context'
++    || snapshot.source.sourceSessionId !== value.diagramId) throw Error('DIAGRAM_CONTEXT_MISMATCH: backing record does not match diagram');
++  return snapshot;
++}
++
++export function validateDiagramAgentContext(value: DiagramAgentContext): void {
++  if (!value || typeof value.diagramId !== 'string' || !value.diagramId.startsWith('diagram-')
++    || typeof value.compiledFromRevisionId !== 'string' || !value.compiledFromRevisionId.startsWith('diagram-revision-')
++    || typeof value.sourceFingerprint !== 'string' || !/^[a-f0-9]{64}$/.test(value.sourceFingerprint)
++    || value.contentHash !== undefined && !/^[a-f0-9]{64}$/.test(value.contentHash)) throw Error('Invalid diagram agent context');
++  if ('snapshot' in value && value.snapshot !== undefined) {
++    if (value.backingRecordId !== undefined) throw Error('Diagram context has two backing sources');
++    const snapshot = AgentContext.fromSnapshot(value.snapshot).toSnapshot();
++    if ((value.contentHash && snapshot.contentHash !== value.contentHash) || snapshot.source.agentType !== 'diagram-context'
++      || snapshot.source.sourceSessionId !== value.diagramId) throw Error('Diagram agent context belongs to another diagram');
++  } else if (!value.contentHash || typeof value.backingRecordId !== 'string' || !/^[a-f0-9]{64}$/.test(value.backingRecordId))
++    throw Error('Invalid diagram context backing record');
++}
+diff --git a/domain/core/diagrams/diagramRevisionReview.ts b/domain/core/diagrams/diagramRevisionReview.ts
+new file mode 100644
+index 00000000..5ca6a88e
+--- /dev/null
++++ b/domain/core/diagrams/diagramRevisionReview.ts
+@@ -0,0 +1,195 @@
++import { deriveDiagram } from './diagramRevision';
++import { z } from 'zod';
++import { diagramContentNodes } from './diagramContentNodes';
++import { diagramSubtreeRange, subtreeReplacement } from './diagramSubtreeEdit';
++import type { DiagramRevision } from './diagramRevision';
++
++const id = z.string().min(1).max(500).refine(value => !['__proto__', 'constructor', 'prototype'].includes(value));
++/** Review workflow metadata over revisions; presentation does not require this record. */
++export const diagramRevisionReviewSchema = z.object({
++  id, name: z.string().trim().min(1).max(120), diagramId: id, contentId: id,
++  /** 'root' is the synthetic owner of the complete diagram. */
++  contextVariantId: id.optional(),
++  replacementScope: z.object({ mode: z.enum(['multi-contiguous', 'multi-disjoint']),
++    ranges: z.array(z.object({ startLine: z.number().int().positive(), endLine: z.number().int().nonnegative() }).strict()).min(1).max(100) }).strict().optional(),
++  ownerNodeId: id, baseRevisionId: id, headRevisionId: id,
++  revisionIds: z.array(id).min(1).max(1000),
++  prompt: z.string().max(20000).optional(),
++  decisions: z.record(id, z.enum(['accept', 'reject'])),
++  /** Last installation, used as the three-way base when changing review decisions. */
++  appliedRevisionId: id.optional(),
++  appliedReview: z.object({ headRevisionId: id, decisions: z.record(id, z.enum(['accept', 'reject'])) }).strict().optional()
++}).strict();
++export type DiagramRevisionReview = z.infer<typeof diagramRevisionReviewSchema>;
++export type RevisionDecision = 'accept' | 'reject';
++interface NodeState { label: string; parentId?: string; childIds: string[] }
++type Tree = Record<string, NodeState>;
++export interface RevisionChange { id: string; label: string; kind: 'added' | 'removed' | 'updated'; before?: NodeState; after?: NodeState }
++const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
++const rootId = '$root';
++
++export function reviewRevisionIds(variant: DiagramRevisionReview) {
++  return [...new Set([variant.baseRevisionId, variant.headRevisionId, ...variant.revisionIds, ...(variant.appliedRevisionId ? [variant.appliedRevisionId] : []), ...(variant.appliedReview ? [variant.appliedReview.headRevisionId] : [])])];
++}
++export function validateRevisionReview(variant: DiagramRevisionReview, get: (id: string) => DiagramRevision) {
++  diagramRevisionReviewSchema.parse(variant);
++  if (!variant.revisionIds.includes(variant.headRevisionId)) throw Error('Variant head is not retained');
++  if (variant.replacementScope) {
++    const ranges = variant.replacementScope.ranges, length = get(variant.headRevisionId).diagram.content.ascii.split('\n').length;
++    if (ranges.some((range, i) => range.startLine > length + 1 || range.endLine > length || range.endLine < range.startLine - 1
++      || i > 0 && range.startLine <= ranges[i - 1].endLine)) throw Error('Invalid variant replacement scope');
++  }
++  const base = get(variant.baseRevisionId);
++  for (const id of reviewRevisionIds(variant)) {
++    const revision = get(id);
++    if (!revision || revision.diagramId !== variant.diagramId || revision.diagram.id !== variant.contentId) throw Error('Invalid variant revision');
++    scopedTree(revision, variant.ownerNodeId);
++    if (variant.ownerNodeId !== 'root' && variant.revisionIds.includes(id))
++      subtreeReplacement(base.diagram, revision.diagram.content.ascii, revisionScope(base, variant.ownerNodeId));
++  }
++  const changes = revisionChanges(get(variant.baseRevisionId), get(variant.headRevisionId), variant.ownerNodeId);
++  if (Object.keys(variant.decisions).some(id => !changes.some(change => change.id === id))) throw Error('Unknown variant review change');
++  if (variant.appliedReview) approvedTree({ ...variant, ...variant.appliedReview }, base, get(variant.appliedReview.headRevisionId));
++}
++export function revisionScope(revision: DiagramRevision, owner: string) {
++  if (owner === 'root') return { startLine: 1, endLine: revision.diagram.content.ascii.split('\n').length };
++  const parsed = Object.entries(revision.nodeRefs).find(([, ref]) => ref === owner)?.[0];
++  if (!parsed) throw Error('VARIANT_SCOPE: subtree owner no longer exists');
++  return diagramSubtreeRange(revision.diagram, parsed);
++}
++function scopedTree(revision: DiagramRevision, owner: string): Tree {
++  const { content } = revision.diagram;
++  if (content.structure.kind !== 'tree' || !Object.keys(content.structure.nodes).length) {
++    if (owner !== 'root') throw Error('Subtree variants require a tree diagram');
++    return { [rootId]: { label: content.ascii, childIds: [] } };
++  }
++  const nodes = diagramContentNodes(content), byId = new Map(nodes.map(node => [node.id, node]));
++  const start = owner === 'root' ? content.structure.rootIds : [Object.keys(revision.nodeRefs).find(id => revision.nodeRefs[id] === owner)!];
++  if (start.some(id => !byId.has(id))) throw Error('VARIANT_SCOPE: subtree owner no longer exists');
++  const out: Tree = { [rootId]: { label: '', childIds: start.map(id => revision.nodeRefs[id]) } };
++  const visit = (id: string, parentId: string, depth: number) => {
++    if (depth > 100) throw Error('Variant tree is too deep');
++    const node = byId.get(id)!, ref = revision.nodeRefs[id];
++    out[ref] = { label: node.label, parentId, childIds: node.childIds.map(id => revision.nodeRefs[id]) };
++    node.childIds.forEach(id => visit(id, ref, depth + 1));
++  };
++  start.forEach(id => visit(id, rootId, 0));
++  return out;
++}
++export function revisionChanges(base: DiagramRevision, candidate: DiagramRevision, owner: string): RevisionChange[] {
++  if (base.diagramId !== candidate.diagramId || base.diagram.content.structure.kind !== candidate.diagram.content.structure.kind) throw Error('Variant must preserve diagram identity and structure kind');
++  const before = scopedTree(base, owner), after = scopedTree(candidate, owner);
++  return [...new Set([...Object.keys(before), ...Object.keys(after)])].filter(id => !same(before[id], after[id])).map(id => ({
++    id, label: id === rootId ? 'Subtree structure / content' : after[id]?.label ?? before[id].label,
++    kind: !before[id] ? 'added' : !after[id] ? 'removed' : 'updated', before: before[id], after: after[id]
++  }));
++}
++function checkTree(tree: Tree) {
++  const visited = new Set<string>();
++  const visit = (id: string, parentId?: string, depth = 0) => {
++    const node = tree[id];
++    if (!node || visited.has(id) || node.parentId !== parentId || depth > 100) throw Error('REVIEW_DEPENDENCY: accept or reject the related parent, child and move changes together');
++    visited.add(id); node.childIds.forEach(child => visit(child, id, depth + 1));
++  };
++  visit(rootId);
++  if (visited.size !== Object.keys(tree).length) throw Error('REVIEW_DEPENDENCY: a retained node would be disconnected; review its parent change');
++}
++function approvedTree(variant: DiagramRevisionReview, base: DiagramRevision, candidate: DiagramRevision) {
++  const result = structuredClone(scopedTree(base, variant.ownerNodeId));
++  for (const change of revisionChanges(base, candidate, variant.ownerNodeId)) if (variant.decisions[change.id] === 'accept') {
++    if (change.after) result[change.id] = structuredClone(change.after); else delete result[change.id];
++  }
++  checkTree(result); return result;
++}
++export function reviewRevision(variant: DiagramRevisionReview, get: (id: string) => DiagramRevision) {
++  const base = get(variant.baseRevisionId), candidate = get(variant.headRevisionId);
++  const changes = revisionChanges(base, candidate, variant.ownerNodeId);
++  let error: string | undefined;
++  try { approvedTree(variant, base, candidate); } catch (e) { error = String(e instanceof Error ? e.message : e); }
++  const scopeLabel = variant.ownerNodeId === 'root' ? 'Whole diagram'
++    : diagramContentNodes(base.diagram.content).find(node => base.nodeRefs[node.id] === variant.ownerNodeId)?.label ?? 'Subtree';
++  return { changes, error, scopeLabel, ascii: candidate.diagram.content.ascii };
++}
++
++/** Three-way application touches only changed logical nodes in the chosen subtree. */
++export function applyRevisionReview(variant: DiagramRevisionReview, current: DiagramRevision, get: (id: string) => DiagramRevision) {
++  validateRevisionReview(variant, id => get(id));
++  if (current.diagramId !== variant.diagramId || current.diagram.id !== variant.contentId) throw Error('Variant belongs to another diagram');
++  const base = get(variant.baseRevisionId), candidate = get(variant.headRevisionId);
++  const desired = approvedTree(variant, base, candidate);
++  const before = variant.appliedReview ? approvedTree({ ...variant, ...variant.appliedReview }, base, get(variant.appliedReview.headRevisionId)) : scopedTree(base, variant.ownerNodeId);
++  const live = scopedTree(current, variant.ownerNodeId), merged = structuredClone(live);
++  for (const id of new Set([...Object.keys(before), ...Object.keys(desired)])) {
++    if (same(before[id], desired[id])) continue;
++    // Fields merge separately, so a label review does not overwrite newly added children.
++    const from = before[id], to = desired[id], now = live[id];
++    if (from && to && now) {
++      for (const field of ['label', 'parentId', 'childIds'] as const) if (!same(from[field], to[field])) {
++        if (!same(now[field], from[field]) && !same(now[field], to[field])) throw Error(`VARIANT_CONFLICT: ${now.label} changed since this review`);
++        (merged[id] as any)[field] = structuredClone(to[field]);
++      }
++    } else {
++      if (!same(now, from) && !same(now, to)) throw Error(`VARIANT_CONFLICT: ${to?.label ?? from?.label ?? id} changed since this review`);
++      if (to) merged[id] = structuredClone(to); else delete merged[id];
++    }
++  }
++  checkTree(merged);
++  if (same(merged, live)) return { diagram: current.diagram, revision: current, nodeIds: new Map(Object.keys(current.nodeRefs).map(id => [id, id])) };
++  const range = revisionScope(current, variant.ownerNodeId), oldLines = current.diagram.content.ascii.split('\n');
++  const lines: string[] = [], refs: Record<string, number> = {};
++  const sameTopology = Object.keys(merged).length === Object.keys(live).length && Object.entries(merged).every(([id, node]) =>
++    live[id] && node.parentId === live[id].parentId && same(node.childIds, live[id].childIds));
++  if (current.diagram.content.structure.kind === 'diagram' || merged[rootId].label) lines.push(...merged[rootId].label.split('\n'));
++  else if (sameTopology) {
++    lines.push(...oldLines.slice(range.startLine - 1, range.endLine));
++    for (const node of diagramContentNodes(current.diagram.content)) {
++      const ref = current.nodeRefs[node.id];
++      if (!merged[ref]) continue;
++      const index = node.line - range.startLine;
++      lines[index] = lines[index].slice(0, node.startColumn - 1) + merged[ref].label + lines[index].slice(node.endColumn);
++      refs[ref] = node.line;
++    }
++  } else {
++    const nodeLines = new Set(diagramContentNodes(current.diagram.content).map(node => node.line));
++    if (oldLines.slice(range.startLine - 1, range.endLine).some((line, index) =>
++      !nodeLines.has(range.startLine + index) && /[^ |+`\-]/.test(line)))
++      throw Error('VARIANT_LAYOUT: structural review cannot safely reposition non-node text; make that text a tree node first');
++    const root = diagramContentNodes(current.diagram.content).find(n => current.nodeRefs[n.id] === variant.ownerNodeId);
++    const rootPrefix = root ? oldLines[root.line - 1].slice(0, root.startColumn - 1) : '';
++    const render = (id: string, prefix: string, childPrefix: string) => {
++      refs[id] = range.startLine + lines.length;
++      lines.push(prefix + merged[id].label);
++      merged[id].childIds.forEach((child, i, all) => render(child, childPrefix + (i === all.length - 1 ? '`-- ' : '|-- '), childPrefix + (i === all.length - 1 ? '    ' : '|   ')));
++    };
++    const branchWidth = root ? root.startColumn - 1 - root.branchColumn : 0;
++    const childPrefix = root && root.branchColumn >= 0 ? rootPrefix.slice(0, root.branchColumn)
++      + (rootPrefix[root.branchColumn] === '`' ? ' '.repeat(branchWidth) : '|' + ' '.repeat(Math.max(0, branchWidth - 1))) : rootPrefix;
++    merged[rootId].childIds.forEach(id => render(id, rootPrefix, childPrefix));
++  }
++  const ascii = [...oldLines.slice(0, range.startLine - 1), ...lines, ...oldLines.slice(range.endLine)].join('\n');
++  const delta = lines.length - (range.endLine - range.startLine + 1);
++  for (const node of diagramContentNodes(current.diagram.content)) if (node.line < range.startLine || node.line > range.endLine)
++    refs[current.nodeRefs[node.id]] = node.line + (node.line > range.endLine ? delta : 0);
++  // Source mappings are retained only where their label-relative span still denotes the same text.
++  const outputLines = ascii.split('\n'), mappings: any[] = [], ids = new Set<string>();
++  for (const revision of [current, candidate, base]) {
++    const nodes = diagramContentNodes(revision.diagram.content), sourceLines = revision.diagram.content.ascii.split('\n');
++    for (const mapping of revision.diagram.sourceContext.mappings) {
++      if (ids.has(mapping.id)) continue;
++      const node = nodes.find(n => n.line === mapping.line && mapping.startColumn >= n.startColumn && mapping.endColumn <= n.endColumn);
++      const ref = node && revision.nodeRefs[node.id], line = ref && refs[ref];
++      if (!node || !line) continue;
++      const text = sourceLines[mapping.line - 1].slice(mapping.startColumn - 1, mapping.endColumn);
++      const label = merged[ref!]?.label ?? node.label, labelStart = outputLines[line - 1].lastIndexOf(label);
++      const startColumn = labelStart + 1 + mapping.startColumn - node.startColumn, endColumn = startColumn + text.length - 1;
++      if (labelStart < 0 || outputLines[line - 1].slice(startColumn - 1, endColumn) !== text) continue;
++      ids.add(mapping.id); mappings.push({ ...mapping, line, startColumn, endColumn });
++    }
++  }
++  const result = deriveDiagram(current, { ascii, structureKind: current.diagram.content.structure.kind,
++    source: current.diagram.sourceContext.binding, evidence: { ...base.diagram.sourceContext.evidence, ...candidate.diagram.sourceContext.evidence, ...current.diagram.sourceContext.evidence }, mappings }, refs, [current, base, candidate]);
++  const rendered = scopedTree(result.revision, variant.ownerNodeId);
++  if (Object.keys(rendered).length !== Object.keys(merged).length || Object.entries(merged).some(([id, node]) => !same(node, rendered[id])))
++    throw Error('VARIANT_LAYOUT: the reviewed structure cannot be represented safely in this diagram');
++  return result;
++}
+diff --git a/domain/core/diagrams/diagramRevisionStore.ts b/domain/core/diagrams/diagramRevisionStore.ts
+new file mode 100644
+index 00000000..82f02731
+--- /dev/null
++++ b/domain/core/diagrams/diagramRevisionStore.ts
+@@ -0,0 +1,33 @@
++import { diagramRevisions } from './internal/revisionRegistry';
++import { diagramContentNodes } from './diagramContentNodes';
++import { createDiagram, reviseDiagram, deriveDiagram, type DiagramRevision, type DiagramRevisionResult, type DiagramRevisionSummary } from './diagramRevision';
++import { submitDiagramEdit } from './submitDiagramEdit';
++import type { DiagramInput } from './diagram';
++import type { DiagramEdit } from './diagramRevisionEditor';
++import type { DiagramGenerationRequest } from './diagramGeneration';
++import type { GeneratedDiagramEdit } from './generatedDiagramEdit';
++
++/** Runtime storage API. Durable adapters flush retained revisions before publishing bindings. */
++export function getDiagramRevision(id: string): DiagramRevision { return diagramRevisions.get(id); }
++export function listDiagramRevisions(diagramId: string): readonly DiagramRevisionSummary[] {
++  return Object.freeze(diagramRevisions.list(diagramId).map(({ id, diagramId, parentId }) => Object.freeze({ id, diagramId, parentId })));
++}
++export function importDiagramRevision(revision: DiagramRevision): void {
++  const refs = diagramContentNodes(revision.diagram.content).map(node => revision.nodeRefs?.[node.id]);
++  if (refs.some(ref => typeof ref !== 'string' || !ref) || new Set(refs).size !== refs.length) throw Error('Invalid logical node identities');
++  diagramRevisions.register(revision);
++}
++export function retainDiagramRevision(result: DiagramRevisionResult): DiagramRevisionResult {
++  importDiagramRevision(result.revision);
++  const revision = getDiagramRevision(result.revision.id);
++  return { ...result, diagram: revision.diagram, revision };
++}
++// Convenience commands for existing synchronous callers; the domain operations above work without this store.
++export function createStoredDiagram(input: DiagramInput) { return retainDiagramRevision(createDiagram(input)); }
++export function reviseStoredDiagram(baseId: string, edit: DiagramEdit) { return retainDiagramRevision(reviseDiagram(getDiagramRevision(baseId), edit)); }
++export function deriveStoredDiagram(baseId: string, input: Omit<DiagramInput, 'id' | 'revision'>, refs: Record<string, number>, sources: readonly string[]) {
++  return retainDiagramRevision(deriveDiagram(getDiagramRevision(baseId), input, refs, sources.map(getDiagramRevision)));
++}
++export function submitStoredDiagramEdit(request: DiagramGenerationRequest, candidate: GeneratedDiagramEdit, correspondence?: Record<string, number>) {
++  return retainDiagramRevision(submitDiagramEdit(request, candidate, request.baseRevisionId ? getDiagramRevision(request.baseRevisionId) : undefined, correspondence));
++}
+diff --git a/domain/core/diagrams/submitDiagramEdit.ts b/domain/core/diagrams/submitDiagramEdit.ts
+new file mode 100644
+index 00000000..21c3131b
+--- /dev/null
++++ b/domain/core/diagrams/submitDiagramEdit.ts
+@@ -0,0 +1,34 @@
++import { constructDiagram } from './internal/constructDiagram';
++import { scopedReplacements } from './diagramSubtreeEdit';
++import { validateGeneratedDiagramEdit, type GeneratedDiagramEdit } from './generatedDiagramEdit';
++import type { DiagramGenerationRequest } from './diagramGeneration';
++import { createDiagram, reviseDiagram, type DiagramRevision, type DiagramRevisionResult } from './diagramRevision';
++
++export function submitDiagramEdit(request: DiagramGenerationRequest, raw: GeneratedDiagramEdit, base: DiagramRevision | undefined, correspondence?: Record<string, number>): DiagramRevisionResult {
++  if (request.baseRevisionId && (!base || base.id !== request.baseRevisionId)) throw Error('Generation base revision is missing or mismatched');
++  if (base && base.diagram.id !== request.input.id) throw Error('Generation base belongs to another diagram');
++  if (!base && raw.replacementRanges) throw Error('REPLACEMENT_SCOPE: new diagrams cannot include replacementRanges');
++  const context = base?.diagram ?? request.context?.diagram ?? constructDiagram({ ...request.input, revision: 0, ascii: '[New diagram]', mappings: [] });
++  const clean = validateGeneratedDiagramEdit(context, raw, base?.nodeRefs, request.sourceMappings);
++  const generated = { ...clean, nodeCorrespondence: { ...correspondence, ...clean.nodeCorrespondence },
++    source: context.sourceContext.binding, evidence: context.sourceContext.evidence };
++  const ranges = request.editRanges?.length ? request.editRanges : request.editRange ? [request.editRange] : [];
++  if (base && ranges.length) {
++    const source = base.diagram;
++    if (generated.structureKind && generated.structureKind !== source.content.structure.kind) throw Error('REPLACEMENT_SCOPE: preserve the diagram structure kind');
++    const { patches, outputRanges } = scopedReplacements(source, generated.ascii, ranges, generated.replacementRanges);
++    const retained = source.sourceContext.mappings.flatMap(mapping => {
++      if (ranges.some(range => mapping.line >= range.startLine && mapping.line <= range.endLine)) return [];
++      const delta = ranges.reduce((sum, range, i) => sum + (mapping.line > range.endLine
++        ? outputRanges[i].endLine - outputRanges[i].startLine - (range.endLine - range.startLine) : 0), 0);
++      return [{ ...mapping, line: mapping.line + delta }];
++    });
++    const retainedIds = new Set(retained.map(mapping => mapping.id));
++    const mappings = [...retained, ...(generated.mappings ?? []).filter(mapping => !retainedIds.has(mapping.id)
++      && outputRanges.some(range => mapping.line >= range.startLine && mapping.line <= range.endLine))];
++    return { ...reviseDiagram(base!, { kind: 'patches', retainMappings: !request.sourceMappings, patches, mappings, nodeCorrespondence: generated.nodeCorrespondence }), replacementRanges: outputRanges };
++  }
++  return request.baseRevisionId
++    ? reviseDiagram(base!, { kind: 'replace', retainMappings: !request.sourceMappings, input: generated, nodeCorrespondence: generated.nodeCorrespondence })
++    : createDiagram({ ...request.input, ...generated, id: request.input.id, revision: 0 });
++}
+diff --git a/domain/mapping/agent/diagramEdit.ts b/domain/mapping/agent/diagramEdit.ts
+index 246f80e6..e2f4a6fa 100644
+--- a/domain/mapping/agent/diagramEdit.ts
++++ b/domain/mapping/agent/diagramEdit.ts
+@@ -1,22 +1,78 @@
+ import { z } from 'zod';
++import { agentContextSnapshotSchema, type AgentContextSnapshot } from '../../core/agents/agentContext';
++import { contentNodeAnchorSchema, type ContentNodeAnchor } from '../../core/diagrams/diagramConnection';
++import type { DiagramInput } from '../../core/diagrams/diagram';
+ import type { DiagramRevision } from '../../core/diagrams/diagramRevisionEditor';
++import { promptTemplateSelectionSchema, type PromptOperation } from './promptTemplates';
+ 
+ const id = z.string().min(1).max(200);
+-export const editDiagramSchema = z.object({
++const label = z.string().trim().min(1).max(200);
++const line = z.number().int().positive();
++/** References are pinned to an immutable revision when inserted; later canvas changes never alter them. */
++export const promptReferenceSchema = z.discriminatedUnion('kind', [
++  z.object({ kind: z.literal('diagram'), label, diagramId: id, revisionId: id }).strict(),
++  z.object({ kind: z.literal('nodes'), label, diagramId: id, revisionId: id, nodeIds: z.array(id).max(500),
++    range: z.object({ startLine: line, endLine: line, startColumn: line, endColumn: line }).strict()
++      .refine(range => range.startLine <= range.endLine && range.startColumn <= range.endColumn, 'Invalid node range') }).strict()
++]);
++export type PromptReference = z.infer<typeof promptReferenceSchema>;
++const promptFields = {
++  /** Panel-owned conversation identity and its last completed context. */
++  llmSessionId: id.optional(),
++  agentContext: agentContextSnapshotSchema.optional(),
++  template: promptTemplateSelectionSchema.optional(),
++  /** The instruction cites references[N-1] as [ref N]. */
++  references: z.array(promptReferenceSchema).max(20).optional()
++};
++export const editModeSchema = z.enum(['in-place', 'variant']);
++export const replaceModeSchema = z.enum(['diagram', 'subnode-single', 'multi-contiguous', 'multi-disjoint']);
++const subtreeSchema = z.object({ contentNodeId: z.string().min(1).max(500), revisionId: id }).strict();
++const generationSchema = z.object({
++  'presentation-alternative': z.object({ name: z.string().trim().min(1).max(120), select: z.boolean().default(false) }).strict().optional().describe('Promote this variant as a named presentation alternative. Requires edit-mode variant. select defaults to false.'),
++  'source-mappings': z.boolean().optional().describe('Defaults to false. Enable to supply new source mappings.'),
+   sessionId: id, nodeId: id, expectedVersion: z.number().int().nonnegative(),
+-  baseRevisionId: id, agentContextId: id.optional(), prompt: z.string().trim().min(1).max(20000), requestId: id
++  'edit-mode': editModeSchema.optional(),
++  'replace-mode': replaceModeSchema.optional(),
++  variant: z.object({ name: z.string().trim().min(1).max(120), count: z.number().int().min(1).max(4).default(1), variantId: id.optional() }).strict().optional(),
++  subtree: subtreeSchema.optional(),
++  subtrees: z.array(subtreeSchema).min(2).max(100).optional(),
++  origin: z.object({ column: z.number().int().nonnegative(), row: z.number().int().nonnegative() }).strict().optional(),
++  sources: z.array(contentNodeAnchorSchema).max(500).optional(),
++  baseRevisionId: id, agentContextId: id.optional().describe('Saved global ID from create-agent-context, or a legacy upload ID scoped to this canvas. Kept separate from the generation prompt.'), prompt: z.string().trim().min(1).max(20000), requestId: id, ...promptFields
+ }).strict();
++export const editDiagramSchema = generationSchema.extend({
++  'edit-mode': editModeSchema.describe('Required. in-place applies the edit; variant saves an alternative.'),
++  'replace-mode': replaceModeSchema.describe('Required. diagram: no subtree targets; subnode-single: subtree; multi-contiguous: adjacent subtrees; multi-disjoint: separate subtrees. Supply subtrees for either multi mode.')
++}).strict();
++/** nodeId/baseRevisionId pin the anchor diagram: its revision is the context and new diagrams are placed beside it. */
++export const createDiagramSchema = generationSchema.extend({ count: z.number().int().min(1).max(4).optional() }).strict();
++export const extendDiagramSchema = generationSchema.extend({ origin: editDiagramSchema.shape.origin.unwrap(), sources: z.array(contentNodeAnchorSchema).min(1).max(500) }).strict();
+ export const diagramEditRunSchema = z.object({ runId: id }).strict();
+ export type EditDiagramInput = z.infer<typeof editDiagramSchema>;
++export type CreateDiagramInput = z.infer<typeof createDiagramSchema>;
+ export interface DiagramRevisionApplication {
++  variants?: { variant: import('../../core/diagrams/diagramRevisionReview').DiagramRevisionReview; revision: DiagramRevision; alternative?: import('../../core/presentation/diagramAlternative').DiagramAlternative; selectAlternative?: boolean }[];
+   requestId: string;
+   expectedVersion: number;
+   nodeId: string;
+   baseRevisionId: string;
+   revision: DiagramRevision;
+ }
++/** A created diagram, placed by the canvas in one undoable update. */
++export interface DiagramCreation {
++  id: string; parentId?: string; position: { column: number; row: number };
++  content: Omit<DiagramInput, 'id' | 'revision'>;
++  sources?: ContentNodeAnchor[];
++}
+ export interface DiagramEditRun {
++  agentContextId?: string; agentContextHash?: string;
++  variants?: { id: string; name: string; revisionId: string; alternativeId?: string }[];
++  /** Actual runtime session for diagnostics/clipboard; each run may have a new ID. */
++  agentSessionId?: string;
++  /** Updated conversation, published only after the canvas acknowledges success. */
++  agentContext?: AgentContextSnapshot;
+   runId: string;
++  operation: PromptOperation;
+   status: 'generating' | 'applying' | 'completed' | 'conflict' | 'failed' | 'cancelled' | 'awaiting-acknowledgement';
+   nodeId: string;
+   baseRevisionId: string;
+@@ -24,4 +80,6 @@ export interface DiagramEditRun {
+   error?: string;
+   generated?: { diagramId: string; revisionId: string; ascii: string };
+   result?: { diagramId: string; previousRevisionId: string; revisionId: string; documentVersion: number; unresolvedEdgeIds: string[] };
++  /** create-diagram only: the new canvas nodes, in generation order. */
++  created?: { documentVersion: number; nodeIds: string[] };
+ }
+diff --git a/domain/mapping/workspace/diagramAlternatives.ts b/domain/mapping/workspace/diagramAlternatives.ts
+new file mode 100644
+index 00000000..59629ec1
+--- /dev/null
++++ b/domain/mapping/workspace/diagramAlternatives.ts
+@@ -0,0 +1,79 @@
++import { alternativeSelections, alternativesOverlap, emptyDiagramAlternatives, ownerScope, scopeOwner, validateDiagramAlternatives, type DiagramAlternative, type DiagramAlternativePart, type DiagramSidePanel } from '../../core/presentation/diagramAlternative';
++import { getDiagramRevision } from '../../core/diagrams/diagramRevisionStore';
++import type { MappingGridDocument } from './mappingGrid';
++import { findBox } from './canvasDisplayNode';
++
++export type AlternativeOperation =
++  | { method: 'alternative-promote'; nodeId: string; alternativeId: string; name: string; parts: DiagramAlternativePart[]; display?: 'regular' | 'diff'; parentAlternativeId?: string; reviewId?: string; select?: boolean }
++  | { method: 'alternative-select'; nodeId: string; alternativeId: string; selected: boolean; replace?: boolean }
++  | { method: 'alternative-remove'; nodeId: string; alternativeId: string }
++  | { method: 'side-panel'; nodeId: string; alternativeId: string; partIndex: number; close?: boolean; placement?: 'flow' | 'overlay'; display?: 'regular' | 'diff'; autoPlace?: boolean; side?: 'left' | 'right' };
++
++export function applyAlternativeOperation(document: MappingGridDocument, op: AlternativeOperation) {
++  const box = findBox(document.scene.root, op.nodeId.replace(/^grid:/, ''));
++  if (box?.kind !== 'diagram' || op.nodeId !== `grid:${box.id}`) throw Error('Expected diagram presentation');
++  const diagram = document.scene.contents[box.contentId];
++  const state = document.alternatives = structuredClone(document.alternatives ?? emptyDiagramAlternatives());
++  if (op.method === 'alternative-promote') {
++    if (state.items[op.alternativeId]) throw Error('Alternative already exists');
++    state.items[op.alternativeId] = { id: op.alternativeId, name: op.name, diagramId: diagram.diagramId, presentationId: op.nodeId,
++      parts: structuredClone(op.parts), ...(op.display ? { display: op.display } : {}), ...(op.parentAlternativeId ? { parentAlternativeId: op.parentAlternativeId } : {}), ...(op.reviewId ? { reviewId: op.reviewId } : {}) };
++    if (op.select) selectAlternative(document, state.items[op.alternativeId], true, false);
++  } else {
++    const item = state.items[op.alternativeId];
++    if (!item || item.presentationId !== op.nodeId) throw Error('Alternative belongs to another presentation');
++    if (op.method === 'alternative-select') selectAlternative(document, item, op.selected, !!op.replace);
++    if (op.method === 'alternative-remove') {
++      if (Object.values(state.items).some(child => child.parentAlternativeId === item.id)) throw Error('Remove nested alternatives first');
++      delete state.items[item.id];
++      state.selected[op.nodeId] = (state.selected[op.nodeId] ?? []).filter(id => id !== item.id);
++      for (const panel of Object.values(state.panels)) if (panel.alternativeId === item.id) delete state.panels[panel.id];
++    }
++    if (op.method === 'side-panel') {
++      const part = item.parts[op.partIndex];
++      if (!part) throw Error('Unknown alternative part');
++      const id = `panel:${item.id}:${op.partIndex}`, previous = state.panels[id];
++      if (op.close) delete state.panels[id];
++      else state.panels[id] = { id, kind: 'diagram-side-panel', attachment: { diagramPresentationId: op.nodeId, nodeRef: scopeOwner(part.target) },
++        alternativeId: item.id, partIndex: op.partIndex, placement: op.placement ?? previous?.placement ?? 'overlay',
++        display: op.display ?? previous?.display ?? item.display ?? 'regular', side: op.side ?? previous?.side ?? 'right' } satisfies DiagramSidePanel;
++    }
++  }
++  validateDiagramAlternatives(state, getDiagramRevision);
++}
++function selectAlternative(document: MappingGridDocument, item: DiagramAlternative, selected: boolean, replace: boolean) {
++  const state = document.alternatives!;
++  let ids = (state.selected[item.presentationId] ?? []).filter(id => id !== item.id);
++  if (selected) {
++    const box = findBox(document.scene.root, item.presentationId.slice(5));
++    if (!item.parentAlternativeId && box?.kind === 'diagram') {
++      const refs = Object.values(getDiagramRevision(document.scene.contents[box.contentId].revisionId).nodeRefs);
++      if (item.parts.some(part => part.target.kind === 'subtree' && !refs.includes(part.target.nodeRef))) throw Error('STALE_ALTERNATIVE: a target no longer exists');
++    }
++    if (replace) ids = ids.filter(id => !alternativesOverlap(item, state.items[id], getDiagramRevision));
++    ids.push(item.id);
++  }
++  state.selected[item.presentationId] = ids;
++}
++
++/** Keep older clients working while choices now belong to individual placements. */
++export function selectLegacyRevision(document: MappingGridDocument, nodeId: string, contentId: string, owner: string, context: string | null,
++  revisionId: string | null | undefined, baseRevisionId: string, reviewId?: string) {
++  const state = document.alternatives ??= emptyDiagramAlternatives();
++  const parent = Object.values(state.items).find(item => item.presentationId === nodeId && item.parts.some(p => p.source.revisionId === context));
++  for (const id of state.selected[nodeId] ?? []) {
++    const item = state.items[id];
++    if (item.parentAlternativeId === parent?.id && item.parts.some(p => scopeOwner(p.target) === owner)) selectAlternative(document, item, false, false);
++  }
++  if (!revisionId) return;
++  const existing = Object.values(state.items).find(item => item.presentationId === nodeId && item.parentAlternativeId === parent?.id
++    && item.parts.some(p => p.source.revisionId === revisionId && scopeOwner(p.target) === owner));
++  if (existing) selectAlternative(document, existing, true, true);
++  else applyAlternativeOperation(document, { method: 'alternative-promote', nodeId, alternativeId: `alternative-${crypto.randomUUID()}`,
++    name: reviewId ? document.revisionReviews?.[reviewId]?.name ?? 'Alternative' : 'Selected revision',
++    parts: [{ target: ownerScope(owner), source: { revisionId, scope: ownerScope(owner) }, baseRevisionId }], reviewId,
++    parentAlternativeId: parent?.id, select: true });
++  // The legacy map remains readable by older API consumers, but rendering uses per-placement choices.
++  void contentId;
++}
++export { alternativeSelections };
+diff --git a/infrastructure/core/agents/agentRuntime.ts b/infrastructure/core/agents/agentRuntime.ts
+index 9e4a0cd8..e7e93e28 100644
+--- a/infrastructure/core/agents/agentRuntime.ts
++++ b/infrastructure/core/agents/agentRuntime.ts
+@@ -1,3 +1,4 @@
++import { requireAiEnabled } from '../../../application/core/errors';
+ import type { AgentContext } from '../../../domain/core/agents/agentContext';
+ import { type Model } from "@earendil-works/pi-ai";
+ import { createAgentSession, SessionManager, type CreateAgentSessionOptions, ModelRuntime, type AgentSessionEvent } from "@earendil-works/pi-coding-agent";
+@@ -17,14 +18,23 @@ export function progressFor(event: AgentSessionEvent, model: string, sessionId:
+   }
+   return undefined;
+ }
++export function createPersistedAgentSessionManager(cwd: string): SessionManager {
++  // Keep Pi sessions on disk so prompts, tool calls, and usage remain auditable.
++  // Do not switch back to in-memory sessions without explicit user approval.
++  return SessionManager.create(cwd);
++}
+ export class PiAgentRuntime {
++  constructor(private readonly enabled = false) {}
++
++  protected requireEnabled(): void { requireAiEnabled(this.enabled); }
+ 
+   protected modelRuntime?: Promise<ModelRuntime>;
+ 
+   protected readonly sessions = new Set<{ abort(): Promise<void>; dispose(): void }>();
+ 
+   protected async createSession(configuration: Omit<CreateAgentSessionOptions, 'sessionManager'>, context?: AgentContext) {
+-    const sessionManager = SessionManager.inMemory(configuration.cwd);
++    this.requireEnabled();
++    const sessionManager = createPersistedAgentSessionManager(configuration.cwd ?? process.cwd());
+     for (const message of context?.toPiMessages() ?? []) sessionManager.appendMessage(message);
+     const result = await createAgentSession({ ...configuration, sessionManager });
+     this.sessions.add(result.session);
+@@ -32,6 +42,7 @@ export class PiAgentRuntime {
+   }
+ 
+   protected runtime(): Promise<ModelRuntime> {
++    this.requireEnabled();
+     this.modelRuntime ??= ModelRuntime.create({ allowModelNetwork: false });
+     return this.modelRuntime;
+   }
+diff --git a/infrastructure/core/persistence/fileAgentContextRepository.ts b/infrastructure/core/persistence/fileAgentContextRepository.ts
+new file mode 100644
+index 00000000..f2cddca2
+--- /dev/null
++++ b/infrastructure/core/persistence/fileAgentContextRepository.ts
+@@ -0,0 +1,48 @@
++import { randomUUID } from 'node:crypto';
++import { mkdir, readFile, readdir, open, link, rm } from 'node:fs/promises';
++import path from 'node:path';
++import { AgentContext } from '../../../domain/core/agents/agentContext';
++import { savedAgentContextIdSchema, savedAgentContextSchema, summarizeAgentContext, type SavedAgentContext } from '../../../domain/core/agents/savedAgentContext';
++import type { AgentContextRepository } from '../../../application/core/ports/agentContextRepository';
++
++/** Globally addressable within this application store; no canvas or chat binding. */
++export class FileAgentContextRepository implements AgentContextRepository {
++  private readonly directory: string;
++  constructor(root: string) { this.directory = path.join(root, 'agent-contexts'); }
++  private file(id: string) { return path.join(this.directory, `${savedAgentContextIdSchema.parse(id)}.json`); }
++  async read(id: string): Promise<SavedAgentContext | null> {
++    try {
++      const record = savedAgentContextSchema.parse(JSON.parse(await readFile(this.file(id), 'utf8')));
++      if (record.agentContextId !== id) throw Error('AGENT_CONTEXT_ID_MISMATCH');
++      AgentContext.fromSnapshot(record.snapshot);
++      return record;
++    } catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null; throw error; }
++  }
++  async create(record: SavedAgentContext) {
++    const file = this.file(record.agentContextId);
++    await mkdir(this.directory, { recursive: true });
++    const temp = path.join(this.directory, `.${randomUUID()}.tmp`);
++    try {
++      const handle = await open(temp, 'wx', 0o600);
++      try { await handle.writeFile(JSON.stringify(record)); await handle.sync(); } finally { await handle.close(); }
++      // An atomic, exclusive publish also protects identical IDs across processes.
++      try { await link(temp, file); }
++      catch (error) { if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error; }
++      const directory = await open(this.directory, 'r');
++      try { await directory.sync(); } finally { await directory.close(); }
++      const saved = (await this.read(record.agentContextId))!;
++      if (saved.requestHash !== record.requestHash) throw Error('REQUEST_ID_CONFLICT: this UUID identifies a different saved context');
++      return saved;
++    } finally { await rm(temp, { force: true }); }
++  }
++  async summaries() {
++    let files: string[];
++    try { files = await readdir(this.directory); }
++    catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') return []; throw error; }
++    const summaries: ReturnType<typeof summarizeAgentContext>[] = [];
++    for (const file of files) if (/^saved-agent-context-[a-f0-9-]{36}\.json$/.test(file)) {
++      const record = await this.read(file.slice(0, -5)); if (record) summaries.push(summarizeAgentContext(record));
++    }
++    return summaries;
++  }
++}
+diff --git a/infrastructure/core/persistence/fileAgentContextSources.ts b/infrastructure/core/persistence/fileAgentContextSources.ts
+new file mode 100644
+index 00000000..21962a54
+--- /dev/null
++++ b/infrastructure/core/persistence/fileAgentContextSources.ts
+@@ -0,0 +1,117 @@
++import { execFile } from 'node:child_process';
++import { promisify } from 'node:util';
++import path from 'node:path';
++import type { AgentContextSources } from '../../../application/core/ports/agentContextSources';
++import { AgentContext, AGENT_CONTEXT_MAX_BYTES, type AgentContextSnapshot } from '../../../domain/core/agents/agentContext';
++import { sourceRangeSchema, sourceFileSchema, sourceFileHash, sourceRangeText, captureSourceRangeSchema,
++  type AgentContextSourceFile, type AgentContextSourceRange, type CaptureSourceRange } from '../../../domain/core/agents/agentContextSource';
++import type { CorpusBinding } from '../../../domain/core/profiles/domainProfile';
++import { corpusProvider } from '../corpus/corpus';
++import { ImmutableRecords } from './immutableRecords';
++
++const exec = promisify(execFile);
++/** Shared across saved contexts and diagram contexts. No caller-supplied absolute file paths. */
++export class FileAgentContextSources implements AgentContextSources {
++  private readonly blobs: ImmutableRecords;
++  private readonly pinned = new Map<string, Promise<AgentContextSourceFile>>();
++  constructor(root: string, private readonly binding?: (sourceId: string) => Promise<CorpusBinding>) {
++    this.blobs = new ImmutableRecords(path.join(root, 'agent-context-sources'));
++  }
++  private async source(id: string) {
++    if (!this.binding) throw Error('AGENT_CONTEXT_SOURCE_UNAVAILABLE: source registry is unavailable');
++    return this.binding(id);
++  }
++  private async git(binding: CorpusBinding, args: string[]) {
++    if (binding.kind !== 'git-worktree') throw Error('AGENT_CONTEXT_SOURCE_UNAVAILABLE: source is not Git');
++    return (await exec('git', ['--no-replace-objects', '-C', binding.root, ...args], { encoding: 'utf8', maxBuffer: AGENT_CONTEXT_MAX_BYTES })).stdout;
++  }
++  private file(text: string): AgentContextSourceFile {
++    if (Buffer.byteLength(text) > AGENT_CONTEXT_MAX_BYTES) throw Error('AGENT_CONTEXT_TOO_LARGE: source exceeds 2 MiB');
++    if (text.includes('\0')) throw Error('AGENT_CONTEXT_SOURCE_INVALID: binary source');
++    return { startLine: 1, lines: text.split(/\r?\n/) };
++  }
++  private pinnedFile(binding: CorpusBinding, commit: string, file: string) {
++    const key = JSON.stringify([binding.root, commit, file]);
++    let pending = this.pinned.get(key);
++    if (!pending) {
++      pending = this.readPinnedFile(binding, commit, file);
++      // Each file is at most 2 MiB. Repeated ranges share one read; failures are retryable.
++      this.pinned.set(key, pending);
++      while (this.pinned.size > 16) this.pinned.delete(this.pinned.keys().next().value!);
++      void pending.catch(() => { if (this.pinned.get(key) === pending) this.pinned.delete(key); });
++    }
++    return pending;
++  }
++  private async readPinnedFile(binding: CorpusBinding, commit: string, file: string) {
++    // Reject trees, submodules and symlinks instead of treating their payload as source text.
++    const entry = await this.git(binding, ['ls-tree', commit, '--', file]);
++    if (!/^100(?:644|755) blob /.test(entry) || entry.trimEnd().split('\n').length !== 1)
++      throw Error('AGENT_CONTEXT_SOURCE_UNAVAILABLE: expected a regular Git file');
++    return this.file(await this.git(binding, ['show', `${commit}:${file}`]));
++  }
++  async capture(raw: CaptureSourceRange) {
++    const input = captureSourceRangeSchema.parse(raw), binding = await this.source(input.sourceId);
++    let file: AgentContextSourceFile, version: AgentContextSourceRange['version'];
++    const revision = input.revision ?? (binding.kind === 'git-worktree' ? binding.revision : undefined);
++    if (revision) {
++      const commit = (await this.git(binding, ['rev-parse', '--verify', '--end-of-options', `${revision}^{commit}`])).trim();
++      file = await this.pinnedFile(binding, commit, input.path); version = { kind: 'git', commit };
++    } else {
++      file = this.file(await corpusProvider(binding).readDocumentText(binding, input.path));
++      version = { kind: 'snapshot', contentHash: sourceFileHash(file) };
++      if (binding.kind === 'git-worktree') {
++        // Reuse committed bytes only when they exactly match the captured worktree content.
++        try {
++          const commit = (await this.git(binding, ['rev-parse', '--verify', 'HEAD^{commit}'])).trim();
++          const committed = await this.pinnedFile(binding, commit, input.path);
++          if (sourceFileHash(committed) === sourceFileHash(file)) version = { kind: 'git', commit };
++        } catch { /* Untracked files and unborn repositories use a shared immutable snapshot. */ }
++      }
++    }
++    const reference = sourceRangeSchema.parse({ type: 'sourceRange', sourceId: input.sourceId, path: input.path,
++      startLine: input.startLine, endLine: input.endLine ?? file.startLine + file.lines.length - 1, version });
++    sourceRangeText(reference, file);
++    if (version.kind === 'snapshot') await this.blobs.put(file);
++    return reference;
++  }
++  private async load(reference: AgentContextSourceRange) {
++    sourceRangeSchema.parse(reference);
++    const file = reference.version.kind === 'snapshot'
++      ? sourceFileSchema.parse(await this.blobs.get(reference.version.contentHash))
++      : await this.pinnedFile(await this.source(reference.sourceId), reference.version.commit, reference.path);
++    sourceRangeText(reference, file);
++    return file;
++  }
++  async read(reference: AgentContextSourceRange) { return sourceRangeText(reference, await this.load(reference)); }
++  async persist(raw: AgentContextSnapshot) {
++    const context = AgentContext.fromSnapshot(raw), snapshot = context.toSnapshot();
++    for (const file of Object.values(snapshot.sourceFiles ?? {})) await this.blobs.put(file);
++    // Check references before publication, including imported descriptors with missing blobs.
++    const seen = new Set<string>();
++    for (const message of snapshot.messages) for (const block of message.content) if (block.type === 'sourceRange') {
++      const key = JSON.stringify(block);
++      if (!seen.has(key)) { await this.load(block); seen.add(key); }
++    }
++    return context.withoutSourceFiles();
++  }
++  async portable(raw: AgentContextSnapshot) {
++    const context = AgentContext.fromSnapshot(raw), snapshot = context.toSnapshot();
++    const files: Record<string, AgentContextSourceFile> = {};
++    const messages = [];
++    for (const message of snapshot.messages) {
++      const content = [];
++      for (const block of message.content) {
++        if (block.type !== 'sourceRange') { content.push(block); continue; }
++        const file = block.version.kind === 'snapshot' && snapshot.sourceFiles?.[block.version.contentHash]
++          || await this.load(block);
++        // Portable context contains only its selected evidence, not unrelated file lines.
++        const selected = { startLine: block.startLine,
++          lines: file.lines.slice(block.startLine - file.startLine, block.endLine - file.startLine + 1) };
++        const contentHash = sourceFileHash(selected); files[contentHash] = selected;
++        content.push({ ...block, version: { kind: 'snapshot' as const, contentHash } });
++      }
++      messages.push({ ...message, content });
++    }
++    return context.withMessages(messages, files).toSnapshot();
++  }
++}
+diff --git a/infrastructure/core/persistence/fileDiagramAgentContextStore.ts b/infrastructure/core/persistence/fileDiagramAgentContextStore.ts
+new file mode 100644
+index 00000000..6cd87fb4
+--- /dev/null
++++ b/infrastructure/core/persistence/fileDiagramAgentContextStore.ts
+@@ -0,0 +1,16 @@
++import path from 'node:path';
++import { AgentContext, type AgentContextSnapshot } from '../../../domain/core/agents/agentContext';
++import type { DiagramAgentContextStore } from '../../../domain/core/diagrams/diagramAgentContext';
++import type { AgentContextSources } from '../../../application/core/ports/agentContextSources';
++import { FileAgentContextSources } from './fileAgentContextSources';
++import { ImmutableRecords } from './immutableRecords';
++
++/** Each context is one immutable, content-addressed file outside canvas checkpoints. */
++export class FileDiagramAgentContextStore implements DiagramAgentContextStore {
++  private readonly records: ImmutableRecords;
++  constructor(root: string, private readonly sources: AgentContextSources = new FileAgentContextSources(root)) { this.records = new ImmutableRecords(path.join(root, 'diagram-agent-contexts')); }
++  async put(snapshot: AgentContextSnapshot) { return this.records.put(await this.sources.persist(snapshot)); }
++  portable(snapshot: AgentContextSnapshot) { return this.sources.portable(snapshot); }
++  async resolve(snapshot: AgentContextSnapshot) { return (await AgentContext.fromSnapshot(snapshot).resolveSources(ref => this.sources.read(ref))).toSnapshot(); }
++  async get(recordId: string) { return AgentContext.fromSnapshot(await this.records.get(recordId)).toSnapshot(); }
++}
+diff --git a/src/features/mapping/prompt-composer/PromptComposer.tsx b/src/features/mapping/prompt-composer/PromptComposer.tsx
+new file mode 100644
+index 00000000..2128fdfb
+--- /dev/null
++++ b/src/features/mapping/prompt-composer/PromptComposer.tsx
+@@ -0,0 +1,314 @@
++import { VariantReview, type VariantReviewSource } from './VariantReview';
++import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
++import { createPortal } from 'react-dom';
++import { useStore } from 'zustand';
++import type { PromptReference } from '../../../../domain/mapping/agent/diagramEdit';
++import { findPromptTemplate, promptTemplateCatalog, promptTemplates, type PromptTemplateParameter } from '../../../../domain/mapping/agent/promptTemplates';
++import { TemplateEditor } from './TemplateEditor';
++import { composerUnsettled, type PromptComposerCoordinator, type PromptComposerEntry, type PromptComposerTarget } from './promptComposerCoordinator';
++import { draftReferences, referenceSummary, removeBlock, selectTemplate, serializePromptDraft, setBlockText,
++  setTemplateMarkdown, setTemplateOption, insertReference, type PromptBlock } from './promptDraft';
++import { pastedPromptReferences } from './promptReferences';
++import { revisionNames } from './revisionNames';
++import './promptComposer.css';
++
++/** One immutable revision of the target diagram, newest first. sequence numbers the revision chain from 1. */
++export interface PromptRevision { id: string; diagramId: string; sequence: number; current: boolean; title: string; ascii: string }
++export interface PromptRevisionSource {
++  list(target: PromptComposerTarget): PromptRevision[];
++  sequence(revisionId: string): number | undefined;
++}
++const promptLimit = 20000;
++const measure = typeof document === 'undefined' ? undefined! : document.createElement('canvas');
++
++export function revisionReference(revision: PromptRevision): PromptReference {
++  return { kind: 'diagram', label: revision.title, diagramId: revision.diagramId, revisionId: revision.id };
++}
++function useRevisionTag(source: PromptRevisionSource) {
++  const names = useStore(revisionNames, state => state.names);
++  return (revisionId: string) => names[revisionId] ?? (source.sequence(revisionId) ? `r${source.sequence(revisionId)}` : revisionId.slice(-6));
++}
++
++export function PromptComposer({ coordinator, revisions, variants }: { coordinator: PromptComposerCoordinator; revisions: PromptRevisionSource; variants?: VariantReviewSource }) {
++  const { entries, activeKey, carried } = useStore(coordinator.store);
++  const [railOpen, setRailOpen] = useState(false);
++  const entry = activeKey ? entries[activeKey] : undefined;
++  if (!entry || !activeKey) return <p className="window-panel-message">Select nodes and choose LLM [Ctrl+B, L], or start a new LLM in Explorer.</p>;
++  const locked = composerUnsettled(entry), list = revisions.list(entry.target);
++  return <div className="llm-panel prompt-composer" onKeyDown={event => event.stopPropagation()}>
++    <div className="llm-mode">
++      <label>Mode <select aria-label="LLM mode" value={entry.target.operation} disabled={locked}
++        onChange={event => coordinator.setTarget(activeKey, { operation: event.target.value as import('../../../../domain/mapping/agent/promptTemplates').PromptOperation })}>
++        <option value="create-diagram">Create diagram</option><option value="edit-diagram">Update subtree</option><option value="extend-diagram">Extend diagram</option>
++      </select></label>
++      <small>{entry.target.label}</small>
++      <small>{entry.target.operation === 'edit-diagram' ? entry.target.subtree ? `Update ${entry.target.subtreeLabel ?? 'selected node'} and its descendants.` : entry.target.generateVariants ? 'Generate alternatives for the whole diagram.' : 'Select a node to choose the subtree to update.'
++        : entry.target.operation === 'extend-diagram' ? entry.target.origin ? `New origin: column ${entry.target.origin.column}, row ${entry.target.origin.row}` : 'Click the green circle, move to empty canvas, then click to place. Escape cancels.' : 'Create one new diagram from your prompt and references.'}</small>
++    </div>
++    {entry.target.operation === 'edit-diagram' && <div className="variant-generation">
++      <label><input type="checkbox" aria-label="Generate variants for review" checked={!!entry.target.generateVariants} disabled={locked}
++        onChange={e => coordinator.setTarget(activeKey, { generateVariants: e.target.checked, variantId: undefined })} /> Generate variants for review</label>
++      {entry.target.generateVariants && <>
++        <label>Variant name <input aria-label="Variant name" maxLength={110} value={entry.target.variantName ?? 'Alternative'} disabled={locked}
++          onChange={e => coordinator.setTarget(activeKey, { variantName: e.target.value })} /></label>
++        <label>Count <select aria-label="Variant count" value={entry.target.variantId ? 1 : entry.target.variantCount ?? 1} disabled={locked || !!entry.target.variantId}
++          onChange={e => coordinator.setTarget(activeKey, { variantCount: Number(e.target.value) })}>{[1,2,3,4].map(n => <option key={n}>{n}</option>)}</select></label>
++        <small>{entry.target.variantId ? 'Refining the saved variant. The live diagram stays unchanged.' : entry.target.subtree ? 'Generate alternatives for the selected subtree.' : 'Generate alternatives for the whole diagram.'}</small>
++        {entry.target.variantId && <button onClick={() => coordinator.setTarget(activeKey, { variantId: undefined })} disabled={locked}>Start new variants</button>}
++        {entry.target.subtree && !entry.target.variantId && <button onClick={() => coordinator.setTarget(activeKey, { subtree: undefined, subtreeLabel: undefined })} disabled={locked}>Use whole diagram</button>}
++      </>}
++    </div>}
++    <PromptPane key={activeKey} coordinator={coordinator} entryKey={activeKey} entry={entry} revisions={revisions} list={list}
++      railOpen={railOpen} onToggleRail={() => setRailOpen(open => !open)} carrying={!!carried} />
++    {variants && <VariantReview key={entry.target.documentId + entry.target.nodeId} source={variants} target={entry.target} coordinator={coordinator} entryKey={activeKey} locked={locked} />}
++    {carried && <CarriedGhost coordinator={coordinator} reference={carried.reference} revisions={revisions} />}
++  </div>;
++}
++
++function statusMessage(entry: PromptComposerEntry) {
++  const status = entry.run?.status, create = entry.target.operation !== 'edit-diagram';
++  const created = entry.run?.created?.nodeIds.length ?? 0;
++  if (status === 'completed' && entry.run?.variants) return `Saved ${entry.run.variants.length} variant(s). Review changes below.`;
++  return status === 'completed' ? create ? `Created ${created === 1 ? 'a diagram' : `${created} diagrams`} and saved the workspace. You can undo this change.`
++      : 'Diagram updated and workspace saved. You can undo this change.'
++    : status === 'conflict' ? 'The canvas changed before the update could be applied. Your prompt is preserved; submit again using the latest diagram.'
++    : status === 'awaiting-acknowledgement' ? `The ${create ? 'diagrams' : 'update'} may already be applied. Retry confirmation to finish safely.`
++    : status === 'cancelled' ? 'Cancelled before application.'
++    : status === 'failed' ? `The ${create ? 'diagram creation' : 'diagram update'} failed. Your prompt is preserved.`
++    : status === 'applying' ? create ? 'Placing and saving the new diagrams…' : 'Applying and saving the updated diagram…'
++    : status === 'generating' ? entry.run?.message || (create ? 'Generating diagrams…' : 'Generating diagram update…')
++    : entry.pending ? 'Preparing request…'
++    : create ? 'Describe the diagram to create. References are pinned to the revision shown on each chip.'
++    : 'Describe how this diagram should change. References are pinned to the revision shown on each chip.';
++}
++
++function PromptPane({ coordinator, entryKey, entry, revisions, list, railOpen, onToggleRail, carrying }: { coordinator: PromptComposerCoordinator;
++  entryKey: string; entry: PromptComposerEntry; revisions: PromptRevisionSource; list: PromptRevision[]; railOpen: boolean; onToggleRail: () => void; carrying: boolean }) {
++  const [copyStatus, setCopyStatus] = useState('');
++  useEffect(() => setCopyStatus(''), [entry.agentSessionId]);
++  const copySession = async () => {
++    if (!entry.agentSessionId) return;
++    try { await navigator.clipboard.writeText(entry.agentSessionId); setCopyStatus('Copied'); }
++    catch { setCopyStatus('Could not copy'); }
++  };
++  const locked = composerUnsettled(entry), status = entry.run?.status, create = entry.target.operation !== 'edit-diagram';
++  const { prompt } = serializePromptDraft(entry.draft), references = draftReferences(entry.draft);
++  const update = (change: Parameters<PromptComposerCoordinator['updateDraft']>[1]) => coordinator.updateDraft(entryKey, change);
++  return <div className="prompt-composer-layout">
++    <form className="prompt-composer-main" onSubmit={event => { event.preventDefault(); void coordinator.submit(entryKey); }}>
++      <p className="prompt-composer-heading"><span className="eyebrow">Prompt</span> Template first, then your text and references in order.</p>
++      <div className="prompt-box" role="group" aria-label="Prompt draft" aria-disabled={locked}>
++        <TemplateBlock entry={entry} locked={locked} update={update} instruction={prompt} referenceCount={references.length} />
++        <PromptBody coordinator={coordinator} entryKey={entryKey} entry={entry} locked={locked} revisions={revisions} carrying={carrying}
++          placeholder={create ? 'Describe the diagram to create, e.g. the refund path starting from the ledger service' : 'e.g. add the persistence service beneath its owning controller'} />
++        <div className="prompt-box-toolbar">
++          <button type="button" aria-expanded={railOpen} aria-controls={`${entryKey}-revisions`} onClick={onToggleRail}
++            className={railOpen ? 'is-open' : undefined}><span aria-hidden="true" className="prompt-chevron">›</span>Insert revision</button>
++          <span className="prompt-hint">Paste copied references with Ctrl+V</span>
++          <span className="prompt-counter" data-over={prompt.length > promptLimit}>{references.length} refs · {prompt.length.toLocaleString()} / {promptLimit.toLocaleString()}</span>
++        </div>
++      </div>
++      <p role="status" aria-live="polite" className="prompt-status" data-edit-status={status ?? (entry.pending ? 'preparing' : 'composing')}>{statusMessage(entry)}</p>
++      {(entry.error || entry.run?.error) && <p role="alert" className="prompt-error">{entry.error ?? entry.run?.error}</p>}
++      {!!entry.run?.result?.unresolvedEdgeIds.length && <p role="alert" className="prompt-error">Some connections need their endpoints repaired: {entry.run.result.unresolvedEdgeIds.join(', ')}</p>}
++      <footer className="prompt-composer-footer">
++        {entry.agentSessionId && <button type="button" onClick={() => void copySession()}
++          aria-label="Copy agent session ID" title={entry.agentSessionId}>{copyStatus || 'Copy agent session ID'}</button>}
++        {!locked && !status && <button type="button" onClick={() => coordinator.close()}>Cancel</button>}
++        {status === 'generating' && <button type="button" disabled={entry.pending} onClick={() => void coordinator.cancel(entryKey)}>{create ? 'Cancel creation' : 'Cancel update'}</button>}
++        {(status === 'awaiting-acknowledgement' || entry.error && locked) && <button type="button" disabled={entry.pending}
++          onClick={() => void coordinator.retry(entryKey)}>{status === 'awaiting-acknowledgement' ? 'Retry confirmation' : entry.run ? 'Refresh status' : 'Retry request'}</button>}
++        {!locked && <button type="submit" className="prompt-primary" disabled={!prompt || prompt.length > promptLimit || entry.target.operation === 'edit-diagram' && !entry.target.subtree && !entry.target.generateVariants || entry.target.operation === 'extend-diagram' && (!entry.target.sources?.length || !entry.target.origin)}>{create
++          ? entry.target.operation === 'extend-diagram' ? 'Extend diagram' : 'Create diagram'
++          : entry.target.generateVariants ? entry.target.variantId ? 'Refine variant' : 'Generate variants' : status === 'conflict' ? 'Update latest diagram' : 'Update diagram'}</button>}
++      </footer>
++    </form>
++    {railOpen && <RevisionRail id={`${entryKey}-revisions`} coordinator={coordinator} list={list} />}
++  </div>;
++}
++
++function TemplateBlock({ entry, locked, update, instruction, referenceCount }: { entry: PromptComposerEntry; locked: boolean;
++  update: (change: Parameters<PromptComposerCoordinator['updateDraft']>[1]) => void; instruction: string; referenceCount: number }) {
++  const [editing, setEditing] = useState(false);
++  const template = entry.draft.template, definition = findPromptTemplate(template.id, template.version);
++  const versions = promptTemplateCatalog.filter(candidate => candidate.id === template.id);
++  if (!definition) return <p role="alert" className="prompt-error">This draft's template is no longer available.</p>;
++  return <div className="prompt-template" aria-label="Prompt template (cannot be removed)" role="group">
++    <div className="prompt-template-header">
++      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" role="img" aria-label="Locked"><rect x="4" y="11" width="16" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>
++      <span className="eyebrow">Template</span>
++      <select aria-label="Template" value={template.id} disabled={locked} onChange={event => update(draft => selectTemplate(draft, event.target.value))}>
++        {promptTemplates(entry.target.operation).map(option => <option key={option.id} value={option.id}>{option.title}</option>)}
++      </select>
++      <select aria-label="Template version" value={template.version} disabled={locked || versions.length < 2}
++        onChange={event => update(draft => selectTemplate(draft, template.id, Number(event.target.value)))}>
++        {versions.map(version => <option key={version.version} value={version.version}>v{version.version}</option>)}
++      </select>
++      <span className="prompt-badge" data-operation={entry.target.operation}>{entry.target.operation}</span>
++      {template.markdown !== undefined && <span className="prompt-badge" data-edited>markdown edited</span>}
++      <button type="button" className="prompt-template-edit" disabled={locked} onClick={() => setEditing(true)}>Edit template</button>
++    </div>
++    {definition.parameters.length > 0 && <div className="prompt-template-options">
++      {definition.parameters.map(parameter => <TemplateParameter key={parameter.key} parameter={parameter} value={template.options[parameter.key] ?? parameter.default}
++        disabled={locked} onChange={value => update(draft => setTemplateOption(draft, parameter.key, value))} />)}
++    </div>}
++    {editing && <TemplateEditor template={template} instruction={instruction} referenceCount={referenceCount} onClose={() => setEditing(false)}
++      onSave={markdown => update(draft => setTemplateMarkdown(draft, markdown))} />}
++  </div>;
++}
++
++function TemplateParameter({ parameter, value, disabled, onChange }: { parameter: PromptTemplateParameter; value: string | number; disabled: boolean; onChange: (value: string | number) => void }) {
++  if (parameter.kind === 'enum') return <label>{parameter.label}
++    <select value={value} disabled={disabled} onChange={event => onChange(event.target.value)}>
++      {parameter.options.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
++    </select></label>;
++  return <label><span className="prompt-option-label">{parameter.label}<output>{value}{parameter.unit ? ` ${parameter.unit}` : ''}</output></span>
++    <input type="range" min={parameter.min} max={parameter.max} step={parameter.step} value={value} disabled={disabled}
++      onChange={event => onChange(Number(event.target.value))} /></label>;
++}
++
++function PromptBody({ coordinator, entryKey, entry, locked, revisions, carrying, placeholder }: { coordinator: PromptComposerCoordinator; entryKey: string;
++  entry: PromptComposerEntry; locked: boolean; revisions: PromptRevisionSource; carrying: boolean; placeholder: string }) {
++  const body = useRef<HTMLDivElement>(null), focusNext = useRef<{ blockId: string; offset: number }>(undefined);
++  const update = (change: Parameters<PromptComposerCoordinator['updateDraft']>[1]) => coordinator.updateDraft(entryKey, change);
++  const blocks = entry.draft.body;
++  const focusEnd = () => {
++    const areas = body.current?.querySelectorAll<HTMLTextAreaElement>('textarea');
++    const last = areas?.[areas.length - 1];
++    if (last && !last.disabled) { last.focus(); last.setSelectionRange(last.value.length, last.value.length); }
++  };
++  // Opening a prompt puts the caret at the end of its text, ready to type.
++  useEffect(focusEnd, []);
++  useLayoutEffect(() => {
++    const next = focusNext.current; if (!next) return;
++    focusNext.current = undefined;
++    const area = body.current?.querySelector<HTMLTextAreaElement>(`[data-block-id="${next.blockId}"]`);
++    area?.focus(); area?.setSelectionRange(next.offset, next.offset);
++  });
++  const dropCarried = (cursor?: { blockId: string; offset: number }) => {
++    const carried = coordinator.store.getState().carried;
++    if (!carried) return false;
++    if (cursor) coordinator.setCursor(entryKey, cursor);
++    coordinator.insertReference(carried.reference, entryKey);
++    coordinator.carry();
++    return true;
++  };
++  return <div ref={body} className="prompt-body" aria-label="Prompt body" data-drop-target={carrying && !locked}
++    onClick={event => {
++      if (event.target !== event.currentTarget || locked) return;
++      if (dropCarried()) event.preventDefault();
++      else focusEnd();
++    }}>
++    {blocks.map((block, index) => block.kind === 'reference'
++      ? <ReferenceChip key={block.id} reference={block.reference} revisions={revisions} onRemove={locked ? undefined : () => {
++          const previous = blocks[index - 1];
++          if (previous?.kind === 'text') focusNext.current = { blockId: previous.id, offset: previous.text.length };
++          update(draft => removeBlock(draft, block.id));
++        }} />
++      : <PromptText key={block.id} block={block} disabled={locked} placeholder={index === 0 && blocks.length === 1 ? placeholder : undefined}
++          last={index === blocks.length - 1}
++          onCursor={offset => { coordinator.setCursor(entryKey, { blockId: block.id, offset }); }}
++          onDrop={offset => dropCarried({ blockId: block.id, offset })}
++          onChange={text => update(draft => setBlockText(draft, block.id, text))}
++          onRemoveAdjacent={direction => {
++            const neighbour = blocks[index + direction];
++            if (neighbour?.kind !== 'reference') return false;
++            // Removing a chip merges its neighbours; keep the caret where the user was typing.
++            const before = direction < 0 ? blocks[index - 2] : block;
++            if (before?.kind === 'text') focusNext.current = { blockId: before.id, offset: before.text.length };
++            update(draft => removeBlock(draft, neighbour.id));
++            return true;
++          }}
++          onPasteReferences={(references, offset) => {
++            update(draft => references.reduceRight((next, reference) => insertReference(next, reference, { blockId: block.id, offset }), draft));
++          }} />)}
++  </div>;
++}
++
++function PromptText({ block, disabled, placeholder, last, onCursor, onDrop, onChange, onRemoveAdjacent, onPasteReferences }: {
++  block: Extract<PromptBlock, { kind: 'text' }>; disabled: boolean; placeholder?: string; last: boolean; onCursor: (offset: number) => void;
++  onDrop: (offset: number) => boolean; onChange: (text: string) => void; onRemoveAdjacent: (direction: -1 | 1) => boolean;
++  onPasteReferences: (references: PromptReference[], offset: number) => void }) {
++  const area = useRef<HTMLTextAreaElement>(null);
++  useLayoutEffect(() => {
++    const element = area.current; if (!element) return;
++    // Text between references sizes to its content so chips flow inline with it; the last block fills the line.
++    if (!last) {
++      const style = getComputedStyle(element), context = measure.getContext('2d')!;
++      context.font = `${style.fontSize} ${style.fontFamily}`;
++      const widest = Math.max(0, ...(block.text || ' ').split('\n').map(line => context.measureText(line).width));
++      element.style.width = `${Math.ceil(widest) + 14}px`;
++    } else element.style.width = '';
++    element.style.height = '0'; element.style.height = `${element.scrollHeight}px`;
++  }, [block.text, last]);
++  const cursor = () => onCursor(area.current?.selectionStart ?? block.text.length);
++  return <textarea ref={area} data-block-id={block.id} className="prompt-body-text" data-last={last} rows={1} value={block.text}
++    disabled={disabled} placeholder={placeholder} aria-label="Prompt text" maxLength={promptLimit}
++    onChange={event => { onChange(event.target.value); onCursor(event.target.selectionStart); }}
++    onSelect={cursor} onFocus={cursor}
++    onClick={event => { if (onDrop(event.currentTarget.selectionStart)) event.preventDefault(); }}
++    onKeyDown={event => {
++      const { selectionStart, selectionEnd, value } = event.currentTarget;
++      if (selectionStart !== selectionEnd) return;
++      if (event.key === 'Backspace' && selectionStart === 0 && onRemoveAdjacent(-1)) event.preventDefault();
++      if (event.key === 'Delete' && selectionStart === value.length && onRemoveAdjacent(1)) event.preventDefault();
++    }}
++    onPaste={event => {
++      const references = pastedPromptReferences(event.clipboardData.getData('text/html'));
++      if (!references?.length) return;
++      event.preventDefault(); onPasteReferences(references, event.currentTarget.selectionStart);
++    }} />;
++}
++
++function ReferenceIcon({ kind }: { kind: PromptReference['kind'] }) {
++  return kind === 'diagram'
++    ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18M9 21V9" /></svg>
++    : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><rect x="3" y="3" width="8" height="7" rx="1" /><rect x="13" y="14" width="8" height="7" rx="1" /><path d="M7 10v4h6" /></svg>;
++}
++/** Shared reference presentation: whole diagrams are solid cyan, selected nodes dashed purple. */
++export function ReferenceChip({ reference, revisions, onRemove, children }: { reference: PromptReference; revisions: PromptRevisionSource; onRemove?: () => void; children?: ReactNode }) {
++  const tag = useRevisionTag(revisions)(reference.revisionId);
++  const summary = referenceSummary(reference);
++  return <span className="prompt-reference" data-kind={reference.kind}
++    title={`${reference.kind === 'diagram' ? 'Whole diagram' : 'Selected nodes'} · ${summary} · pinned to ${tag}`}>
++    <ReferenceIcon kind={reference.kind} /><span className="prompt-reference-label">{reference.label}</span>
++    <small>{tag}{reference.kind === 'nodes' ? ` · ${reference.nodeIds.length || 'region'}${reference.nodeIds.length === 1 ? ' node' : reference.nodeIds.length ? ' nodes' : ''}` : ''}</small>
++    {children}
++    {onRemove && <button type="button" className="prompt-reference-remove" aria-label={`Remove reference ${summary}`} onClick={onRemove}>×</button>}
++  </span>;
++}
++
++function CarriedGhost({ coordinator, reference, revisions }: { coordinator: PromptComposerCoordinator; reference: PromptReference; revisions: PromptRevisionSource }) {
++  const [point, setPoint] = useState<{ x: number; y: number }>();
++  useEffect(() => {
++    const move = (event: PointerEvent) => setPoint({ x: event.clientX, y: event.clientY });
++    const key = (event: KeyboardEvent) => { if (event.key === 'Escape') { event.preventDefault(); coordinator.carry(); } };
++    window.addEventListener('pointermove', move); window.addEventListener('keydown', key, true);
++    document.body.classList.add('is-placing-prompt-reference');
++    return () => { window.removeEventListener('pointermove', move); window.removeEventListener('keydown', key, true); document.body.classList.remove('is-placing-prompt-reference'); };
++  }, [coordinator]);
++  return point ? createPortal(<div className="prompt-reference-ghost" aria-hidden="true" style={{ left: point.x + 14, top: point.y + 10 }}>
++    <ReferenceChip reference={reference} revisions={revisions} /></div>, document.body) : null;
++}
++
++function RevisionRail({ id, coordinator, list }: { id: string; coordinator: PromptComposerCoordinator; list: PromptRevision[] }) {
++  const carried = useStore(coordinator.store, state => state.carried);
++  const names = useStore(revisionNames, state => state.names);
++  return <aside id={id} className="prompt-revision-rail" aria-label="Diagram revisions">
++    <header><span className="eyebrow">Revisions</span><small>{list.length}</small></header>
++    {carried && <div className="prompt-carry-status" role="status">
++      <span>Click the prompt box or the canvas to place {names[carried.reference.revisionId] ?? carried.reference.label}</span>
++      <button type="button" onClick={() => coordinator.carry()}>Cancel</button>
++    </div>}
++    <ul>{list.map(revision => {
++      const active = carried?.reference.revisionId === revision.id && carried.reference.kind === 'diagram';
++      return <li key={revision.id} data-active={active}>
++        <span className="prompt-revision-tag">r{revision.sequence}</span>
++        <span className="prompt-revision-name"><span data-named={!!names[revision.id]}>{names[revision.id] ?? 'Untitled revision'}</span>
++          <small>{revision.current ? 'current' : `${revision.ascii.split('\n').length} lines`}</small></span>
++        <button type="button" aria-pressed={active} aria-label={`Pick up r${revision.sequence} to place in the prompt or on the canvas`}
++          onClick={() => coordinator.carry(active ? undefined : revisionReference(revision))}>+</button>
++      </li>;
++    })}</ul>
++  </aside>;
++}
+diff --git a/src/features/mapping/prompt-composer/VariantReview.tsx b/src/features/mapping/prompt-composer/VariantReview.tsx
+new file mode 100644
+index 00000000..a3021593
+--- /dev/null
++++ b/src/features/mapping/prompt-composer/VariantReview.tsx
+@@ -0,0 +1,51 @@
++import { useState } from 'react';
++import type { DiagramRevisionReview, RevisionDecision, RevisionChange } from '../../../../domain/core/diagrams/diagramRevisionReview';
++import type { PromptComposerCoordinator, PromptComposerTarget } from './promptComposerCoordinator';
++export interface VariantReviewSource {
++  list(target: PromptComposerTarget): { variant: DiagramRevisionReview; changes: RevisionChange[]; ascii: string; scopeLabel: string; error?: string }[];
++  update(target: PromptComposerTarget, id: string, change: { decisions?: Record<string, RevisionDecision>; name?: string; remove?: boolean; apply?: boolean }): Promise<void>;
++}
++export function VariantReview({ source, target, coordinator, entryKey, locked }: {
++  source: VariantReviewSource; target: PromptComposerTarget; coordinator: PromptComposerCoordinator; entryKey: string; locked: boolean;
++}) {
++  const list = source.list(target), [selected, setSelected] = useState(''), [error, setError] = useState(''), [busy, setBusy] = useState(false);
++  const item = list.find(item => item.variant.id === selected) ?? list.at(-1);
++  if (!item) return null;
++  const { variant, changes } = item;
++  const update = async (change: Parameters<VariantReviewSource['update']>[2]) => {
++    setBusy(true); setError('');
++    try { await source.update(target, variant.id, change); } catch (e) { setError(String(e instanceof Error ? e.message : e)); }
++    finally { setBusy(false); }
++  };
++  const disabled = busy || locked;
++  return <section className="variant-review" aria-label="Variant review">
++    <h3>Variants</h3>
++    <label>Review variant <select aria-label="Review variant" value={variant.id} disabled={disabled} onChange={e => { setSelected(e.target.value); setError(''); }}>
++      {list.map(({ variant }) => <option key={variant.id} value={variant.id}>{variant.name}</option>)}
++    </select></label>
++    <label>Name <input aria-label="Rename variant" key={variant.id + variant.name} defaultValue={variant.name} maxLength={120} disabled={disabled}
++      onBlur={e => { if (e.target.value.trim() && e.target.value.trim() !== variant.name) void update({ name: e.target.value }); }} /></label>
++    <p>{variant.replacementScope ? variant.replacementScope.mode === 'multi-contiguous' ? 'Adjacent subtrees' : 'Separate subtrees' : variant.ownerNodeId === 'root' ? 'Whole diagram' : `Subtree: ${item.scopeLabel}`} · {variant.revisionIds.length} generated revision(s)</p>
++    <details><summary>Generated candidate</summary><pre>{item.ascii}</pre></details>
++    <div className="variant-review-actions">
++      <button disabled={disabled} onClick={() => void update({ decisions: Object.fromEntries(changes.map(c => [c.id, 'accept'])) })}>Accept all</button>
++      <button disabled={disabled} onClick={() => void update({ decisions: Object.fromEntries(changes.map(c => [c.id, 'reject'])) })}>Reject all</button>
++      <button disabled={disabled} onClick={() => coordinator.setTarget(entryKey, { operation: 'edit-diagram', generateVariants: true, replaceMode: variant.replacementScope?.mode ?? (variant.ownerNodeId === 'root' ? 'diagram' : 'subnode-single'), variantId: variant.id, variantName: variant.name, variantCount: 1 })}>Refine this variant</button>
++    </div>
++    <ul>{changes.map(change => <li key={change.id} data-variant-change={change.id}>
++      <strong>{change.label}</strong> <small>{change.kind}</small>
++      {change.before && change.after && change.before.label !== change.after.label && <div><del>{change.before.label}</del> → {change.after.label}</div>}
++      {change.before && change.after && (change.before.parentId !== change.after.parentId || JSON.stringify(change.before.childIds) !== JSON.stringify(change.after.childIds)) && <small>Parent or child order changed; related structural changes must agree.</small>}
++      <div><span>{variant.decisions[change.id] ?? 'Pending'}</span>
++        <button aria-label={`Accept ${change.label}`} disabled={disabled} aria-pressed={variant.decisions[change.id] === 'accept'} onClick={() => void update({ decisions: { [change.id]: 'accept' } })}>Accept</button>
++        <button aria-label={`Reject ${change.label}`} disabled={disabled} aria-pressed={variant.decisions[change.id] === 'reject'} onClick={() => void update({ decisions: { [change.id]: 'reject' } })}>Reject</button>
++      </div>
++    </li>)}</ul>
++    {!changes.length && <p>No content changes in this variant.</p>}
++    {item.error && <p role="alert">{item.error}</p>}
++    {error && <p role="alert">{error}</p>}
++    <p>Pending and rejected changes keep the base content. After applying, change decisions and apply again to roll back selected updates.</p>
++    <button className="prompt-primary" disabled={disabled || !!item.error || !changes.length} onClick={() => void update({ apply: true })}>Apply reviewed changes</button>
++    <button disabled={disabled} onClick={() => void update({ remove: true })}>Remove variant</button>
++  </section>;
++}
+diff --git a/src/features/mapping/tldraw/DiagramAlternativeControls.tsx b/src/features/mapping/tldraw/DiagramAlternativeControls.tsx
+new file mode 100644
+index 00000000..1442de6b
+--- /dev/null
++++ b/src/features/mapping/tldraw/DiagramAlternativeControls.tsx
+@@ -0,0 +1,48 @@
++import { mappingShapeId } from './shapeProjection';
++import { useContext, useState } from 'react';
++import { useValue } from 'tldraw';
++import { CanvasRuntimeContext, type GridModel } from './CanvasRuntimeContext';
++import { getDiagramRevision } from '../../../../domain/core/diagrams/diagramRevisionStore';
++import { resolveRevisionLines } from '../../../../domain/core/diagrams/diagramRevisionSelection';
++import { alternativeSelections, scopeOwner } from '../../../../domain/core/presentation/diagramAlternative';
++import type { AlternativeOperation } from '../../../../domain/mapping/workspace/diagramAlternatives';
++
++export function DiagramAlternativeControls({ model, disabled }: { model: GridModel; disabled: boolean }) {
++  const runtime = useContext(CanvasRuntimeContext)!;
++  const state = useValue('promoted alternatives', () => runtime.alternativeState.get(), [runtime]);
++  const [menu, setMenu] = useState<string>(), [error, setError] = useState('');
++  const snapshot = runtime.controller.getSnapshot(), base = getDiagramRevision(model.diagram!.revisionId);
++  const folded = new Set([...(model.view?.collapsedNodeRefs ?? []), ...(model.view?.collapsedContentNodeIds ?? []).flatMap(id => base.nodeRefs[id] ? [base.nodeRefs[id]] : [])]);
++  const lines = resolveRevisionLines(base, alternativeSelections(snapshot.document, model.id, model.diagram!.id, base), getDiagramRevision, folded);
++  const groups = new Map<string, { id: string; name: string; partIndex: number }[]>();
++  for (const item of Object.values(state?.items ?? {})) if (item.presentationId === model.id && (!item.parentAlternativeId || state?.selected[model.id]?.includes(item.parentAlternativeId)))
++    item.parts.forEach((part, partIndex) => { const owner = scopeOwner(part.target); groups.set(owner, [...(groups.get(owner) ?? []), { id: item.id, name: item.name, partIndex }]); });
++  const run = (op: AlternativeOperation) => {
++    try { runtime.controller.applyUpdate(runtime.controller.getSnapshot().version, [op]); setError(''); setMenu(undefined); }
++    catch (error) { setError(error instanceof Error ? error.message : String(error)); }
++  };
++  return <div className="diagram-alternative-controls" data-mapping-static-ui data-diagram-canvas-static-ui onPointerDown={e => e.stopPropagation()} onDoubleClick={e => e.stopPropagation()}>
++    {[...groups].map(([owner, alternatives]) => {
++      const row = owner === 'root' ? 0 : lines.findIndex(line => line.nodeRef === owner || line.ownerNodeId === owner);
++      if (row < 0 || model.frame.collapsed && row > 0) return null;
++      const active = alternatives.find(item => state?.selected[model.id]?.includes(item.id)) ?? alternatives[0];
++      const select = (id: string) => run({ method: 'alternative-select', nodeId: model.id, alternativeId: id, selected: !state?.selected[model.id]?.includes(id), replace: true });
++      const open = (item: typeof active) => {
++        const panelId = `panel:${item.id}:${item.partIndex}`;
++        const bounds = state?.panels[panelId] && runtime.editor?.getShapePageBounds(mappingShapeId(panelId));
++        if (bounds) { runtime.editor?.zoomToBounds(bounds.clone().expandBy(80), { animation: { duration: 150 } }); setMenu(undefined); }
++        else run({ method: 'side-panel', nodeId: model.id, alternativeId: item.id, partIndex: item.partIndex });
++      };
++      return <div key={owner} data-alternative-node={owner} style={{ position: 'absolute', top: row * model.cell.height, right: -48, display: 'flex', zIndex: 8, pointerEvents: 'auto' }}>
++        <button style={{ height: model.cell.height, width: 23, padding: 0, fontSize: 13 }} disabled={disabled} aria-label={`Swap alternative ${active.name}`} title="Swap alternative inline" aria-pressed={state?.selected[model.id]?.includes(active.id) ?? false}
++          onClick={() => alternatives.length === 1 ? select(active.id) : setMenu(menu === `swap:${owner}` ? undefined : `swap:${owner}`)}>⇄</button>
++        <button style={{ height: model.cell.height, width: 23, padding: 0, fontSize: 13 }} disabled={disabled} aria-label={`Open alternative panel ${active.name}`} title="Open alternative SidePanel"
++          onClick={() => alternatives.length === 1 ? open(active) : setMenu(menu === `panel:${owner}` ? undefined : `panel:${owner}`)}>▥</button>
++        {(menu === `swap:${owner}` || menu === `panel:${owner}`) && <div role="menu" style={{ position: 'absolute', left: 0, top: '100%', background: 'var(--surface-raised)', padding: 4, minWidth: 180 }}>
++          {alternatives.map(item => <button role="menuitem" key={item.id} onClick={() => menu.startsWith('swap:') ? select(item.id) : open(item)}>{item.name}{state?.selected[model.id]?.includes(item.id) ? ' ✓' : ''}</button>)}
++        </div>}
++      </div>;
++    })}
++    {error && <div role="alert" style={{ position: 'absolute', top: '100%', color: 'var(--diff-deleted-text)', background: 'var(--surface-raised)' }}>{error}</div>}
++  </div>;
++}
+diff --git a/src/features/mapping/tldraw/DiagramSidePanelContent.tsx b/src/features/mapping/tldraw/DiagramSidePanelContent.tsx
+new file mode 100644
+index 00000000..c2d0f01c
+--- /dev/null
++++ b/src/features/mapping/tldraw/DiagramSidePanelContent.tsx
+@@ -0,0 +1,58 @@
++import { useContext, useRef, useState } from 'react';
++import { useQuickReactor, useValue } from 'tldraw';
++import { CanvasRuntimeContext } from './CanvasRuntimeContext';
++import { DiagramText } from '../../../shared/diagrams/DiagramText';
++import type { AlternativeOperation } from '../../../../domain/mapping/workspace/diagramAlternatives';
++
++export function DiagramSidePanelContent({ nodeId }: { nodeId: string }) {
++  const runtime = useContext(CanvasRuntimeContext)!;
++  const model = useValue(`side panel ${nodeId}`, () => runtime.panels.get(nodeId).get(), [runtime, nodeId]);
++  const [error, setError] = useState('');
++  const element = useRef<HTMLDivElement>(null);
++  const restingZoom = useRef<number | undefined>(undefined);
++  useQuickReactor('side panel pan layer', () => {
++    const editor = runtime.editor, panel = element.current;
++    if (!editor || !panel) return;
++    const zoom = editor.getZoomLevel(), moving = editor.getCameraState() === 'moving';
++    if (!moving || restingZoom.current === undefined) restingZoom.current = zoom;
++    // Cache the panel's raster during translation only. Release it at rest or
++    // on zoom so text is rasterized at the new scale instead of staying blurry.
++    panel.style.willChange = moving && zoom === restingZoom.current ? 'transform' : '';
++  }, [runtime, model]);
++  if (!model) return null;
++  const { panel, cell, bounds } = model;
++  const command = (changes: Partial<Extract<AlternativeOperation, { method: 'side-panel' }>>) => {
++    try { runtime.controller.applyUpdate(runtime.controller.getSnapshot().version, [{ method: 'side-panel', nodeId: panel.attachment.diagramPresentationId,
++      alternativeId: panel.alternativeId, partIndex: panel.partIndex, ...changes }]); setError(''); }
++    catch (error) { setError(error instanceof Error ? error.message : String(error)); }
++  };
++  const x1 = (model.anchor.column - bounds.column) * cell.width, x2 = panel.side === 'right' ? 0 : bounds.columns * cell.width;
++  return <div ref={element} className="diagram-side-panel" data-side-panel={nodeId} data-panel-side={panel.side} data-panel-placement={panel.placement} data-mapping-static-ui data-diagram-canvas-static-ui
++    onPointerDown={event => {
++      const control = (event.target as Element).closest('button,input,textarea,select,a,[contenteditable=true]');
++      const navigating = event.button === 1 || event.pointerType === 'touch'
++        || runtime.editor?.inputs.getIsPanning() || runtime.editor?.getCurrentToolId() === 'hand';
++      if (control || !navigating) event.stopPropagation();
++    }} onDoubleClick={event => event.stopPropagation()}
++    style={{ position: 'absolute', inset: 0, pointerEvents: 'auto', overflow: 'visible' }}>
++    <svg aria-hidden style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', overflow: 'visible', pointerEvents: 'none' }}>
++      <path d={`M ${x1} ${cell.height / 2} L ${x2} ${cell.height / 2}`} stroke="var(--border-strong)" fill="none" />
++    </svg>
++    <div className="diagram-side-panel-toolbar" style={{ position: 'absolute', bottom: '100%', left: 0, display: 'flex', whiteSpace: 'nowrap', fontSize: 12 }}>
++      <span style={{ maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis' }} title={model.name}>{model.name}</span>
++      <button aria-label="Toggle panel diff" aria-pressed={panel.display === 'diff'} onClick={() => command({ display: panel.display === 'diff' ? 'regular' : 'diff' })}>{panel.display === 'diff' ? 'Regular' : 'Diff'}</button>
++      <button aria-label="Toggle panel layout flow" aria-pressed={panel.placement === 'flow'} onClick={() => command({ placement: panel.placement === 'flow' ? 'overlay' : 'flow' })}>{panel.placement === 'flow' ? 'Flow' : 'Overlay'}</button>
++      <button aria-label="Auto-place panel" onClick={() => command({ autoPlace: true })}>Auto</button>
++      {model.partCount > 1 && <select aria-label="Alternative part" value={panel.partIndex} onChange={event => {
++        const partIndex = Number(event.target.value);
++        try { runtime.controller.applyUpdate(runtime.controller.getSnapshot().version, [
++          { method: 'side-panel', nodeId: panel.attachment.diagramPresentationId, alternativeId: panel.alternativeId, partIndex: panel.partIndex, close: true },
++          { method: 'side-panel', nodeId: panel.attachment.diagramPresentationId, alternativeId: panel.alternativeId, partIndex, placement: panel.placement, display: panel.display }]); }
++        catch (e) { setError(String(e)); }
++      }}>{Array.from({ length: model.partCount }, (_, i) => <option key={i} value={i}>Part {i + 1}</option>)}</select>}
++      <button aria-label="Close alternative panel" onClick={() => command({ close: true })}>×</button>
++    </div>
++    <DiagramText className="mapping-poc-ascii" rows={model.rows} />
++    {error && <div role="alert">{error}</div>}
++  </div>;
++}
+diff --git a/src/server/app/bootstrap.ts b/src/server/app/bootstrap.ts
+index fbc535cb..cdc89f06 100644
+--- a/src/server/app/bootstrap.ts
++++ b/src/server/app/bootstrap.ts
+@@ -1,6 +1,23 @@
++import { resolveDiagramSource } from '../../../application/core/source/diagramSource';
++import { FileAgentContextSources } from '../../../infrastructure/core/persistence/fileAgentContextSources';
++import { AgentContextLibrary } from '../../../application/mapping/agent/agentContextLibrary';
++import { FileAgentContextRepository } from '../../../infrastructure/core/persistence/fileAgentContextRepository';
++import { GenerationCanvasBridge } from '../../../application/mapping/agent-chat/generationCanvasBridge';
++import { CompareSessionService } from '../../../application/mapping/compare/compareSessionService';
++import { FileCompareSessionStore } from '../../../infrastructure/mapping/compare/fileCompareSessionStore';
++import { WorkspaceRecordStore } from '../../../infrastructure/mapping/persistence/workspace/workspaceRecordStore';
++import { MappingChatMcpBinding } from '../../../infrastructure/mapping/agent-chat/chatMcpBinding';
++import { AgentChatService } from '../../../application/mapping/agent-chat/agentChatService';
++import { ChatDiagramTools } from '../../../application/mapping/agent-chat/chatDiagramTools';
++import { StdioCodexConnection } from '../../../infrastructure/mapping/agent-chat/codexConnection';
++import { FileChatStore } from '../../../infrastructure/mapping/agent-chat/chatStore';
++import { PushIntegrationService } from '../../../application/core/integrations/pushIntegrationService';
++import { FilePushIntegrationStore } from '../../../infrastructure/core/integrations/pushIntegrationStore';
++import { GitPushSource } from '../../../infrastructure/core/integrations/gitPushSource';
++import { CanvasApiProjection } from '../../../application/mapping/agent/apiProjection';
+ import { AgentContextService } from '../../../application/mapping/agent/agentContextService';
+ import { LiveCanvasService } from '../../../application/mapping/agent/liveCanvasService';
+-import { RevisionedDiagramService } from '../../../domain/core/diagrams/diagramService';
++
+ import { FakeDiagramEditRuntime, PiDiagramEditRuntime } from '../../../infrastructure/mapping/agents/diagram-edit/diagramEditRuntime';
+ import { CoreApplication } from "../../../application/core/application";
+ import { AgentDiagrammingSessionService } from '../../../application/mapping/agent/sessionService';
+@@ -13,6 +30,7 @@ import { QuickJsAgentRuntime } from '../../../infrastructure/mapping/agent/execR
+ import { DiagramChangeSessionStore } from '../../../infrastructure/mapping/changes/diagramChangeSessionStore';
+ 
+ import { DiagramStore } from "../../../infrastructure/core/persistence/store";
++import { FileDiagramAgentContextStore } from '../../../infrastructure/core/persistence/fileDiagramAgentContextStore';
+ import { CodexLocalChatRuntime, FakeLocalChatRuntime } from "../../../infrastructure/mapping/agents/chat/localChatRuntime";
+ import { FakeFileCompactionRuntime, PiFileCompactionRuntime } from "../../../infrastructure/mapping/agents/compaction/fileCompactionRuntime";
+ import { FakeMappingAgentRuntime, PiMappingAgentRuntime } from "../../../infrastructure/mapping/agents/selection/agentRuntime";
+@@ -34,6 +52,9 @@ import { resolveFileCompactionSettings } from '../../../infrastructure/mapping/a
+ import { loadFileCompactionPrompts } from '../../../infrastructure/mapping/agents/compaction/prompts';
+ import { FileCompactionStore } from '../../../infrastructure/mapping/persistence/compactionStore';
+ import { MappingWorkspaceStore } from '../../../infrastructure/mapping/persistence/workspace/mappingWorkspaceStore';
++import { DiffSessionWorkflowService } from '../../../application/mapping/changes/diffSessionWorkflowService';
++import { PiDiffSessionRuntime } from '../../../infrastructure/mapping/agents/diff-session-create/diffSessionRuntime';
++import { FileDiffSessionRunStore, loadDiffSessionPrompts, createDiffSessionSourceReader } from '../../../infrastructure/mapping/agents/diff-session-create/diffSessionStorage';
+ 
+ export const corpusAccess: CorpusAccess = {
+   provider: corpusProvider, readDocumentLines: readCorpusDocumentLines, discover: discoverDomainCorpus
+@@ -50,22 +71,43 @@ export function createFileCompactionService(core: CoreApplication, runtime: File
+ 
+ /** The only production module that chooses and connects concrete integrations. */
+ export function createBackend(projectRoot: string, diagramsDirectory: string, configuredDomainProfileId: BuiltInDomainProfileId | undefined,
+-  mappingPocSourceRoot: string, options: { lspEnabled?: boolean }) {
++  mappingPocSourceRoot: string, options: { lspEnabled?: boolean; piEnabled?: boolean }) {
+   const fake = process.env.NEW_DIAGRAM_AGENT === "fake";
+-  const chatRuntime = fake ? new FakeLocalChatRuntime() : new CodexLocalChatRuntime();
+-  const mappingRuntime = fake ? new FakeMappingAgentRuntime() : new PiMappingAgentRuntime();
+-  const diagramEditRuntime = fake ? new FakeDiagramEditRuntime() : new PiDiagramEditRuntime(mappingPocSourceRoot);
++  const chatRuntime = fake ? new FakeLocalChatRuntime() : new CodexLocalChatRuntime(options.piEnabled === true);
++  const mappingRuntime = fake ? new FakeMappingAgentRuntime() : new PiMappingAgentRuntime(options.piEnabled === true);
+   const store = new DiagramStore(projectRoot, diagramsDirectory);
++  const contextSources = new FileAgentContextSources(store.storeRoot, async sourceId => {
++    if (sourceId.startsWith('repo-')) {
++      const repository = (await store.repositories.list()).find(repository => repository.id === sourceId);
++      if (repository?.checkoutRoots[0]) return { kind: 'git-worktree', root: repository.checkoutRoots[0] };
++    }
++    const project = await store.loadProject();
++    if (!project) throw Error('AGENT_CONTEXT_SOURCE_UNAVAILABLE: project is not initialized');
++    return (await resolveDiagramSource(store, { projectId: project.id, sourceId })).binding().corpus;
++  });
++  const diagramEditRuntime = fake ? new FakeDiagramEditRuntime() : new PiDiagramEditRuntime(mappingPocSourceRoot, options.piEnabled === true, contextSources);
+   const core = createCoreApplication(store);
+-  const compactionService = createFileCompactionService(core, fake ? new FakeFileCompactionRuntime() : new PiFileCompactionRuntime());
++  const compactionService = createFileCompactionService(core, fake ? new FakeFileCompactionRuntime() : new PiFileCompactionRuntime(options.piEnabled === true));
+   const languageService = options.lspEnabled === true ? new ProjectLanguageService() : undefined;
+-  const diagrams = new MappingDiagramService(store, corpusAccess, projectRoot, configuredDomainProfileId);
+-  const canvasBridge = new CanvasSessionBridge();
+-  const agentContexts = new AgentContextService();
++  const diagrams = new MappingDiagramService(store, corpusAccess, projectRoot, configuredDomainProfileId, new WorkspaceRecordStore(store.storeRoot));
++  const canvasBridge = new GenerationCanvasBridge(new CanvasSessionBridge());
++  const contextLibrary = new AgentContextLibrary(new FileAgentContextRepository(store.storeRoot), contextSources);
++  const agentContexts = new AgentContextService(undefined, contextLibrary);
++  const diagramContextStore = new FileDiagramAgentContextStore(store.storeRoot, contextSources);
++  const apiProjection = new CanvasApiProjection();
+   const liveCanvas = new LiveCanvasService(() => canvasBridge.list(), async (workspaceInstanceId, documentId) =>
+-    await canvasBridge.dispatch(workspaceInstanceId, { method: 'context', documentId }) as import('../../../domain/mapping/agent/liveCanvasStatus').LiveCanvasContext, agentContexts);
++    await canvasBridge.dispatch(workspaceInstanceId, { method: 'context', documentId }) as import('../../../domain/mapping/agent/liveCanvasStatus').LiveCanvasContext, agentContexts, apiProjection);
++  const changes = new ChangeSessionService(new DiagramChangeSessionStore(store.storeRoot, undefined, true), store, canvasBridge);
+   const agent = new AgentDiagrammingSessionService(canvasBridge, diagrams, store, new QuickJsAgentRuntime(),
+-    new ChangeSessionService(new DiagramChangeSessionStore(store.storeRoot, undefined, true), store, canvasBridge), new RevisionedDiagramService(diagramEditRuntime), agentContexts);
++    changes, diagramEditRuntime, agentContexts, apiProjection, diagramContextStore);
++  const agentChat = new AgentChatService(new StdioCodexConnection(mappingPocSourceRoot, options.piEnabled === true), new FileChatStore(store.storeRoot), mappingPocSourceRoot, liveCanvas, new ChatDiagramTools(agent), new MappingChatMcpBinding(agent, process.cwd()), canvasBridge, contextLibrary);
++  const diffSessionWorkflows = new DiffSessionWorkflowService(changes, agent, new PiDiffSessionRuntime(options.piEnabled === true),
++    new FileDiffSessionRunStore(store.storeRoot), { enabled: options.piEnabled === true, sourceRoot: mappingPocSourceRoot,
++      loadPrompts: loadDiffSessionPrompts, sourceReader: capture => createDiffSessionSourceReader(store.repositories, capture) });
++  const pushIntegrations = new PushIntegrationService(new FilePushIntegrationStore(store.storeRoot),
++    new GitPushSource(store.repositories), diffSessionWorkflows, options.piEnabled === true);
++  const workspace = new MappingWorkspaceService(store, new MappingWorkspaceStore(store.storeRoot, store.diagramPersistence), diagramContextStore);
++  const compareSessions = new CompareSessionService(workspace, new FileCompareSessionStore(store.storeRoot));
+   const routes = {
+     core: createCoreRoutes({
+       application: core,
+@@ -74,14 +116,16 @@ export function createBackend(projectRoot: string, diagramsDirectory: string, co
+     }),
+     mapping: createMappingRoutes({
+       selection: new SelectionService(store, mappingRuntime, mappingPocSourceRoot),
+-      diagrams, agent, liveCanvas,
+-      workspace: new MappingWorkspaceService(store, new MappingWorkspaceStore(store.storeRoot, store.diagramPersistence)),
++      diagrams, agent, agentChat, liveCanvas, diffSessionWorkflows, pushIntegrations, pushToken: process.env.NEW_DIAGRAM_PUSH_TOKEN,
++      workspace, compareSessions,
+       chat: new LocalChatService(store, corpusAccess, chatRuntime, mappingPocSourceRoot),
+       compactionService
+     })
+   };
+   return {
+-    routes, liveCanvas, dispose() {
++    routes, liveCanvas, diffSessionWorkflows, pushIntegrations, dispose() {
++      agentChat.dispose();
++      diffSessionWorkflows.dispose();
+       agent.dispose(); diagramEditRuntime.dispose(); canvasBridge.dispose(); languageService?.dispose(); mappingRuntime.dispose(); chatRuntime.dispose(); compactionService.dispose();
+     }
+   };

@@ -1,0 +1,35 @@
+[B] Diagram
+Diagram (readonly; repository-independent)
+  diagramId   stable service identity
+  revisionId  service revision identity
+  id          local scene.contents key
+  revision    nonnegative integer
+  content: DiagramContent
+    revisionId = id:revision / ascii / asciiSha256
+    structure
+      kind: diagram
+      kind: tree
+        parserVersion: ascii-tree-1 | ascii-tree-2
+        rootIds
+        nodes[id]: DiagramContentNode
+        + label / line / branchColumn
+        + startColumn / endColumn
+        + parentId? / childIds / foldRanges
+  sourceContext: DiagramSourceContext
+    contentHash = SHA256(content.ascii)
+    binding?: sourceId / repositoryIdentity
+      corpus + domainProfileId
+      + source-code <-> git-worktree
+      + document    <-> filesystem-documents
+    mappings[]: diagram span -> entityId + range index
+    evidence[entityId] -> sourceRanges[]
+    + relative path / startLine / endLine / originalLines
+  jumps?: DiagramJump[]
+validateDiagram -> canonical content + hash + binding
++ jumps + local mappings + evidence joins
+diagramSource -> entries / forSelection / search
++ visibleContentLines(content, collapsedIds) -> folded line set
++ unknown tree node ID -> STALE_CONTENT_NODE
+Sources: diagram.ts; diagramContent.ts
+
+edge "Diagram (readonly; repository-independent)" -- "validateDiagram -> canonical content + hash + binding"

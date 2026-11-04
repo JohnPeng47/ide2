@@ -1,0 +1,72 @@
+AGENT CHAT SESSIONS + DIRECT DIAGRAM ACTIONS
+A saved conversation connects live turns, canvas context and atomic diagram changes.
+
++----------------------------------------------------+    +--------------------------------------------------------+
+| CREATE CONVERSATION                                |    | RESUME CODEX THREAD                                    |
+| Panel selects model / effort / access              |    | thread/resume; reject an already active thread         |
+| AgentChatService.create -> thread/start            |    | Restore history, cwd and model; retain prompt/tools    |
+| Register diagram tools + MCP configuration         |    | Reload tools enables Agent Chat canvas actions         |
++-------------------------+--------------------------+    +---------------------------+----------------------------+
+                          |                                                           |
+                          +----------------------------+------------------------------+
+                                                       v
+                  +------------------------------------+-----------------------------------+
+                  | CHAT SESSION  (AgentChatService / ChatSession)                         |
+                  | Chat ID <-> Codex thread ID; transcript; pending requests              |
+                  | idle -> running -> idle / interrupted / failed                         |
+                  | One active turn per conversation; Stop interrupts it                   |
+                  +------------------------------------+-----------------------------------+
+                                                       | Send / Read Canvas
+                                                       v
+                  +------------------------------------+-----------------------------------+
+                  | CAPTURE + START A TURN                                                 |
+                  | Bind MCP to the canvas document and access for this turn               |
+                  | Send: text + revision-pinned diagram / node references                 |
+                  | Read Canvas: short canvas context delivered as tool output             |
+                  | Save requestId before turn/start to prevent duplicate turns            |
+                  +------------------------------------+-----------------------------------+
+                                                       | turn/start
+                                                       v
+                  +------------------------------------+-----------------------------------+
+                  | CODEX CONNECTION: ACTIVE TURN                                          |
+                  | Streams items, requests user input and calls available tools           |
+                  +-------+-----------------------------------------------------------+----+
+                          |                                                           |
+                          | events / requests                                         | supplied content
+                          v                                                           v
++-------------------------+--------------------------+    +---------------------------+----------------------------+
+| LIVE CONVERSATION                                  |    | DIRECT ACTIONS  (ChatDiagramTools)                     |
+| receive -> reduceChatEvent -> session + listeners  |    | edit-diagram / create-diagram / extend-diagram         |
+| Text deltas buffered for 32 ms                     |    | Agent supplies final ASCII in operations[]             |
+| SSE -> ChatStream -> ChatTranscript                |    | No second model call to generate diagram content       |
+| Reconnect: snapshot followed by live updates       |    | Require Workspace access, active turn and known tool   |
+|                                                    |    +---------------------------+----------------------------+
+| Questions / approvals -> pending request form      |                                | prepare
+| User answer -> connection.respond -> active turn   |                                v
+| Record interaction; clear resolved request         |    +---------------------------+----------------------------+
++-------------------------+--------------------------+    | RESOLVE TARGETS + PIN ONE CANVAS SNAPSHOT              |
+                          | save session                  | Selected reference OR nodeId + baseRevisionId          |
+                          v                               | Preserve selected scope; reject stale revisions        |
++-------------------------+--------------------------+    | All operations target the same canvas document         |
+| RETAIN + RECOVER                                   |    | Request ID + signature keep retries consistent         |
+| FileChatStore queues session JSON writes           |    +---------------------------+----------------------------+
+| .tmp -> rename into agent-chat/<id>.json           |                                | submitDirect
+| Save creation, turn boundaries and interactions    |                                v
+|                                                    |    +---------------------------+----------------------------+
+| Completion settles open items + pending requests   |    | ATOMIC MULTI-DIAGRAM BATCH  (DiagramBatchService)      |
+| Restart restores history; running -> interrupted   |    | Check expected canvas version; validate operations     |
+| Connection failure clears bindings/pending work    |    | Stage all edits/creations against the same snapshot    |
+| A later message can resume the thread              |    | Combine edits of one diagram into one operation        |
++----------------------------------------------------+    | Apply staged changes with one canvas.batch call        |
+                                                          +---------------------------+----------------------------+
+                                                                                      | commit
+                                                                                      v
+                                                          +---------------------------+----------------------------+
+                                                          | ONE TRANSACTION + ONE UNDO STEP                        |
+                                                          | completed = applied AND persisted                      |
+                                                          | failed / conflict / cancelled = batch not committed    |
+                                                          | awaiting-acknowledgement: retry identical request      |
+                                                          +---------------------------+----------------------------+
+                                                                                      | tool result / run status
+                                                                                      v
+                                                                        [Return to the active chat turn]

@@ -1,0 +1,80 @@
+INCREMENTAL PERSISTENCE & DURABLE RECOVERY
+Small updates flow to immutable records; a durable manifest makes a batch visible.
+
++--------------------------------------------------------------------------------------+
+| 1  LIVE CANVAS -> CHANGED RECORDS                                                    |
+|                                                                                      |
+| CanvasHistory: checkpoints bind diagram revision IDs instead of embedding diagrams.  |
+| persistenceChanges(cursor) emits new checkpoints/revisions + navigation header.      |
+| WorkspacePersistence projects affected canvases and personal view state.             |
+|                                                                                      |
+| history / checkpoint / revision     canvas / metadata / baseline / viewport          |
+|                   \                  /                                               |
+|                    +-- shared content-addressed items --+                            |
+|                        Existing items are sent once.                                 |
++------------------------------------------+-------------------------------------------+
+                                           |
+                                           v
++--------------------------------------------------------------------------------------+
+| 2  COALESCE IN MEMORY  [RecordStorage]                                               |
+|                                                                                      |
+| Equal values -> no save. Pending map -> latest change per key.                       |
+| Default debounce: 150 ms; continuous edits trigger scheduling within 1 second.       |
+| One batch in flight: {requestId, expectedRevision, changes}.                         |
+| New edits wait in pending while that exact flight is unresolved.                     |
++------------------------------------------+-------------------------------------------+
+                                           |
+                                           v
++--------------------------------------------------------------------------------------+
+| 3  SEND OFF THE UI THREAD  [one persistent workspace worker]                         |
+|                                                                                      |
+| Serialize + normalize saved state; cache request body for identical retries.         |
+| POST records -> server                                                               |
+|                                                                                      |
+| ACK ---------------------> advance revision; clear flight; send pending edits        |
+| Transport / server error -> retain flight + ID; retry with capped backoff            |
+| Client rejection --------> stop automatic retries; surface error                     |
+|                                                                                      |
+| Explicit commit: UI installs after ACK; definitive rejection rolls cache back.       |
+| Ambiguous response: retry identical request before allowing another write.           |
++------------------------------------------+-------------------------------------------+
+                                           | batch + stable request ID
+                                           v
++--------------------------------------------------------------------------------------+
+| 4  ACCEPT ONCE  [WorkspaceRecordStore: serialized per storage root]                  |
+|                                                                                      |
+| Durable receipt already exists?                                                      |
+|   Same ID + same batch hash -> return original revision, even after a lost ACK.      |
+|   Same ID + different hash -> REQUEST_ID_CONFLICT.                                   |
+| Otherwise require expectedRevision == current manifest revision.                     |
+|   Stale writer -> VERSION_CONFLICT; reload before saving.                            |
+|                                                                                      |
+| Validate changed records + references; preserve immutable revisions/items and        |
+| checkpoint meaning. Check current composition and cross-canvas transfer links.       |
++------------------------------------------+-------------------------------------------+
+                                           |
+                                           v
++--------------------------------------------------------------------------------------+
+| 5  PUBLISH DURABLY  [only changed record keys]                                       |
+|                                                                                      |
+| JSON -> SHA-256 blob ID -> reuse matching file or write new immutable blob           |
+|       -> temp file + file fsync + rename  [up to 8 writers; await every writer]      |
+|       -> fsync blob directory                                                        |
+|       -> write manifest temp + fsync + rename + fsync parent directory               |
+|                                                                                      |
+| MANIFEST = revision + record-key -> blob-ID map + request receipts                   |
+| Atomic manifest replacement is the visibility boundary for the whole batch.          |
+| Unpublished blobs are unreachable; a published receipt resolves uncertain writes.    |
++------------------------------------------+-------------------------------------------+
+                                           | reopen from published manifest
+                                           v
++--------------------------------------------------------------------------------------+
+| 6  RESTORE & RESUME                                                                  |
+|                                                                                      |
+| Verify referenced blob hashes -> rebuild checkpoints, revision bindings and view.    |
+| Normal load validates current history; older checkpoints validate when visited.      |
+| Persisted running UI work becomes interrupted/error state for review and retry.      |
+|                                                                                      |
+| Pending != durable: flush before orderly close. Abrupt tab exit can lose queued      |
+| edits. Integrity checks detect corruption; they do not repair damaged records.       |
++--------------------------------------------------------------------------------------+

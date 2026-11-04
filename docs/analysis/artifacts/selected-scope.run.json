@@ -1,0 +1,61 @@
+{
+  "snapshotId": "snapshot:080cf44202e8d365af633a08fcfe12a8587d39b92efb7c443fa200adece3e108",
+  "elapsedMs": 3152.9931250000004,
+  "peakRssBytes": 503320576,
+  "phasesMs": {
+    "parse": 1294.022665,
+    "containment": 540.9560660000002,
+    "lexical": 165.44187299999976,
+    "resources": 344.994326,
+    "calls": 272.08784799999967,
+    "frameworks": 98.78500000000076,
+    "dataflow": 171.59859499999948,
+    "snapshot": 77.05880500000058,
+    "derive": 187.8000519999996
+  },
+  "serializationMs": 1688.7491880000007,
+  "finalPeakRssBytes": 512229376,
+  "jsonBytes": 14121159,
+  "compressedBytes": 2667092,
+  "analyzedFiles": 18,
+  "entities": 2276,
+  "relations": 10151,
+  "views": [
+    {
+      "view": "containment",
+      "status": "complete",
+      "candidateSites": 1839,
+      "resolvedSites": 1839,
+      "unresolvedSites": 0
+    },
+    {
+      "view": "lexical",
+      "status": "complete",
+      "candidateSites": 3152,
+      "resolvedSites": 3152,
+      "unresolvedSites": 0
+    },
+    {
+      "view": "calls",
+      "status": "partial",
+      "candidateSites": 936,
+      "resolvedSites": 330,
+      "unresolvedSites": 606
+    },
+    {
+      "view": "ownership",
+      "status": "partial",
+      "candidateSites": 604,
+      "resolvedSites": 486,
+      "unresolvedSites": 118
+    },
+    {
+      "view": "dependencies",
+      "status": "partial",
+      "candidateSites": 1819,
+      "resolvedSites": 1796,
+      "unresolvedSites": 23
+    }
+  ],
+  "unresolvedCount": 640
+}

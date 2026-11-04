@@ -1,0 +1,172 @@
+{
+ "boxes": [
+  {
+   "id": "1:1-1:35",
+   "text": "[D] Controller edits / agent access",
+   "rect": {
+    "line1": 1,
+    "col1": 1,
+    "line2": 1,
+    "col2": 35
+   }
+  },
+  {
+   "id": "3:1-7:78",
+   "text": "useAgentCanvasBridge\nstableWorkspaceId + ephemeral canvasId -> register agent/canvases\npoll commands -> handleAgentCommand -> reply; unregister on pagehide/cleanup\nmutation receipt cache by command.id; context reads bypass receipt cache\npublishLiveCanvasSelections(workspace) -> /api/mapping/live WebSocket",
+   "rect": {
+    "line1": 3,
+    "col1": 1,
+    "line2": 7,
+    "col2": 78
+   }
+  },
+  {
+   "id": "10:1-15:75",
+   "text": "MappingPage.handleAgentCommand\ncontext -> version + nodes + edges; document-state -> document + name\nsnapshot -> controller snapshot + history + saved identity\ncreate-document / copy-document -> workspace sessions\napply-diagram-revision -> DiagramRevisionReceiver -> sync + storage.flush\napply -> requestId receipt + busy checks",
+   "rect": {
+    "line1": 10,
+    "col1": 1,
+    "line2": 15,
+    "col2": 75
+   }
+  },
+  {
+   "id": "18:1-19:69",
+   "text": "MappingDocumentController.applyUpdate(expectedVersion, operations)\ntransact = same command path; 1..100 operations; version must match",
+   "rect": {
+    "line1": 18,
+    "col1": 1,
+    "line2": 19,
+    "col2": 69
+   }
+  },
+  {
+   "id": "22:3-22:54",
+   "text": "clone document + canvas -> stage operations in order",
+   "rect": {
+    "line1": 22,
+    "col1": 3,
+    "line2": 22,
+    "col2": 54
+   }
+  },
+  {
+   "id": "23:13-24:70",
+   "text": "create / insert / replace / patch -> DiagramService [G]\npatches remap content-node anchors, jumps, folds, sections",
+   "rect": {
+    "line1": 23,
+    "col1": 13,
+    "line2": 24,
+    "col2": 70
+   },
+   "parent": "22:3-22:54"
+  },
+  {
+   "id": "25:13-25:67",
+   "text": "setSourceMappings / setJumps -> revise content metadata",
+   "rect": {
+    "line1": 25,
+    "col1": 13,
+    "line2": 25,
+    "col2": 67
+   },
+   "parent": "22:3-22:54"
+  },
+  {
+   "id": "26:13-26:71",
+   "text": "diagram-revision-apply -> check expectedRevisionId, receive",
+   "rect": {
+    "line1": 26,
+    "col1": 13,
+    "line2": 26,
+    "col2": 71
+   },
+   "parent": "22:3-22:54"
+  },
+  {
+   "id": "27:13-27:57",
+   "text": "edge create/update/remove -> validate anchors",
+   "rect": {
+    "line1": 27,
+    "col1": 13,
+    "line2": 27,
+    "col2": 57
+   },
+   "parent": "22:3-22:54"
+  },
+  {
+   "id": "28:13-28:61",
+   "text": "grid move/collapse/group/remove -> scene + layout",
+   "rect": {
+    "line1": 28,
+    "col1": 13,
+    "line2": 28,
+    "col2": 61
+   },
+   "parent": "22:3-22:54"
+  },
+  {
+   "id": "29:13-29:57",
+   "text": "floating move/collapse/remove -> display tree",
+   "rect": {
+    "line1": 29,
+    "col1": 13,
+    "line2": 29,
+    "col2": 57
+   },
+   "parent": "22:3-22:54"
+  },
+  {
+   "id": "32:3-35:73",
+   "text": "projectCanvasSnapshot -> updateSnapshot(record=true)\nreconcile connections/jumps; normalize folds; resolve floating geometry\nappend(document, canvas, node correspondence) -> history [E]\npublish snapshot + version -> listeners -> return {version, nodes}",
+   "rect": {
+    "line1": 32,
+    "col1": 3,
+    "line2": 35,
+    "col2": 73
+   }
+  },
+  {
+   "id": "36:1-37:57",
+   "text": "select(command) -> recorded selection update\nupdateCanvas(value, record=false) -> transient by default",
+   "rect": {
+    "line1": 36,
+    "col1": 1,
+    "line2": 37,
+    "col2": 57
+   }
+  },
+  {
+   "id": "38:1-38:79",
+   "text": "Sources: mappingDocumentController.ts, useAgentCanvasBridge.ts, MappingPage.tsx",
+   "rect": {
+    "line1": 38,
+    "col1": 1,
+    "line2": 38,
+    "col2": 79
+   }
+  }
+ ],
+ "edges": [
+  {
+   "from": "3:1-7:78",
+   "to": "10:1-15:75",
+   "direction": "->"
+  },
+  {
+   "from": "10:1-15:75",
+   "to": "18:1-19:69",
+   "direction": "->"
+  },
+  {
+   "from": "18:1-19:69",
+   "to": "22:3-22:54",
+   "direction": "->"
+  },
+  {
+   "from": "22:3-22:54",
+   "to": "32:3-35:73",
+   "direction": "->"
+  }
+ ]
+}

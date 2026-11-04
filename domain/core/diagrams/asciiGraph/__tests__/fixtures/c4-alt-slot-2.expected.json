@@ -1,0 +1,81 @@
+{
+ "boxes": [
+  {
+   "id": "1:1-1:18",
+   "text": "[G] DiagramService",
+   "rect": {
+    "line1": 1,
+    "col1": 1,
+    "line2": 1,
+    "col2": 18
+   }
+  },
+  {
+   "id": "3:1-4:24",
+   "text": "RevisionedDiagramService\ncreate(input)",
+   "rect": {
+    "line1": 3,
+    "col1": 1,
+    "line2": 4,
+    "col2": 24
+   }
+  },
+  {
+   "id": "3:45-3:63",
+   "text": "Sole content writer",
+   "rect": {
+    "line1": 3,
+    "col1": 45,
+    "line2": 3,
+    "col2": 63
+   }
+  },
+  {
+   "id": "4:28-4:55",
+   "text": "revise(baseRevisionId, edit)",
+   "rect": {
+    "line1": 4,
+    "col1": 28,
+    "line2": 4,
+    "col2": 55
+   }
+  },
+  {
+   "id": "7:3-7:65",
+   "text": "DiagramRevisionEditor -> prepared diagram + node correspondence",
+   "rect": {
+    "line1": 7,
+    "col1": 3,
+    "line2": 7,
+    "col2": 65
+   }
+  },
+  {
+   "id": "10:1-16:73",
+   "text": "Issued diagram revision\ndiagramRevisions.register -> result {diagram, nodeIds, revision, ...}\nstable diagramId; new revisionId; parentId for changed revisions\nnodeRefs reuse mapped base identity, otherwise allocate node IDs\nunchanged edit -> base revision; getRevision / listRevisions -> reads\ngenerate -> DiagramGenerator -> create OR replace base via revise\nabort checks + matching input.id; durable adapters flush before publish",
+   "rect": {
+    "line1": 10,
+    "col1": 1,
+    "line2": 16,
+    "col2": 73
+   }
+  }
+ ],
+ "edges": [
+  {
+   "from": "3:1-4:24",
+   "to": "7:3-7:65",
+   "direction": "->"
+  },
+  {
+   "from": "4:28-4:55",
+   "to": "7:3-7:65",
+   "direction": "->"
+  },
+  {
+   "from": "7:3-7:65",
+   "to": "10:1-16:73",
+   "direction": "->"
+  }
+ ]
+}

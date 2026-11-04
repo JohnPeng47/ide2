@@ -1,0 +1,183 @@
+ChangeSession evaluation input contract, version 1
+Purpose: independently propose one ChangeSession for this assigned group, using the same previously reviewed changes. The supplied baseline diagrams are inputs to update, not expected outputs to imitate. No reference answer, generated replacement ASCII, hidden template, generic task placeholder or hidden runtime instruction is provided.
+Code target is fixed at 81f05a2bf9efa2334985d2298dcbd7b044dc4c1e; the old pinned architecture baseline is 03f2168deba364103c2450ca9b8168cd1fc9ddc5. Newer diagrams already cover some target features. Unpinned diagrams have unknown code baseline: compare their captured contents to pinned evidence without inventing a commit. Exclude later commits, the working tree, the proposed backend-authority refactor, new Evals/comparison features and uncommitted DiagramPane/symbol-search work.
+Inputs visible in this context: this prompt; assigned scope and feature briefs; complete owned-diagram ASCII and related read-only diagrams with per-diagram hashes; global ownership table and existing connections; pinned target source files; exact old-side source excerpts and changed-line indices derived from path-scoped Git diffs. Full per-group patches and immutable read captures are also saved in the local input bundle, but this context contains the evidence needed for its task without relying on those local files.
+Exclusive ownership is at whole-canvas-document granularity, stronger than the parent-diagram constraint because acceptance checks/publishes whole documents. Only this group's owned canvases may be changed. Every modification to an existing diagram or parent, including feature introductions, caller/owner links, persistence/API summaries, migration annotations and new-detail attachment edges, must stay in its owner's group. Read-only diagrams may inform the result but may not be revised, removed, relaid out, reparented or annotated. Reading shared code is allowed; overlapping write ownership is not.
+Keep related changes together within owned parents. Do not split the parent update by feature. Both endpoints of each assigned migration are owned here and must be represented together. Reuse existing accurate detailed diagrams. Before proposing missing detail, establish its explicit component owner, caller and owned state in an owned existing parent, and identify that exact component as the attachment point. Do not require a new node created by another group's future output. Report any newly discovered cross-group write requirement as an ownership dependency rather than silently writing outside the boundary.
+Use the user's categories: [1a] correct obsolete structure; [1b] extend within existing scope; [2] annotate both different-diagram locations of a code move or responsibility transfer; [3] specify missing detailed diagrams by high-level features and source files/ranges only; [4] replace a structurally obsolete diagram only when ordinary modifications/migrations cannot express the change, and list its replacement under [3]. Do not draw new missing-detail diagrams in this eval. These user-facing categories differ from the backend numeric change-type schema: discover that schema before recording API metadata.
+Output the modified existing-diagram excerpts, missing-detail specifications and an ASCII recap with a legend. Use ** for new branch connections and ** ---- [description] ---- ** / ** ---- ... ---- ** around changed existing sections. Do not emit diff-renderer [+]/[-] prefixes or cosmetic spacing/punctuation edits. Do not prescribe tree layout beyond these requested presentation markers. Preserve accurate unaffected content, evidence and connections.
+This is a proposal-generation eval, not authority to accept/publish global changes. If the visible eval harness supplies ChangeSession tools, create an isolated proposal and write only this group's changes there; include changeSessionId on every proposal call. If it is a text-only harness, return the proposal text. Never edit live global canvases or source code in an eval. Other contexts' proposals are not prerequisites and need not run first.
+All captured short handles are read-scoped and may expire. Locate the stable document ID and diagram title/hash, reread current anchors/versions, and verify the captured baseline before any proposal edits. If baseline content or relationships drift, report that mismatch rather than silently changing the eval input. Independent application is conditional on unchanged baselines and disjoint actual write sets; this input does not bypass acceptance conflict checks.
+DiffTree integration limitation: full-range get_repository_diff_hunks currently fails its 8 MiB cap because the range contains unrelated investigation dumps. The path-scoped Git deltas supplied here are real evidence but are NOT server-issued hunk IDs. Do not fabricate hunk IDs or claim a fully mapped API DiffTree. Discover narrower supported commit sets if the harness requires DiffTree creation; otherwise report the limitation and retain the complete textual proposal. No backend behavior was changed to bypass this limit.
+
+Assigned group 03: Persistence, checkpoints and durable application state
+
+Update PersistentLayer as one whole parent, including every new feature's storage: saved AgentContexts, pinned source blobs, diagram-context associations, chat/generation state, DiffSession workflow runs and push-integration state. Preserve service/store ownership instead of incorrectly making every store a DiagramStore-owned feature. Trace actual composition in bootstrap and feature services.
+Update Workspace persistence flow with checkpoint deltas, shared immutable values/text, retention dependencies, unchanged-write suppression, bounded durable writes, restore, and checkpoint capture/flush before whole-canvas catalog publication. Incremental autosave, debounce and record batching already exist in the baseline; do not claim they are newly introduced.
+History retains already issued diagram revisions rather than allocating diagram revision identities. Persist CanvasViews/working copies and referenced presentation/alternative/review/context state through checkpoint records without treating transient selection/gesture state as new content revisions.
+PersistentLayer's SearchArtifact branch is marked PROPOSED and is not implemented at the pinned target; do not present it as the implemented search worker's storage, or invent a migration away from it.
+No new detail diagram is required by the previous proposal for this group; extend the existing persistence diagrams. The concrete source may justify listing a missing detail, but do not create a duplicate persistence canvas.
+Related authoring/context/chat/view features are included as source evidence to make these two parent updates coherent. Their UI, domain-history, API and AgentContext parents are owned by other contexts and must remain unchanged.
+
+Feature briefs (cross-group references are read-only):
+1. Saved CanvasViews and branching: Creating, saving, reopening and forking views; retaining unsaved working copies; keeping or discarding alternative branches; saved checkpoints and ancestry.
+2. Managed generation of canvas alternatives: Generating independent candidates from one saved checkpoint; shared and candidate-specific prompts; isolated child canvases and chats; inherited model or saved context; progress, cancellation and persisted results.
+3. Reusable AgentContexts and pinned source evidence: Saving reusable contexts across chats and canvases; diagram-bound source context; immutable source references; lazy source loading; source snapshots and portable exports.
+4. Scoped diagram authoring and alternative review: Structured prompts and pinned references; whole-diagram or subtree edits; generating variants; reviewing changes; inline alternative swaps and side-panel inspection. Explain the authoring and interaction workflow, preserving the distinction between presentation selection and applying a revision.
+5. Agent Chat sessions and direct diagram actions: Creating and resuming conversations; capturing canvas references for a turn; streaming responses; answering agent requests; persisting conversations; submitting supplied diagram edits directly, including atomic multi-diagram submissions.
+6. Bound Canvas API connections and batched edits: Persistent canvas binding; compact current-state reads; batching consecutive mutations; flush boundaries; version checks; retry receipts and failure behavior. Correct the obsolete notion that every exec mutation necessarily commits separately.
+7. Mapping integration with tldraw: How native gestures become domain edits; native versus semantic selection ownership; undo/redo restoring domain checkpoints; granular diagram updates, local anchors and connection routing. Focus on this application integration, not generic tldraw internals.
+8. Git changes to generated ChangeSessions and review: Pinning commits and hunks; generating isolated proposals from repository changes or pushes; mapping DiffTree entries to hunks and diagram destinations; navigating review and explicit acceptance.
+9. Diagram search and mapped-source navigation: Search across canvases and proposals; click symbols to search; reveal matches; open mapped source in a resizable workspace panel. Include source identity and stale-result protection where they explain user-visible behavior.
+10. Source coverage and change treemaps: Measure mapped source coverage; distribute overlapping source ranges without double-counting; identify unresolved mappings; visualize changed-code coverage; navigate from coverage results to diagrams.
+11. Focused canvases from selected or highlighted diagrams: Create a derived canvas from selected or highlighted diagrams; preserve source provenance; adjust its arrangement; save and undo layout changes. Describe the implemented projection feature rather than the contents of an existing canvas named Projection.
+12. Incremental persistence and durable recovery: Deduplicated history records; saving only changed records; coalesced writes; uncertain-write retries; durable manifest publication and restoration. Explain current reliability and performance behavior beyond the older component overview.
+
+Missing detail IDs owned here: 
+Migration IDs owned here: 
+
+Global exclusive ownership table:
+[
+  {
+    "key": "C00",
+    "documentId": "representation-b697fd11-5c8d-49e7-a6b5-b12030f2f79a",
+    "name": "Canvas domain model - baseline 03f2168 (before tldraw)",
+    "owner": "01"
+  },
+  {
+    "key": "C01",
+    "documentId": "representation-60532c3a-39f7-4392-9c66-a3f85c84f58b",
+    "name": "Unified selection - state, gestures and WebSocket",
+    "owner": "01"
+  },
+  {
+    "key": "C02",
+    "documentId": "representation-00e20688-1815-4518-a617-932a4e6cd233",
+    "name": "AgentContext - implemented call flow and domain models (03f2168)",
+    "owner": "02"
+  },
+  {
+    "key": "C03",
+    "documentId": "representation-74feeeae-7381-43ca-a707-9c90cfe01ee1",
+    "name": "Mapping page - MCP and HTTP API",
+    "owner": "02"
+  },
+  {
+    "key": "C04",
+    "documentId": "representation-c7177725-a7dd-4caa-9ac5-a1c702f3350d",
+    "name": "PersistentLayer",
+    "owner": "03"
+  },
+  {
+    "key": "C05",
+    "documentId": "representation-ed88e035-9f51-4e09-9174-15605cfe63d6",
+    "name": "ChangeSession - domain model and call tree",
+    "owner": "01"
+  },
+  {
+    "key": "C06",
+    "documentId": "representation-8d528230-94b4-4e16-97d4-eab812b1ad7e",
+    "name": "Workspace persistence flow",
+    "owner": "03"
+  },
+  {
+    "key": "C07",
+    "documentId": "draft-34cb3bd6-8fc0-41b4-8246-2fb76f0bdabc",
+    "name": "Canvas domain model - baseline 03f2168 (before tldraw) \u00b7 Projection",
+    "owner": "01"
+  },
+  {
+    "key": "C08",
+    "documentId": "representation-b6b47084-b633-4479-83ca-c951738fcab5",
+    "name": "tldraw - Editor, Store, History and Snapshots",
+    "owner": "read-only"
+  },
+  {
+    "key": "C09",
+    "documentId": "draft-250e5b08-0775-4d65-aebd-9c5fbf529174",
+    "name": "01 - Saved CanvasViews and branching",
+    "owner": "read-only"
+  },
+  {
+    "key": "C10",
+    "documentId": "representation-9e361d7b-431c-4032-a145-0730a24d4a13",
+    "name": "Roll-up 1 \u00b7 r2 \u00b7 Proposal 1 - Content, revisions, and alternatives",
+    "owner": "read-only"
+  },
+  {
+    "key": "C11",
+    "documentId": "representation-50bca2cb-366e-4798-af9d-31d5ded0c37a",
+    "name": "Central and side diagrams - Attempt 2",
+    "owner": "read-only"
+  },
+  {
+    "key": "C12",
+    "documentId": "representation-037cbe86-6bcf-4188-a78e-e8eb1b1ac9e4",
+    "name": "Roll-up 1 \u00b7 g2 \u00b7 Canvas domain model - baseline 03f2168 (before tldraw)",
+    "owner": "01"
+  },
+  {
+    "key": "C13",
+    "documentId": "representation-24833e06-0c3c-424c-bd7a-d1b657093538",
+    "name": "Roll-up 2 \u00b7 r2 \u00b7 Proposal 1 - Content, revisions, and alternatives",
+    "owner": "read-only"
+  },
+  {
+    "key": "C14",
+    "documentId": "representation-4aa021f3-23ff-41b8-9d8d-0e773dcddff1",
+    "name": "Roll-up 2 \u00b7 g2 \u00b7 Canvas domain model - baseline 03f2168 (before tldraw)",
+    "owner": "01"
+  },
+  {
+    "key": "C15",
+    "documentId": "representation-e2eed78b-ccfb-4fa7-8bf9-c8531e141ed8",
+    "name": "Roll-up 2 \u00b7 r2 \u00b7 Proposal 1 - Content, revisions, and alternatives",
+    "owner": "read-only"
+  }
+]
+
+Migration endpoint contract:
+[
+  {
+    "id": "M1",
+    "kind": "responsibility-transfer",
+    "owner": "01",
+    "source": {
+      "canvas": 0,
+      "diagram": 6
+    },
+    "destination": {
+      "canvas": 7,
+      "diagram": 1
+    },
+    "meaning": "Removed DiagramService responsibilities are split into pure revision operations, retention, generation and publication. Annotate both diagrams; preserve already accurate destination content."
+  },
+  {
+    "id": "M2",
+    "kind": "shared-code-extraction",
+    "owner": "01",
+    "source": {
+      "canvas": 5,
+      "diagram": 4
+    },
+    "destination": {
+      "canvas": 7,
+      "diagram": 2
+    },
+    "meaning": "ChangeSession preview uses shared core diagram diff and row projection also consumed by alternative/side-panel presentation. This does not merge review/acceptance semantics."
+  },
+  {
+    "id": "M3",
+    "kind": "rendering-responsibility-transfer",
+    "owner": "01",
+    "source": {
+      "canvas": 0,
+      "diagram": 3
+    },
+    "destination": {
+      "canvas": 0,
+      "diagram": 0
+    },
+    "meaning": "Source/code panel rendering belongs to SourceWindowPanel under MappingPage. Logical retained panel records still exist. The two locations are different diagrams in the same canvas."
+  }
+]

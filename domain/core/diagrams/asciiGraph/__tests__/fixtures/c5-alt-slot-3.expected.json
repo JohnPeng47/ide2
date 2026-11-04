@@ -1,0 +1,115 @@
+{
+ "boxes": [
+  {
+   "id": "1:1-1:27",
+   "text": "[A] GridBox / LineGridScene",
+   "rect": {
+    "line1": 1,
+    "col1": 1,
+    "line2": 1,
+    "col2": 27
+   }
+  },
+  {
+   "id": "3:1-3:13",
+   "text": "LineGridScene",
+   "rect": {
+    "line1": 3,
+    "col1": 1,
+    "line2": 3,
+    "col2": 13
+   }
+  },
+  {
+   "id": "4:7-4:46",
+   "text": "contents: local contentId -> Diagram [B]",
+   "rect": {
+    "line1": 4,
+    "col1": 7,
+    "line2": 4,
+    "col2": 46
+   },
+   "parent": "3:1-3:13"
+  },
+  {
+   "id": "5:7-7:49",
+   "text": "root: GridBox\nid / position {column,row} / minimumSize?\ncollapsed / collapsedContentId?",
+   "rect": {
+    "line1": 5,
+    "col1": 7,
+    "line2": 7,
+    "col2": 49
+   },
+   "parent": "3:1-3:13"
+  },
+  {
+   "id": "9:13-9:38",
+   "text": "kind: diagram -> contentId",
+   "rect": {
+    "line1": 9,
+    "col1": 13,
+    "line2": 9,
+    "col2": 38
+   },
+   "parent": "5:7-7:49"
+  },
+  {
+   "id": "10:13-11:55",
+   "text": "kind: container -> children: GridBox[]\nlayout: collisionPolicy='push-right', gap",
+   "rect": {
+    "line1": 10,
+    "col1": 13,
+    "line2": 11,
+    "col2": 55
+   },
+   "parent": "5:7-7:49"
+  },
+  {
+   "id": "14:1-17:51",
+   "text": "resolveScene -> absolute bounds + resolved children\ncells: parent-relative, zero-based; end-exclusive\ncollapsed -> summary content; children hidden\nexpanded -> content/children extent + minimumSize",
+   "rect": {
+    "line1": 14,
+    "col1": 1,
+    "line2": 17,
+    "col2": 51
+   }
+  },
+  {
+   "id": "18:1-20:55",
+   "text": "updateGridBox -> layoutScene(changedId) -> composeScene\nanchor changed subtree; settle siblings to the right\nstable spatial order; validate bounds + collisions",
+   "rect": {
+    "line1": 18,
+    "col1": 1,
+    "line2": 20,
+    "col2": 55
+   }
+  },
+  {
+   "id": "21:1-22:50",
+   "text": "hitTest -> deepest box + local cell coordinates\nprojectMapping -> 1-based text span to scene cells",
+   "rect": {
+    "line1": 21,
+    "col1": 1,
+    "line2": 22,
+    "col2": 50
+   }
+  },
+  {
+   "id": "23:1-23:19",
+   "text": "Source: lineGrid.ts",
+   "rect": {
+    "line1": 23,
+    "col1": 1,
+    "line2": 23,
+    "col2": 19
+   }
+  }
+ ],
+ "edges": [
+  {
+   "from": "3:1-3:13",
+   "to": "14:1-17:51",
+   "direction": "->"
+  }
+ ]
+}

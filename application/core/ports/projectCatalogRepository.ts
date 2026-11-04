@@ -30,5 +30,5 @@ export interface ProjectCatalogRepository {
   loadDiagramSourceBindings(projectId: string): Promise<import('../../../domain/core/diagrams/diagram').DiagramSourceBinding[]>;
   loadChangeSessionAcceptances(projectId: string): Promise<NonNullable<ProjectRepresentationCatalogRecord['changeSessionAcceptances']>>;
   saveRepresentationCatalog(catalog: ProjectRepresentationCatalogRecord): Promise<void>;
-  archiveRepresentation(projectId: string, representationId: string): Promise<ProjectRepresentationCatalogRecord>;
+  archiveRepresentation(projectId: string, representationId: string, options?: { includeHistory?: boolean }): Promise<ProjectRepresentationCatalogRecord>;
 }

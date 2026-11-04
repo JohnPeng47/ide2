@@ -1,0 +1,50 @@
+FOCUSED CANVASES
+Project selected or highlighted diagrams into a derived canvas
+
+  [Selected diagram placements]       [Diagrams with active highlights]
+                |                                      |
+                +------------------+-------------------+
+                                   | copy whole diagrams
+                                   v
++------------------------------------------------------------------------------------+
+| PROJECT INTO A NEW CANVAS                                                          |
+|                                                                                    |
+|  Copied diagrams + internal connections + one blank diagram (65 x 35)              |
+|  Source canvas stays unchanged; copied diagrams receive new identities.            |
+|                                                                                    |
+|  Preserved content                      Recorded provenance                        |
+|  +-- Diagram text and structure         +-- Source canvas and source revision      |
+|  +-- Source mappings and evidence       +-- Copied placement -> source placement   |
+|  +-- Highlights and presentation        +-- Original bounds as layout baseline     |
+|  +-- Links remapped within the copy     +-- Saved settings and blank diagram ID    |
++------------------------------------------------------------------------------------+
+                                   |
+                                   v
++------------------------------------------------------------------------------------+
+| ADJUST THE ARRANGEMENT                                                             |
+| Nonmodal Projection layout panel keeps the canvas interactive.                     |
+|                                                                                    |
+|  Presets: Default / Original / Balanced / Tight / Connected                        |
+|                                                                                    |
+|  ORIGINAL                               COMPACT                                    |
+|  Preserve source spacing.               Pull toward a chosen center and neighbors. |
+|  Put blank diagram alongside.           Balance closeness with original positions. |
+|                                         Preserve axis order; prevent overlap.      |
+|                                                                                    |
+|  Center: average / area-weighted / a diagram / the blank diagram                   |
+|  Controls: centroid attraction / neighbor closeness / original arrangement / gap   |
++------------------------------------------------------------------------------------+
+                                   | settings change
+                                   v
+                  [Worker calculates positions from geometry]
+                   Diagram text and evidence stay out of layout jobs.
+                                   |
+                                   v
+                      [Commit positions + layout settings]
+                                   |
+                                   v
+                       [Automatically saved layout history]
+                                   |
+                                   +---- Undo ----> [Previous layout]
+
+  Baseline guard: if diagram membership changes, project again before relayout.

@@ -1,0 +1,403 @@
+{
+  "experimentId": "41f10540-6cc6-494e-b3e7-82c5429d9cc2",
+  "oneCaseConditionSample": true,
+  "allStagesRegistered": true,
+  "stages": [
+    {
+      "stage": "modify",
+      "runId": "aaf261aa-617d-424c-8970-6c5b7777eb0f",
+      "runNumber": 38,
+      "canvasId": "representation-516c5392-d7c7-42c0-99a6-6e7f8423b9b3",
+      "checkpointId": "canvas-revision-7e5dd612-6c60-4cbf-8c51-86a01814ae6e",
+      "diagrams": 2,
+      "edges": 6,
+      "connected": true,
+      "carriedParentEdgesPreserved": true,
+      "pinnedPredecessorsVerified": true,
+      "contextHash": "a82096318fdb465f19ee0370ccc90a10b7f1bac7de80d39acdafb8bcf4af2566",
+      "edgeAnchors": [
+        {
+          "source": {
+            "diagram": "api-interfaces",
+            "line": 2,
+            "text": "|-- MCP tools (also callable through HTTP)"
+          },
+          "target": {
+            "diagram": "api-backend",
+            "line": 2,
+            "text": "|-- Request entry"
+          },
+          "label": "Agent tools"
+        },
+        {
+          "source": {
+            "diagram": "api-interfaces",
+            "line": 90,
+            "text": "|-- Live WebSocket transport"
+          },
+          "target": {
+            "diagram": "api-backend",
+            "line": 47,
+            "text": "|-- Read and synchronize live state"
+          },
+          "label": "Live state / context"
+        },
+        {
+          "source": {
+            "diagram": "api-interfaces",
+            "line": 75,
+            "text": "|   |-- Workspace persistence"
+          },
+          "target": {
+            "diagram": "api-backend",
+            "line": 74,
+            "text": "|   `-- MappingWorkspaceService: called by workspace routes"
+          },
+          "label": "Persistence"
+        },
+        {
+          "source": {
+            "diagram": "api-interfaces",
+            "line": 85,
+            "text": "|   `-- Existing agent-backed operations"
+          },
+          "target": {
+            "diagram": "api-backend",
+            "line": 77,
+            "text": "`-- Run application features"
+          },
+          "label": "Application features"
+        },
+        {
+          "source": {
+            "diagram": "api-interfaces",
+            "line": 11,
+            "text": "|   |-- Canvas editing"
+          },
+          "target": {
+            "diagram": "api-backend",
+            "line": 8,
+            "text": "|-- Execute diagram changes"
+          },
+          "label": "Canvas mutation execution"
+        },
+        {
+          "source": {
+            "diagram": "api-interfaces",
+            "line": 62,
+            "text": "|   |-- AgentChat: /agent-chat"
+          },
+          "target": {
+            "diagram": "api-backend",
+            "line": 78,
+            "text": "    |-- AgentChatService: AgentChatPanel / GenerateAlternatives / bound chat tools"
+          },
+          "label": "Chats and managed generation"
+        }
+      ]
+    },
+    {
+      "stage": "c1",
+      "runId": "a6aa88bd-5275-4441-abf7-cbfd8322ba09",
+      "runNumber": 39,
+      "canvasId": "representation-31262644-00e7-4c82-95da-38ad013036ac",
+      "checkpointId": "canvas-revision-9a8a7772-1d83-4819-b9cf-0888f7d4d313",
+      "diagrams": 3,
+      "edges": 7,
+      "connected": true,
+      "carriedParentEdgesPreserved": true,
+      "pinnedPredecessorsVerified": true,
+      "contextHash": "a82096318fdb465f19ee0370ccc90a10b7f1bac7de80d39acdafb8bcf4af2566",
+      "edgeAnchors": [
+        {
+          "source": {
+            "diagram": "api-interfaces",
+            "line": 2,
+            "text": "|-- MCP tools (also callable through HTTP)"
+          },
+          "target": {
+            "diagram": "api-backend",
+            "line": 2,
+            "text": "|-- Request entry"
+          },
+          "label": "Agent tools"
+        },
+        {
+          "source": {
+            "diagram": "api-interfaces",
+            "line": 90,
+            "text": "|-- Live WebSocket transport"
+          },
+          "target": {
+            "diagram": "api-backend",
+            "line": 47,
+            "text": "|-- Read and synchronize live state"
+          },
+          "label": "Live state / context"
+        },
+        {
+          "source": {
+            "diagram": "api-interfaces",
+            "line": 75,
+            "text": "|   |-- Workspace persistence"
+          },
+          "target": {
+            "diagram": "api-backend",
+            "line": 74,
+            "text": "|   `-- MappingWorkspaceService: called by workspace routes"
+          },
+          "label": "Persistence"
+        },
+        {
+          "source": {
+            "diagram": "api-interfaces",
+            "line": 85,
+            "text": "|   `-- Existing agent-backed operations"
+          },
+          "target": {
+            "diagram": "api-backend",
+            "line": 77,
+            "text": "`-- Run application features"
+          },
+          "label": "Application features"
+        },
+        {
+          "source": {
+            "diagram": "api-interfaces",
+            "line": 11,
+            "text": "|   |-- Canvas editing"
+          },
+          "target": {
+            "diagram": "api-backend",
+            "line": 8,
+            "text": "|-- Execute diagram changes"
+          },
+          "label": "Canvas mutation execution"
+        },
+        {
+          "source": {
+            "diagram": "api-interfaces",
+            "line": 62,
+            "text": "|   |-- AgentChat: /agent-chat"
+          },
+          "target": {
+            "diagram": "api-backend",
+            "line": 78,
+            "text": "    |-- AgentChatService: AgentChatPanel / GenerateAlternatives / bound chat tools"
+          },
+          "label": "Chats and managed generation"
+        },
+        {
+          "source": {
+            "diagram": "api-backend",
+            "line": 78,
+            "text": "    |-- AgentChatService: AgentChatPanel / GenerateAlternatives / bound chat tools"
+          },
+          "target": {
+            "diagram": "n2-c1",
+            "line": 1,
+            "text": "N2 - AgentChatService: chats and managed alternative generation"
+          },
+          "label": "Expands AgentChatService ownership and managed child lifecycle"
+        }
+      ]
+    },
+    {
+      "stage": "c2",
+      "runId": "e289f5a1-ea8d-40e7-933c-42b800106043",
+      "runNumber": 40,
+      "canvasId": "representation-3174d9ad-19bd-4488-b091-2c5aa1ea0710",
+      "checkpointId": "canvas-revision-4947c9fe-ae43-4576-ad4d-d1249459015a",
+      "diagrams": 7,
+      "edges": 14,
+      "connected": true,
+      "carriedParentEdgesPreserved": true,
+      "pinnedPredecessorsVerified": true,
+      "contextHash": "a82096318fdb465f19ee0370ccc90a10b7f1bac7de80d39acdafb8bcf4af2566",
+      "edgeAnchors": [
+        {
+          "source": {
+            "diagram": "api-interfaces",
+            "line": 2,
+            "text": "|-- MCP tools (also callable through HTTP)"
+          },
+          "target": {
+            "diagram": "api-backend",
+            "line": 2,
+            "text": "|-- Request entry"
+          },
+          "label": "Agent tools"
+        },
+        {
+          "source": {
+            "diagram": "api-interfaces",
+            "line": 90,
+            "text": "|-- Live WebSocket transport"
+          },
+          "target": {
+            "diagram": "api-backend",
+            "line": 47,
+            "text": "|-- Read and synchronize live state"
+          },
+          "label": "Live state / context"
+        },
+        {
+          "source": {
+            "diagram": "api-interfaces",
+            "line": 75,
+            "text": "|   |-- Workspace persistence"
+          },
+          "target": {
+            "diagram": "api-backend",
+            "line": 74,
+            "text": "|   `-- MappingWorkspaceService: called by workspace routes"
+          },
+          "label": "Persistence"
+        },
+        {
+          "source": {
+            "diagram": "api-interfaces",
+            "line": 85,
+            "text": "|   `-- Existing agent-backed operations"
+          },
+          "target": {
+            "diagram": "api-backend",
+            "line": 77,
+            "text": "`-- Run application features"
+          },
+          "label": "Application features"
+        },
+        {
+          "source": {
+            "diagram": "api-interfaces",
+            "line": 11,
+            "text": "|   |-- Canvas editing"
+          },
+          "target": {
+            "diagram": "api-backend",
+            "line": 8,
+            "text": "|-- Execute diagram changes"
+          },
+          "label": "Canvas mutation execution"
+        },
+        {
+          "source": {
+            "diagram": "api-interfaces",
+            "line": 62,
+            "text": "|   |-- AgentChat: /agent-chat"
+          },
+          "target": {
+            "diagram": "api-backend",
+            "line": 78,
+            "text": "    |-- AgentChatService: AgentChatPanel / GenerateAlternatives / bound chat tools"
+          },
+          "label": "Chats and managed generation"
+        },
+        {
+          "source": {
+            "diagram": "api-backend",
+            "line": 78,
+            "text": "    |-- AgentChatService: AgentChatPanel / GenerateAlternatives / bound chat tools"
+          },
+          "target": {
+            "diagram": "n2-c1",
+            "line": 1,
+            "text": "N2 - AgentChatService: chats and managed alternative generation"
+          },
+          "label": "Expands AgentChatService ownership and managed child lifecycle"
+        },
+        {
+          "source": {
+            "diagram": "n2-c1",
+            "line": 2,
+            "text": "|-- Turn and reference binding: startTurn() / MappingChatMcpBinding"
+          },
+          "target": {
+            "diagram": "n2-turns",
+            "line": 2,
+            "text": "|-- startTurn(): AgentChatPanel send/readCanvas -> captured ChatSession"
+          },
+          "label": "Expands captured turn context and reference binding"
+        },
+        {
+          "source": {
+            "diagram": "n2-c1",
+            "line": 9,
+            "text": "|-- Supplied edit boundary: ChatDiagramTools -> agent.submitDirect()"
+          },
+          "target": {
+            "diagram": "n2-turns",
+            "line": 17,
+            "text": "|-- Supplied edits: ChatDiagramTools owns request preparation and run owners"
+          },
+          "label": "Expands supplied-edit caller validation and run ownership"
+        },
+        {
+          "source": {
+            "diagram": "n2-c1",
+            "line": 15,
+            "text": "|-- Generation preparation: genAlternatives() / CanvasHistory.startGeneration()"
+          },
+          "target": {
+            "diagram": "n2-lifecycle",
+            "line": 2,
+            "text": "|-- genAlternatives(): parent chat caller -> persisted child records"
+          },
+          "label": "Expands generation preparation and durable request identity"
+        },
+        {
+          "source": {
+            "diagram": "n2-c1",
+            "line": 24,
+            "text": "|-- Child chat launch: AgentChatService.launchGeneration()"
+          },
+          "target": {
+            "diagram": "n2-lifecycle",
+            "line": 11,
+            "text": "|-- launchGeneration(): each candidate owns one thread and managed turn"
+          },
+          "label": "Expands independent child thread launch"
+        },
+        {
+          "source": {
+            "diagram": "n2-c1",
+            "line": 36,
+            "text": "|-- Progress and cancellation: CanvasGeneration / cancelGeneration()"
+          },
+          "target": {
+            "diagram": "n2-lifecycle",
+            "line": 21,
+            "text": "`-- Progress and cancellation: AgentChatService owns terminal settlement"
+          },
+          "label": "Expands progress, cancellation and settlement ownership"
+        },
+        {
+          "source": {
+            "diagram": "n2-c1",
+            "line": 30,
+            "text": "|-- Child canvas execution: GenerationCanvasBridge"
+          },
+          "target": {
+            "diagram": "n2-execution",
+            "line": 1,
+            "text": "GenerationCanvasBridge: isolated child canvas execution"
+          },
+          "label": "Expands managed controller, queue and persistence receipts"
+        },
+        {
+          "source": {
+            "diagram": "n2-c1",
+            "line": 42,
+            "text": "`-- Result retention and parent synchronization: finishGeneration()"
+          },
+          "target": {
+            "diagram": "n2-results",
+            "line": 1,
+            "text": "finishGeneration(): retain result, then synchronize parent view"
+          },
+          "label": "Expands retained results and live parent synchronization"
+        }
+      ]
+    }
+  ]
+}

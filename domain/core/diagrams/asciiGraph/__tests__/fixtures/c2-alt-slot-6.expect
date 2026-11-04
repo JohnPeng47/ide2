@@ -1,0 +1,38 @@
+[D] Controller edits / agent access
+UI commands
+useAgentCanvasBridge
++ register -> poll commands -> reply
++ stableWorkspaceId + ephemeral canvasId
++ mutation receipts; context always fresh
++ live selections -> WebSocket publisher
+MappingPage.handleAgentCommand
+  context -> version / nodes / edges
+  snapshot -> state + exported history
+  apply -> requestId receipt cache
+  apply-diagram-revision -> receiver
+  + sync persistence + flush
+MappingDocumentController.applyUpdate(expectedVersion, operations)
++ transact = same batch adapter
+  reject stale version; require 1..100 operations
+  clone snapshot -> stage operations in order
+    create / insert / replace / patch / mappings / jumps
+      DiagramService revisions + node correspondence
+    patch -> remap edge anchors / jumps / folds / sections
+    grid move / group / collapse / remove -> layoutScene
+    floating move / collapse / remove -> display tree
+    edge create / update / remove -> document.edges
+  updateSnapshot(record=true)
+    reconcile edges + jumps; validate connections
+    normalize views + selection focus; resolve geometry
+    history.append(document, canvas, correspondence)
+    checkpoint + version + canUndo/canRedo -> notify listeners
+select(command) -> updateSelection -> recorded canvas update
++ updateCanvas(value, record=false) -> optional history entry
++ undo/redo -> history.navigate -> restore document + view
++ nodes() -> cached CanvasDisplayNode[] -> structuredClone
+Sources: mappingDocumentController.ts; MappingPage.tsx;
++ useAgentCanvasBridge.ts; selectionState.ts
+
+edge "UI commands" -> "MappingDocumentController.applyUpdate(expectedVersion, operations)"
+edge "useAgentCanvasBridge" -- "MappingPage.handleAgentCommand"
+edge "MappingPage.handleAgentCommand" -> "MappingDocumentController.applyUpdate(expectedVersion, operations)"

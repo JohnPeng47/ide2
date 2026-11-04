@@ -8,5 +8,5 @@ const EvalsPage = lazy(() => import('../features/mapping/evals/EvalsPage').then(
 export function App() {
   const [services] = useState(createMappingServices);
   const evals = typeof window !== 'undefined' && window.location.pathname.replace(/\/$/, '') === `${import.meta.env.BASE_URL}evals`.replace(/\/$/, '');
-  return <>{evals ? <Suspense fallback={<p>Loading Evals…</p>}><EvalsPage /></Suspense> : <MappingPocPage services={services} />}<ThemeToggle /></>;
+  return <>{evals ? <Suspense fallback={<p>Loading Evals…</p>}><EvalsPage services={services} /></Suspense> : <MappingPocPage services={services} />}<ThemeToggle /></>;
 }

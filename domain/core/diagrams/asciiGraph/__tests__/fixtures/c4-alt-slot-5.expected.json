@@ -1,0 +1,100 @@
+{
+ "boxes": [
+  {
+   "id": "1:1-1:24",
+   "text": "[C] FloatingBox variants",
+   "rect": {
+    "line1": 1,
+    "col1": 1,
+    "line2": 1,
+    "col2": 24
+   }
+  },
+  {
+   "id": "3:1-5:56",
+   "text": "DisplayState\nrootIds + nodes[id] -> FloatingPane ownership tree\nadd child -> owner.childIds; remove -> subtree removed",
+   "rect": {
+    "line1": 3,
+    "col1": 1,
+    "line2": 5,
+    "col2": 56
+   }
+  },
+  {
+   "id": "7:1-12:58",
+   "text": "FloatingPane\nDisplayNodeBase = id + childIds + expansion\ngeometry = position(x,y) + bounds(width,height)\ncoordinateSpace = canvas | viewport; CSS pixels\npolicy = automatic/manual placement + content/fixed size\nexpandedGeometry? -> restore allocation after collapse",
+   "rect": {
+    "line1": 7,
+    "col1": 1,
+    "line2": 12,
+    "col2": 58
+   }
+  },
+  {
+   "id": "13:7-15:62",
+   "text": "selection\nsourceBoxId/contentId/ascii/revision? + rect/selectedIds\ncaptured context; stacked/chained + activeChildId?",
+   "rect": {
+    "line1": 13,
+    "col1": 7,
+    "line2": 15,
+    "col2": 62
+   },
+   "parent": "7:1-12:58"
+  },
+  {
+   "id": "16:7-18:55",
+   "text": "projection\ntitle + projectionId? + source/targetRevisionId?\ncall-tree | compaction | source-code | code-panel",
+   "rect": {
+    "line1": 16,
+    "col1": 7,
+    "line2": 18,
+    "col2": 55
+   },
+   "parent": "7:1-12:58"
+  },
+  {
+   "id": "19:7-21:50",
+   "text": "conversation\nthread + draft + canvasAnchor + presentation\ncompact | floating | docked",
+   "rect": {
+    "line1": 19,
+    "col1": 7,
+    "line2": 21,
+    "col2": 50
+   },
+   "parent": "7:1-12:58"
+  },
+  {
+   "id": "22:7-22:42",
+   "text": "detail -> title + ascii + sectionId?",
+   "rect": {
+    "line1": 22,
+    "col1": 7,
+    "line2": 22,
+    "col2": 42
+   },
+   "parent": "7:1-12:58"
+  },
+  {
+   "id": "24:1-27:53",
+   "text": "FloatingBox\nFloatingPane OR FloatingBoxArrow\ndocument.edges -> drawEdge -> arrow follows anchors\narrows are derived; DisplayState stores panes only",
+   "rect": {
+    "line1": 24,
+    "col1": 1,
+    "line2": 27,
+    "col2": 53
+   }
+  }
+ ],
+ "edges": [
+  {
+   "from": "3:1-5:56",
+   "to": "7:1-12:58",
+   "direction": "->"
+  },
+  {
+   "from": "7:1-12:58",
+   "to": "24:1-27:53",
+   "direction": "->"
+  }
+ ]
+}

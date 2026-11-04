@@ -1,0 +1,486 @@
+[
+  {
+    "path": "application/core/integrations/pushIntegrationService.ts",
+    "status": "added",
+    "hunks": [
+      {
+        "oldStart": 0,
+        "oldLines": 0,
+        "newStart": 1,
+        "newLines": 104,
+        "heading": "",
+        "oldSideExcerpt": ""
+      }
+    ]
+  },
+  {
+    "path": "application/mapping/agent/diagramEditService.ts",
+    "status": "modified",
+    "hunks": [
+      {
+        "oldStart": 1,
+        "oldLines": 51,
+        "newStart": 1,
+        "newLines": 96,
+        "heading": "",
+        "oldSideExcerpt": "import { AgentContext, type AgentContextSnapshot } from '../../../domain/core/agents/agentContext';\nimport { randomUUID } from 'node:crypto';\nimport { CanvasHistory } from '../../../domain/core/diagrams/canvasHistory';\nimport type { DiagramService, DiagramRevisionResult } from '../../../domain/core/diagrams/diagramService';\nimport type { LiveDocumentSnapshot } from '../../../domain/mapping/agent/contracts';\nimport type { DiagramEditRun, DiagramRevisionApplication, EditDiagramInput } from '../../../domain/mapping/agent/diagramEdit';\nimport { findBox } from '../../../domain/mapping/workspace/canvasDisplayNode';\n\nexport interface DiagramEditCanvasPort {\n  snapshot(sessionId: string): Promise<LiveDocumentSnapshot>;\n  apply(sessionId: string, input: DiagramRevisionApplication): Promise<{ version: number; unresolvedEdgeIds: string[] }>;\n}\ninterface Run {\n  agentContext?: AgentContextSnapshot;\n  input: EditDiagramInput;\n  signature: string;\n  state: DiagramEditRun;\n  abort: AbortController;\n  revision?: DiagramRevisionResult;\n  pending?: Promise<void>;\n}\n\n/** A request owns both generation and installation; retries never rerun the model. */\nexport class DiagramEditService {\n  private runs = new Map<string, Run>();\n  private requests = new Map<string, string>();\n  constructor(private readonly diagrams: DiagramService, private readonly canvas: DiagramEditCanvasPort) {}\n\n  start(input: EditDiagramInput, suppliedContext?: AgentContextSnapshot): DiagramEditRun {\n    const agentContext = suppliedContext ? AgentContext.fromSnapshot(suppliedContext).toSnapshot() : undefined;\n    if (input.agentContextId && !agentContext) throw Error('AGENT_CONTEXT_NOT_FOUND: resolve context before starting the edit');\n    const key = JSON.stringify([input.sessionId, input.requestId]);\n    const signature = JSON.stringify({ input, agentContextHash: agentContext?.contentHash });\n    const existing = this.requests.get(key);\n    if (existing) {\n      const run = this.runs.get(existing)!;\n      if (run.signature !== signature) throw Error('REQUEST_ID_CONFLICT: edit request differs');\n      if (run.state.status === 'awaiting-acknowledgement' && !run.pending) this.launch(run, () => this.apply(run));\n      return structuredClone(run.state);\n    }\n    if (this.runs.size >= 500) throw Error('Diagram edit run capacity reached; restart the backend');\n    const run: Run = { agentContext, input: structuredClone(input), signature, abort: new AbortController(), state: {\n      runId: `diagram-edit-${randomUUID()}`, status: 'generating', nodeId: input.nodeId, baseRevisionId: input.baseRevisionId\n    } };\n    this.runs.set(run.state.runId, run); this.requests.set(key, run.state.runId);\n    this.launch(run, () => this.generate(run));\n    return structuredClone(run.state);\n  }\n  get(id: string) {\n    const run = this.runs.get(id); if (!run) throw Error('Diagram edit run not found');\n    return structuredClone(run.state);"
+      },
+      {
+        "oldStart": 67,
+        "oldLines": 39,
+        "newStart": 112,
+        "newLines": 182,
+        "heading": " export class DiagramEditService {",
+        "oldSideExcerpt": "      run.state.error = message;\n    }).finally(() => { run.pending = undefined; });\n  }\n  private async generate(run: Run) {\n    const { input, abort } = run;\n    const snapshot = await this.canvas.snapshot(input.sessionId);\n    abort.signal.throwIfAborted();\n    if (snapshot.version !== input.expectedVersion) throw Error('VERSION_CONFLICT: read the canvas again');\n    const box = input.nodeId.startsWith('grid:') && findBox(snapshot.document.scene.root, input.nodeId.slice(5));\n    if (!box || box.kind !== 'diagram') throw Error('Expected diagram GridBox');\n    const base = snapshot.document.scene.contents[box.contentId];\n    if (base.revisionId !== input.baseRevisionId) throw Error('VERSION_CONFLICT: diagram base is no longer current');\n    if (!snapshot.history) throw Error('Canvas history is required for diagram generation');\n    // Validated portable history imports the exact browser-issued revision identities.\n    new CanvasHistory(snapshot.document, snapshot.canvas, snapshot.history, 'current');\n    const lines = base.content.ascii.split('\\n');\n    run.revision = await this.diagrams.generate({ input: { id: base.id, structureKind: base.content.structure.kind,\n      source: base.sourceContext.binding, evidence: base.sourceContext.evidence },\n      instruction: input.prompt, agentContext: run.agentContext, baseRevisionId: base.revisionId,\n      context: { diagram: base, selection: { startLine: 1, endLine: lines.length, startColumn: 1,\n        endColumn: Math.max(1, ...lines.map(line => line.length)) }, connections: snapshot.document.edges }\n    }, { signal: abort.signal, onProgress: message => { if (run.state.status === 'generating') run.state.message = message; } });\n    abort.signal.throwIfAborted();\n    run.state.generated = { diagramId: run.revision.diagram.diagramId, revisionId: run.revision.revision.id,\n      ascii: run.revision.diagram.content.ascii };\n    await this.apply(run);\n  }\n  private async apply(run: Run) {\n    run.state.status = 'applying'; delete run.state.error;\n    const revision = run.revision!.revision, input = run.input;\n    // The controller checks both versions at the mutation boundary, after generation.\n    const result = await this.canvas.apply(input.sessionId, { requestId: run.state.runId,\n      expectedVersion: input.expectedVersion, nodeId: input.nodeId, baseRevisionId: input.baseRevisionId, revision });\n    run.state.result = { diagramId: revision.diagramId, previousRevisionId: input.baseRevisionId,\n      revisionId: revision.id, documentVersion: result.version, unresolvedEdgeIds: result.unresolvedEdgeIds };\n    run.state.status = 'completed'; run.state.message = 'Diagram revision installed and workspace persisted';\n  }\n  dispose() { for (const run of this.runs.values()) this.cancel(run.state.runId); }\n}"
+      }
+    ]
+  },
+  {
+    "path": "application/mapping/changes/changeSessionService.ts",
+    "status": "modified",
+    "hunks": [
+      {
+        "oldStart": 1,
+        "oldLines": 6,
+        "newStart": 1,
+        "newLines": 11,
+        "heading": "",
+        "oldSideExcerpt": "import { canvasDisplayNodes } from '../../../domain/mapping/workspace/canvasDisplayNode';\nimport { DefaultCanvasHistoryService } from '../../../domain/core/diagrams/canvasHistoryService';\nimport { RevisionedDiagramService, type DiagramService } from '../../../domain/core/diagrams/diagramService';\nimport { historyFromRevision, documentFromRevision } from '../../../domain/core/diagrams/projectDiagramCanvas';\nimport { diagramContentNodes } from '../../../domain/core/diagrams/diagramContentNodes';\nimport { createHash, randomUUID } from 'node:crypto';"
+      },
+      {
+        "oldStart": 17,
+        "oldLines": 11,
+        "newStart": 22,
+        "newLines": 19,
+        "heading": " import { connectionBox, validateConnectionAnchor } from '../../../domain/core/di",
+        "oldSideExcerpt": "import { stateKey } from '../../../domain/core/diagrams/canvasHistory';\nimport type { ChangeSessionAcceptance } from '../../../domain/core/representations/changeAcceptance';\n\nexport class ChangeSessionService {\n  private readonly historyService = new DefaultCanvasHistoryService();\n  private queues = new Map<string, Promise<unknown>>();\n  constructor(private readonly repository: DiagramChangeSessionRepository,\n    private readonly source: Pick<DiagramRepository, 'loadProject' | 'projectCatalogs'>, private readonly bridge: CanvasSessionPort, private readonly diagrams: DiagramService = new RevisionedDiagramService()) {}\n  private async projectId() { const p = await this.source.loadProject(); if (!p) throw new Error('Project is not initialized'); return p.id; }\n  private serialize<T>(id: string, fn: () => Promise<T>): Promise<T> {\n    const next = (this.queues.get(id) ?? Promise.resolve()).catch(() => {}).then(fn);"
+      },
+      {
+        "oldStart": 70,
+        "oldLines": 6,
+        "newStart": 83,
+        "newLines": 61,
+        "heading": " export class ChangeSessionService {",
+        "oldSideExcerpt": "    // Resolve acceptance against the exact generation returned by the scoped read.\n    return { ...preview, ...await this.effectiveSummary(preview), document: preview.document };\n  }\n  private async finishAcceptance(session: DiagramChangeSession, acceptance: ChangeSessionAcceptance) {\n    if (session.version !== acceptance.sessionVersion) throw new Error('Acceptance does not match saved proposal version');\n    session.status = 'accepted'; session.acceptance = acceptance;"
+      },
+      {
+        "oldStart": 99,
+        "oldLines": 49,
+        "newStart": 167,
+        "newLines": 82,
+        "heading": " export class ChangeSessionService {",
+        "oldSideExcerpt": "      const acceptance = await this.source.projectCatalogs.acceptCanvasChanges(session.projectId, {\n        changeSessionId: session.id, sessionVersion: session.version, requestId: input.requestId, changeIds: session.changes.map(c => c.id),\n        documents: affected.map(doc => ({ documentId: doc.id, representationId: doc.representationId, expectedRevisionId: doc.savedRevisionId,\n          name: doc.name, document: doc.proposed.document, history: this.controller(doc).exportHistory() }))\n      });\n      // The catalog receipt recovers this step after a crash or a failed session write.\n      await this.finishAcceptance(session, acceptance);\n      return summarizeChangeSession(session);\n    });\n  }\n  async create(input: { title: string; description?: string; canvasId?: string; requestId: string }) {\n    const projectId = await this.projectId();\n    const id = `change-${createHash('sha256').update(`${projectId}:${input.requestId}`).digest('hex').slice(0,32)}`;\n    return this.serialize(id, async () => {\n      const signature = JSON.stringify(input);\n      const prior = await this.repository.read(projectId, id).catch(error => { if (error.code === 'ENOENT') return undefined; throw error; });\n      if (prior) {\n        if (prior.receipts.create?.signature !== signature) throw new Error('REQUEST_ID_CONFLICT');\n        return prior.receipts.create.result;\n      }\n      const documents = new Map<string, ChangeSessionDocument>();\n      const catalog = await this.source.projectCatalogs.loadRepresentationCatalog(projectId);\n      for (const rep of Object.values(catalog.representations).filter(r => r.status === 'settled')) {\n        const revision = catalog.revisions[rep.currentRevisionId];\n        const baseline = { document: documentFromRevision(revision), canvas: initialCanvasState() };\n        documents.set(rep.id, { id: rep.id, name: rep.name, representationId: rep.id, savedRevisionId: revision.id, history: this.forkHistory(baseline, historyFromRevision(revision)),\n          baseline, proposed: structuredClone(baseline), version: 0, past: [], future: [] });\n      }\n      const live = this.bridge.list().filter(c => c.projectId === projectId && (!input.canvasId || c.canvasId === input.canvasId));\n      if (input.canvasId && !live.length) throw new Error('Unknown project canvas');\n      if (!input.canvasId && live.length > 1) throw new Error('Multiple live workspaces: specify canvasId to capture drafts');\n      for (const canvas of live) for (const doc of canvas.documents) {\n        const snapshot = await this.bridge.dispatch(canvas.canvasId, { method: 'snapshot', documentId: doc.documentId }) as LiveDocumentSnapshot;\n        const baseline = structuredClone({ document: snapshot.document, canvas: snapshot.canvas });\n        const key = snapshot.representationId ?? doc.representationId ?? doc.documentId;\n        documents.set(key, { id: key, name: snapshot.name, representationId: snapshot.representationId ?? doc.representationId,\n          history: this.forkHistory(baseline, snapshot.history),\n          savedRevisionId: snapshot.revisionId, capturedVersion: snapshot.version, baseline, proposed: structuredClone(baseline), version: 0, past: [], future: [] });\n      }\n      const result = { changeSessionId: id, canvasId: id, version: 0, documents: [...documents.values()].map(d => ({ documentId: d.id, name: d.name })) };\n      const now = new Date().toISOString();\n      await this.repository.write({ schemaVersion: 1, id, projectId, title: input.title, description: input.description ?? '', status: 'draft', version: 0,\n        createdAt: now, updatedAt: now, documents: [...documents.values()], changes: [], receipts: { create: { signature, result } } });\n      return result;\n    });\n  }\n  private forkHistory(state: ChangeDocumentState, history?: import('../../../domain/core/diagrams/canvasHistory').CanvasHistoryRecord) {\n    const context = this.historyService.openContext(state.document, state.canvas, history);\n    return this.historyService.forkContext(context, state.canvas);"
+      },
+      {
+        "oldStart": 161,
+        "oldLines": 12,
+        "newStart": 262,
+        "newLines": 12,
+        "heading": " export class ChangeSessionService {",
+        "oldSideExcerpt": "    });\n  }\n  async descriptor(id: string) { const s = await this.get(id); return [{ canvasId: s.id, projectId: s.projectId,\n    documents: s.documents.map(d => ({ documentId: d.id, name: d.name, representationId: d.representationId })) }]; }\n  private document(session: DiagramChangeSession, id: string) { const doc = session.documents.find(d => d.id === id); if (!doc) throw new Error('Unknown change-session document'); return doc; }\n  async snapshot(id: string, documentId: string): Promise<LiveDocumentSnapshot> {\n    const s = await this.get(id), doc = this.document(s, documentId);\n    return { ...structuredClone(doc.proposed), name: doc.name, representationId: doc.representationId, revisionId: doc.savedRevisionId,\n      version: doc.version, history: doc.history, contextId: doc.history?.contextId, canUndo: !!(doc.history?.past.length || doc.past.length), canRedo: !!(doc.history?.future.length || doc.future.length) } as LiveDocumentSnapshot;\n  }\n  private async mutate<T>(id: string, requestId: string, signature: string, fn: (s: DiagramChangeSession) => T) {\n    return this.serialize(id, async () => {"
+      },
+      {
+        "oldStart": 176,
+        "oldLines": 9,
+        "newStart": 277,
+        "newLines": 10,
+        "heading": " export class ChangeSessionService {",
+        "oldSideExcerpt": "      if (s.status === 'accepted') throw new Error('Change session is accepted and cannot be edited');\n      if (Object.keys(s.receipts).length >= 2000) throw new Error('Change session request capacity reached');\n      const before = new Map(s.documents.map(doc => [doc.id, doc.version]));\n      const result = fn(s);\n      s.version++; s.updatedAt = new Date().toISOString(); s.receipts[key] = { signature, result };\n      await this.repository.write(s, { documents: s.documents.filter(doc => before.get(doc.id) !== doc.version).map(doc => doc.id), receipts: [key] });\n      return result;\n    });\n  }"
+      },
+      {
+        "oldStart": 214,
+        "oldLines": 7,
+        "newStart": 316,
+        "newLines": 7,
+        "heading": " export class ChangeSessionService {",
+        "oldSideExcerpt": "      migrated.future = ids.slice(doc.past.length + 1).reverse();\n      doc.history = migrated;\n    }\n    return new MappingDocumentController(doc.proposed.document, doc.proposed.canvas, doc.version, undefined, undefined, doc.history, this.diagrams, this.historyService);\n  }\n  private record(doc: ChangeSessionDocument, controller: MappingDocumentController) {\n    const snapshot = controller.getSnapshot();"
+      },
+      {
+        "oldStart": 228,
+        "oldLines": 7,
+        "newStart": 330,
+        "newLines": 7,
+        "heading": " export class ChangeSessionService {",
+        "oldSideExcerpt": "  async createDocument(id: string, name: string, requestId: string) {\n    return this.mutate(id, requestId, JSON.stringify({ name }), s => {\n      const documentId = `draft-${randomUUID()}`;\n      s.documents.push({ id: documentId, name, baseline: null, proposed: { document: mappingDocumentFromScene(singleDiagramScene('[New diagram]')),\n        canvas: initialCanvasState() }, version: 0, past: [], future: [] });\n      this.controller(s.documents[s.documents.length - 1]);\n      this.refreshChanges(s, new Set([documentId])); s.status = 'draft'; return { documentId };"
+      },
+      {
+        "oldStart": 239,
+        "oldLines": 6,
+        "newStart": 341,
+        "newLines": 8,
+        "heading": " export class ChangeSessionService {",
+        "oldSideExcerpt": "    for (const doc of s.documents) {\n      if (!affected.has(doc.id)) { changes.push(...s.changes.filter(change => change.documentId === doc.id)); continue; }\n      if (!doc.baseline) { changes.push({ id: `canvas:${doc.id}`, documentId: doc.id, title: doc.name, type: 3, reasons: [], dependsOn: [] }); continue; }\n      const before = canvasDisplayNodes(doc.baseline.document, doc.baseline.canvas, 0);\n      const after = canvasDisplayNodes(doc.proposed.document, doc.proposed.canvas, 0);\n      const candidates = new Map([...before, ...after].filter(n => n.layout === 'grid' && n.kind === 'diagram').map(n => [n.id, n]));"
+      },
+      {
+        "oldStart": 259,
+        "oldLines": 7,
+        "newStart": 363,
+        "newLines": 13,
+        "heading": " export class ChangeSessionService {",
+        "oldSideExcerpt": "    });\n  }\n  async update(input: { changeSessionId: string; requestId: string; expectedVersion: number; title?: string; status?: 'draft'|'ready'|'archived';\n    changes?: DiagramChange[]; action?: 'undo'|'redo'|'reset'; documentId?: string }) {\n    return this.mutate(input.changeSessionId, input.requestId, JSON.stringify(input), s => {\n      if (s.version !== input.expectedVersion) throw new Error('VERSION_CONFLICT: reread change session');\n      if (input.action) {"
+      },
+      {
+        "oldStart": 277,
+        "oldLines": 6,
+        "newStart": 387,
+        "newLines": 10,
+        "heading": " export class ChangeSessionService {",
+        "oldSideExcerpt": "        this.record(doc, controller);\n        this.refreshChanges(s, new Set([doc.id])); s.status = 'draft';\n      }\n      if (input.title) s.title = input.title;\n      if (input.changes) {\n        if (input.changes.length !== s.changes.length || new Set(input.changes.map(c => c.id)).size !== s.changes.length) throw new Error('Annotate every generated change exactly once');"
+      },
+      {
+        "oldStart": 287,
+        "oldLines": 12,
+        "newStart": 401,
+        "newLines": 22,
+        "heading": " export class ChangeSessionService {",
+        "oldSideExcerpt": "        }\n        s.changes = input.changes;\n      }\n      if (input.status === 'ready') this.validateReady(s);\n      if (input.status) s.status = input.status;\n      return { ...summarizeChangeSession(s), version: s.version + 1 };\n    });\n  }\n  private validateReady(s: DiagramChangeSession) {\n    if (!s.changes.length) throw new Error('Session has no changes');\n    const visited = new Set<string>(), visiting = new Set<string>();\n    const visit = (id: string) => {"
+      },
+      {
+        "oldStart": 308,
+        "oldLines": 9,
+        "newStart": 432,
+        "newLines": 9,
+        "heading": " export class ChangeSessionService {",
+        "oldSideExcerpt": "    for (const change of s.changes.filter(c => c.type === 2)) {\n      const doc = this.document(s, change.documentId);\n      const connected = doc.proposed.document.edges.some(edge => edge.target.displayNodeId === change.nodeId\n        && !!doc.baseline && !!connectionBox(doc.baseline.document.scene, edge.source.displayNodeId)\n        && (doc.proposed.nodeOrigins ? !!doc.proposed.nodeOrigins[edge.source.contentNodeId]\n          : Object.values(doc.baseline.document.scene.contents).some(d => diagramContentNodes(d.content).some(n => n.id === edge.source.contentNodeId))));\n      if (!connected) throw new Error(`Added diagram needs an edge from an existing diagram: ${change.title}`);\n    }\n  }"
+      }
+    ]
+  },
+  {
+    "path": "application/mapping/changes/diffSessionTools.ts",
+    "status": "added",
+    "hunks": [
+      {
+        "oldStart": 0,
+        "oldLines": 0,
+        "newStart": 1,
+        "newLines": 89,
+        "heading": "",
+        "oldSideExcerpt": ""
+      }
+    ]
+  },
+  {
+    "path": "application/mapping/changes/diffSessionWorkflow.ts",
+    "status": "added",
+    "hunks": [
+      {
+        "oldStart": 0,
+        "oldLines": 0,
+        "newStart": 1,
+        "newLines": 47,
+        "heading": "",
+        "oldSideExcerpt": ""
+      }
+    ]
+  },
+  {
+    "path": "application/mapping/changes/diffSessionWorkflowService.ts",
+    "status": "added",
+    "hunks": [
+      {
+        "oldStart": 0,
+        "oldLines": 0,
+        "newStart": 1,
+        "newLines": 109,
+        "heading": "",
+        "oldSideExcerpt": ""
+      }
+    ]
+  },
+  {
+    "path": "domain/core/diagrams/diagramContentDiff.ts",
+    "status": "added",
+    "hunks": [
+      {
+        "oldStart": 0,
+        "oldLines": 0,
+        "newStart": 1,
+        "newLines": 148,
+        "heading": "",
+        "oldSideExcerpt": ""
+      }
+    ]
+  },
+  {
+    "path": "domain/core/diagrams/diagramRevisionReview.ts",
+    "status": "added",
+    "hunks": [
+      {
+        "oldStart": 0,
+        "oldLines": 0,
+        "newStart": 1,
+        "newLines": 195,
+        "heading": "",
+        "oldSideExcerpt": ""
+      }
+    ]
+  },
+  {
+    "path": "domain/core/presentation/diagramAlternative.ts",
+    "status": "added",
+    "hunks": [
+      {
+        "oldStart": 0,
+        "oldLines": 0,
+        "newStart": 1,
+        "newLines": 160,
+        "heading": "",
+        "oldSideExcerpt": ""
+      }
+    ]
+  },
+  {
+    "path": "domain/core/presentation/diagramDiffProjection.ts",
+    "status": "added",
+    "hunks": [
+      {
+        "oldStart": 0,
+        "oldLines": 0,
+        "newStart": 1,
+        "newLines": 123,
+        "heading": "",
+        "oldSideExcerpt": ""
+      }
+    ]
+  },
+  {
+    "path": "domain/core/presentation/diagramRevisionProjection.ts",
+    "status": "added",
+    "hunks": [
+      {
+        "oldStart": 0,
+        "oldLines": 0,
+        "newStart": 1,
+        "newLines": 39,
+        "heading": "",
+        "oldSideExcerpt": ""
+      }
+    ]
+  },
+  {
+    "path": "domain/mapping/agent/diagramEdit.ts",
+    "status": "modified",
+    "hunks": [
+      {
+        "oldStart": 1,
+        "oldLines": 22,
+        "newStart": 1,
+        "newLines": 78,
+        "heading": "",
+        "oldSideExcerpt": "import { z } from 'zod';\nimport type { DiagramRevision } from '../../core/diagrams/diagramRevisionEditor';\n\nconst id = z.string().min(1).max(200);\nexport const editDiagramSchema = z.object({\n  sessionId: id, nodeId: id, expectedVersion: z.number().int().nonnegative(),\n  baseRevisionId: id, agentContextId: id.optional(), prompt: z.string().trim().min(1).max(20000), requestId: id\n}).strict();\nexport const diagramEditRunSchema = z.object({ runId: id }).strict();\nexport type EditDiagramInput = z.infer<typeof editDiagramSchema>;\nexport interface DiagramRevisionApplication {\n  requestId: string;\n  expectedVersion: number;\n  nodeId: string;\n  baseRevisionId: string;\n  revision: DiagramRevision;\n}\nexport interface DiagramEditRun {\n  runId: string;\n  status: 'generating' | 'applying' | 'completed' | 'conflict' | 'failed' | 'cancelled' | 'awaiting-acknowledgement';\n  nodeId: string;\n  baseRevisionId: string;"
+      },
+      {
+        "oldStart": 24,
+        "oldLines": 4,
+        "newStart": 80,
+        "newLines": 6,
+        "heading": " export interface DiagramEditRun {",
+        "oldSideExcerpt": "  error?: string;\n  generated?: { diagramId: string; revisionId: string; ascii: string };\n  result?: { diagramId: string; previousRevisionId: string; revisionId: string; documentVersion: number; unresolvedEdgeIds: string[] };\n}"
+      }
+    ]
+  },
+  {
+    "path": "domain/mapping/changes/diagramChangeSession.ts",
+    "status": "modified",
+    "hunks": [
+      {
+        "oldStart": 1,
+        "oldLines": 5,
+        "newStart": 1,
+        "newLines": 8,
+        "heading": "",
+        "oldSideExcerpt": "import { CanvasHistory, validateCanvasHistory, type CanvasHistoryRecord } from '../workspace/canvasHistory';\nimport { z } from 'zod';\nimport type { MappingGridDocument } from '../workspace/mappingGrid';\nimport type { MappingCanvasState } from '../workspace/mappingWorkspace';\nimport { deserializeWorkspace } from '../workspace/mappingWorkspaceCodec';"
+      },
+      {
+        "oldStart": 14,
+        "oldLines": 6,
+        "newStart": 17,
+        "newLines": 7,
+        "heading": " export const diagramChangeSchema = z.object({",
+        "oldSideExcerpt": "export type DiagramChange = z.infer<typeof diagramChangeSchema>;\nexport interface ChangeDocumentState { nodeOrigins?: Record<string, string>; document: MappingGridDocument; canvas: MappingCanvasState }\nexport interface ChangeSessionDocument {\n  history?: CanvasHistoryRecord;\n  id: string; name: string; representationId?: string; savedRevisionId?: string; capturedVersion?: number;\n  baseline: ChangeDocumentState | null;"
+      },
+      {
+        "oldStart": 23,
+        "oldLines": 14,
+        "newStart": 27,
+        "newLines": 18,
+        "heading": " export interface ChangeSessionDocument {",
+        "oldSideExcerpt": "  future: ChangeDocumentState[];\n}\nexport interface DiagramChangeSession {\n  schemaVersion: 1; id: string; projectId: string; title: string; description: string;\n  status: 'draft' | 'ready' | 'accepted' | 'archived'; version: number; createdAt: string; updatedAt: string;\n  acceptance?: ChangeSessionAcceptance;\n  documents: ChangeSessionDocument[]; changes: DiagramChange[];\n  receipts: Record<string, { signature: string; result: unknown }>;\n}\nexport type ChangeSessionSummary = Omit<DiagramChangeSession, 'documents' | 'receipts'> & {\n  documents: Pick<ChangeSessionDocument, 'id' | 'name' | 'representationId' | 'version'>[];\n};\nexport type ChangePreviewDocument = Omit<ChangeSessionDocument, 'history' | 'past' | 'future'>;\nexport type ChangeSessionPreview = ChangeSessionSummary & { document: ChangePreviewDocument };"
+      },
+      {
+        "oldStart": 41,
+        "oldLines": 33,
+        "newStart": 49,
+        "newLines": 51,
+        "heading": " const acceptance = z.object({ changeSessionId: changeId, sessionVersion: z.numbe",
+        "oldSideExcerpt": "/** Read list metadata without restoring document references, histories, or replay receipts. */\nexport function validateChangeSessionSummary(input: unknown): ChangeSessionSummary {\n  const summary = z.object({\n    schemaVersion: z.literal(1), id: changeId, projectId: changeId, title: z.string().min(1).max(200), description: z.string().max(100000),\n    status: z.enum(['draft', 'ready', 'accepted', 'archived']), acceptance: acceptance.optional(),\n    version: z.number().int().nonnegative(), createdAt: z.string(), updatedAt: z.string(),\n    changes: z.array(diagramChangeSchema).max(2000),\n    documents: z.array(z.object({ id: changeId, name: z.string().min(1).max(200), representationId: changeId.optional(),\n      version: z.number().int().nonnegative() })).max(100)\n  }).parse(input);\n  if ((summary.status === 'accepted') !== !!summary.acceptance || summary.acceptance && summary.acceptance.changeSessionId !== summary.id)\n    throw new Error('Invalid change-session acceptance');\n  if (new Set(summary.documents.map(doc => doc.id)).size !== summary.documents.length) throw new Error('Duplicate change-session document');\n  return summary;\n}\nexport function summarizeChangeSession(session: DiagramChangeSession): ChangeSessionSummary {\n  const { receipts: _, documents, ...summary } = session;\n  return { ...summary, documents: documents.map(({ id, name, representationId, version }) => ({ id, name, representationId, version })) };\n}\nexport function validateChangeSession(input: unknown): DiagramChangeSession {\n  const state = z.custom<ChangeDocumentState>(value => !!value && typeof value === 'object' && 'document' in value && 'canvas' in value);\n  const parsed = z.object({\n    schemaVersion: z.literal(1), id: changeId, projectId: changeId, title: z.string().min(1).max(200), description: z.string().max(100000),\n    status: z.enum(['draft','ready','accepted','archived']), acceptance: acceptance.optional(), version: z.number().int().nonnegative(), createdAt: z.string(), updatedAt: z.string(),\n    documents: z.array(z.object({ history: z.custom<CanvasHistoryRecord>().optional(), id: changeId, name: z.string().min(1).max(200), representationId: changeId.optional(), savedRevisionId: changeId.optional(),\n      capturedVersion: z.number().int().nonnegative().optional(), baseline: state.nullable(), proposed: state, version: z.number().int().nonnegative(),\n      past: z.array(state).max(50), future: z.array(state).max(50) }).strict()).max(100),\n    changes: z.array(diagramChangeSchema).max(2000),\n    receipts: z.record(z.string(), z.object({ signature: z.string(), result: z.unknown() }))\n  }).strict().parse(input);\n  if ((parsed.status === 'accepted') !== !!parsed.acceptance || parsed.acceptance && parsed.acceptance.changeSessionId !== parsed.id)\n    throw new Error('Invalid change-session acceptance');\n  const ids = new Set<string>();"
+      },
+      {
+        "oldStart": 83,
+        "oldLines": 3,
+        "newStart": 109,
+        "newLines": 8,
+        "heading": " export function validateChangeSession(input: unknown): DiagramChangeSession {",
+        "oldSideExcerpt": "  }\n  return parsed;\n}"
+      }
+    ]
+  },
+  {
+    "path": "domain/mapping/changes/diffTree.ts",
+    "status": "added",
+    "hunks": [
+      {
+        "oldStart": 0,
+        "oldLines": 0,
+        "newStart": 1,
+        "newLines": 89,
+        "heading": "",
+        "oldSideExcerpt": ""
+      }
+    ]
+  },
+  {
+    "path": "domain/mapping/workspace/diagramAlternatives.ts",
+    "status": "added",
+    "hunks": [
+      {
+        "oldStart": 0,
+        "oldLines": 0,
+        "newStart": 1,
+        "newLines": 79,
+        "heading": "",
+        "oldSideExcerpt": ""
+      }
+    ]
+  },
+  {
+    "path": "src/features/mapping/changes/DiffSessionWorkflowPanel.tsx",
+    "status": "added",
+    "hunks": [
+      {
+        "oldStart": 0,
+        "oldLines": 0,
+        "newStart": 1,
+        "newLines": 74,
+        "heading": "",
+        "oldSideExcerpt": ""
+      }
+    ]
+  },
+  {
+    "path": "src/features/mapping/changes/DiffTreePanel.tsx",
+    "status": "added",
+    "hunks": [
+      {
+        "oldStart": 0,
+        "oldLines": 0,
+        "newStart": 1,
+        "newLines": 189,
+        "heading": "",
+        "oldSideExcerpt": ""
+      }
+    ]
+  },
+  {
+    "path": "src/features/mapping/prompt-composer/PromptComposer.tsx",
+    "status": "added",
+    "hunks": [
+      {
+        "oldStart": 0,
+        "oldLines": 0,
+        "newStart": 1,
+        "newLines": 314,
+        "heading": "",
+        "oldSideExcerpt": ""
+      }
+    ]
+  },
+  {
+    "path": "src/features/mapping/prompt-composer/VariantReview.tsx",
+    "status": "added",
+    "hunks": [
+      {
+        "oldStart": 0,
+        "oldLines": 0,
+        "newStart": 1,
+        "newLines": 51,
+        "heading": "",
+        "oldSideExcerpt": ""
+      }
+    ]
+  },
+  {
+    "path": "src/features/mapping/tldraw/DiagramAlternativeControls.tsx",
+    "status": "added",
+    "hunks": [
+      {
+        "oldStart": 0,
+        "oldLines": 0,
+        "newStart": 1,
+        "newLines": 48,
+        "heading": "",
+        "oldSideExcerpt": ""
+      }
+    ]
+  },
+  {
+    "path": "src/features/mapping/tldraw/DiagramSidePanelContent.tsx",
+    "status": "added",
+    "hunks": [
+      {
+        "oldStart": 0,
+        "oldLines": 0,
+        "newStart": 1,
+        "newLines": 58,
+        "heading": "",
+        "oldSideExcerpt": ""
+      }
+    ]
+  },
+  {
+    "path": "src/server/app/bootstrap.ts",
+    "status": "modified",
+    "hunks": [
+      {
+        "oldStart": 1,
+        "oldLines": 6,
+        "newStart": 1,
+        "newLines": 23,
+        "heading": "",
+        "oldSideExcerpt": "import { AgentContextService } from '../../../application/mapping/agent/agentContextService';\nimport { LiveCanvasService } from '../../../application/mapping/agent/liveCanvasService';\nimport { RevisionedDiagramService } from '../../../domain/core/diagrams/diagramService';\nimport { FakeDiagramEditRuntime, PiDiagramEditRuntime } from '../../../infrastructure/mapping/agents/diagram-edit/diagramEditRuntime';\nimport { CoreApplication } from \"../../../application/core/application\";\nimport { AgentDiagrammingSessionService } from '../../../application/mapping/agent/sessionService';"
+      },
+      {
+        "oldStart": 13,
+        "oldLines": 6,
+        "newStart": 30,
+        "newLines": 7,
+        "heading": " import { QuickJsAgentRuntime } from '../../../infrastructure/mapping/agent/execR",
+        "oldSideExcerpt": "import { DiagramChangeSessionStore } from '../../../infrastructure/mapping/changes/diagramChangeSessionStore';\n\nimport { DiagramStore } from \"../../../infrastructure/core/persistence/store\";\nimport { CodexLocalChatRuntime, FakeLocalChatRuntime } from \"../../../infrastructure/mapping/agents/chat/localChatRuntime\";\nimport { FakeFileCompactionRuntime, PiFileCompactionRuntime } from \"../../../infrastructure/mapping/agents/compaction/fileCompactionRuntime\";\nimport { FakeMappingAgentRuntime, PiMappingAgentRuntime } from \"../../../infrastructure/mapping/agents/selection/agentRuntime\";"
+      },
+      {
+        "oldStart": 34,
+        "oldLines": 6,
+        "newStart": 52,
+        "newLines": 9,
+        "heading": " import { resolveFileCompactionSettings } from '../../../infrastructure/mapping/a",
+        "oldSideExcerpt": "import { loadFileCompactionPrompts } from '../../../infrastructure/mapping/agents/compaction/prompts';\nimport { FileCompactionStore } from '../../../infrastructure/mapping/persistence/compactionStore';\nimport { MappingWorkspaceStore } from '../../../infrastructure/mapping/persistence/workspace/mappingWorkspaceStore';\n\nexport const corpusAccess: CorpusAccess = {\n  provider: corpusProvider, readDocumentLines: readCorpusDocumentLines, discover: discoverDomainCorpus"
+      },
+      {
+        "oldStart": 50,
+        "oldLines": 22,
+        "newStart": 71,
+        "newLines": 43,
+        "heading": " export function createFileCompactionService(core: CoreApplication, runtime: File",
+        "oldSideExcerpt": "\n/** The only production module that chooses and connects concrete integrations. */\nexport function createBackend(projectRoot: string, diagramsDirectory: string, configuredDomainProfileId: BuiltInDomainProfileId | undefined,\n  mappingPocSourceRoot: string, options: { lspEnabled?: boolean }) {\n  const fake = process.env.NEW_DIAGRAM_AGENT === \"fake\";\n  const chatRuntime = fake ? new FakeLocalChatRuntime() : new CodexLocalChatRuntime();\n  const mappingRuntime = fake ? new FakeMappingAgentRuntime() : new PiMappingAgentRuntime();\n  const diagramEditRuntime = fake ? new FakeDiagramEditRuntime() : new PiDiagramEditRuntime(mappingPocSourceRoot);\n  const store = new DiagramStore(projectRoot, diagramsDirectory);\n  const core = createCoreApplication(store);\n  const compactionService = createFileCompactionService(core, fake ? new FakeFileCompactionRuntime() : new PiFileCompactionRuntime());\n  const languageService = options.lspEnabled === true ? new ProjectLanguageService() : undefined;\n  const diagrams = new MappingDiagramService(store, corpusAccess, projectRoot, configuredDomainProfileId);\n  const canvasBridge = new CanvasSessionBridge();\n  const agentContexts = new AgentContextService();\n  const liveCanvas = new LiveCanvasService(() => canvasBridge.list(), async (workspaceInstanceId, documentId) =>\n    await canvasBridge.dispatch(workspaceInstanceId, { method: 'context', documentId }) as import('../../../domain/mapping/agent/liveCanvasStatus').LiveCanvasContext, agentContexts);\n  const agent = new AgentDiagrammingSessionService(canvasBridge, diagrams, store, new QuickJsAgentRuntime(),\n    new ChangeSessionService(new DiagramChangeSessionStore(store.storeRoot, undefined, true), store, canvasBridge), new RevisionedDiagramService(diagramEditRuntime), agentContexts);\n  const routes = {\n    core: createCoreRoutes({\n      application: core,"
+      },
+      {
+        "oldStart": 74,
+        "oldLines": 14,
+        "newStart": 116,
+        "newLines": 16,
+        "heading": " export function createBackend(projectRoot: string, diagramsDirectory: string, co",
+        "oldSideExcerpt": "    }),\n    mapping: createMappingRoutes({\n      selection: new SelectionService(store, mappingRuntime, mappingPocSourceRoot),\n      diagrams, agent, liveCanvas,\n      workspace: new MappingWorkspaceService(store, new MappingWorkspaceStore(store.storeRoot, store.diagramPersistence)),\n      chat: new LocalChatService(store, corpusAccess, chatRuntime, mappingPocSourceRoot),\n      compactionService\n    })\n  };\n  return {\n    routes, liveCanvas, dispose() {\n      agent.dispose(); diagramEditRuntime.dispose(); canvasBridge.dispose(); languageService?.dispose(); mappingRuntime.dispose(); chatRuntime.dispose(); compactionService.dispose();\n    }\n  };"
+      }
+    ]
+  }
+]

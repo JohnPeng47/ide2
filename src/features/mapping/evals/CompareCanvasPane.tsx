@@ -16,7 +16,9 @@ import '../tldraw/mappingEditor.css';
 
 const shapeUtils = [MappingShapeUtil];
 /** Static domain projection with a private editor camera. No live bridge or autosave. */
-export function CompareCanvasPane({ copy, camera, focus, side, detail, actions, fitContent, bare }: { copy: CompareCanvasCopy; camera: CameraView; focus?: CanvasCameraView; side?: 'A' | 'B'; detail?: string; actions?: import('react').ReactNode; fitContent?: boolean; bare?: boolean }) {
+export function CompareCanvasPane({ copy, camera, focus, side, detail, actions, fitContent, bare, onDiagramContextMenu }: { copy: CompareCanvasCopy; camera: CameraView; focus?: CanvasCameraView; side?: 'A' | 'B'; detail?: string; actions?: import('react').ReactNode; fitContent?: boolean; bare?: boolean;
+  /** Right-click on a diagram box: its grid box ID and the pointer position in client coordinates. */
+  onDiagramContextMenu?: (boxId: string, at: { x: number; y: number }) => void }) {
   const theme = useTheme(), root = useRef<HTMLDivElement>(null);
   const [editor, setEditor] = useState<Editor>();
   const [focusError, setFocusError] = useState('');
@@ -69,8 +71,24 @@ export function CompareCanvasPane({ copy, camera, focus, side, detail, actions, 
       <button type="button" onClick={resetFocus}>{focus ? 'Reset focus' : fitContent ? 'Reset view' : 'Reset camera'}</button>
       <button type="button" onClick={() => { const bounds = editor?.getCurrentPageBounds(); if (bounds) editor?.zoomToBounds(bounds.clone().expandBy(40)); }}>Fit</button>
     </>;
+  // The innermost diagram box under the pointer; containers and floating panes are ignored.
+  const diagramAt = (x: number, y: number) => {
+    if (!editor) return undefined;
+    const point = editor.screenToPage({ x, y });
+    return editor.getCurrentPageShapes().flatMap(shape => {
+      const props = (shape as unknown as { props: { nodeId?: string; kind?: string } }).props;
+      const bounds = editor.getShapePageBounds(shape.id);
+      return props.kind === 'diagram' && props.nodeId?.startsWith('grid:') && bounds?.containsPoint(point) ? [{ boxId: props.nodeId.slice(5), area: bounds.w * bounds.h }] : [];
+    }).sort((a, b) => a.area - b.area)[0]?.boxId;
+  };
+  const contextMenu = (event: import('react').MouseEvent) => {
+    const boxId = onDiagramContextMenu && diagramAt(event.clientX, event.clientY);
+    if (!boxId) return;
+    event.preventDefault(); event.stopPropagation();
+    onDiagramContextMenu!(boxId, { x: event.clientX, y: event.clientY });
+  };
   const canvas = <div ref={root} className="compare-canvas mapping-editor-canvas mapping-poc-canvas" data-compare-pane={side} data-camera-view={focus?.id} data-focus-diagram={focus?.focus.type === 'DiagramFocused' ? focus.focus.diagramId : undefined}
-      onWheelCapture={() => editor?.focus({ focusContainer: false })}>
+      onWheelCapture={() => editor?.focus({ focusContainer: false })} onContextMenuCapture={contextMenu}>
       <CanvasRuntimeContext.Provider value={runtime}>
         <Tldraw shapeUtils={shapeUtils} hideUi autoFocus={false} colorScheme={theme} onMount={setEditor}
           licenseKey={import.meta.env.VITE_TLDRAW_LICENSE_KEY} options={{ maxShapesPerPage: 10000 }} />

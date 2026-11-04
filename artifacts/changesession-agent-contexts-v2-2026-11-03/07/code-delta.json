@@ -1,0 +1,626 @@
+[
+  {
+    "path": "application/mapping/agent/sessionService.ts",
+    "status": "modified",
+    "hunks": [
+      {
+        "oldStart": 1,
+        "oldLines": 3,
+        "newStart": 1,
+        "newLines": 21,
+        "heading": "",
+        "oldSideExcerpt": "import type { AgentContextService } from './agentContextService';\nimport { DiagramEditService } from './diagramEditService';\nimport { DefaultCanvasHistoryService } from '../../../domain/core/diagrams/canvasHistoryService';"
+      },
+      {
+        "oldStart": 5,
+        "oldLines": 7,
+        "newStart": 23,
+        "newLines": 7,
+        "heading": " import { documentFromRevision } from '../../../domain/core/diagrams/projectDiagr",
+        "oldSideExcerpt": "import type { ChangeSessionService } from '../changes/changeSessionService';\nimport { rebaseDiagramJumps } from '../../../domain/core/diagrams/diagramJump';\nimport { diagramSource, type Diagram, type DiagramSourceBinding } from '../../../domain/core/diagrams/diagram';\nimport { RevisionedDiagramService, type DiagramService } from '../../../domain/core/diagrams/diagramService';\nimport { createHash, randomUUID } from 'node:crypto';\nimport type { CanvasSessionPort, AgentExecRuntime } from './ports';\nimport { agentToolSchemas, canvasApiSpec, canvasMethods, type AgentToolName, type LiveDocumentSnapshot } from '../../../domain/mapping/agent/contracts';"
+      },
+      {
+        "oldStart": 19,
+        "oldLines": 6,
+        "newStart": 37,
+        "newLines": 7,
+        "heading": " import type { DiagramRepository } from '../../core/ports/diagramRepository';",
+        "oldSideExcerpt": "\ntype EditResult = ReturnType<MappingDocumentController['applyUpdate']>;\ninterface ExecStep {\n  signature: string;\n  execute: () => Promise<unknown>;\n  outcome?: { value: unknown } | { error: unknown };"
+      },
+      {
+        "oldStart": 32,
+        "oldLines": 46,
+        "newStart": 51,
+        "newLines": 118,
+        "heading": " interface ExecRun {",
+        "oldSideExcerpt": "  lastEdit?: EditResult;\n  createdDocument: boolean;\n  steps: ExecStep[];\n}\nconst canvasTimeout = (error: unknown) => error instanceof Error && error.message.includes('CANVAS_TIMEOUT');\n\nexport class AgentDiagrammingSessionService {\n  private readonly edits?: DiagramEditService;\n  private sessions = new Map<string, { canvasId: string; documentId: string; changeSessionId?: string }>();\n  private saves = new Map<string, Promise<unknown>>();\n  private execRuns = new Map<string, ExecRun>();\n  private requests = new Map<string, { signature: string; promise: Promise<unknown> }>();\n  constructor(readonly bridge: CanvasSessionPort, private readonly diagrams: MappingDiagramService,\n    private readonly store: Pick<DiagramRepository, 'loadProject' | 'projectCatalogs'>, private readonly runtime: AgentExecRuntime, readonly changes?: ChangeSessionService,\n    editDiagrams?: DiagramService, private readonly agentContexts?: AgentContextService) {\n    if (editDiagrams) this.edits = new DiagramEditService(editDiagrams, {\n      snapshot: sessionId => this.snapshot(sessionId),\n      apply: async (sessionId, input) => {\n        const session = this.session(sessionId);\n        return await this.bridge.dispatch(session.canvasId, { method: 'apply-diagram-revision', documentId: session.documentId, payload: input }) as { version: number; unresolvedEdgeIds: string[] };\n      }\n    });\n  }\n  dispose() { this.edits?.dispose(); }\n  async call(name: AgentToolName, raw: unknown): Promise<unknown> {\n    const schema = agentToolSchemas[name];\n    if (!schema) throw new Error('Unknown agent tool');\n    const input = schema.parse(raw);\n    if (name === 'edit-diagram' || name === 'edit-diagram-status' || name === 'cancel-diagram-edit') {\n      if (!this.edits) throw Error('Diagram editing UNAVAILABLE in this runtime');\n      if (name === 'edit-diagram') {\n        const edit = agentToolSchemas['edit-diagram'].parse(input);\n        const session = this.session(edit.sessionId); // Live attachment only; never creates a proposal.\n        if (edit.agentContextId && !this.agentContexts) throw Error('AGENT_CONTEXT_UNAVAILABLE');\n        const context = edit.agentContextId ? this.agentContexts!.get({ workspaceInstanceId: session.canvasId,\n          documentId: session.documentId }, edit.agentContextId) : undefined;\n        return this.edits.start(edit, context);\n      }\n      const { runId } = agentToolSchemas['edit-diagram-status'].parse(input);\n      return name === 'edit-diagram-status' ? this.edits.get(runId) : this.edits.cancel(runId);\n    }\n    if ('requestId' in input) {\n      const key = `${'changeSessionId' in input ? input.changeSessionId ?? '' : ''}:${name}:${'sessionId' in input ? input.sessionId ?? '' : ''}:${input.requestId}`;\n      const signature = JSON.stringify(input), old = this.requests.get(key);\n      if (old) { if (old.signature !== signature) throw new Error('REQUEST_ID_CONFLICT'); return old.promise; }\n      if (name === 'exec') {"
+      },
+      {
+        "oldStart": 80,
+        "oldLines": 34,
+        "newStart": 171,
+        "newLines": 107,
+        "heading": " export class AgentDiagrammingSessionService {",
+        "oldSideExcerpt": "        if (pending && pending.signature !== signature) throw new Error('REQUEST_ID_CONFLICT');\n      }\n      if (this.requests.size >= 2000) throw new Error('Request capacity reached; restart the backend before a new session');\n      const execute = () => this.execute(name, input);\n      const promise = ('changeSessionId' in input && input.changeSessionId && 'sessionId' in input && input.sessionId && name !== 'save_diagram'\n        ? this.changeService().request(input.changeSessionId, `${name}:${input.requestId}`, signature, execute) : execute()).catch(error => {\n        // The browser deduplicates request IDs too, so a lost acknowledgement can be recovered.\n        if (canvasTimeout(error)) this.requests.delete(key);\n        throw error;\n      });\n      this.requests.set(key, { signature, promise });\n      return promise;\n    }\n    return this.execute(name, input);\n  }\n  private async execute(name: AgentToolName, raw: unknown): Promise<unknown> {\n    if (name === 'create_diagram_change_session') return this.changeService().create(agentToolSchemas[name].parse(raw));\n    if (name === 'update_diagram_change_session') return this.changeService().update(agentToolSchemas[name].parse(raw));\n    if (name === 'accept_diagram_change_session') return this.changeService().accept(agentToolSchemas[name].parse(raw));\n    if (name === 'canvas-api-search') return canvasApiSpec(agentToolSchemas[name].parse(raw).query);\n    if (name === 'diagram-search') return this.search(agentToolSchemas[name].parse(raw));\n    if (name === 'exec') return this.exec(agentToolSchemas[name].parse(raw));\n    if (name === 'save_diagram') return this.save(agentToolSchemas[name].parse(raw));\n    if (name === 'set_diagram_source_mappings') {\n      const { sessionId, changeSessionId, expectedVersion, requestId, ...fields } = agentToolSchemas[name].parse(raw);\n      return this.apply(sessionId, expectedVersion, [{ method: 'setSourceMappings', ...fields }], requestId, changeSessionId);\n    }\n    const input = agentToolSchemas.draw_diagram.parse(raw);\n    const operation = input.nodeId ? { method: 'replace', nodeId: input.nodeId, ...this.content(input) }\n      : { method: 'diagram-create', id: `diagram-${randomUUID()}`, parentId: input.parentId, position: input.position, ...this.content(input) };\n    return this.apply(input.sessionId, input.expectedVersion, [operation as DiagramOperation], input.requestId, input.changeSessionId);\n  }\n  private changeService() { if (!this.changes) throw new Error('Change sessions unavailable'); return this.changes; }\n  private content(input: { ascii: string; structureKind?: 'diagram'|'tree'; mappings?: unknown; evidence?: unknown; source?: DiagramSourceBinding }) {"
+      },
+      {
+        "oldStart": 119,
+        "oldLines": 10,
+        "newStart": 283,
+        "newLines": 14,
+        "heading": " export class AgentDiagrammingSessionService {",
+        "oldSideExcerpt": "    if (!session || !session.changeSessionId && !this.bridge.list().some(canvas => canvas.canvasId === session.canvasId)) throw new Error('SESSION_UNAVAILABLE: attach to a live canvas');\n    return session;\n  }\n  private async snapshot(sessionId: string, changeSessionId?: string): Promise<LiveDocumentSnapshot> {\n    const session = this.session(sessionId, changeSessionId);\n    if (session.changeSessionId) return this.changeService().snapshot(session.changeSessionId, session.documentId);\n    return await this.bridge.dispatch(session.canvasId, { method: 'snapshot', documentId: session.documentId }) as LiveDocumentSnapshot;\n  }\n  private async attach(canvasId: string, documentId: string, changeSessionId?: string) {\n    const canvases = changeSessionId ? await this.changeService().descriptor(changeSessionId) : this.bridge.list();"
+      },
+      {
+        "oldStart": 133,
+        "oldLines": 26,
+        "newStart": 301,
+        "newLines": 44,
+        "heading": " export class AgentDiagrammingSessionService {",
+        "oldSideExcerpt": "    if (this.sessions.size >= 500) throw new Error('Session capacity reached');\n    const sessionId = randomUUID(); this.sessions.set(sessionId, { canvasId, documentId, changeSessionId });\n    try {\n      const snapshot = await this.snapshot(sessionId, changeSessionId);\n      return { sessionId, canvasId, documentId, changeSessionId, version: snapshot.version };\n    } catch (error) { this.sessions.delete(sessionId); throw error; }\n  }\n  private async apply(sessionId: string, expectedVersion: number, operations: DiagramOperation[], requestId: string, changeSessionId?: string) {\n    const session = this.session(sessionId, changeSessionId);\n    if (session.changeSessionId) return this.changeService().apply(session.changeSessionId, session.documentId, expectedVersion, operations, requestId);\n    return this.bridge.dispatch(session.canvasId, { method: 'apply', documentId: session.documentId, payload: { expectedVersion, operations, requestId } });\n  }\n  private async exec(input: ReturnType<typeof agentToolSchemas.exec.parse>) {\n    const key = JSON.stringify([input.changeSessionId, input.sessionId, input.requestId]);\n    const signature = JSON.stringify(input);\n    let run = this.execRuns.get(key);\n    if (run && run.signature !== signature) throw new Error('REQUEST_ID_CONFLICT');\n    if (!run) {\n      if (this.execRuns.size >= 2000) throw new Error('Execution retry capacity reached');\n      const snapshot = input.sessionId ? await this.snapshot(input.sessionId, input.changeSessionId) : undefined;\n      run = { signature, initialVersion: snapshot?.version, version: snapshot?.version, createdDocument: false, steps: [],\n        nodes: snapshot && canvasDisplayNodes(snapshot.document, snapshot.canvas, snapshot.version, snapshot.cell, snapshot.endpointBounds),\n        edges: snapshot?.document.edges };\n      this.execRuns.set(key, run);\n    }\n    const state = run;"
+      },
+      {
+        "oldStart": 160,
+        "oldLines": 8,
+        "newStart": 346,
+        "newLines": 37,
+        "heading": " export class AgentDiagrammingSessionService {",
+        "oldSideExcerpt": "    // The pending call retains its operation ID, expected version and request ID.\n    const requestPrefix = `exec-${createHash('sha256').update(key).digest('hex')}`;\n    let cursor = 0;\n    try {\n      const value = await this.runtime.run(input.code, async (method, args) => {\n        const stepIndex = cursor++, stepSignature = JSON.stringify({ method, args });\n        let step = state.steps[stepIndex];\n        if (step && step.signature !== stepSignature) throw new Error('REQUEST_ID_CONFLICT: execution changed during retry');"
+      },
+      {
+        "oldStart": 169,
+        "oldLines": 10,
+        "newStart": 384,
+        "newLines": 18,
+        "heading": " export class AgentDiagrammingSessionService {",
+        "oldSideExcerpt": "          try {\n            const entry = canvasMethods[method as keyof typeof canvasMethods];\n            if (!entry) throw new Error('Unknown canvas method');\n            const parsed = entry.schema.parse(args) as Record<string, any>;\n            let execute: () => Promise<unknown>;\n            if (method === 'canvas.list') execute = async () => input.changeSessionId ? this.changeService().descriptor(input.changeSessionId) : this.bridge.list();\n            else if (method === 'canvas.attach') execute = () => this.attach(parsed.canvasId, parsed.documentId, input.changeSessionId);\n            else if (method === 'canvas.copyDocument') {\n              if (input.changeSessionId) throw new Error('Copy supports live canvases only');\n              if (input.sessionId || state.createdDocument) throw new Error('Create one document per unbound exec call');"
+      },
+      {
+        "oldStart": 180,
+        "oldLines": 8,
+        "newStart": 403,
+        "newLines": 9,
+        "heading": " export class AgentDiagrammingSessionService {",
+        "oldSideExcerpt": "                throw new Error('Unknown live document');\n              state.createdDocument = true;\n              execute = async () => {\n                const result = await this.bridge.dispatch(parsed.canvasId, { method: 'copy-document', documentId: parsed.documentId,\n                  payload: { name: parsed.name, expectedVersion: parsed.expectedVersion, requestId: `${requestPrefix}:${stepIndex}` } }) as { documentId: string };\n                // The browser has created the document; its descriptor refresh may still be in flight.\n                return this.attachDocument(parsed.canvasId, result.documentId);\n              };"
+      },
+      {
+        "oldStart": 191,
+        "oldLines": 48,
+        "newStart": 415,
+        "newLines": 121,
+        "heading": " export class AgentDiagrammingSessionService {",
+        "oldSideExcerpt": "              state.createdDocument = true;\n              if (input.changeSessionId && parsed.canvasId !== input.changeSessionId) throw new Error('CHANGE_SESSION_MISMATCH');\n              execute = async () => {\n                const result = input.changeSessionId\n                  ? await this.changeService().createDocument(input.changeSessionId, parsed.name, input.requestId)\n                  : await this.bridge.dispatch(parsed.canvasId, { method: 'create-document', payload: { name: parsed.name,\n                      requestId: input.requestId, snapshot: await this.diagrams.initialize() } }) as { documentId: string };\n                return this.attach(parsed.canvasId, result.documentId, input.changeSessionId);\n              };\n            } else {\n              if (!input.sessionId || state.version === undefined) throw new Error('sessionId is required for node operations');\n              const sessionId = input.sessionId;\n              if (method === 'edges.list') execute = async () => {\n                if (!state.edges) {\n                  const snapshot = await this.snapshot(sessionId, input.changeSessionId);\n                  if (snapshot.version !== state.version) throw new Error('VERSION_CONFLICT: canvas changed during execution');\n                  state.edges = snapshot.document.edges;\n                }\n                return { version: state.version, edges: state.edges };\n              };\n              else if (method === 'nodes.list') execute = async () => ({ version: state.version, nodes: state.nodes });\n              else if (method === 'nodes.get') execute = async () => {\n                const node = state.nodes!.find(node => node.id === parsed.nodeId);\n                if (!node) throw new Error('Unknown DisplayNode');\n                return node;\n              };\n              else {\n                if (input.expectedVersion !== state.initialVersion) throw new Error('VERSION_CONFLICT: mutations require current expectedVersion');\n                const expectedVersion = state.version;\n                const operation = (method.startsWith('edges.')\n                  ? method === 'edges.remove' ? { method: 'edge-remove', edgeId: parsed.edgeId }\n                    : { method: method === 'edges.create' ? 'edge-create' : 'edge-update',\n                        edge: { ...parsed, id: method === 'edges.create' ? `connection-${randomUUID()}` : parsed.id } }\n                  : method === 'nodes.draw' ? { ...parsed, method: 'diagram-create', id: `diagram-${randomUUID()}` }\n                    : { ...parsed, method: method.slice(6) }) as DiagramOperation;\n                execute = async () => {\n                  const result = await this.apply(sessionId, expectedVersion, [operation], `${requestPrefix}:${stepIndex}`, input.changeSessionId) as EditResult;\n                  state.version = result.version; state.nodes = result.nodes; state.edges = undefined; state.lastEdit = result;\n                  if (method.startsWith('edges.')) return 'edge' in operation ? operation.edge : null;\n                  const nodeId = operation.method === 'diagram-create' ? `grid:${operation.id}` : parsed.nodeId;\n                  return result.nodes.find(node => node.id === nodeId) ?? null;\n                };\n              }\n            }\n            step = { signature: stepSignature, execute };\n            state.steps[stepIndex] = step;\n          } catch (error) {\n            state.steps[stepIndex] = { signature: stepSignature, execute: async () => { throw error; }, outcome: { error } };"
+      },
+      {
+        "oldStart": 244,
+        "oldLines": 36,
+        "newStart": 541,
+        "newLines": 70,
+        "heading": " export class AgentDiagrammingSessionService {",
+        "oldSideExcerpt": "          catch (error) { if (!canvasTimeout(error)) step.outcome = { error }; throw error; }\n        }\n        if ('error' in step.outcome) throw step.outcome.error;\n        return step.outcome.value;\n      });\n      // A script may catch a transport timeout. Keep it retryable until the unknown\n      // outcome is acknowledged, rather than reporting a completed execution.\n      if (state.steps.some(step => !step.outcome)) throw new Error('CANVAS_TIMEOUT: retry execution with the same requestId');\n      this.execRuns.delete(key);\n      // Retain the response shape; transaction describes the last individual edit.\n      return state.lastEdit ? { value, transaction: state.lastEdit } : { value, ...(state.version === undefined ? {} : { version: state.version }) };\n    } catch (error) {\n      if (!canvasTimeout(error)) this.execRuns.delete(key);\n      throw error;\n    }\n  }\n  private async search(input: ReturnType<(typeof agentToolSchemas)['diagram-search']['parse']>) {\n    if (input.changeSessionId && !input.sessionId) {\n      const session = await this.changeService().get(input.changeSessionId);\n      if (input.revisionId) throw new Error('Session reads use pinned proposal documents, not catalog revisions');\n      const docs = session.documents.filter(d => !input.representationId || d.id === input.representationId || d.representationId === input.representationId);\n      if (input.operation === 'read') {\n        if (docs.length !== 1) throw new Error('Specify representationId (or session document ID) for a session read');\n        const doc = docs[0];\n        return { origin: 'change-session', changeSessionId: session.id, documentId: doc.id, name: doc.name, version: doc.version,\n          nodes: canvasDisplayNodes(doc.proposed.document, doc.proposed.canvas, doc.version),\n          changeSession: { version: session.version, title: session.title, status: session.status, changes: session.changes } };\n      }\n      const hits = docs.flatMap(doc => canvasDisplayNodes(doc.proposed.document, doc.proposed.canvas, doc.version).flatMap(node =>\n        node.layout === 'grid' && node.diagram ? this.matches(node.diagram, input).map(match => ({ origin: 'change-session', documentId: doc.id,\n          representationId: doc.representationId, name: doc.name, nodeId: node.id, version: doc.version, ...match })) : []));\n      return { total: hits.length, hits: hits.slice(input.offset, input.offset + input.limit),\n        changeSession: { version: session.version, title: session.title, status: session.status, changes: session.changes } };\n    }\n    if (input.sessionId) {\n      const snapshot = await this.snapshot(input.sessionId, input.changeSessionId);"
+      },
+      {
+        "oldStart": 281,
+        "oldLines": 14,
+        "newStart": 612,
+        "newLines": 14,
+        "heading": " export class AgentDiagrammingSessionService {",
+        "oldSideExcerpt": "      if (input.operation === 'read') {\n        const node = nodes.find(node => node.id === input.nodeId);\n        if (!node) throw new Error('A valid live nodeId is required');\n        return { origin: 'live', version: snapshot.version, node, evidence: node.layout === 'grid' ? node.diagram?.sourceContext.evidence ?? {} : {} };\n      }\n      const hits = nodes.flatMap(node => node.layout === 'grid' && node.content ? this.matches(node.diagram!, input).map(match => ({ origin: 'live', nodeId: node.id, version: snapshot.version, ...match })) : []);\n      return { total: hits.length, hits: hits.slice(input.offset, input.offset + input.limit) };\n    }\n    const project = await this.store.loadProject();\n    if (!project) { if (input.operation === 'read') throw new Error('Project is not initialized'); return { total: 0, hits: [] }; }\n    const catalog = await this.store.projectCatalogs.loadRepresentationCatalog(project.id);\n    const representations = Object.values(catalog.representations).filter(rep => rep.status === 'settled' && (!input.representationId || rep.id === input.representationId));\n    if (input.operation === 'read') {\n      const representation = representations.find(rep => rep.id === input.representationId);"
+      },
+      {
+        "oldStart": 297,
+        "oldLines": 7,
+        "newStart": 628,
+        "newLines": 7,
+        "heading": " export class AgentDiagrammingSessionService {",
+        "oldSideExcerpt": "      if (!representation.revisionIds.includes(revisionId)) throw new Error('Revision does not belong to representation');\n      const revision = catalog.revisions[revisionId];\n      const document = documentFromRevision(revision);\n      return { origin: 'saved', representation, revision, nodes: canvasDisplayNodes(document, initialCanvasState(), 0) };\n    }\n    const hits: unknown[] = [];\n    for (const representation of representations) {"
+      },
+      {
+        "oldStart": 315,
+        "oldLines": 11,
+        "newStart": 646,
+        "newLines": 11,
+        "heading": " export class AgentDiagrammingSessionService {",
+        "oldSideExcerpt": "  }\n  private matches(diagram: Diagram, input: ReturnType<(typeof agentToolSchemas)['diagram-search']['parse']>): { snippet: string; contentNodeId?: string; evidenceId?: string; line?: number }[] {\n    const content = diagram.content, source = diagramSource(diagram);\n    const q = (input.query ?? '').toLowerCase();\n    if (input.mode === 'code-reference') return source.search(q).map(({mapping,entity}) => ({ snippet: entity.label, evidenceId: mapping.entityId, line: mapping.line }));\n    if (input.mode === 'node') {\n      const nodes = content.structure.kind === 'tree' ? Object.values(content.structure.nodes) : [];\n      return [...nodes.filter(node => `${node.id} ${node.label}`.toLowerCase().includes(q)).map(node => ({ snippet: node.label, contentNodeId: node.id, line: node.line })),\n        ...source.entries().filter(({mapping,entity}) => `${mapping.id} ${entity.label}`.toLowerCase().includes(q)).map(({mapping,entity}) => ({ snippet: entity.label, contentNodeId: mapping.id, line: mapping.line }))];\n    }\n    return content.ascii.split('\\n').flatMap((line, i) => line.toLowerCase().includes(q) ? [{ snippet: line, line: i + 1 }] : []);"
+      },
+      {
+        "oldStart": 335,
+        "oldLines": 7,
+        "newStart": 666,
+        "newLines": 19,
+        "heading": " export class AgentDiagrammingSessionService {",
+        "oldSideExcerpt": "    return result;\n  }\n  private async saveNow(input: ReturnType<typeof agentToolSchemas.save_diagram.parse>) {\n    const session = this.session(input.sessionId), snapshot = await this.snapshot(input.sessionId, input.changeSessionId);\n    if (input.expectedVersion !== snapshot.version) throw new Error('VERSION_CONFLICT: read the canvas again');\n    let scene = snapshot.document.scene, history = snapshot.history;\n    if (input.nodeId) {"
+      },
+      {
+        "oldStart": 345,
+        "oldLines": 15,
+        "newStart": 688,
+        "newLines": 20,
+        "heading": " export class AgentDiagrammingSessionService {",
+        "oldSideExcerpt": "      if (box.kind !== 'diagram') throw new Error('Expected diagram');\n      const content = scene.contents[box.contentId];\n      const isolated = singleDiagramScene(content.content.ascii);\n      scene = { ...isolated, contents: { ...isolated.contents, overview: new RevisionedDiagramService().create({id:'overview', revision:content.revision, ascii:content.content.ascii, structureKind:content.content.structure.kind, source:content.sourceContext.binding, evidence:content.sourceContext.evidence, mappings:content.sourceContext.mappings}).diagram } };\n      if (content.jumps) scene = { ...scene, contents: { ...scene.contents, overview: new RevisionedDiagramService().revise(\n        scene.contents.overview.revisionId, { kind: 'jumps', jumps: rebaseDiagramJumps(content.content, scene.contents.overview.content, content.jumps) }).diagram } };\n      const histories = new DefaultCanvasHistoryService();\n      history = histories.exportContext(histories.openContext({ scene, edges: [], sections: {} }, snapshot.canvas));\n    }\n    const representationId = input.representationId ?? (!input.nodeId ? snapshot.representationId : undefined);\n    if (!history) throw new Error('Canvas history is required to save');\n    const save: SaveProjectDiagramInput = { name: input.name, history, scene, edges: input.nodeId ? [] : snapshot.document.edges, representationId,\n      expectedRevisionId: input.expectedRevisionId ?? (representationId === snapshot.representationId ? snapshot.revisionId : undefined) };\n    const result = await this.diagrams.save(save);\n    let displayUpdated = true;"
+      }
+    ]
+  },
+  {
+    "path": "application/mapping/changes/diffSessionWorkflowService.ts",
+    "status": "added",
+    "hunks": [
+      {
+        "oldStart": 0,
+        "oldLines": 0,
+        "newStart": 1,
+        "newLines": 109,
+        "heading": "",
+        "oldSideExcerpt": ""
+      }
+    ]
+  },
+  {
+    "path": "application/mapping/workspace/workspaceService.ts",
+    "status": "modified",
+    "hunks": [
+      {
+        "oldStart": 2,
+        "oldLines": 9,
+        "newStart": 2,
+        "newLines": 12,
+        "heading": " import type { WorkspaceBatch } from '../../../domain/mapping/workspace/workspace",
+        "oldSideExcerpt": "import { ApplicationError } from '../../core/errors';\nimport type { DiagramRepository } from '../../core/ports/diagramRepository';\nimport type { MappingWorkspaceRepository } from './repository';\n\nexport class MappingWorkspaceService {\n  constructor(private readonly projects: Pick<DiagramRepository, 'loadProject'>, private readonly workspace: MappingWorkspaceRepository) { }\n  async loadRecords(historyValidation: import('../../../domain/core/diagrams/canvasHistory').HistoryValidation = 'all') {\n    const project = await this.projects.loadProject();\n    if (!project) throw new ApplicationError('invalid-input', 'Project is not initialized');"
+      },
+      {
+        "oldStart": 25,
+        "oldLines": 4,
+        "newStart": 28,
+        "newLines": 55,
+        "heading": " export class MappingWorkspaceService {",
+        "oldSideExcerpt": "    await this.workspace.save(project.id, input);\n    return { saved: true };\n  }\n}"
+      }
+    ]
+  },
+  {
+    "path": "domain/core/diagrams/canvasCheckpointRecords.ts",
+    "status": "added",
+    "hunks": [
+      {
+        "oldStart": 0,
+        "oldLines": 0,
+        "newStart": 1,
+        "newLines": 259,
+        "heading": "",
+        "oldSideExcerpt": ""
+      }
+    ]
+  },
+  {
+    "path": "domain/core/diagrams/canvasHistory.ts",
+    "status": "modified",
+    "hunks": [
+      {
+        "oldStart": 1,
+        "oldLines": 11,
+        "newStart": 1,
+        "newLines": 21,
+        "heading": "",
+        "oldSideExcerpt": "import { deepFreeze } from '../immutability';\nimport { diagramRevisions } from './internal/revisionRegistry';\nimport { validateDiagram, type Diagram } from './diagram';\nimport { diagramContentNodes } from './diagramContentNodes';\nimport { correspondingNodes, DiagramRevisionEditor, type DiagramRevision } from './diagramRevisionEditor';\nimport type { LineGridScene } from './lineGrid';\nimport type { DiagramConnection, DiagramAnchor, ContentNodeAnchor } from './diagramConnection';\nexport interface ResolvedCanvasDocument { scene: LineGridScene; edges: DiagramConnection[]; jumps?: CanvasJump[]; sections: Readonly<Record<string, readonly {id: string; label: string; startLine: number; endLine: number; anchorToken: string}[]>> }\nimport { projectCanvasSnapshot, validateCanvasScene } from './projectDiagramCanvas';\nimport { validateConnections } from './diagramConnection';\nimport { validateCanvasJumps, type CanvasJump } from './canvasJump';"
+      },
+      {
+        "oldStart": 17,
+        "oldLines": 6,
+        "newStart": 27,
+        "newLines": 11,
+        "heading": " export type CanvasConnection = Omit<DiagramConnection, 'source' | 'target'> & {",
+        "oldSideExcerpt": "};\n/** Canonical canvas state separates diagram bindings from composition. Jump spans retain their source revision for stale-link detection. */\nexport interface CanvasDocument {\n  jumps?: CanvasJump[];\n  scene: Pick<ResolvedCanvasDocument['scene'], 'root'>;\n  edges: CanvasConnection[];"
+      },
+      {
+        "oldStart": 39,
+        "oldLines": 8,
+        "newStart": 54,
+        "newLines": 11,
+        "heading": " export interface HistoryChanges {",
+        "oldSideExcerpt": "  header: Omit<CanvasHistoryRecord, \"snapshots\" | \"diagramRevisions\">;\n  snapshots: CanvasHistoryRecord[\"snapshots\"];\n  diagramRevisions: CanvasHistoryRecord[\"diagramRevisions\"];\n}\nexport interface CanvasHistoryRecord {\n  schemaVersion: 1;\n  contextId: string;\n  baselineId: string;"
+      },
+      {
+        "oldStart": 49,
+        "oldLines": 12,
+        "newStart": 67,
+        "newLines": 22,
+        "heading": " export interface CanvasHistoryRecord {",
+        "oldSideExcerpt": "  future: string[];\n  snapshots: Record<string, StoredCanvasSnapshot>;\n  diagramRevisions: Record<string, DiagramRevision>;\n}\nexport type HistoryValidation = 'all' | 'current';\nexport function currentHistoryChanges(record: CanvasHistoryRecord, snapshotId = record.headId) {\n  const snapshot = record.snapshots?.[snapshotId];\n  if (!snapshot) throw Error('Unknown canvas checkpoint');\n  return { revisions: [...new Set(Object.values(snapshot.diagramBindings))], snapshots: [snapshotId] };\n}\nconst id = (kind: string) => `${kind}-${crypto.randomUUID()}`;\nexport function stateKey(value: unknown): string {"
+      },
+      {
+        "oldStart": 68,
+        "oldLines": 8,
+        "newStart": 96,
+        "newLines": 10,
+        "heading": " export class CanvasHistory {",
+        "oldSideExcerpt": "  private record: CanvasHistoryRecord;\n  private readonly validatedSnapshots = new Set<string>();\n  private changes: { snapshots: CanvasHistoryRecord[\"snapshots\"]; diagramRevisions: CanvasHistoryRecord[\"diagramRevisions\"] }[] = [];\n  readonly diagrams: Pick<DiagramRevisionEditor, 'resolve' | 'merge'>;\n  constructor(document: ResolvedCanvasDocument, view: unknown, record?: CanvasHistoryRecord, validation: HistoryValidation = 'all') {\n    if (record) {\n      validateCanvasHistory(record, validation === 'current' ? currentHistoryChanges(record) : undefined);\n      for (const revision of Object.values(record.diagramRevisions)) {"
+      },
+      {
+        "oldStart": 77,
+        "oldLines": 6,
+        "newStart": 107,
+        "newLines": 7,
+        "heading": " export class CanvasHistory {",
+        "oldSideExcerpt": "      }\n      for (const key of validation === 'current' ? [record.headId] : Object.keys(record.snapshots)) this.validatedSnapshots.add(key);\n      this.record = structuredClone(record);\n      if (!equal(this.document(), document)) throw new Error('Canvas history does not match document');\n    } else {\n      this.record = { schemaVersion: 1, contextId: id('context'), baselineId: '', headId: '', past: [], future: [], snapshots: {}, diagramRevisions: {} };"
+      },
+      {
+        "oldStart": 100,
+        "oldLines": 11,
+        "newStart": 131,
+        "newLines": 30,
+        "heading": " export class CanvasHistory {",
+        "oldSideExcerpt": "    const updates = since === undefined ? { snapshots: { ...snapshots }, diagramRevisions: { ...diagramRevisions } }\n      : this.changes.slice(since).reduce((out, change) => ({ snapshots: Object.assign(out.snapshots, change.snapshots),\n        diagramRevisions: Object.assign(out.diagramRevisions, change.diagramRevisions) }), { snapshots: {}, diagramRevisions: {} });\n    return { sequence: this.changes.length, header: { ...header, past: [...header.past], future: [...header.future] }, ...updates };\n  }\n  export(): CanvasHistoryRecord { return structuredClone(this.record); }\n  fork(view: unknown = this.head.view): CanvasHistoryRecord {\n    const record = this.export(), head = this.head;\n    const baseline = { ...head, view: structuredClone(view), id: id('canvas-revision'), parentId: head.id, nodeOrigins: Object.fromEntries(\n      Object.values(this.document().scene.contents).flatMap(diagram => diagramContentNodes(diagram.content).map(node => [node.id, node.id]))) };\n    record.snapshots[baseline.id] = baseline;"
+      },
+      {
+        "oldStart": 115,
+        "oldLines": 6,
+        "newStart": 165,
+        "newLines": 17,
+        "heading": " export class CanvasHistory {",
+        "oldSideExcerpt": "    this.validateCheckpoint(snapshotId);\n    return documentFromHistory(this.record, snapshotId);\n  }\n  private validateCheckpoint(snapshotId: string) {\n    if (this.validatedSnapshots.has(snapshotId)) return;\n    validateCanvasHistory(this.record, currentHistoryChanges(this.record, snapshotId));"
+      },
+      {
+        "oldStart": 125,
+        "oldLines": 6,
+        "newStart": 186,
+        "newLines": 12,
+        "heading": " export class CanvasHistory {",
+        "oldSideExcerpt": "    projectCanvasSnapshot(document.scene);\n    validateConnections(document.scene, document.edges);\n    if (document.jumps) validateCanvasJumps(document.scene, document.jumps);\n    const previous = this.record.snapshots[this.record.headId];\n    const bindings: Record<string, string> = {}, additions: Record<string, DiagramRevision> = {}, origins: Record<string, string> = {};\n    for (const [diagramId, diagram] of Object.entries(document.scene.contents)) {"
+      },
+      {
+        "oldStart": 142,
+        "oldLines": 16,
+        "newStart": 209,
+        "newLines": 43,
+        "heading": " export class CanvasHistory {",
+        "oldSideExcerpt": "      bindings[diagramId] = issued.id;\n      const include = (revision: DiagramRevision) => {\n        if (this.record.diagramRevisions[revision.id] || additions[revision.id]) return;\n        if (revision.parentId) include(diagramRevisions.get(revision.parentId));\n        additions[revision.id] = revision;\n      };\n      include(issued);\n    }\n    const unresolvedAnchors: Record<string, ContentNodeAnchor> = {};\n    const revisions = { ...this.record.diagramRevisions, ...additions };\n    const edges = document.edges.map(edge => ({ ...edge, source: encodeAnchor(edge.source, edge.id + ':source', document.scene, bindings, revisions, unresolvedAnchors) as CanvasNodeAnchor, target: encodeAnchor(edge.target, edge.id + ':target', document.scene, bindings, revisions, unresolvedAnchors) }));\n    const snapshot: StoredCanvasSnapshot = { id: id('canvas-revision'), parentId: previous?.id,\n      document: { scene: { root: structuredClone(document.scene.root) }, edges, sections: structuredClone(document.sections), ...(document.jumps ? { jumps: structuredClone(document.jumps) } : {}) },\n      diagramBindings: bindings, unresolvedAnchors, view: structuredClone(view), nodeOrigins: origins };\n    // Validation above must complete before any canonical state changes.\n    Object.assign(this.record.diagramRevisions, additions);"
+      },
+      {
+        "oldStart": 161,
+        "oldLines": 8,
+        "newStart": 255,
+        "newLines": 225,
+        "heading": " export class CanvasHistory {",
+        "oldSideExcerpt": "    if (previous) this.record.past.push(previous.id);\n    this.record.headId = snapshot.id;\n    this.record.future = [];\n    return this.head;\n  }\n  navigationTransactionId(redo = false) {\n    return this.record.snapshots[redo ? this.record.future.at(-1)! : this.record.headId]?.transactionId;\n  }"
+      },
+      {
+        "oldStart": 173,
+        "oldLines": 6,
+        "newStart": 484,
+        "newLines": 7,
+        "heading": " export class CanvasHistory {",
+        "oldSideExcerpt": "    (redo ? this.record.future : this.record.past).pop();\n    (redo ? this.record.past : this.record.future).push(this.record.headId);\n    this.record.headId = target;\n    return this.head;\n  }\n  linkTransaction(transactionId: string) {"
+      },
+      {
+        "oldStart": 204,
+        "oldLines": 6,
+        "newStart": 516,
+        "newLines": 7,
+        "heading": " export class CanvasHistory {",
+        "oldSideExcerpt": "    // Keep the revision table object used by the internal resolver alive.\n    Object.assign(this.record.diagramRevisions, structuredClone(proposed.diagramRevisions));\n    this.record = { ...next, diagramRevisions: this.record.diagramRevisions };\n    this.changes.push({ snapshots: { [snapshot.id]: snapshot }, diagramRevisions: Object.fromEntries(Object.keys(added).map(key => [key, this.record.diagramRevisions[key]])) });\n  }\n  reset(view?: unknown) {"
+      },
+      {
+        "oldStart": 215,
+        "oldLines": 6,
+        "newStart": 528,
+        "newLines": 7,
+        "heading": " export class CanvasHistory {",
+        "oldSideExcerpt": "    this.record.past.push(this.record.headId);\n    this.record.headId = snapshot.id;\n    this.record.future = [];\n    return this.head;\n  }\n}"
+      },
+      {
+        "oldStart": 226,
+        "oldLines": 12,
+        "newStart": 540,
+        "newLines": 12,
+        "heading": " export function validateCanvasHistory(value: CanvasHistoryRecord, changed?: { re",
+        "oldSideExcerpt": "  for (const key of [value.headId, value.baselineId, ...value.past, ...value.future]) {\n    if (typeof key !== 'string' || !Object.hasOwn(value.snapshots, key)) throw new Error('Unknown canvas history reference');\n  }\n  for (const [key, revision] of (changed ? changed.revisions.map(key => [key, value.diagramRevisions[key]] as const) : Object.entries(value.diagramRevisions))) {\n    if (revision.diagram.revisionId !== key || revision.id !== key || revision.diagramId !== revision.diagram.diagramId || !revision.nodeRefs) throw new Error('Invalid diagram history identity');\n    validateDiagram(revision.diagram);\n    validated.add(revision.diagram);\n    if (revision.parentId && (!Object.hasOwn(value.diagramRevisions, revision.parentId)\n      || value.diagramRevisions[revision.parentId].diagramId !== revision.diagramId)) throw new Error('Invalid diagram revision parent');\n    const refs = diagramContentNodes(revision.diagram.content).map(n => revision.nodeRefs[n.id]);\n    if (refs.some(ref => typeof ref !== 'string' || !ref) || new Set(refs).size !== refs.length) throw new Error('Invalid logical node identities');\n  }"
+      },
+      {
+        "oldStart": 245,
+        "oldLines": 7,
+        "newStart": 559,
+        "newLines": 19,
+        "heading": " export function validateCanvasHistory(value: CanvasHistoryRecord, changed?: { re",
+        "oldSideExcerpt": "      if (!revision || revision.diagram.id !== diagramId) throw new Error('Invalid diagram binding');\n      contents[diagramId] = revision.diagram;\n    }\n    const scene = { root: snapshot.document.scene.root, contents };\n    validateCanvasScene(scene, validated);\n    if (snapshot.transactionId !== undefined && (typeof snapshot.transactionId !== 'string' || !snapshot.transactionId)) throw Error('Invalid transaction reference');\n    if (snapshot.document.jumps) validateCanvasJumps(scene, snapshot.document.jumps);"
+      },
+      {
+        "oldStart": 268,
+        "oldLines": 7,
+        "newStart": 594,
+        "newLines": 7,
+        "heading": " export function documentFromHistory(record: CanvasHistoryRecord, snapshotId = re",
+        "oldSideExcerpt": "    if (!revision || !contentNodeId) throw new Error('Unresolvable canonical anchor');\n    return { ...anchor, contentNodeId, revisionId: revision.diagram.content.revisionId };\n  };\n  const result = structuredClone({ ...snapshot.document, scene, edges: snapshot.document.edges.map(edge => ({ ...edge,\n    source: decode(edge.source, edge.id + ':source') as ContentNodeAnchor, target: decode(edge.target, edge.id + ':target') })) });\n  Object.values(result.scene.contents).forEach(deepFreeze);\n  return result;"
+      }
+    ]
+  },
+  {
+    "path": "domain/mapping/workspace/workspaceRecords.ts",
+    "status": "modified",
+    "hunks": [
+      {
+        "oldStart": 1,
+        "oldLines": 4,
+        "newStart": 1,
+        "newLines": 8,
+        "heading": "",
+        "oldSideExcerpt": "import { canvasTransferSchema } from '../../core/diagrams/canvasTransfer';\nimport { CanvasHistory, currentHistoryChanges, documentFromHistory, validateCanvasHistory, type CanvasHistoryRecord, type HistoryChanges, type HistoryValidation } from '../../core/diagrams/canvasHistory';\nimport type { StorageChange } from '../../core/storage/storageService';\nimport { deserializeWorkspace } from './mappingWorkspaceCodec';"
+      },
+      {
+        "oldStart": 11,
+        "oldLines": 12,
+        "newStart": 15,
+        "newLines": 20,
+        "heading": " export interface WorkspaceRecordState { revision: number; records: WorkspaceReco",
+        "oldSideExcerpt": "export const documentPrefix = (id: string) => `document/${encodeURIComponent(id)}/`;\nexport function historyChanges(id: string, history: HistoryChanges): StorageChange[] {\n  const prefix = documentPrefix(id);\n  return [\n    { key: prefix + 'history', value: history.header },\n    ...Object.entries(history.snapshots).map(([key, value]) => ({ key: prefix + 'checkpoint/' + key, value })),\n    ...Object.entries(history.diagramRevisions).map(([key, value]) => ({ key: prefix + 'revision/' + key, value }))\n  ];\n}\nexport function documentRecords(doc: MappingDocumentSnapshot): WorkspaceRecords {\n  const { document, canvas, history, viewport, savedName, savedScene, savedEdges, revisionId, ...metadata } = doc;\n  const changes = new CanvasHistory(document, canvas, history).persistenceChanges();"
+      },
+      {
+        "oldStart": 24,
+        "oldLines": 7,
+        "newStart": 36,
+        "newLines": 8,
+        "heading": " export function documentRecords(doc: MappingDocumentSnapshot): WorkspaceRecords",
+        "oldSideExcerpt": "  return Object.fromEntries([\n    ...historyChanges(doc.representationId, changes).map(change => [change.key, 'value' in change ? change.value : undefined]),\n    [prefix + 'metadata', metadata], [prefix + 'baseline', { savedName, savedScene, savedEdges, revisionId }],\n    [prefix + 'canvas', canvas], ...(viewport ? [[prefix + 'viewport', viewport]] : [])\n  ]);\n}\nexport function workspaceRecords(workspace: MappingWorkspaceSnapshot): WorkspaceRecords {"
+      },
+      {
+        "oldStart": 34,
+        "oldLines": 16,
+        "newStart": 47,
+        "newLines": 24,
+        "heading": " export function workspaceRecords(workspace: MappingWorkspaceSnapshot): Workspace",
+        "oldSideExcerpt": "}\nexport function recordHistory(records: WorkspaceRecords, id: string): CanvasHistoryRecord {\n  const prefix = documentPrefix(id);\n  return { ...records[prefix + 'history'] as HistoryChanges['header'],\n    snapshots: Object.fromEntries(Object.entries(records).filter(([key]) => key.startsWith(prefix + 'checkpoint/')).map(([key, value]) => [key.slice((prefix + 'checkpoint/').length), value])),\n    diagramRevisions: Object.fromEntries(Object.entries(records).filter(([key]) => key.startsWith(prefix + 'revision/')).map(([key, value]) => [key.slice((prefix + 'revision/').length), value]))\n  } as CanvasHistoryRecord;\n}\nexport function recordDocument(records: WorkspaceRecords, id: string): MappingDocumentSnapshot {\n  const prefix = documentPrefix(id), history = recordHistory(records, id);\n  return { ...records[prefix + 'metadata'] as object, ...records[prefix + 'baseline'] as object,\n    representationId: id, document: documentFromHistory(history), history,\n    canvas: records[prefix + 'canvas'] as MappingCanvasState,\n    ...(records[prefix + 'viewport'] ? { viewport: records[prefix + 'viewport'] } : {}) } as MappingDocumentSnapshot;\n}\nexport function recordsWorkspace(records: WorkspaceRecords): MappingWorkspaceSnapshot | null {"
+      },
+      {
+        "oldStart": 53,
+        "oldLines": 7,
+        "newStart": 74,
+        "newLines": 7,
+        "heading": " export function recordsWorkspace(records: WorkspaceRecords): MappingWorkspaceSna",
+        "oldSideExcerpt": "}\n/** Save projection, separate from full import validation. Called on the worker's copy. */\nexport function normalizeRecord(key: string, value: unknown): unknown {\n  if (!key.endsWith('/canvas')) return value;\n  const canvas = value as MappingCanvasState;\n  for (const node of Object.values(canvas.display.nodes)) if (node.kind === 'conversation') {\n    if (node.thread.pending && node.thread.context) node.thread.error = 'Reply interrupted by workspace reload. Retry to continue.';"
+      },
+      {
+        "oldStart": 78,
+        "oldLines": 10,
+        "newStart": 99,
+        "newLines": 11,
+        "heading": " export function validateRecordUpdate(records: WorkspaceRecords, keys: string[],",
+        "oldSideExcerpt": "  const affected = new Set<string>();\n  for (const key of keys) {\n    if (key === 'workspace') continue;\n    const match = /^document\\/([^/]+)\\/(metadata|baseline|canvas|viewport|history|checkpoint\\/[^/]+|revision\\/[^/]+)$/.exec(key);\n    if (!match) throw Error('Invalid workspace record key');\n    const id = decodeURIComponent(match[1]);\n    if (!id || match[1] !== encodeURIComponent(id) || ['__proto__', 'constructor', 'prototype'].includes(id)) throw Error('Invalid canvas ID');\n    if (index.documentIds.includes(id)) affected.add(id);\n    else if (Object.hasOwn(records, key)) throw Error('Record belongs to a removed canvas');\n  }"
+      },
+      {
+        "oldStart": 89,
+        "oldLines": 6,
+        "newStart": 111,
+        "newLines": 8,
+        "heading": " export function validateRecordUpdate(records: WorkspaceRecords, keys: string[],",
+        "oldSideExcerpt": "    const prefix = documentPrefix(id);\n    if (!records[prefix + 'metadata'] || !records[prefix + 'baseline'] || !records[prefix + 'history'] || !records[prefix + 'canvas']) throw Error('Incomplete canvas');\n  }\n  for (const id of affected) {\n    const prefix = documentPrefix(id), history = recordHistory(records, id);\n    const removesHistory = keys.some(k => (k.startsWith(prefix + 'revision/') || k.startsWith(prefix + 'checkpoint/')) && !Object.hasOwn(records, k));"
+      }
+    ]
+  },
+  {
+    "path": "infrastructure/core/integrations/pushIntegrationStore.ts",
+    "status": "added",
+    "hunks": [
+      {
+        "oldStart": 0,
+        "oldLines": 0,
+        "newStart": 1,
+        "newLines": 56,
+        "heading": "",
+        "oldSideExcerpt": ""
+      }
+    ]
+  },
+  {
+    "path": "infrastructure/core/persistence/fileAgentContextRepository.ts",
+    "status": "added",
+    "hunks": [
+      {
+        "oldStart": 0,
+        "oldLines": 0,
+        "newStart": 1,
+        "newLines": 48,
+        "heading": "",
+        "oldSideExcerpt": ""
+      }
+    ]
+  },
+  {
+    "path": "infrastructure/core/persistence/fileAgentContextSources.ts",
+    "status": "added",
+    "hunks": [
+      {
+        "oldStart": 0,
+        "oldLines": 0,
+        "newStart": 1,
+        "newLines": 117,
+        "heading": "",
+        "oldSideExcerpt": ""
+      }
+    ]
+  },
+  {
+    "path": "infrastructure/core/persistence/fileDiagramAgentContextStore.ts",
+    "status": "added",
+    "hunks": [
+      {
+        "oldStart": 0,
+        "oldLines": 0,
+        "newStart": 1,
+        "newLines": 16,
+        "heading": "",
+        "oldSideExcerpt": ""
+      }
+    ]
+  },
+  {
+    "path": "infrastructure/mapping/agent-chat/chatStore.ts",
+    "status": "added",
+    "hunks": [
+      {
+        "oldStart": 0,
+        "oldLines": 0,
+        "newStart": 1,
+        "newLines": 25,
+        "heading": "",
+        "oldSideExcerpt": ""
+      }
+    ]
+  },
+  {
+    "path": "infrastructure/mapping/persistence/workspace/workspaceRecordStore.ts",
+    "status": "modified",
+    "hunks": [
+      {
+        "oldStart": 1,
+        "oldLines": 9,
+        "newStart": 1,
+        "newLines": 12,
+        "heading": "",
+        "oldSideExcerpt": "import { createHash, randomUUID } from 'node:crypto';\nimport { assertDiagramStorageFormat } from '../../../core/persistence/diagramStorageFormat';\nimport { mkdir, readFile, rename, rm, open } from 'node:fs/promises';\nimport path from 'node:path';\nimport { ApplicationError } from '../../../../application/core/errors';\nimport { recordsWorkspace, validateRecordUpdate, workspaceRecords, type WorkspaceBatch, type WorkspaceRecords, type WorkspaceRecordState } from '../../../../domain/mapping/workspace/workspaceRecords';\nimport type { MappingWorkspaceSnapshot } from '../../../../domain/mapping/workspace/mappingWorkspace';\nimport type { HistoryValidation } from '../../../../domain/core/diagrams/canvasHistory';\n"
+      },
+      {
+        "oldStart": 44,
+        "oldLines": 6,
+        "newStart": 47,
+        "newLines": 26,
+        "heading": " export class WorkspaceRecordStore {",
+        "oldSideExcerpt": "    if (Object.keys(records).length) validateRecordUpdate(records, Object.keys(records), projectId, historyValidation);\n    return this.cached = { raw, manifest, records, historyValidation };\n  }\n  async load(projectId: string): Promise<MappingWorkspaceSnapshot | undefined> {\n    const state = await this.read(projectId); return state ? recordsWorkspace(state.records)! : undefined;\n  }"
+      },
+      {
+        "oldStart": 76,
+        "oldLines": 7,
+        "newStart": 99,
+        "newLines": 7,
+        "heading": " export class WorkspaceRecordStore {",
+        "oldSideExcerpt": "        return { revision: receipt.revision };\n      }\n      if (input.expectedRevision !== state.manifest.revision) throw new ApplicationError('conflict', 'VERSION_CONFLICT: workspace changed in another client; reload before saving');\n      const records = { ...state.records }, keys: string[] = [], seen = new Set<string>();\n      for (const change of input.changes) {\n        if (!change || typeof change.key !== 'string' || change.key.length > 1000 || Object.keys(change).some(k => !['key', 'value', 'delete'].includes(k))\n          || ('delete' in change ? change.delete !== true || 'value' in change : !('value' in change))) throw Error('Invalid record change');"
+      },
+      {
+        "oldStart": 86,
+        "oldLines": 14,
+        "newStart": 109,
+        "newLines": 26,
+        "heading": " export class WorkspaceRecordStore {",
+        "oldSideExcerpt": "        if ('delete' in change) delete records[change.key]; else {\n          const previous = records[change.key];\n          if (previous && change.key.includes('/revision/') && JSON.stringify(previous) !== JSON.stringify(change.value)) throw Error('Immutable diagram revision changed');\n          if (previous && change.key.includes('/checkpoint/')) {\n            const { transactionId: _before, ...before } = previous as Record<string, unknown>;\n            const { transactionId: _after, ...after } = change.value as Record<string, unknown>;\n            if (JSON.stringify(before) !== JSON.stringify(after)) throw Error('Immutable canvas checkpoint changed');\n          }\n          records[change.key] = change.value;\n        }\n      }\n      validateRecordUpdate(records, keys, projectId);\n      const revision = state.manifest.revision + 1;\n      try {"
+      },
+      {
+        "oldStart": 107,
+        "oldLines": 28,
+        "newStart": 142,
+        "newLines": 41,
+        "heading": " export class WorkspaceRecordStore {",
+        "oldSideExcerpt": "      return { revision };\n    });\n  }\n  private async atomic(file: string, text: string) {\n    await mkdir(path.dirname(file), { recursive: true });\n    const temp = `${file}.${randomUUID()}.tmp`;\n    try {\n      const handle = await open(temp, 'wx');\n      try { await handle.writeFile(text); await handle.sync(); } finally { await handle.close(); }\n      await rename(temp, file);\n      const dir = await open(path.dirname(file), 'r'); try { await dir.sync(); } finally { await dir.close(); }\n    } finally { await rm(temp, { force: true }); }\n  }\n  private async publish(manifest: Manifest, records: WorkspaceRecords, keys: string[]) {\n    // Serial writes bound descriptors and memory even during initial migration.\n    for (const key of keys) {\n      if (!Object.hasOwn(records, key)) { delete manifest.records[key]; continue; }\n      const text = JSON.stringify(records[key]), id = hash(text);\n      if (manifest.records[key] !== id) {\n        const file = path.join(this.root, 'workspace-records', id + '.json');\n        try { if (await readFile(file, 'utf8') !== text) throw Error('Workspace record integrity failure'); }\n        catch (e) { if ((e as NodeJS.ErrnoException).code !== 'ENOENT') throw e; await this.atomic(file, text); }\n        manifest.records[key] = id;\n      }\n    }\n    const raw = JSON.stringify(manifest);\n    await this.atomic(this.file, raw);\n    return this.cached = { raw, manifest, records, historyValidation: 'current' };"
+      }
+    ]
+  },
+  {
+    "path": "src/features/mapping/workspace/recordStorage.ts",
+    "status": "modified",
+    "hunks": [
+      {
+        "oldStart": 2,
+        "oldLines": 12,
+        "newStart": 2,
+        "newLines": 14,
+        "heading": " import type { StorageChange, StorageService, StorageStatus } from '../../../../d",
+        "oldSideExcerpt": "import type { WorkspaceBatch, WorkspaceRecordState } from '../../../../domain/mapping/workspace/workspaceRecords';\n\nexport interface RecordTransport { write(batch: WorkspaceBatch): Promise<{ revision: number }> }\nfunction equalEntry(a: unknown, b: unknown) { return a === b || Array.isArray(a) && Array.isArray(b) && a.length === b.length && a.every((value, index) => value === b[index]); }\nfunction same(a: unknown, b: unknown): boolean {\n  if (a === b) return true;\n  if (!a || !b || typeof a !== 'object' || typeof b !== 'object') return false;\n  const left = Object.keys(a), right = Object.keys(b);\n  return left.length === right.length && left.every(key => Object.hasOwn(b, key) && equalEntry((a as Record<string, unknown>)[key], (b as Record<string, unknown>)[key]));\n}\n/** Cheap synchronous submission. Encoding and transport are supplied by a persistent worker. */\nexport class RecordStorage implements StorageService {"
+      }
+    ]
+  },
+  {
+    "path": "src/features/mapping/workspace/workspacePersistence.ts",
+    "status": "modified",
+    "hunks": [
+      {
+        "oldStart": 1,
+        "oldLines": 7,
+        "newStart": 1,
+        "newLines": 8,
+        "heading": "",
+        "oldSideExcerpt": "import type { StorageChange } from '../../../../domain/core/storage/storageService';\nimport { documentPrefix, historyChanges, type WorkspaceIndex } from '../../../../domain/mapping/workspace/workspaceRecords';\nimport type { CanvasTransfer } from '../../../../domain/core/diagrams/canvasTransfer';\nimport type { StoredCanvasSnapshot } from '../../../../domain/core/diagrams/canvasHistory';\nimport type { CanvasDraft, CanvasWorkspace } from './canvasWorkspace';\nimport type { CanvasSession } from './canvasSession';\nimport type { SourcePaneViewState } from '../source-pane/sourcePaneViewState';"
+      },
+      {
+        "oldStart": 41,
+        "oldLines": 8,
+        "newStart": 42,
+        "newLines": 8,
+        "heading": " export class WorkspacePersistence {",
+        "oldSideExcerpt": "        for (const key of this.storage.keys()) if (key.startsWith(prefix)) changes.push({ key, delete: true });\n        this.known.delete(id); continue;\n      }\n      const { representationId: savedRepresentationId, name, hidden, savedName, savedScene, savedEdges, revisionId } = draft;\n      changes.push({ key: prefix + 'metadata', value: { representationId: id, savedRepresentationId, name, hidden } },\n        { key: prefix + 'baseline', value: { savedName, savedScene, savedEdges, revisionId } });\n      const cursor = this.cursors.get(draft.session), delta = draft.session.controller.persistenceChanges(cursor);\n      if (cursor === undefined) {"
+      },
+      {
+        "oldStart": 58,
+        "oldLines": 28,
+        "newStart": 59,
+        "newLines": 36,
+        "heading": " export class WorkspacePersistence {",
+        "oldSideExcerpt": "        // Revision IDs are immutable; checkpoints may have retired transfer links.\n        if (cursor === undefined && 'value' in change && this.storage.get(change.key)) {\n          if (change.key.startsWith(prefix + 'revision/')) continue;\n          if (change.key.startsWith(prefix + 'checkpoint/') && this.storage.get<StoredCanvasSnapshot>(change.key)?.transactionId === (change.value as StoredCanvasSnapshot).transactionId) continue;\n        }\n        changes.push(change);\n      }\n      this.cursors.set(draft.session, delta.sequence);\n      const canvas = draft.session.controller.getSnapshot().canvas;\n      changes.push({ key: prefix + 'canvas', value: { ...canvas, display: this.view.captureDisplay(id, canvas.display) } });\n      if (prior?.viewport !== draft.viewport || !prior) {\n        const viewport = this.view.captureCamera(id, draft.viewport);\n        if (viewport) changes.push({ key: prefix + 'viewport', value: viewport });\n      }\n      this.known.set(id, draft);\n    }\n    changes.push(this.index()); this.storage.batch(changes);\n  }\n  private syncView(id: string) {\n    if (this.paused) return;\n    const draft = this.workspace.store.getState().drafts[id]; if (!draft) return;\n    const prefix = documentPrefix(id), canvas = draft.session.controller.getSnapshot().canvas;\n    const viewport = this.view.captureCamera(id, draft.viewport);\n    this.storage.batch([{ key: prefix + 'canvas', value: { ...canvas, display: this.view.captureDisplay(id, canvas.display) } },\n      ...(viewport ? [{ key: prefix + 'viewport', value: viewport }] : [])]);\n  }\n  dispose() { this.subscriptions.forEach(off => off()); }\n}"
+      }
+    ]
+  },
+  {
+    "path": "src/features/mapping/workspace/workspaceStorage.ts",
+    "status": "modified",
+    "hunks": [
+      {
+        "oldStart": 1,
+        "oldLines": 6,
+        "newStart": 1,
+        "newLines": 6,
+        "heading": "",
+        "oldSideExcerpt": "import type { StorageChange } from '../../../../domain/core/storage/storageService';\nimport type { MappingWorkspaceSnapshot } from '../../../../domain/mapping/workspace/mappingWorkspace';\nimport type { WorkspaceRecordState } from '../../../../domain/mapping/workspace/workspaceRecords';\nimport { RecordStorage } from './recordStorage';\n\n/** One worker per opened workspace; no worker construction in a store() call. */"
+      },
+      {
+        "oldStart": 46,
+        "oldLines": 6,
+        "newStart": 46,
+        "newLines": 16,
+        "heading": " export class WorkspaceStorage {",
+        "oldSideExcerpt": "    await this.records!.commit(changes);\n  }\n\n  async restore() {\n    await this.records?.flush();\n    this.records?.dispose(); this.ready = undefined;"
+      }
+    ]
+  },
+  {
+    "path": "src/server/app/bootstrap.ts",
+    "status": "modified",
+    "hunks": [
+      {
+        "oldStart": 1,
+        "oldLines": 6,
+        "newStart": 1,
+        "newLines": 23,
+        "heading": "",
+        "oldSideExcerpt": "import { AgentContextService } from '../../../application/mapping/agent/agentContextService';\nimport { LiveCanvasService } from '../../../application/mapping/agent/liveCanvasService';\nimport { RevisionedDiagramService } from '../../../domain/core/diagrams/diagramService';\nimport { FakeDiagramEditRuntime, PiDiagramEditRuntime } from '../../../infrastructure/mapping/agents/diagram-edit/diagramEditRuntime';\nimport { CoreApplication } from \"../../../application/core/application\";\nimport { AgentDiagrammingSessionService } from '../../../application/mapping/agent/sessionService';"
+      },
+      {
+        "oldStart": 13,
+        "oldLines": 6,
+        "newStart": 30,
+        "newLines": 7,
+        "heading": " import { QuickJsAgentRuntime } from '../../../infrastructure/mapping/agent/execR",
+        "oldSideExcerpt": "import { DiagramChangeSessionStore } from '../../../infrastructure/mapping/changes/diagramChangeSessionStore';\n\nimport { DiagramStore } from \"../../../infrastructure/core/persistence/store\";\nimport { CodexLocalChatRuntime, FakeLocalChatRuntime } from \"../../../infrastructure/mapping/agents/chat/localChatRuntime\";\nimport { FakeFileCompactionRuntime, PiFileCompactionRuntime } from \"../../../infrastructure/mapping/agents/compaction/fileCompactionRuntime\";\nimport { FakeMappingAgentRuntime, PiMappingAgentRuntime } from \"../../../infrastructure/mapping/agents/selection/agentRuntime\";"
+      },
+      {
+        "oldStart": 34,
+        "oldLines": 6,
+        "newStart": 52,
+        "newLines": 9,
+        "heading": " import { resolveFileCompactionSettings } from '../../../infrastructure/mapping/a",
+        "oldSideExcerpt": "import { loadFileCompactionPrompts } from '../../../infrastructure/mapping/agents/compaction/prompts';\nimport { FileCompactionStore } from '../../../infrastructure/mapping/persistence/compactionStore';\nimport { MappingWorkspaceStore } from '../../../infrastructure/mapping/persistence/workspace/mappingWorkspaceStore';\n\nexport const corpusAccess: CorpusAccess = {\n  provider: corpusProvider, readDocumentLines: readCorpusDocumentLines, discover: discoverDomainCorpus"
+      },
+      {
+        "oldStart": 50,
+        "oldLines": 22,
+        "newStart": 71,
+        "newLines": 43,
+        "heading": " export function createFileCompactionService(core: CoreApplication, runtime: File",
+        "oldSideExcerpt": "\n/** The only production module that chooses and connects concrete integrations. */\nexport function createBackend(projectRoot: string, diagramsDirectory: string, configuredDomainProfileId: BuiltInDomainProfileId | undefined,\n  mappingPocSourceRoot: string, options: { lspEnabled?: boolean }) {\n  const fake = process.env.NEW_DIAGRAM_AGENT === \"fake\";\n  const chatRuntime = fake ? new FakeLocalChatRuntime() : new CodexLocalChatRuntime();\n  const mappingRuntime = fake ? new FakeMappingAgentRuntime() : new PiMappingAgentRuntime();\n  const diagramEditRuntime = fake ? new FakeDiagramEditRuntime() : new PiDiagramEditRuntime(mappingPocSourceRoot);\n  const store = new DiagramStore(projectRoot, diagramsDirectory);\n  const core = createCoreApplication(store);\n  const compactionService = createFileCompactionService(core, fake ? new FakeFileCompactionRuntime() : new PiFileCompactionRuntime());\n  const languageService = options.lspEnabled === true ? new ProjectLanguageService() : undefined;\n  const diagrams = new MappingDiagramService(store, corpusAccess, projectRoot, configuredDomainProfileId);\n  const canvasBridge = new CanvasSessionBridge();\n  const agentContexts = new AgentContextService();\n  const liveCanvas = new LiveCanvasService(() => canvasBridge.list(), async (workspaceInstanceId, documentId) =>\n    await canvasBridge.dispatch(workspaceInstanceId, { method: 'context', documentId }) as import('../../../domain/mapping/agent/liveCanvasStatus').LiveCanvasContext, agentContexts);\n  const agent = new AgentDiagrammingSessionService(canvasBridge, diagrams, store, new QuickJsAgentRuntime(),\n    new ChangeSessionService(new DiagramChangeSessionStore(store.storeRoot, undefined, true), store, canvasBridge), new RevisionedDiagramService(diagramEditRuntime), agentContexts);\n  const routes = {\n    core: createCoreRoutes({\n      application: core,"
+      },
+      {
+        "oldStart": 74,
+        "oldLines": 14,
+        "newStart": 116,
+        "newLines": 16,
+        "heading": " export function createBackend(projectRoot: string, diagramsDirectory: string, co",
+        "oldSideExcerpt": "    }),\n    mapping: createMappingRoutes({\n      selection: new SelectionService(store, mappingRuntime, mappingPocSourceRoot),\n      diagrams, agent, liveCanvas,\n      workspace: new MappingWorkspaceService(store, new MappingWorkspaceStore(store.storeRoot, store.diagramPersistence)),\n      chat: new LocalChatService(store, corpusAccess, chatRuntime, mappingPocSourceRoot),\n      compactionService\n    })\n  };\n  return {\n    routes, liveCanvas, dispose() {\n      agent.dispose(); diagramEditRuntime.dispose(); canvasBridge.dispose(); languageService?.dispose(); mappingRuntime.dispose(); chatRuntime.dispose(); compactionService.dispose();\n    }\n  };"
+      }
+    ]
+  }
+]

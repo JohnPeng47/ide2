@@ -1,0 +1,185 @@
+{
+ "boxes": [
+  {
+   "id": "1:1-1:11",
+   "text": "[B] Diagram",
+   "rect": {
+    "line1": 1,
+    "col1": 1,
+    "line2": 1,
+    "col2": 11
+   }
+  },
+  {
+   "id": "3:1-3:7",
+   "text": "Diagram",
+   "rect": {
+    "line1": 3,
+    "col1": 1,
+    "line2": 3,
+    "col2": 7
+   }
+  },
+  {
+   "id": "5:7-5:44",
+   "text": "diagramId      stable service identity",
+   "rect": {
+    "line1": 5,
+    "col1": 7,
+    "line2": 5,
+    "col2": 44
+   },
+   "parent": "3:1-3:7"
+  },
+  {
+   "id": "6:7-6:59",
+   "text": "revisionId     service revision: diagram-revision-...",
+   "rect": {
+    "line1": 6,
+    "col1": 7,
+    "line2": 6,
+    "col2": 59
+   },
+   "parent": "3:1-3:7"
+  },
+  {
+   "id": "7:7-7:45",
+   "text": "id             local scene.contents key",
+   "rect": {
+    "line1": 7,
+    "col1": 7,
+    "line2": 7,
+    "col2": 45
+   },
+   "parent": "3:1-3:7"
+  },
+  {
+   "id": "8:7-8:40",
+   "text": "revision       nonnegative integer",
+   "rect": {
+    "line1": 8,
+    "col1": 7,
+    "line2": 8,
+    "col2": 40
+   },
+   "parent": "3:1-3:7"
+  },
+  {
+   "id": "10:7-13:43",
+   "text": "content: DeepReadonly<DiagramContent>\nrevisionId = id + ':' + revision\nascii + asciiSha256\nstructure",
+   "rect": {
+    "line1": 10,
+    "col1": 7,
+    "line2": 13,
+    "col2": 43
+   },
+   "parent": "3:1-3:7"
+  },
+  {
+   "id": "14:15-14:27",
+   "text": "kind: diagram",
+   "rect": {
+    "line1": 14,
+    "col1": 15,
+    "line2": 14,
+    "col2": 27
+   },
+   "parent": "10:7-13:43"
+  },
+  {
+   "id": "15:15-19:58",
+   "text": "kind: tree\nparserVersion: ascii-tree-1 | ascii-tree-2\nrootIds + nodes keyed by content-node ID\nlabel, line, columns, parentId, childIds\nfoldRanges -> visibleContentLines",
+   "rect": {
+    "line1": 15,
+    "col1": 15,
+    "line2": 19,
+    "col2": 58
+   },
+   "parent": "10:7-13:43"
+  },
+  {
+   "id": "21:7-27:56",
+   "text": "sourceContext: DeepReadonly<DiagramSourceContext>\ncontentHash = SHA256(content.ascii)\nbinding? -> sourceId, repositoryIdentity\ncorpus {kind, root, revision?}\ndomainProfileId\nmappings[] -- entityId --> evidence[entityId]\nsourceRangeIndex / sourceRangeId?",
+   "rect": {
+    "line1": 21,
+    "col1": 7,
+    "line2": 27,
+    "col2": 56
+   },
+   "parent": "3:1-3:7"
+  },
+  {
+   "id": "30:28-31:55",
+   "text": "sourceRanges: relative path,\nline bounds + originalLines",
+   "rect": {
+    "line1": 30,
+    "col1": 28,
+    "line2": 31,
+    "col2": 55
+   }
+  },
+  {
+   "id": "32:7-32:27",
+   "text": "jumps?: DiagramJump[]",
+   "rect": {
+    "line1": 32,
+    "col1": 7,
+    "line2": 32,
+    "col2": 27
+   },
+   "parent": "3:1-3:7"
+  },
+  {
+   "id": "3:33-3:60",
+   "text": "repository-independent value",
+   "rect": {
+    "line1": 3,
+    "col1": 33,
+    "line2": 3,
+    "col2": 60
+   }
+  },
+  {
+   "id": "35:1-36:58",
+   "text": "validateDiagram: canonical content, hash, jumps, mappings,\nsource binding, evidence ranges + mapping/evidence joins",
+   "rect": {
+    "line1": 35,
+    "col1": 1,
+    "line2": 36,
+    "col2": 58
+   }
+  },
+  {
+   "id": "37:1-38:57",
+   "text": "diagramSource / queryDiagramSourceContext\nmappings / entries / forSelection(rect) / search(query)",
+   "rect": {
+    "line1": 37,
+    "col1": 1,
+    "line2": 38,
+    "col2": 57
+   }
+  },
+  {
+   "id": "39:1-39:38",
+   "text": "Sources: diagram.ts, diagramContent.ts",
+   "rect": {
+    "line1": 39,
+    "col1": 1,
+    "line2": 39,
+    "col2": 38
+   }
+  }
+ ],
+ "edges": [
+  {
+   "from": "21:7-27:56",
+   "to": "30:28-31:55",
+   "direction": "->"
+  },
+  {
+   "from": "3:1-3:7",
+   "to": "35:1-36:58",
+   "direction": "->"
+  }
+ ]
+}

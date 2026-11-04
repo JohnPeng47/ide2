@@ -47,6 +47,27 @@ export class WorkspaceRecordStore {
     if (Object.keys(records).length) validateRecordUpdate(records, Object.keys(records), projectId, historyValidation);
     return this.cached = { raw, manifest, records, historyValidation };
   }
+  /** Inspect saved-view metadata without reading the workspace's entire checkpoint archive. */
+  async viewHeaders(projectId: string): Promise<import('../../../../domain/mapping/workspace/workspaceRecords').WorkspaceViewHeader[] | undefined> {
+    let raw: string;
+    try { raw = await readFile(this.file, 'utf8'); } catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined; throw error; }
+    const manifest = JSON.parse(raw) as Manifest;
+    if (manifest.schemaVersion !== 1 || manifest.projectId !== projectId) throw Error('Workspace belongs to another project or has an invalid version');
+    const read = async (key: string) => {
+      const id = manifest.records[key];
+      if (!id || !/^[a-f0-9]{64}$/.test(id)) throw Error('Invalid workspace record reference');
+      const text = await readFile(path.join(this.root, 'workspace-records', id + '.json'), 'utf8');
+      if (hash(text) !== id) throw Error('Workspace record integrity failure');
+      return JSON.parse(text);
+    };
+    if (!manifest.records.workspace) return [];
+    const index = await read('workspace') as import('../../../../domain/mapping/workspace/workspaceRecords').WorkspaceIndex;
+    return Promise.all(index.documentIds.map(async documentId => {
+      const prefix = `document/${encodeURIComponent(documentId)}/`;
+      const [metadata, header] = await Promise.all([read(prefix + 'metadata'), read(prefix + 'history')]);
+      return { documentId, type: metadata.type, canvasViews: header.canvasViews };
+    }));
+  }
   /** Pin immutable references from one manifest; only hydrate the selected current checkpoint. */
   async capture(projectId: string, documentId: string, checkpointId: string, version: number) {
     const manifest = JSON.parse(await readFile(this.file, 'utf8')) as Manifest;

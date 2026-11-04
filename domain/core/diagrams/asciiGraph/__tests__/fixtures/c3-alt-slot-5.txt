@@ -1,0 +1,27 @@
+[C] FloatingBox variants
+=========================================================
+[FloatingBox]
+  +-- FloatingPane --> persisted in DisplayState
+  '-- FloatingBoxArrow --> derived from document.edges
+[DisplayState]
+  rootIds + nodes[id]; ownership via childIds
+  base: id, expansion, expandedGeometry?
+  position{x,y} + bounds{width,height}: CSS pixels
+  coordinateSpace: canvas / viewport
+  geometryPolicy: automatic/manual + content/fixed
+    |
+    +-- selection: SelectionRegion
+    |     captured source + rect + selectedIds
+    |     stacked/chained + activeChildId?
+    +-- projection: ProjectedPane
+    |     call-tree / compaction / source-code / code-panel
+    |     title + projection/revision IDs + activeChildId?
+    +-- conversation: ConversationPane
+    |     thread + draft + canvasAnchor
+    |     compact / floating / docked
+    '-- detail: DetailPane --> title + ascii + sectionId?
+[Floating placement]
+  automatic selection --> grid-region; projection --> parent
+  conversation --> anchor; other panes --> stored coordinates
+  arrow --> connection; no arrow record in DisplayState
+Sources: displayModel.ts; canvasDisplayNode.ts

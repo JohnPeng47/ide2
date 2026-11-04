@@ -1,0 +1,48 @@
+Saved CanvasViews and branching
+|
++-- Saved view = named canvas state with checkpoint history
+|   +-- startCheckpointId -> first saved checkpoint
+|   +-- checkpointIds -> retained checkpoints in order
+|   +-- finalCheckpointId -> latest saved checkpoint
+|   |   +-- Canvas composition: diagrams, layout, connections, presentation
+|   |   +-- Diagram bindings -> exact diagram revisions
+|   |   +-- Saved view state, including camera
+|   |   `-- Existing checkpoints remain immutable
+|   `-- activeViewId -> the view currently being edited
+|
++-- Capture and save
+|   +-- CREATE(name) -> save the current canvas immediately; make it active
+|   +-- EDIT -> current canvas can differ from the saved endpoint
+|   |   `-- Dirty indicator ignores camera and selection-only changes
+|   `-- SAVE / Ctrl+S -> update the active view's saved endpoint
+|       +-- Retain earlier checkpoints; append current checkpoint if new
+|       `-- Clear that view's stashed working copy
+|
++-- Switch views without losing work
+|   +-- OPEN(target) -> stash the outgoing active view's current state
+|   |   `-- workingCopies[viewId] -> checkpoint containing unsaved edits
+|   +-- Resume target's working copy if present
+|   |   `-- Otherwise restore target's latest saved checkpoint
+|   +-- Keep the current camera in place while switching
+|   `-- Reopening preserves edits; SAVE makes them the saved endpoint
+|
++-- Branch from a saved checkpoint
+|   +-- FORK(parent, name) -> create and open one independent child
+|   +-- ALTERNATIVES(parent, names) -> create grouped independent children
+|   |   +-- All children start from ONE pinned parent checkpoint
+|   |   `-- Current canvas stays open; this command only creates copies
+|   +-- Each child records its ancestry
+|   |   +-- parentViewId -> parent view
+|   |   +-- forkCheckpointId -> exact parent checkpoint used
+|   |   `-- alternativeGroupId -> sibling alternatives, when grouped
+|   `-- Unsaved parent edits are excluded: save first to include them
+|
+`-- Choose which branches to retain
+    +-- KEEP(candidate) -> user chooses an alternative
+    |   +-- Open/resume it if needed, then save it
+    |   +-- Archive its group siblings and their descendants
+    |   `-- Retain the chosen candidate and its descendants
+    +-- DISCARD(view) -> archive that view and its descendants
+    |   `-- If active branch is archived: open its available parent,
+    |       or clear the active view when no parent is available
+    `-- Archived views leave the explorer; saved history remains retained

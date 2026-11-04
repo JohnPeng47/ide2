@@ -1,0 +1,39 @@
+[B] Diagram
+=============================================================
+Diagram                         repository-independent value
+  |
+  +-- diagramId      stable service identity
+  +-- revisionId     service revision: diagram-revision-...
+  +-- id             local scene.contents key
+  +-- revision       nonnegative integer
+  |
+  +-- content: DeepReadonly<DiagramContent>
+  |     revisionId = id + ':' + revision
+  |     ascii + asciiSha256
+  |     structure
+  |       +-- kind: diagram
+  |       +-- kind: tree
+  |             parserVersion: ascii-tree-1 | ascii-tree-2
+  |             rootIds + nodes keyed by content-node ID
+  |             label, line, columns, parentId, childIds
+  |             foldRanges -> visibleContentLines
+  |
+  +-- sourceContext: DeepReadonly<DiagramSourceContext>
+  |     contentHash = SHA256(content.ascii)
+  |     binding? -> sourceId, repositoryIdentity
+  |                 corpus {kind, root, revision?}
+  |                 domainProfileId
+  |     mappings[] -- entityId --> evidence[entityId]
+  |                    sourceRangeIndex / sourceRangeId?
+  |                                    |
+  |                                    v
+  |                        sourceRanges: relative path,
+  |                        line bounds + originalLines
+  +-- jumps?: DiagramJump[]
+        |
+        v
+validateDiagram: canonical content, hash, jumps, mappings,
+  source binding, evidence ranges + mapping/evidence joins
+diagramSource / queryDiagramSourceContext
+  mappings / entries / forSelection(rect) / search(query)
+Sources: diagram.ts, diagramContent.ts

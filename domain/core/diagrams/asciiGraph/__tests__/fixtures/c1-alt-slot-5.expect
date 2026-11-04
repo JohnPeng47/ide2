@@ -1,0 +1,28 @@
+[C] FloatingBox variants
+FloatingBox
++ FloatingPane OR derived FloatingBoxArrow
+DisplayState
++ rootIds + nodes: Record<id, FloatingPane>
++ DisplayNodeBase
++ id / childIds / expansion / expandedGeometry?
++ position(x,y) + bounds(width,height): CSS pixels
++ coordinateSpace: canvas | viewport
++ placement: automatic | manual; sizing: content | fixed
+  selection: SelectionRegion
+  + source box/content/revision/ASCII + rect + selectedIds
+  + stacked | chained; activeChildId?
+  + captured context; membership in SelectionState
+  projection: ProjectedPane
+  + title / projectionId? / source,target revision?
+  + call-tree | compaction | source-code | code-panel
+  conversation: ConversationPane
+  + thread / draft / canvasAnchor
+  + compact | floating | docked
+  detail: DetailPane
+  + title / ascii / sectionId?
+Derived arrows
++ document.edges -> drawEdge -> FloatingBoxArrow
+Geometry lifecycle
++ collapse saves expandedGeometry -> expand restores
++ auto selection -> grid region; projection -> owner
++ conversation -> anchor/presentation; otherwise stored

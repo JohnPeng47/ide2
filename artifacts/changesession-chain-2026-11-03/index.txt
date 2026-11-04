@@ -1,0 +1,35 @@
+Completed ChangeSession prompt workflow
+
+http://localhost:5191/evals?experiment=41f10540-6cc6-494e-b3e7-82c5429d9cc2
+
+Context: ChangeSession v2 05 - AgentChat, generation and Canvas API
+saved-agent-context-b4df6a6c-83f6-428f-9247-7bd2f2548e7c
+One case, one baseline condition, one independent sample; three sequential stages. Model: gpt-6-astra/high.
+
+modify - Run #38
+Run ID: aaf261aa-617d-424c-8970-6c5b7777eb0f
+Canvas: representation-516c5392-d7c7-42c0-99a6-6e7f8423b9b3
+Checkpoint: canvas-revision-7e5dd612-6c60-4cbf-8c51-86a01814ae6e
+2 diagrams, 6 connections
+
+c1 - Run #39
+Run ID: a6aa88bd-5275-4441-abf7-cbfd8322ba09
+Canvas: representation-31262644-00e7-4c82-95da-38ad013036ac
+Checkpoint: canvas-revision-9a8a7772-1d83-4819-b9cf-0888f7d4d313
+3 diagrams, 7 connections
+
+c2 - Run #40
+Run ID: e289f5a1-ea8d-40e7-933c-42b800106043
+Canvas: representation-3174d9ad-19bd-4488-b091-2c5aa1ea0710
+Checkpoint: canvas-revision-4947c9fe-ae43-4576-ad4d-d1249459015a
+7 diagrams, 14 connections
+
+C1 means the single N2 central diagram; C2 expands it into a connected central/peripheral cluster. Both carried API parents remain byte-identical after Modify. C2 also preserves the C1 central diagram exactly and adds four details: turns, lifecycle, execution and results.
+
+Verified: experiment has exactly one case/condition/sample and three real registered cells; exact pinned predecessor checkpoints; same immutable AgentContext hash; valid content-node edge anchors; connected outputs; carried parent content and connections. No source canvases were accepted or edited.
+
+Provenance files: state.json, experiment.json, verification.json, pinned-context.json; each stage has prompt-v2.txt, run-request.json, run.json, canvas.json and diagrams.json.
+
+Observed prompt issues: the first prompt-save version mentioned a reserved template filename while saying no template; the API rejected launch before creating a run. Version 2 removes that mention and is the exact executed prompt for all three stages. Generated explanations compare the serialized context.json byte hash with the canonical saved-snapshot hash; those hashes are expected to differ. context-hash-audit.json verifies the distinction and stable input. No rerun was performed for this explanatory warning.
+
+run.mjs orchestrates the three Alternatives execution cells and registers them in the new experiment model. verify.mjs validates the complete saved chain.

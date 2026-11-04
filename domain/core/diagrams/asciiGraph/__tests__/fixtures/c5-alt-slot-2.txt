@@ -1,0 +1,15 @@
+[G] DiagramService
+=======================================================================
+DiagramService = sole content writer
+  create(input) ---------> DiagramRevisionEditor.prepareCreate
+  revise(baseId, edit) --> prepareEdit; unchanged -> reuse base
+                             |
+                             v
+  issue(prepared, base?) -> diagramRevisions.register
+    revision: id, diagramId, parentId?, diagram, nodeRefs
+    node correspondence -> preserve nodeRefs; new nodes -> UUID
+  getRevision(id) / listRevisions(diagramId) -> registry reads
+  generate(request, options) -> DiagramGenerator.generate
+    agentContext?, instruction, input, baseRevisionId?, selection context
+    abort checks + base identity check -> revise(replace) OR create
+Source: diagramService.ts

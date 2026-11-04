@@ -2,7 +2,7 @@ import { alternativeSelections, emptyDiagramAlternatives } from '../../core/pres
 import { presentationHighlights } from '../../core/presentation/diagramPresentation';
 import { rebaseDiagramHighlights, type DiagramHighlight } from '../../core/diagrams/diagramHighlight';
 import type { CanvasViewComparison, CanvasViewSnapshot } from '../../core/diagrams/canvasView';
-import { buildDiagramContent } from '../../core/diagrams/diagramContent';
+import { buildDiagramContent, contentParserVersion } from '../../core/diagrams/diagramContent';
 import { diagramContentNodes } from '../../core/diagrams/diagramContentNodes';
 import { resolveRevisionLines } from '../../core/diagrams/diagramRevisionSelection';
 import type { DiagramAnchor } from '../../core/diagrams/diagramConnection';
@@ -38,8 +38,7 @@ function project(snapshot: CanvasViewSnapshot) {
       const rows = resolveRevisionLines(revision, choices, id => snapshot.revisions[id]);
       const ascii = rows.map(row => row.revision.diagram.content.ascii.split('\n')[row.sourceLine - 1]).join('\n');
       const structure = rows[0]?.revision.diagram.content.structure ?? diagram.content.structure;
-      const content = buildDiagramContent(ascii, diagram.content.revisionId, structure.kind,
-        structure.kind === 'tree' ? structure.parserVersion : undefined);
+      const content = buildDiagramContent(ascii, diagram.content.revisionId, structure.kind, contentParserVersion(structure));
       refs = {};
       const remap = new Map<string, string>();
       for (const node of diagramContentNodes(content)) {

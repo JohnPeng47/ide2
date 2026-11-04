@@ -1,12 +1,18 @@
 import { z } from 'zod';
+import { promptExperimentSchema, sourceKey, type ComparisonReport } from './comparisonReport';
 import { compareRangesSchema, compareSourceSchema, type CompareCanvasCopy } from './comparePageSession';
 
 export const generateComparisonSchema = z.object({
   requestId: z.string().uuid(), title: z.string().trim().min(1).max(120).default('Generated diagram comparisons'),
   sources: z.array(compareSourceSchema).min(2).max(10).refine(sources => new Set(sources.map(s => `${s.documentId}:${s.viewId ?? ''}`)).size === sources.length, 'Select distinct views'),
+  experiment: promptExperimentSchema.optional(),
   model: z.string().trim().min(1).max(100).default('gpt-6-sol'),
   effort: z.enum(['low', 'medium', 'high', 'xhigh']).default('high')
-}).strict();
+}).strict().refine(input => {
+  if (!input.experiment) return true;
+  const groups = [...input.experiment.baseline, ...input.experiment.prompted].map(sourceKey);
+  return new Set(groups).size === groups.length && groups.length === input.sources.length && input.sources.every(s => groups.includes(sourceKey(s)));
+}, 'Experiment groups must partition the supplied sources exactly');
 export type GenerateComparison = z.infer<typeof generateComparisonSchema>;
 const side = z.object({ diagram: z.string().regex(/^D[1-9]\d*$/), ranges: compareRangesSchema }).strict();
 export const generatedComparisonsSchema = z.object({
@@ -19,14 +25,18 @@ export interface ComparisonInputDiagram {
   id: string; name: string; canvasCopyId: string; diagramId: string; revisionId: string; ascii: string;
 }
 export interface ComparisonRun {
+  /** Pinned for new evaluations; older records may not retain their exact prompt. */
+  evaluationPrompt?: string;
+  evaluationPromptVersion?: number;
+  report?: ComparisonReport;
   id: string; projectId: string; request: GenerateComparison; requestHash: string;
   status: 'queued' | 'generating' | 'finished' | 'failed'; createdAt: string; completedAt?: string;
   error?: string; sessionId?: string; usage?: Record<string, number>;
   canvases: CompareCanvasCopy[]; diagrams: ComparisonInputDiagram[];
 }
-export type ComparisonRunSummary = Omit<ComparisonRun, 'canvases' | 'diagrams' | 'requestHash'> & { url?: string };
-export function summarizeComparisonRun({ canvases: _, diagrams: __, requestHash: ___, ...run }: ComparisonRun): ComparisonRunSummary {
-  return { ...run, ...(run.sessionId ? { url: `/evals?session=${encodeURIComponent(run.sessionId)}` } : {}) };
+export type ComparisonRunSummary = Omit<ComparisonRun, 'canvases' | 'diagrams' | 'requestHash' | 'evaluationPrompt' | 'report'> & { url?: string };
+export function summarizeComparisonRun({ canvases: _, diagrams: __, requestHash: ___, evaluationPrompt: ____, report: _____, ...run }: ComparisonRun): ComparisonRunSummary {
+  return { ...run, ...(run.request.experiment ? { url: `/evals?judgements=&judgement=${encodeURIComponent(run.id + '-report')}` } : run.sessionId ? { url: `/evals?session=${encodeURIComponent(run.sessionId)}` } : {}) };
 }
 
 /** Only ASCII links enter the model prompt. Source evidence and revision metadata stay on the server. */

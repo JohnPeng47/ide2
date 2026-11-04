@@ -1,0 +1,85 @@
+BOUND CANVAS API CONNECTIONS + BATCHED EDITS
+One persistent target. Compact reads. One commit per flushed batch.
+
+  CONNECTION / TARGET
+  +-----------------------------------+   +-----------------------------------+
+  | Agent Chat                        |   | Standalone bound MCP              |
+  | Captures canvas + document        |   | --canvas + --document at startup  |
+  | for the active turn               |   | Lazily attaches; reuses session   |
+  +-----------------+-----------------+   +-----------------+-----------------+
+                    |                                     |
+                    +------------------+------------------+
+                                       v
+                  +------------------------------------------+
+                  | Bound connection supplies sessionId      |
+                  | Calls omit sessionId; mismatches rejected |
+                  +--------------------+---------------------+
+                                       |
+                                       v
+  READ CURRENT STATE
+  +---------------------------------------------------------------------------+
+  | canvas.read({level: "small"}) -> version + read-scoped IDs + current state  |
+  | Small: ASCII, anchors, source evidence/mappings, highlights, collapse, jumps|
+  | Full:  adds layout, groups, floating objects, edges and view               |
+  | nodeIds filters the read; history is excluded                              |
+  +------------------------------------+--------------------------------------+
+                                       |
+                                       | use returned version and IDs
+                                       v
+  EXECUTE: synchronous JavaScript with canvas / nodes / edges; use return
+  +---------------------------------------------------------------------------+
+  | exec({expectedVersion: V, requestId: unique, code: ...})                    |
+  | Mutation gate: expectedVersion must match the execution's initial version |
+  | Each flush also checks its expected document version                      |
+  +------------------------------------+--------------------------------------+
+                                       |
+                                       v
+  DEFAULT: mode = "batched"
+  +---------------------------------------------------------------------------+
+  | mutation A -> mutation B -> queued operations                             |
+  |                            calls return ID handles, not full node results |
+  |                                      |                                    |
+  |                         FLUSH BOUNDARY                                     |
+  |                         - read / canvas API call                          |
+  |                         - before setSourceMappings or setJumps             |
+  |                         - successful script completion                    |
+  |                                      |                                    |
+  |                                      v                                    |
+  |                         Apply the pending batch atomically                 |
+  |                         1 browser command / version increment / undo entry |
+  |                                      |                                    |
+  |                                      v                                    |
+  |                         Continue at the updated version                   |
+  +---------------------------------------------------------------------------+
+
+  EXAMPLE: one exec can contain multiple batches
+  A -> B -> read -> C -> D -> script returns
+  [batch 1]  |     [batch 2]       |
+       +-----+          +---------+
+       v                v
+    commit V+1       commit V+2
+    read sees A+B    completion flushes C+D
+
+  RESULTS + RECOVERY
+  +--------------------------------------+------------------------------------+
+  | Successful execution                 | Failure behavior                   |
+  | {value, transaction:                 | Uncaught script error:             |
+  |   {version, receipts: [...]}}        |   discard pending edits            |
+  | Receipts identify applied operations| Rejected batch:                    |
+  | and saved IDs/status at each commit  |   applies none of that batch       |
+  | Later edits can supersede receipts  | Earlier flushed batches survive    |
+  +--------------------------------------+------------------------------------+
+  | Uncertain transport outcome -> retry IDENTICAL arguments + requestId       |
+  | Replay completed API results; resend only the unacknowledged call/batch   |
+  | Preserve operation IDs, expected version and request IDs during retry      |
+  | Changed arguments with reused ID -> REQUEST_ID_CONFLICT                    |
+  | Version/validation error -> reread; correct work with a new requestId      |
+  | Retry state is in memory and does not survive a backend restart            |
+  +---------------------------------------------------------------------------+
+
+  LEGACY OPT-IN: mode = "immediate"
+  Each mutation commits separately and returns full per-edit results.
+  Separate commits per mutation are NOT the default.
+
+  Implementation: server.ts / chatBindings.ts -> sessionService.ts
+                  contracts.ts / currentCanvasRead.ts / mutationReceipt.ts

@@ -1,0 +1,27 @@
+[C] FloatingBox variants
+DisplayState
++ rootIds + nodes[id] -> FloatingPane ownership tree
++ add child -> owner.childIds; remove -> subtree removed
+FloatingPane
++ DisplayNodeBase = id + childIds + expansion
++ geometry = position(x,y) + bounds(width,height)
++ coordinateSpace = canvas | viewport; CSS pixels
++ policy = automatic/manual placement + content/fixed size
++ expandedGeometry? -> restore allocation after collapse
+  selection
+  + sourceBoxId/contentId/ascii/revision? + rect/selectedIds
+  + captured context; stacked/chained + activeChildId?
+  projection
+  + title + projectionId? + source/targetRevisionId?
+  + call-tree | compaction | source-code | code-panel
+  conversation
+  + thread + draft + canvasAnchor + presentation
+  + compact | floating | docked
+  detail -> title + ascii + sectionId?
+FloatingBox
++ FloatingPane OR FloatingBoxArrow
++ document.edges -> drawEdge -> arrow follows anchors
++ arrows are derived; DisplayState stores panes only
+
+edge "DisplayState" -> "FloatingPane"
+edge "FloatingPane" -> "FloatingBox"

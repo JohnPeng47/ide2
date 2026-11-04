@@ -1,5 +1,6 @@
 import { diagramContentNodes } from '../../core/diagrams/diagramContentNodes';
 import type { DiagramContentNode } from '../../core/diagrams/diagramContent';
+import { contentNodeIntersectsRect, contentNodeOverlapsRange } from '../../core/diagrams/contentNodeGeometry';
 import type { Diagram } from '../../core/diagrams/diagram';
 import { diagramSelectionNodes } from '../workspace/mappingDocument';
 import type { MappingPocGridRect } from './mappingPoc';
@@ -65,8 +66,9 @@ export function regionSelectionItem(diagram: Diagram, boxId: string, rect: Mappi
   } };
 }
 
-export function nodeIntersectsRect(node: Pick<DiagramContentNode, 'line' | 'startColumn' | 'endColumn'>, rect: MappingPocGridRect): boolean {
-  return node.line >= rect.startLine && node.line <= rect.endLine && node.startColumn <= rect.endColumn && node.endColumn >= rect.startColumn;
+/** Intersection semantics: a node is in the rectangle when any of its text spans overlaps it. */
+export function nodeIntersectsRect(node: Pick<DiagramContentNode, 'line' | 'startColumn' | 'endColumn' | 'lines'>, rect: MappingPocGridRect): boolean {
+  return contentNodeIntersectsRect(node, rect);
 }
 
 /** Legacy rectangles are read once as membership; current selections use explicit IDs. */
@@ -89,7 +91,7 @@ export function withSelectionNodes(item: SelectionItem, diagram: Diagram, ids: r
   return { ...item, id: item.region ? item.id : crypto.randomUUID(), region: {
     sourceContentId: diagram.id, sourceRevisionId: diagram.content.revisionId, sourceAscii: diagram.content.ascii,
     rect, contentNodeIds: [...ids], selectedIds: diagramSelectionNodes(diagram).filter(mapping => nodes.some(node =>
-      mapping.head.line === node.line && mapping.head.startColumn <= node.endColumn && mapping.head.endColumn >= node.startColumn)).map(mapping => mapping.id)
+      contentNodeOverlapsRange(node, mapping.head))).map(mapping => mapping.id)
   } };
 }
 

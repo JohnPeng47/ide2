@@ -1,0 +1,17 @@
+[G] DiagramService
+RevisionedDiagramService
++ create(input)
+Sole content writer
+revise(baseRevisionId, edit)
+DiagramRevisionEditor -> prepared diagram + node correspondence
+Issued diagram revision
++ diagramRevisions.register -> result {diagram, nodeIds, revision, ...}
++ stable diagramId; new revisionId; parentId for changed revisions
++ nodeRefs reuse mapped base identity, otherwise allocate node IDs
++ unchanged edit -> base revision; getRevision / listRevisions -> reads
++ generate -> DiagramGenerator -> create OR replace base via revise
++ abort checks + matching input.id; durable adapters flush before publish
+
+edge "RevisionedDiagramService" -> "DiagramRevisionEditor -> prepared diagram + node correspondence"
+edge "revise(baseRevisionId, edit)" -> "DiagramRevisionEditor -> prepared diagram + node correspondence"
+edge "DiagramRevisionEditor -> prepared diagram + node correspondence" -> "Issued diagram revision"

@@ -1,0 +1,19 @@
+[G] DiagramService
+[DiagramService: sole content writer]
+  create(input)
+  revise(baseRevisionId, edit)
+  generate(...)
+  + generator
+  + create / replace
+[DiagramRevisionEditor]
++ prepared diagram + nodeIds correspondence + lineAfter?
+[issue / diagramRevisions.register]
++ id + diagramId + parentId? + diagram + nodeRefs
++ matched nodes retain refs; other nodes receive new refs
++ unchanged revise reuses base; getRevision / listRevisions read records
++ durable adapters flush issued records before publishing canvases
+Source: diagramService.ts
+
+edge "create(input)" -> "[DiagramRevisionEditor]"
+edge "revise(baseRevisionId, edit)" -> "[DiagramRevisionEditor]"
+edge "[DiagramRevisionEditor]" -- "[issue / diagramRevisions.register]"

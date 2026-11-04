@@ -1,0 +1,49 @@
+DIAGRAM SEARCH AND MAPPED-SOURCE NAVIGATION
+Find diagram text -> reveal matching context -> inspect mapped source
+
++--------------------------------------------------+     +--------------------------------------------------+
+| SEARCH DIAGRAMS                                  |     | INSPECT MAPPED SOURCE                            |
+|                                                  |     |                                                  |
+| Type a query, or click a diagram symbol          |     | Mapped source projection / selection             |
+| (type, variable, function; plain mouse click)    |     |                      |                           |
+| Drags and modified clicks do not start search    |     |                      v                           |
+|                      |                           |     | Resizable workspace source panel                 |
+|                      v                           |     | - Selected code panel or source-file pane        |
+| Choose scope + optional Match case               |     | - Panel size retained per canvas document        |
+| - This canvas: active canvas or proposal         |     | - Close collapses visible source panes           |
+| - Entire project: current project canvases       |     |                      |                           |
+|   Global search excludes proposal placements     |     |                      v                           |
+| - Symbol click starts entire-project search      |     | Read by project + source ID + file path          |
+|                      |                           |     | Source identity separates same-path files        |
+|                      v                           |     | from different repositories                      |
+| Background search of current diagram text        |     |                      |                           |
+| - Includes unsaved edits; no history or files    |     |                      v                           |
+| - Shared content indexed once, many placements   |     | Current file hash matches projection hash?       |
+| - Batched results; 1,000 matching-line limit     |     |         /                         \              |
+|                      |                           |     |       yes                          no            |
+|                      v                           |     |        |                            |            |
+| Results grouped by canvas, then diagram          |     |        v                            v            |
+| Matching text and line numbers                   |     | Mapped ranges +          Current source with     |
+| Click / Enter: reveal; Shift+Enter: previous     |     | compaction available     a changed-file notice   |
+|                      |                           |     |                          No mapped highlights    |
+|                      v                           |     |                          or compaction folds     |
+| Reveal matching diagram context                  |     |                          Update projection       |
+| Auto-select unfolds matching boxes, ancestors    |     |                          to realign mappings     |
+| and tree branches after results settle           |     |                                                  |
+| Auto-reveal preserves content and camera         |     | Navigate within the source pane                  |
+|                                                  |     | - Files, mapped ranges, back/forward, reload     |
+| Inspect the revealed diagram's source mappings   |     | - Ctrl/Cmd+click or F12: go to definition        |
+|                                                  |     |   when supported and language service enabled    |
+|                                                  |     | - One definition: open; several: choose          |
+|                                                  |     | - Loading errors offer Retry                     |
++--------------------------------------------------+     +--------------------------------------------------+
+
+  Search and source inspection meet at the diagram's mapped source projection.
+
++-----------------------------------------------------------------------------------------------------------+
+| KEEP NAVIGATION TIED TO CURRENT CONTENT                                                                   |
+| Search: new queries cancel old work; results must match the current request and index generation.          |
+| Reveal: revision ID and diagram text hash must still match before automatic expansion.                     |
+| Source: project, source ID and file path identify the destination; file hashes protect mapped ranges.      |
+| Pending file reads and definition lookups are cancelled when their destination changes.                    |
++-----------------------------------------------------------------------------------------------------------+

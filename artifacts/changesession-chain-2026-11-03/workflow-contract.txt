@@ -1,0 +1,13 @@
+Experiment: http://localhost:5191/evals?experiment=41f10540-6cc6-494e-b3e7-82c5429d9cc2
+Saved input: saved-agent-context-b4df6a6c-83f6-428f-9247-7bd2f2548e7c
+Input content hash: a82096318fdb465f19ee0370ccc90a10b7f1bac7de80d39acdafb8bcf4af2566
+
+One case, one baseline condition, one sample; model gpt-6-astra, effort high.
+
+modify: context.json -> two proposed API parent replacements.
+c1: same context.json + pinned Modify canvas as previous-1.json -> same two parents + one N2 central diagram.
+c2: same context.json + pinned Modify as previous-1.json + pinned C1 as previous-2.json -> same parents + N2 central diagram + 2 to 4 connected details.
+
+C1/C2 are interpreted visibly as central representation then central/peripheral cluster. No layout template. Prompt v2 removes a reserved template filename from the no-template instruction because the run API treats any occurrence as a template requirement; no generation ran with v1.
+
+The experiment model registers the three real Alternatives execution cells as logical stages. No source canvases are accepted or modified. No Judge report is part of this run.

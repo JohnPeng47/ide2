@@ -11,11 +11,11 @@ export const evalRunRequestSchema = z.object({
     .refine(items => new Set(items.map(item => item.promptId)).size === items.length, 'Select each prompt once'),
   /** Canvas inputs pin a checkpoint; AgentContext inputs are immutable by ID. */
   inputs: z.record(z.string().regex(/^[a-z][a-z0-9_]*$/), z.union([compareSourceSchema, z.object({ agentContextId: savedAgentContextIdSchema }).strict()])),
-  task: z.string().max(20000).optional(),
   /** Earlier generated canvases attached as extra input (Alternatives). */
   previous: z.array(z.string().regex(/^[A-Za-z0-9][A-Za-z0-9_-]{0,80}$/)).max(6).optional(),
+  referenceIds: z.array(id).max(30).refine(ids => new Set(ids).size === ids.length, "Select each reference once").optional(),
   layoutTemplateId: id.optional(),
-  passes: z.number().int().min(1).max(4).default(1),
+  passes: z.number().int().min(1).max(20).default(1),
   model: z.string().trim().min(1).max(100).default('gpt-6-sol'),
   effort: z.enum(['low', 'medium', 'high', 'xhigh']).default('high'),
   /** Reruns are filed under the original run and share its AgentContext. */
@@ -26,7 +26,9 @@ export const renameEvalRunSchema = z.object({ name: z.string().trim().max(120) }
 export const evalEfforts = ['low', 'medium', 'high', 'xhigh'] as const;
 
 /** Prompt text is pinned into the run; later prompt edits never change what a run means. */
-export interface EvalRunPrompt { promptId: string; version?: number; name: string; stages: Record<string, string> }
+export interface EvalRunPrompt { promptId: string; version?: number; name: string; stages: Record<string, string>;
+  /** Text of the references the stages cite, frozen when the run starts. */
+  references?: Record<string, { name: string; ascii: string }> }
 export type EvalCellStatus = 'queued' | 'generating' | 'finished' | 'failed' | 'skipped' | 'cancelled';
 export interface EvalRunCell {
   layoutPlacements?: import('../../core/diagrams/layoutTemplate').LayoutPlacement[];
@@ -45,12 +47,13 @@ export interface EvalRun {
   outputSnapshots?: Record<string, import('../../core/diagrams/generatedCanvas').GeneratedCanvasRecord>;
   /** Compatibility records retain their original request and child chat identities. */
   compatibility?: { kind: 'chat-alternatives'; requestId?: string; parentChatId: string; candidates: { viewId: string; chatId: string; name: string }[] };
-  schemaVersion: 1; id: string; requestHash: string; request: EvalRunRequest; projectId: string; workflow: EvalWorkflowId;
+  schemaVersion: 1; id: string; requestHash: string; request: EvalRunRequest & { /** Historical records only; rejected on new requests. */ task?: string }; projectId: string; workflow: EvalWorkflowId;
   agentContextId: string; contextName: string; prompts: EvalRunPrompt[]; inputs: Record<string, CompareCanvasCopy>;
   /** AgentContext inputs, recorded with the hash they had when the run started. */
   contexts?: Record<string, EvalRunContext>;
   /** Pinned copies of earlier alternatives attached to every prompt. */
   previous?: CompareCanvasCopy[];
+  references?: import("./evalReference").EvalReference[];
   status: EvalRunStatus; createdAt: string; completedAt?: string; error?: string; cells: EvalRunCell[];
   /** The original run this one reruns; always a root run, never another rerun. */
   parentRunId?: string;
@@ -61,7 +64,9 @@ export interface EvalRun {
 }
 export interface EvalRunContext { agentContextId: string; name: string; contentHash: string }
 export interface EvalRunInputSummary { source: CompareSource; name: string; canvasName: string; generated?: import('../../core/diagrams/generatedCanvas').GeneratedCanvas }
-export type EvalRunSummary = Omit<EvalRun, 'inputs' | 'previous' | 'requestHash' | 'outputSnapshots'> & { inputs: Record<string, EvalRunInputSummary>; previousNames?: string[]; previousInputs?: EvalRunInputSummary[] };
+export type EvalRunSummary = Omit<EvalRun, 'inputs' | 'previous' | 'requestHash' | 'outputSnapshots'> & { inputs: Record<string, EvalRunInputSummary>; previousNames?: string[]; previousInputs?: EvalRunInputSummary[];
+  /** Judgements own their attachments, allowing one result to evaluate several runs. */
+  judgements?: import('./judgement').JudgementSummary[] };
 
 export const cellKey = (promptId: string | undefined, pass: number, stage: string) => `${promptId ?? 'unknown'}:${pass}:${stage}`;
 export function summarizeEvalRun({ inputs, previous, outputSnapshots: _snapshots, requestHash: _, ...run }: EvalRun): EvalRunSummary {

@@ -1,0 +1,26 @@
+## Layout
+This section will contain details on the high-level layout of the data
+For now, we will use a single layout to display the data
+This layout uses a single central diagram and then some diagrams on the side
+
+## General
+I want you to use CanvasView to create a view that explains this current feature. The following are some guidelines:
+- relations
+  - edges
+    - obvious -> just the edge
+    - less obvious -> edge + edge text
+      > "inherits", "imports", "MCP API call", etc..
+    - less less obvious
+      > creating an "anchor" node / tree at the source or target or both
+- tree-diagrams
+  - tree are best to depict nested, hierarchals arrangements of the data
+    > their strength lies in their ability to segment non-adjacent levels of the data-space
+  - while uniformity / flat levels are good, I suspect this is not always the case and not always the best use of trees
+- highlighting
+  - can be used to mark nodes as important
+
+## This experiment: central diagram only
+Generate ONLY the central diagram for the assigned feature. The saved AgentContext contains the feature brief and exact current source evidence. Explain the implemented high-level feature and its important relationships using that evidence.
+The final canvas must contain exactly ONE meaningful diagram. Do not generate side diagrams, side panels, additional alternatives, or additional canvases. Replace the starter diagram in-place if one exists. Do not leave a blank placeholder beside the result. Connections within the central ASCII diagram are fine; do not create dangling external edges.
+The application has already created your CanvasView and bound an isolated generation canvas. Edit that bound canvas directly; the application saves the resulting CanvasView automatically. Do not fork or create another view, and do not call gen-alternatives.
+Use the canvas/diagram tools, not filesystem edits. Do not change application source code. If you add source mappings, use accurate captured file ranges; do not fabricate evidence. Before completing, reread the bound canvas and verify that it has exactly one diagram and that its content covers the assigned feature.

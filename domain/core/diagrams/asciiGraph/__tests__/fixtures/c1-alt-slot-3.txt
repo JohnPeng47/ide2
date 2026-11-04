@@ -1,0 +1,23 @@
+[A] GridBox / LineGridScene
+=====================================================
+LineGridScene
+  contents[contentId] -> Diagram
+  root -> GridBox
+    id / position / minimumSize? / collapsed
+    collapsedContentId? -> summary Diagram
+    +-- diagram: contentId
+    +-- container: children + push-right layout + gap
+Cell geometry
+  zero-based column,row; right/bottom exclusive
+  parent origin + child position -> absolute bounds
+  expanded -> ASCII size + children + minimumSize
+  collapsed -> summary size; no children/minimumSize
+Immutable layout
+  updateGridBox -> layoutScene(changedId)
+    anchor changed subtree at each ancestor
+    stable spatial order -> settle siblings to right
+  resolveScene -> ResolvedGridBox tree + bounds
+  composeScene -> paint ASCII; reject collisions
+  hitTest -> deepest hit + local coordinates
+Mapping projection
+  1-based mapping line/span -> 0-based scene cells

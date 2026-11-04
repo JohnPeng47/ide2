@@ -1,0 +1,115 @@
+{
+ "boxes": [
+  {
+   "id": "1:1-1:27",
+   "text": "[A] GridBox / LineGridScene",
+   "rect": {
+    "line1": 1,
+    "col1": 1,
+    "line2": 1,
+    "col2": 27
+   }
+  },
+  {
+   "id": "3:1-3:13",
+   "text": "LineGridScene",
+   "rect": {
+    "line1": 3,
+    "col1": 1,
+    "line2": 3,
+    "col2": 13
+   }
+  },
+  {
+   "id": "4:3-4:32",
+   "text": "contents[contentId] -> Diagram",
+   "rect": {
+    "line1": 4,
+    "col1": 3,
+    "line2": 4,
+    "col2": 32
+   },
+   "parent": "3:1-3:13"
+  },
+  {
+   "id": "4:40-4:54",
+   "text": "root -> GridBox",
+   "rect": {
+    "line1": 4,
+    "col1": 40,
+    "line2": 4,
+    "col2": 54
+   },
+   "parent": "3:1-3:13"
+  },
+  {
+   "id": "6:1-8:42",
+   "text": "GridBox\nid + position(column,row) + minimumSize?\ncollapsed + collapsedContentId?",
+   "rect": {
+    "line1": 6,
+    "col1": 1,
+    "line2": 8,
+    "col2": 42
+   }
+  },
+  {
+   "id": "9:7-9:28",
+   "text": "diagram   -> contentId",
+   "rect": {
+    "line1": 9,
+    "col1": 7,
+    "line2": 9,
+    "col2": 28
+   },
+   "parent": "6:1-8:42"
+  },
+  {
+   "id": "10:7-10:53",
+   "text": "container -> children[] + push-right layout/gap",
+   "rect": {
+    "line1": 10,
+    "col1": 7,
+    "line2": 10,
+    "col2": 53
+   },
+   "parent": "6:1-8:42"
+  },
+  {
+   "id": "13:1-17:57",
+   "text": "ResolvedGridBox\nresolveScene -> absolute bounds + contentId? + children\nzero-based cells; right and bottom are exclusive\ncollapsed -> summary content; no resolved children\nexpanded -> content/children extents + minimumSize",
+   "rect": {
+    "line1": 13,
+    "col1": 1,
+    "line2": 17,
+    "col2": 57
+   }
+  },
+  {
+   "id": "19:1-23:55",
+   "text": "Immutable layout\nupdateGridBox -> layoutScene -> composeScene\nanchor changed subtree; settle siblings; push right\ncompose rejects collisions and excessive allocation\nhitTest -> local cells; projectMapping -> grid bounds",
+   "rect": {
+    "line1": 19,
+    "col1": 1,
+    "line2": 23,
+    "col2": 55
+   }
+  }
+ ],
+ "edges": [
+  {
+   "from": "4:40-4:54",
+   "to": "6:1-8:42",
+   "direction": "->"
+  },
+  {
+   "from": "6:1-8:42",
+   "to": "13:1-17:57",
+   "direction": "->"
+  },
+  {
+   "from": "13:1-17:57",
+   "to": "19:1-23:55",
+   "direction": "--"
+  }
+ ]
+}

@@ -1,0 +1,81 @@
+GIT CHANGES -> GENERATED CHANGESESSION -> REVIEW -> EXPLICIT ACCEPTANCE
+
++----------------------------------------------------------------------------------------------+
+| 1  CHOOSE THE CHANGE                                                                         |
+| Selected repository + commits               Branch push                                      |
+| Resolve and pin commit/head SHAs             Deduplicate by connection + event ID            |
+|                                             Capture net before -> after changes              |
+|                                             Includes force-push removals / rollback          |
+|                                                                                              |
+| Pushes skip: non-branch refs, deleted branches, unchanged refs, or no net content change.    |
++----------------------------------------------------------------------------------------------+
+                                               |
+                                               v
++----------------------------------------------------------------------------------------------+
+| 2  FREEZE THE EVIDENCE AND THE BASELINE                                                      |
+| Repository context: repository ID + commit SHAs + head + optional comparisonBase             |
+| Captured hunks: immutable IDs + patches       Canvas baseline: saved + live draft state      |
+|                                                                                              |
+| Regenerate from a prior ChangeSession: reuse its pinned Git evidence and ORIGINAL canvases.  |
+| Source reads use pinned revisions. Generation requires captured hunks.                       |
++----------------------------------------------------------------------------------------------+
+                                               |
+                                               v
++----------------------------------------------------------------------------------------------+
+| 3  GENERATE ONE ISOLATED PROPOSAL                                                            |
+|                                                                                              |
+| ANALYZE (read only)                          MATERIALIZE (proposal-bound tools)              |
+| Read frozen diagrams, hunks, source  ----->  Create one ChangeSession from the capture       |
+|                                             Edit proposed diagrams / connections             |
+|                                             Annotate changes and dependencies                |
+|                                                                                              |
+|    DIFFTREE ENTRY                                                                            |
+|    |-- hunk IDs --------------------------> Captured code changes                            |
+|    `-- diagram destinations --------------> Proposal canvas / diagram / content node         |
+|                                                                                              |
+| Tree and mappings are replaced atomically; stable node identities, not label guessing.       |
+| Document edits use document versions; session metadata uses the session version.             |
+| Retries reuse request IDs; tools cannot mutate another workflow's ChangeSession.             |
++----------------------------------------------------------------------------------------------+
+                                               |
+                                               v
++----------------------------------------------------------------------------------------------+
+| 4  VALIDATE -> READY FOR REVIEW                                                              |
+| Valid DiffTree + nonempty changes + valid edges / migrations + acyclic dependencies          |
+| Added diagrams need a connection from a diagram present in the baseline.                     |
+| Workflow completion additionally requires every captured hunk to appear in DiffTree.         |
+|                                                                                              |
+| Run stages: capture -> analyze -> materialize -> validate -> completed                       |
+| Failure / cancellation ends the run; a completed run leaves a proposal ready for review.     |
++----------------------------------------------------------------------------------------------+
+                                               |
+                                               v
++----------------------------------------------------------------------------------------------+
+| 5  REVIEW THE PROPOSAL                                                                       |
+|                                                                                              |
+| Change tree  <------ mapping / coverage ------>  Captured hunks                              |
+| Select entry: reveal its hunks                   Scroll: track matching tree entry           |
+|      |                                          Open hunk: follow mapped destination         |
+|      +--------------------+---------------------+                                            |
+|                           v                                                                  |
+|                 Proposed canvas / diagram / content node                                     |
+|                                                                                              |
+| DiffTree stays available across canvas navigation; tree, hunks and treemaps support review.  |
+| Missing diagram destinations report a navigation error.                                      |
+| Proposal edits return the session to draft; validate again before accepting.                 |
++----------------------------------------------------------------------------------------------+
+                                               |
+                                               v
++----------------------------------------------------------------------------------------------+
+| 6  EXPLICIT ACCEPTANCE                                                                       |
+| User accepts READY proposal with current session version + request ID                        |
+|                            |                                                                 |
+|                            v                                                                 |
+| Revalidate + compare affected live canvases against the captured baseline                    |
+|    |-- Conflict: newer live edits -> reject acceptance; create a new proposal                |
+|    `-- Match: commit affected documents with saved-revision checks                           |
+|                          -> persist acceptance receipt -> mark session ACCEPTED              |
+|                                                                                              |
+| The receipt supports retry / recovery after an interrupted write.                            |
+| Accepted proposals cannot be edited. Generation and review alone do not apply changes.       |
++----------------------------------------------------------------------------------------------+

@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { evalWorkflowIds, type EvalWorkflowId } from './evalWorkflows';
 
 /** Versions are immutable so a run can always show the exact text it used. */
-export interface EvalPromptVersion { version: number; createdAt: string; note?: string; stages: Record<string, string> }
+export interface EvalPromptVersion { version: number; createdAt: string; format?: 'explicit-v1'; note?: string; stages: Record<string, string> }
 export interface EvalPrompt {
   schemaVersion: 1; id: string; projectId: string; workflow: EvalWorkflowId; name: string; description?: string;
   createdAt: string; updatedAt: string; archivedAt?: string; builtin?: boolean;

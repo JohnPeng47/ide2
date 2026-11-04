@@ -1,0 +1,270 @@
+{
+ "boxes": [
+  {
+   "id": "1:1-1:11",
+   "text": "[B] Diagram",
+   "rect": {
+    "line1": 1,
+    "col1": 1,
+    "line2": 1,
+    "col2": 11
+   }
+  },
+  {
+   "id": "3:1-3:42",
+   "text": "Diagram (readonly; repository-independent)",
+   "rect": {
+    "line1": 3,
+    "col1": 1,
+    "line2": 3,
+    "col2": 42
+   }
+  },
+  {
+   "id": "4:7-4:41",
+   "text": "diagramId   stable service identity",
+   "rect": {
+    "line1": 4,
+    "col1": 7,
+    "line2": 4,
+    "col2": 41
+   },
+   "parent": "3:1-3:42"
+  },
+  {
+   "id": "5:7-5:43",
+   "text": "revisionId  service revision identity",
+   "rect": {
+    "line1": 5,
+    "col1": 7,
+    "line2": 5,
+    "col2": 43
+   },
+   "parent": "3:1-3:42"
+  },
+  {
+   "id": "6:7-6:42",
+   "text": "id          local scene.contents key",
+   "rect": {
+    "line1": 6,
+    "col1": 7,
+    "line2": 6,
+    "col2": 42
+   },
+   "parent": "3:1-3:42"
+  },
+  {
+   "id": "7:7-7:37",
+   "text": "revision    nonnegative integer",
+   "rect": {
+    "line1": 7,
+    "col1": 7,
+    "line2": 7,
+    "col2": 37
+   },
+   "parent": "3:1-3:42"
+  },
+  {
+   "id": "9:7-9:29",
+   "text": "content: DiagramContent",
+   "rect": {
+    "line1": 9,
+    "col1": 7,
+    "line2": 9,
+    "col2": 29
+   },
+   "parent": "3:1-3:42"
+  },
+  {
+   "id": "10:12-10:57",
+   "text": "revisionId = id:revision / ascii / asciiSha256",
+   "rect": {
+    "line1": 10,
+    "col1": 12,
+    "line2": 10,
+    "col2": 57
+   },
+   "parent": "9:7-9:29"
+  },
+  {
+   "id": "11:12-11:20",
+   "text": "structure",
+   "rect": {
+    "line1": 11,
+    "col1": 12,
+    "line2": 11,
+    "col2": 20
+   },
+   "parent": "9:7-9:29"
+  },
+  {
+   "id": "12:17-12:29",
+   "text": "kind: diagram",
+   "rect": {
+    "line1": 12,
+    "col1": 17,
+    "line2": 12,
+    "col2": 29
+   },
+   "parent": "11:12-11:20"
+  },
+  {
+   "id": "13:17-13:26",
+   "text": "kind: tree",
+   "rect": {
+    "line1": 13,
+    "col1": 17,
+    "line2": 13,
+    "col2": 26
+   },
+   "parent": "11:12-11:20"
+  },
+  {
+   "id": "14:22-14:63",
+   "text": "parserVersion: ascii-tree-1 | ascii-tree-2",
+   "rect": {
+    "line1": 14,
+    "col1": 22,
+    "line2": 14,
+    "col2": 63
+   },
+   "parent": "13:17-13:26"
+  },
+  {
+   "id": "15:22-15:28",
+   "text": "rootIds",
+   "rect": {
+    "line1": 15,
+    "col1": 22,
+    "line2": 15,
+    "col2": 28
+   },
+   "parent": "13:17-13:26"
+  },
+  {
+   "id": "16:22-19:55",
+   "text": "nodes[id]: DiagramContentNode\nlabel / line / branchColumn\nstartColumn / endColumn\nparentId? / childIds / foldRanges",
+   "rect": {
+    "line1": 16,
+    "col1": 22,
+    "line2": 19,
+    "col2": 55
+   },
+   "parent": "13:17-13:26"
+  },
+  {
+   "id": "21:7-21:41",
+   "text": "sourceContext: DiagramSourceContext",
+   "rect": {
+    "line1": 21,
+    "col1": 7,
+    "line2": 21,
+    "col2": 41
+   },
+   "parent": "3:1-3:42"
+  },
+  {
+   "id": "22:12-22:46",
+   "text": "contentHash = SHA256(content.ascii)",
+   "rect": {
+    "line1": 22,
+    "col1": 12,
+    "line2": 22,
+    "col2": 46
+   },
+   "parent": "21:7-21:41"
+  },
+  {
+   "id": "23:12-23:50",
+   "text": "binding?: sourceId / repositoryIdentity",
+   "rect": {
+    "line1": 23,
+    "col1": 12,
+    "line2": 23,
+    "col2": 50
+   },
+   "parent": "21:7-21:41"
+  },
+  {
+   "id": "24:17-26:53",
+   "text": "corpus + domainProfileId\nsource-code <-> git-worktree\ndocument    <-> filesystem-documents",
+   "rect": {
+    "line1": 24,
+    "col1": 17,
+    "line2": 26,
+    "col2": 53
+   },
+   "parent": "23:12-23:50"
+  },
+  {
+   "id": "27:12-27:61",
+   "text": "mappings[]: diagram span -> entityId + range index",
+   "rect": {
+    "line1": 27,
+    "col1": 12,
+    "line2": 27,
+    "col2": 61
+   },
+   "parent": "21:7-21:41"
+  },
+  {
+   "id": "28:12-29:63",
+   "text": "evidence[entityId] -> sourceRanges[]\nrelative path / startLine / endLine / originalLines",
+   "rect": {
+    "line1": 28,
+    "col1": 12,
+    "line2": 29,
+    "col2": 63
+   },
+   "parent": "21:7-21:41"
+  },
+  {
+   "id": "31:7-31:27",
+   "text": "jumps?: DiagramJump[]",
+   "rect": {
+    "line1": 31,
+    "col1": 7,
+    "line2": 31,
+    "col2": 27
+   },
+   "parent": "3:1-3:42"
+  },
+  {
+   "id": "33:1-34:58",
+   "text": "validateDiagram -> canonical content + hash + binding\njumps + local mappings + evidence joins",
+   "rect": {
+    "line1": 33,
+    "col1": 1,
+    "line2": 34,
+    "col2": 58
+   }
+  },
+  {
+   "id": "35:1-37:61",
+   "text": "diagramSource -> entries / forSelection / search\nvisibleContentLines(content, collapsedIds) -> folded line set\nunknown tree node ID -> STALE_CONTENT_NODE",
+   "rect": {
+    "line1": 35,
+    "col1": 1,
+    "line2": 37,
+    "col2": 61
+   }
+  },
+  {
+   "id": "39:1-39:38",
+   "text": "Sources: diagram.ts; diagramContent.ts",
+   "rect": {
+    "line1": 39,
+    "col1": 1,
+    "line2": 39,
+    "col2": 38
+   }
+  }
+ ],
+ "edges": [
+  {
+   "from": "3:1-3:42",
+   "to": "33:1-34:58",
+   "direction": "--"
+  }
+ ]
+}

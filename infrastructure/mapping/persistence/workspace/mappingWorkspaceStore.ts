@@ -12,6 +12,7 @@ export class MappingWorkspaceStore {
   constructor(private readonly root: string, private readonly diagramPersistence: DiagramPersistence = new DiagramPersistence(new DiagramRevisionStore(root))) { this.records = new WorkspaceRecordStore(root); }
   private readonly records: WorkspaceRecordStore;
   loadRecords(projectId: string, historyValidation: import('../../../../domain/core/diagrams/canvasHistory').HistoryValidation = 'all') { return this.records.state(projectId, () => this.loadLegacy(projectId), historyValidation); }
+  loadViewHeaders(projectId: string) { return this.records.viewHeaders(projectId); }
   applyBatch(projectId: string, batch: WorkspaceBatch) { return this.records.apply(projectId, batch); }
   async load(projectId: string): Promise<MappingWorkspaceSnapshot | null> {
     return await this.records.load(projectId) ?? this.loadLegacy(projectId);

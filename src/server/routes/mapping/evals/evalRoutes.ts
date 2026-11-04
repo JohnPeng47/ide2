@@ -3,21 +3,42 @@ import type { ServerResponse } from 'node:http';
 import type { Connect } from 'vite';
 import type { EvalPromptService } from '../../../../../application/mapping/evals/evalPromptService';
 import type { EvalRunService } from '../../../../../application/mapping/evals/evalRunService';
+import type { EvalReferenceService } from '../../../../../application/mapping/evals/evalReferenceService';
+import { captureCanvasSchema } from '../../../../../domain/mapping/evals/evalReference';
 import { archiveEvalPromptSchema } from '../../../../../domain/mapping/evals/evalPrompt';
-import { renameLayoutTemplateSchema } from '../../../../../domain/mapping/evals/layoutTemplate';
 import { renameEvalRunSchema, summarizeEvalRun } from '../../../../../domain/mapping/evals/evalRun';
 import { readBody, sendJson } from '../../../http/http';
 
 const segment = '([A-Za-z0-9][A-Za-z0-9_-]{0,80})';
-export async function handleEvalRoutes(request: Connect.IncomingMessage, response: ServerResponse, url: URL, prompts: EvalPromptService, runs: EvalRunService) {
+export async function handleEvalRoutes(request: Connect.IncomingMessage, response: ServerResponse, url: URL, prompts: EvalPromptService, runs: EvalRunService, references: EvalReferenceService) {
   const route = url.pathname.slice('/api/mapping/evals'.length), method = request.method;
+  if (route === '/experiments' && runs.experiments) {
+    if (method === 'GET') return sendJson(response, 200, await runs.experiments.list());
+    if (method === 'POST') return sendJson(response, 200, await runs.experiments.save(await readBody(request)));
+  }
+  const experimentMatch = route.match(new RegExp(`^/experiments/${segment}$`));
+  if (experimentMatch && method === 'GET' && runs.experiments) return sendJson(response, 200, await runs.experiments.read(experimentMatch[1]));
+  if (route === '/judgements' && method === 'GET') return sendJson(response, 200, await runs.judgements?.list(url.searchParams.get('runId') ?? undefined) ?? []);
+  const judgementMatch = route.match(new RegExp(`^/judgements/${segment}$`));
+  if (judgementMatch && runs.judgements) {
+    if (method === 'GET') return sendJson(response, 200, await runs.judgements.read(judgementMatch[1]));
+    if (method === 'DELETE') { await runs.judgements.delete(judgementMatch[1]); return sendJson(response, 200, { deleted: true }); }
+  }
+  if (route === '/references') {
+    if (method === 'GET') return sendJson(response, 200, await references.list(url.searchParams.get('archived') === 'true'));
+    if (method === 'POST') return sendJson(response, 200, await references.create(await readBody(request)));
+  }
+  const referenceMatch = route.match(new RegExp(`^/references/${segment}$`));
+  if (referenceMatch && method === 'GET') return sendJson(response, 200, await references.read(referenceMatch[1]));
+  if (referenceMatch && method === 'PATCH') return sendJson(response, 200, await references.update(referenceMatch[1], await readBody(request)));
+  if (route === '/capture' && method === 'POST') return sendJson(response, 200, await runs.captureCanvas(captureCanvasSchema.parse(await readBody(request)).source));
   if (route.startsWith('/layout-templates') && runs.layoutTemplates) {
     const templates = runs.layoutTemplates;
     if (route === '/layout-templates' && method === 'GET') return sendJson(response, 200, await templates.list());
     if (route === '/layout-templates' && method === 'POST') return sendJson(response, 200, await templates.save(await readBody(request)));
     if (route === '/layout-templates/capture' && method === 'POST') return sendJson(response, 200, await templates.capture(await readBody(request)));
     const match = route.match(new RegExp(`^/layout-templates/${segment}$`));
-    if (match && method === 'POST') return sendJson(response, 200, await templates.rename(match[1], renameLayoutTemplateSchema.parse(await readBody(request)).name));
+    if (match && method === 'POST') return sendJson(response, 200, await templates.update(match[1], await readBody(request)));
     if (match && method === 'DELETE') { await templates.delete(match[1]); return sendJson(response, 200, { deleted: true }); }
   }
   if (route === '/prompts') {
@@ -33,8 +54,16 @@ export async function handleEvalRoutes(request: Connect.IncomingMessage, respons
     if (method === 'GET') return sendJson(response, 200, await runs.list());
     if (method === 'POST') return sendJson(response, 202, await runs.start(await readBody(request)));
   }
+  if (route === '/runs/delete' && method === 'POST') {
+    const input = z.object({ ids: z.array(z.string().regex(/^[A-Za-z0-9][A-Za-z0-9_-]{0,80}$/)).min(1) }).strict().parse(await readBody(request));
+    await runs.deleteRuns(input.ids); return sendJson(response, 200, { deleted: true });
+  }
   match = route.match(new RegExp(`^/runs/${segment}$`));
-  if (match && method === 'GET') return sendJson(response, 200, summarizeEvalRun(await runs.read(match[1])));
+  if (match && method === 'GET') {
+    const summary = summarizeEvalRun(await runs.read(match[1]));
+    const judgements = await runs.judgements?.list(summary.id) ?? [];
+    return sendJson(response, 200, { ...summary, ...(judgements.length ? { judgements } : {}) });
+  }
   if (match && method === 'DELETE') { await runs.deleteRun(match[1]); return sendJson(response, 200, { deleted: true }); }
   match = route.match(new RegExp(`^/runs/${segment}/rerun-chat$`));
   if (match && method === 'POST') { const input = z.object({ requestId: z.string().min(1).max(200) }).strict().parse(await readBody(request));
@@ -51,7 +80,7 @@ export async function handleEvalRoutes(request: Connect.IncomingMessage, respons
   match = route.match(new RegExp(`^/contexts/${segment}/outputs$`));
   if (match && method === 'DELETE') {
     const workflow = url.searchParams.get('workflow');
-    if (workflow !== 'roll-up' && workflow !== 'alternatives') return sendJson(response, 400, { error: 'Choose a workflow.' });
+    if (workflow !== 'roll-up' && workflow !== 'alternatives' && workflow !== 'few-shot-refinement') return sendJson(response, 400, { error: 'Choose a workflow.' });
     await runs.deleteContextOutputs(match[1], workflow); return sendJson(response, 200, { deleted: true });
   }
   if (route === '/migrate' && method === 'POST') return sendJson(response, 200, await runs.migrate());

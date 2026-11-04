@@ -1,0 +1,126 @@
+{
+ "boxes": [
+  {
+   "id": "1:1-1:35",
+   "text": "[D] Controller edits / agent access",
+   "rect": {
+    "line1": 1,
+    "col1": 1,
+    "line2": 1,
+    "col2": 35
+   }
+  },
+  {
+   "id": "3:1-5:70",
+   "text": "Agent bridge\nregister canvasId + stableWorkspaceId -> poll -> handle -> reply\nnon-context receipts cached (max 200); live selections via WebSocket",
+   "rect": {
+    "line1": 3,
+    "col1": 1,
+    "line2": 5,
+    "col2": 70
+   }
+  },
+  {
+   "id": "6:1-11:72",
+   "text": "MappingPage.handleAgentCommand\ncontext -> version + nodes + edges; document-state -> document\nsnapshot -> controller state + history + metadata\napply -> documentId:requestId receipt -> applyUpdate\napply-diagram-revision -> receiver -> persistence.sync + storage.flush\ncreate-document / copy-document -> workspace drafts",
+   "rect": {
+    "line1": 6,
+    "col1": 1,
+    "line2": 11,
+    "col2": 72
+   }
+  },
+  {
+   "id": "12:1-15:76",
+   "text": "Shared edit boundary\nUI commands / transact(MCP batch) -> MappingDocumentController.applyUpdate\nexpectedVersion must match; 1..100 operations\nclone snapshot -> stage operations in order",
+   "rect": {
+    "line1": 12,
+    "col1": 1,
+    "line2": 15,
+    "col2": 76
+   }
+  },
+  {
+   "id": "17:7-19:74",
+   "text": "content: create / insert / replace / patch / source mappings / jumps\nDiagramService -> issued revisions + node correspondence\nreceived revision -> expectedRevisionId check",
+   "rect": {
+    "line1": 17,
+    "col1": 7,
+    "line2": 19,
+    "col2": 74
+   },
+   "parent": "12:1-15:76"
+  },
+  {
+   "id": "20:7-21:68",
+   "text": "grid: move / group / collapse / remove / delete-diagrams\ncell coordinates -> layoutScene; summary for collapsed boxes",
+   "rect": {
+    "line1": 20,
+    "col1": 7,
+    "line2": 21,
+    "col2": 68
+   },
+   "parent": "12:1-15:76"
+  },
+  {
+   "id": "22:7-22:45",
+   "text": "subtree collapse -> canvas.diagramViews",
+   "rect": {
+    "line1": 22,
+    "col1": 7,
+    "line2": 22,
+    "col2": 45
+   },
+   "parent": "12:1-15:76"
+  },
+  {
+   "id": "23:7-24:51",
+   "text": "floating: move / collapse / remove\npixels; explicit move sets manual placement",
+   "rect": {
+    "line1": 23,
+    "col1": 7,
+    "line2": 24,
+    "col2": 51
+   },
+   "parent": "12:1-15:76"
+  },
+  {
+   "id": "25:7-25:57",
+   "text": "edges: create / update / remove -> validate anchors",
+   "rect": {
+    "line1": 25,
+    "col1": 7,
+    "line2": 25,
+    "col2": 57
+   },
+   "parent": "12:1-15:76"
+  },
+  {
+   "id": "28:1-34:71",
+   "text": "Publish completed edit\nprojectCanvasSnapshot -> updateSnapshot(record=true)\nreconcile connections + rebase jumps + validate connections\nnormalize diagramViews -> resolve floating geometry\nappend(document, canvas, node correspondence) -> CanvasHistoryService\nfreeze issued content references -> snapshot + version -> subscribers\nreturn {version, nodes}",
+   "rect": {
+    "line1": 28,
+    "col1": 1,
+    "line2": 34,
+    "col2": 71
+   }
+  },
+  {
+   "id": "35:1-39:69",
+   "text": "Other update paths\nupdateCanvas(record=false) -> transient by default\nselect(command) -> recorded selection update\nconfigureLayout / endpoint measurements -> geometry without history\nundo/redo -> history navigation -> restore document + canvas view",
+   "rect": {
+    "line1": 35,
+    "col1": 1,
+    "line2": 39,
+    "col2": 69
+   }
+  }
+ ],
+ "edges": [
+  {
+   "from": "12:1-15:76",
+   "to": "28:1-34:71",
+   "direction": "->"
+  }
+ ]
+}

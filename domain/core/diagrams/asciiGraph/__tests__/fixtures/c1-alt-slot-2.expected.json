@@ -1,0 +1,56 @@
+{
+ "boxes": [
+  {
+   "id": "1:1-1:18",
+   "text": "[G] DiagramService",
+   "rect": {
+    "line1": 1,
+    "col1": 1,
+    "line2": 1,
+    "col2": 18
+   }
+  },
+  {
+   "id": "3:1-7:68",
+   "text": "RevisionedDiagramService: sole content writer\ncreate(input)\nrevise(base, edit) -> getRevision -> prepareEdit\ngenerate(request) -> DiagramGenerator -> create or revise(replace)\nabort checks; base diagram local id must match request.input.id",
+   "rect": {
+    "line1": 3,
+    "col1": 1,
+    "line2": 7,
+    "col2": 68
+   }
+  },
+  {
+   "id": "4:25-4:59",
+   "text": "DiagramRevisionEditor.prepareCreate",
+   "rect": {
+    "line1": 4,
+    "col1": 25,
+    "line2": 4,
+    "col2": 59
+   }
+  },
+  {
+   "id": "10:1-16:74",
+   "text": "Issued revision\ndiagramRevisions.register({id, diagramId, parentId?, diagram, nodeRefs})\nnode correspondence -> stable nodeRefs reused; new nodes -> UUID refs\nchanged edit -> same diagramId + new service revisionId\nno-op revise -> original diagram and revision\nresult = prepared edit + diagram + revision\nreads: getRevision(revisionId) / listRevisions(diagramId)",
+   "rect": {
+    "line1": 10,
+    "col1": 1,
+    "line2": 16,
+    "col2": 74
+   }
+  }
+ ],
+ "edges": [
+  {
+   "from": "3:1-7:68",
+   "to": "4:25-4:59",
+   "direction": "->"
+  },
+  {
+   "from": "3:1-7:68",
+   "to": "10:1-16:74",
+   "direction": "->"
+  }
+ ]
+}

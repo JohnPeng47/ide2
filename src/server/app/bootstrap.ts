@@ -1,6 +1,11 @@
+import { ExperimentService, type StoredExperiment } from '../../../application/mapping/evals/experimentService';
 import { EvalRunService } from '../../../application/mapping/evals/evalRunService';
+import { JudgementService } from '../../../application/mapping/evals/judgementService';
+import type { Judgement } from '../../../domain/mapping/evals/judgement';
 import { LayoutTemplateService, type LayoutTemplateStore } from '../../../application/mapping/evals/layoutTemplateService';
 import { EvalPromptService } from '../../../application/mapping/evals/evalPromptService';
+import { EvalReferenceService } from '../../../application/mapping/evals/evalReferenceService';
+import type { EvalReference } from '../../../domain/mapping/evals/evalReference';
 import { GeneratedCanvasCatalog } from '../../../application/mapping/evals/generatedCanvasCatalog';
 import { FileRollUpRunStore } from '../../../infrastructure/mapping/rollup/fileRollUpRunStore';
 import { JsonDirectoryStore } from '../../../infrastructure/mapping/evals/jsonDirectoryStore';
@@ -120,16 +125,21 @@ export function createBackend(projectRoot: string, diagramsDirectory: string, co
     new GitPushSource(store.repositories), diffSessionWorkflows, options.piEnabled === true);
   const workspace = new MappingWorkspaceService(store, new MappingWorkspaceStore(store.storeRoot, store.diagramPersistence), diagramContextStore);
   const generatedCanvases = new GeneratedCanvasCatalog(store);
-  const compareSessions = new CompareSessionService(workspace, new FileCompareSessionStore(store.storeRoot), generatedCanvases);
-  const evalPrompts = new EvalPromptService(new JsonDirectoryStore<EvalPrompt>(store.storeRoot, 'eval-prompts'), store);
+  const compareSessions = new CompareSessionService(workspace, new FileCompareSessionStore(store.storeRoot), generatedCanvases, store);
+  const evalReferences = new EvalReferenceService(new JsonDirectoryStore<EvalReference>(store.storeRoot, 'eval-references'), store);
+  const evalPrompts = new EvalPromptService(new JsonDirectoryStore<EvalPrompt>(store.storeRoot, 'eval-prompts'), store, evalReferences);
+  const evalRunStore = new JsonDirectoryStore<EvalRun>(store.storeRoot, 'eval-runs');
   const evalRuns = new EvalRunService(compareSessions, workspace, store, contextLibrary, evalPrompts, generatedCanvases,
-    new JsonDirectoryStore<EvalRun>(store.storeRoot, 'eval-runs'), fake ? new FakeEvalRuntime() : new CodexEvalRuntime(options.piEnabled === true), new FileRollUpRunStore(store.storeRoot));
+    evalRunStore, fake ? new FakeEvalRuntime() : new CodexEvalRuntime(options.piEnabled === true), new FileRollUpRunStore(store.storeRoot));
   evalRuns.layoutTemplates = new LayoutTemplateService(new JsonDirectoryStore<Awaited<ReturnType<LayoutTemplateStore['list']>>[number]>(store.storeRoot, 'layout-templates'), compareSessions, store);
   evalRuns.replayLegacy = (run, requestId) => agentChat.rerunAlternatives(run, requestId);
   evalRuns.cancelLegacy = id => agentChat.cancelGeneration(id);
   void agentChat.observeGenerations((children, parent, historical) => evalRuns.recordLegacy(children, parent, historical)).catch(error => console.error('Generation reconciliation failed', error));
   generatedCanvases.snapshot = (id, checkpoint) => evalRuns.outputSnapshot(id, checkpoint);
-  const comparisonRuns = new ComparisonGenerationService(compareSessions, new FileComparisonRunStore(store.storeRoot), fake ? new FakeComparisonRuntime() : new CodexComparisonRuntime(options.piEnabled === true));
+  const comparisonRunStore = new FileComparisonRunStore(store.storeRoot);
+  const comparisonRuns = new ComparisonGenerationService(compareSessions, comparisonRunStore, fake ? new FakeComparisonRuntime() : new CodexComparisonRuntime(options.piEnabled === true));
+  evalRuns.judgements = new JudgementService(new JsonDirectoryStore<Judgement>(store.storeRoot, 'judgements'), compareSessions, comparisonRunStore, comparisonRuns, evalRunStore);
+  evalRuns.experiments = new ExperimentService(new JsonDirectoryStore<StoredExperiment>(store.storeRoot, 'eval-experiments'), evalRuns, store, contextLibrary);
   evalRuns.deleteContextComparisons = (id, workflow) => comparisonRuns.deleteContextOutputs(id, workflow);
   const routes = {
     core: createCoreRoutes({
@@ -140,7 +150,7 @@ export function createBackend(projectRoot: string, diagramsDirectory: string, co
     mapping: createMappingRoutes({
       selection: new SelectionService(store, mappingRuntime, mappingPocSourceRoot),
       diagrams, agent, agentChat, liveCanvas, diffSessionWorkflows, pushIntegrations, pushToken: process.env.NEW_DIAGRAM_PUSH_TOKEN,
-      workspace, compareSessions, comparisonRuns, evalRuns, evalPrompts,
+      workspace, compareSessions, comparisonRuns, evalRuns, evalPrompts, evalReferences,
       chat: new LocalChatService(store, corpusAccess, chatRuntime, mappingPocSourceRoot),
       compactionService
     })

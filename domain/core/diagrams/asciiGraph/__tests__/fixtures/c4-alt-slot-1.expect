@@ -1,0 +1,110 @@
+MappingPage
+baseline 03f2168, before tldraw
+MappingPocPage
++ MappingServicesContext.Provider -> MappingWorkspacePage
++ injected diagrams + canvasHistory + optional workspaceStorage
+CanvasWorkspace
+WorkspaceStorage
+CanvasWorkspace drafts
++ documentId -> metadata + CanvasSession
++ metadata = name / savedName / revisionId / representationId
++ savedScene / savedEdges / viewport / busy / hidden / focusBox
++ controllers Map -> each session's MappingDocumentController
++ dirtyScenes -> IDs whose scene differs from the saved baseline
+CanvasSession
++ MappingDocumentController owns the state
+  document store
+  + document
+  presentation store
+  + display + diagramViews
+  selection store
+  + selection.items
+  controls store
+  + controls
+  geometry store
+  + bounds + cell + version
+  status store
+  + dirty + undo/redo
+  read-only subscriptions publish completed controller changes
+ControllerSnapshot
++ contextId + canvasRevisionId + version + canUndo + canRedo
++ document -----------------------+    canvas
++ cell + endpointBounds
+MappingGridDocument
++ scene -> LineGridScene [A]
++ root -> GridBox tree
++ contents -> Diagram values [B]
++ edges -> DiagramConnection[]
++ sections keyed by contentId
++ jumps? -> CanvasJump[]
+MappingCanvasState
++ selection -> SelectionState
++ items in insertion order
++ whole instance OR captured region
++ displayNodeId + region?
++ sourceContentId / sourceRevisionId?
++ sourceAscii / rect / selectedIds
++ diagramViews -> per-instance folds
++ display -> DisplayState [C]
++ controls -> MappingControls
++ activeBoxId / selectionFocusId
++ activeThreadId / surfaces[id]
+Selection membership
++ replace / add / toggleDiagram / remove / clear -> one reducer
++ deduplicate regions; exclude whole + region selection on one instance
++ panel context and action-menu focus have separate owners
+CanvasDisplayNode read projection
++ scene + display + edges + diagramViews + cell + endpointBounds
+grid:<boxId>
++ diagram / group
++ bounds in cells
+floating:<id>
++ pane variants [C]
++ geometry in pixels
+floating:edge:<id>
++ derived arrows
++ drawEdge from connections
+controller.nodes() -> cached registry -> structured clone
+Rendered workspace
++ mounted document -> DraggableDiagramCanvas -> MappingPocSelectionCanvas
++ session supplied per draft; inactive documents retained and hidden
++ onUpdateDiagram -> DiagramEditCoordinator -> DiagramEditComposer
++ onTransfer / onUndo -> MappingPage workspace coordination [E]
++ onJump -> open target canvas -> focus box / content node
++ DiagramSearchPanel <- saved + draft + proposal search documents
++ MappingDiagramExplorer <- catalog + drafts + dirty/busy state
++ ChangeSessionPreview <- changeMode; accepted revisions reopen canvases
+Startup and restore
++ project representations + storage.load() -> independent reads
++ saved workspace -> project check -> prune -> reconcile -> draft sessions
++ otherwise -> requested settled canvas OR first settled canvas
++ activeId + mountedDocuments determine visible canvas
+Agent access
++ useAgentCanvasBridge -> handleAgentCommand -> document controller [D]
++ visible draft descriptors; ephemeral canvasId + stableWorkspaceId
++ HTTP registration / command polling / replies; WebSocket selections
+Live view and persistence
++ SourcePaneViewState -> live scroll + camera
++ captureDisplay / captureCamera -> workspace capture and record writes
++ session checkpoint change -> onCommit -> WorkspacePersistence [E]
++ workspace capture -> schemaVersion 3 + projectId + activeDocumentId
++ transfers[] + documents[history, document, canvas, viewport, baseline]
+Project save
++ capture name + history + scene + edges + expectedRevisionId
++ -> saveMappingProjectDiagram -> acknowledged representation revision
++ -> update captured baseline -> recompute CanvasSession dirty status
++ isDirty = scene changed OR edges changed OR name changed
++ newer edits made during save remain compared with the captured baseline
+
+edge "MappingPocPage" -> "CanvasWorkspace"
+edge "MappingPocPage" -> "WorkspaceStorage"
+edge "CanvasWorkspace" -> "CanvasWorkspace drafts"
+edge "CanvasWorkspace drafts" -> "CanvasSession"
+edge "read-only subscriptions publish completed controller changes" -> "ControllerSnapshot"
+edge "ControllerSnapshot" -> "MappingGridDocument"
+edge "ControllerSnapshot" -> "MappingCanvasState"
+edge "Selection membership" -> "CanvasDisplayNode read projection"
+edge "CanvasDisplayNode read projection" -> "grid:<boxId>"
+edge "CanvasDisplayNode read projection" -> "floating:<id>"
+edge "CanvasDisplayNode read projection" -> "floating:edge:<id>"
+edge "controller.nodes() -> cached registry -> structured clone" -> "Rendered workspace"

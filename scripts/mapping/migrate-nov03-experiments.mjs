@@ -1,0 +1,62 @@
+/** Explicit, repeatable migration of the four November 3 runs only. Dry-run unless --apply. */
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import crypto from 'node:crypto';
+const base = process.env.EVALS_URL || 'http://localhost:5191';
+const apply = process.argv.includes('--apply');
+const api = async (path, body) => {
+  const response = await fetch(`${base}/api/mapping/evals${path}`, body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : undefined);
+  const result = await response.json(); if (!response.ok) throw Error(JSON.stringify(result)); return result;
+};
+const runs = await api('/runs'), judgements = await api('/judgements');
+const date = value => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Toronto', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(value));
+const ids = {
+  original: '6595c4da-57c2-4d00-b7b3-331d688eb16d', fresh: '0b452fd0-18d3-4e35-92d4-d9cbbf7ba746',
+  baseline: '9cd037c2-322a-4f94-9161-4272f9e98ffc', extremes: 'b354daf6-fdac-4112-b131-082aabb126ca'
+};
+const selected = Object.fromEntries(Object.entries(ids).map(([key, id]) => {
+  const run = runs.find(r => r.id === id); assert(run, `Missing ${key} run`); assert.equal(date(run.createdAt), '2026-11-03');
+  assert.equal(run.status, 'finished'); return [key, run];
+}));
+assert.deepEqual(new Set(runs.filter(r => date(r.createdAt) === '2026-11-03').map(r => r.id)), new Set(Object.values(ids)), 'Review additional November 3 runs before migrating');
+const input = selected.baseline.contexts.context;
+for (const run of Object.values(selected)) assert.deepEqual(run.contexts.context, input);
+const workflow = { id: 'alternatives', name: 'Generate canvas', version: 1, stages: [{ id: 'generate', name: 'Generate canvas', dependsOn: [] }] };
+const cases = [{ id: 'canvas-domain', name: 'Canvas domain · pre-tldraw', agentContextId: input.agentContextId, contentHash: input.contentHash }];
+const sample = (run, cell, conditionId, number) => ({ id: `${conditionId}-${number}`, caseId: cases[0].id, conditionId, number, attempt: 1, outputs: [{ stageId: 'generate', runId: run.id, cellKey: cell.key }] });
+const weightedConditions = [{ id: 'baseline', name: 'Baseline', description: 'Original template baseline.' }, { id: 'weighted', name: 'Weighted 3+1', description: 'Measured 3+1 presentation balance.' }];
+const weighted = {
+  name: 'Baseline vs weighted 3+1', description: 'Two independent generation batches comparing the template baseline with measured 3+1 emphasis. Assessment revisions retain their original input samples.', workflow, cases,
+  conditions: weightedConditions,
+  samples: ['original', 'fresh'].flatMap((key, i) => selected[key].cells.map(cell => sample(selected[key], cell, cell.promptId === '078d0e20-9509-42be-b76a-f931841cd264' ? 'weighted' : 'baseline', i + 1))),
+  comparisons: ['original', 'fresh'].map(key => ({ id: key, name: key === 'original' ? 'Initial generation comparison' : 'Fresh generation comparison', description: '', conditionIds: ['baseline', 'weighted'], caseIds: [cases[0].id], judgementIds: judgements.filter(j => j.runIds.length === 1 && j.runIds[0] === selected[key].id).sort((a, b) => a.createdAt.localeCompare(b.createdAt)).map(j => j.id) }))
+};
+const names = { baseline: 'Shared baseline', code: 'Code', language: 'Natural language', modular: 'Modular', runtime: 'Runtime state', shallow: 'Shallow', varied: 'Varied' };
+const conditionFor = cell => cell.promptName.split('/').at(-1).trim();
+const style = {
+  name: 'Diagram style controls', description: 'Three shared baselines and one sample at each extreme of expression, modular/runtime focus, and tree topology. Each extreme changes one control paragraph.', workflow, cases,
+  conditions: Object.entries(names).map(([id, name]) => ({ id, name, description: id === 'baseline' ? '50% code / 50% natural language; balanced modular/runtime focus; moderate hierarchy. Shared by all three comparisons.' : 'One control differs from the shared baseline.' })),
+  samples: ['baseline', 'extremes'].flatMap(key => selected[key].cells.map(cell => sample(selected[key], cell, conditionFor(cell), cell.pass))),
+  comparisons: [
+    ['expression', 'Code ↔ natural language', ['baseline', 'code', 'language'], 'a18e3716-132f-45d1-8c67-3c8b79c0a74a-report'],
+    ['focus', 'Modular ↔ runtime state', ['baseline', 'modular', 'runtime'], '873b3630-5a85-4c14-a9c0-d8c13ae34c57-report'],
+    ['topology', 'Shallow ↔ varied topology', ['baseline', 'shallow', 'varied'], '87fbe72f-343e-4e45-9417-0b3cde7cca06-report']
+  ].map(([id, name, conditionIds, report]) => ({ id, name, description: 'Each extreme versus all three baselines, and opposite extremes against each other. One sample per extreme limits attribution confidence.', conditionIds, caseIds: [cases[0].id], judgementIds: [report] }))
+};
+const requests = [
+  { requestId: 'bd2081d9-9fa5-4eb0-a777-cc1e9ad0a729', experiment: weighted },
+  { requestId: '708ed1bd-ed6e-495f-a5be-c9852343b05c', experiment: style }
+];
+const digest = value => crypto.createHash('sha256').update(JSON.stringify(value)).digest('hex');
+const before = digest(runs);
+const results = [];
+for (const request of requests) {
+  console.log(`${apply ? 'Register' : 'Preview'}: ${request.experiment.name} — ${request.experiment.samples.length} samples, ${request.experiment.comparisons.flatMap(c => c.judgementIds).length} Judgements`);
+  if (apply) { const saved = await api('/experiments', request); results.push({ id: saved.id, name: saved.name, revision: saved.revision, url: `${base}/evals?experiment=${saved.id}` }); }
+}
+assert.equal(digest(await api('/runs')), before, 'Migration must not rewrite any source runs, including older runs');
+if (apply) {
+  await fs.mkdir('/tmp/experiment-migration', { recursive: true });
+  await fs.writeFile('/tmp/experiment-migration/nov03-results.json', JSON.stringify({ results, runRecordsUnchanged: true, migratedRunIds: Object.values(ids) }, null, 2));
+  console.log(JSON.stringify(results, null, 2));
+}

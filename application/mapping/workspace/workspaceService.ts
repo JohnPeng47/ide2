@@ -13,6 +13,11 @@ export class MappingWorkspaceService {
     if (!project) throw new ApplicationError('invalid-input', 'Project is not initialized');
     return this.workspace.loadRecords(project.id, historyValidation);
   }
+  async loadViewHeaders() {
+    const project = await this.projects.loadProject();
+    if (!project) throw new ApplicationError('invalid-input', 'Project is not initialized');
+    return this.workspace.loadViewHeaders?.(project.id);
+  }
   async applyBatch(input: WorkspaceBatch) {
     const project = await this.projects.loadProject();
     if (!project) throw new ApplicationError('invalid-input', 'Project is not initialized');

@@ -1,0 +1,400 @@
+{
+ "boxes": [
+  {
+   "id": "1:1-1:48",
+   "text": "[E] CanvasHistoryService / coordinated revisions",
+   "rect": {
+    "line1": 1,
+    "col1": 1,
+    "line2": 1,
+    "col2": 48
+   }
+  },
+  {
+   "id": "3:1-3:48",
+   "text": "CanvasHistoryService: history + storage boundary",
+   "rect": {
+    "line1": 3,
+    "col1": 1,
+    "line2": 3,
+    "col2": 48
+   }
+  },
+  {
+   "id": "5:7-5:64",
+   "text": "openContext(document, view, record?) -> frozen {contextId}",
+   "rect": {
+    "line1": 5,
+    "col1": 7,
+    "line2": 5,
+    "col2": 64
+   },
+   "parent": "3:1-3:48"
+  },
+  {
+   "id": "6:12-7:65",
+   "text": "WeakMap<CanvasEditingContext, CanvasHistory>\nruntime object handles; isolated viewers; GC on close",
+   "rect": {
+    "line1": 6,
+    "col1": 12,
+    "line2": 7,
+    "col2": 65
+   },
+   "parent": "5:7-5:64"
+  },
+  {
+   "id": "8:7-8:65",
+   "text": "state -> checkpointId / document / view / canUndo / canRedo",
+   "rect": {
+    "line1": 8,
+    "col1": 7,
+    "line2": 8,
+    "col2": 65
+   },
+   "parent": "3:1-3:48"
+  },
+  {
+   "id": "9:7-9:48",
+   "text": "resolve(context, diagramId) -> DiagramView",
+   "rect": {
+    "line1": 9,
+    "col1": 7,
+    "line2": 9,
+    "col2": 48
+   },
+   "parent": "3:1-3:48"
+  },
+  {
+   "id": "10:7-10:49",
+   "text": "document(context) -> ResolvedCanvasDocument",
+   "rect": {
+    "line1": 10,
+    "col1": 7,
+    "line2": 10,
+    "col2": 49
+   },
+   "parent": "3:1-3:48"
+  },
+  {
+   "id": "11:7-11:63",
+   "text": "append(document, view, correspondence?) -> history.append",
+   "rect": {
+    "line1": 11,
+    "col1": 7,
+    "line2": 11,
+    "col2": 63
+   },
+   "parent": "3:1-3:48"
+  },
+  {
+   "id": "12:7-12:52",
+   "text": "navigate / reset -> move or reset history head",
+   "rect": {
+    "line1": 12,
+    "col1": 7,
+    "line2": 12,
+    "col2": 52
+   },
+   "parent": "3:1-3:48"
+  },
+  {
+   "id": "13:12-13:67",
+   "text": "linked transaction? navigate rejects; use workspace undo",
+   "rect": {
+    "line1": 13,
+    "col1": 12,
+    "line2": 13,
+    "col2": 67
+   },
+   "parent": "12:7-12:52"
+  },
+  {
+   "id": "14:7-15:62",
+   "text": "exportContext / forkContext / adopt / persistenceChanges\nretireTransactions / prepareTransfer / transferBoundary",
+   "rect": {
+    "line1": 14,
+    "col1": 7,
+    "line2": 15,
+    "col2": 62
+   },
+   "parent": "3:1-3:48"
+  },
+  {
+   "id": "17:1-18:52",
+   "text": "MappingDocumentController\ndocument edits + canvas view + node correspondence",
+   "rect": {
+    "line1": 17,
+    "col1": 1,
+    "line2": 18,
+    "col2": 52
+   }
+  },
+  {
+   "id": "21:3-21:45",
+   "text": "CanvasHistoryService.append -> checkpointId",
+   "rect": {
+    "line1": 21,
+    "col1": 3,
+    "line2": 21,
+    "col2": 45
+   }
+  },
+  {
+   "id": "24:3-24:53",
+   "text": "CanvasSession: canvasRevisionId changed -> onCommit",
+   "rect": {
+    "line1": 24,
+    "col1": 3,
+    "line2": 24,
+    "col2": 53
+   }
+  },
+  {
+   "id": "26:3-26:40",
+   "text": "CanvasWorkspace.onPersist(documentIds)",
+   "rect": {
+    "line1": 26,
+    "col1": 3,
+    "line2": 26,
+    "col2": 40
+   }
+  },
+  {
+   "id": "29:3-29:32",
+   "text": "WorkspacePersistence.sync(ids)",
+   "rect": {
+    "line1": 29,
+    "col1": 3,
+    "line2": 29,
+    "col2": 32
+   }
+  },
+  {
+   "id": "30:9-30:55",
+   "text": "per-session cursor -> persistenceChanges(since)",
+   "rect": {
+    "line1": 30,
+    "col1": 9,
+    "line2": 30,
+    "col2": 55
+   },
+   "parent": "29:3-29:32"
+  },
+  {
+   "id": "31:9-31:59",
+   "text": "historyChanges -> revision/* + checkpoint/* records",
+   "rect": {
+    "line1": 31,
+    "col1": 9,
+    "line2": 31,
+    "col2": 59
+   },
+   "parent": "29:3-29:32"
+  },
+  {
+   "id": "32:9-32:47",
+   "text": "metadata + baseline + canvas + viewport",
+   "rect": {
+    "line1": 32,
+    "col1": 9,
+    "line2": 32,
+    "col2": 47
+   },
+   "parent": "29:3-29:32"
+  },
+  {
+   "id": "33:9-33:68",
+   "text": "workspace index: project / document IDs / active / transfers",
+   "rect": {
+    "line1": 33,
+    "col1": 9,
+    "line2": 33,
+    "col2": 68
+   },
+   "parent": "29:3-29:32"
+  },
+  {
+   "id": "34:9-34:58",
+   "text": "SourcePaneViewState.captureDisplay + captureCamera",
+   "rect": {
+    "line1": 34,
+    "col1": 9,
+    "line2": 34,
+    "col2": 58
+   },
+   "parent": "29:3-29:32"
+  },
+  {
+   "id": "37:3-38:55",
+   "text": "RecordStorage.batch -> cache + pending changes by key\ndebounce 150ms; pending wait capped at 1000ms",
+   "rect": {
+    "line1": 37,
+    "col1": 3,
+    "line2": 38,
+    "col2": 55
+   }
+  },
+  {
+   "id": "40:3-40:68",
+   "text": "flush -> one in-flight batch{requestId, expectedRevision, changes}",
+   "rect": {
+    "line1": 40,
+    "col1": 3,
+    "line2": 40,
+    "col2": 68
+   }
+  },
+  {
+   "id": "42:3-42:46",
+   "text": "WorkspaceStorage -> one worker per workspace",
+   "rect": {
+    "line1": 42,
+    "col1": 3,
+    "line2": 42,
+    "col2": 46
+   }
+  },
+  {
+   "id": "44:3-44:57",
+   "text": "/api/mapping/workspace/records -> acknowledged revision",
+   "rect": {
+    "line1": 44,
+    "col1": 3,
+    "line2": 44,
+    "col2": 57
+   }
+  },
+  {
+   "id": "46:1-47:61",
+   "text": "COORDINATED COPY / MOVE + LINKED UNDO\nMappingPage: selectedIds + captured source canvasRevisionId",
+   "rect": {
+    "line1": 46,
+    "col1": 1,
+    "line2": 47,
+    "col2": 61
+   }
+  },
+  {
+   "id": "49:9-49:62",
+   "text": "pause persistence / mark busy / check source unchanged",
+   "rect": {
+    "line1": 49,
+    "col1": 9,
+    "line2": 49,
+    "col2": 62
+   },
+   "parent": "46:1-47:61"
+  },
+  {
+   "id": "50:9-50:54",
+   "text": "capture workspace + source/destination history",
+   "rect": {
+    "line1": 50,
+    "col1": 9,
+    "line2": 50,
+    "col2": 54
+   },
+   "parent": "46:1-47:61"
+  },
+  {
+   "id": "51:9-52:68",
+   "text": "runWorkspaceTask(transfer) -> prepared states + transaction\nmove: source + destination updated; copy: source deselected",
+   "rect": {
+    "line1": 51,
+    "col1": 9,
+    "line2": 52,
+    "col2": 68
+   },
+   "parent": "46:1-47:61"
+  },
+  {
+   "id": "53:9-55:65",
+   "text": "publishTransfer(workspace)\nstorage.save -> flush -> project -> records.commit\nrejection -> restore cache; ambiguous -> retry same ID",
+   "rect": {
+    "line1": 53,
+    "col1": 9,
+    "line2": 55,
+    "col2": 65
+   },
+   "parent": "46:1-47:61"
+  },
+  {
+   "id": "59:10-59:60",
+   "text": "installWorkspace -> sessions + transfers + activeId",
+   "rect": {
+    "line1": 59,
+    "col1": 10,
+    "line2": 59,
+    "col2": 60
+   }
+  },
+  {
+   "id": "61:3-64:73",
+   "text": "undo/redo: boundary -> prepareTransferNavigation(source,destination)\nrequire both canvases; undo newer related transfers first\nrestore both states + transaction; created destination hidden on undo\n-> publishTransfer -> storage acknowledgement -> installWorkspace",
+   "rect": {
+    "line1": 61,
+    "col1": 3,
+    "line2": 64,
+    "col2": 73
+   }
+  },
+  {
+   "id": "65:1-67:60",
+   "text": "Sources: canvasHistoryService.ts; MappingPage.tsx;\ncanvasSession.ts; workspacePersistence.ts; recordStorage.ts;\nworkspaceStorage.ts",
+   "rect": {
+    "line1": 65,
+    "col1": 1,
+    "line2": 67,
+    "col2": 60
+   }
+  }
+ ],
+ "edges": [
+  {
+   "from": "17:1-18:52",
+   "to": "21:3-21:45",
+   "direction": "->"
+  },
+  {
+   "from": "21:3-21:45",
+   "to": "24:3-24:53",
+   "direction": "->"
+  },
+  {
+   "from": "24:3-24:53",
+   "to": "26:3-26:40",
+   "direction": "--"
+  },
+  {
+   "from": "26:3-26:40",
+   "to": "29:3-29:32",
+   "direction": "->"
+  },
+  {
+   "from": "29:3-29:32",
+   "to": "37:3-38:55",
+   "direction": "->"
+  },
+  {
+   "from": "37:3-38:55",
+   "to": "40:3-40:68",
+   "direction": "--"
+  },
+  {
+   "from": "40:3-40:68",
+   "to": "42:3-42:46",
+   "direction": "--"
+  },
+  {
+   "from": "42:3-42:46",
+   "to": "44:3-44:57",
+   "direction": "--"
+  },
+  {
+   "from": "46:1-47:61",
+   "to": "59:10-59:60",
+   "direction": "->",
+   "label": "acknowledgement"
+  }
+ ]
+}

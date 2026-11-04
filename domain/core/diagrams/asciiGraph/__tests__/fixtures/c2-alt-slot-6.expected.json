@@ -1,0 +1,278 @@
+{
+ "boxes": [
+  {
+   "id": "1:1-1:35",
+   "text": "[D] Controller edits / agent access",
+   "rect": {
+    "line1": 1,
+    "col1": 1,
+    "line2": 1,
+    "col2": 35
+   }
+  },
+  {
+   "id": "3:1-3:11",
+   "text": "UI commands",
+   "rect": {
+    "line1": 3,
+    "col1": 1,
+    "line2": 3,
+    "col2": 11
+   }
+  },
+  {
+   "id": "3:37-7:76",
+   "text": "useAgentCanvasBridge\nregister -> poll commands -> reply\nstableWorkspaceId + ephemeral canvasId\nmutation receipts; context always fresh\nlive selections -> WebSocket publisher",
+   "rect": {
+    "line1": 3,
+    "col1": 37,
+    "line2": 7,
+    "col2": 76
+   }
+  },
+  {
+   "id": "9:38-9:67",
+   "text": "MappingPage.handleAgentCommand",
+   "rect": {
+    "line1": 9,
+    "col1": 38,
+    "line2": 9,
+    "col2": 67
+   }
+  },
+  {
+   "id": "10:43-10:76",
+   "text": "context -> version / nodes / edges",
+   "rect": {
+    "line1": 10,
+    "col1": 43,
+    "line2": 10,
+    "col2": 76
+   },
+   "parent": "9:38-9:67"
+  },
+  {
+   "id": "11:43-11:78",
+   "text": "snapshot -> state + exported history",
+   "rect": {
+    "line1": 11,
+    "col1": 43,
+    "line2": 11,
+    "col2": 78
+   },
+   "parent": "9:38-9:67"
+  },
+  {
+   "id": "12:43-12:74",
+   "text": "apply -> requestId receipt cache",
+   "rect": {
+    "line1": 12,
+    "col1": 43,
+    "line2": 12,
+    "col2": 74
+   },
+   "parent": "9:38-9:67"
+  },
+  {
+   "id": "13:43-14:76",
+   "text": "apply-diagram-revision -> receiver\nsync persistence + flush",
+   "rect": {
+    "line1": 13,
+    "col1": 43,
+    "line2": 14,
+    "col2": 76
+   },
+   "parent": "9:38-9:67"
+  },
+  {
+   "id": "16:1-17:66",
+   "text": "MappingDocumentController.applyUpdate(expectedVersion, operations)\ntransact = same batch adapter",
+   "rect": {
+    "line1": 16,
+    "col1": 1,
+    "line2": 17,
+    "col2": 66
+   }
+  },
+  {
+   "id": "19:7-19:53",
+   "text": "reject stale version; require 1..100 operations",
+   "rect": {
+    "line1": 19,
+    "col1": 7,
+    "line2": 19,
+    "col2": 53
+   },
+   "parent": "16:1-17:66"
+  },
+  {
+   "id": "20:7-20:49",
+   "text": "clone snapshot -> stage operations in order",
+   "rect": {
+    "line1": 20,
+    "col1": 7,
+    "line2": 20,
+    "col2": 49
+   },
+   "parent": "16:1-17:66"
+  },
+  {
+   "id": "21:12-21:63",
+   "text": "create / insert / replace / patch / mappings / jumps",
+   "rect": {
+    "line1": 21,
+    "col1": 12,
+    "line2": 21,
+    "col2": 63
+   },
+   "parent": "20:7-20:49"
+  },
+  {
+   "id": "22:17-22:62",
+   "text": "DiagramService revisions + node correspondence",
+   "rect": {
+    "line1": 22,
+    "col1": 17,
+    "line2": 22,
+    "col2": 62
+   },
+   "parent": "21:12-21:63"
+  },
+  {
+   "id": "23:12-23:65",
+   "text": "patch -> remap edge anchors / jumps / folds / sections",
+   "rect": {
+    "line1": 23,
+    "col1": 12,
+    "line2": 23,
+    "col2": 65
+   },
+   "parent": "20:7-20:49"
+  },
+  {
+   "id": "24:12-24:63",
+   "text": "grid move / group / collapse / remove -> layoutScene",
+   "rect": {
+    "line1": 24,
+    "col1": 12,
+    "line2": 24,
+    "col2": 63
+   },
+   "parent": "20:7-20:49"
+  },
+  {
+   "id": "25:12-25:60",
+   "text": "floating move / collapse / remove -> display tree",
+   "rect": {
+    "line1": 25,
+    "col1": 12,
+    "line2": 25,
+    "col2": 60
+   },
+   "parent": "20:7-20:49"
+  },
+  {
+   "id": "26:12-26:58",
+   "text": "edge create / update / remove -> document.edges",
+   "rect": {
+    "line1": 26,
+    "col1": 12,
+    "line2": 26,
+    "col2": 58
+   },
+   "parent": "20:7-20:49"
+  },
+  {
+   "id": "28:7-28:33",
+   "text": "updateSnapshot(record=true)",
+   "rect": {
+    "line1": 28,
+    "col1": 7,
+    "line2": 28,
+    "col2": 33
+   },
+   "parent": "16:1-17:66"
+  },
+  {
+   "id": "29:12-29:56",
+   "text": "reconcile edges + jumps; validate connections",
+   "rect": {
+    "line1": 29,
+    "col1": 12,
+    "line2": 29,
+    "col2": 56
+   },
+   "parent": "28:7-28:33"
+  },
+  {
+   "id": "30:12-30:62",
+   "text": "normalize views + selection focus; resolve geometry",
+   "rect": {
+    "line1": 30,
+    "col1": 12,
+    "line2": 30,
+    "col2": 62
+   },
+   "parent": "28:7-28:33"
+  },
+  {
+   "id": "31:12-31:59",
+   "text": "history.append(document, canvas, correspondence)",
+   "rect": {
+    "line1": 31,
+    "col1": 12,
+    "line2": 31,
+    "col2": 59
+   },
+   "parent": "28:7-28:33"
+  },
+  {
+   "id": "32:12-32:69",
+   "text": "checkpoint + version + canUndo/canRedo -> notify listeners",
+   "rect": {
+    "line1": 32,
+    "col1": 12,
+    "line2": 32,
+    "col2": 69
+   },
+   "parent": "28:7-28:33"
+  },
+  {
+   "id": "33:1-36:60",
+   "text": "select(command) -> updateSelection -> recorded canvas update\nupdateCanvas(value, record=false) -> optional history entry\nundo/redo -> history.navigate -> restore document + view\nnodes() -> cached CanvasDisplayNode[] -> structuredClone",
+   "rect": {
+    "line1": 33,
+    "col1": 1,
+    "line2": 36,
+    "col2": 60
+   }
+  },
+  {
+   "id": "37:1-38:55",
+   "text": "Sources: mappingDocumentController.ts; MappingPage.tsx;\nuseAgentCanvasBridge.ts; selectionState.ts",
+   "rect": {
+    "line1": 37,
+    "col1": 1,
+    "line2": 38,
+    "col2": 55
+   }
+  }
+ ],
+ "edges": [
+  {
+   "from": "3:1-3:11",
+   "to": "16:1-17:66",
+   "direction": "->"
+  },
+  {
+   "from": "3:37-7:76",
+   "to": "9:38-9:67",
+   "direction": "--"
+  },
+  {
+   "from": "9:38-9:67",
+   "to": "16:1-17:66",
+   "direction": "->"
+  }
+ ]
+}

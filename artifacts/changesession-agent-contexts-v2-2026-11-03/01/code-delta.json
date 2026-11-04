@@ -1,0 +1,772 @@
+[
+  {
+    "path": "application/mapping/agent/diagramEditService.ts",
+    "status": "modified",
+    "hunks": [
+      {
+        "oldStart": 1,
+        "oldLines": 51,
+        "newStart": 1,
+        "newLines": 96,
+        "heading": "",
+        "oldSideExcerpt": "import { AgentContext, type AgentContextSnapshot } from '../../../domain/core/agents/agentContext';\nimport { randomUUID } from 'node:crypto';\nimport { CanvasHistory } from '../../../domain/core/diagrams/canvasHistory';\nimport type { DiagramService, DiagramRevisionResult } from '../../../domain/core/diagrams/diagramService';\nimport type { LiveDocumentSnapshot } from '../../../domain/mapping/agent/contracts';\nimport type { DiagramEditRun, DiagramRevisionApplication, EditDiagramInput } from '../../../domain/mapping/agent/diagramEdit';\nimport { findBox } from '../../../domain/mapping/workspace/canvasDisplayNode';\n\nexport interface DiagramEditCanvasPort {\n  snapshot(sessionId: string): Promise<LiveDocumentSnapshot>;\n  apply(sessionId: string, input: DiagramRevisionApplication): Promise<{ version: number; unresolvedEdgeIds: string[] }>;\n}\ninterface Run {\n  agentContext?: AgentContextSnapshot;\n  input: EditDiagramInput;\n  signature: string;\n  state: DiagramEditRun;\n  abort: AbortController;\n  revision?: DiagramRevisionResult;\n  pending?: Promise<void>;\n}\n\n/** A request owns both generation and installation; retries never rerun the model. */\nexport class DiagramEditService {\n  private runs = new Map<string, Run>();\n  private requests = new Map<string, string>();\n  constructor(private readonly diagrams: DiagramService, private readonly canvas: DiagramEditCanvasPort) {}\n\n  start(input: EditDiagramInput, suppliedContext?: AgentContextSnapshot): DiagramEditRun {\n    const agentContext = suppliedContext ? AgentContext.fromSnapshot(suppliedContext).toSnapshot() : undefined;\n    if (input.agentContextId && !agentContext) throw Error('AGENT_CONTEXT_NOT_FOUND: resolve context before starting the edit');\n    const key = JSON.stringify([input.sessionId, input.requestId]);\n    const signature = JSON.stringify({ input, agentContextHash: agentContext?.contentHash });\n    const existing = this.requests.get(key);\n    if (existing) {\n      const run = this.runs.get(existing)!;\n      if (run.signature !== signature) throw Error('REQUEST_ID_CONFLICT: edit request differs');\n      if (run.state.status === 'awaiting-acknowledgement' && !run.pending) this.launch(run, () => this.apply(run));\n      return structuredClone(run.state);\n    }\n    if (this.runs.size >= 500) throw Error('Diagram edit run capacity reached; restart the backend');\n    const run: Run = { agentContext, input: structuredClone(input), signature, abort: new AbortController(), state: {\n      runId: `diagram-edit-${randomUUID()}`, status: 'generating', nodeId: input.nodeId, baseRevisionId: input.baseRevisionId\n    } };\n    this.runs.set(run.state.runId, run); this.requests.set(key, run.state.runId);\n    this.launch(run, () => this.generate(run));\n    return structuredClone(run.state);\n  }\n  get(id: string) {\n    const run = this.runs.get(id); if (!run) throw Error('Diagram edit run not found');\n    return structuredClone(run.state);"
+      },
+      {
+        "oldStart": 67,
+        "oldLines": 39,
+        "newStart": 112,
+        "newLines": 182,
+        "heading": " export class DiagramEditService {",
+        "oldSideExcerpt": "      run.state.error = message;\n    }).finally(() => { run.pending = undefined; });\n  }\n  private async generate(run: Run) {\n    const { input, abort } = run;\n    const snapshot = await this.canvas.snapshot(input.sessionId);\n    abort.signal.throwIfAborted();\n    if (snapshot.version !== input.expectedVersion) throw Error('VERSION_CONFLICT: read the canvas again');\n    const box = input.nodeId.startsWith('grid:') && findBox(snapshot.document.scene.root, input.nodeId.slice(5));\n    if (!box || box.kind !== 'diagram') throw Error('Expected diagram GridBox');\n    const base = snapshot.document.scene.contents[box.contentId];\n    if (base.revisionId !== input.baseRevisionId) throw Error('VERSION_CONFLICT: diagram base is no longer current');\n    if (!snapshot.history) throw Error('Canvas history is required for diagram generation');\n    // Validated portable history imports the exact browser-issued revision identities.\n    new CanvasHistory(snapshot.document, snapshot.canvas, snapshot.history, 'current');\n    const lines = base.content.ascii.split('\\n');\n    run.revision = await this.diagrams.generate({ input: { id: base.id, structureKind: base.content.structure.kind,\n      source: base.sourceContext.binding, evidence: base.sourceContext.evidence },\n      instruction: input.prompt, agentContext: run.agentContext, baseRevisionId: base.revisionId,\n      context: { diagram: base, selection: { startLine: 1, endLine: lines.length, startColumn: 1,\n        endColumn: Math.max(1, ...lines.map(line => line.length)) }, connections: snapshot.document.edges }\n    }, { signal: abort.signal, onProgress: message => { if (run.state.status === 'generating') run.state.message = message; } });\n    abort.signal.throwIfAborted();\n    run.state.generated = { diagramId: run.revision.diagram.diagramId, revisionId: run.revision.revision.id,\n      ascii: run.revision.diagram.content.ascii };\n    await this.apply(run);\n  }\n  private async apply(run: Run) {\n    run.state.status = 'applying'; delete run.state.error;\n    const revision = run.revision!.revision, input = run.input;\n    // The controller checks both versions at the mutation boundary, after generation.\n    const result = await this.canvas.apply(input.sessionId, { requestId: run.state.runId,\n      expectedVersion: input.expectedVersion, nodeId: input.nodeId, baseRevisionId: input.baseRevisionId, revision });\n    run.state.result = { diagramId: revision.diagramId, previousRevisionId: input.baseRevisionId,\n      revisionId: revision.id, documentVersion: result.version, unresolvedEdgeIds: result.unresolvedEdgeIds };\n    run.state.status = 'completed'; run.state.message = 'Diagram revision installed and workspace persisted';\n  }\n  dispose() { for (const run of this.runs.values()) this.cancel(run.state.runId); }\n}"
+      }
+    ]
+  },
+  {
+    "path": "domain/core/diagrams/canvasTransfer.ts",
+    "status": "modified",
+    "hunks": [
+      {
+        "oldStart": 1,
+        "oldLines": 8,
+        "newStart": 1,
+        "newLines": 13,
+        "heading": "",
+        "oldSideExcerpt": "import { placeTransferredGroup } from './canvasTransferPlacement';\nimport { z } from 'zod';\nimport { CanvasHistory, documentFromHistory, type CanvasHistoryRecord, type ResolvedCanvasDocument } from './canvasHistory';\nimport { rebaseDiagramJumps, type DiagramJumpTarget } from './diagramJump';\nimport { RevisionedDiagramService } from './diagramService';\nimport { diagramContentNodes } from './diagramContentNodes';\nimport { connectionBox, getArrowLabel, validateConnectionAnchor } from './diagramConnection';\nimport { flattenGrid, resolveScene, type GridBox, type LineGridScene } from './lineGrid';"
+      },
+      {
+        "oldStart": 30,
+        "oldLines": 7,
+        "newStart": 35,
+        "newLines": 6,
+        "heading": " const state = (history: CanvasHistory): TransferState => ({ document: history.do",
+        "oldSideExcerpt": "/** Preparation operates on isolated histories. Publication belongs to the workspace transaction. */\nexport function prepareCanvasTransfer(record: CanvasHistoryRecord, input: TransferInput, destinationRecord?: CanvasHistoryRecord): PreparedCanvasTransfer {\n  if (input.sourceId === input.destinationId) throw Error('Choose another canvas as the destination');\n  const diagrams = new RevisionedDiagramService();\n  const original = new CanvasHistory(documentFromHistory(record), {}, record), before = original.document();\n  if (!input.selectedIds.length || new Set(input.selectedIds).size !== input.selectedIds.length) throw Error('Select one or more diagrams');\n  const existing = destinationRecord ? documentFromHistory(destinationRecord) : emptyCanvasDocument();"
+      },
+      {
+        "oldStart": 54,
+        "oldLines": 11,
+        "newStart": 58,
+        "newLines": 21,
+        "heading": " export function prepareCanvasTransfer(record: CanvasHistoryRecord, input: Transf",
+        "oldSideExcerpt": "      const old = before.scene.contents[id];\n      if (next === id) contents[next] = old;\n      else {\n        const created = diagrams.create({ id: next, revision: 0, ascii: old.content.ascii,\n          structureKind: old.content.structure.kind, source: old.sourceContext.binding,\n          mappings: old.sourceContext.mappings, evidence: old.sourceContext.evidence }).diagram;\n        contents[next] = old.jumps ? diagrams.revise(created.revisionId,\n          { kind: 'jumps', jumps: rebaseDiagramJumps(old.content, created.content, old.jumps) }).diagram : created;\n      }\n      if (before.sections[id]) sections[next] = structuredClone(before.sections[id]);\n    }"
+      },
+      {
+        "oldStart": 84,
+        "oldLines": 8,
+        "newStart": 98,
+        "newLines": 14,
+        "heading": " export function prepareCanvasTransfer(record: CanvasHistoryRecord, input: Transf",
+        "oldSideExcerpt": "    ? { ...jump, representationId: input.destinationId, displayNodeId: `grid:${boxIds.get(jump.displayNodeId.slice(5))}`,\n      ...(jump.contentNodeId ? { contentNodeId: remapNode(jump.displayNodeId, jump.contentNodeId) } : {}) } : jump;\n  const remapJumps = (diagram: LineGridScene['contents'][string]) => diagram.jumps\n    ? diagrams.revise(diagram.revisionId, { kind: 'jumps', jumps: diagram.jumps.map(jump => ({ ...jump, target: remapTarget(jump.target) })) }).diagram : diagram;\n  for (const [id, diagram] of Object.entries(contents)) contents[id] = remapJumps(diagram);\n  const targetJumps: CanvasJump[] = [], sourceJumps: CanvasJump[] = [];\n  for (const jump of before.jumps ?? []) {\n    if (selected.has(jump.sourceDisplayNodeId)) {"
+      },
+      {
+        "oldStart": 162,
+        "oldLines": 6,
+        "newStart": 182,
+        "newLines": 7,
+        "heading": " export function prepareCanvasTransfer(record: CanvasHistoryRecord, input: Transf",
+        "oldSideExcerpt": "    target.edges = [...existing.edges, ...target.edges];\n    target.jumps = [...(existing.jumps ?? []).map(jump => input.mode === 'move' ? { ...jump, target: remapTarget(jump.target) } : jump), ...targetJumps];\n    target.sections = { ...existing.sections, ...sections };\n  }\n  const transaction: CanvasTransfer = { id: fresh('transfer'), mode: input.mode, applied: true, destinationCreated: !destinationRecord,\n    sourceId: input.sourceId, destinationId: input.destinationId, sourceBefore: record.headId, sourceAfter: original.head.id,"
+      }
+    ]
+  },
+  {
+    "path": "domain/core/diagrams/diagramRevisionReview.ts",
+    "status": "added",
+    "hunks": [
+      {
+        "oldStart": 0,
+        "oldLines": 0,
+        "newStart": 1,
+        "newLines": 195,
+        "heading": "",
+        "oldSideExcerpt": ""
+      }
+    ]
+  },
+  {
+    "path": "domain/core/diagrams/highlightProjection.ts",
+    "status": "added",
+    "hunks": [
+      {
+        "oldStart": 0,
+        "oldLines": 0,
+        "newStart": 1,
+        "newLines": 232,
+        "heading": "",
+        "oldSideExcerpt": ""
+      }
+    ]
+  },
+  {
+    "path": "domain/core/diagrams/projectDiagramCanvas.ts",
+    "status": "modified",
+    "hunks": [
+      {
+        "oldStart": 1,
+        "oldLines": 6,
+        "newStart": 1,
+        "newLines": 7,
+        "heading": "",
+        "oldSideExcerpt": "import { documentFromHistory, type CanvasHistoryRecord } from './canvasHistory';\nimport { validateDiagram, diagramSource, type Diagram, type DiagramSourceBinding } from './diagram';\nimport { RevisionedDiagramService } from './diagramService';\nimport {\n  composeScene,\n  flattenGrid,"
+      },
+      {
+        "oldStart": 12,
+        "oldLines": 6,
+        "newStart": 13,
+        "newLines": 7,
+        "heading": " import type { ProjectRepresentationEvidenceRecord, ProjectRepresentationMappingR",
+        "oldSideExcerpt": "\nexport type ProjectDiagramContent = { kind: \"canvas-history\"; history: CanvasHistoryRecord };\nexport interface SaveProjectDiagramInput {\n  history: CanvasHistoryRecord;\n  projectId?: string;\n  representationId?: string;"
+      },
+      {
+        "oldStart": 24,
+        "oldLines": 8,
+        "newStart": 26,
+        "newLines": 8,
+        "heading": " export interface SaveProjectDiagramInput {",
+        "oldSideExcerpt": "\nexport function singleDiagramScene(ascii: string, source?: DiagramSourceBinding): LineGridScene {\n  return { contents: {\n    overview: new RevisionedDiagramService().create({ id: \"overview\", revision: 0, ascii, source }).diagram,\n    \"overview-summary\": new RevisionedDiagramService().create({ id: \"overview-summary\", revision: 0, ascii: \"[Diagram]\" }).diagram\n  }, root: { id: \"root\", kind: \"container\", position: { column: 0, row: 0 }, collapsed: false,\n    layout: { collisionPolicy: \"push-right\", gap: 3 }, children: [\n      { id: \"overview\", kind: \"diagram\", position: { column: 0, row: 0 }, collapsed: false,"
+      }
+    ]
+  },
+  {
+    "path": "domain/mapping/agent/diagramEdit.ts",
+    "status": "modified",
+    "hunks": [
+      {
+        "oldStart": 1,
+        "oldLines": 22,
+        "newStart": 1,
+        "newLines": 78,
+        "heading": "",
+        "oldSideExcerpt": "import { z } from 'zod';\nimport type { DiagramRevision } from '../../core/diagrams/diagramRevisionEditor';\n\nconst id = z.string().min(1).max(200);\nexport const editDiagramSchema = z.object({\n  sessionId: id, nodeId: id, expectedVersion: z.number().int().nonnegative(),\n  baseRevisionId: id, agentContextId: id.optional(), prompt: z.string().trim().min(1).max(20000), requestId: id\n}).strict();\nexport const diagramEditRunSchema = z.object({ runId: id }).strict();\nexport type EditDiagramInput = z.infer<typeof editDiagramSchema>;\nexport interface DiagramRevisionApplication {\n  requestId: string;\n  expectedVersion: number;\n  nodeId: string;\n  baseRevisionId: string;\n  revision: DiagramRevision;\n}\nexport interface DiagramEditRun {\n  runId: string;\n  status: 'generating' | 'applying' | 'completed' | 'conflict' | 'failed' | 'cancelled' | 'awaiting-acknowledgement';\n  nodeId: string;\n  baseRevisionId: string;"
+      },
+      {
+        "oldStart": 24,
+        "oldLines": 4,
+        "newStart": 80,
+        "newLines": 6,
+        "heading": " export interface DiagramEditRun {",
+        "oldSideExcerpt": "  error?: string;\n  generated?: { diagramId: string; revisionId: string; ascii: string };\n  result?: { diagramId: string; previousRevisionId: string; revisionId: string; documentVersion: number; unresolvedEdgeIds: string[] };\n}"
+      }
+    ]
+  },
+  {
+    "path": "domain/mapping/changes/changeTreemap.ts",
+    "status": "added",
+    "hunks": [
+      {
+        "oldStart": 0,
+        "oldLines": 0,
+        "newStart": 1,
+        "newLines": 170,
+        "heading": "",
+        "oldSideExcerpt": ""
+      }
+    ]
+  },
+  {
+    "path": "domain/mapping/treemap/canvasTreemap.ts",
+    "status": "added",
+    "hunks": [
+      {
+        "oldStart": 0,
+        "oldLines": 0,
+        "newStart": 1,
+        "newLines": 127,
+        "heading": "",
+        "oldSideExcerpt": ""
+      }
+    ]
+  },
+  {
+    "path": "domain/mapping/workspace/canvasDisplayNode.ts",
+    "status": "modified",
+    "hunks": [
+      {
+        "oldStart": 1,
+        "oldLines": 13,
+        "newStart": 1,
+        "newLines": 21,
+        "heading": "",
+        "oldSideExcerpt": "import type { EndpointBounds } from './endpointGeometry';\nimport { resolveDiagramContent, projectDiagramContent } from './diagramViewState';\nexport { resolveDiagramContent } from './diagramViewState';\nimport { flattenGrid, resolveScene, type GridBounds } from '../../core/diagrams/lineGrid';\nimport type { DiagramContent } from '../../core/diagrams/diagramContent';\nimport type { FloatingBox, DisplayGeometry } from './displayModel';\nimport type { MappingGridDocument } from './mappingGrid';\nimport type { MappingCanvasState } from './mappingWorkspace';\nimport { drawEdge } from './connectionLayout';\nimport { connectionContentNodes } from '../../core/diagrams/diagramConnection';\nexport type { FloatingBox };\n\nexport type FloatingPlacement ="
+      },
+      {
+        "oldStart": 26,
+        "oldLines": 16,
+        "newStart": 34,
+        "newLines": 19,
+        "heading": " export interface DisplayNodeCollapsible {",
+        "oldSideExcerpt": "  }[];\n}\nexport type CanvasDisplayNode = {\n  id: string; version: number; childIds: string[]; expansion: 'expanded' | 'collapsed';\n  collapsible: DisplayNodeCollapsible;\n} & ({ layout: 'grid'; kind: 'diagram' | 'group'; boxId: string; geometry: { units: 'cells'; bounds: GridBounds }; content?: DiagramContent; contentNodes?: readonly import('../../core/diagrams/diagramContent').DiagramContentNode[]; diagram?: import(\"../../core/diagrams/diagram\").Diagram }\n  | { layout: 'floating'; kind: FloatingBox['kind']; geometry: DisplayGeometry & { units: 'pixels' }; placement: FloatingPlacement; value: FloatingBox });\nexport const gridNodeId = (id: string) => `grid:${id}`;\nexport const floatingNodeId = (id: string) => `floating:${id}`;\n\n/** Read-only registry over the two existing stores. Geometry has no second writable copy. */\nexport function canvasDisplayNodes(document: MappingGridDocument, canvas: MappingCanvasState, version: number, cell = { width: 8, height: 18 }, endpointBounds?: EndpointBounds): CanvasDisplayNode[] {\n  const visible = new Map(flattenGrid(resolveScene(document.scene)).map(node => [node.box.id, node]));\n  const expand = (box: typeof document.scene.root): typeof box => box.kind === 'container'\n    ? { ...box, collapsed: false, children: box.children.map(expand) } : { ...box, collapsed: false };\n  const expanded = flattenGrid(resolveScene({ ...document.scene, root: expand(document.scene.root) }));"
+      },
+      {
+        "oldStart": 45,
+        "oldLines": 13,
+        "newStart": 56,
+        "newLines": 40,
+        "heading": " export function canvasDisplayNodes(document: MappingGridDocument, canvas: Mappin",
+        "oldSideExcerpt": "    const parsed = content && resolveDiagramContent(content);\n    const view = canvas.diagramViews?.[gridNodeId(box.id)];\n    const projection = parsed && projectDiagramContent(parsed, view);\n    return { collapsible: { self: box.id !== document.scene.root.id, subtrees: parsed?.structure.kind === 'tree' ? Object.values(parsed.structure.nodes).filter(item => item.childIds.length).map(item => ({\n      contentNodeId: item.id, label: item.label, line: item.line, branchColumn: item.branchColumn, visibleRow: projection!.rowForLine(item.line),\n      expansion: view?.contentRevisionId === parsed.revisionId && view.collapsedContentNodeIds.includes(item.id) ? 'collapsed' as const : 'expanded' as const\n    })) : [] }, id: gridNodeId(box.id), boxId: box.id, version, layout: 'grid', kind: box.kind === 'diagram' ? 'diagram' : 'group',\n      childIds: box.kind === 'container' ? box.children.map(child => gridNodeId(child.id)) : [], expansion: box.collapsed ? 'collapsed' : 'expanded',\n      geometry: { units: 'cells', bounds: visible.get(box.id)?.bounds ?? node.bounds },\n      ...(content ? { content: resolveDiagramContent(content), contentNodes: connectionContentNodes(content.content), diagram: content } : {}) };\n  });\n  const floating: CanvasDisplayNode[] = Object.values(canvas.display.nodes).map(node => {\n    const owner = Object.values(canvas.display.nodes).find(parent => parent.childIds.includes(node.id));"
+      },
+      {
+        "oldStart": 64,
+        "oldLines": 11,
+        "newStart": 102,
+        "newLines": 18,
+        "heading": " export function canvasDisplayNodes(document: MappingGridDocument, canvas: Mappin",
+        "oldSideExcerpt": "      childIds: node.childIds.map(floatingNodeId), expansion: node.expansion,\n      geometry: { units: 'pixels', position: node.position, bounds: node.bounds, coordinateSpace: node.coordinateSpace }, placement, value: node };\n  });\n  const arrows: CanvasDisplayNode[] = (document.edges ?? []).map(edge => {\n    const value = drawEdge(edge, document.scene, canvas.diagramViews, cell, endpointBounds);\n    return { id: `floating:${value.id}`, version, childIds: [], expansion: 'expanded', collapsible: { self: false, subtrees: [] },\n      layout: 'floating', kind: 'arrow', geometry: { units: 'pixels', position: value.position, bounds: value.bounds, coordinateSpace: 'canvas' },\n      placement: { kind: 'connection', edgeId: edge.id }, value };\n  });\n  return structuredClone([...grid, ...floating, ...arrows]);\n}"
+      }
+    ]
+  },
+  {
+    "path": "domain/mapping/workspace/diagramAlternatives.ts",
+    "status": "added",
+    "hunks": [
+      {
+        "oldStart": 0,
+        "oldLines": 0,
+        "newStart": 1,
+        "newLines": 79,
+        "heading": "",
+        "oldSideExcerpt": ""
+      }
+    ]
+  },
+  {
+    "path": "src/features/mapping/MappingPage.tsx",
+    "status": "modified",
+    "hunks": [
+      {
+        "oldStart": 1,
+        "oldLines": 22,
+        "newStart": 1,
+        "newLines": 51,
+        "heading": "",
+        "oldSideExcerpt": "import { DiagramEditComposer } from './diagram-edit/DiagramEditComposer';\nimport { DiagramEditCoordinator } from './diagram-edit/diagramEditCoordinator';\nimport { createDiagramEditClient } from './diagram-edit/diagramEditClient';\nimport { deselectCanvas } from '../../../domain/mapping/selection/canvasSelection';\nimport { DiagramRevisionReceiver } from './agent/diagramRevisionReceiver';\nimport type { DiagramRevisionApplication } from '../../../domain/mapping/agent/diagramEdit';\nimport { DefaultCanvasHistoryService } from '../../../domain/core/diagrams/canvasHistoryService';\nimport { useStore } from 'zustand';\nimport { CanvasWorkspace, type CanvasDraft as Draft, type CanvasDraftSeed } from './workspace/canvasWorkspace';\nimport { WorkspacePersistence } from './workspace/workspacePersistence';\nimport { runWorkspaceTask } from './workspace/runWorkspaceTask';\nimport { pruneWorkspaceDocuments } from '../../../domain/mapping/workspace/pruneWorkspaceDocuments';\nimport { emptyCanvasDocument, type CanvasTransfer, type TransferState } from '../../../domain/core/diagrams/canvasTransfer';\nimport { removeDisplayNode } from '../../../domain/mapping/workspace/displayModel';\nimport { MappingServicesContext, useMappingServices, type MappingServices } from './services/MappingServices';\nimport { reconcileWorkspaceDocument } from '../../../domain/mapping/workspace/reconcileWorkspace';\nimport { historyFromRevision, documentFromRevision } from '../../../domain/core/diagrams/projectDiagramCanvas';\nimport { UiTestFramework } from \"@new-diagram/ui-test-framework\";\nimport { useCallback, useEffect, useMemo, useRef, useState } from \"react\";\nimport { DiagramSearchService, type SearchDocument } from './search/diagramSearchService';\nimport type { DiagramLineSearchResult } from '../../../domain/mapping/search/diagramSearch';\nimport { findBox } from '../../../domain/mapping/workspace/canvasDisplayNode';"
+      },
+      {
+        "oldStart": 31,
+        "oldLines": 7,
+        "newStart": 60,
+        "newLines": 7,
+        "heading": " import { type DiagramOperation, MappingDocumentController } from '../../../domai",
+        "oldSideExcerpt": "import type { MappingGridDocument } from \"../../../domain/mapping/workspace/mappingGrid\";\nimport { initialCanvasState, type MappingCanvasState, type MappingWorkspaceSnapshot } from \"../../../domain/mapping/workspace/mappingWorkspace\";\nimport { deserializeWorkspace, serializeWorkspace } from \"../../../domain/mapping/workspace/mappingWorkspaceCodec\";\nimport { DraggableDiagramCanvas } from \"../../shared/diagrams/DraggableDiagramCanvas\";\nimport { loadProjectRepresentations, type ProjectRepresentationsSnapshot } from \"../../shared/http/api\";\nimport { useAgentCanvasBridge } from './agent/useAgentCanvasBridge';\nimport { MappingPocSelectionCanvas } from \"./canvas/MappingCanvas\";"
+      },
+      {
+        "oldStart": 41,
+        "oldLines": 12,
+        "newStart": 70,
+        "newLines": 15,
+        "heading": " import type { DiagramChangeSession } from '../../../domain/mapping/changes/diagr",
+        "oldSideExcerpt": "import { stateKey } from '../../../domain/core/diagrams/canvasHistory';\nimport { SourcePaneViewState } from \"./source-pane/sourcePaneViewState\";\nimport { SourcePaneDocumentActiveContext, SourcePaneDocumentContext, SourcePaneViewStateContext } from \"./source-pane/SourcePaneViewStateContext\";\nimport { FloatingPane } from \"./workspace/FloatingPane\";\nimport { MappingDiagramExplorer } from \"./workspace/MappingDiagramExplorer\";\nimport { deleteMappingProjectDiagram, saveMappingProjectDiagram } from \"./workspace/mappingProjectApi\";\nimport { MappingSubmenu } from \"./workspace/MappingSubmenu\";\nimport { WorkspaceStorage } from './workspace/workspaceStorage';\n\nconst LOCAL_CHAT_UI_CONTROLS = {\n  variant: {\n    type: \"select\","
+      },
+      {
+        "oldStart": 71,
+        "oldLines": 12,
+        "newStart": 103,
+        "newLines": 23,
+        "heading": " export function MappingPocPage({ services }: { services: MappingServices }) {",
+        "oldSideExcerpt": "}\n\nfunction MappingWorkspacePage() {\n  const { diagrams: diagramService, canvasHistory, workspaceStorage: injectedStorage } = useMappingServices();\n  const [storage] = useState(() => injectedStorage ?? new WorkspaceStorage());\n  const persistence = useRef<WorkspacePersistence | undefined>(undefined);\n  const [pendingTransfer, setPendingTransfer] = useState<{ sourceId: string; mode: 'copy' | 'move'; selectedIds: string[]; revisionId: string }>();\n  const [explorerTab, setExplorerTab] = useState<'diagrams'|'changes'>('diagrams');\n  const [changeMode, setChangeMode] = useState<DisplayModeChange>();\n  const [workspaceEpoch, setWorkspaceEpoch] = useState(0);\n  const [viewState, setViewState] = useState(() => new SourcePaneViewState());\n  const [workspaceStatus, setWorkspaceStatus] = useState(\"\");"
+      },
+      {
+        "oldStart": 87,
+        "oldLines": 8,
+        "newStart": 130,
+        "newLines": 20,
+        "heading": " function MappingWorkspacePage() {",
+        "oldSideExcerpt": "  const [workspaceLoaded, setWorkspaceLoaded] = useState(false);\n  const importRef = useRef<HTMLInputElement>(null);\n  const [snapshot, setSnapshot] = useState<ProjectRepresentationsSnapshot>();\n  const [workspace] = useState(() => new CanvasWorkspace(diagramService, canvasHistory));\n  const [diagramEdits] = useState(() => new DiagramEditCoordinator(createDiagramEditClient()));\n  const drafts = useStore(workspace.store, state => state.drafts);\n  const dirtySceneIds = useStore(workspace.dirtyScenes, state => state.ids);\n  const setDrafts = workspace.setDrafts;"
+      },
+      {
+        "oldStart": 96,
+        "oldLines": 7,
+        "newStart": 151,
+        "newLines": 7,
+        "heading": " function MappingWorkspacePage() {",
+        "oldSideExcerpt": "  useEffect(() => {\n    clearTimeout(disposal.current);\n    return () => { disposal.current = setTimeout(() => {\n      diagramEdits.dispose();\n      workspace.dispose();\n      if (!injectedStorage) {\n        if (storage.records) void storage.flush().catch(() => {}).finally(() => storage.dispose());"
+      },
+      {
+        "oldStart": 114,
+        "oldLines": 9,
+        "newStart": 169,
+        "newLines": 31,
+        "heading": " function MappingWorkspacePage() {",
+        "oldSideExcerpt": "  const [deletingId, setDeletingId] = useState<string>();\n  const [creating, setCreating] = useState(false);\n  const [newName, setNewName] = useState(\"New diagram\");\n  const [newAscii, setNewAscii] = useState(\"[New diagram]\");\n  const [copyCurrent, setCopyCurrent] = useState(false);\n  const active = activeId ? drafts[activeId] : undefined;\n  const controllers = { current: workspace.controllers };\n  const cancelTransfer = useCallback(() => {\n    if (transferBusy.current) return;"
+      },
+      {
+        "oldStart": 143,
+        "oldLines": 6,
+        "newStart": 220,
+        "newLines": 9,
+        "heading": " function MappingWorkspacePage() {",
+        "oldSideExcerpt": "  const savedSearchDocuments = useRef(new WeakMap<object, MappingGridDocument>());\n  const [proposalSearchDocument, setProposalSearchDocument] = useState<SearchDocument>();\n  const [proposalSearchFocus, setProposalSearchFocus] = useState<{ documentId: string; focus: DiagramFocus }>();\n  const [searchMatches, setSearchMatches] = useState<readonly DiagramLineSearchResult[]>([]);\n  const searchMatchesByDocument = useMemo(() => {\n    const grouped = new Map<string, DiagramLineSearchResult[]>();"
+      },
+      {
+        "oldStart": 180,
+        "oldLines": 6,
+        "newStart": 260,
+        "newLines": 7,
+        "heading": " function MappingWorkspacePage() {",
+        "oldSideExcerpt": "  }, [drafts, snapshot?.catalog, proposalSearchDocument, proposalSearchId]);\n  useEffect(() => { search.sync(searchDocuments); }, [search, searchDocuments]);\n  useEffect(() => () => search.dispose(), [search]);\n  const appliedRequests = useRef(new Map<string, unknown>());\n  const [revisionReceiver] = useState(() => new DiagramRevisionReceiver());\n  const waitController = async (id: string) => {"
+      },
+      {
+        "oldStart": 192,
+        "oldLines": 12,
+        "newStart": 273,
+        "newLines": 12,
+        "heading": " function MappingWorkspacePage() {",
+        "oldSideExcerpt": "  const handleAgentCommand = async (command: CanvasCommand): Promise<unknown> => {\n    if (transferBusy.current) throw new Error('WORKSPACE_BUSY');\n    if (command.method === 'copy-document') {\n      const { name, expectedVersion, requestId } = command.payload as { name: string; expectedVersion?: number; requestId: string };\n      const key = `copy:${command.documentId}:${requestId}`;\n      if (appliedRequests.current.has(key)) return appliedRequests.current.get(key);\n      const sourceId = command.documentId!, source = draftRef.current[sourceId];\n      if (!source || source.hidden) throw new Error('DOCUMENT_UNAVAILABLE');\n      const result = workspace.copyDocument({ documentId: sourceId, name, expectedVersion,\n        display: viewState.captureDisplay(sourceId, source.session.controller.getSnapshot().canvas.display),\n        viewport: viewState.captureCamera(sourceId, source.viewport) });\n      // Record the receipt immediately: a lost acknowledgement must not create another copy."
+      },
+      {
+        "oldStart": 206,
+        "oldLines": 12,
+        "newStart": 287,
+        "newLines": 12,
+        "heading": " function MappingWorkspacePage() {",
+        "oldSideExcerpt": "      return result;\n    }\n    if (command.method === 'create-document') {\n      const { name, snapshot: initialized, requestId } = command.payload as { name: string; requestId: string; snapshot: ProjectRepresentationsSnapshot };\n      if (appliedRequests.current.has(`create:${requestId}`)) return appliedRequests.current.get(`create:${requestId}`);\n      const id = `draft-${crypto.randomUUID()}`;\n      const document = mappingDocumentFromScene(singleDiagramScene('[New diagram]'));\n      setSnapshot(initialized);\n      setDrafts(current => ({ ...current, [id]: { name, document, savedEdges: JSON.stringify(document.edges), savedScene: JSON.stringify(document.scene), savedName: '', revisionId: '', busy: false, canvas: initialCanvasState() } }));\n      setActiveId(id);\n      await waitController(id);\n      const result = { documentId: id };"
+      },
+      {
+        "oldStart": 222,
+        "oldLines": 14,
+        "newStart": 303,
+        "newLines": 92,
+        "heading": " function MappingWorkspacePage() {",
+        "oldSideExcerpt": "    const controller = await waitController(id);\n    const draft = draftRef.current[id];\n    if (!draft || draft.hidden) throw new Error('DOCUMENT_UNAVAILABLE');\n    // Acceptance only compares the current state; exporting all history can make replies enormous.\n    if (command.method === 'context') {\n      const snapshot = controller.getSnapshot();\n      return { version: snapshot.version, name: draft.name, nodes: controller.nodes(), edges: structuredClone(snapshot.document.edges) };\n    }\n    if (command.method === 'document-state') return { document: controller.getSnapshot().document, name: draft.name };\n    if (command.method === 'snapshot') return { ...structuredClone(controller.getSnapshot()), history: controller.exportHistory(), name: draft.name,\n      representationId: draft.representationId ?? (id.startsWith('draft-') ? undefined : id), revisionId: draft.revisionId || undefined };\n    if (command.method === 'apply-diagram-revision') {\n      if (workspaceBusy || draft.busy) throw new Error('WORKSPACE_BUSY');\n      if (!persistence.current || !storage.records) throw Error('WORKSPACE_UNAVAILABLE: persistence is not ready');"
+      },
+      {
+        "oldStart": 238,
+        "oldLines": 12,
+        "newStart": 397,
+        "newLines": 53,
+        "heading": " function MappingWorkspacePage() {",
+        "oldSideExcerpt": "        await storage.flush();\n      });\n    }\n    if (command.method === 'apply') {\n      const { requestId, expectedVersion, operations } = command.payload as { requestId: string; expectedVersion: number; operations: DiagramOperation[] };\n      const key = `${id}:${requestId}`;\n      if (appliedRequests.current.has(key)) return appliedRequests.current.get(key);\n      if (draft.busy) throw new Error('DOCUMENT_BUSY');\n      const result = controller.applyUpdate(expectedVersion, operations);\n      appliedRequests.current.set(key, result);\n      return result;\n    }"
+      },
+      {
+        "oldStart": 251,
+        "oldLines": 15,
+        "newStart": 451,
+        "newLines": 17,
+        "heading": " function MappingWorkspacePage() {",
+        "oldSideExcerpt": "      result: Awaited<ReturnType<typeof saveMappingProjectDiagram>>; wholeDocument: boolean; savedScene: string; savedEdges: string; name: string;\n    };\n    setSnapshot(result);\n    if (wholeDocument) setDrafts(current => ({ ...current, [id]: { ...current[id], representationId: result.representation.id,\n      revisionId: result.representation.currentRevisionId, savedScene, savedEdges, savedName: name, name: current[id].name === draft.name ? name : current[id].name } }));\n    return { updated: true };\n  };\n  const { canvasId, agentStatus } = useAgentCanvasBridge({ projectId: snapshot?.project?.id, documents: Object.entries(drafts).filter(([, draft]) => !draft.hidden).map(([documentId, draft]) => ({ documentId, name: draft.name,\n    representationId: draft.representationId ?? (documentId.startsWith('draft-') ? undefined : documentId) })) }, handleAgentCommand, workspace);\n  const draftAliases = new Set(Object.entries(drafts).map(([id, draft]) => draft.representationId ?? id));\n  const diagrams = [...Object.values(snapshot?.catalog?.representations ?? {}).filter(diagram => diagram.status === 'settled' && !draftAliases.has(diagram.id)),\n    ...Object.entries(drafts).filter(([, draft]) => !draft.hidden).map(([id, draft]) => ({ id: draft.representationId ?? id, name: draft.name }))];\n\n  const open = (id: string, data = snapshot, navigate = true) => {\n    const existingId = Object.entries(draftRef.current).find(([key, draft]) => key === id || draft.representationId === id)?.[0];"
+      },
+      {
+        "oldStart": 273,
+        "oldLines": 7,
+        "newStart": 475,
+        "newLines": 7,
+        "heading": " function MappingWorkspacePage() {",
+        "oldSideExcerpt": "    const revision = representation && data?.catalog?.revisions[representation.currentRevisionId];\n    if (!representation || representation.status !== 'settled' || !revision) { setError('Project diagram was not found'); return; }\n    const document = documentFromRevision(revision);\n    setDrafts((current) => current[id] ? current : { ...current, [id]: { name: representation.name,\n      history: historyFromRevision(revision), document, savedEdges: JSON.stringify(document.edges), savedScene: JSON.stringify(document.scene), savedName: representation.name, revisionId: revision.id, busy: false, canvas: initialCanvasState() } });\n    setActiveId(id);\n    if (navigate) {"
+      },
+      {
+        "oldStart": 284,
+        "oldLines": 6,
+        "newStart": 486,
+        "newLines": 22,
+        "heading": " function MappingWorkspacePage() {",
+        "oldSideExcerpt": "    return id;\n  };\n\n  const jumpTo = async (target: DiagramJumpTarget) => {\n    try {\n      const id = open(target.representationId);"
+      },
+      {
+        "oldStart": 325,
+        "oldLines": 10,
+        "newStart": 543,
+        "newLines": 12,
+        "heading": " function MappingWorkspacePage() {",
+        "oldSideExcerpt": "  const openAccepted = async (session: Omit<DiagramChangeSession, 'receipts'>, documentId: string) => {\n    const acceptance = session.acceptance;\n    const selected = acceptance?.documents.find(d => d.documentId === documentId);\n    if (!acceptance || !selected) throw new Error('Accepted canvas was not found');\n    const data = await loadProjectRepresentations();\n    const next: Record<string, Draft | CanvasDraftSeed> = { ...draftRef.current };\n    let selectedId = selected.representationId, keptLocalEdits = false;\n    for (const published of acceptance.documents) {\n      const representation = data.catalog?.representations[published.representationId];\n      const revision = representation && data.catalog?.revisions[representation.currentRevisionId];"
+      },
+      {
+        "oldStart": 347,
+        "oldLines": 13,
+        "newStart": 567,
+        "newLines": 32,
+        "heading": " function MappingWorkspacePage() {",
+        "oldSideExcerpt": "      }\n      const document = documentFromRevision(revision), history = historyFromRevision(revision);\n      const view = history?.snapshots[history.headId].view as MappingCanvasState | undefined;\n      next[key] = { ...previous, representationId: representation.id, name: representation.name, document, history,\n        canvas: view?.display ? view : initialCanvasState(), revisionId: revision.id, savedName: representation.name,\n        savedScene: JSON.stringify(document.scene), savedEdges: JSON.stringify(document.edges), busy: false, reloadKey: revision.id };\n    }\n    setSnapshot(data); setDrafts(next); setActiveId(selectedId); setChangeMode(undefined); setExplorerTab('diagrams');\n    setWorkspaceStatus(keptLocalEdits ? 'Changes accepted; newer local edits were preserved.' : 'Changes accepted. The review diff remains in Changes.');\n    const url = new URL(location.href); url.searchParams.set('diagram', selected.representationId); history.replaceState({}, '', url);\n  };\n\n  const restore = (workspace: MappingWorkspaceSnapshot, data = snapshot) => {"
+      },
+      {
+        "oldStart": 368,
+        "oldLines": 7,
+        "newStart": 607,
+        "newLines": 9,
+        "heading": " function MappingWorkspacePage() {",
+        "oldSideExcerpt": "    setViewState(new SourcePaneViewState());\n    setDrafts(Object.fromEntries(documents.map(doc => {\n      const refreshed = data?.catalog && !(workspace.transfers ?? []).some(tx => tx.sourceId === doc.representationId || tx.destinationId === doc.representationId) ? reconcileWorkspaceDocument(doc, data.catalog) : { document: doc, newerRevision: false };\n      return [doc.representationId, { ...refreshed.document, newerRevision: refreshed.newerRevision, representationId: doc.savedRepresentationId, busy: false }];\n    })));\n    const id = documents.some(doc => !doc.hidden && doc.representationId === workspace.activeDocumentId)\n      ? workspace.activeDocumentId : documents.find(doc => !doc.hidden)?.representationId"
+      },
+      {
+        "oldStart": 383,
+        "oldLines": 7,
+        "newStart": 624,
+        "newLines": 7,
+        "heading": " function MappingWorkspacePage() {",
+        "oldSideExcerpt": "  const capture = (): MappingWorkspaceSnapshot => {\n    if (!snapshot?.project) throw new Error('Project is not initialized');\n    return { schemaVersion: 3, projectId: snapshot.project.id, activeDocumentId: activeId, transfers,\n      documents: Object.entries(workspace.store.getState().drafts).map(([representationId, draft]) => ({ representationId, hidden: draft.hidden, savedRepresentationId: draft.representationId, name: draft.name,\n        history: draft.session.controller.exportHistory(), savedName: draft.savedName, savedScene: draft.savedScene, savedEdges: draft.savedEdges, revisionId: draft.revisionId,\n        document: documentOf(draft), canvas: { ...(canvasOf(draft)), display: viewState.captureDisplay(representationId, canvasOf(draft).display) },\n        viewport: viewState.captureCamera(representationId, draft.viewport) })) };"
+      },
+      {
+        "oldStart": 425,
+        "oldLines": 7,
+        "newStart": 666,
+        "newLines": 7,
+        "heading": " function MappingWorkspacePage() {",
+        "oldSideExcerpt": "        const revision = representation && snapshot?.catalog?.revisions[representation.currentRevisionId];\n        if (!representation || representation.status !== 'settled' || !revision) throw Error('Destination canvas is unavailable');\n        const document = documentFromRevision(revision);\n        destinationDoc = { representationId: representation.id, name: representation.name, savedName: representation.name, revisionId: revision.id,\n          savedScene: JSON.stringify(document.scene), savedEdges: JSON.stringify(document.edges), document, canvas: initialCanvasState(), history: historyFromRevision(revision) };\n        workspace.documents.push(destinationDoc);\n      }"
+      },
+      {
+        "oldStart": 433,
+        "oldLines": 8,
+        "newStart": 674,
+        "newLines": 7,
+        "heading": " function MappingWorkspacePage() {",
+        "oldSideExcerpt": "      const destinationId = destinationDoc?.representationId ?? `draft-${crypto.randomUUID()}`;\n      const name = destinationDoc?.name ?? ('name' in destinationChoice ? destinationChoice.name.trim() : '');\n      if (!name || name.length > 120) throw Error('Enter a canvas name (up to 120 characters)');\n      const destination = destinationDoc ? controllers.current.get(destinationId) ?? new MappingDocumentController(destinationDoc.document,\n        destinationDoc.canvas, 0, undefined, undefined, destinationDoc.history, diagramService, canvasHistory) : undefined;\n      const sourceView = structuredClone(source.getSnapshot().canvas);\n      for (const node of Object.values(sourceView.display.nodes)) if (node.kind === 'selection' && selectedIds.includes(`grid:${node.sourceBoxId}`))\n        sourceView.display = removeDisplayNode(sourceView.display, node.id);"
+      },
+      {
+        "oldStart": 451,
+        "oldLines": 7,
+        "newStart": 691,
+        "newLines": 7,
+        "heading": " function MappingWorkspacePage() {",
+        "oldSideExcerpt": "        if (doc.representationId === destinationId) return { ...doc, document: prepared.destination.document, history: prepared.destination.history, canvas: prepared.destination.view as MappingCanvasState };\n        return doc;\n      });\n      if (!destinationDoc) workspace.documents.push({ representationId: destinationId, name, revisionId: '', savedName: '',\n        savedScene: JSON.stringify(emptyCanvasDocument().scene), savedEdges: '[]', document: prepared.destination.document,\n        canvas: prepared.destination.view as MappingCanvasState, history: prepared.destination.history });\n      workspace.activeDocumentId = destinationId;"
+      },
+      {
+        "oldStart": 463,
+        "oldLines": 6,
+        "newStart": 703,
+        "newLines": 50,
+        "heading": " function MappingWorkspacePage() {",
+        "oldSideExcerpt": "    } catch (error) { setError(error instanceof Error ? error.message : String(error)); }\n    finally { transferBusy.current = false; setWorkspaceBusy(false); setTransferProgress(''); }\n  };\n  const undo = async (id: string, redo = false) => {\n    if (transferBusy.current || workspaceBusy || savingId || deletingId || Object.values(drafts).some(draft => draft.busy)) return;\n    try {"
+      },
+      {
+        "oldStart": 474,
+        "oldLines": 6,
+        "newStart": 758,
+        "newLines": 28,
+        "heading": " function MappingWorkspacePage() {",
+        "oldSideExcerpt": "        throw Error('Undo newer transfers involving either canvas first');\n      const source = controllers.current.get(tx.sourceId), destination = controllers.current.get(tx.destinationId);\n      if (!source || !destination) throw Error('Both canvases must be available to undo or redo this transfer');\n      const prepared = source.prepareTransferNavigation(destination, tx, redo);\n      const workspace = capture();\n      workspace.documents = workspace.documents.map(doc => {"
+      },
+      {
+        "oldStart": 493,
+        "oldLines": 13,
+        "newStart": 799,
+        "newLines": 23,
+        "heading": " function MappingWorkspacePage() {",
+        "oldSideExcerpt": "    viewState.flush();\n    persistence.current?.setPaused(true); setWorkspaceBusy(true); setError('');\n    try {\n      if (imported !== undefined) { restore(deserializeWorkspace(imported)); setWorkspaceStatus('Workspace imported'); }\n      else if (action === 'save') { persistence.current?.setPaused(false); viewState.flush(); persistence.current?.update(activeId, transfers); persistence.current?.sync(); await storage.flush(); setWorkspaceStatus('Workspace saved'); }\n      else if (action === 'restore') {\n        const saved = await storage.restore();\n        if (saved) restore(saved); else setWorkspaceStatus('No saved workspace yet');\n      } else {\n        const href = URL.createObjectURL(new Blob([serializeWorkspace(capture())], { type: 'application/json' }));\n        const a = document.createElement('a'); a.href = href; a.download = 'mapping-workspace.json'; a.click(); URL.revokeObjectURL(href);\n        setWorkspaceStatus('Workspace exported');\n      }"
+      },
+      {
+        "oldStart": 569,
+        "oldLines": 15,
+        "newStart": 885,
+        "newLines": 19,
+        "heading": " function MappingWorkspacePage() {",
+        "oldSideExcerpt": "  const save = async () => {\n    if (!activeId || !active || active.busy || savingId || deletingId || workspaceBusy) return;\n    const id = activeId;\n    const captured = { ...active, document: documentOf(active), history: active.session.controller.exportHistory() };\n    setSavingId(id); setError(\"\");\n    try {\n      const result = await saveMappingProjectDiagram({ projectId: snapshot?.project?.id, representationId: captured.representationId ?? (id.startsWith('draft-') ? undefined : id),\n        history: captured.history, expectedRevisionId: captured.revisionId, name: captured.name, scene: captured.document.scene, edges: captured.document.edges });\n      setSnapshot(result);\n      setDrafts((current) => ({ ...current, [id]: { ...current[id], savedName: captured.name.trim(),\n        name: current[id].name === captured.name ? captured.name.trim() : current[id].name,\n        representationId: result.representation.id, savedScene: JSON.stringify(captured.document.scene), savedEdges: JSON.stringify(captured.document.edges), revisionId: result.representation.currentRevisionId } }));\n    } catch (error) { setError(error instanceof Error ? error.message : \"Could not save diagram\"); }\n    finally { setSavingId(undefined); }\n  };"
+      },
+      {
+        "oldStart": 589,
+        "oldLines": 7,
+        "newStart": 909,
+        "newLines": 7,
+        "heading": " function MappingWorkspacePage() {",
+        "oldSideExcerpt": "      const histories = new DefaultCanvasHistoryService();\n      const context = histories.openContext(document, initialCanvasState(), copyCurrent && active ? active.session.controller.exportHistory() : undefined);\n      const history = copyCurrent && active ? histories.forkContext(context, initialCanvasState()) : histories.exportContext(context);\n      const result = await saveMappingProjectDiagram({ projectId: snapshot?.project?.id, name: newName,\n        history, scene: document.scene, edges: document.edges,\n        ...(copyCurrent && active ? { sourceRevisionId: active.revisionId } : {}) });\n      setSnapshot(result); setCreating(false); open(result.representation.id, result);"
+      },
+      {
+        "oldStart": 611,
+        "oldLines": 7,
+        "newStart": 931,
+        "newLines": 8,
+        "heading": " function MappingWorkspacePage() {",
+        "oldSideExcerpt": "      const result = savedId ? await deleteMappingProjectDiagram(savedId) : snapshot!;\n      if (savedId) setSnapshot(result);\n      for (const [key, controller] of controllers.current) if (key !== draftId && retired.size) controller.retireTransactions(retired);\n      const remaining = Object.fromEntries(Object.entries(workspace.store.getState().drafts).filter(([key]) => key !== draftId));\n      const nextTransfers = transfers.filter(tx => !retired.has(tx.id));\n      const nextId = activeId === draftId ? Object.entries(remaining).find(([, draft]) => !draft.hidden)?.[0] : activeId;\n      setDrafts(remaining); setTransfers(nextTransfers); setActiveId(nextId);"
+      },
+      {
+        "oldStart": 633,
+        "oldLines": 9,
+        "newStart": 954,
+        "newLines": 168,
+        "heading": " function MappingWorkspacePage() {",
+        "oldSideExcerpt": "    for (const [id, draft] of Object.entries(drafts)) viewState.prune(id, canvasOf(draft).display);\n  }, [drafts, viewState]);\n\n  return <SourcePaneViewStateContext.Provider value={viewState}><UiTestFramework id=\"mapping-local-chat\" title=\"Local chat variants\" controls={LOCAL_CHAT_UI_CONTROLS}>\n    {(ui) => <main className=\"mapping-poc-shell\" data-local-chat-variant={ui.variant}>\n      <header className=\"workspace-header mapping-poc-header\" inert={!!pendingTransfer}>\n        {!changeMode && <MappingSubmenu projectName={snapshot?.project?.name ?? \"Project\"} name={active?.name ?? \"\"}\n          status={savingId ? \"Saving\u2026\" : active?.busy ? \"Editing\u2026\" : active ? dirty(active) ? \"Unsaved changes\" : \"Saved\" : \"\"}\n          canSave={Boolean(active?.name.trim() && active && dirty(active) && !active.busy && !savingId && !deletingId && !workspaceBusy)}"
+      },
+      {
+        "oldStart": 649,
+        "oldLines": 6,
+        "newStart": 1129,
+        "newLines": 7,
+        "heading": " function MappingWorkspacePage() {",
+        "oldSideExcerpt": "            {!agentStatus.connected ? 'Agents unavailable' : agentStatus.count\n              ? `${agentStatus.count} agent${agentStatus.count === 1 ? '' : 's'} connected` : 'No agents connected'}\n          </span>\n          <button disabled={workspaceBusy || Boolean(deletingId) || !active || Object.values(drafts).some(draft => draft.busy)} onClick={() => void workspaceAction('save')}>Save workspace</button>\n          <button disabled={workspaceBusy || Boolean(deletingId) || Object.values(drafts).some(draft => draft.busy)} onClick={() => void workspaceAction('restore')}>Restore workspace</button>\n          <button disabled={workspaceBusy || !active} onClick={() => void workspaceAction('export')}>Export</button>"
+      },
+      {
+        "oldStart": 660,
+        "oldLines": 64,
+        "newStart": 1141,
+        "newLines": 121,
+        "heading": " function MappingWorkspacePage() {",
+        "oldSideExcerpt": "        </div>}\n        <nav className=\"screen-tabs\" aria-label=\"Application pages\">\n          <button type=\"button\" className=\"is-active\" aria-current=\"page\">MAPPING</button>\n        </nav>\n      </header>\n      <section className=\"mapping-poc-workspace\">\n        <div className=\"mapping-viewport\">\n          {Object.entries(drafts).filter(([id]) => mountedDocuments.current.has(id)).map(([id, draft]) => <SourcePaneDocumentContext.Provider key={`${workspaceEpoch}:${id}:${draft.reloadKey ?? ''}`} value={id}><SourcePaneDocumentActiveContext.Provider value={id === activeId && !changeMode}><div className=\"mapping-document-view\" inert={!!pendingTransfer || workspaceBusy} hidden={draft.hidden || id !== activeId || !!changeMode}>\n            <DraggableDiagramCanvas className=\"mapping-poc-canvas\" enabled={id === activeId} resetKey={id} leftInset={340} focusBox={draft.focusBox}\n              initialTransform={draft.viewport} onTransformChange={viewport => viewState.setCamera(id, viewport)}>\n              <MappingPocSelectionCanvas onUpdateDiagram={nodeId => {\n                  const node = draft.session.controller.nodes().find(node => node.id === nodeId);\n                  if (node?.layout !== 'grid' || node.kind !== 'diagram') { setError('The selected diagram is no longer available.'); return; }\n                  const title = node.content?.ascii.split('\\n').find(line => line.trim())?.trim().slice(0, 80) ?? nodeId;\n                  diagramEdits.open({ canvasId, documentId: id, nodeId, label: `${draft.name} / ${title}` });\n                }} onTransfer={(mode, selected) => beginTransfer(id, mode, selected)}\n                onUndo={redo => void undo(id, redo)} canWorkspaceUndo={!!boundary(id)} canWorkspaceRedo={!!boundary(id, true)} onJump={target => void jumpTo(target)} session={draft.session} active={id === activeId && !draft.hidden && !workspaceBusy && !pendingTransfer && !creating && !changeMode} focusBox={draft.focusBox} searchMatches={searchMatchesByDocument.get(id)}\n                projectContext={draft.revisionId ? { projectId: snapshot!.project!.id, representationId: draft.representationId ?? id, baseRevisionId: draft.revisionId } : undefined}\n                projectionCatalog={snapshot?.catalog ?? undefined}\n                dirtyRepresentationIds={dirtySceneIds}\n                onBusyChange={(busy) => setDrafts((current) => !current[id] || current[id].busy === busy ? current : { ...current, [id]: { ...current[id], busy } })}\n                localChatVariant={ui.variant as LocalChatVariant} />\n            </DraggableDiagramCanvas>\n          </div></SourcePaneDocumentActiveContext.Provider></SourcePaneDocumentContext.Provider>)}\n          {!active && !changeMode && <div className=\"mapping-empty\"><h1>{snapshot ? \"Create a project diagram\" : error ? \"Could not load project diagrams\" : \"Loading project diagrams\u2026\"}</h1>\n            {snapshot && <button type=\"button\" onClick={() => setCreating(true)}>New diagram</button>}</div>}\n          {changeMode && <ChangeSessionPreview mode={changeMode} onSelect={setChangeMode} onOpenAccepted={openAccepted}\n            onSearchDocument={onProposalSearchDocument} searchFocus={proposalSearchFocus && proposalSearchFocus.documentId === proposalSearchId ? proposalSearchFocus.focus : undefined}\n            searchMatches={proposalSearchId ? searchMatchesByDocument.get(proposalSearchId) : undefined} />}\n          {!pendingTransfer && <DiagramSearchPanel service={search} activeDocumentId={proposalSearchId ?? activeId}\n            activeName={changeMode ? proposalSearchDocument && proposalSearchDocument.id === proposalSearchId ? proposalSearchDocument.name : 'Loading proposal\u2026' : active?.name}\n            onReveal={revealSearchResult} onClear={clearSearchFocus} onMatches={setSearchMatches} />}\n          <FloatingPane highlighted={!!pendingTransfer}><MappingDiagramExplorer explorerTab={explorerTab}\n            transfer={pendingTransfer ? { mode: pendingTransfer.mode, count: pendingTransfer.selectedIds.length,\n              sourceId: drafts[pendingTransfer.sourceId]?.representationId ?? pendingTransfer.sourceId, busy: workspaceBusy, error, progress: transferProgress,\n              onCancel: cancelTransfer, onNew: name => void transfer({ name }) } : undefined}\n            onTabChange={tab => { setExplorerTab(tab); if (tab === 'diagrams') setChangeMode(undefined); }}\n            changeMode={changeMode} onChangeSelect={setChangeMode} projectName={snapshot?.project?.name ?? \"Project\"} diagrams={diagrams}\n            activeId={active?.representationId ?? activeId} scene={active ? documentOf(active).scene : undefined} dirtyIds={Object.keys(drafts).filter((id) => dirty(drafts[id])).map(id => drafts[id].representationId ?? id)}\n            onDelete={id => void remove(id)} deletingId={deletingId} deleteDisabled={Boolean(deletingId || savingId || workspaceBusy)}\n            busyIds={Object.keys(drafts).filter(id => drafts[id].busy).map(id => drafts[id].representationId ?? id)}\n            onOpen={(id) => { if (pendingTransfer) void transfer({ id }); else { setChangeMode(undefined); open(id); } }} onFocus={(id) => { if (activeId && !drafts[activeId]?.busy) setDrafts((current) => ({ ...current,\n              [activeId]: { ...current[activeId], focusBox: { id, serial: (current[activeId].focusBox?.serial ?? 0) + 1 } } })); }} /></FloatingPane>\n          {workspaceBusy && <div className=\"mapping-transfer-busy\" role=\"status\" aria-live=\"polite\"><div><strong>{transferProgress || 'Saving workspace\u2026'}</strong><p>Keep this page open while the operation finishes.</p></div></div>}\n          {error && !pendingTransfer && <div className=\"mapping-project-error\" role=\"alert\">{error}<button type=\"button\" onClick={() => setError(\"\")}>Dismiss</button></div>}\n        </div>\n        <footer className=\"mapping-poc-status\"><span>{active?.name ?? \"PROJECT DIAGRAMS\"}</span>\n          <span>{active?.newerRevision ? 'A newer saved revision is available. Your local edits were preserved.' : workspaceStatus || 'Click a node or Ctrl-drag to select \u00b7 Actions (A) opens selection actions \u00b7 Double-click background selects diagrams'}</span></footer>\n      </section>\n      <DiagramEditComposer coordinator={diagramEdits} />\n      {creating && <div className=\"mapping-dialog-backdrop\"><form className=\"mapping-create-dialog\" role=\"dialog\" aria-modal=\"true\" aria-label=\"New project diagram\"\n        onKeyDown={(event) => {\n          if (event.key === \"Escape\" && !savingId) { event.preventDefault(); setCreating(false); setError(\"\"); }\n          if (event.key !== \"Tab\") return;\n          const controls = Array.from(event.currentTarget.querySelectorAll<HTMLElement>(\"input:not(:disabled), textarea:not(:disabled), button:not(:disabled)\"));\n          const next = event.shiftKey ? controls.at(-1) : controls[0];\n          if (document.activeElement === (event.shiftKey ? controls[0] : controls.at(-1))) { event.preventDefault(); next?.focus(); }\n        }}\n        onSubmit={(event) => { event.preventDefault(); void create(); }}>\n        <h2>New project diagram</h2>\n        <label>Name<input autoFocus aria-label=\"New diagram name\" value={newName} maxLength={120} onChange={(event) => setNewName(event.target.value)} /></label>\n        {active && <label><input type=\"checkbox\" checked={copyCurrent} onChange={(event) => setCopyCurrent(event.target.checked)} />Start from current diagram</label>}\n        {!copyCurrent && <label>ASCII content<textarea aria-label=\"Initial diagram content\" value={newAscii} onChange={(event) => setNewAscii(event.target.value)} rows={8} maxLength={20000} /></label>}\n        <p>Start from a mapped diagram to keep its source evidence for select \u2192 prompt.</p>"
+      }
+    ]
+  },
+  {
+    "path": "src/features/mapping/changes/ChangeTreemapContent.tsx",
+    "status": "added",
+    "hunks": [
+      {
+        "oldStart": 0,
+        "oldLines": 0,
+        "newStart": 1,
+        "newLines": 35,
+        "heading": "",
+        "oldSideExcerpt": ""
+      }
+    ]
+  },
+  {
+    "path": "src/features/mapping/changes/treemapLayout.ts",
+    "status": "added",
+    "hunks": [
+      {
+        "oldStart": 0,
+        "oldLines": 0,
+        "newStart": 1,
+        "newLines": 23,
+        "heading": "",
+        "oldSideExcerpt": ""
+      }
+    ]
+  },
+  {
+    "path": "src/features/mapping/prompt-composer/PromptComposer.tsx",
+    "status": "added",
+    "hunks": [
+      {
+        "oldStart": 0,
+        "oldLines": 0,
+        "newStart": 1,
+        "newLines": 314,
+        "heading": "",
+        "oldSideExcerpt": ""
+      }
+    ]
+  },
+  {
+    "path": "src/features/mapping/prompt-composer/VariantReview.tsx",
+    "status": "added",
+    "hunks": [
+      {
+        "oldStart": 0,
+        "oldLines": 0,
+        "newStart": 1,
+        "newLines": 51,
+        "heading": "",
+        "oldSideExcerpt": ""
+      }
+    ]
+  },
+  {
+    "path": "src/features/mapping/prompt-composer/promptComposerCoordinator.ts",
+    "status": "added",
+    "hunks": [
+      {
+        "oldStart": 0,
+        "oldLines": 0,
+        "newStart": 1,
+        "newLines": 210,
+        "heading": "",
+        "oldSideExcerpt": ""
+      }
+    ]
+  },
+  {
+    "path": "src/features/mapping/search/DiagramSearchPanel.tsx",
+    "status": "modified",
+    "hunks": [
+      {
+        "oldStart": 1,
+        "oldLines": 17,
+        "newStart": 1,
+        "newLines": 20,
+        "heading": "",
+        "oldSideExcerpt": "import { Fragment, useEffect, useRef, useState, useSyncExternalStore } from 'react';\nimport type { DiagramSearchService } from './diagramSearchService';\nimport type { DiagramLineSearchResult } from '../../../../domain/mapping/search/diagramSearch';\nimport { SearchQueryHistory } from './searchQueryHistory';\nimport './diagramSearch.css';\n\nconst preferenceKey = 'diagram-search-auto-select';\nexport function DiagramSearchPanel({ service, activeDocumentId, activeName, onReveal, onClear, onMatches }: {\n  service: DiagramSearchService; activeDocumentId?: string; activeName?: string;\n  onReveal: (result: DiagramLineSearchResult) => Promise<void>;\n  onClear: () => void;\n  onMatches: (results: readonly DiagramLineSearchResult[]) => void;\n}) {\n  const [opened, setOpened] = useState(false), [global, setGlobal] = useState(false);\n  const [query, setQuery] = useState(''), [caseSensitive, setCaseSensitive] = useState(false);\n  const [queryHistory] = useState(() => {\n    try { return new SearchQueryHistory(localStorage); } catch { return new SearchQueryHistory(); }"
+      },
+      {
+        "oldStart": 28,
+        "oldLines": 19,
+        "newStart": 31,
+        "newLines": 19,
+        "heading": " export function DiagramSearchPanel({ service, activeDocumentId, activeName, onRe",
+        "oldSideExcerpt": "  const state = useSyncExternalStore(service.subscribe, service.getSnapshot);\n  const open = (all: boolean) => {\n    if (!opened) previousFocus.current = document.activeElement as HTMLElement;\n    setGlobal(all); setOpened(true); setFocusSerial(value => value + 1);\n  };\n  const close = () => { setOpened(false); previousFocus.current?.focus(); };\n  useEffect(() => {\n    const key = (event: KeyboardEvent) => {\n      if ((event.ctrlKey || event.metaKey) && !event.altKey && event.key.toLowerCase() === 'f') {\n        event.preventDefault(); event.stopPropagation(); open(event.shiftKey);\n      } else if (opened && event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); close(); }\n    };\n    window.addEventListener('keydown', key, true);\n    return () => window.removeEventListener('keydown', key, true);\n  }, [opened]);\n  useEffect(() => { if (opened) { input.current?.focus(); input.current?.select(); } }, [opened, focusSerial]);\n  const scopeDocumentId = global ? undefined : activeDocumentId;\n  useEffect(() => {\n    service.cancel(); onClear(); setSelected(0); lastRevealed.current = -1; setNavigationError('');"
+      },
+      {
+        "oldStart": 73,
+        "oldLines": 8,
+        "newStart": 76,
+        "newLines": 8,
+        "heading": " export function DiagramSearchPanel({ service, activeDocumentId, activeName, onRe",
+        "oldSideExcerpt": "    input.current?.focus();\n  };\n  return <>\n    {!opened && <button className=\"diagram-search-open\" aria-label=\"Search diagrams\" title=\"Find in canvas (Ctrl+F); find in project (Ctrl+Shift+F)\" onClick={() => open(global)}>Search</button>}\n    {opened && <section className=\"diagram-search-panel\" role=\"search\" aria-label=\"Diagram search\" onKeyDown={event => {\n      if (event.nativeEvent.isComposing) return;\n      const inInput = event.target === input.current;\n      const navigatingResults = event.target instanceof Element && !!event.target.closest('.diagram-search-results');"
+      }
+    ]
+  },
+  {
+    "path": "src/features/mapping/source-pane/SourceCodePane.tsx",
+    "status": "modified",
+    "hunks": [
+      {
+        "oldStart": 30,
+        "oldLines": 6,
+        "newStart": 30,
+        "newLines": 7,
+        "heading": " export const SourceCodePane = memo(function SourceCodePane(props: {",
+        "oldSideExcerpt": "  const [preview, setPreview] = useState<ProjectSourceFile | null>(null);\n  const [error, setError] = useState('');\n  const [attempt, setAttempt] = useState(0);\n  const [revealRequestId, setRevealRequestId] = useState(0);\n  const [navigation, setNavigation] = useState<{ visit: Visit; id: number } | undefined>(() => props.initialLocation ? { visit: props.initialLocation, id: 1 } : undefined);\n  const [explorerOpen, setExplorerOpen] = useState(false);"
+      },
+      {
+        "oldStart": 42,
+        "oldLines": 8,
+        "newStart": 43,
+        "newLines": 9,
+        "heading": " export const SourceCodePane = memo(function SourceCodePane(props: {",
+        "oldSideExcerpt": "\n  useEffect(() => {\n    const controller = new AbortController();\n    setPreview(null); setError('');\n    void codeRepo.readFile({ projectId: content.projectId, sourceId: content.sourceId ?? '' }, content.sourceFile, { signal: controller.signal })\n      .then(result => { if (!controller.signal.aborted) setPreview({ path: result.path, startLine: 1, lines: result.text.split('\\n'), sourceSha256: result.sha256, lspEnabled: Boolean(result.lspEnabled) }); })\n      .catch((error: unknown) => { if (!controller.signal.aborted) setError(error instanceof Error ? error.message : 'Could not load source file'); });\n    return () => controller.abort();"
+      }
+    ]
+  },
+  {
+    "path": "src/features/mapping/source-pane/SourceWindowPanel.tsx",
+    "status": "added",
+    "hunks": [
+      {
+        "oldStart": 0,
+        "oldLines": 0,
+        "newStart": 1,
+        "newLines": 59,
+        "heading": "",
+        "oldSideExcerpt": ""
+      }
+    ]
+  },
+  {
+    "path": "src/features/mapping/tldraw/DiagramAlternativeControls.tsx",
+    "status": "added",
+    "hunks": [
+      {
+        "oldStart": 0,
+        "oldLines": 0,
+        "newStart": 1,
+        "newLines": 48,
+        "heading": "",
+        "oldSideExcerpt": ""
+      }
+    ]
+  },
+  {
+    "path": "src/features/mapping/tldraw/DiagramSidePanelContent.tsx",
+    "status": "added",
+    "hunks": [
+      {
+        "oldStart": 0,
+        "oldLines": 0,
+        "newStart": 1,
+        "newLines": 58,
+        "heading": "",
+        "oldSideExcerpt": ""
+      }
+    ]
+  },
+  {
+    "path": "src/features/mapping/treemap/CanvasTreemapContent.tsx",
+    "status": "added",
+    "hunks": [
+      {
+        "oldStart": 0,
+        "oldLines": 0,
+        "newStart": 1,
+        "newLines": 68,
+        "heading": "",
+        "oldSideExcerpt": ""
+      }
+    ]
+  },
+  {
+    "path": "src/features/mapping/treemap/useTreemapRegionSelection.ts",
+    "status": "added",
+    "hunks": [
+      {
+        "oldStart": 0,
+        "oldLines": 0,
+        "newStart": 1,
+        "newLines": 45,
+        "heading": "",
+        "oldSideExcerpt": ""
+      }
+    ]
+  },
+  {
+    "path": "src/features/mapping/workspace/ProjectionLayoutPanel.tsx",
+    "status": "added",
+    "hunks": [
+      {
+        "oldStart": 0,
+        "oldLines": 0,
+        "newStart": 1,
+        "newLines": 71,
+        "heading": "",
+        "oldSideExcerpt": ""
+      }
+    ]
+  },
+  {
+    "path": "src/features/mapping/workspace/runWorkspaceTask.ts",
+    "status": "modified",
+    "hunks": [
+      {
+        "oldStart": 1,
+        "oldLines": 12,
+        "newStart": 1,
+        "newLines": 16,
+        "heading": "",
+        "oldSideExcerpt": "import type { WorkspaceTask, WorkspaceTaskResult } from './workspaceTask';\n\n/** One isolated job: expensive history validation never blocks pointer or paint events. */\nexport function runWorkspaceTask<T extends WorkspaceTask>(task: T): Promise<WorkspaceTaskResult<T>> {\n  return new Promise((resolve, reject) => {\n    const worker = new Worker(new URL('./workspaceTask.worker.ts', import.meta.url), { type: 'module' });\n    const fail = (message: string) => { worker.terminate(); reject(new Error(message)); };\n    worker.onmessage = ({ data }) => {\n      worker.terminate();\n      if (data.error) reject(new Error(data.error)); else resolve(data.result);\n    };\n    worker.onerror = event => fail(event.message || 'Could not prepare workspace');"
+      }
+    ]
+  },
+  {
+    "path": "src/features/mapping/workspace/workspaceTask.ts",
+    "status": "modified",
+    "hunks": [
+      {
+        "oldStart": 2,
+        "oldLines": 11,
+        "newStart": 2,
+        "newLines": 18,
+        "heading": " import type { CanvasHistoryRecord } from '../../../../domain/core/diagrams/canva",
+        "oldSideExcerpt": "import { prepareCanvasTransfer, type TransferInput, type PreparedCanvasTransfer } from '../../../../domain/core/diagrams/canvasTransfer';\nimport type { MappingWorkspaceSnapshot } from '../../../../domain/mapping/workspace/mappingWorkspace';\nimport { serializeWorkspace } from '../../../../domain/mapping/workspace/mappingWorkspaceCodec';\n\nexport type WorkspaceTask = { type: 'serialize'; snapshot: MappingWorkspaceSnapshot }\n  | { type: 'transfer'; source: CanvasHistoryRecord; input: TransferInput; destination?: CanvasHistoryRecord };\nexport type WorkspaceTaskResult<T extends WorkspaceTask> = T extends { type: 'serialize' } ? string : PreparedCanvasTransfer;\nexport function executeWorkspaceTask(task: WorkspaceTask): string | PreparedCanvasTransfer {\n  return task.type === 'serialize' ? serializeWorkspace(task.snapshot, false)\n    : prepareCanvasTransfer(task.source, task.input, task.destination);\n}"
+      }
+    ]
+  },
+  {
+    "path": "src/server/app/bootstrap.ts",
+    "status": "modified",
+    "hunks": [
+      {
+        "oldStart": 1,
+        "oldLines": 6,
+        "newStart": 1,
+        "newLines": 23,
+        "heading": "",
+        "oldSideExcerpt": "import { AgentContextService } from '../../../application/mapping/agent/agentContextService';\nimport { LiveCanvasService } from '../../../application/mapping/agent/liveCanvasService';\nimport { RevisionedDiagramService } from '../../../domain/core/diagrams/diagramService';\nimport { FakeDiagramEditRuntime, PiDiagramEditRuntime } from '../../../infrastructure/mapping/agents/diagram-edit/diagramEditRuntime';\nimport { CoreApplication } from \"../../../application/core/application\";\nimport { AgentDiagrammingSessionService } from '../../../application/mapping/agent/sessionService';"
+      },
+      {
+        "oldStart": 13,
+        "oldLines": 6,
+        "newStart": 30,
+        "newLines": 7,
+        "heading": " import { QuickJsAgentRuntime } from '../../../infrastructure/mapping/agent/execR",
+        "oldSideExcerpt": "import { DiagramChangeSessionStore } from '../../../infrastructure/mapping/changes/diagramChangeSessionStore';\n\nimport { DiagramStore } from \"../../../infrastructure/core/persistence/store\";\nimport { CodexLocalChatRuntime, FakeLocalChatRuntime } from \"../../../infrastructure/mapping/agents/chat/localChatRuntime\";\nimport { FakeFileCompactionRuntime, PiFileCompactionRuntime } from \"../../../infrastructure/mapping/agents/compaction/fileCompactionRuntime\";\nimport { FakeMappingAgentRuntime, PiMappingAgentRuntime } from \"../../../infrastructure/mapping/agents/selection/agentRuntime\";"
+      },
+      {
+        "oldStart": 34,
+        "oldLines": 6,
+        "newStart": 52,
+        "newLines": 9,
+        "heading": " import { resolveFileCompactionSettings } from '../../../infrastructure/mapping/a",
+        "oldSideExcerpt": "import { loadFileCompactionPrompts } from '../../../infrastructure/mapping/agents/compaction/prompts';\nimport { FileCompactionStore } from '../../../infrastructure/mapping/persistence/compactionStore';\nimport { MappingWorkspaceStore } from '../../../infrastructure/mapping/persistence/workspace/mappingWorkspaceStore';\n\nexport const corpusAccess: CorpusAccess = {\n  provider: corpusProvider, readDocumentLines: readCorpusDocumentLines, discover: discoverDomainCorpus"
+      },
+      {
+        "oldStart": 50,
+        "oldLines": 22,
+        "newStart": 71,
+        "newLines": 43,
+        "heading": " export function createFileCompactionService(core: CoreApplication, runtime: File",
+        "oldSideExcerpt": "\n/** The only production module that chooses and connects concrete integrations. */\nexport function createBackend(projectRoot: string, diagramsDirectory: string, configuredDomainProfileId: BuiltInDomainProfileId | undefined,\n  mappingPocSourceRoot: string, options: { lspEnabled?: boolean }) {\n  const fake = process.env.NEW_DIAGRAM_AGENT === \"fake\";\n  const chatRuntime = fake ? new FakeLocalChatRuntime() : new CodexLocalChatRuntime();\n  const mappingRuntime = fake ? new FakeMappingAgentRuntime() : new PiMappingAgentRuntime();\n  const diagramEditRuntime = fake ? new FakeDiagramEditRuntime() : new PiDiagramEditRuntime(mappingPocSourceRoot);\n  const store = new DiagramStore(projectRoot, diagramsDirectory);\n  const core = createCoreApplication(store);\n  const compactionService = createFileCompactionService(core, fake ? new FakeFileCompactionRuntime() : new PiFileCompactionRuntime());\n  const languageService = options.lspEnabled === true ? new ProjectLanguageService() : undefined;\n  const diagrams = new MappingDiagramService(store, corpusAccess, projectRoot, configuredDomainProfileId);\n  const canvasBridge = new CanvasSessionBridge();\n  const agentContexts = new AgentContextService();\n  const liveCanvas = new LiveCanvasService(() => canvasBridge.list(), async (workspaceInstanceId, documentId) =>\n    await canvasBridge.dispatch(workspaceInstanceId, { method: 'context', documentId }) as import('../../../domain/mapping/agent/liveCanvasStatus').LiveCanvasContext, agentContexts);\n  const agent = new AgentDiagrammingSessionService(canvasBridge, diagrams, store, new QuickJsAgentRuntime(),\n    new ChangeSessionService(new DiagramChangeSessionStore(store.storeRoot, undefined, true), store, canvasBridge), new RevisionedDiagramService(diagramEditRuntime), agentContexts);\n  const routes = {\n    core: createCoreRoutes({\n      application: core,"
+      },
+      {
+        "oldStart": 74,
+        "oldLines": 14,
+        "newStart": 116,
+        "newLines": 16,
+        "heading": " export function createBackend(projectRoot: string, diagramsDirectory: string, co",
+        "oldSideExcerpt": "    }),\n    mapping: createMappingRoutes({\n      selection: new SelectionService(store, mappingRuntime, mappingPocSourceRoot),\n      diagrams, agent, liveCanvas,\n      workspace: new MappingWorkspaceService(store, new MappingWorkspaceStore(store.storeRoot, store.diagramPersistence)),\n      chat: new LocalChatService(store, corpusAccess, chatRuntime, mappingPocSourceRoot),\n      compactionService\n    })\n  };\n  return {\n    routes, liveCanvas, dispose() {\n      agent.dispose(); diagramEditRuntime.dispose(); canvasBridge.dispose(); languageService?.dispose(); mappingRuntime.dispose(); chatRuntime.dispose(); compactionService.dispose();\n    }\n  };"
+      }
+    ]
+  }
+]

@@ -1,0 +1,122 @@
+ChangeSession eval inputs v2 - seven contexts
+
+Library group: ChangeSession evals v2 - 7 contexts
+Pinned code: 03f2168deba364103c2450ca9b8168cd1fc9ddc5 .. 81f05a2bf9efa2334985d2298dcbd7b044dc4c1e
+
+This set supersedes v1. Parent-diagram ownership is exclusive; whole-canvas ownership is intentionally not. All 48 previously assigned diagrams and all 12 feature areas remain covered.
+
+01 - Canvas workspace, authoring and navigation
+saved-agent-context-16ba6214-8c1a-4617-b165-3242ac53e23b
+Primary feature numbers: 4, 9, 10, 11
+Missing-detail specifications: N4, N6, N7, N8
+Migrations: M3
+Owned parent diagrams:
+  C00/D00 MappingPage                              baseline 03f2168, before tldraw
+  C00/D03 [C] FloatingBox variants
+  C12/D00 MappingPage                              baseline 03f2168, before tldraw
+  C12/D03 [C] FloatingBox variants
+  C14/D00 MappingPage                              baseline 03f2168, before tldraw
+  C14/D03 [C] FloatingBox variants
+
+02 - Tldraw runtime, selection and controller edits
+saved-agent-context-db04f7f1-5aa5-4159-8466-79d0799722b0
+Primary feature numbers: 7
+Missing-detail specifications: N1
+Migrations: none
+Owned parent diagrams:
+  C00/D01 [A] GridBox / LineGridScene
+  C00/D04 [D] Controller edits / agent access
+  C01/D00 CanvasSession
+  C12/D01 [A] GridBox / LineGridScene
+  C12/D04 [D] Controller edits / agent access
+  C14/D01 [A] GridBox / LineGridScene
+  C14/D04 [D] Controller edits / agent access
+
+03 - Revisions, history and saved CanvasViews
+saved-agent-context-6e3d2462-84a5-4c3a-8d8d-b065c8c0e521
+Primary feature numbers: 1
+Missing-detail specifications: none
+Migrations: M1
+Owned parent diagrams:
+  C00/D02 [B] Diagram
+  C00/D05 [E] CanvasHistoryService / coordinated revisions
+  C00/D06 [G] DiagramService
+  C07/D00 [B] Diagram - immutable content and presentation
+  C07/D01 [G] Revision operations, retention, and generation
+  C12/D02 [B] Diagram
+  C12/D05 [E] CanvasHistoryService / coordinated revisions
+  C12/D06 [G] DiagramService
+  C12/D07 [R] Immutable content and revision lifecycle
+  C14/D02 [B] Diagram
+  C14/D05 [E] CanvasHistoryService / coordinated revisions
+  C14/D06 [G] DiagramService
+  C14/D07 [R] Content revisions and publication
+
+04 - Alternatives and ChangeSession review
+saved-agent-context-911f0ae2-d2c6-4ce6-bd26-dc91590bd709
+Primary feature numbers: 8
+Missing-detail specifications: N5
+Migrations: M2
+Owned parent diagrams:
+  C05/D00 [MODEL] ChangeSession ownership
+  C05/D01 [CALLS] ChangeSession operations
+  C05/D02 [H] Isolated history and undo/redo
+  C05/D03 [P] Session persistence and reopening
+  C05/D04 [D] Baseline/proposed -> unified review
+  C05/D05 [A] Ready validation and atomic acceptance
+  C07/D02 [P1] Presentation alternatives - choose what a placement shows
+  C07/D03 [P2] Review versus presentation - two independent operations
+  C12/D08 [P1] Presentation alternatives
+  C12/D09 [P2] Review and presentation are separate
+  C14/D08 [P] Placement choices and revision review
+
+05 - AgentChat, generation and Canvas API
+saved-agent-context-b4df6a6c-83f6-428f-9247-7bd2f2548e7c
+Primary feature numbers: 2, 5, 6
+Missing-detail specifications: N2
+Migrations: none
+Owned parent diagrams:
+  C03/D00 Mapping page: exposed interfaces at 03f2168
+  C03/D01 Mapping backend: grouped responsibilities (03f2168)
+
+06 - Saved AgentContexts and source evidence
+saved-agent-context-c002f3b1-d0c5-4f6b-aa22-43fd518afe51
+Primary feature numbers: 3
+Missing-detail specifications: N3
+Migrations: none
+Owned parent diagrams:
+  C02/D00 [New diagram]
+  C02/D01 (O) Edit diagram with AgentContext - baseline 03f2168
+  C02/D02 [D1] EditDiagramInput - request domain
+  C02/D03 [D2] Diagram edit run - asynchronous execution
+  C02/D04 [D3] AgentContext - implemented domain object and adapter
+  C02/D05 [D4] Diagram-edit agent session - runtime model
+  C02/D06 [D5] Revision and canvas bindings - output domain
+
+07 - Persistence and durable storage
+saved-agent-context-3cc6fe05-807a-40e6-98aa-df864234bb8e
+Primary feature numbers: 12
+Missing-detail specifications: none
+Migrations: none
+Owned parent diagrams:
+  C04/D00 PersistentLayer
+  C06/D00 Workspace persistence flow - baseline 03f2168
+
+Generation and integration
+Each prompt-v2.txt is included verbatim in the saved context alongside captured baseline diagrams, exact target Git source and path-scoped before/delta evidence. Each generator updates complete assigned parents independently and proposes missing details without drawing them. Sibling diagrams remain read-only.
+
+Contexts 01, 02, 03 and 04 share the original domain canvas and its g2 copies; 03 and 04 also share Projection. After evaluation, combine selected diagram-scoped changes against a fresh shared document baseline, reanchor connections, and accept a combined proposal. The current backend does not safely accept independently captured whole-canvas proposals sequentially merely because their diagram edits are disjoint.
+
+No eval run, live diagram edit or ChangeSession acceptance was performed. The prior three immutable saved contexts are retained under Superseded - ChangeSession evals v1 (3 contexts).
+
+Known carried-forward limitation
+Whole-range DiffTree discovery exceeds the existing 8 MiB hunk-capture cap due unrelated investigation dumps. Inputs contain scoped code evidence, not fabricated API hunk IDs.
+
+Files
+manifest.json: IDs, hashes, feature coverage and provenance.
+ownership.json: complete diagram ownership and shared-canvas integration boundaries.
+validation.json: all previous targets preserved, unique writers, complete feature/detail coverage, paired migration ownership.
+saved-context-verification.json: saved snapshots and all source references verified against pinned Git objects.
+superseded-contexts.json: prior contexts preserved with unchanged immutable hashes.
+XX/create-request.json: exact immutable input request.
+XX/prompt-v2.txt: visible eval-specific instructions.

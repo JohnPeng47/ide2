@@ -1,0 +1,76 @@
+{
+ "boxes": [
+  {
+   "id": "1:1-1:18",
+   "text": "[G] DiagramService",
+   "rect": {
+    "line1": 1,
+    "col1": 1,
+    "line2": 1,
+    "col2": 18
+   }
+  },
+  {
+   "id": "3:1-5:63",
+   "text": "DiagramService = sole content writer\ncreate(input)\nrevise(baseId, edit) --> prepareEdit; unchanged -> reuse base",
+   "rect": {
+    "line1": 3,
+    "col1": 1,
+    "line2": 5,
+    "col2": 63
+   }
+  },
+  {
+   "id": "4:28-4:62",
+   "text": "DiagramRevisionEditor.prepareCreate",
+   "rect": {
+    "line1": 4,
+    "col1": 28,
+    "line2": 4,
+    "col2": 62
+   }
+  },
+  {
+   "id": "8:3-10:63",
+   "text": "issue(prepared, base?) -> diagramRevisions.register\nrevision: id, diagramId, parentId?, diagram, nodeRefs\nnode correspondence -> preserve nodeRefs; new nodes -> UUID",
+   "rect": {
+    "line1": 8,
+    "col1": 3,
+    "line2": 10,
+    "col2": 63
+   }
+  },
+  {
+   "id": "11:3-14:73",
+   "text": "getRevision(id) / listRevisions(diagramId) -> registry reads\ngenerate(request, options) -> DiagramGenerator.generate\nagentContext?, instruction, input, baseRevisionId?, selection context\nabort checks + base identity check -> revise(replace) OR create",
+   "rect": {
+    "line1": 11,
+    "col1": 3,
+    "line2": 14,
+    "col2": 73
+   }
+  },
+  {
+   "id": "15:1-15:25",
+   "text": "Source: diagramService.ts",
+   "rect": {
+    "line1": 15,
+    "col1": 1,
+    "line2": 15,
+    "col2": 25
+   }
+  }
+ ],
+ "edges": [
+  {
+   "from": "3:1-5:63",
+   "to": "4:28-4:62",
+   "direction": "->"
+  },
+  {
+   "from": "3:1-5:63",
+   "to": "8:3-10:63",
+   "direction": "->"
+  }
+ ]
+}

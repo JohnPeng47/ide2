@@ -60,7 +60,11 @@ try {
   await expect(paneA.locator('[data-native-node="grid:overview"]')).toContainText('Second implementation');
   await page.getByRole('button', { name: 'Previous', exact: true }).click();
   await expect(paneA.locator('[data-native-node="grid:overview"]')).toContainText('First implementation');
-  const sessionId = new URL(page.url()).searchParams.get('session'); assert.ok(sessionId);
+  const currentSessionId = async () => {
+    const params = new URL(page.url()).searchParams;
+    return params.get('session') ?? (await fetch(`${url}/api/mapping/evals/judgements/${params.get('judgement')}`).then(r => r.json())).source.id;
+  };
+  const sessionId = await currentSessionId(); assert.ok(sessionId);
   assert.equal(await readFile(path.join(storeRoot, 'workspace-records.json'), 'utf8'), manifest, 'Evals must not write to the Mapping workspace');
   // Same saved view in both panes: three explicit, ordered camera focuses.
   await page.getByRole('button', { name: 'New comparison', exact: true }).click();
@@ -132,7 +136,7 @@ try {
   await page.getByRole('region', { name: 'Comparison pane A', exact: true }).getByRole('button', { name: 'Reset focus' }).click();
   await focused('grid:relationships');
   if (process.env.COMPARE_SCREENSHOT_PATH) await page.screenshot({ path: process.env.COMPARE_SCREENSHOT_PATH });
-  const tourId = new URL(page.url()).searchParams.get('session');
+  const tourId = await currentSessionId();
   const tour = await (await fetch(`${url}/api/mapping/compare-sessions/${tourId}`)).json();
   assert.equal(tour.compares[0].points.length, 3);
   assert.equal(tour.canvases[0].view.cameraViews.length, 3);

@@ -1,0 +1,56 @@
+REUSABLE AGENTCONTEXTS + PINNED SOURCE EVIDENCE
+Capture once -> retain immutable evidence -> reuse across generation tasks
+
++-----------------------------------------------+    +-----------------------------------------------+
+| GLOBAL SAVED CONTEXT LIBRARY                  |    | DIAGRAM-BOUND SOURCE CONTEXT                  |
+| create-agent-context                          |    | Compile captured diagram source evidence      |
+| Text, snapshot, or sourceFile inputs          |    | originalLines become pinned snapshot slices   |
+| UUID retries return the same saved record     |    | Binding + evidence produce a fingerprint      |
+| list-agent-contexts / read-agent-context      |    | Store a small reference on the diagram:       |
+| Browse summaries; read by global saved ID     |    | backingRecordId + contentHash                 |
+| Disk records survive application restarts     |    | compiledFromRevisionId + sourceFingerprint    |
+| Reuse across chats and canvases in this store |    | Later edits supply the authoritative diagram  |
++-----------------------------------------------+    +-----------------------------------------------+
+                        |                                                     |
+                        +--------------------------+--------------------------+
+                                                   v
++----------------------------------------------------------------------------------------------------+
+| IMMUTABLE AGENTCONTEXT SNAPSHOT                                                                    |
+| Validated messages + source provenance + selected conversation range + canonical contentHash       |
+| Version 1: text / tool history     Version 2: includes sourceRange references                      |
+| Validates conversation/tool-result pairing and hashes; context size is bounded to 2 MiB            |
+| Source attachments are separate transport data, excluded from the descriptor hash                  |
++----------------------------------------------------------------------------------------------------+
+                                                   |
+                                      references pinned evidence
+                                                   v
++----------------------------------------------------------------------------------------------------+
+| SOURCE REFERENCE = sourceId + relative path + inclusive line range + immutable version             |
+|                                                                                                    |
+| Git commit reference                           Content-addressed snapshot                          |
+| +-- Explicit revision resolves to commit       +-- Changed/untracked worktree or document bytes    |
+| +-- Worktree matches HEAD: reuse commit         +-- Diagram evidence keeps original line offsets   |
+| +-- Read regular file from that commit          +-- Immutable blobs shared by content hash         |
+| +-- No copied source blob required              +-- Saved descriptor points to the blob            |
+|                                                                                                    |
+| Capture fixes the evidence version. Persistence checks references before publishing.               |
++----------------------------------------------------------------------------------------------------+
+                                                   |
+                        +--------------------------+--------------------------+
+                        |                                                     |
+                        v                                                     v
++-----------------------------------------------+    +-----------------------------------------------+
+| LAZY SOURCE RESOLUTION                        |    | PORTABLE EXPORT                               |
+| Load pinned ranges when text is needed        |    | Load each referenced source                   |
+| Git commit -> file -> selected lines          |    | Keep only the selected evidence lines         |
+| Snapshot hash -> blob -> selected lines       |    | Retain their original line offsets            |
+| Repeated references share cached reads        |    | Replace Git refs with snapshot-hash refs      |
+| read returns compact + resolved snapshots     |    | Attach sourceFiles to the exported snapshot   |
+| Saved snapshot and its hash remain unchanged  |    | Recompute descriptor hash if refs change      |
+| Resolve before conversion to model messages   |    | Export carries the selected evidence bytes    |
++-----------------------------------------------+    +-----------------------------------------------+
+
+REUSE CONTRACT
+Saved context ID supplies background to generation; the task prompt stays separate.
+Diagram evidence fingerprint tracks its captured source basis; current diagram content comes per edit.
+Temporary uploads are scoped to a workspace/document and backend lifetime; saved library IDs persist.

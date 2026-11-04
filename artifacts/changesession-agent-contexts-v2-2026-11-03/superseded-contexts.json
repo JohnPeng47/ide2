@@ -1,0 +1,44 @@
+[
+  {
+    "agentContextId": "saved-agent-context-ce5f5f9c-3501-4065-94db-90a807c00f22",
+    "name": "ChangeSession 01 - Canvas interaction, presentation and change review",
+    "description": "Exclusive canvas ownership; code 03f2168..81f05a2b. Reproducible ChangeSession eval input v1, including captured parents, pinned source and scoped code deltas.",
+    "createdAt": "2026-11-03T19:23:19.110Z",
+    "group": "Superseded - ChangeSession evals v1 (3 contexts)",
+    "contentHash": "69ebcfee89acda8808d90addb3e4a386963b721089f2275694c2140c4f28bf05",
+    "messageCount": 1,
+    "source": {
+      "agentType": "saved-context",
+      "sourceSessionId": "ce5f5f9c-3501-4065-94db-90a807c00f22",
+      "format": "messages-v1"
+    }
+  },
+  {
+    "agentContextId": "saved-agent-context-34dfbd10-aa3e-4675-8c91-73d2a3d79952",
+    "name": "ChangeSession 02 - Agent authoring, saved contexts and API orchestration",
+    "description": "Exclusive canvas ownership; code 03f2168..81f05a2b. Reproducible ChangeSession eval input v1, including captured parents, pinned source and scoped code deltas.",
+    "createdAt": "2026-11-03T19:23:28.205Z",
+    "group": "Superseded - ChangeSession evals v1 (3 contexts)",
+    "contentHash": "309a2b05a6a3256bd487ebd2e7b25cb71c12ce2ed6d65d983cc3d4c758fb9312",
+    "messageCount": 1,
+    "source": {
+      "agentType": "saved-context",
+      "sourceSessionId": "34dfbd10-aa3e-4675-8c91-73d2a3d79952",
+      "format": "messages-v1"
+    }
+  },
+  {
+    "agentContextId": "saved-agent-context-09a43aa1-2358-4bee-a9fc-1c4cddbdd018",
+    "name": "ChangeSession 03 - Persistence, checkpoints and durable application state",
+    "description": "Exclusive canvas ownership; code 03f2168..81f05a2b. Reproducible ChangeSession eval input v1, including captured parents, pinned source and scoped code deltas.",
+    "createdAt": "2026-11-03T19:23:32.641Z",
+    "group": "Superseded - ChangeSession evals v1 (3 contexts)",
+    "contentHash": "0ed314da95bed7f4c2e90a487c441f4b3048d08c5db436251fade340086a1caa",
+    "messageCount": 1,
+    "source": {
+      "agentType": "saved-context",
+      "sourceSessionId": "09a43aa1-2358-4bee-a9fc-1c4cddbdd018",
+      "format": "messages-v1"
+    }
+  }
+]

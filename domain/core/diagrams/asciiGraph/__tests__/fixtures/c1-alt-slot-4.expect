@@ -1,0 +1,50 @@
+[B] Diagram
+Diagram
++ diagramId  = stable service identity
++ revisionId = issued service revision
++ id         = local scene.contents key
++ revision   = nonnegative local revision number
+  content
+  sourceContext
+  jumps?
+DiagramContent @L9 #dc-target
+DiagramSourceContext @L10 #dsc-target
+DiagramJump[]
+DiagramContent @L12
++ revisionId = id:revision
++ ascii + asciiSha256
++ 1..20000 printable ASCII characters; LF newlines
++ structure
+  diagram
+  tree: parserVersion ascii-tree-1 | ascii-tree-2
+  + rootIds + nodes[id]
+  + label / line / branchColumn / column span
+  + parentId / childIds / foldRanges
+  + node id <- content revision + hash + line
+DiagramSourceContext @L23 #dsc
++ contentHash == SHA-256(content.ascii)
++ binding?: sourceId / repositoryIdentity / corpus
++ source-code <-> git-worktree
++ document    <-> filesystem-documents
++ corpus root must be absolute
++ mappings[]
++ evidence: label + relative path + source line ranges
++ originalLines preserve source text
+evidence[entityId]
+sourceRanges[index]
+matching range.id
+Validation and queries
++ validateDiagram -> canonical content / hash / joins / jumps
++ diagramSource -> entries / forSelection / search
++ results: mapping + entity + range + binding
+Tree visibility
++ visibleContentLines -> exclude collapsed foldRanges
++ unknown content node -> STALE_CONTENT_NODE
++ instance fold choices -> canvas.diagramViews
+
+edge "content" -> #dc-target
+edge "sourceContext" -> #dsc-target
+edge "jumps?" -> "DiagramJump[]"
+edge #dsc -> "evidence[entityId]" : entityId
+edge #dsc -> "sourceRanges[index]" : range index
+edge #dsc -> "matching range.id" : range id?

@@ -1,0 +1,57 @@
+SAVED CANVASVIEWS AND BRANCHING
+Save a canvas state, explore independent branches, and resume unfinished work.
+
++--------------------------------+      create(name)      +--------------------------------+
+| LIVE CANVAS                    | ---------------------> | NAMED VIEW                     |
+| Diagrams, layout, connections  |   save current state   | Becomes the active view        |
+| and presentation               |                        | Saved checkpoint + ancestry    |
++--------------------------------+                        +--------------------------------+
+                |                                                        |
+                | edit                                                   | owns
+                v                                                        v
++--------------------------------+       save view        +--------------------------------+
+| ACTIVE WORKING STATE           | ---------------------> | IMMUTABLE SAVED CHECKPOINTS    |
+| Changes may be unsaved         |  update saved endpoint | start --> ... --> latest saved |
+| Dirty compares to saved state  |  clear working copy    | Previous checkpoints retained  |
++--------------------------------+                        +--------------------------------+
+                ^                                                        |
+                |                                                        |
+                +---------- open(view): resume working copy, -------------+
+                            otherwise use latest saved checkpoint
+
+SWITCHING VIEWS
+  open another view --> stash outgoing state as that view's working copy
+                    --> restore target content; keep the current camera
+  Reopen later      --> resume its unsaved work
+  Forking uses the SAVED endpoint; save first to include unsaved edits.
+
+BRANCHING FROM ONE PINNED SAVED CHECKPOINT
+                                  |
+                                  v
+                    +----------------------------+
+                    | PARENT VIEW                |
+                    | Latest saved checkpoint P  |
+                    +----------------------------+
+                         |                  |
+        fork(name)       |                  | alternatives(names)
+        creates + opens  |                  | creates a group; stays on current view
+                         v                  v
+              +------------------+   +---------------------------------------+
+              | CHILD VIEW       |   | ALTERNATIVE GROUP                     |
+              | Independent work |   | A              B              C       |
+              +------------------+   | Independent children, all start at P  |
+                         |           +---------------------------------------+
+                         |                  |                       |
+                         |                  | keep B                | discard A
+                         |                  v                       v
+                         |     +--------------------------+  +--------------------------+
+                         |     | Open/resume B and save   |  | Archive A and descendants|
+                         |     | Archive group siblings   |  | If active is archived,   |
+                         |     | and their descendants    |  | return to parent if able |
+                         |     +--------------------------+  +--------------------------+
+                         |
+                         +--> parentViewId identifies the parent view
+                              forkCheckpointId pins checkpoint P
+
+Ancestry records where branches came from; each branch can evolve independently.
+Archived views leave the available-view list; their saved checkpoints remain.

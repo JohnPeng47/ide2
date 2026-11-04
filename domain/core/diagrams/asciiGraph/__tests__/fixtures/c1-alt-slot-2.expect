@@ -1,0 +1,17 @@
+[G] DiagramService
+RevisionedDiagramService: sole content writer
++ create(input)
++ revise(base, edit) -> getRevision -> prepareEdit
++ generate(request) -> DiagramGenerator -> create or revise(replace)
++ abort checks; base diagram local id must match request.input.id
+DiagramRevisionEditor.prepareCreate
+Issued revision
++ diagramRevisions.register({id, diagramId, parentId?, diagram, nodeRefs})
++ node correspondence -> stable nodeRefs reused; new nodes -> UUID refs
++ changed edit -> same diagramId + new service revisionId
++ no-op revise -> original diagram and revision
++ result = prepared edit + diagram + revision
++ reads: getRevision(revisionId) / listRevisions(diagramId)
+
+edge "RevisionedDiagramService: sole content writer" -> "DiagramRevisionEditor.prepareCreate"
+edge "RevisionedDiagramService: sole content writer" -> "Issued revision"

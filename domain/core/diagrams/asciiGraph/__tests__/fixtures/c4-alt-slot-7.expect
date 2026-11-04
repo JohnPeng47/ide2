@@ -1,0 +1,59 @@
+[E] CanvasHistoryService / coordinated revisions
+History owner
++ MappingDocumentController -> private CanvasEditingContext
++ DefaultCanvasHistoryService -> WeakMap<object handle, CanvasHistory>
++ frozen contextId handle isolates viewers; runtime handles are not saved
+History boundary
++ openContext(document, view, record?) -> runtime handle
++ state -> checkpointId + document + view + canUndo/canRedo
++ document -> resolved document; resolve(diagramId) -> DiagramView
++ append(document, view, correspondence?) -> checkpoint
++ navigate / reset -> controller restores document + canvas view
++ exportContext / forkContext / adopt -> portable history records
++ persistenceChanges(since?) -> deltas; retireTransactions -> unlink
++ navigate detects linked transfer -> require workspace undo/redo
+Cross-canvas transfer
++ MappingPage.beginTransfer -> sourceId + mode + selectedIds + checkpoint
++ busy checks + unchanged source checkpoint -> pause persistence
++ capture workspace -> existing destination OR new canvas
+Prepared participant states
++ runWorkspaceTask(type=transfer, source history, destination history, input)
+  source state
+  destination state
+  transaction
+^ proposed workspace = participant documents + views + histories + transfers
++ move -> install source result; copy -> deselect source
++ activate destination; discard previously undone transfers
+Durable publication
++ publishTransfer -> await WorkspaceStorage.save(proposed workspace)
++ flush prior writes -> project snapshot -> RecordStorage.commit
++ acknowledged write -> installWorkspace -> replace sessions together
++ install transfers + activeId; reset SourcePaneViewState + workspace epoch
+Coordinated undo and redo
++ boundary(id, redo) finds linked transaction at participant head
++ no transaction -> controller.undo(redo)
++ transaction -> both controllers required; newer shared transfers undone first
++ prepareTransferNavigation -> source + destination + transaction
++ capture -> replace both states -> persist -> install
++ newly created destination hidden on undo, reopened on redo
+Incremental persistence
++ CanvasSession.onCommit -> CanvasWorkspace.onPersist(ids)
++ WorkspacePersistence uses a cursor per session -> historyChanges
++ records = metadata / baseline / revisions / checkpoints / canvas / viewport
++ index = projectId + documentIds + activeDocumentId + transfers
++ SourcePaneViewState supplies captured scroll + camera
++ new session graph -> remove obsolete revision/checkpoint records atomically
+Record transport
++ RecordStorage.batch -> cache + coalesced changes -> worker write
++ requestId + expectedRevision -> acknowledgement advances persisted sequence
++ commit retries ambiguous response with identical request/ID
++ REJECTED -> restore cache and abandon proposed transaction
++ WorkspaceStorage owns one worker per opened workspace
+
+edge "History owner" -> "History boundary"
+edge "Cross-canvas transfer" -> "Prepared participant states"
+edge "source state" -> "proposed workspace = participant documents + views + histories + transfers"
+edge "destination state" -> "proposed workspace = participant documents + views + histories + transfers"
+edge "transaction" -> "proposed workspace = participant documents + views + histories + transfers"
+edge "proposed workspace = participant documents + views + histories + transfers" -> "Durable publication"
+edge "Incremental persistence" -> "Record transport"

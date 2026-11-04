@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { contentNodeContainsRange } from './contentNodeGeometry';
 import type { DiagramContent } from './diagramContent';
 import { diagramContentNodes } from './diagramContentNodes';
 
@@ -36,8 +37,7 @@ export function validateDiagramJumps(content: DiagramContent, input: unknown, al
     if (!current && allowStale) continue;
     if (!activeDiagramJumps(content, [jump]).length) throw new Error('STALE_JUMP_SOURCE');
     if (jump.source.contentNodeId) {
-      const matches = diagramContentNodes(content).filter(node => node.line === jump.source.line
-        && node.startColumn <= jump.source.startColumn && node.endColumn >= jump.source.endColumn);
+      const matches = diagramContentNodes(content).filter(node => contentNodeContainsRange(node, jump.source));
       if (matches.length !== 1 || matches[0].id !== jump.source.contentNodeId) throw new Error('STALE_CONTENT_NODE');
     }
   }
@@ -54,8 +54,7 @@ export function rebaseDiagramJumps(before: DiagramContent, after: DiagramContent
   if (before.ascii !== after.ascii) return structuredClone([...jumps]);
   return jumps.map(jump => {
     if (!activeDiagramJumps(before, [jump]).length) return structuredClone(jump);
-    const node = diagramContentNodes(after).filter(node => node.line === jump.source.line
-      && node.startColumn <= jump.source.startColumn && node.endColumn >= jump.source.endColumn);
+    const node = diagramContentNodes(after).filter(node => contentNodeContainsRange(node, jump.source));
     const { contentNodeId: _old, ...source } = jump.source;
     return { ...jump, source: { ...source, revisionId: after.revisionId, contentHash: after.asciiSha256,
       ...(node.length === 1 ? { contentNodeId: node[0].id } : {}) } };

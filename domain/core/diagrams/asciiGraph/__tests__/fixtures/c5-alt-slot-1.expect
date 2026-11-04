@@ -1,0 +1,94 @@
+MappingPage
+baseline 03f2168, before tldraw
+MappingPocPage(services)
+  MappingServicesContext.Provider
+MappingWorkspacePage
++ services: diagrams / canvasHistory / workspaceStorage
++ page state: activeId, catalog snapshot, transfers, busy, changeMode
+CanvasWorkspace
++ drafts + controllers
+  onPersist(ids)
+SourcePaneViewState
++ live pane scroll + camera
+WorkspaceStorage
++ load / save / flush
+WorkspacePersistence
++ live view captures + history deltas
+RecordStorage
+CanvasDraft = metadata + CanvasSession
++ name / savedName / savedScene / savedEdges / revisionId
++ representationId? / hidden? / busy / viewport? / focusBox?
+CanvasSession
++ controller owns domain state; readable stores publish references
+  MappingDocumentController [D]
+  + snapshot: contextId, canvasRevisionId, version
+  + document, canvas, canUndo, canRedo
+  + cell?, endpointBounds?
+  document store
+  ^ search / explorer
+  presentation store: display, diagramViews
+  selection store: ordered membership
+  controls store: focus + action surfaces
+  geometry store: cell, endpointBounds, version
+  status store: isDirty, sceneDirty, canUndo, canRedo
+    dirty = scene OR edges OR name differs from baseline
+    checkpoint changes -> onCommit -> workspace persistence
+CONTROLLER-OWNED SNAPSHOT
+  MappingGridDocument
+  + scene: LineGridScene [A]
+  + root: GridBox hierarchy
+  + contents: id -> Diagram [B]
+  + edges: DiagramConnection[]
+  + jumps?: CanvasJump[]
+  + sections: content id -> sections
+  MappingCanvasState
+  + selection: SelectionState
+  + items: whole instance OR region
+  + region: ASCII, rect, selected node IDs
+  + diagramViews: per-instance tree folds
+  + content revision + collapsed IDs
+  + display: DisplayState [C]
+  + rootIds + nodes of FloatingPane
+  + controls: activeBoxId, selectionFocusId
+  + activeThreadId, surfaces
+canvasDisplayNodes(document, canvas, version)
++ READ-ONLY REGISTRY: grid + floating + derived arrows
+  grid:<boxId>       diagram / group; bounds in cells
+  + childIds, content, contentNodes, folds
+  floating:<id>      selection / projection / conversation / detail
+  + position + bounds in unscaled CSS pixels
+  floating:edge:<id> arrow from document.edges + anchor geometry
+DraggableDiagramCanvas -> MappingPocSelectionCanvas(session)
++ camera changes -> SourcePaneViewState; UI commands -> controller
++ visited documents stay mounted; inactive/hidden views are hidden
++ DiagramEditComposer <-> DiagramEditCoordinator
++ DiagramSearchPanel + MappingDiagramExplorer + ChangeSessionPreview
+PAGE LIFECYCLE / DURABILITY
++ loadProjectRepresentations('current') + storage.load() in parallel
+  restore workspace OR open settled catalog revision
+  + documentFromRevision + historyFromRevision -> session seed
+  save project diagram: capture document + history + name
+  + saveMappingProjectDiagram(expectedRevisionId)
+  + acknowledgement updates the captured saved baseline
+  save/restore/import/export workspace: schemaVersion 3
+  + documents + canvas views + histories + viewport + transfers
+  copy/move selected diagrams; coordinated undo/redo [E]
+  + prepare both histories -> storage.save -> installWorkspace
+  useAgentCanvasBridge -> handleAgentCommand -> controller [D]
+Sources: MappingPage.tsx, canvasWorkspace.ts, canvasSession.ts
++ mappingGrid.ts, mappingWorkspace.ts, canvasDisplayNode.ts
+
+edge "MappingPocPage(services)" -> "MappingWorkspacePage"
+edge "MappingWorkspacePage" -> "CanvasWorkspace"
+edge "MappingWorkspacePage" -> "SourcePaneViewState"
+edge "MappingWorkspacePage" -> "WorkspaceStorage"
+edge "SourcePaneViewState" -> "WorkspacePersistence"
+edge "WorkspaceStorage" -> "RecordStorage"
+edge "onPersist(ids)" -> "WorkspacePersistence"
+edge "WorkspacePersistence" -> "RecordStorage"
+edge "CanvasWorkspace" -> "CanvasDraft = metadata + CanvasSession"
+edge "CanvasDraft = metadata + CanvasSession" -> "CanvasSession"
+edge "document store" -> "search / explorer"
+edge "MappingGridDocument" -> "canvasDisplayNodes(document, canvas, version)"
+edge "MappingCanvasState" -> "canvasDisplayNodes(document, canvas, version)"
+edge "canvasDisplayNodes(document, canvas, version)" -> "DraggableDiagramCanvas -> MappingPocSelectionCanvas(session)"

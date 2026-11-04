@@ -1,0 +1,113 @@
+{
+ "boxes": [
+  {
+   "id": "1:1-1:11",
+   "text": "[B] Diagram",
+   "rect": {
+    "line1": 1,
+    "col1": 1,
+    "line2": 1,
+    "col2": 11
+   }
+  },
+  {
+   "id": "3:1-6:58",
+   "text": "Diagram identities\ndiagramId -> stable service identity\nrevisionId -> issued service revision\nid -> local canvas content key; revision -> integer >= 0",
+   "rect": {
+    "line1": 3,
+    "col1": 1,
+    "line2": 6,
+    "col2": 58
+   }
+  },
+  {
+   "id": "11:1-14:26",
+   "text": "DiagramContent\nrevisionId = id:revision\nascii + asciiSha256\nstructure",
+   "rect": {
+    "line1": 11,
+    "col1": 1,
+    "line2": 14,
+    "col2": 26
+   }
+  },
+  {
+   "id": "15:7-15:13",
+   "text": "diagram",
+   "rect": {
+    "line1": 15,
+    "col1": 7,
+    "line2": 15,
+    "col2": 13
+   },
+   "parent": "11:1-14:26"
+  },
+  {
+   "id": "16:7-22:39",
+   "text": "tree\nparserVersion\nascii-tree-1 / ascii-tree-2\nrootIds + nodes[id]\nlabel / line / branchColumn\nstartColumn / endColumn\nparentId? / childIds / foldRanges",
+   "rect": {
+    "line1": 16,
+    "col1": 7,
+    "line2": 22,
+    "col2": 39
+   },
+   "parent": "11:1-14:26"
+  },
+  {
+   "id": "11:35-15:64",
+   "text": "DiagramSourceContext\ncontentHash = hash(ascii)\nbinding? -> source identity\nmappings[] -> evidence joins\nevidence[entityId]",
+   "rect": {
+    "line1": 11,
+    "col1": 35,
+    "line2": 15,
+    "col2": 64
+   }
+  },
+  {
+   "id": "25:1-27:54",
+   "text": "Content folding\nvisibleContentLines(content, collapsedIds)\nhide fold ranges; unknown node -> STALE_CONTENT_NODE",
+   "rect": {
+    "line1": 25,
+    "col1": 1,
+    "line2": 27,
+    "col2": 54
+   }
+  },
+  {
+   "id": "29:1-35:65",
+   "text": "Source evidence join\nmapping.entityId -> evidence entry -> sourceRanges[index]\nsourceRangeId? must match range.id\nrelative path + start/endLine + originalLines\nbinding = sourceId + repositoryIdentity + corpus + profile\nsource-code <-> git-worktree; document <-> filesystem-documents\ndiagramSource -> entries / forSelection / search / mappings",
+   "rect": {
+    "line1": 29,
+    "col1": 1,
+    "line2": 35,
+    "col2": 65
+   }
+  },
+  {
+   "id": "37:1-40:64",
+   "text": "Validation\ncanonical content rebuild + hashes + local mappings + evidence\njumps? validated against content; source binding checked\nnonblank ASCII, 1..20000 chars, printable characters + LF",
+   "rect": {
+    "line1": 37,
+    "col1": 1,
+    "line2": 40,
+    "col2": 64
+   }
+  }
+ ],
+ "edges": [
+  {
+   "from": "3:1-6:58",
+   "to": "11:1-14:26",
+   "direction": "->"
+  },
+  {
+   "from": "3:1-6:58",
+   "to": "11:35-15:64",
+   "direction": "->"
+  },
+  {
+   "from": "11:1-14:26",
+   "to": "25:1-27:54",
+   "direction": "->"
+  }
+ ]
+}

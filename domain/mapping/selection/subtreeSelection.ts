@@ -1,4 +1,5 @@
 import type { Diagram } from '../../core/diagrams/diagram';
+import { contentNodeRect } from '../../core/diagrams/contentNodeGeometry';
 import { diagramContentNodes } from '../../core/diagrams/diagramContentNodes';
 import { regionSelectionItem, selectionCommand, selectionContentNodes, withSelectionNodes, type SelectionItem, type SelectionState } from './selectionState';
 
@@ -24,9 +25,10 @@ export function toggleNodeSelection(state: SelectionState, diagram: Diagram, box
   const selected = state.items.some(item => current(item) && selectionContentNodes(diagram, item.region).some(node => node.id === root.id));
   if (!selected) {
     const members = [...membersToToggle].map(id => byId.get(id)!);
+    const rects = members.map(contentNodeRect);
     const item = regionSelectionItem(diagram, boxId, {
-      startLine: Math.min(...members.map(node => node.line)), endLine: Math.max(...members.map(node => node.line)),
-      startColumn: Math.min(...members.map(node => node.startColumn)), endColumn: Math.max(...members.map(node => node.endColumn))
+      startLine: Math.min(...rects.map(r => r.startLine)), endLine: Math.max(...rects.map(r => r.endLine)),
+      startColumn: Math.min(...rects.map(r => r.startColumn)), endColumn: Math.max(...rects.map(r => r.endColumn))
     });
     return selectionCommand(state, { type: 'add', items: [withSelectionNodes(item, diagram, [...membersToToggle])] });
   }

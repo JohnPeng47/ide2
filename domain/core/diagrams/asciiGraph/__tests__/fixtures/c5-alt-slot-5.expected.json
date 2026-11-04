@@ -1,0 +1,143 @@
+{
+ "boxes": [
+  {
+   "id": "1:1-1:24",
+   "text": "[C] FloatingBox variants",
+   "rect": {
+    "line1": 1,
+    "col1": 1,
+    "line2": 1,
+    "col2": 24
+   }
+  },
+  {
+   "id": "3:1-3:11",
+   "text": "FloatingBox",
+   "rect": {
+    "line1": 3,
+    "col1": 1,
+    "line2": 3,
+    "col2": 11
+   }
+  },
+  {
+   "id": "4:7-4:50",
+   "text": "FloatingPane -> stored in DisplayState.nodes",
+   "rect": {
+    "line1": 4,
+    "col1": 7,
+    "line2": 4,
+    "col2": 50
+   },
+   "parent": "3:1-3:11"
+  },
+  {
+   "id": "6:13-8:54",
+   "text": "selection: captured sourceBoxId/contentId,\nASCII, revision?, rect, selectedIds\ndisplayMode: stacked | chained",
+   "rect": {
+    "line1": 6,
+    "col1": 13,
+    "line2": 8,
+    "col2": 54
+   },
+   "parent": "4:7-4:50"
+  },
+  {
+   "id": "9:13-11:55",
+   "text": "projection: title, revision/projection IDs?\ncontent: call-tree | compaction\nsource-code | code-panel",
+   "rect": {
+    "line1": 9,
+    "col1": 13,
+    "line2": 11,
+    "col2": 55
+   },
+   "parent": "4:7-4:50"
+  },
+  {
+   "id": "12:13-13:55",
+   "text": "conversation: thread, draft, canvasAnchor\npresentation: compact | floating | docked",
+   "rect": {
+    "line1": 12,
+    "col1": 13,
+    "line2": 13,
+    "col2": 55
+   },
+   "parent": "4:7-4:50"
+  },
+  {
+   "id": "14:13-14:44",
+   "text": "detail: title, ascii, sectionId?",
+   "rect": {
+    "line1": 14,
+    "col1": 13,
+    "line2": 14,
+    "col2": 44
+   },
+   "parent": "4:7-4:50"
+  },
+  {
+   "id": "16:7-16:53",
+   "text": "arrow: drawEdge(document.edges) -> derived only",
+   "rect": {
+    "line1": 16,
+    "col1": 7,
+    "line2": 16,
+    "col2": 53
+   },
+   "parent": "3:1-3:11"
+  },
+  {
+   "id": "18:1-22:51",
+   "text": "DisplayNodeBase\nid, childIds, expansion, expandedGeometry?\nposition {x,y}, bounds {width,height}: CSS pixels\ncoordinateSpace: canvas | viewport\ngeometryPolicy: automatic/manual + content/fixed",
+   "rect": {
+    "line1": 18,
+    "col1": 1,
+    "line2": 22,
+    "col2": 51
+   }
+  },
+  {
+   "id": "24:12-24:55",
+   "text": "add/remove ownership tree; recursive removal",
+   "rect": {
+    "line1": 24,
+    "col1": 12,
+    "line2": 24,
+    "col2": 55
+   },
+   "parent": "18:1-22:51"
+  },
+  {
+   "id": "25:12-25:54",
+   "text": "collapse saves geometry; expand restores it",
+   "rect": {
+    "line1": 25,
+    "col1": 12,
+    "line2": 25,
+    "col2": 54
+   },
+   "parent": "18:1-22:51"
+  },
+  {
+   "id": "26:1-26:54",
+   "text": "SelectionState owns membership; pane captures context.",
+   "rect": {
+    "line1": 26,
+    "col1": 1,
+    "line2": 26,
+    "col2": 54
+   }
+  },
+  {
+   "id": "27:1-27:46",
+   "text": "Sources: displayModel.ts, canvasDisplayNode.ts",
+   "rect": {
+    "line1": 27,
+    "col1": 1,
+    "line2": 27,
+    "col2": 46
+   }
+  }
+ ],
+ "edges": []
+}

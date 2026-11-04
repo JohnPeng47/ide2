@@ -1,5 +1,5 @@
 import { rebaseDiagramHighlights } from './diagramHighlight';
-import { buildDiagramContent } from './diagramContent';
+import { buildDiagramContent, contentParserVersion } from './diagramContent';
 import { diagramContentNodes } from './diagramContentNodes';
 import { validateDiagram, type Diagram } from './diagram';
 
@@ -33,7 +33,7 @@ export function patchDiagramRanges(before: Diagram, input: readonly { start: num
     return line + delta;
   };
   const content = unchanged ? before.content : buildDiagramContent(ascii, `${before.id}:${before.revision + 1}`,
-    before.content.structure.kind, before.content.structure.kind === 'tree' ? before.content.structure.parserVersion : undefined);
+    before.content.structure.kind, contentParserVersion(before.content.structure));
   const afterNodes = diagramContentNodes(content);
   const nodeIds = new Map<string, string>();
   for (const node of diagramContentNodes(before.content)) {

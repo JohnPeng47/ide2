@@ -1,0 +1,37 @@
+[D] Controller edits / agent access
+[useAgentCanvasBridge]
++ stable workspace identity + ephemeral canvasId
++ register --> poll commands --> handle --> reply
++ non-context results cached by command ID; live selections via WebSocket
+[MappingPage.handleAgentCommand]
++ context / document-state / snapshot --> controller read projections
++ apply(requestId, expectedVersion, operations) --> receipt deduplication
++ apply-diagram-revision --> revisionReceiver --> sync + storage.flush
++ create-document / copy-document --> CanvasWorkspace sessions
+[MappingDocumentController.applyUpdate / transact]
++ version check --> 1-100 operations --> clone staged document + canvas
+  diagram-create / insert / replace / patch / mappings / jumps
+  + DiagramService --> issued Diagram + node correspondence
+  + patch --> rebase anchors / jumps / folds / sections
+  diagram-revision-apply --> expected revision check + receive
+  edge-create / update / remove --> validate anchors
+  grid move / collapse / group / remove --> layoutScene
+  subtree collapse --> revision-scoped diagramViews
+  + missing node --> STALE_CONTENT_NODE
+  floating move / collapse / remove --> DisplayState
+  + pixel move selects manual placement; arrows follow anchors
+[updateSnapshot(record=true)]
++ reconcile connections + jumps; normalize folds + selection focus
++ resolve floating geometry; validate connections
++ append(document, canvas, node correspondence) --> history checkpoint
++ publish snapshot + version + undo/redo flags --> subscribers
+[CanvasSession publications]
++ document / presentation / selection / controls / geometry / status
++ select(command) records; updateCanvas defaults to transient
++ layout and endpoint measurements update runtime geometry
+Sources: mappingDocumentController.ts; useAgentCanvasBridge.ts; MappingPage.tsx
+
+edge "[useAgentCanvasBridge]" -- "[MappingPage.handleAgentCommand]"
+edge "[MappingPage.handleAgentCommand]" -- "[MappingDocumentController.applyUpdate / transact]"
+edge "[MappingDocumentController.applyUpdate / transact]" -- "[updateSnapshot(record=true)]"
+edge "[updateSnapshot(record=true)]" -- "[CanvasSession publications]"

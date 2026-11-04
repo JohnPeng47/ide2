@@ -1,0 +1,71 @@
+7d44fa04bfee6bb4a2af171fe43e5e55a0c1f140 chore: checkpoint workspace before tldraw migration
+4cfd462c50351ef95846152d5a6d0a62b4a3a971 feat(canvas): integrate tldraw camera, shapes, and gesture history
+e0c9e7641c073c9ba433d5c13277532eed2cfc26 Render canvas shapes through granular subscriptions and local anchors
+3726186d98be8495cda98460eb9b308fe83bdd52 refactor(source): extract shared syntax highlighting utilities
+b3ae534e19b79cb3f32c3a4b930ff9612c6a70e8 feat(changes): persist repository context, diff trees, and migrations
+bb64b7939944584167347b28b30507179d787a46 feat(agent): expose repository change workflows and compact canvas APIs
+6fc824d148f4ba4737c245d9db1faa9c812184c1 feat(mapping): add repository explorer and diff tree migration review
+9c811283281b3ae4370b3a6b82d9ef1cc66c130b docs: update canvas workflows and end-to-end test plan
+9278ea1df4b88d19045c79dc8bbeea994f4f8712 refactor(review): remove the migration review overlay
+ff5ce571e61bab2b541433cbe55368c8ebbec99a feat(review): resize review panels without moving the canvas
+6df4e3abf30c64408820e04c2adafa8edd70d34f fix(canvas): keep edges behind diagrams by default
+586df6dc338d8c2b5cd085cb4028acda9fc3314a fix(review): require explicit navigation from diff hunks
+a0809e3394857b089e121d7cdf4a92601b369edc test(perf): add canvas interaction performance measurements
+695dcfc6e561a4a9c0600c3fbc17a9a9639b4554 docs: add code guidelines informed by tldraw patterns
+ccdb867c40e9a9727b353728a7f9e3f8cf2f763f Track current canvas snapshots and use local diagram store
+d4e9fba91c0f077b03a0b69504f41074b32bf745 perf(source): resolve bindings without restoring full canvas history
+ecb39cea74985f320386b8c432c642a4eaaf1b93 perf(source): cache file reads in a background worker
+6e4425f21727d9e683c713b1239fd6820fe1e388 fix(code-panel): preserve diagram order and hide stale snippets
+bace01806dad099ecd6eb1e9c00806538e48feca feat(source): show mapped code in a resizable workspace panel
+de7f8d03d01d17318efd5f0fba73b7db3bddb72b feat(connections): replace connection editor with endpoint navigation
+22e15f8efc03be2c5235f74fe163dab66bfaf846 feat(diff-tree): improve navigation between diagrams and change hunks
+0ec9ec96770d778603755b81260ad873152d3248 docs(diagrams): preserve Proposal 2 with its full review history
+9370145641edd66bb94e7e3749ab4bc2802f837d feat(canvas): add iPad gestures and touch integration tests
+25578d0624a7527fd7fa891da8b4330ba5e1b6ee feat(server): require startup flags for HTTP and AI access
+b974563d03a7456e3387d23079ce06b27a47a231 fix(server): allow reads while HTTP writes are disabled
+eb01bcf86b41d5b4be5a6b8b59033a840aceb3ec fix(server): keep app persistence outside agent API write gate
+4bafd68b1da1aa97aca7c630d08be54173b9de9b feat(canvas): reserve finger gestures for navigation and add escape controls
+681b818634dbaaa80a67bb93c75defabcf4527fe Merge branch 'feat/ipad-gestures' into worktree/perf-debug
+78c9072cb74709faa4a78ce096913fa9ef7f7ed0 fix(ui): remove top-right canvas error popups
+5c5ed23c3ecc6139bf3a9e84202badc88b289b7f Fix canvas selection copying and add planning notes
+032bc3f494edd1932d7c0db408d0a11b9bd37119 Replace the diagram edit modal with a structured prompt composer
+936f7b72afef2f9b736180d57c1d42281b3063e4 Checkpoint diagram editing, selection, and investigation work before rebase
+808aca3615203866939d876644ebd539f37d66d4 Add change-session treemaps with shared LOC allocation and diagram navigation
+14ff49fd386d09334b23199672af61b3aa81e6f5 Add treemap presentation designs and session summary
+907e69135e4df498fc2a44d362a58a0a73a0f994 Add blueprint treemaps and ChangeSession generation workflow
+32acfd7eb3bd095c8f47d62e1d5eaead5e3d1607 Add light and dark themes with treemap opacity controls
+6c15ecece45db34f3f045c0eee8ef524b0b7b6ea Add shared canvas treemaps and persistent panel agent context
+d24849dda9448a271b0e735dfab2f232d6a48d51 Implement 7-step canvas API change with Agent Chat foundations
+132c2b7a4887c4f3171d7fbca6e10ece727d1a13 feat: generate DiffSessions from Git pushes
+2a87e7cba2845c0a7915316ab3c9e20b27fa7d08 feat: resume existing Codex sessions in Agent Chat
+c35511e8a50812fb02e8c626420915ef4e7c8353 fix: refine canvas selection and synchronize chat references
+a61074311d05870f2a713b75e59a60e12c13b9fb fix: preserve text selection while chat streams
+a3450a4268415219d34771ab3a7b1551ce4d4634 feat: show chat activity and elapsed time
+ff1f7a4620d2cbeedb6501a7c747f315b4162973 docs: record Canvas API trace investigation
+71a2fa5e0b6fea2c9c55b666039be3052b727747 docs: add diagram navigation formalization notes
+ff45e4250aa502e3ea8ecd3d1478775c08ca12a3 docs: remove obsolete session handoff documentation
+b321abcf792ac36961052bb6001385a8376678e5 Add highlighted canvas projection with tunable layout
+2adef44426b08f81a1808bf0861dd7a104862841 refactor: persist canvas history as deduplicated record diffs
+b95869f49511678d65c1e8c5bf8d96bec02599e7 perf: avoid redundant workspace saves and bound durable writes
+da8cf3de7828762ad13ef67521e9d700f0456886 feat: batch canvas mutations with receipts and grouped highlights
+b2396bda2a56e7c920868d75d32e338b449e9a3d feat: reuse bound MCP connections and preload canvas capabilities
+1d400af18af96b936b31f45f55d6420e6bc27561 fix: preserve chat text selection and native clipboard contents
+3708170229e3ff6b8312bfda078ee0439b866d61 fix: configure threshold-based compaction for Agent Chat
+5a54118ede914a28bafc9ae4b12c699f7e5e50fc refactor: simplify the diagram explorer to canvas entries
+b054943aef9f21281cb7d0ee35fe5c0aa700cb15 feat: generate and review persistent subtree variants with node continuity
+8ce5b7ad91eca83d1dacabed8377386f1387b8a4 chore(diagrams): compact saved canvas histories and migrate records
+7a99539d34d242bb00fa138541ae3cccc5264b45 fix(agents): persist Pi runtime sessions for audit and recovery
+258ccc1c4a8200bda6b63ec9c192f7ceabf927ff feat(canvas): persist views and diagram contexts with scoped revision support
+622adb3fcb44f79d78a83dd73fb6c2179a7f8d01 feat(agent-chat): submit diagram edits directly with atomic batches
+5e926a69a55465bcb7469d35fd88ff4a10477531 fix(canvas): improve obstacle routing, collapsed bounds and drag selection
+7fa6f6f3196875b3c9405fb7eaf279b8525025d6 feat(diagrams): separate revision models and presentation
+f0be561fef85be748b38601af7da0bfbac7cefd5 docs(diagrams): describe revision and presentation boundaries
+0066e1126de6f72aae3b295a1e7266665d30929f feat(mapping): add persistent alternatives and managed canvas generation
+507de3e99902a2a0673d13d556e0929a870f8375 feat(mapping): expose alternative generation and diagram side panels
+3a6c0d6447eba7f849a08953f419d1c9f4016733 chore(diagrams): preserve saved canvas and change-session records
+f4d7beac7b3beefd16ffef02462a773a7b10814a added compare plan
+cfdc11b85c747af837eb4e2a294659bcd2e96302 Track canvas projection workspace and history
+caf0883dc7b1fe9cf68cf278f7c0de4f2c64798c Update CompareView plan with session and pairing decisions
+0a8716edcdb41408902c1fdcbe71516d66b4c188 feat(evals): add persistent snapshot comparison sessions
+fd7244080388f0c98455e19620ed743c21355b49 feat(agent-context): persist reusable saved contexts
+81f05a2bf9efa2334985d2298dcbd7b044dc4c1e feat(agent-context): resolve pinned source ranges lazily

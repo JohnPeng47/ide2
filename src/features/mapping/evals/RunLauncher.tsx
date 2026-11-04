@@ -8,9 +8,9 @@ import { evalEfforts, type EvalRunRequest, type EvalRunSummary } from '../../../
 import { evalWorkflowIds, evalWorkflows, type EvalWorkflowId } from '../../../../domain/mapping/evals/evalWorkflows';
 import { templateVariables } from '../../../../domain/mapping/evals/promptTemplate';
 import { listCompareCandidates } from './compareApi';
-import { listLayoutTemplates, listContexts, listGenerated, startRun, type AgentContextSummary } from './evalsApi';
+import { listReferences, listLayoutTemplates, listContexts, listGenerated, startRun, type AgentContextSummary } from './evalsApi';
 import { errorMessage, promptLabel, relativeTime, runNumbers } from './evalsFormat';
-import { candidateKey, sourceOf } from './CanvasPicker';
+import { CanvasPicker, candidateKey, sourceOf } from './CanvasPicker';
 import { Drawer } from './Drawer';
 import { SourceTree, type TreeNode } from './SourceTree';
 
@@ -36,6 +36,8 @@ export function RunLauncher({ prompts, runs, initial, onClose, onStarted }: {
   }
   const [workflowId, setWorkflowId] = useState(rerun?.workflow ?? initial.workflow);
   const workflow = evalWorkflows[workflowId];
+  const fewShot = workflowId === 'few-shot-refinement';
+  const [targetKey, setTargetKey] = useState(rerun?.inputs.target ? candidateKey(rerun.inputs.target.source) : '');
   // A rerun keeps the exact prompt versions it used, even if a prompt was archived since.
   const [selected, setSelected] = useState<Record<string, number>>(() => rerun
     ? Object.fromEntries(rerun.prompts.filter(pinned => pinned.version !== undefined && prompts.some(prompt => prompt.id === pinned.promptId)).map(pinned => [pinned.promptId, pinned.version!]))
@@ -54,8 +56,10 @@ export function RunLauncher({ prompts, runs, initial, onClose, onStarted }: {
   const [templateError, setTemplateError] = useState('');
   const layoutTemplate = (rerun?.layoutTemplate?.id === layoutTemplateId ? rerun.layoutTemplate : templates?.find(item => item.id === layoutTemplateId));
   const [previous, setPrevious] = useState<string[]>(request?.previous ?? []);
-  const [task, setTask] = useState(request?.task ?? ''), [passes, setPasses] = useState(request?.passes ?? workflow.defaultPasses);
-  const [model, setModel] = useState(request?.model ?? 'gpt-6-sol'), [effort, setEffort] = useState<EvalRunRequest['effort']>(request?.effort ?? 'high');
+  const [references, setReferences] = useState<import('../../../../domain/mapping/evals/evalReference').EvalReference[]>([]);
+  const [referenceIds, setReferenceIds] = useState<string[]>(request?.referenceIds ?? []);
+  const [passes, setPasses] = useState(request?.passes ?? workflow.defaultPasses);
+  const [model, setModel] = useState(request?.model ?? (fewShot ? 'gpt-6-astra' : 'gpt-6-sol')), [effort, setEffort] = useState<EvalRunRequest['effort']>(request?.effort ?? 'high');
   const [busy, setBusy] = useState(false), [error, setError] = useState('');
   const pending = useRef<{ signature: string; requestId: string }>(undefined);
   useEffect(() => {
@@ -68,6 +72,7 @@ export function RunLauncher({ prompts, runs, initial, onClose, onStarted }: {
       setPicked(current => current.filter(key => pinned.has(key) || items.some(item => candidateKey(item) === key)));
     }).catch(fail);
     void listLayoutTemplates().then(items => { if (!closed) setTemplates(items); }).catch(error => { if (!closed) setTemplateError(errorMessage(error)); });
+    void listReferences().then(items => { if (!closed) setReferences(items); }).catch(fail);
     void listContexts().then(result => { if (!closed) setContexts(result.items); }).catch(fail);
     void listGenerated().then(items => {
       if (closed) return;
@@ -78,7 +83,7 @@ export function RunLauncher({ prompts, runs, initial, onClose, onStarted }: {
     return () => { closed = true; };
   }, []);
   const switchWorkflow = (id: EvalWorkflowId) => {
-    setWorkflowId(id); setSelected({}); setPicked([]); setContextId(undefined); setPrevious([]); setPasses(evalWorkflows[id].defaultPasses);
+    setWorkflowId(id); if (id === 'few-shot-refinement') { setModel('gpt-6-astra'); setEffort('high'); } setSelected({}); setPicked([]); setContextId(undefined); setPrevious([]); setPasses(evalWorkflows[id].defaultPasses);
   };
 
   const numbers = useMemo(() => runNumbers(runs), [runs]);
@@ -120,7 +125,7 @@ export function RunLauncher({ prompts, runs, initial, onClose, onStarted }: {
           const items = outputs.filter(canvas => (canvas.generated!.runId ?? 'migrated') === runId);
           const label = runId === 'migrated' ? 'Migrated alternatives' : `Run #${numbers.get(runId) ?? '?'}`;
           return { id: `run:${context.agentContextId}:${runId}`, label, group: true, meta: `${items.length} canvas${items.length === 1 ? '' : 'es'}`,
-            children: items.map(canvas => ({ id: `alt:${canvas.id}`, label: canvas.generated!.pass && canvas.generated!.prompt ? `${promptLabel(canvas.generated!.prompt)} · pass ${canvas.generated!.pass}` : canvas.name,
+            children: items.map(canvas => ({ id: `alt:${canvas.id}`, label: canvas.generated!.pass && canvas.generated!.prompt ? `${promptLabel(canvas.generated!.prompt)} · sample ${canvas.generated!.pass}` : canvas.name,
               detail: canvas.generated!.pass ? undefined : promptLabel(canvas.generated!.prompt), selectable: true,
               disabled: full && !previous.includes(canvas.id), meta: relativeTime(canvas.createdAt) })) };
         }) };
@@ -148,24 +153,28 @@ export function RunLauncher({ prompts, runs, initial, onClose, onStarted }: {
   const chosen = available.filter(prompt => selected[prompt.id] !== undefined);
   const uses = (name: string) => chosen.some(prompt => Object.values(prompt.versions.find(item => item.version === selected[prompt.id])?.stages ?? {})
     .some(body => templateVariables(body).includes(name)));
-  const usesTask = uses('task');
   const candidate = (key: string) => candidates?.find(item => candidateKey(item) === key) ?? (pinned.has(key) ? { ...pinned.get(key)!.source, name: pinned.get(key)!.name, canvasName: pinned.get(key)!.canvasName } : undefined);
   const context = contexts?.find(item => item.agentContextId === contextId);
   const problems = [
+    referenceIds.length > 0 && chosen.some(p => !Object.values(p.versions.find(v => v.version === selected[p.id])?.stages ?? {}).some(body => templateVariables(body).includes('references'))) && 'Add {{references}} to each selected prompt.',
     !chosen.length && 'Select at least one prompt.',
+    fewShot && chosen.length !== 1 && 'Select exactly one refinement prompt.',
+    fewShot && !targetKey && 'Select the target canvas.',
+    fewShot && !!layoutTemplate && (layoutTemplate.geometry.slots.length !== 1 || !layoutTemplate.geometry.slots[0].title) && 'Use one titled layout slot or automatic capture.',
     chosen.length > 6 && 'Select at most six prompts.',
     workflowId === 'roll-up' && picked.length < 2 && `Tick ${picked.length ? 'a parent' : 'a child and a parent'} canvas in the tree.`,
-    workflowId === 'alternatives' && !contextId && 'Tick an AgentContext in the tree.',
+    workflowId !== 'roll-up' && !contextId && 'Tick an AgentContext in the tree.',
     rerun?.contexts?.context && contextId && contextId !== rerun.contexts.context.agentContextId && `A rerun must use ${rerun.contexts.context.name}.`,
     workflowId === 'alternatives' && !!layoutTemplateId && !layoutTemplate && 'The selected layout template is unavailable.',
-    usesTask && !task.trim() && 'A selected prompt uses {{task}}. Describe the task.'
+    workflowId === 'alternatives' && chosen.some(p => !!layoutTemplateId !== !!p.versions.find(v => v.version === selected[p.id])?.stages.alternative.includes('layout-template.json'))
+      && (layoutTemplateId ? 'Select a prompt with explicit layout-template.json instructions, such as Template alternative.' : 'The selected template prompt requires a layout template.')
   ].filter((problem): problem is string => !!problem);
-  const outputs = chosen.length * passes * workflow.stages.length;
+  const outputs = fewShot ? 9 : chosen.length * passes * workflow.stages.length;
   const submit = async () => {
     const inputs: EvalRunRequest['inputs'] = workflowId === 'roll-up'
-      ? { child: sourceOf(candidate(picked[0])!), parent: sourceOf(candidate(picked[1])!) } : { context: { agentContextId: contextId! } };
-    const body = { workflow: workflowId, prompts: chosen.map(prompt => ({ promptId: prompt.id, version: selected[prompt.id] })), passes, model: model.trim(), effort,
-      inputs, ...(workflowId === 'alternatives' && layoutTemplateId ? { layoutTemplateId } : {}), ...(usesTask ? { task: task.trim() } : {}), ...(workflowId === 'alternatives' && previous.length ? { previous } : {}), ...(rerun ? { parentRunId: rerun.id } : {}) };
+      ? { child: sourceOf(candidate(picked[0])!), parent: sourceOf(candidate(picked[1])!) } : { context: { agentContextId: contextId! }, ...(fewShot ? { target: sourceOf(candidate(targetKey)!) } : {}) };
+    const body = { referenceIds, workflow: workflowId, prompts: chosen.map(prompt => ({ promptId: prompt.id, version: selected[prompt.id] })), passes: fewShot ? 3 : passes, model: model.trim(), effort,
+      inputs, ...(workflowId !== 'roll-up' && layoutTemplateId ? { layoutTemplateId } : {}), ...(workflowId === 'alternatives' && previous.length ? { previous } : {}), ...(rerun ? { parentRunId: rerun.id } : {}) };
     const signature = JSON.stringify(body);
     if (pending.current?.signature !== signature) pending.current = { signature, requestId: crypto.randomUUID() };
     setBusy(true); setError('');
@@ -187,7 +196,7 @@ export function RunLauncher({ prompts, runs, initial, onClose, onStarted }: {
           {loading && !error ? <p role="status" className="evals-muted">Loading…</p>
             : workflowId === 'roll-up'
               ? <SourceTree key="roll-up" label="Canvases" nodes={rollUpTree} checked={checked} onToggle={toggleRollUp} empty="Save a canvas or view in Mapping first." />
-              : <SourceTree key="alternatives" label="AgentContexts" nodes={alternativesTree} checked={checked} onToggle={toggleAlternative} empty="No saved AgentContexts yet. Save one from Agent Chat." />}
+              : <SourceTree key="alternatives" label="AgentContexts" nodes={fewShot ? alternativesTree.filter(node => node.id.startsWith('ctx:')).map(node => ({ ...node, children: undefined })) : alternativesTree} checked={checked} onToggle={toggleAlternative} empty="No saved AgentContexts yet. Save one from Agent Chat." />}
           <p className="run-launcher-count" aria-live="polite">{checked.size} selected</p>
         </section>
         <div className="run-launcher-form">
@@ -214,9 +223,10 @@ export function RunLauncher({ prompts, runs, initial, onClose, onStarted }: {
                 {previous.length > 0 && chosen.length > 0 && !uses('previous') && <p className="evals-warning">The selected prompts don't use {'{{previous}}'}; the files are still attached.</p>}
               </>}
             </section>
-            {workflowId === 'alternatives' && <section aria-label="Layout template"><h3>Layout template <small>optional</small></h3>
+            {fewShot && candidates && <CanvasPicker label="Target canvas" candidates={candidates} value={targetKey} onChange={setTargetKey} disabled={busy} />}
+            {workflowId !== 'roll-up' && <section aria-label="Layout template"><h3>Layout template <small>optional</small></h3>
               <label>Layout template<select aria-label="Layout template" value={layoutTemplateId} onChange={event => setLayoutTemplateId(event.target.value)}>
-                <option value="">No template</option>
+                <option value="">{fewShot ? "Capture first target diagram: title and size" : "No template"}</option>
                 {rerun?.layoutTemplate && <option value={rerun.layoutTemplate.id}>{rerun.layoutTemplate.name} · pinned from run</option>}
                 {templates?.filter(item => item.id !== rerun?.layoutTemplate?.id).map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
               </select></label>
@@ -239,17 +249,19 @@ export function RunLauncher({ prompts, runs, initial, onClose, onStarted }: {
                 </li>;
               })}</ul>
             </section>
-            {usesTask && <label>Task <small>fills {'{{task}}'} in the selected prompts</small>
-              <textarea aria-label="Task" value={task} maxLength={20000} rows={3} placeholder="What should every alternative accomplish?" onChange={event => setTask(event.target.value)} /></label>}
+            {!fewShot && <section aria-label="References"><h3>References</h3>
+              <p>Select examples to insert at {'{{references}}'} in the prompt.</p>
+              {references.map(reference => <label key={reference.id}><input type="checkbox" checked={referenceIds.includes(reference.id)} onChange={event => setReferenceIds(ids => event.target.checked ? [...ids, reference.id] : ids.filter(id => id !== reference.id))} />{reference.name}</label>)}
+            </section>}
             <section aria-label="Settings" className="run-settings"><h3>Settings</h3>
-              <label>Passes<input type="number" aria-label="Passes" min={1} max={4} value={passes} onChange={event => setPasses(Math.min(4, Math.max(1, Number(event.target.value) || 1)))} /></label>
+              {!fewShot && <label>Samples<input type="number" aria-label="Samples" min={1} max={20} value={passes} onChange={event => setPasses(Math.min(20, Math.max(1, Number(event.target.value) || 1)))} /></label>}
               <label>Model<input aria-label="Model" value={model} maxLength={100} onChange={event => setModel(event.target.value)} /></label>
               <label>Effort<select aria-label="Effort" value={effort} onChange={event => setEffort(event.target.value as EvalRunRequest['effort'])}>
                 {evalEfforts.map(item => <option key={item}>{item}</option>)}</select></label>
             </section>
           </fieldset>
           <footer className="evals-drawer-footer">
-            <p aria-live="polite">{chosen.length} prompt{chosen.length === 1 ? '' : 's'} × {passes} pass{passes === 1 ? '' : 'es'}{workflow.stages.length > 1 ? ` × ${workflow.stages.length} stages` : ''} = <strong>{outputs} canvas{outputs === 1 ? '' : 'es'}</strong></p>
+            <p aria-live="polite">{fewShot ? <>3 rounds × 3 alternatives = <strong>9 canvases</strong> · one progress Judgement</> : <>{chosen.length} prompt{chosen.length === 1 ? '' : 's'} × {passes} sample{passes === 1 ? '' : 's'}{workflow.stages.length > 1 ? ` × ${workflow.stages.length} stages` : ''} = <strong>{outputs} canvas{outputs === 1 ? '' : 'es'}</strong></>}</p>
             {problems.length > 0 && <ul className="evals-problems">{problems.map(problem => <li key={problem}>{problem}</li>)}</ul>}
             {error && <p role="alert" className="evals-error">{error}</p>}
             <div className="evals-actions"><button type="button" onClick={onClose}>Cancel</button>

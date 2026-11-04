@@ -196,3 +196,15 @@ it('migrates legacy checkpoints atomically, accepts equivalent delta bases, and 
   ] })).rejects.toThrow('Immutable canvas checkpoint changed');
   expect(await readFile(path.join(root, 'workspace-records.json'), 'utf8')).toBe(manifestBefore);
 });
+
+
+it('reads view headers without opening checkpoint payloads and verifies header integrity', async () => {
+  const { root, store, prefix } = await fixture();
+  const manifest = JSON.parse(await readFile(path.join(root, 'workspace-records.json'), 'utf8'));
+  const checkpoint = Object.keys(manifest.records).find(key => key.startsWith(prefix + 'checkpoint/'))!;
+  await rm(path.join(root, 'workspace-records', manifest.records[checkpoint] + '.json'));
+  expect(await store.viewHeaders('project')).toMatchObject([{ documentId: 'draft-a' }]);
+  await expect(store.viewHeaders('another-project')).rejects.toThrow('Workspace belongs to another project');
+  await writeFile(path.join(root, 'workspace-records', manifest.records[prefix + 'history'] + '.json'), '{}');
+  await expect(store.viewHeaders('project')).rejects.toThrow('integrity failure');
+});

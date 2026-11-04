@@ -1,0 +1,174 @@
+{
+ "boxes": [
+  {
+   "id": "1:1-1:48",
+   "text": "[E] CanvasHistoryService / coordinated revisions",
+   "rect": {
+    "line1": 1,
+    "col1": 1,
+    "line2": 1,
+    "col2": 48
+   }
+  },
+  {
+   "id": "3:1-6:73",
+   "text": "History owner\nMappingDocumentController -> private CanvasEditingContext\nDefaultCanvasHistoryService -> WeakMap<object handle, CanvasHistory>\nfrozen contextId handle isolates viewers; runtime handles are not saved",
+   "rect": {
+    "line1": 3,
+    "col1": 1,
+    "line2": 6,
+    "col2": 73
+   }
+  },
+  {
+   "id": "9:1-17:68",
+   "text": "History boundary\nopenContext(document, view, record?) -> runtime handle\nstate -> checkpointId + document + view + canUndo/canRedo\ndocument -> resolved document; resolve(diagramId) -> DiagramView\nappend(document, view, correspondence?) -> checkpoint\nnavigate / reset -> controller restores document + canvas view\nexportContext / forkContext / adopt -> portable history records\npersistenceChanges(since?) -> deltas; retireTransactions -> unlink\nnavigate detects linked transfer -> require workspace undo/redo",
+   "rect": {
+    "line1": 9,
+    "col1": 1,
+    "line2": 17,
+    "col2": 68
+   }
+  },
+  {
+   "id": "19:1-22:73",
+   "text": "Cross-canvas transfer\nMappingPage.beginTransfer -> sourceId + mode + selectedIds + checkpoint\nbusy checks + unchanged source checkpoint -> pause persistence\ncapture workspace -> existing destination OR new canvas",
+   "rect": {
+    "line1": 19,
+    "col1": 1,
+    "line2": 22,
+    "col2": 73
+   }
+  },
+  {
+   "id": "25:1-26:77",
+   "text": "Prepared participant states\nrunWorkspaceTask(type=transfer, source history, destination history, input)",
+   "rect": {
+    "line1": 25,
+    "col1": 1,
+    "line2": 26,
+    "col2": 77
+   }
+  },
+  {
+   "id": "27:9-27:20",
+   "text": "source state",
+   "rect": {
+    "line1": 27,
+    "col1": 9,
+    "line2": 27,
+    "col2": 20
+   },
+   "parent": "25:1-26:77"
+  },
+  {
+   "id": "27:31-27:47",
+   "text": "destination state",
+   "rect": {
+    "line1": 27,
+    "col1": 31,
+    "line2": 27,
+    "col2": 47
+   },
+   "parent": "25:1-26:77"
+  },
+  {
+   "id": "27:58-27:68",
+   "text": "transaction",
+   "rect": {
+    "line1": 27,
+    "col1": 58,
+    "line2": 27,
+    "col2": 68
+   },
+   "parent": "25:1-26:77"
+  },
+  {
+   "id": "31:3-33:76",
+   "text": "proposed workspace = participant documents + views + histories + transfers\nmove -> install source result; copy -> deselect source\nactivate destination; discard previously undone transfers",
+   "rect": {
+    "line1": 31,
+    "col1": 3,
+    "line2": 33,
+    "col2": 76
+   }
+  },
+  {
+   "id": "36:1-40:75",
+   "text": "Durable publication\npublishTransfer -> await WorkspaceStorage.save(proposed workspace)\nflush prior writes -> project snapshot -> RecordStorage.commit\nacknowledged write -> installWorkspace -> replace sessions together\ninstall transfers + activeId; reset SourcePaneViewState + workspace epoch",
+   "rect": {
+    "line1": 36,
+    "col1": 1,
+    "line2": 40,
+    "col2": 75
+   }
+  },
+  {
+   "id": "42:1-48:79",
+   "text": "Coordinated undo and redo\nboundary(id, redo) finds linked transaction at participant head\nno transaction -> controller.undo(redo)\ntransaction -> both controllers required; newer shared transfers undone first\nprepareTransferNavigation -> source + destination + transaction\ncapture -> replace both states -> persist -> install\nnewly created destination hidden on undo, reopened on redo",
+   "rect": {
+    "line1": 42,
+    "col1": 1,
+    "line2": 48,
+    "col2": 79
+   }
+  },
+  {
+   "id": "50:1-56:77",
+   "text": "Incremental persistence\nCanvasSession.onCommit -> CanvasWorkspace.onPersist(ids)\nWorkspacePersistence uses a cursor per session -> historyChanges\nrecords = metadata / baseline / revisions / checkpoints / canvas / viewport\nindex = projectId + documentIds + activeDocumentId + transfers\nSourcePaneViewState supplies captured scroll + camera\nnew session graph -> remove obsolete revision/checkpoint records atomically",
+   "rect": {
+    "line1": 50,
+    "col1": 1,
+    "line2": 56,
+    "col2": 77
+   }
+  },
+  {
+   "id": "59:1-64:77",
+   "text": "Record transport\nRecordStorage.batch -> cache + coalesced changes -> worker write\nrequestId + expectedRevision -> acknowledgement advances persisted sequence\ncommit retries ambiguous response with identical request/ID\nREJECTED -> restore cache and abandon proposed transaction\nWorkspaceStorage owns one worker per opened workspace",
+   "rect": {
+    "line1": 59,
+    "col1": 1,
+    "line2": 64,
+    "col2": 77
+   }
+  }
+ ],
+ "edges": [
+  {
+   "from": "3:1-6:73",
+   "to": "9:1-17:68",
+   "direction": "->"
+  },
+  {
+   "from": "19:1-22:73",
+   "to": "25:1-26:77",
+   "direction": "->"
+  },
+  {
+   "from": "27:9-27:20",
+   "to": "31:3-33:76",
+   "direction": "->"
+  },
+  {
+   "from": "27:31-27:47",
+   "to": "31:3-33:76",
+   "direction": "->"
+  },
+  {
+   "from": "27:58-27:68",
+   "to": "31:3-33:76",
+   "direction": "->"
+  },
+  {
+   "from": "31:3-33:76",
+   "to": "36:1-40:75",
+   "direction": "->"
+  },
+  {
+   "from": "50:1-56:77",
+   "to": "59:1-64:77",
+   "direction": "->"
+  }
+ ]
+}

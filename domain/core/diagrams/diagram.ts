@@ -1,7 +1,7 @@
 import { validateDiagramHighlights, type DiagramHighlight } from './diagramHighlight';
 import type { DeepReadonly } from '../immutability';
 import { validateDiagramJumps, type DiagramJump } from './diagramJump';
-import { buildDiagramContent, type DiagramContent } from './diagramContent';
+import { buildDiagramContent, contentParserVersion, type DiagramContent } from './diagramContent';
 import { validateDiagramLocalMappings } from './diagramMappings';
 import { mappingsForSelection } from './diagramSelection';
 import { asciiSha256 } from './asciiSha256';
@@ -55,7 +55,7 @@ export function validateDiagram(diagram: Diagram): void {
   if (!diagram || typeof diagram.diagramId !== 'string' || !diagram.diagramId.startsWith('diagram-') || typeof diagram.revisionId !== 'string' || !diagram.revisionId.startsWith('diagram-revision-') || typeof diagram.id !== 'string' || !diagram.id || !Number.isInteger(diagram.revision) || diagram.revision < 0 || !diagram.content) throw new Error('Invalid diagram');
   if (['ascii','mappings','diagramContent','structureKind'].some(key => Object.hasOwn(diagram,key))) throw new Error('Diagram data must live in content and sourceContext');
   const { content, sourceContext: source } = diagram;
-  const canonical = buildDiagramContent(content.ascii, `${diagram.id}:${diagram.revision}`, content.structure.kind, content.structure.kind === 'tree' ? content.structure.parserVersion : undefined);
+  const canonical = buildDiagramContent(content.ascii, `${diagram.id}:${diagram.revision}`, content.structure.kind, contentParserVersion(content.structure));
   if (JSON.stringify(content) !== JSON.stringify(canonical)) throw new Error('Invalid diagram content revision or parsed structure');
   if (!source || !source.evidence || !Array.isArray(source.mappings) || source.contentHash !== asciiSha256(content.ascii)) throw new Error('Diagram source context does not match content');
   if (source.binding) validateSourceBinding(source.binding);

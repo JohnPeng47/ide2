@@ -1,0 +1,99 @@
+{
+ "boxes": [
+  {
+   "id": "1:1-1:24",
+   "text": "[C] FloatingBox variants",
+   "rect": {
+    "line1": 1,
+    "col1": 1,
+    "line2": 1,
+    "col2": 24
+   }
+  },
+  {
+   "id": "3:1-4:42",
+   "text": "FloatingBox\nFloatingPane OR derived FloatingBoxArrow",
+   "rect": {
+    "line1": 3,
+    "col1": 1,
+    "line2": 4,
+    "col2": 42
+   }
+  },
+  {
+   "id": "5:1-11:58",
+   "text": "DisplayState\nrootIds + nodes: Record<id, FloatingPane>\nDisplayNodeBase\nid / childIds / expansion / expandedGeometry?\nposition(x,y) + bounds(width,height): CSS pixels\ncoordinateSpace: canvas | viewport\nplacement: automatic | manual; sizing: content | fixed",
+   "rect": {
+    "line1": 5,
+    "col1": 1,
+    "line2": 11,
+    "col2": 58
+   }
+  },
+  {
+   "id": "12:7-15:62",
+   "text": "selection: SelectionRegion\nsource box/content/revision/ASCII + rect + selectedIds\nstacked | chained; activeChildId?\ncaptured context; membership in SelectionState",
+   "rect": {
+    "line1": 12,
+    "col1": 7,
+    "line2": 15,
+    "col2": 62
+   },
+   "parent": "5:1-11:58"
+  },
+  {
+   "id": "16:7-18:57",
+   "text": "projection: ProjectedPane\ntitle / projectionId? / source,target revision?\ncall-tree | compaction | source-code | code-panel",
+   "rect": {
+    "line1": 16,
+    "col1": 7,
+    "line2": 18,
+    "col2": 57
+   },
+   "parent": "5:1-11:58"
+  },
+  {
+   "id": "19:7-21:37",
+   "text": "conversation: ConversationPane\nthread / draft / canvasAnchor\ncompact | floating | docked",
+   "rect": {
+    "line1": 19,
+    "col1": 7,
+    "line2": 21,
+    "col2": 37
+   },
+   "parent": "5:1-11:58"
+  },
+  {
+   "id": "22:7-23:34",
+   "text": "detail: DetailPane\ntitle / ascii / sectionId?",
+   "rect": {
+    "line1": 22,
+    "col1": 7,
+    "line2": 23,
+    "col2": 34
+   },
+   "parent": "5:1-11:58"
+  },
+  {
+   "id": "24:1-25:48",
+   "text": "Derived arrows\ndocument.edges -> drawEdge -> FloatingBoxArrow",
+   "rect": {
+    "line1": 24,
+    "col1": 1,
+    "line2": 25,
+    "col2": 48
+   }
+  },
+  {
+   "id": "26:1-29:55",
+   "text": "Geometry lifecycle\ncollapse saves expandedGeometry -> expand restores\nauto selection -> grid region; projection -> owner\nconversation -> anchor/presentation; otherwise stored",
+   "rect": {
+    "line1": 26,
+    "col1": 1,
+    "line2": 29,
+    "col2": 55
+   }
+  }
+ ],
+ "edges": []
+}

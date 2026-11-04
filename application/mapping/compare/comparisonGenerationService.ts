@@ -1,14 +1,15 @@
+import { comparisonManifest, comparisonReportPromptVersion, promptExperimentPrompt, resolveComparisonReport } from '../../../domain/mapping/compare/comparisonReport';
 import { generatedWorkflow } from '../../../domain/core/diagrams/generatedCanvas';
 import { ApplicationError } from '../../core/errors';
 import { sha256 } from '../../../domain/core/sha256';
-import { generateComparisonSchema, generatedComparisonsSchema, summarizeComparisonRun, type ComparisonRun, type ComparisonInputDiagram, type GenerateComparison } from '../../../domain/mapping/compare/comparisonGeneration';
+import { comparisonPrompt, generateComparisonSchema, generatedComparisonsSchema, summarizeComparisonRun, type ComparisonRun, type ComparisonInputDiagram, type GenerateComparison } from '../../../domain/mapping/compare/comparisonGeneration';
 import { diagramTargets, type CompareSessionService } from './compareSessionService';
 
 export interface ComparisonRunStore {
   list(): Promise<ComparisonRun[]>; read(id: string): Promise<ComparisonRun | null>; save(run: ComparisonRun): Promise<void>; delete(id: string): Promise<void>;
 }
 export interface ComparisonRuntime {
-  generate(input: { diagrams: ComparisonInputDiagram[]; model: string; effort: string; signal: AbortSignal }): Promise<{ output: unknown; usage?: Record<string, number> }>;
+  generate(input: { diagrams: ComparisonInputDiagram[]; model: string; effort: string; signal: AbortSignal; evaluationPrompt?: string; experiment?: GenerateComparison['experiment']; canvases?: ComparisonRun['canvases'] }): Promise<{ output: unknown; usage?: Record<string, number> }>;
 }
 export class ComparisonGenerationService {
   private deleted = new Set<string>();
@@ -22,6 +23,7 @@ export class ComparisonGenerationService {
       for (const run of runs) if (run.status === 'queued' || run.status === 'generating') {
         // A crash after publishing the session must not lose the successful result.
         const saved = await comparisons.read(run.id).catch(() => undefined);
+        if (run.report) { await store.save({ ...run, status: 'finished', completedAt: run.completedAt ?? new Date().toISOString() }); continue; }
         await store.save({ ...run, status: saved ? 'finished' : 'failed', completedAt: new Date().toISOString(),
           ...(saved ? { sessionId: saved.id } : { error: 'Server restarted during comparison. Start a new run to retry.' }) });
       }
@@ -70,6 +72,8 @@ export class ComparisonGenerationService {
     if (diagrams.length > 80 || diagrams.reduce((sum, d) => sum + d.ascii.length, 0) > 2_000_000)
       throw new ApplicationError('invalid-input', 'Select fewer or smaller diagrams.');
     const run: ComparisonRun = { id: input.requestId, request: input, requestHash, ...captured, diagrams,
+      evaluationPromptVersion: input.experiment ? comparisonReportPromptVersion : 1,
+      evaluationPrompt: input.experiment ? promptExperimentPrompt(input.experiment, comparisonManifest(captured.canvases, input.experiment), diagrams, captured.canvases) : comparisonPrompt(diagrams),
       status: 'queued', createdAt: new Date().toISOString() };
     await this.store.save(run);
     const abort = new AbortController(); this.running.set(run.id, abort);
@@ -89,8 +93,13 @@ export class ComparisonGenerationService {
   private async execute(run: ComparisonRun, signal: AbortSignal) {
     try {
       run.status = 'generating'; await this.persist(run);
-      const result = await this.runtime.generate({ diagrams: run.diagrams, model: run.request.model, effort: run.request.effort, signal });
+      const result = await this.runtime.generate({ diagrams: run.diagrams, model: run.request.model, effort: run.request.effort, signal, evaluationPrompt: run.evaluationPrompt, experiment: run.request.experiment, canvases: run.canvases });
       signal.throwIfAborted();
+      if (run.request.experiment) {
+        run.report = resolveComparisonReport(result.output, run.canvases, run.request.experiment, run.diagrams);
+        run.status = 'finished'; run.usage = result.usage; run.completedAt = new Date().toISOString();
+        await this.persist(run); return;
+      }
       const output = generatedComparisonsSchema.parse(result.output), used = new Set<string>();
       const side = (target: typeof output.comparisons[number]['A']) => {
         const diagram = run.diagrams.find(diagram => diagram.id === target.diagram);

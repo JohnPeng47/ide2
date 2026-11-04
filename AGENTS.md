@@ -57,3 +57,8 @@ Call them directly through MCP, outside `exec.code`.
    `update_diagram_change_session` with `expectedVersion` from the read's session
    `version`, a new `requestId`, and `diffTree: {expectedRevisionId, ascii?, mappings}`.
    Use the read's `diffTree.revisionId` and supply the complete mapping list.
+
+## Eval prompts
+
+- Write eval-specific instructions directly in the versioned prompt; do not use a generic `{{task}}` variable.
+- State template usage, input files, and generation constraints explicitly in the visible prompt; do not inject hidden instructions at runtime.

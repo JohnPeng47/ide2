@@ -1,0 +1,477 @@
+{
+ "boxes": [
+  {
+   "id": "1:1-1:11",
+   "text": "MappingPage",
+   "rect": {
+    "line1": 1,
+    "col1": 1,
+    "line2": 1,
+    "col2": 11
+   }
+  },
+  {
+   "id": "1:42-1:72",
+   "text": "baseline 03f2168, before tldraw",
+   "rect": {
+    "line1": 1,
+    "col1": 42,
+    "line2": 1,
+    "col2": 72
+   }
+  },
+  {
+   "id": "3:1-3:24",
+   "text": "MappingPocPage(services)",
+   "rect": {
+    "line1": 3,
+    "col1": 1,
+    "line2": 3,
+    "col2": 24
+   }
+  },
+  {
+   "id": "5:7-5:37",
+   "text": "MappingServicesContext.Provider",
+   "rect": {
+    "line1": 5,
+    "col1": 7,
+    "line2": 5,
+    "col2": 37
+   },
+   "parent": "3:1-3:24"
+  },
+  {
+   "id": "8:7-10:78",
+   "text": "MappingWorkspacePage\nservices: diagrams / canvasHistory / workspaceStorage\npage state: activeId, catalog snapshot, transfers, busy, changeMode",
+   "rect": {
+    "line1": 8,
+    "col1": 7,
+    "line2": 10,
+    "col2": 78
+   }
+  },
+  {
+   "id": "15:3-16:22",
+   "text": "CanvasWorkspace\ndrafts + controllers",
+   "rect": {
+    "line1": 15,
+    "col1": 3,
+    "line2": 16,
+    "col2": 22
+   }
+  },
+  {
+   "id": "20:13-20:26",
+   "text": "onPersist(ids)",
+   "rect": {
+    "line1": 20,
+    "col1": 13,
+    "line2": 20,
+    "col2": 26
+   },
+   "parent": "15:3-16:22"
+  },
+  {
+   "id": "15:28-16:52",
+   "text": "SourcePaneViewState\nlive pane scroll + camera",
+   "rect": {
+    "line1": 15,
+    "col1": 28,
+    "line2": 16,
+    "col2": 52
+   }
+  },
+  {
+   "id": "15:60-16:78",
+   "text": "WorkspaceStorage\nload / save / flush",
+   "rect": {
+    "line1": 15,
+    "col1": 60,
+    "line2": 16,
+    "col2": 78
+   }
+  },
+  {
+   "id": "20:32-21:66",
+   "text": "WorkspacePersistence\nlive view captures + history deltas",
+   "rect": {
+    "line1": 20,
+    "col1": 32,
+    "line2": 21,
+    "col2": 66
+   }
+  },
+  {
+   "id": "20:57-20:69",
+   "text": "RecordStorage",
+   "rect": {
+    "line1": 20,
+    "col1": 57,
+    "line2": 20,
+    "col2": 69
+   }
+  },
+  {
+   "id": "24:3-26:60",
+   "text": "CanvasDraft = metadata + CanvasSession\nname / savedName / savedScene / savedEdges / revisionId\nrepresentationId? / hidden? / busy / viewport? / focusBox?",
+   "rect": {
+    "line1": 24,
+    "col1": 3,
+    "line2": 26,
+    "col2": 60
+   }
+  },
+  {
+   "id": "29:3-30:66",
+   "text": "CanvasSession\ncontroller owns domain state; readable stores publish references",
+   "rect": {
+    "line1": 29,
+    "col1": 3,
+    "line2": 30,
+    "col2": 66
+   }
+  },
+  {
+   "id": "32:13-35:60",
+   "text": "MappingDocumentController [D]\nsnapshot: contextId, canvasRevisionId, version\ndocument, canvas, canUndo, canRedo\ncell?, endpointBounds?",
+   "rect": {
+    "line1": 32,
+    "col1": 13,
+    "line2": 35,
+    "col2": 60
+   },
+   "parent": "29:3-30:66"
+  },
+  {
+   "id": "37:13-37:26",
+   "text": "document store",
+   "rect": {
+    "line1": 37,
+    "col1": 13,
+    "line2": 37,
+    "col2": 26
+   },
+   "parent": "29:3-30:66"
+  },
+  {
+   "id": "37:50-37:66",
+   "text": "search / explorer",
+   "rect": {
+    "line1": 37,
+    "col1": 50,
+    "line2": 37,
+    "col2": 66
+   }
+  },
+  {
+   "id": "38:13-38:53",
+   "text": "presentation store: display, diagramViews",
+   "rect": {
+    "line1": 38,
+    "col1": 13,
+    "line2": 38,
+    "col2": 53
+   },
+   "parent": "29:3-30:66"
+  },
+  {
+   "id": "39:13-39:47",
+   "text": "selection store: ordered membership",
+   "rect": {
+    "line1": 39,
+    "col1": 13,
+    "line2": 39,
+    "col2": 47
+   },
+   "parent": "29:3-30:66"
+  },
+  {
+   "id": "40:13-40:51",
+   "text": "controls store: focus + action surfaces",
+   "rect": {
+    "line1": 40,
+    "col1": 13,
+    "line2": 40,
+    "col2": 51
+   },
+   "parent": "29:3-30:66"
+  },
+  {
+   "id": "41:13-41:57",
+   "text": "geometry store: cell, endpointBounds, version",
+   "rect": {
+    "line1": 41,
+    "col1": 13,
+    "line2": 41,
+    "col2": 57
+   },
+   "parent": "29:3-30:66"
+  },
+  {
+   "id": "42:13-42:63",
+   "text": "status store: isDirty, sceneDirty, canUndo, canRedo",
+   "rect": {
+    "line1": 42,
+    "col1": 13,
+    "line2": 42,
+    "col2": 63
+   },
+   "parent": "29:3-30:66"
+  },
+  {
+   "id": "44:19-44:70",
+   "text": "dirty = scene OR edges OR name differs from baseline",
+   "rect": {
+    "line1": 44,
+    "col1": 19,
+    "line2": 44,
+    "col2": 70
+   },
+   "parent": "42:13-42:63"
+  },
+  {
+   "id": "45:19-45:73",
+   "text": "checkpoint changes -> onCommit -> workspace persistence",
+   "rect": {
+    "line1": 45,
+    "col1": 19,
+    "line2": 45,
+    "col2": 73
+   },
+   "parent": "42:13-42:63"
+  },
+  {
+   "id": "47:3-47:27",
+   "text": "CONTROLLER-OWNED SNAPSHOT",
+   "rect": {
+    "line1": 47,
+    "col1": 3,
+    "line2": 47,
+    "col2": 27
+   }
+  },
+  {
+   "id": "49:5-57:36",
+   "text": "MappingGridDocument\nscene: LineGridScene [A]\nroot: GridBox hierarchy\ncontents: id -> Diagram [B]\nedges: DiagramConnection[]\njumps?: CanvasJump[]\nsections: content id -> sections",
+   "rect": {
+    "line1": 49,
+    "col1": 5,
+    "line2": 57,
+    "col2": 36
+   },
+   "parent": "47:3-47:27"
+  },
+  {
+   "id": "49:39-62:77",
+   "text": "MappingCanvasState\nselection: SelectionState\nitems: whole instance OR region\nregion: ASCII, rect, selected node IDs\ndiagramViews: per-instance tree folds\ncontent revision + collapsed IDs\ndisplay: DisplayState [C]\nrootIds + nodes of FloatingPane\ncontrols: activeBoxId, selectionFocusId\nactiveThreadId, surfaces",
+   "rect": {
+    "line1": 49,
+    "col1": 39,
+    "line2": 62,
+    "col2": 77
+   },
+   "parent": "47:3-47:27"
+  },
+  {
+   "id": "67:3-68:54",
+   "text": "canvasDisplayNodes(document, canvas, version)\nREAD-ONLY REGISTRY: grid + floating + derived arrows",
+   "rect": {
+    "line1": 67,
+    "col1": 3,
+    "line2": 68,
+    "col2": 54
+   }
+  },
+  {
+   "id": "70:13-71:68",
+   "text": "grid:<boxId>       diagram / group; bounds in cells\nchildIds, content, contentNodes, folds",
+   "rect": {
+    "line1": 70,
+    "col1": 13,
+    "line2": 71,
+    "col2": 68
+   },
+   "parent": "67:3-68:54"
+  },
+  {
+   "id": "72:13-73:77",
+   "text": "floating:<id>      selection / projection / conversation / detail\nposition + bounds in unscaled CSS pixels",
+   "rect": {
+    "line1": 72,
+    "col1": 13,
+    "line2": 73,
+    "col2": 77
+   },
+   "parent": "67:3-68:54"
+  },
+  {
+   "id": "74:13-74:74",
+   "text": "floating:edge:<id> arrow from document.edges + anchor geometry",
+   "rect": {
+    "line1": 74,
+    "col1": 13,
+    "line2": 74,
+    "col2": 74
+   },
+   "parent": "67:3-68:54"
+  },
+  {
+   "id": "77:3-81:68",
+   "text": "DraggableDiagramCanvas -> MappingPocSelectionCanvas(session)\ncamera changes -> SourcePaneViewState; UI commands -> controller\nvisited documents stay mounted; inactive/hidden views are hidden\nDiagramEditComposer <-> DiagramEditCoordinator\nDiagramSearchPanel + MappingDiagramExplorer + ChangeSessionPreview",
+   "rect": {
+    "line1": 77,
+    "col1": 3,
+    "line2": 81,
+    "col2": 68
+   }
+  },
+  {
+   "id": "83:3-84:68",
+   "text": "PAGE LIFECYCLE / DURABILITY\nloadProjectRepresentations('current') + storage.load() in parallel",
+   "rect": {
+    "line1": 83,
+    "col1": 3,
+    "line2": 84,
+    "col2": 68
+   }
+  },
+  {
+   "id": "86:13-87:70",
+   "text": "restore workspace OR open settled catalog revision\ndocumentFromRevision + historyFromRevision -> session seed",
+   "rect": {
+    "line1": 86,
+    "col1": 13,
+    "line2": 87,
+    "col2": 70
+   },
+   "parent": "83:3-84:68"
+  },
+  {
+   "id": "89:13-91:67",
+   "text": "save project diagram: capture document + history + name\nsaveMappingProjectDiagram(expectedRevisionId)\nacknowledgement updates the captured saved baseline",
+   "rect": {
+    "line1": 89,
+    "col1": 13,
+    "line2": 91,
+    "col2": 67
+   },
+   "parent": "83:3-84:68"
+  },
+  {
+   "id": "93:13-94:71",
+   "text": "save/restore/import/export workspace: schemaVersion 3\ndocuments + canvas views + histories + viewport + transfers",
+   "rect": {
+    "line1": 93,
+    "col1": 13,
+    "line2": 94,
+    "col2": 71
+   },
+   "parent": "83:3-84:68"
+  },
+  {
+   "id": "96:13-97:70",
+   "text": "copy/move selected diagrams; coordinated undo/redo [E]\nprepare both histories -> storage.save -> installWorkspace",
+   "rect": {
+    "line1": 96,
+    "col1": 13,
+    "line2": 97,
+    "col2": 70
+   },
+   "parent": "83:3-84:68"
+  },
+  {
+   "id": "99:13-99:72",
+   "text": "useAgentCanvasBridge -> handleAgentCommand -> controller [D]",
+   "rect": {
+    "line1": 99,
+    "col1": 13,
+    "line2": 99,
+    "col2": 72
+   },
+   "parent": "83:3-84:68"
+  },
+  {
+   "id": "101:1-102:66",
+   "text": "Sources: MappingPage.tsx, canvasWorkspace.ts, canvasSession.ts\nmappingGrid.ts, mappingWorkspace.ts, canvasDisplayNode.ts",
+   "rect": {
+    "line1": 101,
+    "col1": 1,
+    "line2": 102,
+    "col2": 66
+   }
+  }
+ ],
+ "edges": [
+  {
+   "from": "3:1-3:24",
+   "to": "8:7-10:78",
+   "direction": "->"
+  },
+  {
+   "from": "8:7-10:78",
+   "to": "15:3-16:22",
+   "direction": "->"
+  },
+  {
+   "from": "8:7-10:78",
+   "to": "15:28-16:52",
+   "direction": "->"
+  },
+  {
+   "from": "8:7-10:78",
+   "to": "15:60-16:78",
+   "direction": "->"
+  },
+  {
+   "from": "15:28-16:52",
+   "to": "20:32-21:66",
+   "direction": "->"
+  },
+  {
+   "from": "15:60-16:78",
+   "to": "20:57-20:69",
+   "direction": "->"
+  },
+  {
+   "from": "20:13-20:26",
+   "to": "20:32-21:66",
+   "direction": "->"
+  },
+  {
+   "from": "20:32-21:66",
+   "to": "20:57-20:69",
+   "direction": "->"
+  },
+  {
+   "from": "15:3-16:22",
+   "to": "24:3-26:60",
+   "direction": "->"
+  },
+  {
+   "from": "24:3-26:60",
+   "to": "29:3-30:66",
+   "direction": "->"
+  },
+  {
+   "from": "37:13-37:26",
+   "to": "37:50-37:66",
+   "direction": "->"
+  },
+  {
+   "from": "49:5-57:36",
+   "to": "67:3-68:54",
+   "direction": "->"
+  },
+  {
+   "from": "49:39-62:77",
+   "to": "67:3-68:54",
+   "direction": "->"
+  },
+  {
+   "from": "67:3-68:54",
+   "to": "77:3-81:68",
+   "direction": "->"
+  }
+ ]
+}

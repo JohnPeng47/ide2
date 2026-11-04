@@ -247,17 +247,19 @@ export class CanvasCatalogStore {
     await writeJsonAtomic(this.representationCatalogPath(), await this.diagramPersistence.persist(catalog));
   }
 
-  archiveRepresentation(projectId: string, representationId: string) {
-    return this.serialize(() => this.archiveRepresentationUnlocked(projectId, representationId));
+  archiveRepresentation(projectId: string, representationId: string, options?: { includeHistory?: boolean }) {
+    return this.serialize(() => this.archiveRepresentationUnlocked(projectId, representationId, options?.includeHistory !== false));
   }
 
   private async archiveRepresentationUnlocked(
     projectId: string,
-    representationId: string
+    representationId: string,
+    includeHistory: boolean
   ): Promise<ProjectRepresentationCatalogRecord> {
-    const catalog = await this.readRepresentationCatalog(projectId);
+    // Archiving only changes catalog metadata. Keep immutable history references encoded.
+    const catalog = await this.readStoredCatalog(projectId) ?? emptyRepresentationCatalog(projectId);
     const result = rules.archiveRepresentation(catalog, projectId, representationId, catalogEnvironment());
-    if (result !== catalog) await this.saveRepresentationCatalog(result);
-    return result;
+    if (result !== catalog) await writeJsonAtomic(this.representationCatalogPath(), result);
+    return includeHistory ? this.readRepresentationCatalog(projectId) : { ...result, revisions: {} };
   }
 }

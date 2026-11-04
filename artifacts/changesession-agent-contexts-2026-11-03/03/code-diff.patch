@@ -1,0 +1,2458 @@
+diff --git a/application/mapping/agent/sessionService.ts b/application/mapping/agent/sessionService.ts
+index 4dbf9beb..0917e653 100644
+--- a/application/mapping/agent/sessionService.ts
++++ b/application/mapping/agent/sessionService.ts
+@@ -1,3 +1,21 @@
++import { getDiagramRevision } from '../../../domain/core/diagrams/diagramRevisionStore';
++import { presentationHighlights } from '../../../domain/core/presentation/diagramPresentation';
++import { createStoredDiagram, reviseStoredDiagram } from '../../../domain/core/diagrams/diagramRevisionStore';
++import { DiagramBatchService } from './diagramBatchService';
++import { isDiagramTool, directBatchSchemas, type DiagramTool, type DiagramBatchApplication } from '../../../domain/mapping/agent/diagramBatch';
++import { reviewRevision, reviewRevisionIds } from '../../../domain/core/diagrams/diagramRevisionReview';
++import { canvasMutationResult, type CanvasMutationResult } from '../../../domain/mapping/agent/mutationReceipt';
++import { ChatCanvasBindings } from './chatBindings';
++import { CanvasReadAliases } from './readAliases';
++import { currentCanvasRead } from '../../../domain/mapping/agent/currentCanvasRead';
++import { rebaseDiagramHighlights } from '../../../domain/core/diagrams/diagramHighlight';
++import { correspondingNodes } from '../../../domain/core/diagrams/diagramRevisionEditor';
++import { summarizeChangeSession } from '../../../domain/mapping/changes/diagramChangeSession';
++import { CanvasApiProjection } from './apiProjection';
++import { diagramContentNodes } from '../../../domain/core/diagrams/diagramContentNodes';
++import { compileDiagramAgentContext, diagramContextSourceFingerprint, loadDiagramAgentContext, storeDiagramAgentContext,
++  type DiagramAgentContextStore } from '../../../domain/core/diagrams/diagramAgentContext';
++import type { DiagramJump } from '../../../domain/core/diagrams/diagramJump';
+ import type { AgentContextService } from './agentContextService';
+ import { DiagramEditService } from './diagramEditService';
+ import { DefaultCanvasHistoryService } from '../../../domain/core/diagrams/canvasHistoryService';
+@@ -5,7 +23,7 @@ import { documentFromRevision } from '../../../domain/core/diagrams/projectDiagr
+ import type { ChangeSessionService } from '../changes/changeSessionService';
+ import { rebaseDiagramJumps } from '../../../domain/core/diagrams/diagramJump';
+ import { diagramSource, type Diagram, type DiagramSourceBinding } from '../../../domain/core/diagrams/diagram';
+-import { RevisionedDiagramService, type DiagramService } from '../../../domain/core/diagrams/diagramService';
++import type { DiagramGenerator } from '../../../domain/core/diagrams/diagramGeneration';
+ import { createHash, randomUUID } from 'node:crypto';
+ import type { CanvasSessionPort, AgentExecRuntime } from './ports';
+ import { agentToolSchemas, canvasApiSpec, canvasMethods, type AgentToolName, type LiveDocumentSnapshot } from '../../../domain/mapping/agent/contracts';
+@@ -19,6 +37,7 @@ import type { DiagramRepository } from '../../core/ports/diagramRepository';
+ 
+ type EditResult = ReturnType<MappingDocumentController['applyUpdate']>;
+ interface ExecStep {
++  operation?: DiagramOperation;
+   signature: string;
+   execute: () => Promise<unknown>;
+   outcome?: { value: unknown } | { error: unknown };
+@@ -32,46 +51,118 @@ interface ExecRun {
+   lastEdit?: EditResult;
+   createdDocument: boolean;
+   steps: ExecStep[];
++  batches: Map<number, { indices: number[]; expectedVersion: number; result?: CanvasMutationResult; error?: unknown }>;
+ }
+-const canvasTimeout = (error: unknown) => error instanceof Error && error.message.includes('CANVAS_TIMEOUT');
++const canvasTimeout = (error: unknown) => error instanceof Error && /CANVAS_TIMEOUT|CANVAS_REPLY_TOO_LARGE|CANVAS_REPLY_REJECTED/.test(error.message);
+ 
+ export class AgentDiagrammingSessionService {
++  readonly chatBindings = new ChatCanvasBindings();
++  private readonly aliases = new CanvasReadAliases();
+   private readonly edits?: DiagramEditService;
++  private readonly batches?: DiagramBatchService;
+   private sessions = new Map<string, { canvasId: string; documentId: string; changeSessionId?: string }>();
+   private saves = new Map<string, Promise<unknown>>();
+   private execRuns = new Map<string, ExecRun>();
+   private requests = new Map<string, { signature: string; promise: Promise<unknown> }>();
++  private diagramContextMutations = new Map<string, { signature: string; canvasId: string; documentId: string; payload: Record<string, unknown> }>();
+   constructor(readonly bridge: CanvasSessionPort, private readonly diagrams: MappingDiagramService,
+-    private readonly store: Pick<DiagramRepository, 'loadProject' | 'projectCatalogs'>, private readonly runtime: AgentExecRuntime, readonly changes?: ChangeSessionService,
+-    editDiagrams?: DiagramService, private readonly agentContexts?: AgentContextService) {
+-    if (editDiagrams) this.edits = new DiagramEditService(editDiagrams, {
+-      snapshot: sessionId => this.snapshot(sessionId),
+-      apply: async (sessionId, input) => {
++    private readonly store: Pick<DiagramRepository, 'loadProject' | 'projectCatalogs' | 'repositories'>, private readonly runtime: AgentExecRuntime, readonly changes?: ChangeSessionService,
++    editDiagrams?: DiagramGenerator, private readonly agentContexts?: AgentContextService, readonly projection = new CanvasApiProjection(),
++    private readonly diagramContextStore?: DiagramAgentContextStore) {
++    if (editDiagrams) {
++      const canvas = {
++        snapshot: (sessionId: string, revisionIds?: string[]) => this.snapshot(sessionId, undefined, { revisionIds }),
++        apply: async (sessionId: string, input: import('../../../domain/mapping/agent/diagramEdit').DiagramRevisionApplication) => {
++          const session = this.session(sessionId);
++          return await this.bridge.dispatch(session.canvasId, { method: 'apply-diagram-revision', documentId: session.documentId, payload: input }) as { version: number; unresolvedEdgeIds: string[] };
++        },
++        create: async (sessionId: string, input: { requestId: string; expectedVersion: number; diagrams: import('../../../domain/mapping/agent/diagramEdit').DiagramCreation[] }) => {
++          const session = this.session(sessionId);
++          return await this.bridge.dispatch(session.canvasId, { method: 'create-diagrams', documentId: session.documentId, payload: input }) as { version: number };
++        },
++        batch: async (sessionId: string, input: DiagramBatchApplication) => {
++          const session = this.session(sessionId);
++          return await this.bridge.dispatch(session.canvasId, { method: 'apply-diagram-batch', documentId: session.documentId, payload: input }) as { version: number; unresolvedEdgeIds: string[] };
++        }
++      };
++      this.edits = new DiagramEditService(editDiagrams, canvas, this.diagramContextStore);
++      this.batches = new DiagramBatchService(editDiagrams, canvas, this.diagramContextStore, (sessionId, contextId) => {
+         const session = this.session(sessionId);
+-        return await this.bridge.dispatch(session.canvasId, { method: 'apply-diagram-revision', documentId: session.documentId, payload: input }) as { version: number; unresolvedEdgeIds: string[] };
+-      }
+-    });
++        if (!this.agentContexts) throw Error('AGENT_CONTEXT_UNAVAILABLE');
++        return this.agentContexts.resolve({ workspaceInstanceId: session.canvasId, documentId: session.documentId }, contextId);
++      });
++    }
++  }
++  dispose() { this.edits?.dispose(); this.batches?.dispose(); }
++  async callBound(token: string, name: AgentToolName, raw: unknown) {
++    const binding = this.chatBindings.capture(token, !['create-agent-context', 'list-agent-contexts', 'read-agent-context'].includes(name)), target = binding.target!;
++    const input = { ...(raw as Record<string, unknown>) };
++    const targeted = ['exec', 'draw_diagram', 'save_diagram', 'set_diagram_source_mappings', 'edit-diagram', 'create-diagram', 'extend-diagram', 'diagram-agent-context', 'canvas-view'];
++    if (name === 'create_diagram_change_session' && !input.canvasId) input.canvasId = target.workspaceInstanceId;
++    if ((targeted.includes(name) || name === 'diagram-search' && !input.representationId) && !input.changeSessionId) {
++      if (!binding.attachment) binding.attachment = this.attach(target.workspaceInstanceId, target.documentId).then(result => result.sessionId)
++        .catch(error => { binding.attachment = undefined; throw error; });
++      const sessionId = await binding.attachment;
++      if (input.sessionId && this.binding(input.sessionId as string) !== this.binding(sessionId)) throw Error('CHAT_BINDING_MISMATCH: use the canvas captured for this turn');
++      input.sessionId = sessionId;
++    }
++    if (isDiagramTool(name)) return this.submitDirect(name, input, binding.readOnly);
++    return this.call(name, input, binding.readOnly);
+   }
+-  dispose() { this.edits?.dispose(); }
+-  async call(name: AgentToolName, raw: unknown): Promise<unknown> {
++  resolveDiagramArguments<T>(sessionId: string, raw: T): T {
++    const input = this.aliases.resolve(raw, this.binding(sessionId));
++    const walk = (value: unknown, key = ''): unknown => {
++      if (typeof value === 'string' && (key === 'contentNodeId' || key === 'contentNodeIds')) return this.projection.resolveAnchorId(value);
++      if (Array.isArray(value)) return value.map(item => walk(item, key));
++      if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, walk(v, k)]));
++      return value;
++    };
++    return walk(input) as T;
++  }
++  async submitDirect(name: DiagramTool, raw: unknown, readOnly = false) {
++    if (readOnly) throw Error('READ_ONLY: diagram submission requires Workspace access');
++    if (!this.batches) throw Error('Diagram submission unavailable');
++    const input = directBatchSchemas[name].parse(raw);
++    this.session(input.sessionId);
++    const resolved = this.resolveDiagramArguments(input.sessionId, input);
++    const run = this.batches.start(resolved, name, true);
++    return this.batches.wait(run.runId);
++  }
++  async call(name: AgentToolName, raw: unknown, readOnly = false): Promise<unknown> {
++    if (readOnly && !['list-agent-contexts', 'read-agent-context', 'exec', 'canvas-api-search', 'diagram-search', 'diagram-agent-context', 'canvas-view', 'list_repositories', 'edit-diagram-status', 'get_repository_diff_hunks', 'read_change_session_diff_tree'].includes(name)) throw Error('READ_ONLY: canvas mutation requires Workspace access');
+     const schema = agentToolSchemas[name];
+     if (!schema) throw new Error('Unknown agent tool');
+     const input = schema.parse(raw);
+-    if (name === 'edit-diagram' || name === 'edit-diagram-status' || name === 'cancel-diagram-edit') {
++    if (name === 'create-agent-context' || name === 'read-agent-context' || name === 'list-agent-contexts') {
++      const library = this.agentContexts?.library;
++      if (!library) throw Error('AGENT_CONTEXT_UNAVAILABLE: saved context library is unavailable');
++      if (name === 'create-agent-context') return library.create(input);
++      if (name === 'list-agent-contexts') return library.list(input);
++      return library.read(agentToolSchemas['read-agent-context'].parse(input).agentContextId);
++    }
++    if (name === 'canvas-view' && 'operation' in input && ['list', 'read'].includes(input.operation as string)) return this.execute(name, input, readOnly);
++    if (name === 'diagram-agent-context' && 'operation' in input && input.operation === 'read') return this.execute(name, input, readOnly);
++    if (name === 'edit-diagram' || name === 'create-diagram' || name === 'extend-diagram' || name === 'edit-diagram-status' || name === 'cancel-diagram-edit') {
+       if (!this.edits) throw Error('Diagram editing UNAVAILABLE in this runtime');
+-      if (name === 'edit-diagram') {
+-        const edit = agentToolSchemas['edit-diagram'].parse(input);
++      if (name === 'edit-diagram' || name === 'create-diagram' || name === 'extend-diagram') {
++        const candidate = input as { sessionId: string };
++        const edit = agentToolSchemas[name].parse(this.resolveDiagramArguments(candidate.sessionId, input));
+         const session = this.session(edit.sessionId); // Live attachment only; never creates a proposal.
++        if ('operations' in edit) {
++          if (!this.batches) throw Error('Diagram batches unavailable');
++          return this.batches.start(edit, name, false);
++        }
+         if (edit.agentContextId && !this.agentContexts) throw Error('AGENT_CONTEXT_UNAVAILABLE');
+-        const context = edit.agentContextId ? this.agentContexts!.get({ workspaceInstanceId: session.canvasId,
++        const context = edit.agentContextId ? await this.agentContexts!.resolve({ workspaceInstanceId: session.canvasId,
+           documentId: session.documentId }, edit.agentContextId) : undefined;
+-        return this.edits.start(edit, context);
++        return this.edits.start(edit, context, name);
+       }
+       const { runId } = agentToolSchemas['edit-diagram-status'].parse(input);
++      if (this.batches?.has(runId)) return name === 'edit-diagram-status' ? this.batches.get(runId) : this.batches.cancel(runId);
+       return name === 'edit-diagram-status' ? this.edits.get(runId) : this.edits.cancel(runId);
+     }
+     if ('requestId' in input) {
+-      const key = `${'changeSessionId' in input ? input.changeSessionId ?? '' : ''}:${name}:${'sessionId' in input ? input.sessionId ?? '' : ''}:${input.requestId}`;
++      const key = `${readOnly}:${'changeSessionId' in input ? input.changeSessionId ?? '' : ''}:${name}:${'sessionId' in input ? input.sessionId ?? '' : ''}:${input.requestId}`;
+       const signature = JSON.stringify(input), old = this.requests.get(key);
+       if (old) { if (old.signature !== signature) throw new Error('REQUEST_ID_CONFLICT'); return old.promise; }
+       if (name === 'exec') {
+@@ -80,34 +171,107 @@ export class AgentDiagrammingSessionService {
+         if (pending && pending.signature !== signature) throw new Error('REQUEST_ID_CONFLICT');
+       }
+       if (this.requests.size >= 2000) throw new Error('Request capacity reached; restart the backend before a new session');
+-      const execute = () => this.execute(name, input);
++      const execute = () => this.execute(name, input, readOnly);
+       const promise = ('changeSessionId' in input && input.changeSessionId && 'sessionId' in input && input.sessionId && name !== 'save_diagram'
+         ? this.changeService().request(input.changeSessionId, `${name}:${input.requestId}`, signature, execute) : execute()).catch(error => {
+         // The browser deduplicates request IDs too, so a lost acknowledgement can be recovered.
+-        if (canvasTimeout(error)) this.requests.delete(key);
++        if (canvasTimeout(error) || ['diagram-agent-context', 'canvas-view'].includes(name) && String(error).includes('PERSISTENCE_PENDING')) this.requests.delete(key);
+         throw error;
+       });
+       this.requests.set(key, { signature, promise });
++      // Pure exec reads have no mutation receipt to retain. Do not cache large read payloads.
++      void promise.then(result => {
++        if (name === 'exec' && result && typeof result === 'object' && 'version' in result && !('transaction' in result)) this.requests.delete(key);
++      }, () => {});
+       return promise;
+     }
+-    return this.execute(name, input);
++    return this.execute(name, input, readOnly);
+   }
+-  private async execute(name: AgentToolName, raw: unknown): Promise<unknown> {
++  private async execute(name: AgentToolName, raw: unknown, readOnly = false): Promise<unknown> {
++    const candidate = raw as { sessionId?: string; changeSessionId?: string };
++    if (candidate?.sessionId) raw = this.aliases.resolve(raw, this.binding(candidate.sessionId, candidate.changeSessionId));
++    if (name === 'list_repositories' || name === 'register_repository') {
++      if (!this.store.repositories) throw Error('Repository registry unavailable');
++      await this.diagrams.initialize();
++      return name === 'list_repositories' ? this.store.repositories.list()
++        : this.store.repositories.register(agentToolSchemas.register_repository.parse(raw));
++    }
++    if (name === 'get_repository_diff_hunks') return this.changeService().discoverHunks(agentToolSchemas[name].parse(raw));
++    if (name === 'read_change_session_diff_tree') return this.changeService().readDiffTree(agentToolSchemas[name].parse(raw));
+     if (name === 'create_diagram_change_session') return this.changeService().create(agentToolSchemas[name].parse(raw));
+-    if (name === 'update_diagram_change_session') return this.changeService().update(agentToolSchemas[name].parse(raw));
+-    if (name === 'accept_diagram_change_session') return this.changeService().accept(agentToolSchemas[name].parse(raw));
++    if (name === 'update_diagram_change_session') {
++      const input = agentToolSchemas[name].parse(raw);
++      const result = await this.changeService().update({ ...input,
++        ...(input.migrations ? { migrations: this.projection.migrations(input.migrations, true) } : {}) });
++      return { ...result, migrations: this.projection.migrations(result.migrations) };
++    }
++    if (name === 'accept_diagram_change_session') {
++      const result = await this.changeService().accept(agentToolSchemas[name].parse(raw));
++      return { ...result, migrations: this.projection.migrations(result.migrations) };
++    }
+     if (name === 'canvas-api-search') return canvasApiSpec(agentToolSchemas[name].parse(raw).query);
+     if (name === 'diagram-search') return this.search(agentToolSchemas[name].parse(raw));
+-    if (name === 'exec') return this.exec(agentToolSchemas[name].parse(raw));
++    if (name === 'canvas-view') {
++      const input = agentToolSchemas[name].parse(raw), session = this.session(input.sessionId);
++      if (!['list', 'read'].includes(input.operation)) {
++        if (readOnly) throw Error('READ_ONLY: CanvasView changes require Workspace access');
++        if (input.expectedVersion === undefined) throw Error('expectedVersion is required for CanvasView changes');
++      }
++      return this.bridge.dispatch(session.canvasId, { method: 'canvas-view', documentId: session.documentId, payload: input });
++    }
++    if (name === 'diagram-agent-context') {
++      const input = agentToolSchemas[name].parse(raw);
++      if (readOnly && input.operation !== 'read') throw Error('READ_ONLY: canvas mutation requires Workspace access');
++      const session = this.session(input.sessionId);
++      const mutationKey = JSON.stringify([input.sessionId, input.requestId]);
++      const prior = input.operation !== 'read' && this.diagramContextMutations.get(mutationKey);
++      if (prior) {
++        if (prior.signature !== JSON.stringify(input)) throw Error('REQUEST_ID_CONFLICT: diagram context arguments differ');
++        return this.bridge.dispatch(prior.canvasId, { method: 'apply-diagram-context', documentId: prior.documentId, payload: prior.payload });
++      }
++      const snapshot = await this.snapshot(input.sessionId);
++      const box = input.nodeId.startsWith('grid:') ? findBox(snapshot.document.scene.root, input.nodeId.slice(5)) : undefined;
++      const diagram = box?.kind === 'diagram' ? snapshot.document.scene.contents[box.contentId] : undefined;
++      if (!diagram) throw Error('Expected diagram GridBox');
++      const bound = snapshot.document.diagramContexts?.[diagram.diagramId];
++      if (input.operation === 'read') {
++        const materialized = bound ? await loadDiagramAgentContext(bound, this.diagramContextStore) : undefined;
++        const resolvedSnapshot = materialized && this.diagramContextStore?.resolve
++          ? await this.diagramContextStore.resolve(materialized) : undefined;
++        return { diagramId: diagram.diagramId, revisionId: diagram.revisionId,
++          version: snapshot.version, status: !bound ? 'absent' : bound.sourceFingerprint === diagramContextSourceFingerprint(diagram) ? 'ready' : 'stale',
++          backingRecordId: bound?.backingRecordId ?? null,
++          context: bound && materialized ? { diagramId: bound.diagramId, compiledFromRevisionId: bound.compiledFromRevisionId,
++            sourceFingerprint: bound.sourceFingerprint, contentHash: materialized.contentHash, snapshot: materialized, ...(resolvedSnapshot ? { resolvedSnapshot } : {}) } : null };
++      }
++      if (input.expectedVersion === undefined || !input.expectedRevisionId) throw Error('Expected version and revision are required for context changes');
++      if (snapshot.version !== input.expectedVersion || diagram.revisionId !== input.expectedRevisionId)
++        throw Error('VERSION_CONFLICT: read the diagram again');
++      if (input.operation === 'prepare' && !this.diagramContextStore) throw Error('AGENT_CONTEXT_STORAGE_UNAVAILABLE');
++      const context = input.operation === 'prepare' ? await storeDiagramAgentContext(compileDiagramAgentContext(diagram), this.diagramContextStore!) : undefined;
++      if (this.diagramContextMutations.size >= 500) throw Error('Diagram context request capacity reached');
++      const payload = { operation: input.operation, requestId: input.requestId, expectedVersion: input.expectedVersion,
++        expectedRevisionId: input.expectedRevisionId, nodeId: input.nodeId, diagramId: diagram.diagramId, ...(context ? { context } : {}) };
++      this.diagramContextMutations.set(mutationKey, { signature: JSON.stringify(input), canvasId: session.canvasId, documentId: session.documentId, payload });
++      return this.bridge.dispatch(session.canvasId, { method: 'apply-diagram-context', documentId: session.documentId, payload });
++    }
++    if (name === 'exec') return this.exec(agentToolSchemas[name].parse(raw), readOnly);
+     if (name === 'save_diagram') return this.save(agentToolSchemas[name].parse(raw));
+     if (name === 'set_diagram_source_mappings') {
+       const { sessionId, changeSessionId, expectedVersion, requestId, ...fields } = agentToolSchemas[name].parse(raw);
+-      return this.apply(sessionId, expectedVersion, [{ method: 'setSourceMappings', ...fields }], requestId, changeSessionId);
++      return this.projection.result(await this.apply(sessionId, expectedVersion, [{ method: 'setSourceMappings', ...fields, expectedContentHash: await this.mappingHash(sessionId, changeSessionId, fields.nodeId, expectedVersion) }], requestId, changeSessionId) as EditResult);
+     }
+     const input = agentToolSchemas.draw_diagram.parse(raw);
+     const operation = input.nodeId ? { method: 'replace', nodeId: input.nodeId, ...this.content(input) }
+       : { method: 'diagram-create', id: `diagram-${randomUUID()}`, parentId: input.parentId, position: input.position, ...this.content(input) };
+-    return this.apply(input.sessionId, input.expectedVersion, [operation as DiagramOperation], input.requestId, input.changeSessionId);
++    return this.projection.result(await this.apply(input.sessionId, input.expectedVersion, [operation as DiagramOperation], input.requestId, input.changeSessionId) as EditResult);
++  }
++  private async requireRepository(id?: string) {
++    if (!this.store.repositories) { if (id) throw Error('Repository registry unavailable'); return undefined; }
++    const repositories = await this.store.repositories.list();
++    const selected = id ? repositories.find(repo => repo.id === id) : repositories.length === 1 ? repositories[0] : undefined;
++    if (!selected && (id || repositories.length)) throw Error('Specify a registered repositoryId');
++    return selected?.id;
+   }
+   private changeService() { if (!this.changes) throw new Error('Change sessions unavailable'); return this.changes; }
+   private content(input: { ascii: string; structureKind?: 'diagram'|'tree'; mappings?: unknown; evidence?: unknown; source?: DiagramSourceBinding }) {
+@@ -119,10 +283,14 @@ export class AgentDiagrammingSessionService {
+     if (!session || !session.changeSessionId && !this.bridge.list().some(canvas => canvas.canvasId === session.canvasId)) throw new Error('SESSION_UNAVAILABLE: attach to a live canvas');
+     return session;
+   }
+-  private async snapshot(sessionId: string, changeSessionId?: string): Promise<LiveDocumentSnapshot> {
++  private binding(sessionId: string, changeSessionId?: string) {
++    const session = this.session(sessionId, changeSessionId);
++    return JSON.stringify([session.canvasId, session.documentId, changeSessionId]);
++  }
++  private async snapshot(sessionId: string, changeSessionId?: string, options?: { revisionIds?: string[]; currentRevisions?: boolean }): Promise<LiveDocumentSnapshot> {
+     const session = this.session(sessionId, changeSessionId);
+     if (session.changeSessionId) return this.changeService().snapshot(session.changeSessionId, session.documentId);
+-    return await this.bridge.dispatch(session.canvasId, { method: 'snapshot', documentId: session.documentId }) as LiveDocumentSnapshot;
++    return await this.bridge.dispatch(session.canvasId, { method: 'snapshot', documentId: session.documentId, payload: options }) as LiveDocumentSnapshot;
+   }
+   private async attach(canvasId: string, documentId: string, changeSessionId?: string) {
+     const canvases = changeSessionId ? await this.changeService().descriptor(changeSessionId) : this.bridge.list();
+@@ -133,26 +301,44 @@ export class AgentDiagrammingSessionService {
+     if (this.sessions.size >= 500) throw new Error('Session capacity reached');
+     const sessionId = randomUUID(); this.sessions.set(sessionId, { canvasId, documentId, changeSessionId });
+     try {
+-      const snapshot = await this.snapshot(sessionId, changeSessionId);
+-      return { sessionId, canvasId, documentId, changeSessionId, version: snapshot.version };
++      const snapshot = changeSessionId ? await this.snapshot(sessionId, changeSessionId) : await this.bridge.dispatch(canvasId, { method: 'identity', documentId }) as LiveDocumentSnapshot;
++      return { sessionId, canvasId, documentId, changeSessionId, repositoryId: snapshot.repositoryId, version: snapshot.version };
+     } catch (error) { this.sessions.delete(sessionId); throw error; }
+   }
++  private async mappingHash(sessionId: string, changeSessionId: string | undefined, nodeId: string, version: number) {
++    const snapshot = await this.snapshot(sessionId, changeSessionId);
++    if (snapshot.version !== version) throw Error('VERSION_CONFLICT: read the canvas again');
++    const box = nodeId.startsWith('grid:') && findBox(snapshot.document.scene.root, nodeId.slice(5));
++    if (!box || box.kind !== 'diagram') throw Error('Expected diagram GridBox');
++    return snapshot.document.scene.contents[box.contentId].content.asciiSha256;
++  }
+   private async apply(sessionId: string, expectedVersion: number, operations: DiagramOperation[], requestId: string, changeSessionId?: string) {
+     const session = this.session(sessionId, changeSessionId);
+     if (session.changeSessionId) return this.changeService().apply(session.changeSessionId, session.documentId, expectedVersion, operations, requestId);
+-    return this.bridge.dispatch(session.canvasId, { method: 'apply', documentId: session.documentId, payload: { expectedVersion, operations, requestId } });
++    return this.bridge.dispatch(session.canvasId, { method: 'apply', documentId: session.documentId, payload: { expectedVersion, operations, requestId, resultNodeIds: operations.flatMap(op => 'nodeId' in op ? [op.nodeId] : op.method === 'diagram-create' ? [`grid:${op.id}`] : []) } });
++  }
++  private async applyBatch(sessionId: string, expectedVersion: number, operations: DiagramOperation[], requestId: string, changeSessionId?: string): Promise<CanvasMutationResult> {
++    const session = this.session(sessionId, changeSessionId);
++    if (session.changeSessionId) {
++      const result = await this.changeService().apply(session.changeSessionId, session.documentId, expectedVersion, operations, requestId);
++      return canvasMutationResult(session.documentId, operations, result);
++    }
++    return await this.bridge.dispatch(session.canvasId, { method: 'apply', documentId: session.documentId,
++      payload: { expectedVersion, operations, requestId, resultFormat: 'receipt' } }) as CanvasMutationResult;
+   }
+-  private async exec(input: ReturnType<typeof agentToolSchemas.exec.parse>) {
++  private async exec(input: ReturnType<typeof agentToolSchemas.exec.parse>, readOnly = false) {
+     const key = JSON.stringify([input.changeSessionId, input.sessionId, input.requestId]);
+     const signature = JSON.stringify(input);
+     let run = this.execRuns.get(key);
+     if (run && run.signature !== signature) throw new Error('REQUEST_ID_CONFLICT');
+     if (!run) {
+       if (this.execRuns.size >= 2000) throw new Error('Execution retry capacity reached');
+-      const snapshot = input.sessionId ? await this.snapshot(input.sessionId, input.changeSessionId) : undefined;
+-      run = { signature, initialVersion: snapshot?.version, version: snapshot?.version, createdDocument: false, steps: [],
+-        nodes: snapshot && canvasDisplayNodes(snapshot.document, snapshot.canvas, snapshot.version, snapshot.cell, snapshot.endpointBounds),
+-        edges: snapshot?.document.edges };
++      const session = input.sessionId && this.session(input.sessionId, input.changeSessionId);
++      const snapshot = session ? (input.changeSessionId ? await this.snapshot(input.sessionId!, input.changeSessionId)
++        : await this.bridge.dispatch(session.canvasId, { method: 'identity', documentId: session.documentId }) as LiveDocumentSnapshot) : undefined;
++      run = { signature, initialVersion: snapshot?.version, version: snapshot?.version, createdDocument: false, steps: [], batches: new Map(),
++        nodes: snapshot?.document && canvasDisplayNodes(snapshot.document, snapshot.canvas, snapshot.version, snapshot.cell, snapshot.endpointBounds),
++        edges: snapshot?.document?.edges };
+       this.execRuns.set(key, run);
+     }
+     const state = run;
+@@ -160,8 +346,37 @@ export class AgentDiagrammingSessionService {
+     // The pending call retains its operation ID, expected version and request ID.
+     const requestPrefix = `exec-${createHash('sha256').update(key).digest('hex')}`;
+     let cursor = 0;
++    let pending: number[] = [];
++    let uncertain = false;
++    const flush = async () => {
++      if (uncertain) throw Error('CANVAS_TIMEOUT: retry execution with the same requestId');
++      if (!pending.length) return;
++      const indices = pending; pending = [];
++      const first = indices[0];
++      let batch = state.batches.get(first);
++      if (!batch) {
++        batch = { indices, expectedVersion: state.version! };
++        state.batches.set(first, batch);
++      }
++      if (JSON.stringify(batch.indices) !== JSON.stringify(indices)) throw Error('REQUEST_ID_CONFLICT: batch changed during retry');
++      if (batch.error) throw batch.error;
++      if (!batch.result) {
++        try {
++          batch.result = await this.applyBatch(input.sessionId!, batch.expectedVersion,
++            indices.map(index => state.steps[index].operation!), `${requestPrefix}:batch:${first}`, input.changeSessionId);
++          state.version = batch.result.version; state.nodes = undefined; state.edges = undefined;
++        } catch (error) {
++          if (canvasTimeout(error)) uncertain = true;
++          else batch.error = error;
++          throw error;
++        }
++      }
++    };
+     try {
+       const value = await this.runtime.run(input.code, async (method, args) => {
++        if (readOnly && !['canvas.read', 'canvas.list', 'canvas.attach', 'nodes.list', 'nodes.get', 'nodes.variants', 'nodes.alternatives', 'edges.list'].includes(method)) throw Error('READ_ONLY: canvas mutation requires Workspace access');
++        if (input.mode === 'batched' && (method.startsWith('canvas.') || ['nodes.list', 'nodes.get', 'nodes.variants', 'nodes.alternatives', 'edges.list', 'nodes.setSourceMappings', 'nodes.setJumps'].includes(method))) await flush();
++        if (uncertain) throw Error('CANVAS_TIMEOUT: retry execution with the same requestId');
+         const stepIndex = cursor++, stepSignature = JSON.stringify({ method, args });
+         let step = state.steps[stepIndex];
+         if (step && step.signature !== stepSignature) throw new Error('REQUEST_ID_CONFLICT: execution changed during retry');
+@@ -169,10 +384,18 @@ export class AgentDiagrammingSessionService {
+           try {
+             const entry = canvasMethods[method as keyof typeof canvasMethods];
+             if (!entry) throw new Error('Unknown canvas method');
+-            const parsed = entry.schema.parse(args) as Record<string, any>;
++            const resolved = input.sessionId ? this.aliases.resolve(args, this.binding(input.sessionId, input.changeSessionId)) : args;
++            const parsed = entry.schema.parse(resolved) as Record<string, any>;
+             let execute: () => Promise<unknown>;
++            let queuedOperation: DiagramOperation | undefined;
+             if (method === 'canvas.list') execute = async () => input.changeSessionId ? this.changeService().descriptor(input.changeSessionId) : this.bridge.list();
+-            else if (method === 'canvas.attach') execute = () => this.attach(parsed.canvasId, parsed.documentId, input.changeSessionId);
++            else if (method === 'canvas.attach') {
++              if (input.sessionId) {
++                const bound = this.session(input.sessionId, input.changeSessionId);
++                if (parsed.canvasId !== bound.canvasId || parsed.documentId !== bound.documentId) throw Error('BINDING_MISMATCH: use an unbound execution to attach elsewhere');
++              }
++              execute = () => this.attach(parsed.canvasId, parsed.documentId, input.changeSessionId);
++            }
+             else if (method === 'canvas.copyDocument') {
+               if (input.changeSessionId) throw new Error('Copy supports live canvases only');
+               if (input.sessionId || state.createdDocument) throw new Error('Create one document per unbound exec call');
+@@ -180,8 +403,9 @@ export class AgentDiagrammingSessionService {
+                 throw new Error('Unknown live document');
+               state.createdDocument = true;
+               execute = async () => {
++                if (parsed.repositoryId) await this.requireRepository(parsed.repositoryId);
+                 const result = await this.bridge.dispatch(parsed.canvasId, { method: 'copy-document', documentId: parsed.documentId,
+-                  payload: { name: parsed.name, expectedVersion: parsed.expectedVersion, requestId: `${requestPrefix}:${stepIndex}` } }) as { documentId: string };
++                  payload: { name: parsed.name, repositoryId: parsed.repositoryId, expectedVersion: parsed.expectedVersion, requestId: `${requestPrefix}:${stepIndex}` } }) as { documentId: string };
+                 // The browser has created the document; its descriptor refresh may still be in flight.
+                 return this.attachDocument(parsed.canvasId, result.documentId);
+               };
+@@ -191,48 +415,121 @@ export class AgentDiagrammingSessionService {
+               state.createdDocument = true;
+               if (input.changeSessionId && parsed.canvasId !== input.changeSessionId) throw new Error('CHANGE_SESSION_MISMATCH');
+               execute = async () => {
++                if (input.changeSessionId && parsed.repositoryId && (await this.changeService().get(input.changeSessionId)).repositoryId !== parsed.repositoryId)
++                  throw Error('Proposal canvases inherit the ChangeSession repository');
++                const repositoryId = input.changeSessionId ? undefined : await this.requireRepository(parsed.repositoryId);
+                 const result = input.changeSessionId
+                   ? await this.changeService().createDocument(input.changeSessionId, parsed.name, input.requestId)
+-                  : await this.bridge.dispatch(parsed.canvasId, { method: 'create-document', payload: { name: parsed.name,
++                  : await this.bridge.dispatch(parsed.canvasId, { method: 'create-document', payload: { name: parsed.name, repositoryId,
+                       requestId: input.requestId, snapshot: await this.diagrams.initialize() } }) as { documentId: string };
+                 return this.attach(parsed.canvasId, result.documentId, input.changeSessionId);
+               };
+             } else {
+               if (!input.sessionId || state.version === undefined) throw new Error('sessionId is required for node operations');
+               const sessionId = input.sessionId;
+-              if (method === 'edges.list') execute = async () => {
++              if (['nodes.list', 'nodes.get', 'nodes.setJumps'].includes(method) && !state.nodes) {
++                const snapshot = await this.snapshot(sessionId, input.changeSessionId);
++                if (snapshot.version !== state.version) throw Error('VERSION_CONFLICT: canvas changed during execution');
++                state.nodes = canvasDisplayNodes(snapshot.document, snapshot.canvas, snapshot.version, snapshot.cell, snapshot.endpointBounds);
++                state.edges = snapshot.document.edges;
++              }
++              if (method === 'canvas.read') execute = async () => {
++                const session = this.session(sessionId, input.changeSessionId);
++                const read = input.changeSessionId ? currentCanvasRead(await this.snapshot(sessionId, input.changeSessionId), parsed as { level: 'small' | 'full'; nodeIds?: string[] })
++                  : await this.bridge.dispatch(session.canvasId, { method: 'read', documentId: session.documentId, payload: parsed }) as object;
++                return this.aliases.project(read, this.binding(sessionId, input.changeSessionId));
++              };
++              else if (method === 'edges.list') execute = async () => {
+                 if (!state.edges) {
+                   const snapshot = await this.snapshot(sessionId, input.changeSessionId);
+                   if (snapshot.version !== state.version) throw new Error('VERSION_CONFLICT: canvas changed during execution');
+                   state.edges = snapshot.document.edges;
+                 }
+-                return { version: state.version, edges: state.edges };
++                return { version: state.version, edges: state.edges.map(edge => this.projection.edge(edge)) };
+               };
+-              else if (method === 'nodes.list') execute = async () => ({ version: state.version, nodes: state.nodes });
++              else if (method === 'nodes.alternatives') execute = async () => {
++                const snapshot = await this.snapshot(sessionId, input.changeSessionId);
++                if (snapshot.version !== state.version) throw Error('VERSION_CONFLICT: canvas changed during execution');
++                const alternatives = snapshot.document.alternatives;
++                return { version: state.version, alternatives: Object.values(alternatives?.items ?? {}).filter(item => item.presentationId === parsed.nodeId),
++                  selected: alternatives?.selected[parsed.nodeId] ?? [], panels: Object.values(alternatives?.panels ?? {}).filter(panel => panel.attachment.diagramPresentationId === parsed.nodeId) };
++              };
++              else if (method === 'nodes.variants') execute = async () => {
++                const snapshot = await this.snapshot(sessionId, input.changeSessionId);
++                if (snapshot.version !== state.version) throw Error('VERSION_CONFLICT: canvas changed during execution');
++                const node = canvasDisplayNodes(snapshot.document, snapshot.canvas, snapshot.version).find(node => node.id === parsed.nodeId);
++                if (node?.layout !== 'grid' || !node.diagram) throw Error('Expected diagram');
++                const variants = Object.values(snapshot.document.revisionReviews ?? {}).filter(variant => variant.contentId === node.diagram!.id);
++                const retained = await this.snapshot(sessionId, input.changeSessionId, { revisionIds: variants.flatMap(reviewRevisionIds) });
++                if (retained.version !== state.version) throw Error('VERSION_CONFLICT: canvas changed during execution');
++                const revisions = retained.history?.diagramRevisions ?? Object.fromEntries((retained.revisions ?? []).map(revision => [revision.id, revision]));
++                return { version: state.version, variants: variants.map(variant => ({ variant, ...reviewRevision(variant, id => revisions[id]) })) };
++              };
++              else if (method === 'nodes.list') execute = async () => ({ version: state.version, nodes: this.projection.nodes(state.nodes!) });
+               else if (method === 'nodes.get') execute = async () => {
+                 const node = state.nodes!.find(node => node.id === parsed.nodeId);
+                 if (!node) throw new Error('Unknown DisplayNode');
+-                return node;
++                return this.projection.node(node);
+               };
+               else {
+                 if (input.expectedVersion !== state.initialVersion) throw new Error('VERSION_CONFLICT: mutations require current expectedVersion');
++                // Decode before freezing the retry step. Domain state always retains full IDs.
++                if (method === 'edges.create' || method === 'edges.update') Object.assign(parsed, this.projection.resolveEdge(parsed as Omit<import('../../../domain/core/diagrams/diagramConnection').DiagramConnection, 'id'>));
++                if ((method === 'nodes.collapse' || method === 'nodes.highlight') && parsed.contentNodeId) parsed.contentNodeId = this.projection.resolveAnchorId(parsed.contentNodeId);
++                if (method === 'nodes.highlight') {
++                  parsed.highlightId = `highlight-${randomUUID()}`;
++                  if (parsed.contentNodeIds) parsed.contentNodeIds = parsed.contentNodeIds.map((id: string) => this.projection.resolveAnchorId(id));
++                }
++                if (method === 'nodes.setPresentation' && parsed.settings.highlights) {
++                  parsed.settings.highlights = parsed.settings.highlights.map((item: any) => ({ ...item,
++                    ...(item.contentNodeId ? { contentNodeId: this.projection.resolveAnchorId(item.contentNodeId) } : {}),
++                    ...(item.contentNodeIds ? { contentNodeIds: item.contentNodeIds.map((id: string) => this.projection.resolveAnchorId(id)) } : {}) }));
++                }
++                if (method === 'nodes.setSourceMappings') parsed.expectedContentHash = await this.mappingHash(sessionId, input.changeSessionId, parsed.nodeId, state.version);
++                if (method === 'nodes.setJumps') {
++                  const node = state.nodes!.find(node => node.id === parsed.nodeId);
++                  if (node?.layout !== 'grid' || !node.diagram) throw Error('Expected diagram GridBox');
++                  const diagram = node.diagram;
++                  parsed.jumps = parsed.jumps.map(({ status: _status, ...jump }: any) => {
++                    const old = diagram.jumps?.find(j => j.id === jump.id && j.source.revisionId === jump.source.revisionId);
++                    const contentHash = jump.source.contentHash ?? (jump.source.revisionId === diagram.content.revisionId ? diagram.content.asciiSha256 : old?.source.contentHash);
++                    if (!contentHash) throw Error('STALE_JUMP_SOURCE: read current jump metadata');
++                    return { ...jump, source: { ...jump.source, contentHash } };
++                  });
++                  parsed.jumps = await this.resolveJumps(parsed.jumps, diagram.jumps);
++                }
+                 const expectedVersion = state.version;
+                 const operation = (method.startsWith('edges.')
+                   ? method === 'edges.remove' ? { method: 'edge-remove', edgeId: parsed.edgeId }
+                     : { method: method === 'edges.create' ? 'edge-create' : 'edge-update',
+                         edge: { ...parsed, id: method === 'edges.create' ? `connection-${randomUUID()}` : parsed.id } }
++                  : method === 'nodes.promoteAlternative' ? { ...parsed, method: 'alternative-promote' }
++                  : method === 'nodes.selectAlternative' ? { ...parsed, method: 'alternative-select' }
++                  : method === 'nodes.removeAlternative' ? { ...parsed, method: 'alternative-remove' }
++                  : method === 'nodes.sidePanel' ? { ...parsed, method: 'side-panel' }
++                  : method === 'nodes.selectRevision' ? { ...parsed, method: 'revision-select' }
++                  : method === 'nodes.reviewVariant' ? { ...parsed, method: 'variant-review' }
+                   : method === 'nodes.draw' ? { ...parsed, method: 'diagram-create', id: `diagram-${randomUUID()}` }
+                     : { ...parsed, method: method.slice(6) }) as DiagramOperation;
+-                execute = async () => {
++                if (input.mode === 'batched') {
++                  queuedOperation = operation;
++                  // IDs support dependent writes without pretending a queued mutation has committed.
++                  const handle = 'edge' in operation ? { id: operation.edge.id, edgeId: operation.edge.id }
++                    : 'edgeId' in operation ? { id: operation.edgeId, edgeId: operation.edgeId }
++                    : { id: operation.method === 'diagram-create' ? `grid:${operation.id}` : parsed.nodeId,
++                        nodeId: operation.method === 'diagram-create' ? `grid:${operation.id}` : parsed.nodeId };
++                  execute = async () => ({ ...handle, status: 'queued' });
++                } else execute = async () => {
+                   const result = await this.apply(sessionId, expectedVersion, [operation], `${requestPrefix}:${stepIndex}`, input.changeSessionId) as EditResult;
+-                  state.version = result.version; state.nodes = result.nodes; state.edges = undefined; state.lastEdit = result;
+-                  if (method.startsWith('edges.')) return 'edge' in operation ? operation.edge : null;
++                  state.version = result.version; state.nodes = undefined; state.edges = undefined; state.lastEdit = result;
++                  if (method.startsWith('edges.')) return 'edge' in operation ? this.projection.edge(operation.edge) : null;
+                   const nodeId = operation.method === 'diagram-create' ? `grid:${operation.id}` : parsed.nodeId;
+-                  return result.nodes.find(node => node.id === nodeId) ?? null;
++                  const node = result.nodes.find(node => node.id === nodeId);
++                  return node ? this.projection.node(node) : null;
+                 };
+               }
+             }
+-            step = { signature: stepSignature, execute };
++            step = { signature: stepSignature, execute, operation: queuedOperation };
+             state.steps[stepIndex] = step;
+           } catch (error) {
+             state.steps[stepIndex] = { signature: stepSignature, execute: async () => { throw error; }, outcome: { error } };
+@@ -244,36 +541,70 @@ export class AgentDiagrammingSessionService {
+           catch (error) { if (!canvasTimeout(error)) step.outcome = { error }; throw error; }
+         }
+         if ('error' in step.outcome) throw step.outcome.error;
++        if (step.operation) pending.push(stepIndex);
+         return step.outcome.value;
+       });
++      await flush();
+       // A script may catch a transport timeout. Keep it retryable until the unknown
+       // outcome is acknowledged, rather than reporting a completed execution.
+       if (state.steps.some(step => !step.outcome)) throw new Error('CANVAS_TIMEOUT: retry execution with the same requestId');
+       this.execRuns.delete(key);
+-      // Retain the response shape; transaction describes the last individual edit.
+-      return state.lastEdit ? { value, transaction: state.lastEdit } : { value, ...(state.version === undefined ? {} : { version: state.version }) };
++      if (state.batches.size) return { value, transaction: { version: state.version,
++        receipts: [...state.batches.values()].flatMap(batch => batch.result?.receipts ?? []) } };
++      return state.lastEdit ? { value, transaction: this.projection.result(state.lastEdit) } : { value, ...(state.version === undefined ? {} : { version: state.version }) };
+     } catch (error) {
++      if (uncertain) throw Error('CANVAS_TIMEOUT: retry execution with the same requestId');
+       if (!canvasTimeout(error)) this.execRuns.delete(key);
+       throw error;
+     }
+   }
++  private async resolveJumps(input: DiagramJump[], previous: readonly DiagramJump[] = []) {
++    const resolved = input.map(jump => this.projection.resolveJump(jump));
++    let catalog: Awaited<ReturnType<DiagramRepository['projectCatalogs']['loadRepresentationCatalog']>> | undefined;
++    for (let i = 0; i < input.length; i++) {
++      const handle = input[i].target.contentNodeId;
++      if (!handle || !this.projection.isAnchorHandle(handle)) continue;
++      const target = resolved[i].target;
++      // Existing stale jumps must survive a metadata-only update, just like edges.
++      if (previous.some(jump => jump.id === input[i].id && jump.target.representationId === target.representationId
++        && jump.target.displayNodeId === target.displayNodeId && jump.target.contentNodeId === target.contentNodeId)) continue;
++      if (!catalog) {
++        const project = await this.store.loadProject();
++        if (!project) throw Error('STALE_CONTENT_NODE: jump target project is unavailable');
++        catalog = await (this.store.projectCatalogs.loadCurrentRepresentationCatalog?.(project.id) ?? this.store.projectCatalogs.loadRepresentationCatalog(project.id));
++      }
++      const representation = catalog.representations[target.representationId];
++      const revision = representation && catalog.revisions[representation.currentRevisionId];
++      const document = revision && documentFromRevision(revision);
++      const box = document && target.displayNodeId?.startsWith('grid:') && findBox(document.scene.root, target.displayNodeId.slice(5));
++      if (!box || box.kind !== 'diagram' || !diagramContentNodes(document!.scene.contents[box.contentId].content).some(node => node.id === target.contentNodeId))
++        throw Error('STALE_CONTENT_NODE: jump handle does not belong to the target diagram revision');
++    }
++    return resolved;
++  }
+   private async search(input: ReturnType<(typeof agentToolSchemas)['diagram-search']['parse']>) {
++    if (input.snapshot && (!input.changeSessionId || input.sessionId)) throw Error('snapshot requires changeSessionId without sessionId');
+     if (input.changeSessionId && !input.sessionId) {
+       const session = await this.changeService().get(input.changeSessionId);
+       if (input.revisionId) throw new Error('Session reads use pinned proposal documents, not catalog revisions');
+       const docs = session.documents.filter(d => !input.representationId || d.id === input.representationId || d.representationId === input.representationId);
+       if (input.operation === 'read') {
+         if (docs.length !== 1) throw new Error('Specify representationId (or session document ID) for a session read');
+-        const doc = docs[0];
++        const doc = docs[0], state = doc[input.snapshot ?? 'proposed'];
++        if (!state) throw Error('New canvas has no baseline');
+         return { origin: 'change-session', changeSessionId: session.id, documentId: doc.id, name: doc.name, version: doc.version,
+-          nodes: canvasDisplayNodes(doc.proposed.document, doc.proposed.canvas, doc.version),
+-          changeSession: { version: session.version, title: session.title, status: session.status, changes: session.changes } };
++          snapshot: input.snapshot ?? 'proposed',
++          nodes: this.projection.nodes(canvasDisplayNodes(state.document, state.canvas, doc.version)),
++          changeSession: { version: session.version, title: session.title, status: session.status, repositoryId: session.repositoryId, commits: session.commits, head: session.head, diffTree: summarizeChangeSession(session).diffTree, changes: session.changes, migrations: this.projection.migrations(session.migrations) } };
+       }
+-      const hits = docs.flatMap(doc => canvasDisplayNodes(doc.proposed.document, doc.proposed.canvas, doc.version).flatMap(node =>
++      const hits = docs.flatMap(doc => {
++        const state = doc[input.snapshot ?? 'proposed'];
++        return state ? canvasDisplayNodes(state.document, state.canvas, doc.version).flatMap(node =>
+         node.layout === 'grid' && node.diagram ? this.matches(node.diagram, input).map(match => ({ origin: 'change-session', documentId: doc.id,
+-          representationId: doc.representationId, name: doc.name, nodeId: node.id, version: doc.version, ...match })) : []));
++          representationId: doc.representationId, name: doc.name, nodeId: node.id, version: doc.version, ...match })) : []) : [];
++      });
+       return { total: hits.length, hits: hits.slice(input.offset, input.offset + input.limit),
+-        changeSession: { version: session.version, title: session.title, status: session.status, changes: session.changes } };
++        changeSession: { version: session.version, title: session.title, status: session.status, repositoryId: session.repositoryId, commits: session.commits, head: session.head, diffTree: summarizeChangeSession(session).diffTree, changes: session.changes, migrations: this.projection.migrations(session.migrations) } };
+     }
+     if (input.sessionId) {
+       const snapshot = await this.snapshot(input.sessionId, input.changeSessionId);
+@@ -281,14 +612,14 @@ export class AgentDiagrammingSessionService {
+       if (input.operation === 'read') {
+         const node = nodes.find(node => node.id === input.nodeId);
+         if (!node) throw new Error('A valid live nodeId is required');
+-        return { origin: 'live', version: snapshot.version, node, evidence: node.layout === 'grid' ? node.diagram?.sourceContext.evidence ?? {} : {} };
++        return { origin: 'live', version: snapshot.version, node: this.projection.node(node), evidence: node.layout === 'grid' ? node.diagram?.sourceContext.evidence ?? {} : {} };
+       }
+       const hits = nodes.flatMap(node => node.layout === 'grid' && node.content ? this.matches(node.diagram!, input).map(match => ({ origin: 'live', nodeId: node.id, version: snapshot.version, ...match })) : []);
+       return { total: hits.length, hits: hits.slice(input.offset, input.offset + input.limit) };
+     }
+     const project = await this.store.loadProject();
+     if (!project) { if (input.operation === 'read') throw new Error('Project is not initialized'); return { total: 0, hits: [] }; }
+-    const catalog = await this.store.projectCatalogs.loadRepresentationCatalog(project.id);
++    const catalog = await (this.store.projectCatalogs.loadCurrentRepresentationCatalog?.(project.id, input.revisionId ? [input.revisionId] : undefined) ?? this.store.projectCatalogs.loadRepresentationCatalog(project.id));
+     const representations = Object.values(catalog.representations).filter(rep => rep.status === 'settled' && (!input.representationId || rep.id === input.representationId));
+     if (input.operation === 'read') {
+       const representation = representations.find(rep => rep.id === input.representationId);
+@@ -297,7 +628,7 @@ export class AgentDiagrammingSessionService {
+       if (!representation.revisionIds.includes(revisionId)) throw new Error('Revision does not belong to representation');
+       const revision = catalog.revisions[revisionId];
+       const document = documentFromRevision(revision);
+-      return { origin: 'saved', representation, revision, nodes: canvasDisplayNodes(document, initialCanvasState(), 0) };
++      return { origin: 'saved', representation, revision: { id: revision.id, ascii: revision.ascii, revision: revision.revision, createdAt: revision.createdAt, representationKind: revision.representationKind }, nodes: this.projection.nodes(canvasDisplayNodes(document, initialCanvasState(), 0)) };
+     }
+     const hits: unknown[] = [];
+     for (const representation of representations) {
+@@ -315,11 +646,11 @@ export class AgentDiagrammingSessionService {
+   }
+   private matches(diagram: Diagram, input: ReturnType<(typeof agentToolSchemas)['diagram-search']['parse']>): { snippet: string; contentNodeId?: string; evidenceId?: string; line?: number }[] {
+     const content = diagram.content, source = diagramSource(diagram);
+-    const q = (input.query ?? '').toLowerCase();
++    const q = (input.mode === 'node' && input.query && this.projection.isAnchorHandle(input.query) ? this.projection.resolveAnchorId(input.query) : input.query ?? '').toLowerCase();
+     if (input.mode === 'code-reference') return source.search(q).map(({mapping,entity}) => ({ snippet: entity.label, evidenceId: mapping.entityId, line: mapping.line }));
+     if (input.mode === 'node') {
+       const nodes = content.structure.kind === 'tree' ? Object.values(content.structure.nodes) : [];
+-      return [...nodes.filter(node => `${node.id} ${node.label}`.toLowerCase().includes(q)).map(node => ({ snippet: node.label, contentNodeId: node.id, line: node.line })),
++      return [...nodes.filter(node => `${node.id} ${node.label}`.toLowerCase().includes(q)).map(node => ({ snippet: node.label, contentNodeId: this.projection.anchorId(node.id), line: node.line })),
+         ...source.entries().filter(({mapping,entity}) => `${mapping.id} ${entity.label}`.toLowerCase().includes(q)).map(({mapping,entity}) => ({ snippet: entity.label, contentNodeId: mapping.id, line: mapping.line }))];
+     }
+     return content.ascii.split('\n').flatMap((line, i) => line.toLowerCase().includes(q) ? [{ snippet: line, line: i + 1 }] : []);
+@@ -335,7 +666,19 @@ export class AgentDiagrammingSessionService {
+     return result;
+   }
+   private async saveNow(input: ReturnType<typeof agentToolSchemas.save_diagram.parse>) {
+-    const session = this.session(input.sessionId), snapshot = await this.snapshot(input.sessionId, input.changeSessionId);
++    const session = this.session(input.sessionId);
++    if (!input.nodeId) {
++      const checkpoint = await this.bridge.dispatch(session.canvasId, { method: 'checkpoint', documentId: session.documentId,
++        payload: { expectedVersion: input.expectedVersion, requestId: input.requestId } }) as { checkpointId: string; representationId?: string; revisionId?: string; repositoryId?: string };
++      const receipt = await this.diagrams.publishCheckpoint({ documentId: session.documentId, checkpointId: checkpoint.checkpointId,
++        expectedVersion: input.expectedVersion, requestId: input.requestId, name: input.name, repositoryId: input.repositoryId ?? checkpoint.repositoryId,
++        representationId: input.representationId ?? checkpoint.representationId, expectedRevisionId: input.expectedRevisionId ?? checkpoint.revisionId });
++      let displayUpdated = true;
++      try { await this.bridge.dispatch(session.canvasId, { method: 'saved', documentId: session.documentId, payload: { receipt, requestId: input.requestId, name: input.name } }); }
++      catch { displayUpdated = false; }
++      return { representationId: receipt.representation.id, revisionId: receipt.revisionId, savedVersion: receipt.savedVersion, version: receipt.savedVersion, displayUpdated };
++    }
++    const snapshot = await this.snapshot(input.sessionId, input.changeSessionId);
+     if (input.expectedVersion !== snapshot.version) throw new Error('VERSION_CONFLICT: read the canvas again');
+     let scene = snapshot.document.scene, history = snapshot.history;
+     if (input.nodeId) {
+@@ -345,15 +688,20 @@ export class AgentDiagrammingSessionService {
+       if (box.kind !== 'diagram') throw new Error('Expected diagram');
+       const content = scene.contents[box.contentId];
+       const isolated = singleDiagramScene(content.content.ascii);
+-      scene = { ...isolated, contents: { ...isolated.contents, overview: new RevisionedDiagramService().create({id:'overview', revision:content.revision, ascii:content.content.ascii, structureKind:content.content.structure.kind, source:content.sourceContext.binding, evidence:content.sourceContext.evidence, mappings:content.sourceContext.mappings}).diagram } };
+-      if (content.jumps) scene = { ...scene, contents: { ...scene.contents, overview: new RevisionedDiagramService().revise(
+-        scene.contents.overview.revisionId, { kind: 'jumps', jumps: rebaseDiagramJumps(content.content, scene.contents.overview.content, content.jumps) }).diagram } };
++      scene = { ...isolated, contents: { ...isolated.contents, overview: createStoredDiagram({id:'overview', revision:content.revision, ascii:content.content.ascii, structureKind:content.content.structure.kind, source:content.sourceContext.binding, evidence:content.sourceContext.evidence, mappings:content.sourceContext.mappings}).diagram } };
++      if (content.jumps) scene = { ...scene, contents: { ...scene.contents, overview: reviseStoredDiagram(scene.contents.overview.revisionId, { kind: 'jumps', jumps: rebaseDiagramJumps(content.content, scene.contents.overview.content, content.jumps) }).diagram } };
++      const settings = snapshot.document.diagramPresentations?.[box.contentId];
++      const originalHighlights = presentationHighlights(content, settings, getDiagramRevision(content.revisionId).nodeRefs);
++      const output = scene.contents.overview, refs = getDiagramRevision(output.revisionId).nodeRefs;
++      const highlights = rebaseDiagramHighlights(originalHighlights, correspondingNodes(content, output)).map(item => ({ ...item,
++        nodeRefs: (item.contentNodeIds ?? (item.contentNodeId ? [item.contentNodeId] : [])).map(id => refs[id] ?? `stale:${id}`),
++        ...(item.textRange && item.revisionId === content.revisionId ? { revisionId: output.revisionId } : {}) }));
+       const histories = new DefaultCanvasHistoryService();
+-      history = histories.exportContext(histories.openContext({ scene, edges: [], sections: {} }, snapshot.canvas));
++      history = histories.exportContext(histories.openContext({ scene, edges: [], sections: {}, ...(settings || highlights.length ? { diagramPresentations: { overview: { ...settings, highlights } } } : {}) }, snapshot.canvas));
+     }
+     const representationId = input.representationId ?? (!input.nodeId ? snapshot.representationId : undefined);
+     if (!history) throw new Error('Canvas history is required to save');
+-    const save: SaveProjectDiagramInput = { name: input.name, history, scene, edges: input.nodeId ? [] : snapshot.document.edges, representationId,
++    const save: SaveProjectDiagramInput = { repositoryId: input.repositoryId ?? snapshot.repositoryId, name: input.name, history, scene, edges: input.nodeId ? [] : snapshot.document.edges, representationId,
+       expectedRevisionId: input.expectedRevisionId ?? (representationId === snapshot.representationId ? snapshot.revisionId : undefined) };
+     const result = await this.diagrams.save(save);
+     let displayUpdated = true;
+diff --git a/application/mapping/changes/diffSessionWorkflowService.ts b/application/mapping/changes/diffSessionWorkflowService.ts
+new file mode 100644
+index 00000000..829d4562
+--- /dev/null
++++ b/application/mapping/changes/diffSessionWorkflowService.ts
+@@ -0,0 +1,109 @@
++import type { DiffSessionRun } from '../../../domain/mapping/changes/diffSessionWorkflow';
++import { createHash } from 'node:crypto';
++import { z } from 'zod';
++import { requireAiEnabled } from '../../core/errors';
++import { runAgentWorkflow } from '../../core/agents/agentWorkflow';
++import type { AgentDiagrammingSessionService } from '../agent/sessionService';
++import type { ChangeSessionCapture, ChangeSessionService } from './changeSessionService';
++import { DiffSessionTools, type DiffSessionSourceReader } from './diffSessionTools';
++import { createDiffSessionWorkflow, DIFF_SESSION_MODEL, type DiffSessionAgentSession, type DiffSessionMetric, type DiffSessionPrompts, type DiffSessionRuntime } from './diffSessionWorkflow';
++
++export const diffSessionRequestSchema = z.object({
++  requestId: z.string().min(1).max(200), title: z.string().trim().min(1).max(200),
++  baselineChangeSessionId: z.string().min(1).max(200).optional(), repositoryId: z.string().min(1).max(200).optional(),
++  commits: z.array(z.string().min(1).max(200)).max(2000).optional(),
++  comparisonBase: z.string().regex(/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/).nullable().optional(), head: z.string().min(1).max(200).optional(),
++  canvasId: z.string().min(1).max(200).optional()
++}).strict().refine(input => input.baselineChangeSessionId ? !input.repositoryId && !input.commits && !input.head && !input.canvasId && input.comparisonBase === undefined
++  : !!input.repositoryId && (!!input.commits?.length || input.comparisonBase !== undefined && !!input.head && !!input.commits), 'Specify a baseline ChangeSession OR a repository and commits');
++export type DiffSessionRequest = z.infer<typeof diffSessionRequestSchema>;
++export type { DiffSessionRun } from '../../../domain/mapping/changes/diffSessionWorkflow';
++export interface DiffSessionRunStore {
++  create(run: DiffSessionRun): Promise<boolean>;
++  read(id: string): Promise<DiffSessionRun | undefined>;
++  save(run: DiffSessionRun): Promise<void>;
++  artifact(id: string, name: string, data: unknown): Promise<void>;
++}
++
++export class DiffSessionWorkflowService {
++  private active = new Map<string, AbortController>();
++  private live = new Map<string, DiffSessionRun>();
++  private starts = new Map<string, Promise<DiffSessionRun>>();
++  constructor(private readonly changes: ChangeSessionService, private readonly agent: AgentDiagrammingSessionService,
++    private readonly runtime: DiffSessionRuntime, private readonly store: DiffSessionRunStore,
++    private readonly options: { enabled: boolean; sourceRoot: string; loadPrompts(): Promise<DiffSessionPrompts>;
++      sourceReader(capture: ChangeSessionCapture): Promise<DiffSessionSourceReader> }) {}
++
++  async start(raw: unknown): Promise<DiffSessionRun> {
++    requireAiEnabled(this.options.enabled);
++    const request = diffSessionRequestSchema.parse(raw);
++    const id = `diff-run-${createHash('sha256').update(request.requestId).digest('hex').slice(0, 32)}`;
++    const pending = this.starts.get(id);
++    if (pending) {
++      const run = await pending;
++      if (JSON.stringify(run.request) !== JSON.stringify(request)) throw Error('REQUEST_ID_CONFLICT');
++      return run;
++    }
++    const start = this.begin(id, request); this.starts.set(id, start);
++    try { return await start; } finally { this.starts.delete(id); }
++  }
++  private async begin(id: string, request: DiffSessionRequest) {
++    const now = new Date().toISOString();
++    const run: DiffSessionRun = { id, request, workflowId: 'diff-session-create', status: 'running', stage: 'capture',
++      model: DIFF_SESSION_MODEL, createdAt: now, updatedAt: now };
++    if (!await this.store.create(run)) {
++      const existing = await this.get(id);
++      if (!existing || JSON.stringify(existing.request) !== JSON.stringify(request)) throw Error('REQUEST_ID_CONFLICT');
++      return existing;
++    }
++    const abort = new AbortController(); this.active.set(id, abort); this.live.set(id, run);
++    void this.execute(run, abort.signal).catch(() => {}).finally(() => { this.active.delete(id); this.live.delete(id); });
++    return structuredClone(run);
++  }
++  private async execute(run: DiffSessionRun, signal: AbortSignal) {
++    let session: DiffSessionAgentSession | undefined;
++    const metrics: DiffSessionMetric[] = [];
++    const save = () => { run.updatedAt = new Date().toISOString(); return this.store.save(run); };
++    try {
++      const capture = await this.changes.capture(run.request);
++      if (!capture.context || !capture.hunks.length) throw Error('The workflow requires pinned commits with captured hunks');
++      signal.throwIfAborted();
++      await this.store.artifact(run.id, 'context', capture);
++      const prompts = await this.options.loadPrompts();
++      await this.store.artifact(run.id, 'prompts', prompts);
++      const tools = new DiffSessionTools(capture, this.changes, this.agent, await this.options.sourceReader(capture),
++        run.id, run.request.title, async id => { run.changeSessionId = id; await save(); });
++      session = await this.runtime.openSession({ sourceRoot: this.options.sourceRoot, signal, tools: step => tools.tools(step),
++        onProgress: message => { run.message = message; }, onMetric: metric => { metrics.push(metric); } });
++      run.agentSessionId = session.sessionId; await save();
++      const result = await runAgentWorkflow(createDiffSessionWorkflow(prompts, capture), async request => {
++        run.stage = request.stepId as 'analyze' | 'materialize'; run.message = `Running ${request.stepId}`;
++        await this.store.artifact(run.id, `${request.stepId}-request`, { role: 'user', content: request.prompt }); await save();
++        const output = await session!.runStep(request);
++        await this.store.artifact(run.id, `${request.stepId}-response`, output);
++        await this.store.artifact(run.id, 'conversation', session!.transcript());
++        await this.store.artifact(run.id, 'performance', metrics);
++        return output;
++      }, { signal });
++      run.stage = 'validate'; await save();
++      const proposal = await this.changes.get(result.changeSessionId!);
++      if (proposal.id !== tools.changeSessionId || proposal.status !== 'ready') throw Error('Workflow did not produce its own ready proposal');
++      run.changeSessionId = proposal.id; run.status = 'completed'; run.message = 'ChangeSession ready for review';
++    } catch (error) {
++      run.status = signal.aborted ? 'cancelled' : 'failed';
++      run.error = error instanceof Error ? error.message : String(error);
++    } finally {
++      try {
++        if (session) await this.store.artifact(run.id, 'conversation', session.transcript());
++        await this.store.artifact(run.id, 'performance', metrics);
++      } finally { session?.dispose(); await save(); }
++    }
++  }
++  async get(id: string) {
++    const run = this.live.has(id) ? structuredClone(this.live.get(id)!) : await this.store.read(id);
++    if (run?.status === 'running' && !this.active.has(id) && !this.starts.has(id)) run.status = 'interrupted';
++    return run;
++  }
++  async cancel(id: string) { this.active.get(id)?.abort(new Error('Workflow cancelled')); return this.get(id); }
++  dispose() { for (const abort of this.active.values()) abort.abort(new Error('Server shutting down')); this.runtime.dispose(); }
++}
+diff --git a/application/mapping/workspace/workspaceService.ts b/application/mapping/workspace/workspaceService.ts
+index f7ce96ec..af4dd6c0 100644
+--- a/application/mapping/workspace/workspaceService.ts
++++ b/application/mapping/workspace/workspaceService.ts
+@@ -2,9 +2,12 @@ import type { WorkspaceBatch } from '../../../domain/mapping/workspace/workspace
+ import { ApplicationError } from '../../core/errors';
+ import type { DiagramRepository } from '../../core/ports/diagramRepository';
+ import type { MappingWorkspaceRepository } from './repository';
++import { loadDiagramAgentContext, storeDiagramAgentContext, type DiagramAgentContext, type DiagramAgentContextStore } from '../../../domain/core/diagrams/diagramAgentContext';
++import { deserializeWorkspace } from '../../../domain/mapping/workspace/mappingWorkspaceCodec';
+ 
+ export class MappingWorkspaceService {
+-  constructor(private readonly projects: Pick<DiagramRepository, 'loadProject'>, private readonly workspace: MappingWorkspaceRepository) { }
++  constructor(private readonly projects: Pick<DiagramRepository, 'loadProject'>, private readonly workspace: MappingWorkspaceRepository,
++    private readonly diagramContexts?: DiagramAgentContextStore) { }
+   async loadRecords(historyValidation: import('../../../domain/core/diagrams/canvasHistory').HistoryValidation = 'all') {
+     const project = await this.projects.loadProject();
+     if (!project) throw new ApplicationError('invalid-input', 'Project is not initialized');
+@@ -25,4 +28,55 @@ export class MappingWorkspaceService {
+     await this.workspace.save(project.id, input);
+     return { saved: true };
+   }
++  /** Expand disk references at the export boundary so the JSON can be imported on another machine. */
++  async portableExport(input: unknown) {
++    const project = await this.projects.loadProject();
++    if (!project) throw new ApplicationError('invalid-input', 'Project is not initialized');
++    const workspace = deserializeWorkspace(input);
++    if (workspace.projectId !== project.id) throw new ApplicationError('invalid-input', 'Workspace belongs to another project');
++    const expanded = new Map<string, Awaited<ReturnType<typeof loadDiagramAgentContext>>>();
++    const contexts = async (values?: Record<string, DiagramAgentContext>) => {
++      if (!values) return values;
++      return Object.fromEntries(await Promise.all(Object.entries(values).map(async ([id, value]) => {
++        const key = value.backingRecordId ?? value.snapshot?.contentHash ?? id;
++        let snapshot = expanded.get(key);
++        if (!snapshot) { snapshot = await loadDiagramAgentContext(value, this.diagramContexts);
++          if (this.diagramContexts?.portable) snapshot = await this.diagramContexts.portable(snapshot);
++          expanded.set(key, snapshot); }
++        return [id, { diagramId: value.diagramId, compiledFromRevisionId: value.compiledFromRevisionId,
++          sourceFingerprint: value.sourceFingerprint, contentHash: snapshot.contentHash, snapshot } satisfies DiagramAgentContext];
++      })));
++    };
++    for (const document of workspace.documents) {
++      document.document.diagramContexts = await contexts(document.document.diagramContexts);
++      if (document.history) for (const checkpoint of Object.values(document.history.snapshots))
++        checkpoint.document.diagramContexts = await contexts(checkpoint.document.diagramContexts);
++    }
++    return deserializeWorkspace(workspace);
++  }
++  /** Save context files before an imported workspace can publish their references. */
++  async prepareImport(input: unknown) {
++    const project = await this.projects.loadProject();
++    if (!project) throw new ApplicationError('invalid-input', 'Project is not initialized');
++    if (!this.diagramContexts) throw Error('AGENT_CONTEXT_STORAGE_UNAVAILABLE');
++    const workspace = deserializeWorkspace(input);
++    if (workspace.projectId !== project.id) throw new ApplicationError('invalid-input', 'Workspace belongs to another project');
++    const stored = new Map<string, Awaited<ReturnType<typeof storeDiagramAgentContext>>>();
++    const contexts = async (values?: Record<string, DiagramAgentContext>) => {
++      if (!values) return values;
++      return Object.fromEntries(await Promise.all(Object.entries(values).map(async ([id, value]) => {
++        if (!value.snapshot) throw Error('Workspace import requires portable diagram context snapshots');
++        const key = value.snapshot.contentHash;
++        let bound = stored.get(key);
++        if (!bound) { bound = await storeDiagramAgentContext(value, this.diagramContexts!); stored.set(key, bound); }
++        return [id, bound];
++      })));
++    };
++    for (const document of workspace.documents) {
++      document.document.diagramContexts = await contexts(document.document.diagramContexts);
++      if (document.history) for (const checkpoint of Object.values(document.history.snapshots))
++        checkpoint.document.diagramContexts = await contexts(checkpoint.document.diagramContexts);
++    }
++    return deserializeWorkspace(workspace);
++  }
+ }
+diff --git a/domain/core/diagrams/canvasCheckpointRecords.ts b/domain/core/diagrams/canvasCheckpointRecords.ts
+new file mode 100644
+index 00000000..2dd4662a
+--- /dev/null
++++ b/domain/core/diagrams/canvasCheckpointRecords.ts
+@@ -0,0 +1,259 @@
++import { sha256 } from '../sha256';
++import type { StoredCanvasSnapshot } from './canvasHistory';
++
++type Path = string[];
++type RefMap = Record<string, string>;
++export interface CanvasCheckpointHead { id: string; records: RefMap }
++export type CanvasStoredItem =
++  | { format: 'canvas-text'; text: string }
++  | { format: 'canvas-value'; value: unknown; texts: [Path, string][] };
++export interface CanvasRecordDiff {
++  added: RefMap;
++  updated: Record<string, [string, string]>;
++  removed: RefMap;
++}
++export interface CanvasCheckpointDelta {
++  format: 'canvas-checkpoint-v1';
++  id: string;
++  parentId?: string;
++  transactionId?: string;
++  baseId?: string;
++  depth: number;
++  changes: CanvasRecordDiff;
++}
++export interface CanvasViewRecords { format: 'canvas-view-v1'; records: RefMap }
++export interface CanvasCheckpointRecords {
++  checkpoints: Record<string, CanvasCheckpointDelta>;
++  items: Record<string, CanvasStoredItem>;
++  head?: CanvasCheckpointHead;
++}
++export type PersistedCanvasCheckpoint = StoredCanvasSnapshot | CanvasCheckpointDelta;
++export const MAX_CHECKPOINT_DELTA_DEPTH = 31;
++const object = (value: unknown): value is Record<string, any> => !!value && typeof value === 'object' && !Array.isArray(value);
++const own = (value: object, key: string) => Object.hasOwn(value, key);
++const json = (value: unknown) => JSON.stringify(value);
++export const isCheckpointDelta = (value: unknown): value is CanvasCheckpointDelta => object(value) && value.format === 'canvas-checkpoint-v1';
++export const isCanvasViewRecords = (value: unknown): value is CanvasViewRecords => object(value) && value.format === 'canvas-view-v1';
++
++// Split independently edited objects, retaining ordering in their parent skeleton.
++// The codec is lossless: UI/API consumers still receive their existing read model.
++function recordBoundary(path: Path): boolean {
++  const joined = path.slice(0, -1).join('/');
++  return path.join('/') === 'document/scene/root' || path.join('/') === 'nodeOrigins'
++    || path.join('/') === 'unresolvedAnchors'
++    || path[0] === 'document' && path[1] === 'scene' && path.at(-2) === 'children'
++    || ['document/alternatives/items', 'document/alternatives/selected', 'document/alternatives/panels', 'document/edges', 'document/jumps', 'document/sections', 'document/variants', 'document/revisionReviews', 'document/revisionSelections', 'document/diagramPresentations', 'document/diagramContexts', 'diagramBindings',
++      'view/display/nodes', 'view/diagramViews', 'view/controls/surfaces', 'view/selection/items'].includes(joined);
++}
++function splitRecords(value: unknown): Record<string, unknown> {
++  const records: Record<string, unknown> = {};
++  const visit = (value: any, path: Path): any => {
++    const next = Array.isArray(value) ? value.map((item, i) => visit(item, [...path, String(i)]))
++      : object(value) ? Object.fromEntries(Object.entries(value).map(([key, item]) => [key, visit(item, [...path, key])])) : value;
++    if (recordBoundary(path)) { records[json(path)] = next; return null; }
++    return next;
++  };
++  records['[]'] = visit(value, []);
++  return records;
++}
++function fill(root: any, path: Path, value: unknown): any {
++  if (!Array.isArray(path) || path.some(part => typeof part !== 'string')) throw Error('Invalid canvas record path');
++  if (!path.length) {
++    if (root !== null) throw Error('Invalid canvas record placeholder');
++    return value;
++  }
++  let parent = root;
++  for (const key of path.slice(0, -1)) {
++    if (!parent || typeof parent !== 'object' || !own(parent, key)) throw Error('Missing canvas record parent');
++    parent = parent[key];
++  }
++  const key = path.at(-1)!;
++  if (!parent || typeof parent !== 'object' || !own(parent, key) || parent[key] !== null) throw Error('Invalid canvas record placeholder');
++  Object.defineProperty(parent, key, { value, enumerable: true, writable: true, configurable: true });
++  return root;
++}
++
++/** Values are immutable; repeated source ASCII is retained once, including stale selections. */
++export class CanvasValueEncoder {
++  private known = new Map<string, string>();
++  private pending: Record<string, CanvasStoredItem> = {};
++  private items: Record<string, CanvasStoredItem> = {};
++  private put(item: CanvasStoredItem): string {
++    const text = json(item), previous = this.known.get(text);
++    if (previous) return previous;
++    const id = sha256(text);
++    this.known.set(text, id); this.pending[id] = item; this.items[id] = item;
++    return id;
++  }
++  encode(value: unknown): RefMap {
++    return Object.fromEntries(Object.entries(splitRecords(JSON.parse(json(value)))).map(([key, record]) => {
++      const texts: [Path, string][] = [];
++      const pack = (value: any, path: Path): any => {
++        if (typeof value === 'string' && (value.length >= 512 || path.at(-1) === 'sourceAscii')) {
++          texts.push([path, this.put({ format: 'canvas-text', text: value })]); return null;
++        }
++        if (Array.isArray(value)) return value.map((item, i) => pack(item, [...path, String(i)]));
++        return object(value) ? Object.fromEntries(Object.entries(value).map(([key, item]) => [key, pack(item, [...path, key])])) : value;
++      };
++      const packed = pack(record, []);
++      return [key, this.put({ format: 'canvas-value', value: packed, texts })];
++    }));
++  }
++  takeItems(all = false) { const items = all ? { ...this.items } : this.pending; this.pending = {}; return items; }
++}
++
++export function diffCanvasRecords(before: RefMap, after: RefMap): CanvasRecordDiff {
++  const added: RefMap = {}, updated: Record<string, [string, string]> = {}, removed: RefMap = {};
++  for (const [key, value] of Object.entries(after)) {
++    if (!own(before, key)) added[key] = value;
++    else if (before[key] !== value) updated[key] = [before[key], value];
++  }
++  for (const [key, value] of Object.entries(before)) if (!own(after, key)) removed[key] = value;
++  return { added, updated, removed };
++}
++export function applyCanvasRecordDiff(before: RefMap, diff: CanvasRecordDiff, reverse = false): RefMap {
++  if (!diff || !object(diff.added) || !object(diff.updated) || !object(diff.removed)) throw Error('Invalid canvas record diff');
++  const result = { ...before }, seen = new Set<string>();
++  const check = (key: string, refs: unknown[]) => {
++    if (seen.has(key) || refs.some(ref => typeof ref !== 'string' || !/^[a-f0-9]{64}$/.test(ref))) throw Error('Invalid canvas record diff');
++    seen.add(key);
++  };
++  for (const [key, ref] of Object.entries(reverse ? diff.removed : diff.added)) {
++    check(key, [ref]); if (own(result, key)) throw Error('Canvas record diff conflict');
++    Object.defineProperty(result, key, { value: ref, enumerable: true, writable: true, configurable: true });
++  }
++  for (const [key, pair] of Object.entries(diff.updated)) {
++    if (!Array.isArray(pair) || pair.length !== 2) throw Error('Invalid canvas record diff');
++    check(key, pair); const [from, to] = reverse ? [pair[1], pair[0]] : pair;
++    if (!own(result, key) || result[key] !== from) throw Error('Canvas record diff conflict');
++    result[key] = to;
++  }
++  for (const [key, ref] of Object.entries(reverse ? diff.added : diff.removed)) {
++    check(key, [ref]); if (!own(result, key) || result[key] !== ref) throw Error('Canvas record diff conflict');
++    delete result[key];
++  }
++  return result;
++}
++
++export class CanvasCheckpointEncoder {
++  private values = new CanvasValueEncoder();
++  private encoded = new Map<string, { refs: RefMap; checkpoint: CanvasCheckpointDelta }>();
++  encode(snapshots: Record<string, StoredCanvasSnapshot>, full = false, headId?: string): CanvasCheckpointRecords {
++    const checkpoints: Record<string, CanvasCheckpointDelta> = {}, visiting = new Set<string>();
++    const visit = (id: string): void => {
++      if (visiting.has(id)) throw Error('Cyclic canvas history');
++      const snapshot = snapshots[id];
++      if (!snapshot || snapshot.id !== id) throw Error('Unknown canvas checkpoint');
++      visiting.add(id);
++      if (snapshot.parentId && !this.encoded.has(snapshot.parentId) && own(snapshots, snapshot.parentId)) visit(snapshot.parentId);
++      const { id: _, parentId, transactionId, ...payload } = snapshot;
++      const refs = this.values.encode(payload);
++      const existing = this.encoded.get(id);
++      if (existing) {
++        if (json(existing.refs) !== json(refs) || existing.checkpoint.parentId !== parentId) throw Error('Immutable canvas checkpoint changed');
++        checkpoints[id] = { ...existing.checkpoint, transactionId };
++      } else {
++        const parent = parentId && this.encoded.get(parentId);
++        const base = parent && parent.checkpoint.depth < MAX_CHECKPOINT_DELTA_DEPTH ? parent : undefined;
++        checkpoints[id] = { format: 'canvas-checkpoint-v1', id, parentId, transactionId,
++          ...(base ? { baseId: parentId } : {}), depth: base ? base.checkpoint.depth + 1 : 0,
++          changes: diffCanvasRecords(base?.refs ?? {}, refs) };
++      }
++      this.encoded.set(id, { refs, checkpoint: checkpoints[id] }); visiting.delete(id);
++    };
++    for (const id of Object.keys(snapshots)) visit(id);
++    const head = headId && this.encoded.get(headId);
++    if (headId && !head) throw Error('Unknown canvas checkpoint head');
++    return { checkpoints, items: this.values.takeItems(full), ...(head ? { head: { id: headId!, records: head.refs } } : {}) };
++  }
++}
++
++export function readCanvasRecords(refs: RefMap, get: (id: string) => CanvasStoredItem): any {
++  const value = (id: string): unknown => {
++    const item = get(id);
++    if (!item || item.format !== 'canvas-value' || !Array.isArray(item.texts)) throw Error('Missing canvas value');
++    let result = structuredClone(item.value);
++    for (const [path, textId] of item.texts) {
++      const text = get(textId);
++      if (!text || text.format !== 'canvas-text' || typeof text.text !== 'string') throw Error('Missing canvas text');
++      result = fill(result, path, text.text);
++    }
++    return result;
++  };
++  if (!own(refs, '[]')) throw Error('Missing canvas root record');
++  let root = value(refs['[]']);
++  const paths = Object.keys(refs).filter(key => key !== '[]').map(key => ({ key, path: JSON.parse(key) as Path }));
++  paths.sort((a, b) => a.path.length - b.path.length);
++  for (const { key, path } of paths) root = fill(root, path, value(refs[key]));
++  return root;
++}
++
++function checkpointRefs(id: string, get: (id: string) => PersistedCanvasCheckpoint, cache: Map<string, RefMap>, visiting = new Set<string>()): RefMap {
++  if (cache.has(id)) return cache.get(id)!;
++  if (visiting.has(id) || visiting.size > MAX_CHECKPOINT_DELTA_DEPTH) throw Error('Invalid canvas checkpoint chain');
++  const checkpoint = get(id);
++  if (!isCheckpointDelta(checkpoint) || checkpoint.id !== id || !Number.isInteger(checkpoint.depth)
++    || checkpoint.depth < 0 || checkpoint.depth > MAX_CHECKPOINT_DELTA_DEPTH) throw Error('Invalid canvas checkpoint');
++  visiting.add(id);
++  let base: RefMap = {};
++  if (checkpoint.baseId) {
++    const parent = get(checkpoint.baseId);
++    if (checkpoint.baseId !== checkpoint.parentId || !isCheckpointDelta(parent) || parent.depth + 1 !== checkpoint.depth) throw Error('Invalid canvas checkpoint base');
++    base = checkpointRefs(checkpoint.baseId, get, cache, visiting);
++  } else if (checkpoint.depth !== 0) throw Error('Invalid canvas checkpoint depth');
++  const refs = applyCanvasRecordDiff(base, checkpoint.changes);
++  cache.set(id, refs); visiting.delete(id); return refs;
++}
++
++const restoredCheckpoints = new WeakMap<CanvasCheckpointDelta, {
++  refs: RefMap; snapshot: StoredCanvasSnapshot; dependencies: [string, CanvasStoredItem][];
++}>();
++export function restoreCanvasCheckpoints(checkpoints: Record<string, PersistedCanvasCheckpoint>, items: Record<string, CanvasStoredItem>, head?: CanvasCheckpointHead, reuseImmutableRecords = false): Record<string, StoredCanvasSnapshot> {
++  const cache = new Map<string, RefMap>();
++  const snapshots = Object.fromEntries(Object.entries(checkpoints).map(([id, checkpoint]) => {
++    if (!isCheckpointDelta(checkpoint)) return [id, checkpoint];
++    const refs = checkpointRefs(id, key => checkpoints[key], cache);
++    // Workspace batches retain accepted immutable objects. Re-expanding every
++    // historical view during each validation would undo the serialization savings.
++    const prior = reuseImmutableRecords && restoredCheckpoints.get(checkpoint);
++    if (prior && Object.keys(prior.refs).length === Object.keys(refs).length
++      && Object.entries(refs).every(([key, ref]) => prior.refs[key] === ref)
++      && prior.dependencies.every(([key, item]) => items[key] === item)) return [id, prior.snapshot];
++    const dependencies = new Map<string, CanvasStoredItem>();
++    const payload = readCanvasRecords(refs, key => { dependencies.set(key, items[key]); return items[key]; });
++    const snapshot: StoredCanvasSnapshot = { ...payload, id, parentId: checkpoint.parentId, transactionId: checkpoint.transactionId };
++    if (reuseImmutableRecords) restoredCheckpoints.set(checkpoint, { refs, snapshot, dependencies: [...dependencies] });
++    return [id, snapshot];
++  }));
++  if (head) {
++    const refs = cache.get(head.id);
++    if (!refs || !object(head.records) || Object.keys(refs).length !== Object.keys(head.records).length
++      || Object.entries(refs).some(([key, ref]) => head.records[key] !== ref)) throw Error('Invalid canvas checkpoint head');
++  }
++  return snapshots;
++}
++
++/** Read one checkpoint with bounded replay; unrelated history and revision content stay cold. */
++export async function loadCanvasCheckpoint(id: string, getCheckpoint: (id: string) => Promise<PersistedCanvasCheckpoint>, getItem: (id: string) => Promise<CanvasStoredItem>, head?: CanvasCheckpointHead): Promise<StoredCanvasSnapshot> {
++  if (head && (head.id !== id || !object(head.records))) throw Error('Invalid canvas checkpoint head');
++  const checkpoints: Record<string, PersistedCanvasCheckpoint> = {}, seen = new Set<string>();
++  let next: string | undefined = id;
++  while (next) {
++    if (seen.has(next) || seen.size > MAX_CHECKPOINT_DELTA_DEPTH) throw Error('Invalid canvas checkpoint chain');
++    seen.add(next);
++    const checkpoint: PersistedCanvasCheckpoint = await getCheckpoint(next);
++    if (!checkpoint || checkpoint.id !== next) throw Error('Unknown canvas checkpoint');
++    checkpoints[next] = checkpoint;
++    next = isCheckpointDelta(checkpoint) && !head ? checkpoint.baseId : undefined;
++  }
++  if (!isCheckpointDelta(checkpoints[id])) return checkpoints[id] as StoredCanvasSnapshot;
++  const refs = head?.records ?? checkpointRefs(id, key => checkpoints[key], new Map()), items: Record<string, CanvasStoredItem> = {};
++  const load = async (id: string) => {
++    const item = await getItem(id); items[id] = item;
++    if (!item || sha256(json(item)) !== id) throw Error('Canvas item integrity failure');
++  };
++  await Promise.all([...new Set(Object.values(refs))].map(load));
++  await Promise.all([...new Set(Object.values(items).flatMap(item => item.format === 'canvas-value' ? item.texts.map(([, id]) => id) : []))].map(load));
++  const checkpoint = checkpoints[id] as CanvasCheckpointDelta;
++  return { ...readCanvasRecords(refs, key => items[key]), id, parentId: checkpoint.parentId, transactionId: checkpoint.transactionId };
++}
+diff --git a/domain/core/diagrams/canvasHistory.ts b/domain/core/diagrams/canvasHistory.ts
+index b891c95e..f434eb5d 100644
+--- a/domain/core/diagrams/canvasHistory.ts
++++ b/domain/core/diagrams/canvasHistory.ts
+@@ -1,11 +1,21 @@
++import { migrateDiagramAlternatives, alternativeRevisionIds, validateDiagramAlternatives, type DiagramAlternatives } from '../presentation/diagramAlternative';
++import { canvasViewAlternatives, withCanvasViewAlternatives } from '../presentation/canvasViewAlternatives';
++import { diagramPresentationSettingsSchema } from '../presentation/diagramPresentation';
++import type { DiagramPresentations } from '../presentation/diagramPresentation';
++import { migrateRevisionSelections, validateRevisionSelections, type DiagramRevisionSelection } from './diagramRevisionSelection';
++import { canvasViewCommandSchema, validateCanvasViews, type CanvasViewCommand, type CanvasViews, type CanvasViewState } from './canvasView';
++import { canvasGenerationSchema, generationRunning, type CanvasGeneration } from './canvasGeneration';
++import { validateRevisionReview, reviewRevisionIds, type DiagramRevisionReview } from './diagramRevisionReview';
+ import { deepFreeze } from '../immutability';
++import { CanvasCheckpointEncoder, type CanvasCheckpointRecords } from './canvasCheckpointRecords';
+ import { diagramRevisions } from './internal/revisionRegistry';
+ import { validateDiagram, type Diagram } from './diagram';
++import { validateDiagramAgentContext, type DiagramAgentContext } from './diagramAgentContext';
+ import { diagramContentNodes } from './diagramContentNodes';
+ import { correspondingNodes, DiagramRevisionEditor, type DiagramRevision } from './diagramRevisionEditor';
+ import type { LineGridScene } from './lineGrid';
+ import type { DiagramConnection, DiagramAnchor, ContentNodeAnchor } from './diagramConnection';
+-export interface ResolvedCanvasDocument { scene: LineGridScene; edges: DiagramConnection[]; jumps?: CanvasJump[]; sections: Readonly<Record<string, readonly {id: string; label: string; startLine: number; endLine: number; anchorToken: string}[]>> }
++export interface ResolvedCanvasDocument { alternatives?: DiagramAlternatives; diagramPresentations?: DiagramPresentations; diagramContexts?: Record<string, DiagramAgentContext>; revisionSelections?: Record<string, DiagramRevisionSelection>; revisionReviews?: Record<string, DiagramRevisionReview>; scene: LineGridScene; edges: DiagramConnection[]; jumps?: CanvasJump[]; sections: Readonly<Record<string, readonly {id: string; label: string; startLine: number; endLine: number; anchorToken: string}[]>> }
+ import { projectCanvasSnapshot, validateCanvasScene } from './projectDiagramCanvas';
+ import { validateConnections } from './diagramConnection';
+ import { validateCanvasJumps, type CanvasJump } from './canvasJump';
+@@ -17,6 +27,11 @@ export type CanvasConnection = Omit<DiagramConnection, 'source' | 'target'> & {
+ };
+ /** Canonical canvas state separates diagram bindings from composition. Jump spans retain their source revision for stale-link detection. */
+ export interface CanvasDocument {
++  alternatives?: DiagramAlternatives;
++  diagramPresentations?: DiagramPresentations;
++  diagramContexts?: Record<string, DiagramAgentContext>;
++  revisionSelections?: Record<string, DiagramRevisionSelection>;
++  revisionReviews?: Record<string, DiagramRevisionReview>;
+   jumps?: CanvasJump[];
+   scene: Pick<ResolvedCanvasDocument['scene'], 'root'>;
+   edges: CanvasConnection[];
+@@ -39,8 +54,11 @@ export interface HistoryChanges {
+   header: Omit<CanvasHistoryRecord, "snapshots" | "diagramRevisions">;
+   snapshots: CanvasHistoryRecord["snapshots"];
+   diagramRevisions: CanvasHistoryRecord["diagramRevisions"];
++  storage?: CanvasCheckpointRecords;
+ }
+ export interface CanvasHistoryRecord {
++  /** Named recordings belong to the canvas, outside the state restored by undo or applying a view. */
++  canvasViews?: CanvasViews;
+   schemaVersion: 1;
+   contextId: string;
+   baselineId: string;
+@@ -49,12 +67,22 @@ export interface CanvasHistoryRecord {
+   future: string[];
+   snapshots: Record<string, StoredCanvasSnapshot>;
+   diagramRevisions: Record<string, DiagramRevision>;
++  /** An initial/current-only baseline pins parent identity without importing its ancestry. */
++  revisionBoundary?: Record<string, string>;
+ }
++export type CanvasHistoryNavigation = Pick<CanvasHistoryRecord, 'headId' | 'past' | 'future'> & {
++  undoTransactionId?: string; redoTransactionId?: string;
++};
+ export type HistoryValidation = 'all' | 'current';
+ export function currentHistoryChanges(record: CanvasHistoryRecord, snapshotId = record.headId) {
+   const snapshot = record.snapshots?.[snapshotId];
+   if (!snapshot) throw Error('Unknown canvas checkpoint');
+-  return { revisions: [...new Set(Object.values(snapshot.diagramBindings))], snapshots: [snapshotId] };
++  return { revisions: checkpointRevisionIds(snapshot), snapshots: [snapshotId] };
++}
++export function checkpointRevisionIds(snapshot: StoredCanvasSnapshot) {
++  const document = migrateRevisionSelections(snapshot.document);
++  return [...new Set([...Object.values(snapshot.diagramBindings), ...alternativeRevisionIds(document.alternatives), ...Object.values(document.revisionReviews ?? {}).flatMap(reviewRevisionIds),
++    ...Object.values(document.revisionSelections ?? {}).flatMap(selection => [selection.revisionId, selection.baseRevisionId, selection.contextRevisionId].filter((id): id is string => !!id))])];
+ }
+ const id = (kind: string) => `${kind}-${crypto.randomUUID()}`;
+ export function stateKey(value: unknown): string {
+@@ -68,8 +96,10 @@ export class CanvasHistory {
+   private record: CanvasHistoryRecord;
+   private readonly validatedSnapshots = new Set<string>();
+   private changes: { snapshots: CanvasHistoryRecord["snapshots"]; diagramRevisions: CanvasHistoryRecord["diagramRevisions"] }[] = [];
++  private checkpointEncoder = new CanvasCheckpointEncoder();
+   readonly diagrams: Pick<DiagramRevisionEditor, 'resolve' | 'merge'>;
+   constructor(document: ResolvedCanvasDocument, view: unknown, record?: CanvasHistoryRecord, validation: HistoryValidation = 'all') {
++    document = migrateRevisionSelections(document);
+     if (record) {
+       validateCanvasHistory(record, validation === 'current' ? currentHistoryChanges(record) : undefined);
+       for (const revision of Object.values(record.diagramRevisions)) {
+@@ -77,6 +107,7 @@ export class CanvasHistory {
+       }
+       for (const key of validation === 'current' ? [record.headId] : Object.keys(record.snapshots)) this.validatedSnapshots.add(key);
+       this.record = structuredClone(record);
++      document = migrateDiagramAlternatives(document, id => diagramRevisions.get(id), record.snapshots[record.headId].diagramBindings);
+       if (!equal(this.document(), document)) throw new Error('Canvas history does not match document');
+     } else {
+       this.record = { schemaVersion: 1, contextId: id('context'), baselineId: '', headId: '', past: [], future: [], snapshots: {}, diagramRevisions: {} };
+@@ -100,11 +131,30 @@ export class CanvasHistory {
+     const updates = since === undefined ? { snapshots: { ...snapshots }, diagramRevisions: { ...diagramRevisions } }
+       : this.changes.slice(since).reduce((out, change) => ({ snapshots: Object.assign(out.snapshots, change.snapshots),
+         diagramRevisions: Object.assign(out.diagramRevisions, change.diagramRevisions) }), { snapshots: {}, diagramRevisions: {} });
+-    return { sequence: this.changes.length, header: { ...header, past: [...header.past], future: [...header.future] }, ...updates };
++    return { sequence: this.changes.length, header: { ...header, ...(header.canvasViews ? { canvasViews: structuredClone(header.canvasViews) } : {}), past: [...header.past], future: [...header.future] }, ...updates,
++      storage: this.checkpointEncoder.encode(updates.snapshots, since === undefined, header.headId) };
++  }
++  export(currentOnly = false): CanvasHistoryRecord {
++    // Named recordings pin their complete checkpoint/dependency graph during copies and exports.
++    if (this.record.canvasViews && (Object.keys(this.record.canvasViews.saved).length || this.record.canvasViews.recording)) currentOnly = false;
++    if (!currentOnly) return structuredClone(this.record);
++    // Copy operations need current bindings, not the source's entire undo archive.
++    // Keep the real head ID so workspace transfer boundaries still refer to it.
++    const { parentId: _, ...head } = this.record.snapshots[this.record.headId];
++    const revisions = Object.fromEntries(checkpointRevisionIds(head)
++      .map(id => [id, this.record.diagramRevisions[id]]));
++    const revisionBoundary = Object.fromEntries(Object.values(revisions).flatMap(revision =>
++      revision.parentId && !revisions[revision.parentId] ? [[revision.parentId, revision.diagramId]] : []));
++    return structuredClone({ schemaVersion: 1, contextId: this.record.contextId, baselineId: head.id, headId: head.id,
++      past: [], future: [], snapshots: { [head.id]: head }, diagramRevisions: revisions, revisionBoundary });
++  }
++  navigation(): CanvasHistoryNavigation {
++    return { headId: this.record.headId, past: [...this.record.past], future: [...this.record.future],
++      undoTransactionId: this.navigationTransactionId(), redoTransactionId: this.navigationTransactionId(true) };
+   }
+-  export(): CanvasHistoryRecord { return structuredClone(this.record); }
+   fork(view: unknown = this.head.view): CanvasHistoryRecord {
+     const record = this.export(), head = this.head;
++    if (record.canvasViews) delete record.canvasViews.recording;
+     const baseline = { ...head, view: structuredClone(view), id: id('canvas-revision'), parentId: head.id, nodeOrigins: Object.fromEntries(
+       Object.values(this.document().scene.contents).flatMap(diagram => diagramContentNodes(diagram.content).map(node => [node.id, node.id]))) };
+     record.snapshots[baseline.id] = baseline;
+@@ -115,6 +165,17 @@ export class CanvasHistory {
+     this.validateCheckpoint(snapshotId);
+     return documentFromHistory(this.record, snapshotId);
+   }
++  /** Read only the two pinned endpoints, without navigating or copying the undo archive. */
++  canvasViewComparison(viewId: string): import('./canvasView').CanvasViewComparison {
++    const view = this.record.canvasViews?.saved[viewId];
++    if (!view?.finalCheckpointId) throw Error('Unknown saved CanvasView');
++    const read = (checkpointId: string) => {
++      const document = this.document(checkpointId), snapshot = this.record.snapshots[checkpointId];
++      return { checkpointId, document, view: snapshot.view,
++        revisions: Object.fromEntries(checkpointRevisionIds(snapshot).map(id => [id, this.record.diagramRevisions[id]])) };
++    };
++    return structuredClone({ view, baseline: read(view.startCheckpointId), proposed: read(view.finalCheckpointId) });
++  }
+   private validateCheckpoint(snapshotId: string) {
+     if (this.validatedSnapshots.has(snapshotId)) return;
+     validateCanvasHistory(this.record, currentHistoryChanges(this.record, snapshotId));
+@@ -125,6 +186,12 @@ export class CanvasHistory {
+     projectCanvasSnapshot(document.scene);
+     validateConnections(document.scene, document.edges);
+     if (document.jumps) validateCanvasJumps(document.scene, document.jumps);
++    for (const [diagramId, context] of Object.entries(document.diagramContexts ?? {})) {
++      if (diagramId !== context.diagramId || !Object.values(document.scene.contents).some(diagram => diagram.diagramId === diagramId))
++        throw Error('Diagram agent context has no owning diagram');
++      validateDiagramAgentContext(context);
++    }
++    for (const settings of Object.values(document.diagramPresentations ?? {})) diagramPresentationSettingsSchema.parse(settings);
+     const previous = this.record.snapshots[this.record.headId];
+     const bindings: Record<string, string> = {}, additions: Record<string, DiagramRevision> = {}, origins: Record<string, string> = {};
+     for (const [diagramId, diagram] of Object.entries(document.scene.contents)) {
+@@ -142,16 +209,43 @@ export class CanvasHistory {
+       bindings[diagramId] = issued.id;
+       const include = (revision: DiagramRevision) => {
+         if (this.record.diagramRevisions[revision.id] || additions[revision.id]) return;
+-        if (revision.parentId) include(diagramRevisions.get(revision.parentId));
++        if (revision.parentId) {
++          if (previous) include(diagramRevisions.get(revision.parentId));
++          else (this.record.revisionBoundary ??= {})[revision.parentId] = revision.diagramId;
++        }
+         additions[revision.id] = revision;
+       };
+       include(issued);
+     }
++    document = migrateDiagramAlternatives(document, id => diagramRevisions.get(id), bindings);
++    validateRevisionSelections(document);
++    for (const [key, variant] of Object.entries(document.revisionReviews ?? {})) {
++      if (key !== variant.id) throw Error('Invalid variant identity');
++      validateRevisionReview(variant, id => diagramRevisions.get(id));
++      const retain = (id: string): void => {
++        if (this.record.diagramRevisions[id] || additions[id]) return;
++        const revision = diagramRevisions.get(id);
++        if (revision.parentId && !this.record.revisionBoundary?.[revision.parentId]) retain(revision.parentId);
++        additions[id] = revision;
++      };
++      reviewRevisionIds(variant).forEach(retain);
++    }
++    validateRevisionSelections(document, id => diagramRevisions.get(id));
++    const retainSelection = (id: string): void => {
++      if (this.record.diagramRevisions[id] || additions[id]) return;
++      const revision = diagramRevisions.get(id);
++      if (revision.parentId && !this.record.revisionBoundary?.[revision.parentId]) retainSelection(revision.parentId);
++      additions[id] = revision;
++    };
++    for (const selection of Object.values(document.revisionSelections ?? {}))
++      for (const id of [selection.revisionId, selection.baseRevisionId, selection.contextRevisionId]) if (id) retainSelection(id);
++    if (document.alternatives) validateDiagramAlternatives(document.alternatives, id => diagramRevisions.get(id));
++    alternativeRevisionIds(document.alternatives).forEach(retainSelection);
+     const unresolvedAnchors: Record<string, ContentNodeAnchor> = {};
+     const revisions = { ...this.record.diagramRevisions, ...additions };
+     const edges = document.edges.map(edge => ({ ...edge, source: encodeAnchor(edge.source, edge.id + ':source', document.scene, bindings, revisions, unresolvedAnchors) as CanvasNodeAnchor, target: encodeAnchor(edge.target, edge.id + ':target', document.scene, bindings, revisions, unresolvedAnchors) }));
+     const snapshot: StoredCanvasSnapshot = { id: id('canvas-revision'), parentId: previous?.id,
+-      document: { scene: { root: structuredClone(document.scene.root) }, edges, sections: structuredClone(document.sections), ...(document.jumps ? { jumps: structuredClone(document.jumps) } : {}) },
++      document: { ...(document.alternatives ? { alternatives: structuredClone(document.alternatives) } : {}), ...(document.diagramPresentations ? { diagramPresentations: structuredClone(document.diagramPresentations) } : {}), ...(document.diagramContexts ? { diagramContexts: structuredClone(document.diagramContexts) } : {}), ...(document.revisionSelections ? { revisionSelections: structuredClone(document.revisionSelections) } : {}), ...(document.revisionReviews ? { revisionReviews: structuredClone(document.revisionReviews) } : {}), scene: { root: structuredClone(document.scene.root) }, edges, sections: structuredClone(document.sections), ...(document.jumps ? { jumps: structuredClone(document.jumps) } : {}) },
+       diagramBindings: bindings, unresolvedAnchors, view: structuredClone(view), nodeOrigins: origins };
+     // Validation above must complete before any canonical state changes.
+     Object.assign(this.record.diagramRevisions, additions);
+@@ -161,8 +255,225 @@ export class CanvasHistory {
+     if (previous) this.record.past.push(previous.id);
+     this.record.headId = snapshot.id;
+     this.record.future = [];
++    this.recordViewStep();
+     return this.head;
+   }
++  canvasViews(): CanvasViewState {
++    const views = structuredClone(this.record.canvasViews ?? { saved: {} });
++    const active = views.activeViewId && views.saved[views.activeViewId];
++    if (!active) return views;
++    const saved = this.record.snapshots[active.finalCheckpointId!], current = this.head;
++    const contentView = (view: unknown) => {
++      if (!view || typeof view !== 'object') return view;
++      const { viewport: _, selection: __, ...content } = view as Record<string, unknown>;
++      return content;
++    };
++    return { ...views, dirty: !equal(saved.document, current.document) || !equal(saved.diagramBindings, current.diagramBindings)
++      || !equal(contentView(saved.view), contentView(current.view)) };
++  }
++  private stashCanvasView(views: CanvasViews, view: unknown) {
++    if (!equal(this.head.view, view)) this.append(this.document(), view);
++    if (views.activeViewId) (views.workingCopies ??= {})[views.activeViewId] = this.headId;
++  }
++  private openCanvasView(views: CanvasViews, viewId: string, view: unknown) {
++    if (views.activeViewId === viewId) { this.stashCanvasView(views, view); return; }
++    const saved = views.saved[viewId];
++    const checkpointId = views.workingCopies?.[viewId] ?? saved.finalCheckpointId!;
++    this.validateCheckpoint(checkpointId);
++    this.stashCanvasView(views, view);
++    const { transactionId: _, ...target } = this.record.snapshots[checkpointId];
++    // Navigation retains the current camera so alternatives stay visually aligned.
++    const snapshot = structuredClone({ ...target, id: id('canvas-revision'), parentId: this.headId });
++    if (snapshot.view && typeof snapshot.view === 'object' && view && typeof view === 'object' && 'viewport' in view)
++      snapshot.view = { ...snapshot.view, viewport: view.viewport };
++    this.record.snapshots[snapshot.id] = snapshot;
++    this.changes.push({ snapshots: { [snapshot.id]: snapshot }, diagramRevisions: {} });
++    this.record.past.push(this.headId); this.record.headId = snapshot.id; this.record.future = [];
++    views.activeViewId = viewId;
++  }
++  private recordViewStep() {
++    const recording = this.record.canvasViews?.recording;
++    if (recording && recording.checkpointIds.at(-1) !== this.record.headId) recording.checkpointIds.push(this.record.headId);
++  }
++  startGeneration(parentId: string, candidates: { id: string; name: string; generation: CanvasGeneration }[]) {
++    const views = this.record.canvasViews, parent = views?.saved[parentId];
++    if (!parent || parent.archivedAt || views!.recording || generationRunning(parent.generation)) throw Error('Saved parent view is unavailable');
++    if (!candidates.length || candidates.length > 8 || new Set(candidates.map(item => item.id)).size !== candidates.length) throw Error('Invalid candidates');
++    for (const candidate of candidates) {
++      canvasGenerationSchema.parse(candidate.generation);
++      if (!candidate.id || views!.saved[candidate.id]) throw Error('Candidate already exists');
++    }
++    const checkpointId = parent.finalCheckpointId!, now = new Date().toISOString();
++    // Export only this saved state and its revision dependencies, not the live head.
++    const record = { ...this.export(), headId: checkpointId, baselineId: checkpointId, past: [], future: [] };
++    delete record.canvasViews;
++    const history = new CanvasHistory(this.document(checkpointId), this.record.snapshots[checkpointId].view, record).export(true);
++    for (const item of candidates) views!.saved[item.id] = { id: item.id, name: item.name, createdAt: now, savedAt: now,
++      parentViewId: parentId, forkCheckpointId: checkpointId, alternativeGroupId: item.generation.runId,
++      startCheckpointId: checkpointId, finalCheckpointId: checkpointId, checkpointIds: [checkpointId], generation: item.generation };
++    return history;
++  }
++  updateGeneration(viewId: string, generation: CanvasGeneration, proposed?: CanvasHistoryRecord) {
++    canvasGenerationSchema.parse(generation);
++    const saved = this.record.canvasViews?.saved[viewId];
++    if (!saved || saved.archivedAt || saved.generation?.runId !== generation.runId || saved.generation.chatId !== generation.chatId) throw Error('Generation target is unavailable');
++    if (!generationRunning(saved.generation)) {
++      if (equal(saved.generation, generation)) return;
++      throw Error('Generation has already settled');
++    }
++    if (proposed) {
++      if (generation.status !== 'finished') throw Error('Only completed generation can publish a view');
++      validateCanvasHistory(proposed);
++      const snapshot = structuredClone({ ...proposed.snapshots[proposed.headId], id: id('canvas-revision'), parentId: saved.finalCheckpointId });
++      delete snapshot.transactionId;
++      for (const [key, revision] of Object.entries(proposed.diagramRevisions)) {
++        if (this.record.diagramRevisions[key] && !equal(this.record.diagramRevisions[key], revision)) throw Error('Diagram revision is immutable');
++      }
++      const next = { ...this.record, snapshots: { ...this.record.snapshots, [snapshot.id]: snapshot },
++        diagramRevisions: { ...this.record.diagramRevisions, ...proposed.diagramRevisions },
++        revisionBoundary: { ...proposed.revisionBoundary, ...this.record.revisionBoundary } };
++      validateCanvasHistory(next);
++      for (const revision of Object.values(proposed.diagramRevisions)) diagramRevisions.register(revision);
++      Object.assign(this.record.diagramRevisions, proposed.diagramRevisions);
++      this.record.snapshots[snapshot.id] = snapshot;
++      this.record.revisionBoundary = next.revisionBoundary;
++      this.changes.push({ snapshots: { [snapshot.id]: snapshot }, diagramRevisions: proposed.diagramRevisions });
++      saved.finalCheckpointId = snapshot.id; saved.checkpointIds.push(snapshot.id); saved.savedAt = generation.completedAt;
++    }
++    saved.generation = structuredClone(generation);
++  }
++  canvasView(raw: CanvasViewCommand, view = this.head.view): CanvasViewState {
++    const input = canvasViewCommandSchema.parse(raw);
++    if (input.operation === 'list' || input.operation === 'read') {
++      if (input.operation === 'read' && (!input.viewId || !this.record.canvasViews?.saved[input.viewId])) throw Error('CanvasView not found');
++      return this.canvasViews();
++    }
++    const views = this.record.canvasViews ?? { saved: {} };
++    if (views.recording && ['create', 'open', 'fork', 'save', 'alternatives', 'keep', 'discard'].includes(input.operation))
++      throw Error('Stop recording before editing saved CanvasViews');
++    if (input.operation === 'create') {
++      if (!input.name) throw Error('CanvasView name is required');
++      this.stashCanvasView(views, view);
++      const viewId = id('canvas-view'), now = new Date().toISOString();
++      views.saved[viewId] = { id: viewId, name: input.name, createdAt: now, savedAt: now,
++        startCheckpointId: this.headId, finalCheckpointId: this.headId, checkpointIds: [this.headId] };
++      views.activeViewId = viewId;
++    } else if (input.operation === 'start') {
++      if (views.recording) throw Error('A CanvasView is already recording');
++      if (!input.name) throw Error('CanvasView name is required');
++      if (!equal(this.head.view, view)) this.append(this.document(), view);
++      views.recording = { id: id('canvas-view'), name: input.name, createdAt: new Date().toISOString(),
++        startCheckpointId: this.headId, checkpointIds: [this.headId] };
++    } else if (input.operation === 'stop') {
++      if (!views.recording) throw Error('No CanvasView is recording');
++      if (!equal(this.head.view, view)) this.append(this.document(), view);
++      this.recordViewStep();
++      const saved = { ...views.recording, finalCheckpointId: this.headId, savedAt: new Date().toISOString() };
++      views.saved[saved.id] = saved;
++      views.activeViewId = saved.id;
++      delete views.recording;
++    } else if (input.operation === 'cancel') {
++      if (!views.recording) throw Error('No CanvasView is recording');
++      delete views.recording;
++    } else {
++      const targetId = input.viewId ?? (input.operation === 'save' ? views.activeViewId : undefined);
++      const saved = targetId && views.saved[targetId];
++      if (!saved) throw Error('CanvasView not found');
++      if (generationRunning(saved.generation)) throw Error('This view is still generating; cancel generation before editing it');
++      if (['keep', 'discard', 'delete'].includes(input.operation) && Object.values(views.saved).some(item => {
++        if (!generationRunning(item.generation)) return false;
++        if (input.operation === 'keep' && item.alternativeGroupId === saved.alternativeGroupId) return true;
++        let parent = item.parentViewId;
++        while (parent) { if (parent === saved.id) return true; parent = views.saved[parent]?.parentViewId; }
++        return false;
++      })) throw Error('Wait for generation to finish or cancel it first');
++      if (saved.archivedAt) throw Error('CanvasView is archived');
++      if (input.operation === 'fork' || input.operation === 'alternatives') {
++        const names = input.operation === 'fork' ? input.name && [input.name] : input.names;
++        if (!names) throw Error(input.operation === 'fork' ? 'CanvasView name is required' : 'Alternative names are required');
++        const groupId = input.operation === 'alternatives' ? id('view-alternatives') : undefined;
++        const children = names.map(name => {
++          const viewId = id('canvas-view'), now = new Date().toISOString(), checkpointId = saved.finalCheckpointId!;
++          return { id: viewId, name, createdAt: now, savedAt: now, parentViewId: saved.id, forkCheckpointId: checkpointId,
++            ...(groupId ? { alternativeGroupId: groupId } : {}),
++            startCheckpointId: checkpointId, finalCheckpointId: checkpointId, checkpointIds: [checkpointId] };
++        });
++        for (const child of children) views.saved[child.id] = child;
++        if (input.operation === 'fork') this.openCanvasView(views, children[0].id, view);
++      } else if (input.operation === 'open') {
++        this.openCanvasView(views, saved.id, view);
++      } else if (input.operation === 'keep' || input.operation === 'discard') {
++        if (input.operation === 'keep' && !saved.alternativeGroupId) throw Error('CanvasView is not part of an alternative group');
++        const archived = new Set(input.operation === 'discard' ? [saved.id] : Object.values(views.saved)
++          .filter(item => item.id !== saved.id && item.alternativeGroupId === saved.alternativeGroupId).map(item => item.id));
++        let changed = true;
++        while (changed) {
++          changed = false;
++          for (const item of Object.values(views.saved)) if (item.parentViewId && archived.has(item.parentViewId) && !archived.has(item.id)) {
++            archived.add(item.id); changed = true;
++          }
++        }
++        if (input.operation === 'keep') {
++          if (views.activeViewId !== saved.id) this.openCanvasView(views, saved.id, view);
++          else this.stashCanvasView(views, view);
++          views.saved[saved.id] = { ...saved, finalCheckpointId: this.headId, savedAt: new Date().toISOString(),
++            checkpointIds: saved.checkpointIds.at(-1) === this.headId ? saved.checkpointIds : [...saved.checkpointIds, this.headId] };
++          if (views.workingCopies) delete views.workingCopies[saved.id];
++        } else if (views.activeViewId && archived.has(views.activeViewId)) {
++          if (saved.parentViewId && !views.saved[saved.parentViewId].archivedAt) this.openCanvasView(views, saved.parentViewId, view);
++          else { this.stashCanvasView(views, view); delete views.activeViewId; }
++        }
++        for (const viewId of archived) views.saved[viewId] = { ...views.saved[viewId], archivedAt: new Date().toISOString() };
++      } else if (input.operation === 'promote-diffs') {
++        if (views.recording) throw Error('Stop recording before promoting CanvasView diffs');
++        const comparison = this.canvasViewComparison(saved.id);
++        const items = canvasViewAlternatives(comparison);
++        const current = withCanvasViewAlternatives(this.document(), items);
++        const targetDocument = withCanvasViewAlternatives(comparison.proposed.document, items);
++        validateDiagramAlternatives(current.alternatives!, revisionId => diagramRevisions.get(revisionId));
++        validateDiagramAlternatives(targetDocument.alternatives!, revisionId => diagramRevisions.get(revisionId));
++        // Append a new saved endpoint; retain the original immutable checkpoints and comparison base.
++        const target = this.record.snapshots[saved.finalCheckpointId!];
++        if (!equal(target.document.alternatives, targetDocument.alternatives)) {
++          const snapshot = structuredClone({ ...target, id: id('canvas-revision'), parentId: target.id,
++            document: { ...target.document, alternatives: targetDocument.alternatives } });
++          delete snapshot.transactionId;
++          this.record.snapshots[snapshot.id] = snapshot;
++          this.changes.push({ snapshots: { [snapshot.id]: snapshot }, diagramRevisions: {} });
++          views.saved[saved.id] = { ...saved, checkpointIds: [...saved.checkpointIds, snapshot.id],
++            finalCheckpointId: snapshot.id, savedAt: new Date().toISOString() };
++        }
++        if (!equal(current.alternatives, this.document().alternatives)) this.append(current, view);
++      } else if (input.operation === 'save') {
++        if (views.activeViewId && views.activeViewId !== saved.id) throw Error('Open the CanvasView before saving changes to it');
++        if (!equal(this.head.view, view)) this.append(this.document(), view);
++        views.saved[saved.id] = { ...saved, finalCheckpointId: this.headId, savedAt: new Date().toISOString(),
++          checkpointIds: saved.checkpointIds.at(-1) === this.headId ? saved.checkpointIds : [...saved.checkpointIds, this.headId] };
++        views.activeViewId = saved.id;
++        if (views.workingCopies) delete views.workingCopies[saved.id];
++      } else if (input.operation === 'delete') {
++        if (Object.values(views.saved).some(item => item.parentViewId === saved.id)) throw Error('Use discard to archive a CanvasView with children');
++        delete views.saved[saved.id];
++        if (views.workingCopies) delete views.workingCopies[saved.id];
++        if (views.activeViewId === saved.id) delete views.activeViewId;
++      }
++      else {
++        if (views.recording) throw Error('Stop recording before applying or forking a CanvasView');
++        this.validateCheckpoint(saved.finalCheckpointId!);
++        // Restore the exact saved state as a fresh checkpoint. Transfer transaction links
++        // describe the original operation and must not be replayed by this local restore.
++        const { transactionId: _, ...target } = this.record.snapshots[saved.finalCheckpointId!];
++        const snapshot = structuredClone({ ...target, id: id('canvas-revision'), parentId: this.headId });
++        this.record.snapshots[snapshot.id] = snapshot;
++        this.changes.push({ snapshots: { [snapshot.id]: snapshot }, diagramRevisions: {} });
++        this.record.past.push(this.headId); this.record.headId = snapshot.id; this.record.future = [];
++        views.activeViewId = saved.id;
++        if (views.workingCopies) delete views.workingCopies[saved.id];
++      }
++    }
++    this.record.canvasViews = views;
++    return this.canvasViews();
++  }
+   navigationTransactionId(redo = false) {
+     return this.record.snapshots[redo ? this.record.future.at(-1)! : this.record.headId]?.transactionId;
+   }
+@@ -173,6 +484,7 @@ export class CanvasHistory {
+     (redo ? this.record.future : this.record.past).pop();
+     (redo ? this.record.past : this.record.future).push(this.record.headId);
+     this.record.headId = target;
++    this.recordViewStep();
+     return this.head;
+   }
+   linkTransaction(transactionId: string) {
+@@ -204,6 +516,7 @@ export class CanvasHistory {
+     // Keep the revision table object used by the internal resolver alive.
+     Object.assign(this.record.diagramRevisions, structuredClone(proposed.diagramRevisions));
+     this.record = { ...next, diagramRevisions: this.record.diagramRevisions };
++    this.recordViewStep();
+     this.changes.push({ snapshots: { [snapshot.id]: snapshot }, diagramRevisions: Object.fromEntries(Object.keys(added).map(key => [key, this.record.diagramRevisions[key]])) });
+   }
+   reset(view?: unknown) {
+@@ -215,6 +528,7 @@ export class CanvasHistory {
+     this.record.past.push(this.record.headId);
+     this.record.headId = snapshot.id;
+     this.record.future = [];
++    this.recordViewStep();
+     return this.head;
+   }
+ }
+@@ -226,12 +540,12 @@ export function validateCanvasHistory(value: CanvasHistoryRecord, changed?: { re
+   for (const key of [value.headId, value.baselineId, ...value.past, ...value.future]) {
+     if (typeof key !== 'string' || !Object.hasOwn(value.snapshots, key)) throw new Error('Unknown canvas history reference');
+   }
++  validateCanvasViews(value.canvasViews, value.snapshots);
+   for (const [key, revision] of (changed ? changed.revisions.map(key => [key, value.diagramRevisions[key]] as const) : Object.entries(value.diagramRevisions))) {
+     if (revision.diagram.revisionId !== key || revision.id !== key || revision.diagramId !== revision.diagram.diagramId || !revision.nodeRefs) throw new Error('Invalid diagram history identity');
+     validateDiagram(revision.diagram);
+     validated.add(revision.diagram);
+-    if (revision.parentId && (!Object.hasOwn(value.diagramRevisions, revision.parentId)
+-      || value.diagramRevisions[revision.parentId].diagramId !== revision.diagramId)) throw new Error('Invalid diagram revision parent');
++    if (revision.parentId && (value.diagramRevisions[revision.parentId]?.diagramId ?? value.revisionBoundary?.[revision.parentId]) !== revision.diagramId) throw new Error('Invalid diagram revision parent');
+     const refs = diagramContentNodes(revision.diagram.content).map(n => revision.nodeRefs[n.id]);
+     if (refs.some(ref => typeof ref !== 'string' || !ref) || new Set(refs).size !== refs.length) throw new Error('Invalid logical node identities');
+   }
+@@ -245,7 +559,19 @@ export function validateCanvasHistory(value: CanvasHistoryRecord, changed?: { re
+       if (!revision || revision.diagram.id !== diagramId) throw new Error('Invalid diagram binding');
+       contents[diagramId] = revision.diagram;
+     }
++    for (const settings of Object.values(snapshot.document.diagramPresentations ?? {})) diagramPresentationSettingsSchema.parse(settings);
++    if (snapshot.document.alternatives) validateDiagramAlternatives(snapshot.document.alternatives, id => value.diagramRevisions[id]);
++    validateRevisionSelections(migrateRevisionSelections(snapshot.document), id => value.diagramRevisions[id]);
++    for (const [id, variant] of Object.entries(migrateRevisionSelections(snapshot.document).revisionReviews ?? {})) {
++      if (id !== variant.id) throw Error('Invalid variant identity');
++      validateRevisionReview(variant, id => value.diagramRevisions[id]);
++    }
+     const scene = { root: snapshot.document.scene.root, contents };
++    for (const [diagramId, context] of Object.entries(snapshot.document.diagramContexts ?? {})) {
++      if (diagramId !== context.diagramId || !Object.values(contents).some(diagram => diagram.diagramId === diagramId))
++        throw Error('Diagram agent context has no owning diagram');
++      validateDiagramAgentContext(context);
++    }
+     validateCanvasScene(scene, validated);
+     if (snapshot.transactionId !== undefined && (typeof snapshot.transactionId !== 'string' || !snapshot.transactionId)) throw Error('Invalid transaction reference');
+     if (snapshot.document.jumps) validateCanvasJumps(scene, snapshot.document.jumps);
+@@ -268,7 +594,7 @@ export function documentFromHistory(record: CanvasHistoryRecord, snapshotId = re
+     if (!revision || !contentNodeId) throw new Error('Unresolvable canonical anchor');
+     return { ...anchor, contentNodeId, revisionId: revision.diagram.content.revisionId };
+   };
+-  const result = structuredClone({ ...snapshot.document, scene, edges: snapshot.document.edges.map(edge => ({ ...edge,
++  const result = structuredClone({ ...migrateDiagramAlternatives(snapshot.document, id => record.diagramRevisions[id], snapshot.diagramBindings), scene, edges: snapshot.document.edges.map(edge => ({ ...edge,
+     source: decode(edge.source, edge.id + ':source') as ContentNodeAnchor, target: decode(edge.target, edge.id + ':target') })) });
+   Object.values(result.scene.contents).forEach(deepFreeze);
+   return result;
+diff --git a/domain/mapping/workspace/workspaceRecords.ts b/domain/mapping/workspace/workspaceRecords.ts
+index db3bc1d1..32667ca6 100644
+--- a/domain/mapping/workspace/workspaceRecords.ts
++++ b/domain/mapping/workspace/workspaceRecords.ts
+@@ -1,4 +1,8 @@
+ import { canvasTransferSchema } from '../../core/diagrams/canvasTransfer';
++import { sha256 } from '../../core/sha256';
++import { CanvasCheckpointEncoder, CanvasValueEncoder, isCanvasViewRecords, readCanvasRecords, restoreCanvasCheckpoints,
++  type CanvasStoredItem, type CanvasViewRecords, type PersistedCanvasCheckpoint } from '../../core/diagrams/canvasCheckpointRecords';
++import { validateCanvasParents } from './canvasParents';
+ import { CanvasHistory, currentHistoryChanges, documentFromHistory, validateCanvasHistory, type CanvasHistoryRecord, type HistoryChanges, type HistoryValidation } from '../../core/diagrams/canvasHistory';
+ import type { StorageChange } from '../../core/storage/storageService';
+ import { deserializeWorkspace } from './mappingWorkspaceCodec';
+@@ -11,12 +15,20 @@ export interface WorkspaceRecordState { revision: number; records: WorkspaceReco
+ export const documentPrefix = (id: string) => `document/${encodeURIComponent(id)}/`;
+ export function historyChanges(id: string, history: HistoryChanges): StorageChange[] {
+   const prefix = documentPrefix(id);
++  const storage = history.storage ?? new CanvasCheckpointEncoder().encode(history.snapshots, true, history.header.headId);
+   return [
+-    { key: prefix + 'history', value: history.header },
+-    ...Object.entries(history.snapshots).map(([key, value]) => ({ key: prefix + 'checkpoint/' + key, value })),
++    { key: prefix + 'history', value: { ...history.header, checkpointHead: storage.head } },
++    ...Object.entries(storage.items).map(([key, value]) => ({ key: prefix + 'item/' + key, value })),
++    ...Object.entries(storage.checkpoints).map(([key, value]) => ({ key: prefix + 'checkpoint/' + key, value })),
+     ...Object.entries(history.diagramRevisions).map(([key, value]) => ({ key: prefix + 'revision/' + key, value }))
+   ];
+ }
++export function canvasViewChanges(id: string, canvas: MappingCanvasState): StorageChange[] {
++  const prefix = documentPrefix(id), encoder = new CanvasValueEncoder();
++  const value: CanvasViewRecords = { format: 'canvas-view-v1', records: encoder.encode({ view: normalizeRecord(prefix + 'canvas', structuredClone(canvas)) }) };
++  return [...Object.entries(encoder.takeItems()).map(([key, value]) => ({ key: prefix + 'item/' + key, value })),
++    { key: prefix + 'canvas', value }];
++}
+ export function documentRecords(doc: MappingDocumentSnapshot): WorkspaceRecords {
+   const { document, canvas, history, viewport, savedName, savedScene, savedEdges, revisionId, ...metadata } = doc;
+   const changes = new CanvasHistory(document, canvas, history).persistenceChanges();
+@@ -24,7 +36,8 @@ export function documentRecords(doc: MappingDocumentSnapshot): WorkspaceRecords
+   return Object.fromEntries([
+     ...historyChanges(doc.representationId, changes).map(change => [change.key, 'value' in change ? change.value : undefined]),
+     [prefix + 'metadata', metadata], [prefix + 'baseline', { savedName, savedScene, savedEdges, revisionId }],
+-    [prefix + 'canvas', canvas], ...(viewport ? [[prefix + 'viewport', viewport]] : [])
++    ...canvasViewChanges(doc.representationId, canvas).map(change => [change.key, 'value' in change ? change.value : undefined]),
++    ...(viewport ? [[prefix + 'viewport', viewport]] : [])
+   ]);
+ }
+ export function workspaceRecords(workspace: MappingWorkspaceSnapshot): WorkspaceRecords {
+@@ -34,16 +47,24 @@ export function workspaceRecords(workspace: MappingWorkspaceSnapshot): Workspace
+ }
+ export function recordHistory(records: WorkspaceRecords, id: string): CanvasHistoryRecord {
+   const prefix = documentPrefix(id);
+-  return { ...records[prefix + 'history'] as HistoryChanges['header'],
+-    snapshots: Object.fromEntries(Object.entries(records).filter(([key]) => key.startsWith(prefix + 'checkpoint/')).map(([key, value]) => [key.slice((prefix + 'checkpoint/').length), value])),
+-    diagramRevisions: Object.fromEntries(Object.entries(records).filter(([key]) => key.startsWith(prefix + 'revision/')).map(([key, value]) => [key.slice((prefix + 'revision/').length), value]))
++  const checkpoints: Record<string, PersistedCanvasCheckpoint> = {}, items: Record<string, CanvasStoredItem> = {}, diagramRevisions: CanvasHistoryRecord['diagramRevisions'] = {};
++  for (const [key, value] of Object.entries(records)) {
++    if (key.startsWith(prefix + 'checkpoint/')) checkpoints[key.slice((prefix + 'checkpoint/').length)] = value as PersistedCanvasCheckpoint;
++    else if (key.startsWith(prefix + 'item/')) items[key.slice((prefix + 'item/').length)] = value as CanvasStoredItem;
++    else if (key.startsWith(prefix + 'revision/')) diagramRevisions[key.slice((prefix + 'revision/').length)] = value as CanvasHistoryRecord['diagramRevisions'][string];
++  }
++  const { checkpointHead, ...header } = records[prefix + 'history'] as HistoryChanges['header'] & { checkpointHead?: import('../../core/diagrams/canvasCheckpointRecords').CanvasCheckpointHead };
++  if (checkpointHead && checkpointHead.id !== header.headId) throw Error('Invalid canvas checkpoint head');
++  return { ...header,
++    snapshots: restoreCanvasCheckpoints(checkpoints, items, checkpointHead, true), diagramRevisions
+   } as CanvasHistoryRecord;
+ }
+ export function recordDocument(records: WorkspaceRecords, id: string): MappingDocumentSnapshot {
+   const prefix = documentPrefix(id), history = recordHistory(records, id);
++  const storedCanvas = records[prefix + 'canvas'];
+   return { ...records[prefix + 'metadata'] as object, ...records[prefix + 'baseline'] as object,
+     representationId: id, document: documentFromHistory(history), history,
+-    canvas: records[prefix + 'canvas'] as MappingCanvasState,
++    canvas: isCanvasViewRecords(storedCanvas) ? readCanvasRecords(storedCanvas.records, key => records[prefix + 'item/' + key] as CanvasStoredItem).view : storedCanvas as MappingCanvasState,
+     ...(records[prefix + 'viewport'] ? { viewport: records[prefix + 'viewport'] } : {}) } as MappingDocumentSnapshot;
+ }
+ export function recordsWorkspace(records: WorkspaceRecords): MappingWorkspaceSnapshot | null {
+@@ -53,7 +74,7 @@ export function recordsWorkspace(records: WorkspaceRecords): MappingWorkspaceSna
+ }
+ /** Save projection, separate from full import validation. Called on the worker's copy. */
+ export function normalizeRecord(key: string, value: unknown): unknown {
+-  if (!key.endsWith('/canvas')) return value;
++  if (!key.endsWith('/canvas') || isCanvasViewRecords(value)) return value;
+   const canvas = value as MappingCanvasState;
+   for (const node of Object.values(canvas.display.nodes)) if (node.kind === 'conversation') {
+     if (node.thread.pending && node.thread.context) node.thread.error = 'Reply interrupted by workspace reload. Retry to continue.';
+@@ -78,10 +99,11 @@ export function validateRecordUpdate(records: WorkspaceRecords, keys: string[],
+   const affected = new Set<string>();
+   for (const key of keys) {
+     if (key === 'workspace') continue;
+-    const match = /^document\/([^/]+)\/(metadata|baseline|canvas|viewport|history|checkpoint\/[^/]+|revision\/[^/]+)$/.exec(key);
++    const match = /^document\/([^/]+)\/(metadata|baseline|canvas|viewport|history|checkpoint\/[^/]+|revision\/[^/]+|item\/[a-f0-9]{64})$/.exec(key);
+     if (!match) throw Error('Invalid workspace record key');
+     const id = decodeURIComponent(match[1]);
+     if (!id || match[1] !== encodeURIComponent(id) || ['__proto__', 'constructor', 'prototype'].includes(id)) throw Error('Invalid canvas ID');
++    if (match[2].startsWith('item/') && Object.hasOwn(records, key) && sha256(JSON.stringify(records[key])) !== match[2].slice(5)) throw Error('Canvas item integrity failure');
+     if (index.documentIds.includes(id)) affected.add(id);
+     else if (Object.hasOwn(records, key)) throw Error('Record belongs to a removed canvas');
+   }
+@@ -89,6 +111,8 @@ export function validateRecordUpdate(records: WorkspaceRecords, keys: string[],
+     const prefix = documentPrefix(id);
+     if (!records[prefix + 'metadata'] || !records[prefix + 'baseline'] || !records[prefix + 'history'] || !records[prefix + 'canvas']) throw Error('Incomplete canvas');
+   }
++  validateCanvasParents(index.documentIds.map(id => ({ representationId: id,
++    parentCanvasId: (records[documentPrefix(id) + 'metadata'] as MappingDocumentSnapshot).parentCanvasId })));
+   for (const id of affected) {
+     const prefix = documentPrefix(id), history = recordHistory(records, id);
+     const removesHistory = keys.some(k => (k.startsWith(prefix + 'revision/') || k.startsWith(prefix + 'checkpoint/')) && !Object.hasOwn(records, k));
+diff --git a/infrastructure/core/integrations/pushIntegrationStore.ts b/infrastructure/core/integrations/pushIntegrationStore.ts
+new file mode 100644
+index 00000000..91348fa8
+--- /dev/null
++++ b/infrastructure/core/integrations/pushIntegrationStore.ts
+@@ -0,0 +1,56 @@
++import { randomUUID } from 'node:crypto';
++import { link, mkdir, readFile, readdir, rm } from 'node:fs/promises';
++import path from 'node:path';
++import { connectionIdSchema, repositoryConnectionSchema, type PushGeneration, type RepositoryConnection } from '../../../domain/core/integrations/pushIntegration';
++import type { PushIntegrationStore } from '../../../application/core/integrations/ports';
++import { publishJson } from '../persistence/immutableRecords';
++
++export class FilePushIntegrationStore implements PushIntegrationStore {
++  private readonly root: string;
++  constructor(storeRoot: string) { this.root = path.join(storeRoot, 'push-integrations'); }
++  private connectionFile(id: string) { return path.join(this.root, 'connections', `${connectionIdSchema.parse(id)}.json`); }
++  private generationFile(id: string) {
++    if (!/^push-[a-f0-9]{32}$/.test(id)) throw Error('Invalid push generation ID');
++    return path.join(this.root, 'generations', `${id}.json`);
++  }
++  private async read<T>(file: string): Promise<T | undefined> {
++    try { return JSON.parse(await readFile(file, 'utf8')); }
++    catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') return; throw error; }
++  }
++  private async files(directory: string) {
++    try { return (await readdir(directory)).filter(name => name.endsWith('.json')).sort(); }
++    catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') return []; throw error; }
++  }
++  async connections() {
++    const names = await this.files(path.join(this.root, 'connections'));
++    return Promise.all(names.map(async name => repositoryConnectionSchema.parse(await this.read(path.join(this.root, 'connections', name)))));
++  }
++  async connection(id: string) {
++    const value = await this.read(this.connectionFile(id));
++    return value ? repositoryConnectionSchema.parse(value) : undefined;
++  }
++  saveConnection(connection: RepositoryConnection) { return publishJson(this.connectionFile(connection.id), repositoryConnectionSchema.parse(connection)); }
++  async generations(connectionId?: string) {
++    const names = await this.files(path.join(this.root, 'generations'));
++    const values = await Promise.all(names.map(name => this.read<PushGeneration>(path.join(this.root, 'generations', name))));
++    return values.filter((value): value is PushGeneration => !!value && (!connectionId || value.connectionId === connectionId))
++      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
++  }
++  generation(id: string) { return this.read<PushGeneration>(this.generationFile(id)); }
++  async createGeneration(generation: PushGeneration) {
++    const file = this.generationFile(generation.id);
++    await mkdir(path.dirname(file), { recursive: true });
++    const temp = `${file}.${randomUUID()}.claim`;
++    try {
++      await publishJson(temp, generation);
++      // Atomic create-if-absent: readers never see a half-written claim, including
++      // when two server processes receive the same event concurrently.
++      await link(temp, file);
++      return true;
++    } catch (error) {
++      if ((error as NodeJS.ErrnoException).code === 'EEXIST') return false;
++      throw error;
++    } finally { await rm(temp, { force: true }); }
++  }
++  saveGeneration(generation: PushGeneration) { return publishJson(this.generationFile(generation.id), generation); }
++}
+diff --git a/infrastructure/core/persistence/fileAgentContextRepository.ts b/infrastructure/core/persistence/fileAgentContextRepository.ts
+new file mode 100644
+index 00000000..f2cddca2
+--- /dev/null
++++ b/infrastructure/core/persistence/fileAgentContextRepository.ts
+@@ -0,0 +1,48 @@
++import { randomUUID } from 'node:crypto';
++import { mkdir, readFile, readdir, open, link, rm } from 'node:fs/promises';
++import path from 'node:path';
++import { AgentContext } from '../../../domain/core/agents/agentContext';
++import { savedAgentContextIdSchema, savedAgentContextSchema, summarizeAgentContext, type SavedAgentContext } from '../../../domain/core/agents/savedAgentContext';
++import type { AgentContextRepository } from '../../../application/core/ports/agentContextRepository';
++
++/** Globally addressable within this application store; no canvas or chat binding. */
++export class FileAgentContextRepository implements AgentContextRepository {
++  private readonly directory: string;
++  constructor(root: string) { this.directory = path.join(root, 'agent-contexts'); }
++  private file(id: string) { return path.join(this.directory, `${savedAgentContextIdSchema.parse(id)}.json`); }
++  async read(id: string): Promise<SavedAgentContext | null> {
++    try {
++      const record = savedAgentContextSchema.parse(JSON.parse(await readFile(this.file(id), 'utf8')));
++      if (record.agentContextId !== id) throw Error('AGENT_CONTEXT_ID_MISMATCH');
++      AgentContext.fromSnapshot(record.snapshot);
++      return record;
++    } catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null; throw error; }
++  }
++  async create(record: SavedAgentContext) {
++    const file = this.file(record.agentContextId);
++    await mkdir(this.directory, { recursive: true });
++    const temp = path.join(this.directory, `.${randomUUID()}.tmp`);
++    try {
++      const handle = await open(temp, 'wx', 0o600);
++      try { await handle.writeFile(JSON.stringify(record)); await handle.sync(); } finally { await handle.close(); }
++      // An atomic, exclusive publish also protects identical IDs across processes.
++      try { await link(temp, file); }
++      catch (error) { if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error; }
++      const directory = await open(this.directory, 'r');
++      try { await directory.sync(); } finally { await directory.close(); }
++      const saved = (await this.read(record.agentContextId))!;
++      if (saved.requestHash !== record.requestHash) throw Error('REQUEST_ID_CONFLICT: this UUID identifies a different saved context');
++      return saved;
++    } finally { await rm(temp, { force: true }); }
++  }
++  async summaries() {
++    let files: string[];
++    try { files = await readdir(this.directory); }
++    catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') return []; throw error; }
++    const summaries: ReturnType<typeof summarizeAgentContext>[] = [];
++    for (const file of files) if (/^saved-agent-context-[a-f0-9-]{36}\.json$/.test(file)) {
++      const record = await this.read(file.slice(0, -5)); if (record) summaries.push(summarizeAgentContext(record));
++    }
++    return summaries;
++  }
++}
+diff --git a/infrastructure/core/persistence/fileAgentContextSources.ts b/infrastructure/core/persistence/fileAgentContextSources.ts
+new file mode 100644
+index 00000000..21962a54
+--- /dev/null
++++ b/infrastructure/core/persistence/fileAgentContextSources.ts
+@@ -0,0 +1,117 @@
++import { execFile } from 'node:child_process';
++import { promisify } from 'node:util';
++import path from 'node:path';
++import type { AgentContextSources } from '../../../application/core/ports/agentContextSources';
++import { AgentContext, AGENT_CONTEXT_MAX_BYTES, type AgentContextSnapshot } from '../../../domain/core/agents/agentContext';
++import { sourceRangeSchema, sourceFileSchema, sourceFileHash, sourceRangeText, captureSourceRangeSchema,
++  type AgentContextSourceFile, type AgentContextSourceRange, type CaptureSourceRange } from '../../../domain/core/agents/agentContextSource';
++import type { CorpusBinding } from '../../../domain/core/profiles/domainProfile';
++import { corpusProvider } from '../corpus/corpus';
++import { ImmutableRecords } from './immutableRecords';
++
++const exec = promisify(execFile);
++/** Shared across saved contexts and diagram contexts. No caller-supplied absolute file paths. */
++export class FileAgentContextSources implements AgentContextSources {
++  private readonly blobs: ImmutableRecords;
++  private readonly pinned = new Map<string, Promise<AgentContextSourceFile>>();
++  constructor(root: string, private readonly binding?: (sourceId: string) => Promise<CorpusBinding>) {
++    this.blobs = new ImmutableRecords(path.join(root, 'agent-context-sources'));
++  }
++  private async source(id: string) {
++    if (!this.binding) throw Error('AGENT_CONTEXT_SOURCE_UNAVAILABLE: source registry is unavailable');
++    return this.binding(id);
++  }
++  private async git(binding: CorpusBinding, args: string[]) {
++    if (binding.kind !== 'git-worktree') throw Error('AGENT_CONTEXT_SOURCE_UNAVAILABLE: source is not Git');
++    return (await exec('git', ['--no-replace-objects', '-C', binding.root, ...args], { encoding: 'utf8', maxBuffer: AGENT_CONTEXT_MAX_BYTES })).stdout;
++  }
++  private file(text: string): AgentContextSourceFile {
++    if (Buffer.byteLength(text) > AGENT_CONTEXT_MAX_BYTES) throw Error('AGENT_CONTEXT_TOO_LARGE: source exceeds 2 MiB');
++    if (text.includes('\0')) throw Error('AGENT_CONTEXT_SOURCE_INVALID: binary source');
++    return { startLine: 1, lines: text.split(/\r?\n/) };
++  }
++  private pinnedFile(binding: CorpusBinding, commit: string, file: string) {
++    const key = JSON.stringify([binding.root, commit, file]);
++    let pending = this.pinned.get(key);
++    if (!pending) {
++      pending = this.readPinnedFile(binding, commit, file);
++      // Each file is at most 2 MiB. Repeated ranges share one read; failures are retryable.
++      this.pinned.set(key, pending);
++      while (this.pinned.size > 16) this.pinned.delete(this.pinned.keys().next().value!);
++      void pending.catch(() => { if (this.pinned.get(key) === pending) this.pinned.delete(key); });
++    }
++    return pending;
++  }
++  private async readPinnedFile(binding: CorpusBinding, commit: string, file: string) {
++    // Reject trees, submodules and symlinks instead of treating their payload as source text.
++    const entry = await this.git(binding, ['ls-tree', commit, '--', file]);
++    if (!/^100(?:644|755) blob /.test(entry) || entry.trimEnd().split('\n').length !== 1)
++      throw Error('AGENT_CONTEXT_SOURCE_UNAVAILABLE: expected a regular Git file');
++    return this.file(await this.git(binding, ['show', `${commit}:${file}`]));
++  }
++  async capture(raw: CaptureSourceRange) {
++    const input = captureSourceRangeSchema.parse(raw), binding = await this.source(input.sourceId);
++    let file: AgentContextSourceFile, version: AgentContextSourceRange['version'];
++    const revision = input.revision ?? (binding.kind === 'git-worktree' ? binding.revision : undefined);
++    if (revision) {
++      const commit = (await this.git(binding, ['rev-parse', '--verify', '--end-of-options', `${revision}^{commit}`])).trim();
++      file = await this.pinnedFile(binding, commit, input.path); version = { kind: 'git', commit };
++    } else {
++      file = this.file(await corpusProvider(binding).readDocumentText(binding, input.path));
++      version = { kind: 'snapshot', contentHash: sourceFileHash(file) };
++      if (binding.kind === 'git-worktree') {
++        // Reuse committed bytes only when they exactly match the captured worktree content.
++        try {
++          const commit = (await this.git(binding, ['rev-parse', '--verify', 'HEAD^{commit}'])).trim();
++          const committed = await this.pinnedFile(binding, commit, input.path);
++          if (sourceFileHash(committed) === sourceFileHash(file)) version = { kind: 'git', commit };
++        } catch { /* Untracked files and unborn repositories use a shared immutable snapshot. */ }
++      }
++    }
++    const reference = sourceRangeSchema.parse({ type: 'sourceRange', sourceId: input.sourceId, path: input.path,
++      startLine: input.startLine, endLine: input.endLine ?? file.startLine + file.lines.length - 1, version });
++    sourceRangeText(reference, file);
++    if (version.kind === 'snapshot') await this.blobs.put(file);
++    return reference;
++  }
++  private async load(reference: AgentContextSourceRange) {
++    sourceRangeSchema.parse(reference);
++    const file = reference.version.kind === 'snapshot'
++      ? sourceFileSchema.parse(await this.blobs.get(reference.version.contentHash))
++      : await this.pinnedFile(await this.source(reference.sourceId), reference.version.commit, reference.path);
++    sourceRangeText(reference, file);
++    return file;
++  }
++  async read(reference: AgentContextSourceRange) { return sourceRangeText(reference, await this.load(reference)); }
++  async persist(raw: AgentContextSnapshot) {
++    const context = AgentContext.fromSnapshot(raw), snapshot = context.toSnapshot();
++    for (const file of Object.values(snapshot.sourceFiles ?? {})) await this.blobs.put(file);
++    // Check references before publication, including imported descriptors with missing blobs.
++    const seen = new Set<string>();
++    for (const message of snapshot.messages) for (const block of message.content) if (block.type === 'sourceRange') {
++      const key = JSON.stringify(block);
++      if (!seen.has(key)) { await this.load(block); seen.add(key); }
++    }
++    return context.withoutSourceFiles();
++  }
++  async portable(raw: AgentContextSnapshot) {
++    const context = AgentContext.fromSnapshot(raw), snapshot = context.toSnapshot();
++    const files: Record<string, AgentContextSourceFile> = {};
++    const messages = [];
++    for (const message of snapshot.messages) {
++      const content = [];
++      for (const block of message.content) {
++        if (block.type !== 'sourceRange') { content.push(block); continue; }
++        const file = block.version.kind === 'snapshot' && snapshot.sourceFiles?.[block.version.contentHash]
++          || await this.load(block);
++        // Portable context contains only its selected evidence, not unrelated file lines.
++        const selected = { startLine: block.startLine,
++          lines: file.lines.slice(block.startLine - file.startLine, block.endLine - file.startLine + 1) };
++        const contentHash = sourceFileHash(selected); files[contentHash] = selected;
++        content.push({ ...block, version: { kind: 'snapshot' as const, contentHash } });
++      }
++      messages.push({ ...message, content });
++    }
++    return context.withMessages(messages, files).toSnapshot();
++  }
++}
+diff --git a/infrastructure/core/persistence/fileDiagramAgentContextStore.ts b/infrastructure/core/persistence/fileDiagramAgentContextStore.ts
+new file mode 100644
+index 00000000..6cd87fb4
+--- /dev/null
++++ b/infrastructure/core/persistence/fileDiagramAgentContextStore.ts
+@@ -0,0 +1,16 @@
++import path from 'node:path';
++import { AgentContext, type AgentContextSnapshot } from '../../../domain/core/agents/agentContext';
++import type { DiagramAgentContextStore } from '../../../domain/core/diagrams/diagramAgentContext';
++import type { AgentContextSources } from '../../../application/core/ports/agentContextSources';
++import { FileAgentContextSources } from './fileAgentContextSources';
++import { ImmutableRecords } from './immutableRecords';
++
++/** Each context is one immutable, content-addressed file outside canvas checkpoints. */
++export class FileDiagramAgentContextStore implements DiagramAgentContextStore {
++  private readonly records: ImmutableRecords;
++  constructor(root: string, private readonly sources: AgentContextSources = new FileAgentContextSources(root)) { this.records = new ImmutableRecords(path.join(root, 'diagram-agent-contexts')); }
++  async put(snapshot: AgentContextSnapshot) { return this.records.put(await this.sources.persist(snapshot)); }
++  portable(snapshot: AgentContextSnapshot) { return this.sources.portable(snapshot); }
++  async resolve(snapshot: AgentContextSnapshot) { return (await AgentContext.fromSnapshot(snapshot).resolveSources(ref => this.sources.read(ref))).toSnapshot(); }
++  async get(recordId: string) { return AgentContext.fromSnapshot(await this.records.get(recordId)).toSnapshot(); }
++}
+diff --git a/infrastructure/mapping/agent-chat/chatStore.ts b/infrastructure/mapping/agent-chat/chatStore.ts
+new file mode 100644
+index 00000000..1db819a2
+--- /dev/null
++++ b/infrastructure/mapping/agent-chat/chatStore.ts
+@@ -0,0 +1,25 @@
++import { mkdir, readdir, readFile, rename, writeFile } from 'node:fs/promises';
++import path from 'node:path';
++import type { ChatStore } from '../../../application/mapping/agent-chat/ports';
++import type { ChatSession } from '../../../domain/mapping/agent-chat/agentChat';
++
++export class FileChatStore implements ChatStore {
++  private directory: string;
++  private queue = Promise.resolve();
++  constructor(root: string) { this.directory = path.join(root, 'agent-chat'); }
++  async list(): Promise<ChatSession[]> {
++    await mkdir(this.directory, { recursive: true });
++    const files = (await readdir(this.directory)).filter(name => /^[a-f0-9-]+\.json$/.test(name));
++    return Promise.all(files.map(async name => JSON.parse(await readFile(path.join(this.directory, name), 'utf8')) as ChatSession));
++  }
++  save(session: ChatSession) {
++    const content = JSON.stringify(session);
++    const file = path.join(this.directory, `${session.id}.json`);
++    const save = this.queue.then(async () => {
++      await mkdir(this.directory, { recursive: true });
++      await writeFile(`${file}.tmp`, content, { mode: 0o600 }); await rename(`${file}.tmp`, file);
++    });
++    this.queue = save.catch(() => {});
++    return save;
++  }
++}
+diff --git a/infrastructure/mapping/persistence/workspace/workspaceRecordStore.ts b/infrastructure/mapping/persistence/workspace/workspaceRecordStore.ts
+index f3b580de..b04fc146 100644
+--- a/infrastructure/mapping/persistence/workspace/workspaceRecordStore.ts
++++ b/infrastructure/mapping/persistence/workspace/workspaceRecordStore.ts
+@@ -1,9 +1,12 @@
++import { checkpointRevisionIds } from '../../../../domain/core/diagrams/canvasHistory';
+ import { createHash, randomUUID } from 'node:crypto';
+ import { assertDiagramStorageFormat } from '../../../core/persistence/diagramStorageFormat';
+ import { mkdir, readFile, rename, rm, open } from 'node:fs/promises';
+ import path from 'node:path';
+ import { ApplicationError } from '../../../../application/core/errors';
+-import { recordsWorkspace, validateRecordUpdate, workspaceRecords, type WorkspaceBatch, type WorkspaceRecords, type WorkspaceRecordState } from '../../../../domain/mapping/workspace/workspaceRecords';
++import { recordHistory, recordsWorkspace, validateRecordUpdate, workspaceRecords, type WorkspaceBatch, type WorkspaceRecords, type WorkspaceRecordState } from '../../../../domain/mapping/workspace/workspaceRecords';
++import { loadCanvasCheckpoint } from '../../../../domain/core/diagrams/canvasCheckpointRecords';
++import { stateKey } from '../../../../domain/core/diagrams/canvasHistory';
+ import type { MappingWorkspaceSnapshot } from '../../../../domain/mapping/workspace/mappingWorkspace';
+ import type { HistoryValidation } from '../../../../domain/core/diagrams/canvasHistory';
+ 
+@@ -44,6 +47,26 @@ export class WorkspaceRecordStore {
+     if (Object.keys(records).length) validateRecordUpdate(records, Object.keys(records), projectId, historyValidation);
+     return this.cached = { raw, manifest, records, historyValidation };
+   }
++  /** Pin immutable references from one manifest; only hydrate the selected current checkpoint. */
++  async capture(projectId: string, documentId: string, checkpointId: string, version: number) {
++    const manifest = JSON.parse(await readFile(this.file, 'utf8')) as Manifest;
++    if (manifest.projectId !== projectId) throw Error('Workspace belongs to another project');
++    const prefix = `document/${encodeURIComponent(documentId)}/`;
++    const read = async (key: string) => {
++      const id = manifest.records[prefix + key];
++      if (!id || !/^[a-f0-9]{64}$/.test(id)) throw Error('WORKSPACE_UNAVAILABLE: checkpoint is not persisted');
++      const text = await readFile(path.join(this.root, 'workspace-records', id + '.json'), 'utf8');
++      if (hash(text) !== id) throw Error('Workspace record integrity failure');
++      return JSON.parse(text);
++    };
++    const [header, metadata] = await Promise.all([read('history'), read('metadata')]);
++    if (header.headId !== checkpointId || metadata.version !== version) throw Error('VERSION_CONFLICT: canvas changed while saving');
++    const head = await loadCanvasCheckpoint(checkpointId, id => read('checkpoint/' + id), id => read('item/' + id), header.checkpointHead);
++    const revisions = Object.fromEntries(await Promise.all(checkpointRevisionIds(head).map(async id => [id, await read('revision/' + id)])));
++    const refs = (kind: string) => Object.fromEntries(Object.entries(manifest.records).filter(([key]) => key.startsWith(prefix + kind + '/'))
++      .map(([key, id]) => [key.slice((prefix + kind + '/').length), { $diagramRecord: 'workspace', id }]));
++    return { header, head, revisions, metadata, stored: { ...header, workspaceRecords: { checkpoints: refs('checkpoint'), revisions: refs('revision'), items: refs('item') } } };
++  }
+   async load(projectId: string): Promise<MappingWorkspaceSnapshot | undefined> {
+     const state = await this.read(projectId); return state ? recordsWorkspace(state.records)! : undefined;
+   }
+@@ -76,7 +99,7 @@ export class WorkspaceRecordStore {
+         return { revision: receipt.revision };
+       }
+       if (input.expectedRevision !== state.manifest.revision) throw new ApplicationError('conflict', 'VERSION_CONFLICT: workspace changed in another client; reload before saving');
+-      const records = { ...state.records }, keys: string[] = [], seen = new Set<string>();
++      const records = { ...state.records }, keys: string[] = [], seen = new Set<string>(), checkpointUpdates: string[] = [];
+       for (const change of input.changes) {
+         if (!change || typeof change.key !== 'string' || change.key.length > 1000 || Object.keys(change).some(k => !['key', 'value', 'delete'].includes(k))
+           || ('delete' in change ? change.delete !== true || 'value' in change : !('value' in change))) throw Error('Invalid record change');
+@@ -86,14 +109,26 @@ export class WorkspaceRecordStore {
+         if ('delete' in change) delete records[change.key]; else {
+           const previous = records[change.key];
+           if (previous && change.key.includes('/revision/') && JSON.stringify(previous) !== JSON.stringify(change.value)) throw Error('Immutable diagram revision changed');
++          if (previous && change.key.includes('/item/') && JSON.stringify(previous) !== JSON.stringify(change.value)) throw Error('Immutable canvas item changed');
+           if (previous && change.key.includes('/checkpoint/')) {
+             const { transactionId: _before, ...before } = previous as Record<string, unknown>;
+             const { transactionId: _after, ...after } = change.value as Record<string, unknown>;
+-            if (JSON.stringify(before) !== JSON.stringify(after)) throw Error('Immutable canvas checkpoint changed');
++            if (JSON.stringify(before) !== JSON.stringify(after)) checkpointUpdates.push(change.key);
+           }
+           records[change.key] = change.value;
+         }
+       }
++      // Checkpoints may be re-encoded (legacy migration or a new delta base),
++      // but their semantic content is immutable.
++      const migrated = new Map<string, [ReturnType<typeof recordHistory>, ReturnType<typeof recordHistory>]>();
++      for (const key of checkpointUpdates) {
++        const [, encoded, , checkpointId] = key.split('/'), id = decodeURIComponent(encoded);
++        if (!migrated.has(id)) migrated.set(id, [recordHistory(state.records, id), recordHistory(records, id)]);
++        const [beforeHistory, afterHistory] = migrated.get(id)!;
++        const { transactionId: _before, ...before } = beforeHistory.snapshots[checkpointId];
++        const { transactionId: _after, ...after } = afterHistory.snapshots[checkpointId];
++        if (stateKey(before) !== stateKey(after)) throw Error('Immutable canvas checkpoint changed');
++      }
+       validateRecordUpdate(records, keys, projectId);
+       const revision = state.manifest.revision + 1;
+       try {
+@@ -107,28 +142,41 @@ export class WorkspaceRecordStore {
+       return { revision };
+     });
+   }
+-  private async atomic(file: string, text: string) {
++  private async syncDirectory(directory: string) {
++    const dir = await open(directory, 'r'); try { await dir.sync(); } finally { await dir.close(); }
++  }
++  private async atomic(file: string, text: string, syncDirectory = true) {
+     await mkdir(path.dirname(file), { recursive: true });
+     const temp = `${file}.${randomUUID()}.tmp`;
+     try {
+       const handle = await open(temp, 'wx');
+       try { await handle.writeFile(text); await handle.sync(); } finally { await handle.close(); }
+       await rename(temp, file);
+-      const dir = await open(path.dirname(file), 'r'); try { await dir.sync(); } finally { await dir.close(); }
++      if (syncDirectory) await this.syncDirectory(path.dirname(file));
+     } finally { await rm(temp, { force: true }); }
+   }
+   private async publish(manifest: Manifest, records: WorkspaceRecords, keys: string[]) {
+-    // Serial writes bound descriptors and memory even during initial migration.
+-    for (const key of keys) {
+-      if (!Object.hasOwn(records, key)) { delete manifest.records[key]; continue; }
+-      const text = JSON.stringify(records[key]), id = hash(text);
+-      if (manifest.records[key] !== id) {
+-        const file = path.join(this.root, 'workspace-records', id + '.json');
+-        try { if (await readFile(file, 'utf8') !== text) throw Error('Workspace record integrity failure'); }
+-        catch (e) { if ((e as NodeJS.ErrnoException).code !== 'ENOENT') throw e; await this.atomic(file, text); }
+-        manifest.records[key] = id;
++    const directory = path.join(this.root, 'workspace-records');
++    let cursor = 0;
++    // Bound open files and serialization memory, while overlapping durable writes.
++    // Wait for every writer even on failure: no work may outlive this transaction.
++    const results = await Promise.allSettled(Array.from({ length: Math.min(8, keys.length) }, async () => {
++      while (cursor < keys.length) {
++        const key = keys[cursor++];
++        if (!Object.hasOwn(records, key)) { delete manifest.records[key]; continue; }
++        const text = JSON.stringify(records[key]), id = hash(text);
++        if (manifest.records[key] !== id) {
++          const file = path.join(directory, id + '.json');
++          try { if (await readFile(file, 'utf8') !== text) throw Error('Workspace record integrity failure'); }
++          catch (e) { if ((e as NodeJS.ErrnoException).code !== 'ENOENT') throw e; await this.atomic(file, text, false); }
++          manifest.records[key] = id;
++        }
+       }
+-    }
++    }));
++    for (const result of results) if (result.status === 'rejected') throw result.reason;
++    // Make every blob's directory entry durable before publishing references to it.
++    // This also covers blobs left behind by an interrupted earlier attempt.
++    if (keys.some(key => Object.hasOwn(records, key))) await this.syncDirectory(directory);
+     const raw = JSON.stringify(manifest);
+     await this.atomic(this.file, raw);
+     return this.cached = { raw, manifest, records, historyValidation: 'current' };
+diff --git a/src/features/mapping/workspace/recordStorage.ts b/src/features/mapping/workspace/recordStorage.ts
+index 2d1e2c4f..1b80386d 100644
+--- a/src/features/mapping/workspace/recordStorage.ts
++++ b/src/features/mapping/workspace/recordStorage.ts
+@@ -2,12 +2,14 @@ import type { StorageChange, StorageService, StorageStatus } from '../../../../d
+ import type { WorkspaceBatch, WorkspaceRecordState } from '../../../../domain/mapping/workspace/workspaceRecords';
+ 
+ export interface RecordTransport { write(batch: WorkspaceBatch): Promise<{ revision: number }> }
+-function equalEntry(a: unknown, b: unknown) { return a === b || Array.isArray(a) && Array.isArray(b) && a.length === b.length && a.every((value, index) => value === b[index]); }
+ function same(a: unknown, b: unknown): boolean {
+   if (a === b) return true;
+   if (!a || !b || typeof a !== 'object' || typeof b !== 'object') return false;
++  if (Array.isArray(a) !== Array.isArray(b)) return false;
+   const left = Object.keys(a), right = Object.keys(b);
+-  return left.length === right.length && left.every(key => Object.hasOwn(b, key) && equalEntry((a as Record<string, unknown>)[key], (b as Record<string, unknown>)[key]));
++  // History headers and view records contain freshly projected reference maps.
++  // Compare their values so syncing an unchanged workspace does not queue a save.
++  return left.length === right.length && left.every(key => Object.hasOwn(b, key) && same((a as Record<string, unknown>)[key], (b as Record<string, unknown>)[key]));
+ }
+ /** Cheap synchronous submission. Encoding and transport are supplied by a persistent worker. */
+ export class RecordStorage implements StorageService {
+diff --git a/src/features/mapping/workspace/workspacePersistence.ts b/src/features/mapping/workspace/workspacePersistence.ts
+index 8aaa31f1..c3146ae1 100644
+--- a/src/features/mapping/workspace/workspacePersistence.ts
++++ b/src/features/mapping/workspace/workspacePersistence.ts
+@@ -1,7 +1,8 @@
+ import type { StorageChange } from '../../../../domain/core/storage/storageService';
+-import { documentPrefix, historyChanges, type WorkspaceIndex } from '../../../../domain/mapping/workspace/workspaceRecords';
++import { canvasViewChanges, documentPrefix, historyChanges, type WorkspaceIndex } from '../../../../domain/mapping/workspace/workspaceRecords';
+ import type { CanvasTransfer } from '../../../../domain/core/diagrams/canvasTransfer';
+ import type { StoredCanvasSnapshot } from '../../../../domain/core/diagrams/canvasHistory';
++import { isCheckpointDelta } from '../../../../domain/core/diagrams/canvasCheckpointRecords';
+ import type { CanvasDraft, CanvasWorkspace } from './canvasWorkspace';
+ import type { CanvasSession } from './canvasSession';
+ import type { SourcePaneViewState } from '../source-pane/sourcePaneViewState';
+@@ -41,8 +42,8 @@ export class WorkspacePersistence {
+         for (const key of this.storage.keys()) if (key.startsWith(prefix)) changes.push({ key, delete: true });
+         this.known.delete(id); continue;
+       }
+-      const { representationId: savedRepresentationId, name, hidden, savedName, savedScene, savedEdges, revisionId } = draft;
+-      changes.push({ key: prefix + 'metadata', value: { representationId: id, savedRepresentationId, name, hidden } },
++      const { representationId: savedRepresentationId, name, hidden, repositoryId, parentCanvasId, savedName, savedScene, savedEdges, revisionId } = draft;
++      changes.push({ key: prefix + 'metadata', value: { representationId: id, savedRepresentationId, repositoryId, parentCanvasId, name, hidden, version: draft.session.controller.getSnapshot().version } },
+         { key: prefix + 'baseline', value: { savedName, savedScene, savedEdges, revisionId } });
+       const cursor = this.cursors.get(draft.session), delta = draft.session.controller.persistenceChanges(cursor);
+       if (cursor === undefined) {
+@@ -58,28 +59,36 @@ export class WorkspacePersistence {
+         // Revision IDs are immutable; checkpoints may have retired transfer links.
+         if (cursor === undefined && 'value' in change && this.storage.get(change.key)) {
+           if (change.key.startsWith(prefix + 'revision/')) continue;
+-          if (change.key.startsWith(prefix + 'checkpoint/') && this.storage.get<StoredCanvasSnapshot>(change.key)?.transactionId === (change.value as StoredCanvasSnapshot).transactionId) continue;
++          const previous = this.storage.get<StoredCanvasSnapshot>(change.key);
++          if (change.key.startsWith(prefix + 'checkpoint/') && isCheckpointDelta(previous)
++            && JSON.stringify(previous) === JSON.stringify(change.value)) continue;
+         }
+         changes.push(change);
+       }
+       this.cursors.set(draft.session, delta.sequence);
+       const canvas = draft.session.controller.getSnapshot().canvas;
+-      changes.push({ key: prefix + 'canvas', value: { ...canvas, display: this.view.captureDisplay(id, canvas.display) } });
++      changes.push(...canvasViewChanges(id, { ...canvas, display: this.view.captureDisplay(id, canvas.display) }));
+       if (prior?.viewport !== draft.viewport || !prior) {
+         const viewport = this.view.captureCamera(id, draft.viewport);
+         if (viewport) changes.push({ key: prefix + 'viewport', value: viewport });
+       }
+       this.known.set(id, draft);
+     }
+-    changes.push(this.index()); this.storage.batch(changes);
++    changes.push(this.index()); this.submit(changes);
+   }
+   private syncView(id: string) {
+     if (this.paused) return;
+     const draft = this.workspace.store.getState().drafts[id]; if (!draft) return;
+     const prefix = documentPrefix(id), canvas = draft.session.controller.getSnapshot().canvas;
+     const viewport = this.view.captureCamera(id, draft.viewport);
+-    this.storage.batch([{ key: prefix + 'canvas', value: { ...canvas, display: this.view.captureDisplay(id, canvas.display) } },
++    this.submit([...canvasViewChanges(id, { ...canvas, display: this.view.captureDisplay(id, canvas.display) }),
+       ...(viewport ? [{ key: prefix + 'viewport', value: viewport }] : [])]);
+   }
++  private submit(changes: StorageChange[]) {
++    // Content-addressed items are immutable and may be shared by view and history.
++    // Sending them once avoids retransmitting unchanged panels on every gesture.
++    const unique = new Map(changes.map(change => [change.key, change]));
++    this.storage.batch([...unique.values()].filter(change => !change.key.includes('/item/') || 'delete' in change || !this.storage.get(change.key)));
++  }
+   dispose() { this.subscriptions.forEach(off => off()); }
+ }
+diff --git a/src/features/mapping/workspace/workspaceStorage.ts b/src/features/mapping/workspace/workspaceStorage.ts
+index 236c46b9..55f1fe92 100644
+--- a/src/features/mapping/workspace/workspaceStorage.ts
++++ b/src/features/mapping/workspace/workspaceStorage.ts
+@@ -1,6 +1,6 @@
+ import type { StorageChange } from '../../../../domain/core/storage/storageService';
+-import type { MappingWorkspaceSnapshot } from '../../../../domain/mapping/workspace/mappingWorkspace';
+-import type { WorkspaceRecordState } from '../../../../domain/mapping/workspace/workspaceRecords';
++import type { MappingDocumentSnapshot, MappingWorkspaceSnapshot } from '../../../../domain/mapping/workspace/mappingWorkspace';
++import { documentRecords, documentPrefix, type WorkspaceIndex, type WorkspaceRecordState } from '../../../../domain/mapping/workspace/workspaceRecords';
+ import { RecordStorage } from './recordStorage';
+ 
+ /** One worker per opened workspace; no worker construction in a store() call. */
+@@ -46,6 +46,16 @@ export class WorkspaceStorage {
+     await this.records!.commit(changes);
+   }
+ 
++  /** Publish one canvas atomically without exporting/revalidating unrelated histories. */
++  async saveDocument(document: MappingDocumentSnapshot, index: WorkspaceIndex, create = false) {
++    await this.load(); await this.records!.flush();
++    if (create && this.records!.get(documentPrefix(document.representationId) + 'metadata')) throw Error('Canvas already exists');
++    await this.records!.commit([
++      ...Object.entries(documentRecords(document)).map(([key, value]) => ({ key, value })),
++      { key: 'workspace', value: index }
++    ]);
++  }
++
+   async restore() {
+     await this.records?.flush();
+     this.records?.dispose(); this.ready = undefined;
+diff --git a/src/server/app/bootstrap.ts b/src/server/app/bootstrap.ts
+index fbc535cb..cdc89f06 100644
+--- a/src/server/app/bootstrap.ts
++++ b/src/server/app/bootstrap.ts
+@@ -1,6 +1,23 @@
++import { resolveDiagramSource } from '../../../application/core/source/diagramSource';
++import { FileAgentContextSources } from '../../../infrastructure/core/persistence/fileAgentContextSources';
++import { AgentContextLibrary } from '../../../application/mapping/agent/agentContextLibrary';
++import { FileAgentContextRepository } from '../../../infrastructure/core/persistence/fileAgentContextRepository';
++import { GenerationCanvasBridge } from '../../../application/mapping/agent-chat/generationCanvasBridge';
++import { CompareSessionService } from '../../../application/mapping/compare/compareSessionService';
++import { FileCompareSessionStore } from '../../../infrastructure/mapping/compare/fileCompareSessionStore';
++import { WorkspaceRecordStore } from '../../../infrastructure/mapping/persistence/workspace/workspaceRecordStore';
++import { MappingChatMcpBinding } from '../../../infrastructure/mapping/agent-chat/chatMcpBinding';
++import { AgentChatService } from '../../../application/mapping/agent-chat/agentChatService';
++import { ChatDiagramTools } from '../../../application/mapping/agent-chat/chatDiagramTools';
++import { StdioCodexConnection } from '../../../infrastructure/mapping/agent-chat/codexConnection';
++import { FileChatStore } from '../../../infrastructure/mapping/agent-chat/chatStore';
++import { PushIntegrationService } from '../../../application/core/integrations/pushIntegrationService';
++import { FilePushIntegrationStore } from '../../../infrastructure/core/integrations/pushIntegrationStore';
++import { GitPushSource } from '../../../infrastructure/core/integrations/gitPushSource';
++import { CanvasApiProjection } from '../../../application/mapping/agent/apiProjection';
+ import { AgentContextService } from '../../../application/mapping/agent/agentContextService';
+ import { LiveCanvasService } from '../../../application/mapping/agent/liveCanvasService';
+-import { RevisionedDiagramService } from '../../../domain/core/diagrams/diagramService';
++
+ import { FakeDiagramEditRuntime, PiDiagramEditRuntime } from '../../../infrastructure/mapping/agents/diagram-edit/diagramEditRuntime';
+ import { CoreApplication } from "../../../application/core/application";
+ import { AgentDiagrammingSessionService } from '../../../application/mapping/agent/sessionService';
+@@ -13,6 +30,7 @@ import { QuickJsAgentRuntime } from '../../../infrastructure/mapping/agent/execR
+ import { DiagramChangeSessionStore } from '../../../infrastructure/mapping/changes/diagramChangeSessionStore';
+ 
+ import { DiagramStore } from "../../../infrastructure/core/persistence/store";
++import { FileDiagramAgentContextStore } from '../../../infrastructure/core/persistence/fileDiagramAgentContextStore';
+ import { CodexLocalChatRuntime, FakeLocalChatRuntime } from "../../../infrastructure/mapping/agents/chat/localChatRuntime";
+ import { FakeFileCompactionRuntime, PiFileCompactionRuntime } from "../../../infrastructure/mapping/agents/compaction/fileCompactionRuntime";
+ import { FakeMappingAgentRuntime, PiMappingAgentRuntime } from "../../../infrastructure/mapping/agents/selection/agentRuntime";
+@@ -34,6 +52,9 @@ import { resolveFileCompactionSettings } from '../../../infrastructure/mapping/a
+ import { loadFileCompactionPrompts } from '../../../infrastructure/mapping/agents/compaction/prompts';
+ import { FileCompactionStore } from '../../../infrastructure/mapping/persistence/compactionStore';
+ import { MappingWorkspaceStore } from '../../../infrastructure/mapping/persistence/workspace/mappingWorkspaceStore';
++import { DiffSessionWorkflowService } from '../../../application/mapping/changes/diffSessionWorkflowService';
++import { PiDiffSessionRuntime } from '../../../infrastructure/mapping/agents/diff-session-create/diffSessionRuntime';
++import { FileDiffSessionRunStore, loadDiffSessionPrompts, createDiffSessionSourceReader } from '../../../infrastructure/mapping/agents/diff-session-create/diffSessionStorage';
+ 
+ export const corpusAccess: CorpusAccess = {
+   provider: corpusProvider, readDocumentLines: readCorpusDocumentLines, discover: discoverDomainCorpus
+@@ -50,22 +71,43 @@ export function createFileCompactionService(core: CoreApplication, runtime: File
+ 
+ /** The only production module that chooses and connects concrete integrations. */
+ export function createBackend(projectRoot: string, diagramsDirectory: string, configuredDomainProfileId: BuiltInDomainProfileId | undefined,
+-  mappingPocSourceRoot: string, options: { lspEnabled?: boolean }) {
++  mappingPocSourceRoot: string, options: { lspEnabled?: boolean; piEnabled?: boolean }) {
+   const fake = process.env.NEW_DIAGRAM_AGENT === "fake";
+-  const chatRuntime = fake ? new FakeLocalChatRuntime() : new CodexLocalChatRuntime();
+-  const mappingRuntime = fake ? new FakeMappingAgentRuntime() : new PiMappingAgentRuntime();
+-  const diagramEditRuntime = fake ? new FakeDiagramEditRuntime() : new PiDiagramEditRuntime(mappingPocSourceRoot);
++  const chatRuntime = fake ? new FakeLocalChatRuntime() : new CodexLocalChatRuntime(options.piEnabled === true);
++  const mappingRuntime = fake ? new FakeMappingAgentRuntime() : new PiMappingAgentRuntime(options.piEnabled === true);
+   const store = new DiagramStore(projectRoot, diagramsDirectory);
++  const contextSources = new FileAgentContextSources(store.storeRoot, async sourceId => {
++    if (sourceId.startsWith('repo-')) {
++      const repository = (await store.repositories.list()).find(repository => repository.id === sourceId);
++      if (repository?.checkoutRoots[0]) return { kind: 'git-worktree', root: repository.checkoutRoots[0] };
++    }
++    const project = await store.loadProject();
++    if (!project) throw Error('AGENT_CONTEXT_SOURCE_UNAVAILABLE: project is not initialized');
++    return (await resolveDiagramSource(store, { projectId: project.id, sourceId })).binding().corpus;
++  });
++  const diagramEditRuntime = fake ? new FakeDiagramEditRuntime() : new PiDiagramEditRuntime(mappingPocSourceRoot, options.piEnabled === true, contextSources);
+   const core = createCoreApplication(store);
+-  const compactionService = createFileCompactionService(core, fake ? new FakeFileCompactionRuntime() : new PiFileCompactionRuntime());
++  const compactionService = createFileCompactionService(core, fake ? new FakeFileCompactionRuntime() : new PiFileCompactionRuntime(options.piEnabled === true));
+   const languageService = options.lspEnabled === true ? new ProjectLanguageService() : undefined;
+-  const diagrams = new MappingDiagramService(store, corpusAccess, projectRoot, configuredDomainProfileId);
+-  const canvasBridge = new CanvasSessionBridge();
+-  const agentContexts = new AgentContextService();
++  const diagrams = new MappingDiagramService(store, corpusAccess, projectRoot, configuredDomainProfileId, new WorkspaceRecordStore(store.storeRoot));
++  const canvasBridge = new GenerationCanvasBridge(new CanvasSessionBridge());
++  const contextLibrary = new AgentContextLibrary(new FileAgentContextRepository(store.storeRoot), contextSources);
++  const agentContexts = new AgentContextService(undefined, contextLibrary);
++  const diagramContextStore = new FileDiagramAgentContextStore(store.storeRoot, contextSources);
++  const apiProjection = new CanvasApiProjection();
+   const liveCanvas = new LiveCanvasService(() => canvasBridge.list(), async (workspaceInstanceId, documentId) =>
+-    await canvasBridge.dispatch(workspaceInstanceId, { method: 'context', documentId }) as import('../../../domain/mapping/agent/liveCanvasStatus').LiveCanvasContext, agentContexts);
++    await canvasBridge.dispatch(workspaceInstanceId, { method: 'context', documentId }) as import('../../../domain/mapping/agent/liveCanvasStatus').LiveCanvasContext, agentContexts, apiProjection);
++  const changes = new ChangeSessionService(new DiagramChangeSessionStore(store.storeRoot, undefined, true), store, canvasBridge);
+   const agent = new AgentDiagrammingSessionService(canvasBridge, diagrams, store, new QuickJsAgentRuntime(),
+-    new ChangeSessionService(new DiagramChangeSessionStore(store.storeRoot, undefined, true), store, canvasBridge), new RevisionedDiagramService(diagramEditRuntime), agentContexts);
++    changes, diagramEditRuntime, agentContexts, apiProjection, diagramContextStore);
++  const agentChat = new AgentChatService(new StdioCodexConnection(mappingPocSourceRoot, options.piEnabled === true), new FileChatStore(store.storeRoot), mappingPocSourceRoot, liveCanvas, new ChatDiagramTools(agent), new MappingChatMcpBinding(agent, process.cwd()), canvasBridge, contextLibrary);
++  const diffSessionWorkflows = new DiffSessionWorkflowService(changes, agent, new PiDiffSessionRuntime(options.piEnabled === true),
++    new FileDiffSessionRunStore(store.storeRoot), { enabled: options.piEnabled === true, sourceRoot: mappingPocSourceRoot,
++      loadPrompts: loadDiffSessionPrompts, sourceReader: capture => createDiffSessionSourceReader(store.repositories, capture) });
++  const pushIntegrations = new PushIntegrationService(new FilePushIntegrationStore(store.storeRoot),
++    new GitPushSource(store.repositories), diffSessionWorkflows, options.piEnabled === true);
++  const workspace = new MappingWorkspaceService(store, new MappingWorkspaceStore(store.storeRoot, store.diagramPersistence), diagramContextStore);
++  const compareSessions = new CompareSessionService(workspace, new FileCompareSessionStore(store.storeRoot));
+   const routes = {
+     core: createCoreRoutes({
+       application: core,
+@@ -74,14 +116,16 @@ export function createBackend(projectRoot: string, diagramsDirectory: string, co
+     }),
+     mapping: createMappingRoutes({
+       selection: new SelectionService(store, mappingRuntime, mappingPocSourceRoot),
+-      diagrams, agent, liveCanvas,
+-      workspace: new MappingWorkspaceService(store, new MappingWorkspaceStore(store.storeRoot, store.diagramPersistence)),
++      diagrams, agent, agentChat, liveCanvas, diffSessionWorkflows, pushIntegrations, pushToken: process.env.NEW_DIAGRAM_PUSH_TOKEN,
++      workspace, compareSessions,
+       chat: new LocalChatService(store, corpusAccess, chatRuntime, mappingPocSourceRoot),
+       compactionService
+     })
+   };
+   return {
+-    routes, liveCanvas, dispose() {
++    routes, liveCanvas, diffSessionWorkflows, pushIntegrations, dispose() {
++      agentChat.dispose();
++      diffSessionWorkflows.dispose();
+       agent.dispose(); diagramEditRuntime.dispose(); canvasBridge.dispose(); languageService?.dispose(); mappingRuntime.dispose(); chatRuntime.dispose(); compactionService.dispose();
+     }
+   };

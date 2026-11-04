@@ -1,0 +1,433 @@
+{
+ "boxes": [
+  {
+   "id": "1:1-1:11",
+   "text": "MappingPage",
+   "rect": {
+    "line1": 1,
+    "col1": 1,
+    "line2": 1,
+    "col2": 11
+   }
+  },
+  {
+   "id": "1:34-1:64",
+   "text": "baseline 03f2168, before tldraw",
+   "rect": {
+    "line1": 1,
+    "col1": 34,
+    "line2": 1,
+    "col2": 64
+   }
+  },
+  {
+   "id": "3:1-4:62",
+   "text": "[MappingPocPage]\nservices --> MappingServicesContext --> MappingWorkspacePage",
+   "rect": {
+    "line1": 3,
+    "col1": 1,
+    "line2": 4,
+    "col2": 62
+   }
+  },
+  {
+   "id": "6:7-6:71",
+   "text": "DiagramService [G]       content creation / revision / generation",
+   "rect": {
+    "line1": 6,
+    "col1": 7,
+    "line2": 6,
+    "col2": 71
+   },
+   "parent": "3:1-4:62"
+  },
+  {
+   "id": "7:7-7:54",
+   "text": "CanvasHistoryService [E] document + view history",
+   "rect": {
+    "line1": 7,
+    "col1": 7,
+    "line2": 7,
+    "col2": 54
+   },
+   "parent": "3:1-4:62"
+  },
+  {
+   "id": "8:7-8:52",
+   "text": "WorkspaceStorage        injected or page-owned",
+   "rect": {
+    "line1": 8,
+    "col1": 7,
+    "line2": 8,
+    "col2": 52
+   },
+   "parent": "3:1-4:62"
+  },
+  {
+   "id": "10:1-11:42",
+   "text": "[Startup / restore]\nproject representations + storage.load()",
+   "rect": {
+    "line1": 10,
+    "col1": 1,
+    "line2": 11,
+    "col2": 42
+   }
+  },
+  {
+   "id": "12:9-12:58",
+   "text": "saved workspace --> restore / reconcile --> drafts",
+   "rect": {
+    "line1": 12,
+    "col1": 9,
+    "line2": 12,
+    "col2": 58
+   },
+   "parent": "10:1-11:42"
+  },
+  {
+   "id": "13:9-13:58",
+   "text": "requested or first settled representation --> open",
+   "rect": {
+    "line1": 13,
+    "col1": 9,
+    "line2": 13,
+    "col2": 58
+   },
+   "parent": "10:1-11:42"
+  },
+  {
+   "id": "15:1-19:71",
+   "text": "[CanvasWorkspace]\ndrafts[documentId] --> CanvasDraft = DraftMetadata + CanvasSession\ncontrollers       --> controller lookup by documentId\ndirtyScenes       --> IDs whose scenes differ from saved baselines\nsetDrafts         --> create / subscribe / replace / dispose sessions",
+   "rect": {
+    "line1": 15,
+    "col1": 1,
+    "line2": 19,
+    "col2": 71
+   }
+  },
+  {
+   "id": "21:1-22:59",
+   "text": "[CanvasSession]\nowns controller; publishes read-only stores synchronously",
+   "rect": {
+    "line1": 21,
+    "col1": 1,
+    "line2": 22,
+    "col2": 59
+   }
+  },
+  {
+   "id": "23:7-23:43",
+   "text": "document      --> MappingGridDocument",
+   "rect": {
+    "line1": 23,
+    "col1": 7,
+    "line2": 23,
+    "col2": 43
+   },
+   "parent": "21:1-22:59"
+  },
+  {
+   "id": "24:7-24:46",
+   "text": "presentation  --> display + diagramViews",
+   "rect": {
+    "line1": 24,
+    "col1": 7,
+    "line2": 24,
+    "col2": 46
+   },
+   "parent": "21:1-22:59"
+  },
+  {
+   "id": "25:7-25:38",
+   "text": "selection     --> SelectionState",
+   "rect": {
+    "line1": 25,
+    "col1": 7,
+    "line2": 25,
+    "col2": 38
+   },
+   "parent": "21:1-22:59"
+  },
+  {
+   "id": "26:7-26:47",
+   "text": "controls      --> focus + action surfaces",
+   "rect": {
+    "line1": 26,
+    "col1": 7,
+    "line2": 26,
+    "col2": 47
+   },
+   "parent": "21:1-22:59"
+  },
+  {
+   "id": "27:7-27:55",
+   "text": "geometry      --> endpointBounds + cell + version",
+   "rect": {
+    "line1": 27,
+    "col1": 7,
+    "line2": 27,
+    "col2": 55
+   },
+   "parent": "21:1-22:59"
+  },
+  {
+   "id": "28:7-28:61",
+   "text": "status        --> isDirty, sceneDirty, canUndo, canRedo",
+   "rect": {
+    "line1": 28,
+    "col1": 7,
+    "line2": 28,
+    "col2": 61
+   },
+   "parent": "21:1-22:59"
+  },
+  {
+   "id": "30:1-33:62",
+   "text": "[MappingDocumentController]\nControllerSnapshot\ncontextId + canvasRevisionId + version + canUndo / canRedo\ndocument + canvas + runtime cell / endpointBounds",
+   "rect": {
+    "line1": 30,
+    "col1": 1,
+    "line2": 33,
+    "col2": 62
+   }
+  },
+  {
+   "id": "37:1-43:36",
+   "text": "[MappingGridDocument]\nscene: LineGridScene [A]\nroot: GridBox\ncontents[contentId]: Diagram [B]\nedges: DiagramConnection[]\njumps?: CanvasJump[]\nsections[contentId]",
+   "rect": {
+    "line1": 37,
+    "col1": 1,
+    "line2": 43,
+    "col2": 36
+   }
+  },
+  {
+   "id": "37:36-47:71",
+   "text": "[MappingCanvasState]\nselection: SelectionState\nitems in insertion order\nwhole diagram OR captured region\ndiagramViews[displayNodeId]\nrevision + collapsed node IDs\ndisplay: DisplayState [C]\nrootIds + nodes: FloatingPane\ncontrols: MappingControls\nactiveBoxId / selectionFocusId\nactiveThreadId / surfaces",
+   "rect": {
+    "line1": 37,
+    "col1": 36,
+    "line2": 47,
+    "col2": 71
+   }
+  },
+  {
+   "id": "51:1-52:56",
+   "text": "[canvasDisplayNodes]\nread-only registry over scene + canvas; cloned results",
+   "rect": {
+    "line1": 51,
+    "col1": 1,
+    "line2": 52,
+    "col2": 56
+   }
+  },
+  {
+   "id": "53:7-53:68",
+   "text": "grid:<boxId>   diagram / group; cells; resolved GridBox bounds",
+   "rect": {
+    "line1": 53,
+    "col1": 7,
+    "line2": 53,
+    "col2": 68
+   },
+   "parent": "51:1-52:56"
+  },
+  {
+   "id": "54:7-54:66",
+   "text": "floating:<id>  stored panes; pixels; canvas / viewport space",
+   "rect": {
+    "line1": 54,
+    "col1": 7,
+    "line2": 54,
+    "col2": 66
+   },
+   "parent": "51:1-52:56"
+  },
+  {
+   "id": "55:7-55:67",
+   "text": "floating:edge:* arrows from edges + folds + endpoint geometry",
+   "rect": {
+    "line1": 55,
+    "col1": 7,
+    "line2": 55,
+    "col2": 67
+   },
+   "parent": "51:1-52:56"
+  },
+  {
+   "id": "57:1-59:65",
+   "text": "[Mounted document view]\nSourcePaneDocumentContext + SourcePaneDocumentActiveContext\nDraggableDiagramCanvas --> MappingPocSelectionCanvas(session)",
+   "rect": {
+    "line1": 57,
+    "col1": 1,
+    "line2": 59,
+    "col2": 65
+   }
+  },
+  {
+   "id": "60:5-60:18",
+   "text": "camera / focus",
+   "rect": {
+    "line1": 60,
+    "col1": 5,
+    "line2": 60,
+    "col2": 18
+   },
+   "parent": "57:1-59:65"
+  },
+  {
+   "id": "60:32-60:63",
+   "text": "selection / edits / jumps / undo",
+   "rect": {
+    "line1": 60,
+    "col1": 32,
+    "line2": 60,
+    "col2": 63
+   },
+   "parent": "57:1-59:65"
+  },
+  {
+   "id": "61:3-61:69",
+   "text": "visited documents stay mounted; inactive or hidden views are hidden",
+   "rect": {
+    "line1": 61,
+    "col1": 3,
+    "line2": 61,
+    "col2": 69
+   },
+   "parent": "57:1-59:65"
+  },
+  {
+   "id": "63:1-68:65",
+   "text": "[Page tools]\nMappingSubmenu          --> create / name / save\nMappingDiagramExplorer --> open / focus / delete / copy or move\nDiagramSearchPanel     <-- saved + draft + proposal documents\nChangeSessionPreview   <-- changeMode\nDiagramEditComposer    <-- DiagramEditCoordinator",
+   "rect": {
+    "line1": 63,
+    "col1": 1,
+    "line2": 68,
+    "col2": 65
+   }
+  },
+  {
+   "id": "70:1-73:70",
+   "text": "[Agent access]\nuseAgentCanvasBridge --> handleAgentCommand --> controller [D]\ncontext / document-state / snapshot / apply / apply-diagram-revision\ncreate-document / copy-document / saved baseline acknowledgement",
+   "rect": {
+    "line1": 70,
+    "col1": 1,
+    "line2": 73,
+    "col2": 70
+   }
+  },
+  {
+   "id": "75:1-77:65",
+   "text": "[SourcePaneViewState]\npane scroll + camera --> captureDisplay / captureCamera\nlive view state sampled for storage; 250 ms change notification",
+   "rect": {
+    "line1": 75,
+    "col1": 1,
+    "line2": 77,
+    "col2": 65
+   }
+  },
+  {
+   "id": "79:1-85:72",
+   "text": "[Persistence and publication]\ncheckpoint changed --> CanvasSession.onCommit --> workspace.onPersist\nWorkspacePersistence --> RecordStorage --> WorkspaceStorage worker [E]\ncapture() --> MappingWorkspaceSnapshot {schemaVersion: 3}\nprojectId + activeDocumentId + transfers + documents[]\nproject save --> acknowledgement updates captured saved baseline\ntransfer / linked undo-redo --> save --> install workspace",
+   "rect": {
+    "line1": 79,
+    "col1": 1,
+    "line2": 85,
+    "col2": 72
+   }
+  },
+  {
+   "id": "87:1-92:70",
+   "text": "[Selection and dirty-state boundaries]\ncaptured region: sourceContentId / sourceRevisionId / sourceAscii\nrect / selectedIds; reducer deduplicates membership\nfocus + surfaces belong to controls; panels belong to display\nsceneDirty = scene differs; isDirty also compares edges and name\ndocument store changes refresh search/explorer draft entries",
+   "rect": {
+    "line1": 87,
+    "col1": 1,
+    "line2": 92,
+    "col2": 70
+   }
+  },
+  {
+   "id": "94:1-96:63",
+   "text": "Sources: MappingPage.tsx; canvasWorkspace.ts; canvasSession.ts;\nmappingGrid.ts; mappingWorkspace.ts; canvasDisplayNode.ts;\nselectionState.ts; sourcePaneViewState.ts",
+   "rect": {
+    "line1": 94,
+    "col1": 1,
+    "line2": 96,
+    "col2": 63
+   }
+  }
+ ],
+ "edges": [
+  {
+   "from": "3:1-4:62",
+   "to": "10:1-11:42",
+   "direction": "--"
+  },
+  {
+   "from": "10:1-11:42",
+   "to": "15:1-19:71",
+   "direction": "--"
+  },
+  {
+   "from": "15:1-19:71",
+   "to": "21:1-22:59",
+   "direction": "--"
+  },
+  {
+   "from": "21:1-22:59",
+   "to": "30:1-33:62",
+   "direction": "--"
+  },
+  {
+   "from": "30:1-33:62",
+   "to": "37:1-43:36",
+   "direction": "--"
+  },
+  {
+   "from": "30:1-33:62",
+   "to": "37:36-47:71",
+   "direction": "--"
+  },
+  {
+   "from": "37:1-43:36",
+   "to": "51:1-52:56",
+   "direction": "->"
+  },
+  {
+   "from": "37:36-47:71",
+   "to": "51:1-52:56",
+   "direction": "->"
+  },
+  {
+   "from": "51:1-52:56",
+   "to": "57:1-59:65",
+   "direction": "--"
+  },
+  {
+   "from": "61:3-61:69",
+   "to": "63:1-68:65",
+   "direction": "--"
+  },
+  {
+   "from": "63:1-68:65",
+   "to": "70:1-73:70",
+   "direction": "--"
+  },
+  {
+   "from": "70:1-73:70",
+   "to": "75:1-77:65",
+   "direction": "--"
+  },
+  {
+   "from": "75:1-77:65",
+   "to": "79:1-85:72",
+   "direction": "--"
+  },
+  {
+   "from": "79:1-85:72",
+   "to": "87:1-92:70",
+   "direction": "--"
+  }
+ ]
+}

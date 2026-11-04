@@ -44,7 +44,8 @@ export function copyCompareHistory(history: CanvasHistoryRecord, checkpointId: s
 export class CompareSessionService {
   onDelete?: (id: string) => Promise<void>;
   constructor(private readonly workspace: Pick<MappingWorkspaceService, 'loadRecords'>, private readonly store: CompareSessionRepository,
-    private readonly generated?: GeneratedCanvasSource) {}
+    private readonly generated?: GeneratedCanvasSource,
+    private readonly projects?: Pick<import('../../core/ports/diagramRepository').DiagramRepository, 'loadProject'>) {}
   private async workspaceState() {
     const { records } = await this.workspace.loadRecords('current');
     const index = records.workspace as WorkspaceIndex | undefined;
@@ -71,7 +72,11 @@ export class CompareSessionService {
     return [...workspace, ...generated.flatMap(canvas => canvas && !workspace.some(item => item.documentId === canvas.id && !item.viewId && item.checkpointId === canvas.history.headId) ? [{ documentId: canvas.id, checkpointId: canvas.history.headId, name: canvas.name,
       canvasName: canvas.generated.contextName, diagrams: diagramTargets(canvas.history), generated: canvas.generated }] : [])];
   }
-  async list() { const { index } = await this.workspaceState(); return this.store.list(index.projectId); }
+  async list() {
+    // Listing comparison metadata needs project identity, not every live canvas checkpoint.
+    const projectId = this.projects ? (await this.projects.loadProject())?.id : (await this.workspaceState()).index.projectId;
+    return projectId ? this.store.list(projectId) : [];
+  }
   async read(id: string) {
     const session = await this.store.read(id);
     if (!session) throw new ApplicationError('invalid-input', 'Comparison session not found.');

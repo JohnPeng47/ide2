@@ -1,0 +1,209 @@
+[
+  {
+    "trial": 1,
+    "loadMs": 1176.3243220000004,
+    "deleteMs": 166.14836400000058,
+    "apiMs": 149.49434400000064,
+    "modalMs": 62.8978160000006,
+    "resources": [
+      {
+        "url": "/api/mapping/evals/runs",
+        "duration": 151.80000001192093,
+        "bytes": 66230
+      },
+      {
+        "url": "/api/mapping/compare-sessions",
+        "duration": 61,
+        "bytes": 1115
+      },
+      {
+        "url": "/api/mapping/comparison-runs",
+        "duration": 24.900000005960464,
+        "bytes": 1376
+      },
+      {
+        "url": "/api/mapping/evals/canvases",
+        "duration": 82.5,
+        "bytes": 103210
+      },
+      {
+        "url": "/api/mapping/evals/prompts",
+        "duration": 88.5,
+        "bytes": 12362
+      },
+      {
+        "url": "/api/mapping/evals/migrate",
+        "duration": 196.09999999403954,
+        "bytes": 14
+      },
+      {
+        "url": "/api/mapping/evals/references",
+        "duration": 82,
+        "bytes": 2
+      },
+      {
+        "url": "/api/mapping/evals/canvases/representation-fbcac8cc-ff66-44dd-96f7-9b0e0babc208",
+        "duration": 50,
+        "bytes": 23051
+      },
+      {
+        "url": "/api/mapping/evals/canvases",
+        "duration": 149.10000002384186,
+        "bytes": 103210
+      },
+      {
+        "url": "/api/mapping/evals/runs",
+        "duration": 180.2000000178814,
+        "bytes": 66230
+      },
+      {
+        "url": "/api/mapping/compare-sessions",
+        "duration": 121.5,
+        "bytes": 1115
+      },
+      {
+        "url": "/api/mapping/comparison-runs",
+        "duration": 63.5,
+        "bytes": 1376
+      }
+    ]
+  },
+  {
+    "trial": 2,
+    "loadMs": 1204.4304770000017,
+    "deleteMs": 167.5494120000003,
+    "apiMs": 148.16374599999835,
+    "modalMs": 61.44706500000029,
+    "resources": [
+      {
+        "url": "/api/mapping/evals/runs",
+        "duration": 140.59999999403954,
+        "bytes": 66230
+      },
+      {
+        "url": "/api/mapping/compare-sessions",
+        "duration": 57,
+        "bytes": 1115
+      },
+      {
+        "url": "/api/mapping/comparison-runs",
+        "duration": 26.5,
+        "bytes": 1376
+      },
+      {
+        "url": "/api/mapping/evals/canvases",
+        "duration": 83.7000000178814,
+        "bytes": 103210
+      },
+      {
+        "url": "/api/mapping/evals/prompts",
+        "duration": 84.7999999821186,
+        "bytes": 12362
+      },
+      {
+        "url": "/api/mapping/evals/migrate",
+        "duration": 178.40000000596046,
+        "bytes": 14
+      },
+      {
+        "url": "/api/mapping/evals/references",
+        "duration": 65.7999999821186,
+        "bytes": 2
+      },
+      {
+        "url": "/api/mapping/evals/canvases/representation-fbcac8cc-ff66-44dd-96f7-9b0e0babc208",
+        "duration": 44,
+        "bytes": 23051
+      },
+      {
+        "url": "/api/mapping/evals/canvases",
+        "duration": 116.80000001192093,
+        "bytes": 103210
+      },
+      {
+        "url": "/api/mapping/evals/runs",
+        "duration": 147.59999999403954,
+        "bytes": 66230
+      },
+      {
+        "url": "/api/mapping/compare-sessions",
+        "duration": 111.59999999403954,
+        "bytes": 1115
+      },
+      {
+        "url": "/api/mapping/comparison-runs",
+        "duration": 60.30000001192093,
+        "bytes": 1376
+      }
+    ]
+  },
+  {
+    "trial": 3,
+    "loadMs": 1299.146517000001,
+    "deleteMs": 170.24650300000212,
+    "apiMs": 147.70276900000317,
+    "modalMs": 70.56252400000085,
+    "resources": [
+      {
+        "url": "/api/mapping/evals/runs",
+        "duration": 155.09999999403954,
+        "bytes": 66230
+      },
+      {
+        "url": "/api/mapping/compare-sessions",
+        "duration": 62.70000001788139,
+        "bytes": 1115
+      },
+      {
+        "url": "/api/mapping/comparison-runs",
+        "duration": 29.700000017881393,
+        "bytes": 1376
+      },
+      {
+        "url": "/api/mapping/evals/canvases",
+        "duration": 92.19999998807907,
+        "bytes": 103210
+      },
+      {
+        "url": "/api/mapping/evals/prompts",
+        "duration": 96.19999998807907,
+        "bytes": 12362
+      },
+      {
+        "url": "/api/mapping/evals/migrate",
+        "duration": 196,
+        "bytes": 14
+      },
+      {
+        "url": "/api/mapping/evals/references",
+        "duration": 77.59999999403954,
+        "bytes": 2
+      },
+      {
+        "url": "/api/mapping/evals/canvases/representation-fbcac8cc-ff66-44dd-96f7-9b0e0babc208",
+        "duration": 45.5,
+        "bytes": 23051
+      },
+      {
+        "url": "/api/mapping/evals/canvases",
+        "duration": 114.30000001192093,
+        "bytes": 103210
+      },
+      {
+        "url": "/api/mapping/evals/runs",
+        "duration": 147.40000000596046,
+        "bytes": 66230
+      },
+      {
+        "url": "/api/mapping/compare-sessions",
+        "duration": 109.69999998807907,
+        "bytes": 1115
+      },
+      {
+        "url": "/api/mapping/comparison-runs",
+        "duration": 58.70000001788139,
+        "bytes": 1376
+      }
+    ]
+  }
+]

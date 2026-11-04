@@ -3,7 +3,7 @@ import { documentFromHistory } from '../../../domain/core/diagrams/canvasHistory
 import { extractLayoutTemplate, type LayoutTemplate } from '../../../domain/core/diagrams/layoutTemplate';
 import { presentationScene, resolveDiagramView } from '../../../domain/mapping/workspace/diagramViewState';
 import type { MappingCanvasState } from '../../../domain/mapping/workspace/mappingWorkspace';
-import { saveLayoutTemplateSchema } from '../../../domain/mapping/evals/layoutTemplate';
+import { saveLayoutTemplateSchema, updateLayoutTemplateSchema } from '../../../domain/mapping/evals/layoutTemplate';
 import { sha256 } from '../../../domain/core/sha256';
 import { ApplicationError } from '../../core/errors';
 import type { CompareSessionService } from '../compare/compareSessionService';
@@ -51,8 +51,21 @@ export class LayoutTemplateService {
     });
   }
   rename(id: string, name: string) {
+    return this.update(id, { name });
+  }
+  update(id: string, raw: unknown) {
+    const input = updateLayoutTemplateSchema.parse(raw);
     return this.write(async () => { await this.read(id); const item = (await this.store.read(id))!;
-      await this.store.save({ ...item, name }); return this.public({ ...item, name }); });
+      if (Object.keys(input.descriptions ?? {}).some(id => !item.geometry.slots.some(slot => slot.id === id)))
+        throw new ApplicationError('invalid-input', 'Unknown layout slot.');
+      const updated = { ...item, ...(input.name !== undefined ? { name: input.name } : {}),
+        geometry: { ...item.geometry, slots: item.geometry.slots.map(slot => {
+          const description = input.descriptions?.[slot.id];
+          if (description === undefined) return slot;
+          const { description: _, ...rest } = slot;
+          return { ...rest, ...(description ? { description } : {}) };
+        }) } };
+      await this.store.save(updated); return this.public(updated); });
   }
   delete(id: string) {
     return this.write(async () => { await this.read(id); await this.store.save({ ...(await this.store.read(id))!, archivedAt: new Date().toISOString() }); });

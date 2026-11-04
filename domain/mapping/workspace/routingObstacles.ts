@@ -1,4 +1,5 @@
 import { diagramContentNodes } from '../../core/diagrams/diagramContentNodes';
+import { contentNodeSpans } from '../../core/diagrams/contentNodeGeometry';
 import type { DiagramContent, DiagramContentNode } from '../../core/diagrams/diagramContent';
 import { projectDiagramContent, resolveDiagramView, type DiagramViewState, type DiagramViews } from './diagramViewState';
 import { flattenGrid, type LineGridScene } from '../../core/diagrams/lineGrid';
@@ -22,9 +23,10 @@ export function diagramRoutingObstacles(displayNodeId: string, content: DiagramC
   let cached = localCache.get(content);
   if (cached?.has(key)) return cached.get(key)!;
   const projection = projectDiagramContent(content, view);
-  const byLine = new Map<number, DiagramContentNode[]>();
-  for (const node of diagramContentNodes(content)) {
-    const row = byLine.get(node.line) ?? []; row.push(node); byLine.set(node.line, row);
+  // One obstacle per text span: multi-line nodes block each of their rows, not the wires inside their bounds.
+  const byLine = new Map<number, { id: string; startColumn: number; endColumn: number }[]>();
+  for (const node of diagramContentNodes(content)) for (const span of contentNodeSpans(node)) {
+    const row = byLine.get(span.line) ?? []; row.push({ id: node.id, ...span }); byLine.set(span.line, row);
   }
   const obstacles: RoutingObstacle[] = [];
   projection.ascii.split('\n').forEach((text, row) => {

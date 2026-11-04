@@ -1,0 +1,59 @@
+{
+  "requestId": "41f10540-6cc6-494e-b3e7-82c5429d9cc2",
+  "experiment": {
+    "name": "ChangeSession - AgentChat: modify -> C1 -> C2",
+    "description": "One full sequential sample from saved v2 context 05. C1 is the N2 central representation; C2 expands it into a central/peripheral cluster. Isolated proposed parent replacements; no source-canvas acceptance. Same pinned context at every stage. gpt-6-astra/high.",
+    "workflow": {
+      "id": "change-session-generation",
+      "name": "Modify -> C1 -> C2 cluster",
+      "version": 1,
+      "stages": [
+        {
+          "id": "modify",
+          "name": "Modify existing",
+          "dependsOn": []
+        },
+        {
+          "id": "c1",
+          "name": "Generate C1",
+          "dependsOn": [
+            "modify"
+          ]
+        },
+        {
+          "id": "c2",
+          "name": "Generate C2 cluster",
+          "dependsOn": [
+            "c1"
+          ]
+        }
+      ]
+    },
+    "cases": [
+      {
+        "id": "context-05",
+        "name": "ChangeSession v2 05 - AgentChat, generation and Canvas API",
+        "agentContextId": "saved-agent-context-b4df6a6c-83f6-428f-9247-7bd2f2548e7c",
+        "contentHash": "a82096318fdb465f19ee0370ccc90a10b7f1bac7de80d39acdafb8bcf4af2566"
+      }
+    ],
+    "conditions": [
+      {
+        "id": "baseline",
+        "name": "Baseline",
+        "description": "Explicit stage prompts; ASCII trees; no layout template or few-shot examples. gpt-6-astra/high."
+      }
+    ],
+    "samples": [
+      {
+        "id": "sample-1",
+        "caseId": "context-05",
+        "conditionId": "baseline",
+        "number": 1,
+        "attempt": 1,
+        "outputs": []
+      }
+    ],
+    "comparisons": []
+  }
+}

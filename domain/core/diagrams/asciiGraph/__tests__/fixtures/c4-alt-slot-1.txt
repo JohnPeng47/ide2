@@ -1,0 +1,97 @@
+MappingPage                         baseline 03f2168, before tldraw
+==============================================================================
+MappingPocPage
+  MappingServicesContext.Provider -> MappingWorkspacePage
+    injected diagrams + canvasHistory + optional workspaceStorage
+                   |                           |
+                   v                           v
+            CanvasWorkspace              WorkspaceStorage
+                   |
+                   v
+CanvasWorkspace drafts
+  documentId -> metadata + CanvasSession
+  metadata = name / savedName / revisionId / representationId
+             savedScene / savedEdges / viewport / busy / hidden / focusBox
+  controllers Map -> each session's MappingDocumentController
+  dirtyScenes -> IDs whose scene differs from the saved baseline
+                   |
+                   v
+CanvasSession
+  MappingDocumentController owns the state
+  +------------------------+------------------------+------------------------+
+  | document store         | presentation store     | selection store        |
+  | document               | display + diagramViews | selection.items        |
+  +------------------------+------------------------+------------------------+
+  | controls store         | geometry store         | status store           |
+  | controls               | bounds + cell + version| dirty + undo/redo      |
+  +------------------------+------------------------+------------------------+
+  read-only subscriptions publish completed controller changes
+                   |
+                   v
+ControllerSnapshot
+  contextId + canvasRevisionId + version + canUndo + canRedo
+  document -----------------------+    canvas ------------------------+
+  cell + endpointBounds           |                                  |
+                                  v                                  v
+MappingGridDocument                    MappingCanvasState
+  scene -> LineGridScene [A]              selection -> SelectionState
+    root -> GridBox tree                   items in insertion order
+    contents -> Diagram values [B]         whole instance OR captured region
+  edges -> DiagramConnection[]             displayNodeId + region?
+  sections keyed by contentId              sourceContentId / sourceRevisionId?
+  jumps? -> CanvasJump[]                   sourceAscii / rect / selectedIds
+                                         diagramViews -> per-instance folds
+                                         display -> DisplayState [C]
+                                         controls -> MappingControls
+                                           activeBoxId / selectionFocusId
+                                           activeThreadId / surfaces[id]
+Selection membership
+  replace / add / toggleDiagram / remove / clear -> one reducer
+  deduplicate regions; exclude whole + region selection on one instance
+  panel context and action-menu focus have separate owners
+                                  |
+                                  v
+CanvasDisplayNode read projection
+  scene + display + edges + diagramViews + cell + endpointBounds
+       |                        |                        |
+       v                        v                        v
+  grid:<boxId>             floating:<id>          floating:edge:<id>
+  diagram / group          pane variants [C]      derived arrows
+  bounds in cells          geometry in pixels    drawEdge from connections
+  controller.nodes() -> cached registry -> structured clone
+                                  |
+                                  v
+Rendered workspace
+  mounted document -> DraggableDiagramCanvas -> MappingPocSelectionCanvas
+  session supplied per draft; inactive documents retained and hidden
+  onUpdateDiagram -> DiagramEditCoordinator -> DiagramEditComposer
+  onTransfer / onUndo -> MappingPage workspace coordination [E]
+  onJump -> open target canvas -> focus box / content node
+  DiagramSearchPanel <- saved + draft + proposal search documents
+  MappingDiagramExplorer <- catalog + drafts + dirty/busy state
+  ChangeSessionPreview <- changeMode; accepted revisions reopen canvases
+
+Startup and restore
+  project representations + storage.load() -> independent reads
+  saved workspace -> project check -> prune -> reconcile -> draft sessions
+  otherwise -> requested settled canvas OR first settled canvas
+  activeId + mountedDocuments determine visible canvas
+
+Agent access
+  useAgentCanvasBridge -> handleAgentCommand -> document controller [D]
+  visible draft descriptors; ephemeral canvasId + stableWorkspaceId
+  HTTP registration / command polling / replies; WebSocket selections
+
+Live view and persistence
+  SourcePaneViewState -> live scroll + camera
+  captureDisplay / captureCamera -> workspace capture and record writes
+  session checkpoint change -> onCommit -> WorkspacePersistence [E]
+  workspace capture -> schemaVersion 3 + projectId + activeDocumentId
+    transfers[] + documents[history, document, canvas, viewport, baseline]
+
+Project save
+  capture name + history + scene + edges + expectedRevisionId
+    -> saveMappingProjectDiagram -> acknowledged representation revision
+    -> update captured baseline -> recompute CanvasSession dirty status
+  isDirty = scene changed OR edges changed OR name changed
+  newer edits made during save remain compared with the captured baseline

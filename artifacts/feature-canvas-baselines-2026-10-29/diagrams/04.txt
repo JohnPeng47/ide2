@@ -1,0 +1,68 @@
+SCOPED DIAGRAM AUTHORING & ALTERNATIVE REVIEW
+Compose once, target a precise scope, then update content or retain candidates.
+
++-------------------------------------------------------------------------------------------------------+
+| 1  COMPOSE A STRUCTURED PROMPT                                                                        |
+| Template + version + options, followed by ordered text and reference chips.                           |
+| Insert a revision from the rail, or paste copied diagram / node references.                           |
+| Each reference pins immutable revision text or a selected-node excerpt; later edits do not change it. |
++-------------------------------------------------------------------------------------------------------+
+                                                    |
+                                                    v
++-------------------------------------------------------------------------------------------------------+
+| 2  CHOOSE THE OPERATION AND SCOPE                                                                     |
+| CREATE: a new diagram.  EXTEND: a new diagram connected to selected sources at a chosen origin.       |
+| EDIT: whole diagram, one subtree, adjacent subtrees, or separate subtrees.                            |
+| Target revision and replacement boundaries are pinned; text outside the edit scope is preserved.      |
+| Composer: direct updates require a subtree; variant generation also supports the whole diagram.       |
++-------------------------------------------------------------------------------------------------------+
+                                                    |
+                                                    v
++-------------------------------------------------------------------------------------------------------+
+| 3  GENERATE AGAINST THE PINNED BASE                                                                   |
+| Resolve references and validate scope. For edits, choose in-place or variant mode.                    |
+| In-place -> install the edited revision. Create / extend -> place new diagrams.                       |
+| Variant -> retain 1-4 named candidates with base, head, scope and generated revision history.         |
+| Saving variants leaves live diagram content unchanged; refining one uses its saved scope.             |
++-------------------------------------------------------------------------------------------------------+
+                                                    |
+                                                    v
++-------------------------------------------------------------------------------------------------------+
+| 4  RETAINED REVISIONS SUPPORT TWO DISTINCT WORKFLOWS                                                  |
+| A saved candidate can be reviewed for content changes and promoted as a named presentation choice.    |
+| Presentation selection can also use retained revisions without a review record.                       |
++-------------------------------------------------------------------------------------------------------+
+                         |                                                     |
+               review decisions                                    promote / select
+                         v                                                     v
++------------------------------------------------+     +------------------------------------------------+
+| REVIEW AND APPLY CONTENT                       |     | SELECT AND INSPECT PRESENTATION                |
+|                                                |     |                                                |
+| Inspect the candidate and per-node changes.    |     | Promote a whole diagram or scoped parts.       |
+| Accept / reject individual changes or all.     |     | Each part pins a source revision and base.     |
+| Pending / rejected changes keep base content.  |     | Inline swap toggles the displayed alternative; |
+| Related parent, child and move changes must    |     | overlapping choices can be replaced together.  |
+| agree before application.                      |     | Selection belongs to this diagram placement.   |
+|                                                |     |                                                |
+| Refine, rename, or remove a saved variant.     |     | Open an attached SidePanel to inspect a part.  |
++------------------------------------------------+     +------------------------------------------------+
+                         |                                                     |
+             Apply reviewed changes                                  Swap / open panel
+                         v                                                     v
++------------------------------------------------+     +------------------------------------------------+
+| LIVE CONTENT REVISION                          |     | DISPLAYED CHOICE / INSPECTION                  |
+|                                                |     |                                                |
+| Merge accepted changes into current content.   |     | Inline: render selected revision scopes.       |
+| Preserve unrelated edits; report conflicts.    |     | SidePanel: regular or diff; overlay or flow;   |
+| Changing decisions and applying again can      |     | auto-place, switch parts, or close the panel.  |
+| roll back previously applied review changes.   |     | Inspection does not require an inline swap.    |
+|                                                |     |                                                |
+| Application changes the underlying content.    |     | Selection does not install a content revision. |
++------------------------------------------------+     +------------------------------------------------+
+
++-------------------------------------------------------------------------------------------------------+
+| COMPLETION AND RECOVERY                                                                               |
+| Completed means the canvas acknowledged the update and persisted the workspace; changes are undoable. |
+| Edit version conflict -> keep the prompt and resubmit against the latest diagram.                     |
+| Uncertain acknowledgement -> retry confirmation without regenerating. Cancel only before application. |
++-------------------------------------------------------------------------------------------------------+

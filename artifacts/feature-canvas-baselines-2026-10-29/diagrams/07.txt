@@ -1,0 +1,74 @@
+MAPPING + TLDRAW  |  Application semantics, native interaction
+
+  NATIVE INTERACTION                                      APPLICATION STATE
+  +-------------------------------------------+           +-------------------------------------------+
+  | tldraw Editor                             |           | MappingDocumentController                 |
+  | Live shape geometry + native undo history |           | Semantic commands + checkpoint archive    |
+  +-------------------------------------------+           +-------------------------------------------+
+          | drag / resize / duplicate                                ^
+          v                                                          |
+  +-------------------------------------------+  commitEditorGesture |
+  | MappingEditorRuntime.settle()             |-----------------------+
+  | Wait until pointing/dragging/pinching ends |
+  | Grid move -> rounded, nonnegative cells   |           +-------------------------------------------+
+  | Supported diagram clone -> new instance  |           | Controller snapshot                       |
+  | Floating pane -> position / size policy  |           | Document + display + views + selection    |
+  +-------------------------------------------+           +-------------------------------------------+
+                                                                     |
+  [Editor shape reconciliation] <---- publish() + projectMappingShapes()+
+          | Applies projected state back to the tldraw Editor above
+          | Diff existing shapes: create / update / delete only as needed
+          | Keep arrows and diagram side panels above diagram shapes
+
+  SELECTION OWNERSHIP  |  SelectionToolBridge + NativeSelectionOwnership
+  +-------------------------------------------+           +-------------------------------------------+
+  | Native shape selection                    |           | Semantic application selection            |
+  | Enables dragging; extra dragDiagramIds    |           | Content nodes, regions, whole diagrams    |
+  | Does not add semantic content membership |           | Changed by explicit application gestures  |
+  +-------------------------------------------+           +-------------------------------------------+
+          |                                                          |
+          +-----------------------> UNION <--------------------------+
+                                      |
+                                      v
+                         Editor selected shape IDs
+  Application claims selection on domain selection changes; pending projection
+  prevents native capture from overwriting it. Claimed pointer events are suppressed.
+
+  UNDO / REDO  |  Native history restores the matching domain checkpoint
+  [Domain command] --> [Shape diff + document.meta.mappingCheckpoint in editor history]
+                                      |
+                              editor.undo() / redo()
+                                      v
+  [Document change observer] --> restoreEditorCheckpoint(id) --> [Controller snapshot]
+                                      |                                |
+                                      +---- publish(false) <-----------+
+                                            reproject without recording
+  Startup replays checkpoint IDs; old geometry materializes on navigation.
+  Canvas transfers require workspace undo/redo.
+
+  GRANULAR RENDERING + CONNECTIONS  |  CanvasRuntime subscribes to controller snapshots
+  [Controller snapshot] --> [Per-ID atoms: grids / floats / panels / edges]
+                                      |
+                          shareEqual retains unchanged branches
+                                      |
+                  +-------------------+-----------------------+
+                  v                                           v
+  +-------------------------------------------+   +---------------------------------------------------+
+  | LocalAnchorStore                          |   | NativeRoutingStore                                |
+  | Endpoint identity + layoutKey -> local rect|   | Local diagram obstacles + live shape transforms   |
+  | Per-anchor subscriptions; rounded values |   | -> world obstacles; camera is not a dependency    |
+  | Invalidate on layout / font changes      |   +---------------------------------------------------+
+  | Retain measurements through DOM culling  |                           |
+  +-------------------------------------------+                           |
+                  | local endpoint + live shape transform                |
+                  v                                                      v
+  [nativeEdgeInput: world endpoints] ----------> [Route around obstacles; space arrow lanes]
+                                                                |
+                                     Cache by edge/endpoints and nearby obstacles
+                                                                |
+                                                                v
+                                              [Rendered arrows + ConnectionFocus]
+                                              Transient endpoint focus; [ / ] pans
+
+  FRAME BOUNDARY: pointer motion stays in editor geometry; pan/zoom updates camera/overlay.
+  Gesture settlement creates domain edits. Anchor measurement and routing stay transient.

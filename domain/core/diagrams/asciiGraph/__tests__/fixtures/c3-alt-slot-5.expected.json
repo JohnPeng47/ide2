@@ -1,0 +1,121 @@
+{
+ "boxes": [
+  {
+   "id": "1:1-1:24",
+   "text": "[C] FloatingBox variants",
+   "rect": {
+    "line1": 1,
+    "col1": 1,
+    "line2": 1,
+    "col2": 24
+   }
+  },
+  {
+   "id": "3:1-3:13",
+   "text": "[FloatingBox]",
+   "rect": {
+    "line1": 3,
+    "col1": 1,
+    "line2": 3,
+    "col2": 13
+   }
+  },
+  {
+   "id": "4:7-4:48",
+   "text": "FloatingPane --> persisted in DisplayState",
+   "rect": {
+    "line1": 4,
+    "col1": 7,
+    "line2": 4,
+    "col2": 48
+   },
+   "parent": "3:1-3:13"
+  },
+  {
+   "id": "5:7-5:54",
+   "text": "FloatingBoxArrow --> derived from document.edges",
+   "rect": {
+    "line1": 5,
+    "col1": 7,
+    "line2": 5,
+    "col2": 54
+   },
+   "parent": "3:1-3:13"
+  },
+  {
+   "id": "6:1-11:50",
+   "text": "[DisplayState]\nrootIds + nodes[id]; ownership via childIds\nbase: id, expansion, expandedGeometry?\nposition{x,y} + bounds{width,height}: CSS pixels\ncoordinateSpace: canvas / viewport\ngeometryPolicy: automatic/manual + content/fixed",
+   "rect": {
+    "line1": 6,
+    "col1": 1,
+    "line2": 11,
+    "col2": 50
+   }
+  },
+  {
+   "id": "13:9-15:46",
+   "text": "selection: SelectionRegion\ncaptured source + rect + selectedIds\nstacked/chained + activeChildId?",
+   "rect": {
+    "line1": 13,
+    "col1": 9,
+    "line2": 15,
+    "col2": 46
+   },
+   "parent": "6:1-11:50"
+  },
+  {
+   "id": "16:9-18:59",
+   "text": "projection: ProjectedPane\ncall-tree / compaction / source-code / code-panel\ntitle + projection/revision IDs + activeChildId?",
+   "rect": {
+    "line1": 16,
+    "col1": 9,
+    "line2": 18,
+    "col2": 59
+   },
+   "parent": "6:1-11:50"
+  },
+  {
+   "id": "19:9-21:39",
+   "text": "conversation: ConversationPane\nthread + draft + canvasAnchor\ncompact / floating / docked",
+   "rect": {
+    "line1": 19,
+    "col1": 9,
+    "line2": 21,
+    "col2": 39
+   },
+   "parent": "6:1-11:50"
+  },
+  {
+   "id": "22:9-22:57",
+   "text": "detail: DetailPane --> title + ascii + sectionId?",
+   "rect": {
+    "line1": 22,
+    "col1": 9,
+    "line2": 22,
+    "col2": 57
+   },
+   "parent": "6:1-11:50"
+  },
+  {
+   "id": "23:1-26:61",
+   "text": "[Floating placement]\nautomatic selection --> grid-region; projection --> parent\nconversation --> anchor; other panes --> stored coordinates\narrow --> connection; no arrow record in DisplayState",
+   "rect": {
+    "line1": 23,
+    "col1": 1,
+    "line2": 26,
+    "col2": 61
+   }
+  },
+  {
+   "id": "27:1-27:46",
+   "text": "Sources: displayModel.ts; canvasDisplayNode.ts",
+   "rect": {
+    "line1": 27,
+    "col1": 1,
+    "line2": 27,
+    "col2": 46
+   }
+  }
+ ],
+ "edges": []
+}

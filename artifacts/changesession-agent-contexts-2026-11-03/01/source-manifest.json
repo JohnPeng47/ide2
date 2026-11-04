@@ -1,0 +1,538 @@
+[
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "application/core/diagrams/generateDiagram.ts",
+    "startLine": 1,
+    "endLine": 13,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "application/core/integrations/pushIntegrationService.ts",
+    "startLine": 1,
+    "endLine": 104,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "application/mapping/agent/diagramEditService.ts",
+    "startLine": 1,
+    "endLine": 293,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "application/mapping/agent/sessionService.ts",
+    "startLine": 1,
+    "endLine": 712,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "application/mapping/changes/changeSessionService.ts",
+    "startLine": 1,
+    "endLine": 441,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "application/mapping/changes/diffSessionTools.ts",
+    "startLine": 1,
+    "endLine": 89,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "application/mapping/changes/diffSessionWorkflow.ts",
+    "startLine": 1,
+    "endLine": 47,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "application/mapping/changes/diffSessionWorkflowService.ts",
+    "startLine": 1,
+    "endLine": 109,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "domain/core/diagrams/canvasCheckpointRecords.ts",
+    "startLine": 1,
+    "endLine": 259,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "domain/core/diagrams/canvasHistory.ts",
+    "startLine": 1,
+    "endLine": 616,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "domain/core/diagrams/canvasTransfer.ts",
+    "startLine": 1,
+    "endLine": 209,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "domain/core/diagrams/canvasView.ts",
+    "startLine": 1,
+    "endLine": 59,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "domain/core/diagrams/diagramContentDiff.ts",
+    "startLine": 1,
+    "endLine": 148,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "domain/core/diagrams/diagramRevision.ts",
+    "startLine": 1,
+    "endLine": 48,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "domain/core/diagrams/diagramRevisionReview.ts",
+    "startLine": 1,
+    "endLine": 195,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "domain/core/diagrams/diagramRevisionStore.ts",
+    "startLine": 1,
+    "endLine": 33,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "domain/core/diagrams/highlightProjection.ts",
+    "startLine": 1,
+    "endLine": 232,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "domain/core/diagrams/projectDiagramCanvas.ts",
+    "startLine": 1,
+    "endLine": 111,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "domain/core/diagrams/submitDiagramEdit.ts",
+    "startLine": 1,
+    "endLine": 34,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "domain/core/presentation/diagramAlternative.ts",
+    "startLine": 1,
+    "endLine": 160,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "domain/core/presentation/diagramDiffProjection.ts",
+    "startLine": 1,
+    "endLine": 123,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "domain/core/presentation/diagramRevisionProjection.ts",
+    "startLine": 1,
+    "endLine": 39,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "domain/core/source/sourceNavigation.ts",
+    "startLine": 1,
+    "endLine": 9,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "domain/mapping/agent/diagramEdit.ts",
+    "startLine": 1,
+    "endLine": 85,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "domain/mapping/changes/changeTreemap.ts",
+    "startLine": 1,
+    "endLine": 170,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "domain/mapping/changes/diagramChangeSession.ts",
+    "startLine": 1,
+    "endLine": 116,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "domain/mapping/changes/diffTree.ts",
+    "startLine": 1,
+    "endLine": 89,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "domain/mapping/search/diagramSearch.ts",
+    "startLine": 1,
+    "endLine": 84,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "domain/mapping/selection/selectionGesture.ts",
+    "startLine": 1,
+    "endLine": 71,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "domain/mapping/selection/selectionState.ts",
+    "startLine": 1,
+    "endLine": 103,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "domain/mapping/treemap/canvasTreemap.ts",
+    "startLine": 1,
+    "endLine": 127,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "domain/mapping/workspace/canvasDisplayNode.ts",
+    "startLine": 1,
+    "endLine": 123,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "domain/mapping/workspace/diagramAlternatives.ts",
+    "startLine": 1,
+    "endLine": 79,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "domain/mapping/workspace/mappingDocumentController.ts",
+    "startLine": 1,
+    "endLine": 690,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "src/features/mapping/MappingPage.tsx",
+    "startLine": 1,
+    "endLine": 1268,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "src/features/mapping/canvas-views/CanvasViewControls.tsx",
+    "startLine": 1,
+    "endLine": 202,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "src/features/mapping/canvas-views/CanvasViewDiffPreview.tsx",
+    "startLine": 1,
+    "endLine": 34,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "src/features/mapping/canvas-views/canvasViewReceiver.ts",
+    "startLine": 1,
+    "endLine": 35,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "src/features/mapping/changes/ChangeTreemapContent.tsx",
+    "startLine": 1,
+    "endLine": 35,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "src/features/mapping/changes/DiffSessionWorkflowPanel.tsx",
+    "startLine": 1,
+    "endLine": 74,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "src/features/mapping/changes/DiffTreePanel.tsx",
+    "startLine": 1,
+    "endLine": 189,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "src/features/mapping/changes/treemapLayout.ts",
+    "startLine": 1,
+    "endLine": 23,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "src/features/mapping/prompt-composer/PromptComposer.tsx",
+    "startLine": 1,
+    "endLine": 314,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "src/features/mapping/prompt-composer/VariantReview.tsx",
+    "startLine": 1,
+    "endLine": 51,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "src/features/mapping/prompt-composer/promptComposerCoordinator.ts",
+    "startLine": 1,
+    "endLine": 210,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "src/features/mapping/search/DiagramSearchPanel.tsx",
+    "startLine": 1,
+    "endLine": 144,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "src/features/mapping/search/diagramSearch.worker.ts",
+    "startLine": 1,
+    "endLine": 18,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "src/features/mapping/search/diagramSearchService.ts",
+    "startLine": 1,
+    "endLine": 82,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "src/features/mapping/search/revealSearchMatches.ts",
+    "startLine": 1,
+    "endLine": 33,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "src/features/mapping/source-pane/SourceCodePane.tsx",
+    "startLine": 1,
+    "endLine": 141,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "src/features/mapping/source-pane/SourceWindowPanel.tsx",
+    "startLine": 1,
+    "endLine": 59,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "src/features/mapping/tldraw/CanvasRuntimeContext.tsx",
+    "startLine": 1,
+    "endLine": 185,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "src/features/mapping/tldraw/ConnectionFocus.tsx",
+    "startLine": 1,
+    "endLine": 110,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "src/features/mapping/tldraw/DiagramAlternativeControls.tsx",
+    "startLine": 1,
+    "endLine": 48,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "src/features/mapping/tldraw/DiagramSidePanelContent.tsx",
+    "startLine": 1,
+    "endLine": 58,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "src/features/mapping/tldraw/LocalAnchorStore.ts",
+    "startLine": 1,
+    "endLine": 34,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "src/features/mapping/tldraw/MappingEditorCanvas.tsx",
+    "startLine": 1,
+    "endLine": 173,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "src/features/mapping/tldraw/MappingEditorRuntime.ts",
+    "startLine": 1,
+    "endLine": 207,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "src/features/mapping/tldraw/NativeRoutingStore.ts",
+    "startLine": 1,
+    "endLine": 75,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "src/features/mapping/tldraw/SelectionTools.ts",
+    "startLine": 1,
+    "endLine": 49,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "src/features/mapping/tldraw/shapeProjection.ts",
+    "startLine": 1,
+    "endLine": 54,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "src/features/mapping/treemap/CanvasTreemapContent.tsx",
+    "startLine": 1,
+    "endLine": 68,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "src/features/mapping/treemap/useTreemapRegionSelection.ts",
+    "startLine": 1,
+    "endLine": 45,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "src/features/mapping/workspace/ProjectionLayoutPanel.tsx",
+    "startLine": 1,
+    "endLine": 71,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "src/features/mapping/workspace/runWorkspaceTask.ts",
+    "startLine": 1,
+    "endLine": 20,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "src/features/mapping/workspace/workspaceTask.ts",
+    "startLine": 1,
+    "endLine": 19,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  },
+  {
+    "type": "sourceFile",
+    "sourceId": "repo-ce67f2af4410036fce1ce12f",
+    "path": "src/server/app/bootstrap.ts",
+    "startLine": 1,
+    "endLine": 132,
+    "revision": "81f05a2bf9efa2334985d2298dcbd7b044dc4c1e"
+  }
+]

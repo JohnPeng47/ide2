@@ -1,0 +1,56 @@
+[D] Controller edits / agent access
+UI commands
+Agent bridge
++ register -> poll -> handle -> reply
++ live selections over WebSocket
+MappingPage.handleAgentCommand
++ context -> version + nodes + edges
++ snapshot -> state + exported history
++ apply -> cached requestId receipt
+MappingDocumentController
++ applyUpdate(expectedVersion, operations) <- transact MCP adapter
++ version match + 1..100 operations -> clone -> stage in order
+Content operations
++ create / insert
++ replace / patch
++ mappings / jumps
++ apply revision
+Document operations
++ edges create/update
++ edges remove
++ group / remove
++ delete-diagrams
+Presentation operations
++ grid move -> cells
++ floating move -> pixels
++ collapse box or subtree
++ remove floating subtree
+DiagramService
++ revise staged base
++ track node IDs
+Grid layout
++ update + push right
++ validate anchors
+DisplayState / diagramViews
++ normalize folded views
++ resolve floating geometry
+patch -> rebase edge anchors, jumps, sections and collapsed node IDs
+History commit
++ updateSnapshot -> append(document, canvas, correspondence)
++ refresh issued diagram references -> checkpoint + version -> subscribers
++ CanvasSession publishes stores; nodes() returns cloned read projection
++ select() records; updateCanvas() defaults to unrecorded
++ layout / endpoint measurements do not advance history
++ apply-diagram-revision via receiver -> persistence.sync -> storage.flush
++ copy-document -> fork history; clear selection/controls + pending chat
+
+edge "UI commands" -> "MappingDocumentController"
+edge "MappingPage.handleAgentCommand" -> "MappingDocumentController"
+edge "Agent bridge" -- "MappingPage.handleAgentCommand"
+edge "MappingDocumentController" -> "Content operations"
+edge "MappingDocumentController" -> "Document operations"
+edge "MappingDocumentController" -> "Presentation operations"
+edge "Content operations" -> "DiagramService"
+edge "Document operations" -> "Grid layout"
+edge "Presentation operations" -> "DisplayState / diagramViews"
+edge "patch -> rebase edge anchors, jumps, sections and collapsed node IDs" -> "History commit"

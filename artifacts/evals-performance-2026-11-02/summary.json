@@ -1,0 +1,34 @@
+{
+  "date": "2026-11-02",
+  "trialsPerVersion": 3,
+  "method": "Production build; same saved output on independent disposable copies of the current application store; fresh backend process and Chromium browser each trial. OS disk cache not flushed. America/Toronto timezone; 1500x940 viewport.",
+  "output": "Incremental persistence and durable recovery / Central diagram - baseline prompt / pass 1",
+  "measurements": {
+    "loadMs": "Navigation to the Evals output deep link until rendered ASCII is visible, followed by two animation frames.",
+    "deleteMs": "Delete action (native confirmation auto-accepted before; in-app confirmation button after) until the selected output row disappears. Excludes human confirmation delay.",
+    "apiMs": "Same deletion start until DELETE response body completes; includes browser dispatch time.",
+    "modalMs": "Delete icon click until in-app confirmation is visible."
+  },
+  "medians": {
+    "loadMs": {
+      "beforeMedianMs": 4980.549498,
+      "afterMedianMs": 1204.4304770000017,
+      "reductionPercent": 75.81731739673192,
+      "speedup": 4.13519052623574
+    },
+    "deleteMs": {
+      "beforeMedianMs": 4953.908996999999,
+      "afterMedianMs": 167.5494120000003,
+      "reductionPercent": 96.61783427791134,
+      "speedup": 29.566853967831232
+    },
+    "apiMs": {
+      "beforeMedianMs": 4759.451604999995,
+      "afterMedianMs": 148.16374599999835,
+      "reductionPercent": 96.88695760989887,
+      "speedup": 32.1229162564508
+    }
+  },
+  "afterModalMedianMs": 62.8978160000006,
+  "limitations": "One representative output and local machine; fresh browser/server, not a cold operating-system cache. No active user records were deleted."
+}

@@ -1,0 +1,97 @@
+MappingPage                         baseline 03f2168, before tldraw
+=======================================================================
+MappingPocPage(services)
+  |
+  v
+MappingServicesContext.Provider
+  +-- diagrams -----------------------> DiagramService
+  +-- canvasHistory ------------------> CanvasHistoryService
+  +-- workspaceStorage? --------------> injected or WorkspaceStorage
+  |
+  v
+MappingWorkspacePage
+  +-- activeId / mountedDocuments / workspaceEpoch
+  +-- catalog representations + revisions
+  +-- pendingTransfer / transfers / workspaceBusy
+  +-- search / change preview / diagram edit composer
+  |
+  v
+CanvasWorkspace
+  drafts[documentId] = metadata + CanvasSession
+  controllers = Map<documentId, MappingDocumentController>
+  metadata: name / savedName / savedScene / savedEdges
+            revisionId / representationId? / hidden? / busy / viewport?
+  setDrafts(seed) -> new session; replacement -> dispose old session
+  copyDocument -> forkHistory; clear selection + controls
+  |
+  v
+CanvasSession
+  owns controller; publishes read-only stores
+  |
+  v
+MappingDocumentController
+  ControllerSnapshot
+    contextId / canvasRevisionId / version / canUndo / canRedo
+    cell? / endpointBounds?
+    |
+    +-------------------------+-----------------------------+
+    |                         |                             |
+MappingGridDocument
+  scene                       |                             |
+    root: GridBox             |                             |
+    contents: Diagram map     |                             |
+  edges: DiagramConnection[]  |                             |
+  sections / jumps?           |                             |
+                              v                             |
+MappingCanvasState
+  selection.items: ordered membership                       |
+    whole instance OR captured region                       |
+    region = source content/revision/ASCII + rect + IDs      |
+  diagramViews: per-instance contentRevisionId + folded IDs  |
+  display: DisplayState                                     |
+    rootIds + nodes: floating pane ownership                 |
+  controls: activeBoxId / selectionFocusId / activeThreadId   |
+    surfaces: actions / prompt / ask / presentation          |
+                                                            |
+CanvasDisplayNode registry
+  canvasDisplayNodes(document, canvas, version, cell, bounds)
+    +-- scene -------> grid:<boxId> / diagram or group / cells
+    +-- display -----> floating:<id> / pane / CSS pixels
+    +-- edges -------> floating arrow / derived geometry
+  childIds / expansion / collapsible subtrees / content
+  cloned read model; geometry remains in its owning store
+=======================================================================
+Session publications
+  controller.subscribe -> synchronous immutable references
+    +-- document ------------> search / explorer
+    +-- presentation --------> display + diagramViews
+    +-- selection -----------> membership
+    +-- controls ------------> focus + action surfaces
+    +-- geometry ------------> endpointBounds + cell + version
+    +-- status --------------> dirty + sceneDirty + undo/redo
+  canvasRevisionId changes -> onCommit -> workspace.onPersist
+=======================================================================
+Mounted document rendering
+  DraggableDiagramCanvas
+    camera + focusBox
+    +-- MappingPocSelectionCanvas(session)
+          update -> DiagramEditCoordinator -> DiagramEditComposer
+          transfer / undo / jump -> MappingWorkspacePage
+  MappingDiagramExplorer -> open / focus / transfer destination
+  DiagramSearchService -> matches + focus
+  ChangeSessionPreview -> change review
+SourcePaneViewState
+  live source scroll + camera -> captureDisplay / captureCamera
+  document-scoped; sampled outside the React display tree
+=======================================================================
+Agent access
+  useAgentCanvasBridge -> handleAgentCommand -> controller
+Workspace persistence
+  session commits -> WorkspacePersistence -> RecordStorage
+  WorkspaceStorage -> worker -> workspace records API
+  capture -> schemaVersion 3 / projectId / activeDocumentId
+             transfers + documents[metadata,document,canvas,history,viewport]
+Coordinated transfer
+  copy/move or linked undo/redo -> prepare -> save -> installWorkspace
+Project save
+  saveMappingProjectDiagram -> catalog + captured saved baseline

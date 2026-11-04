@@ -1,0 +1,7 @@
+{
+  "savedAgentContextHash": "a82096318fdb465f19ee0370ccc90a10b7f1bac7de80d39acdafb8bcf4af2566",
+  "compactSnapshotHash": "a82096318fdb465f19ee0370ccc90a10b7f1bac7de80d39acdafb8bcf4af2566",
+  "resolvedSnapshotHash": "896e6ae213ed5cc2406bbc8ad4fc0b9eed07ded7302c54595b0b9e1a68663123",
+  "runtimeContextFileByteHash": "838bc97f7efca1f2211cc59af13dbbf6b7be9b2af8348b730ac717c7ed134c4b",
+  "explanation": "The saved AgentContext content hash identifies the canonical immutable snapshot. The resolved snapshot and serialized context.json wrapper have different expected hashes. Output prose comparing the wrapper byte hash to the saved-context hash is a hash-domain mismatch, not evidence drift."
+}

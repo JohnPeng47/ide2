@@ -1,0 +1,214 @@
+{
+ "boxes": [
+  {
+   "id": "1:1-1:11",
+   "text": "[B] Diagram",
+   "rect": {
+    "line1": 1,
+    "col1": 1,
+    "line2": 1,
+    "col2": 11
+   }
+  },
+  {
+   "id": "3:1-7:48",
+   "text": "Diagram\ndiagramId  = stable service identity\nrevisionId = issued service revision\nid         = local scene.contents key\nrevision   = nonnegative local revision number",
+   "rect": {
+    "line1": 3,
+    "col1": 1,
+    "line2": 7,
+    "col2": 48
+   }
+  },
+  {
+   "id": "9:7-9:13",
+   "text": "content",
+   "rect": {
+    "line1": 9,
+    "col1": 7,
+    "line2": 9,
+    "col2": 13
+   },
+   "parent": "3:1-7:48"
+  },
+  {
+   "id": "10:7-10:19",
+   "text": "sourceContext",
+   "rect": {
+    "line1": 10,
+    "col1": 7,
+    "line2": 10,
+    "col2": 19
+   },
+   "parent": "3:1-7:48"
+  },
+  {
+   "id": "11:7-11:12",
+   "text": "jumps?",
+   "rect": {
+    "line1": 11,
+    "col1": 7,
+    "line2": 11,
+    "col2": 12
+   },
+   "parent": "3:1-7:48"
+  },
+  {
+   "id": "9:37-9:50",
+   "text": "DiagramContent",
+   "rect": {
+    "line1": 9,
+    "col1": 37,
+    "line2": 9,
+    "col2": 50
+   }
+  },
+  {
+   "id": "10:37-10:56",
+   "text": "DiagramSourceContext",
+   "rect": {
+    "line1": 10,
+    "col1": 37,
+    "line2": 10,
+    "col2": 56
+   }
+  },
+  {
+   "id": "11:37-11:49",
+   "text": "DiagramJump[]",
+   "rect": {
+    "line1": 11,
+    "col1": 37,
+    "line2": 11,
+    "col2": 49
+   }
+  },
+  {
+   "id": "12:1-16:50",
+   "text": "DiagramContent\nrevisionId = id:revision\nascii + asciiSha256\n1..20000 printable ASCII characters; LF newlines\nstructure",
+   "rect": {
+    "line1": 12,
+    "col1": 1,
+    "line2": 16,
+    "col2": 50
+   }
+  },
+  {
+   "id": "17:9-17:15",
+   "text": "diagram",
+   "rect": {
+    "line1": 17,
+    "col1": 9,
+    "line2": 17,
+    "col2": 15
+   },
+   "parent": "12:1-16:50"
+  },
+  {
+   "id": "18:9-22:55",
+   "text": "tree: parserVersion ascii-tree-1 | ascii-tree-2\nrootIds + nodes[id]\nlabel / line / branchColumn / column span\nparentId / childIds / foldRanges\nnode id <- content revision + hash + line",
+   "rect": {
+    "line1": 18,
+    "col1": 9,
+    "line2": 22,
+    "col2": 55
+   },
+   "parent": "12:1-16:50"
+  },
+  {
+   "id": "23:1-33:54",
+   "text": "DiagramSourceContext\ncontentHash == SHA-256(content.ascii)\nbinding?: sourceId / repositoryIdentity / corpus\nsource-code <-> git-worktree\ndocument    <-> filesystem-documents\ncorpus root must be absolute\nmappings[]\nevidence: label + relative path + source line ranges\noriginalLines preserve source text",
+   "rect": {
+    "line1": 23,
+    "col1": 1,
+    "line2": 33,
+    "col2": 54
+   }
+  },
+  {
+   "id": "29:33-29:50",
+   "text": "evidence[entityId]",
+   "rect": {
+    "line1": 29,
+    "col1": 33,
+    "line2": 29,
+    "col2": 50
+   }
+  },
+  {
+   "id": "30:32-30:50",
+   "text": "sourceRanges[index]",
+   "rect": {
+    "line1": 30,
+    "col1": 32,
+    "line2": 30,
+    "col2": 50
+   }
+  },
+  {
+   "id": "31:32-31:48",
+   "text": "matching range.id",
+   "rect": {
+    "line1": 31,
+    "col1": 32,
+    "line2": 31,
+    "col2": 48
+   }
+  },
+  {
+   "id": "34:1-37:61",
+   "text": "Validation and queries\nvalidateDiagram -> canonical content / hash / joins / jumps\ndiagramSource -> entries / forSelection / search\nresults: mapping + entity + range + binding",
+   "rect": {
+    "line1": 34,
+    "col1": 1,
+    "line2": 37,
+    "col2": 61
+   }
+  },
+  {
+   "id": "38:1-41:53",
+   "text": "Tree visibility\nvisibleContentLines -> exclude collapsed foldRanges\nunknown content node -> STALE_CONTENT_NODE\ninstance fold choices -> canvas.diagramViews",
+   "rect": {
+    "line1": 38,
+    "col1": 1,
+    "line2": 41,
+    "col2": 53
+   }
+  }
+ ],
+ "edges": [
+  {
+   "from": "9:7-9:13",
+   "to": "9:37-9:50",
+   "direction": "->"
+  },
+  {
+   "from": "10:7-10:19",
+   "to": "10:37-10:56",
+   "direction": "->"
+  },
+  {
+   "from": "11:7-11:12",
+   "to": "11:37-11:49",
+   "direction": "->"
+  },
+  {
+   "from": "23:1-33:54",
+   "to": "29:33-29:50",
+   "direction": "->",
+   "label": "entityId"
+  },
+  {
+   "from": "23:1-33:54",
+   "to": "30:32-30:50",
+   "direction": "->",
+   "label": "range index"
+  },
+  {
+   "from": "23:1-33:54",
+   "to": "31:32-31:48",
+   "direction": "->",
+   "label": "range id?"
+  }
+ ]
+}

@@ -62,6 +62,16 @@ export class CodexEvalRuntime implements EvalRuntime {
 export class FakeEvalRuntime implements EvalRuntime {
   async generate(input: Parameters<EvalRuntime['generate']>[0]) {
     input.signal.throwIfAborted();
+    if (input.stage === 'seed' || input.stage === 'judge') {
+      const references = Array.from({ length: 5 }, (_, i) => ({ slot: i + 1, title: `Parcel pattern ${i + 1}`,
+        ascii: `ParcelRoute${i + 1}\n|-- Route\n\`-- Stop`, rationale: 'Preserve a clear ownership subtree.' }));
+      if (input.stage === 'seed') return { output: { references } };
+      const outputs = input.files['outputs.json'] as { key: string }[];
+      return { output: { assessments: outputs.map(item => ({ key: item.key, topology: 3, coverage: 3, accuracy: 4, readability: 4,
+        evidence: 'Line 1 identifies the generated root.', strengths: 'Clear root and child.', weaknesses: 'Limited nested detail.' })),
+        progress: 'The outputs preserve a clear hierarchy; deeper structure still needs improvement.', nextReferences: references,
+        recommendations: 'Retain the ownership examples and test deeper return-model expansion.' } };
+    }
     if (input.stage === 'alternative') {
       if (input.files['layout-template.json']) {
         const geometry = input.files['layout-template.json'] as import('../../../domain/core/diagrams/layoutTemplate').LayoutGeometry;

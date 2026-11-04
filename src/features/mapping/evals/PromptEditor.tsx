@@ -1,7 +1,9 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
+import { ConfirmDialog } from './ConfirmDialog';
 import { composePrompt, evalWorkflows, promptHasErrors, validatePromptStages, type EvalWorkflowId } from '../../../../domain/mapping/evals/evalWorkflows';
 import { latestVersion, type EvalPrompt } from '../../../../domain/mapping/evals/evalPrompt';
-import { templateVariables } from '../../../../domain/mapping/evals/promptTemplate';
+import { referenceKey, templateReferences, templateVariables } from '../../../../domain/mapping/evals/promptTemplate';
+import { referenceToken, renderReference, type EvalReference } from '../../../../domain/mapping/evals/evalReference';
 import { archivePrompt, savePrompt } from './evalsApi';
 import { errorMessage, relativeTime } from './evalsFormat';
 import { TemplateEditor, isMac, modKey, type TemplateChange, type TemplateEditorHandle } from './TemplateEditor';
@@ -9,8 +11,10 @@ import { canRedo, canUndo, createHistory, record, redo, undo, type EditHistory, 
 
 export type PromptDraft = { workflow: EvalWorkflowId; from?: EvalPrompt };
 
-export function PromptEditor({ prompt, draft, version, onSaved, onDirty, onRun, onDuplicate }: {
+export function PromptEditor({ prompt, draft, version, references, onSaved, onDirty, onRun, onDuplicate }: {
   prompt?: EvalPrompt; draft?: PromptDraft;
+  /** Saved references, archived included; undefined while loading (then only token syntax is checked). */
+  references?: EvalReference[];
   /** Opens on this version instead of the latest. */
   version?: number;
   onSaved: (prompt: EvalPrompt) => void; onDirty: (dirty: boolean) => void;
@@ -34,18 +38,24 @@ export function PromptEditor({ prompt, draft, version, onSaved, onDirty, onRun, 
   const editor = useRef<TemplateEditorHandle>(null);
   const pending = useRef<{ signature: string; requestId: string }>(undefined);
   const stage = workflow.stages.find(item => item.id === stageId)!;
-  const issues = useMemo(() => validatePromptStages(workflow, stages), [workflow, stages]);
-  const known = useMemo(() => new Set(workflow.variables.map(variable => variable.name)), [workflow]);
+  const referenceIds = useMemo(() => references && new Set(references.map(item => item.id)), [references]);
+  const issues = useMemo(() => validatePromptStages(workflow, stages, referenceIds), [workflow, stages, referenceIds]);
+  const known = useMemo(() => new Set([...workflow.variables.map(variable => variable.name), ...(references ?? []).map(item => referenceKey(item.id))]), [workflow, references]);
   const used = new Set(templateVariables(stages[stageId] ?? ''));
+  const cited = new Set(templateReferences(stages[stageId] ?? ''));
+  const [referenceQuery, setReferenceQuery] = useState(''), [peek, setPeek] = useState<string>();
+  // Archived references stay listed while this stage still cites them.
+  const pickable = (references ?? []).filter(item => (!item.archivedAt || cited.has(item.id))
+    && `${item.name}\n${item.id}`.toLowerCase().includes(referenceQuery.toLowerCase()));
+  const peeked = references?.find(item => item.id === peek);
   const stagesChanged = JSON.stringify(stages) !== JSON.stringify(prompt ? baseStages : initialStages) || !!prompt && viewing !== latest!.version;
   const dirty = !prompt || stagesChanged || name !== prompt.name || description !== (prompt.description ?? '');
   useEffect(() => { onDirty(!!prompt && dirty); }, [dirty, prompt, onDirty]);
   useEffect(() => () => onDirty(false), [onDirty]);
   const errors = promptHasErrors(issues), stageErrors = (id: string) => issues[id]?.filter(issue => issue.severity === 'error').length ?? 0;
-  const view = (version: number) => {
-    if (stagesChanged && !confirm('Discard unsaved prompt edits?')) return;
-    setViewing(version); setHistory(createHistory(prompt!.versions.find(item => item.version === version)!.stages, stageId));
-  };
+  const [pendingVersion, setPendingVersion] = useState<number>();
+  const applyVersion = (version: number) => { setViewing(version); setHistory(createHistory(prompt!.versions.find(item => item.version === version)!.stages, stageId)); };
+  const view = (version: number) => { if (stagesChanged) setPendingVersion(version); else applyVersion(version); };
   const save = async () => {
     const body = { workflow: workflow.id, name: name.trim(), stages, ...(description.trim() || prompt?.description ? { description: description.trim() } : {}),
       ...(note.trim() ? { note: note.trim() } : {}), ...(prompt ? { promptId: prompt.id, baseVersion: latest!.version } : {}) };
@@ -61,7 +71,9 @@ export function PromptEditor({ prompt, draft, version, onSaved, onDirty, onRun, 
   };
   const sample = Object.fromEntries(workflow.variables.map(variable => [variable.name,
     variable.type === 'canvas' ? `"‹${workflow.inputs.find(input => input.name === variable.name)?.label ?? variable.name}›"`
-      : variable.name === 'task' ? '‹task entered when the run starts›' : variable.name === 'passes' ? '2' : '1']));
+      : variable.name === 'references' ? '‹selected reference titles and ASCII examples›' : variable.name === 'passes' ? '1' : variable.name === 'pass' ? '1'
+      : variable.name === 'previous' ? 'previous-1.json ("‹earlier alternative›")' : `"‹${variable.name} name›"`]
+    ).concat((references ?? []).map(item => [referenceKey(item.id), renderReference(item.ascii)])));
   const edit = (change: TemplateChange) => setHistory(current => record(current,
     { value: { ...current.entries[current.index].value, [stageId]: change.value }, scope: stageId, before: change.before, after: change.after, kind: change.kind }));
   // Undo can cross stages: switch to the stage the change was in, then restore its caret.
@@ -92,6 +104,8 @@ export function PromptEditor({ prompt, draft, version, onSaved, onDirty, onRun, 
   const nextLabel = !prompt ? 'Create prompt' : stagesChanged ? `Save as v${latest!.version + 1}` : 'Save details';
 
   return <form className="prompt-editor" onKeyDown={formKeys} onSubmit={event => { event.preventDefault(); if (canSave) void save(); }}>
+    {pendingVersion !== undefined && <ConfirmDialog title="Discard edits" message="Discard unsaved prompt edits?" confirmLabel="Discard"
+      onConfirm={() => applyVersion(pendingVersion)} onClose={() => setPendingVersion(undefined)} />}
     <header className="evals-view-header">
       <div className="evals-breadcrumb"><span>{workflow.label}</span><span aria-hidden>›</span>
         <input aria-label="Prompt name" className="prompt-name" value={name} maxLength={120} onChange={event => setName(event.target.value)} />
@@ -127,12 +141,12 @@ export function PromptEditor({ prompt, draft, version, onSaved, onDirty, onRun, 
           </button>)}
         </div>}
         <p className="evals-muted">{stage.description}</p>
-        <details className="prompt-locked"><summary><LockIcon />Context files <small>written by the workflow</small></summary><pre>{stage.contextHeader}</pre></details>
+        <p className="evals-muted">This is the full prompt. Include input files, template guidance, and output requirements here. Execution only fills the visible variables.</p>
         <TemplateEditor ref={editor} label={`${stage.label} instructions`} known={known} value={stages[stageId] ?? ''}
           onChange={edit} onUndo={() => step(undo)} onRedo={() => step(redo)} />
         <p className="prompt-shortcuts" aria-label="Keyboard shortcuts"><kbd>{mod}Z</kbd> undo <kbd>{isMac ? '⇧⌘Z' : 'Ctrl+Y'}</kbd> redo <kbd>{mod}S</kbd> save
           <kbd>Tab</kbd>/<kbd>⇧Tab</kbd> indent <kbd>{isMac ? '⌥' : 'Alt+'}↑↓</kbd> move line <kbd>{isMac ? '⇧⌥' : 'Shift+Alt+'}↑↓</kbd> duplicate line <kbd>Esc</kbd> then <kbd>Tab</kbd> leaves the editor</p>
-        <details className="prompt-locked"><summary><LockIcon />Output format <small>validated by the workflow</small></summary><pre>{stage.outputFormat}</pre></details>
+
         <button type="button" className="evals-link" aria-expanded={preview} onClick={() => setPreview(value => !value)}>{preview ? 'Hide' : 'Show'} full prompt preview</button>
         {preview && <pre className="prompt-preview" aria-label="Full prompt preview">{(() => {
           try { return composePrompt(workflow, stageId, stages[stageId] ?? '', sample); } catch (error) { return errorMessage(error); }
@@ -149,6 +163,20 @@ export function PromptEditor({ prompt, draft, version, onSaved, onDirty, onRun, 
             <small>{variable.description}</small>
           </button>)}
         </div>)}
+        <h3>References</h3>
+        <p className="evals-muted">Saved diagram excerpts. Click to cite one at the cursor; its text is placed there when the prompt runs.</p>
+        {references && references.length > 0 && <input type="search" className="prompt-reference-filter" aria-label="Filter references" placeholder="Filter references…"
+          value={referenceQuery} onChange={event => setReferenceQuery(event.target.value)} />}
+        {!references ? <p role="status" className="evals-muted">Loading…</p>
+          : !references.some(item => !item.archivedAt) ? <p className="evals-muted">None yet. Create one in the explorer's References tab.</p>
+          : <div className="prompt-reference-list" onMouseLeave={() => setPeek(undefined)}>{pickable.map(item => <button type="button" key={item.id} className="prompt-variable"
+            aria-label={`Insert reference ${item.name}`} onClick={() => editor.current?.insert(referenceToken(item.id))}
+            onMouseEnter={() => setPeek(item.id)} onFocus={() => setPeek(item.id)}>
+            <code>{referenceToken(item.id)}</code>{cited.has(item.id) && <span className="prompt-used" title="Cited in this stage">used</span>}
+            {item.archivedAt && <span className="evals-badge is-muted">archived</span>}
+            <small>{item.name} · {item.ascii.split('\n').length} lines</small>
+          </button>)}</div>}
+        {peeked && <pre className="reference-ascii prompt-reference-peek" aria-label={`Preview of ${peeked.name}`}>{peeked.ascii}</pre>}
         <h3>Files <LockIcon /></h3>
         <ul className="prompt-files">{stage.files.map(file => <li key={file.name}><code>{file.name}</code><small>{file.description}</small></li>)}</ul>
         <h3>Checks</h3>

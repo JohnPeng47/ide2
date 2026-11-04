@@ -1,0 +1,38 @@
+[D] Controller edits / agent access
+===============================================================================
+useAgentCanvasBridge
+  stableWorkspaceId + ephemeral canvasId -> register agent/canvases
+  poll commands -> handleAgentCommand -> reply; unregister on pagehide/cleanup
+  mutation receipt cache by command.id; context reads bypass receipt cache
+  publishLiveCanvasSelections(workspace) -> /api/mapping/live WebSocket
+        |
+        v
+MappingPage.handleAgentCommand
+  context -> version + nodes + edges; document-state -> document + name
+  snapshot -> controller snapshot + history + saved identity
+  create-document / copy-document -> workspace sessions
+  apply-diagram-revision -> DiagramRevisionReceiver -> sync + storage.flush
+  apply -> requestId receipt + busy checks
+        |
+        v
+MappingDocumentController.applyUpdate(expectedVersion, operations)
+  transact = same command path; 1..100 operations; version must match
+        |
+        v
+  clone document + canvas -> stage operations in order
+        +-> create / insert / replace / patch -> DiagramService [G]
+        |   patches remap content-node anchors, jumps, folds, sections
+        +-> setSourceMappings / setJumps -> revise content metadata
+        +-> diagram-revision-apply -> check expectedRevisionId, receive
+        +-> edge create/update/remove -> validate anchors
+        +-> grid move/collapse/group/remove -> scene + layout
+        +-> floating move/collapse/remove -> display tree
+        |
+        v
+  projectCanvasSnapshot -> updateSnapshot(record=true)
+  reconcile connections/jumps; normalize folds; resolve floating geometry
+  append(document, canvas, node correspondence) -> history [E]
+  publish snapshot + version -> listeners -> return {version, nodes}
+select(command) -> recorded selection update
+updateCanvas(value, record=false) -> transient by default
+Sources: mappingDocumentController.ts, useAgentCanvasBridge.ts, MappingPage.tsx
