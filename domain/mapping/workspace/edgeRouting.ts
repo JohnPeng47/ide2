@@ -3,7 +3,8 @@ import type { EndpointRect } from './endpointGeometry';
 export interface RoutePoint { x: number; y: number }
 export type EndpointSide = 'left' | 'right' | 'top' | 'bottom';
 export interface RouteAnchor extends RoutePoint { side: EndpointSide }
-export interface RouteObstacle extends EndpointRect { kind?: 'text' | 'guide' }
+export interface RouteObstacle extends EndpointRect { kind?: 'text' | 'guide' | 'clearance' }
+export const isHardObstacle = (obstacle: RouteObstacle) => obstacle.kind !== 'guide' && obstacle.kind !== 'clearance';
 const EPS = 0.00001;
 const inside = (p: RoutePoint, r: EndpointRect) => p.x > r.x + EPS && p.x < r.x + r.width - EPS
   && p.y > r.y + EPS && p.y < r.y + r.height - EPS;
@@ -34,7 +35,7 @@ function lineIntervals(obstacles: readonly EndpointRect[], direction: number, fi
 /** Charge for distance inside guides, so crossing a gutter is cheap but following
  * it is discouraged. Merging padded rows avoids charging overlapping guides twice. */
 function guideCosts(obstacles: readonly RouteObstacle[]) {
-  const guides = obstacles.filter(r => r.kind === 'guide');
+  const guides = obstacles.filter(r => !isHardObstacle(r));
   const rows = new Map<number, Interval[]>(), columns = new Map<number, Interval[]>();
   return (direction: number, fixed: number, from: number, to: number) => {
     if (!guides.length) return 0;
@@ -104,7 +105,7 @@ const axis = (side: EndpointSide) => side === 'left' || side === 'right' ? 0 : 1
  * the search allocates only visited states, with no all-pairs visibility graph. */
 function searchRoute(source: RouteAnchor, target: RouteAnchor, exit: RoutePoint, entry: RoutePoint,
   obstacles: readonly RouteObstacle[], envelope: EndpointRect): RoutePoint[] | undefined {
-  const hard = obstacles.filter(r => r.kind !== 'guide'), guideCost = guideCosts(obstacles);
+  const hard = obstacles.filter(isHardObstacle), guideCost = guideCosts(obstacles);
   const xs = [...new Set([exit.x, entry.x, envelope.x, envelope.x + envelope.width,
     ...obstacles.flatMap(r => [r.x, r.x + r.width])])].filter(x => x >= envelope.x && x <= envelope.x + envelope.width).sort((a, b) => a - b);
   const ys = [...new Set([exit.y, entry.y, envelope.y, envelope.y + envelope.height,
@@ -161,7 +162,7 @@ function searchRoute(source: RouteAnchor, target: RouteAnchor, exit: RoutePoint,
 
 /** Use a bounded corridor first; expand it if blocked. Every explored corridor includes all intersecting obstacles. */
 export function routeEdge(source: RouteAnchor, target: RouteAnchor, obstacles: readonly RouteObstacle[], envelope?: EndpointRect): RoutePoint[] | undefined {
-  const hard = obstacles.filter(r => r.kind !== 'guide');
+  const hard = obstacles.filter(isHardObstacle);
   const stub = (p: RouteAnchor): RoutePoint | undefined => {
     const dx = p.side === 'left' ? -1 : p.side === 'right' ? 1 : 0;
     const dy = p.side === 'top' ? -1 : p.side === 'bottom' ? 1 : 0;

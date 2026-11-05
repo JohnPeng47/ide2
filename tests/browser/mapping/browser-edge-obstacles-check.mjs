@@ -58,6 +58,16 @@ try {
     arguments:['--no-sandbox','--disable-gpu']},async({cdp})=>{
     cdp.on('Page.javascriptDialogOpening', () => cdp.send('Page.handleJavaScriptDialog', { accept: true }));
     await cdp.send('Page.enable');await cdp.send('Runtime.enable');
+    await cdp.send('Page.addScriptToEvaluateOnNewDocument', { source: `
+      const RoutingWorker = window.Worker;
+      window.Worker = class extends RoutingWorker {
+        constructor(...args) { super(...args); this.addEventListener('message', event => {
+          if (event.data.arrows) window.completedRoutingJob = event.data.id;
+        }); }
+        postMessage(job, ...args) { if (job.inputs) window.lastRoutingJob = job; super.postMessage(job, ...args); }
+      };
+    ` });
+    await cdp.send('Page.reload');
     const exceptions=[];cdp.on('Runtime.exceptionThrown',event=>exceptions.push(event.exceptionDetails.text));
     const routeSelector='[data-connection-id="around-text"] .diagram-connection-hit';
     const route=()=>evaluate(cdp,`document.querySelector(${JSON.stringify(routeSelector)})?.getAttribute('d')`);
@@ -83,6 +93,19 @@ try {
     };
     await waitForSelector(cdp,routeSelector);
     await waitFor(async()=>await evaluate(cdp,"document.querySelector('[data-connection-id=\"around-text\"]').dataset.geometrySource==='measured'"));
+    await waitFor(() => evaluate(cdp, 'window.lastRoutingJob && window.completedRoutingJob === window.lastRoutingJob.id'));
+    const obstacleDrift = await evaluate(cdp, `(() => {
+      const matrix = document.querySelector(${JSON.stringify(routeSelector)}).getScreenCTM();
+      return window.lastRoutingJob.obstacles.filter(o => o.contentNodeId).flatMap(o => {
+        const label = document.querySelector('[data-native-node="' + o.displayNodeId + '"] [data-content-node-id="' + o.contentNodeId + '"]');
+        if (!label) return [];
+        const rect = label.getBoundingClientRect(), corner = new DOMPoint(o.x + 3, o.y + 3).matrixTransform(matrix);
+        const drift = Math.max(Math.abs(corner.x - rect.x), Math.abs(corner.y - rect.y),
+          Math.abs((o.width - 6) * matrix.a - rect.width), Math.abs((o.height - 6) * matrix.d - rect.height));
+        return drift > 0.1 ? [{ text: label.textContent, drift }] : [];
+      });
+    })()`);
+    assert.deepEqual(obstacleDrift, [], 'Settled routing obstacles must match rendered labels, not estimated grid cells');
     const checkSides = async () => {
       await waitFor(async()=>await evaluate(cdp,"document.querySelector('[data-connection-id=\"choose-sides\"]')?.dataset.geometrySource==='measured'"));
       const bounds = await evaluate(cdp,"(()=>{const p=document.querySelector('[data-connection-id=\"choose-sides\"] .diagram-connection-hit'),b=p.getBBox();return {width:b.width,length:p.getTotalLength()};})()");
@@ -129,19 +152,21 @@ try {
     await evaluate(cdp,"window.__routingLongTasks=[];window.__routingObserver=new PerformanceObserver(list=>window.__routingLongTasks.push(...list.getEntries().map(entry=>entry.duration)));window.__routingObserver.observe({type:'longtask'});");
     await mouse('mouseMoved',handle);await mouse('mousePressed',handle);
     for(let i=1;i<=12;i++)await mouse('mouseMoved',{x:handle.x,y:handle.y+i*20});
-    await waitFor(async()=>await route()!==initial); // The non-endpoint obstacle moves before the gesture is saved.
-    await avoidsText();
+    assert.equal(await route(), initial, 'Keep the settled route while dragging a non-endpoint obstacle');
     await mouse('mouseReleased',{x:handle.x,y:handle.y+240});
     await waitFor(async()=>Number(await evaluate(cdp,"document.querySelector('[data-grid-box=blocker]').dataset.gridRow"))>0);
+    await waitFor(async()=>await route()!==initial);
     const movedLength=await avoidsText();assert.ok(movedLength<initialLength,'Moving the blocker out of the channel should shorten the route');
     const longTasks=await evaluate(cdp,'window.__routingObserver.disconnect();window.__routingLongTasks');
     await click('.mapping-grid-tools button','Undo');
     await waitFor(async()=>Number(await evaluate(cdp,"document.querySelector('[data-grid-box=blocker]').dataset.gridRow"))===0);
+    await waitFor(async()=>await route()===initial);
     await avoidsText();
     await cdp.send('Input.dispatchKeyEvent',{type:'keyDown',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});
     await cdp.send('Input.dispatchKeyEvent',{type:'keyUp',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});
     await click('[data-subtree-owner="grid:blocker"][data-subtree-line="2"]');
     await waitFor(async()=>await evaluate(cdp,"document.querySelector('[data-subtree-owner=\"grid:blocker\"][data-subtree-line=\"2\"]').getAttribute('aria-expanded')==='false'"));
+    await waitFor(async()=>await route()!==initial);
     assert.ok(await avoidsText()<initialLength,'Hidden rows must stop obstructing routes');
     await click('[aria-label="Menu"]');await click('.mapping-workspace-actions button','Save workspace');
     await waitFor(async()=>{const result=await fetch(url+'/api/mapping/workspace').then(r=>r.json());return (result.workspace??result)?.documents?.[0]?.canvas.diagramViews?.['grid:blocker']?.collapsedContentNodeIds.length===1;});
@@ -149,7 +174,7 @@ try {
     await waitFor(async()=>{try{return await evaluate(cdp,'window.__beforeRoutingReload!==true&&document.readyState==="complete"');}catch{return false;}});
     await waitForSelector(cdp,routeSelector);await avoidsText();await checkSides();await checkGuide();await checkLanes();
     assert.deepEqual(exceptions,[]);
-    console.log(JSON.stringify({result:'PASS root destinations, shared lanes, guide crossing, label avoidance, flexible attachment, pan stability, live obstacle drag, undo, collapse and reload',initialLength,movedLength,dragLongTasksMs:longTasks}));
+    console.log(JSON.stringify({result:'PASS measured obstacles, root destinations, shared lanes, guide crossing, label avoidance, flexible attachment, pan stability, routing after drag, undo, collapse and reload',initialLength,movedLength,dragLongTasksMs:longTasks}));
   });
 }finally{
   if(server){try{process.kill(-server.pid,'SIGTERM');}catch{}}

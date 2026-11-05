@@ -1,3 +1,4 @@
+import { experimentOutputSequence, useArrowNavigation } from './evalNavigation';
 import { ExperimentExplorer, type ExperimentRoute } from './ExperimentExplorer';
 import { ExperimentView } from './ExperimentView';
 import { experimentJudgementIds } from '../../../../domain/mapping/evals/experiment';
@@ -11,7 +12,7 @@ import { latestVersion, type EvalPrompt } from '../../../../domain/mapping/evals
 import type { EvalRunSummary } from '../../../../domain/mapping/evals/evalRun';
 import { evalWorkflowIds, evalWorkflows, type EvalWorkflowId } from '../../../../domain/mapping/evals/evalWorkflows';
 import { comparisonRuns, deleteCompareSession, deleteComparisonRun, listCompareSessions, readCompareSession } from './compareApi';
-import { listExperiments, listJudgements, deleteJudgement, listReferences, updateReference, readPrompt, rerunChat, cancelRun, renameRun, deleteContextOutputs, deleteGenerated, deleteRun, deleteRuns, listGenerated, listPrompts, listRuns, migrateGenerated } from './evalsApi';
+import { listExperiments, listJudgements, deleteJudgement, listReferences, listReferenceGroups, createReferenceGroup, renameReferenceGroup, deleteReferenceGroup, updateReference, readPrompt, rerunChat, cancelRun, renameRun, deleteContextOutputs, deleteGenerated, deleteRun, deleteRuns, listGenerated, listPrompts, listRuns, migrateGenerated } from './evalsApi';
 import { errorMessage, relativeTime, runActive, runNumbers, runProgress, runTitle, statusLabel } from './evalsFormat';
 import { EvalsTree, type EvalsSelection, type PickedOutput, type TreeActions } from './EvalsTree';
 import { PopoverMenu, type MenuSection } from './PopoverMenu';
@@ -24,25 +25,30 @@ import { CompareBar } from './CompareBar';
 import { ComparisonView } from './ComparisonView';
 import { JudgementsPane } from './JudgementsPane';
 import { CompareLauncher } from './CompareLauncher';
-import { ReferenceCreator, ReferenceList, ReferenceView } from './References';
+import { loadCandidates, ReferencesLanding, ReferenceView, ReferenceWorkbench, useReferenceCaptures, type ReferenceTarget } from './References';
+import { ReferenceExplorer } from './ReferenceExplorer';
+import { diagramLeafKey, type DiagramLeaf } from '../../../../domain/mapping/evals/referenceExplorer';
+import type { CompareCandidate } from '../../../../domain/mapping/compare/comparePageSession';
 import { MappingServicesContext, type MappingServices } from '../services/MappingServices';
-import type { EvalReference } from '../../../../domain/mapping/evals/evalReference';
+import type { EvalReference, EvalReferenceGroup } from '../../../../domain/mapping/evals/evalReference';
 import './evals.css';
 
-type Route = ExperimentRoute | { kind: 'home' } | { kind: 'prompt'; id: string; version?: number } | { kind: 'new-prompt'; workflow: EvalWorkflowId; from?: string }
+type Route = ExperimentRoute | { kind: 'home' } | { kind: 'prompt'; id: string; version?: number } | { kind: 'new-prompt'; workflow: EvalWorkflowId; from?: string; fromVersion?: number }
   | { kind: 'run'; id: string; output?: string } | { kind: 'session'; id: string } | { kind: 'canvas'; id: string }
-  | { kind: 'reference'; id: string } | { kind: 'new-reference' } | { kind: 'judgements'; id?: string; judgementId?: string };
+  | { kind: 'references' } | { kind: 'reference'; id: string } | { kind: 'new-reference'; target?: ReferenceTarget } | { kind: 'judgements'; id?: string; judgementId?: string; entry?: 'first' | 'last' };
 function readRoute(): Route {
   const params = new URLSearchParams(location.search);
   const id = (key: string) => params.get(key) ?? '';
-  if (params.has('experiment')) return { kind: 'experiment', id: id('experiment'), ...(['overview', 'outputs', 'judgements'].includes(id('view')) ? { view: id('view') as ExperimentRoute['view'] } : {}), ...(params.has('group') ? { groupId: id('group') } : {}) };
+  if (params.has('experiment')) return { kind: 'experiment', id: id('experiment'), ...(['overview', 'outputs', 'judgements'].includes(id('view')) ? { view: id('view') as ExperimentRoute['view'] } : {}), ...(params.has('phase') ? { phaseId: id('phase') } : {}), ...(params.has('group') ? { groupId: id('group') } : {}) };
   if (params.has('prompt')) return { kind: 'prompt', id: id('prompt'), ...(Number(id('version')) > 0 ? { version: Number(id('version')) } : {}) };
   if (params.has('new-prompt') && evalWorkflowIds.includes(id('new-prompt') as EvalWorkflowId))
-    return { kind: 'new-prompt', workflow: id('new-prompt') as EvalWorkflowId, ...(params.has('from') ? { from: id('from') } : {}) };
-  if (params.has('judgements')) return { kind: 'judgements', ...(params.has('run') ? { id: id('run') } : {}), ...(params.has('judgement') ? { judgementId: id('judgement') } : {}) };
+    return { kind: 'new-prompt', workflow: id('new-prompt') as EvalWorkflowId, ...(params.has('from') ? { from: id('from') } : {}), ...(Number(id('from-version')) > 0 ? { fromVersion: Number(id('from-version')) } : {}) };
+  if (params.has('judgements')) return { kind: 'judgements', ...(params.has('run') ? { id: id('run') } : {}), ...(params.has('judgement') ? { judgementId: id('judgement') } : {}), ...(id('entry') === 'last' ? { entry: 'last' as const } : {}) };
   if (params.has('run')) return { kind: 'run', id: id('run'), ...(params.has('output') ? { output: id('output') } : {}) };
   if (params.has('reference')) return { kind: 'reference', id: id('reference') };
-  if (params.has('new-reference')) return { kind: 'new-reference' };
+  if (params.has('references')) return { kind: 'references' };
+  if (params.has('new-reference')) return { kind: 'new-reference', ...(params.has('document') && params.has('checkpoint') && params.has('diagram')
+    ? { target: { source: { documentId: id('document'), ...(params.has('view') ? { viewId: id('view') } : {}), checkpointId: id('checkpoint') }, diagramId: id('diagram') } } : {}) };
   if (params.has('canvas')) return { kind: 'canvas', id: id('canvas') };
   if (params.has('session')) return { kind: 'session', id: id('session') };
   return { kind: 'home' };
@@ -50,12 +56,14 @@ function readRoute(): Route {
 function routeUrl(route: Route) {
   const url = new URL(location.href); url.search = '';
   if (route.kind === 'prompt' || route.kind === 'run' || route.kind === 'session' || route.kind === 'canvas' || route.kind === 'reference') url.searchParams.set(route.kind, route.id);
-  if (route.kind === 'experiment') { url.searchParams.set('experiment', route.id); if (route.view) url.searchParams.set('view', route.view); if (route.groupId) url.searchParams.set('group', route.groupId); }
-  if (route.kind === 'judgements') { url.searchParams.set('judgements', ''); if (route.id) url.searchParams.set('run', route.id); if (route.judgementId) url.searchParams.set('judgement', route.judgementId); }
-  if (route.kind === 'new-reference') url.searchParams.set('new-reference', '');
+  if (route.kind === 'experiment') { url.searchParams.set('experiment', route.id); if (route.view) url.searchParams.set('view', route.view); if (route.groupId) url.searchParams.set('group', route.groupId); if (route.phaseId) url.searchParams.set('phase', route.phaseId); }
+  if (route.kind === 'judgements') { url.searchParams.set('judgements', ''); if (route.id) url.searchParams.set('run', route.id); if (route.judgementId) url.searchParams.set('judgement', route.judgementId); if (route.entry === 'last') url.searchParams.set('entry', 'last'); }
+  if (route.kind === 'references') url.searchParams.set('references', '');
+  if (route.kind === 'new-reference') { url.searchParams.set('new-reference', ''); if (route.target) { const { source, diagramId } = route.target;
+    url.searchParams.set('document', source.documentId); if (source.viewId) url.searchParams.set('view', source.viewId); url.searchParams.set('checkpoint', source.checkpointId); url.searchParams.set('diagram', diagramId); } }
   if (route.kind === 'run' && route.output) url.searchParams.set('output', route.output);
   if (route.kind === 'prompt' && route.version) url.searchParams.set('version', String(route.version));
-  if (route.kind === 'new-prompt') { url.searchParams.set('new-prompt', route.workflow); if (route.from) url.searchParams.set('from', route.from); }
+  if (route.kind === 'new-prompt') { url.searchParams.set('new-prompt', route.workflow); if (route.from) url.searchParams.set('from', route.from); if (route.fromVersion) url.searchParams.set('from-version', String(route.fromVersion)); }
   return url;
 }
 /** Polls quickly only while work is running. */
@@ -113,10 +121,16 @@ function EvalsWorkspace() {
   /** All references, archived included: archived ones still resolve in the prompts that cite them. */
   const [references, setReferences] = useState<EvalReference[]>();
   const activeReferences = useMemo(() => references?.filter(item => !item.archivedAt) ?? [], [references]);
-  const [navTab, setNavTab] = useState<'outputs' | 'references'>(() => route.kind === 'reference' || route.kind === 'new-reference' ? 'references' : 'outputs');
+  const [referenceGroups, setReferenceGroups] = useState<EvalReferenceGroup[]>([]);
+  const groupChanged = useCallback((group: EvalReferenceGroup) => setReferenceGroups(current => [...current.filter(item => item.id !== group.id), group].sort((a, b) => a.name.localeCompare(b.name))), []);
+  const [captures, setCaptures] = useReferenceCaptures();
+  const [candidates, setCandidates] = useState<CompareCandidate[]>(), [candidatesError, setCandidatesError] = useState('');
+  const inReferences = route.kind === 'references' || route.kind === 'reference' || route.kind === 'new-reference';
+  const lastDiagram = useRef<ReferenceTarget>(undefined);
+  if (route.kind === 'new-reference' && route.target) lastDiagram.current = route.target;
   const refreshReferences = useCallback(() => listReferences(true).then(setReferences).catch(onError), [onError]);
-  const referenceChanged = (reference: EvalReference) => setReferences(current => [reference, ...(current ?? []).filter(item => item.id !== reference.id)]
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt)));
+  const referenceChanged = useCallback((reference: EvalReference) => setReferences(current => [reference, ...(current ?? []).filter(item => item.id !== reference.id)]
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))), []);
   const [menu, setMenu] = useState<{ label: string; at: { x: number; y: number }; sections: MenuSection[] }>();
   const [navWidth, setNavWidth] = useState(() => Number(localStorage.getItem('evals-nav-width')) || 300);
   const layout = useRef<HTMLDivElement>(null);
@@ -138,7 +152,15 @@ function EvalsWorkspace() {
     }).catch(error => { if (!closed) onError(error); });
     return () => { closed = true; };
   }, [promptRouteId, promptRouteVersion, onError]);
-  useEffect(() => { void refreshReferences(); }, [refreshReferences]);
+  useEffect(() => { void refreshReferences(); void listReferenceGroups().then(setReferenceGroups).catch(onError); }, [refreshReferences, onError]);
+  // The diagram list is only needed in the Canvas tab, and entering it picks up canvases saved since.
+  const canvasTab = route.kind === 'new-reference';
+  useEffect(() => {
+    if (!canvasTab) return;
+    let closed = false; setCandidatesError('');
+    void loadCandidates().then(value => { if (!closed) setCandidates(value); }).catch(error => { if (!closed) setCandidatesError(errorMessage(error)); });
+    return () => { closed = true; };
+  }, [canvasTab]);
   useEffect(() => {
     const back = () => { setRoute(readRoute()); dirty.current = false; };
     window.addEventListener('popstate', back); return () => window.removeEventListener('popstate', back);
@@ -189,7 +211,7 @@ function EvalsWorkspace() {
   const current = route.kind === 'prompt' ? prompts?.find(prompt => prompt.id === route.id) : undefined;
   const run = route.kind === 'run' ? runs?.find(item => item.id === route.id) : undefined;
   const loading = !prompts || !runs || !sessions;
-  const refreshAll = () => Promise.all([refreshExperiments(), refreshRuns(), refreshGenerated(), refreshSessions(), refreshComparisons(), refreshJudgements()]);
+  const refreshAll = () => Promise.all([listPrompts().then(setPrompts), refreshExperiments(), refreshRuns(), refreshGenerated(), refreshSessions(), refreshComparisons(), refreshJudgements()]);
   /** Confirms, deletes, refreshes, and leaves a view whose subject is gone. */
   const remove = (question: string, task: () => Promise<unknown>, leaves: (route: Route) => boolean, removed?: () => void) => {
     setConfirmation({ title: question.startsWith('Delete output') ? 'Delete output' : 'Confirm deletion', message: question, onConfirm: async () => {
@@ -209,6 +231,15 @@ function EvalsWorkspace() {
   const activeExperiment = (experiments ?? []).find(e => route.kind === 'experiment' ? e.id === route.id
     : route.kind === 'judgements' ? experimentJudgementIds(e).includes(route.judgementId ?? '')
     : route.kind === 'run' && e.samples.some(s => s.outputs.some(o => o.runId === route.id && o.cellKey === shownCell?.key)));
+  const judgementItems = activeExperiment
+    ? experimentJudgementIds(activeExperiment).flatMap(id => judgements?.find(item => item.id === id) ?? [])
+    : judgements ?? [];
+  const outputItems = activeExperiment ? experimentOutputSequence(activeExperiment, runs ?? [])
+    : (runs ?? []).flatMap(item => item.cells.filter(cell => cell.status === 'finished' && cell.canvasId && !cell.deleted)
+      .map(cell => ({ runId: item.id, cellKey: cell.key, label: `${runTitle(item, numbers.get(item.id))} · ${cell.stage} · sample ${cell.pass}` })));
+  const outputIndex = route.kind === 'run' ? outputItems.findIndex(item => item.runId === route.id && item.cellKey === shownCell?.key) : -1;
+  const moveOutput = (direction: number) => { const next = outputItems[outputIndex + direction]; if (next) go({ kind: 'run', id: next.runId, output: next.cellKey }); };
+  useArrowNavigation(moveOutput, route.kind === 'run' && outputIndex >= 0);
   const selection: EvalsSelection | undefined = route.kind === 'experiment' ? route : route.kind === 'run' ? { kind: 'run', id: route.id, output: shownCell?.key }
     : route.kind === 'judgements' ? { kind: 'judgements', id: route.id, judgementId: route.judgementId }
     : route.kind === 'canvas' || route.kind === 'session' ? { kind: route.kind, id: route.id } : undefined;
@@ -271,6 +302,18 @@ function EvalsWorkspace() {
         outputs: context.outputs }) }
     ] }] }),
   };
+  const openDiagram = (leaf: DiagramLeaf) => go({ kind: 'new-reference', target: { source: leaf.source, diagramId: leaf.diagram.diagramId } });
+  const openReference = (id: string) => go({ kind: 'reference', id });
+  const archiveReference = (reference: EvalReference) => void updateReference(reference.id, { archived: true }).then(referenceChanged).catch(onError);
+  const moveReference = (reference: EvalReference, groupId: string | null) => void updateReference(reference.id, { groupId }).then(referenceChanged).catch(onError);
+  const createGroup = (name: string) => void createReferenceGroup({ requestId: crypto.randomUUID(), name }).then(groupChanged).catch(onError);
+  const renameGroup = (group: EvalReferenceGroup, name: string) => void renameReferenceGroup(group.id, name).then(groupChanged).catch(onError);
+  const deleteGroup = (group: EvalReferenceGroup, members: number) => setConfirmation({ title: 'Delete group', confirmLabel: 'Delete group',
+    message: `Delete group “${group.name}”?${members ? ` Its ${members} reference${members === 1 ? '' : 's'} stay and become ungrouped.` : ''}`, onConfirm: async () => {
+      await deleteReferenceGroup(group.id);
+      setReferenceGroups(current => current.filter(item => item.id !== group.id));
+      await refreshReferences();
+    } });
   const promptsMenu = (at: { x: number; y: number }) => setMenu({ label: 'Prompts', at, sections: evalWorkflowIds.map(id => ({ label: evalWorkflows[id].label, items: [
     ...(prompts ?? []).filter(prompt => prompt.workflow === id).map(prompt => ({ label: prompt.name, detail: `v${latestVersion(prompt).version}${prompt.archivedAt ? ' · archived' : ''}`,
       muted: !!prompt.archivedAt, onSelect: () => go({ kind: 'prompt', id: prompt.id }) })),
@@ -283,19 +326,20 @@ function EvalsWorkspace() {
       return <p className="evals-message">Prompt v{route.version} is not available in the current catalog. Its captured text remains in the run details.</p>;
     if (route.kind === 'reference') {
       const reference = references?.find(item => item.id === route.id);
-      return reference ? <ReferenceView key={reference.id} reference={reference} prompts={prompts ?? []} onChanged={referenceChanged} onOpenPrompt={id => go({ kind: 'prompt', id })} />
+      return reference ? <ReferenceView key={reference.id} reference={reference} groups={referenceGroups} prompts={prompts ?? []} onChanged={referenceChanged} onOpenPrompt={id => go({ kind: 'prompt', id })} />
         : references && <p className="evals-message">Reference not found.</p>;
     }
-    if (route.kind === 'experiment') return !experiments || !runs || !judgements ? <p role="status">Loading experiment…</p> : activeExperiment ? <ExperimentView key={`${activeExperiment.id}:${route.view}:${route.groupId}`} experiment={activeExperiment} route={route} runs={runs ?? []} judgements={judgements ?? []} onOpen={go} picked={picked} onPick={(output, on) => setPicked(current => on ? [...current.filter(p => p.canvasId !== output.canvasId), output] : current.filter(p => p.canvasId !== output.canvasId))} /> : <p>Experiment not found.</p>;
-    if (route.kind === 'new-reference') return <ReferenceCreator onCancel={() => go({ kind: 'home' })}
-      onCreated={reference => { referenceChanged(reference); go({ kind: 'reference', id: reference.id }); }} />;
+    if (route.kind === 'experiment') return !experiments || !runs || !judgements ? <p role="status">Loading experiment…</p> : activeExperiment ? <ExperimentView key={`${activeExperiment.id}:${route.view}:${route.groupId}:${route.phaseId}`} experiment={activeExperiment} onChanged={refreshAll} prompts={prompts ?? []} route={route} runs={runs ?? []} judgements={judgements ?? []} onOpen={go} picked={picked} onPick={(output, on) => setPicked(current => on ? [...current.filter(p => p.canvasId !== output.canvasId), output] : current.filter(p => p.canvasId !== output.canvasId))} /> : <p>Experiment not found.</p>;
+    if (route.kind === 'references') return <ReferencesLanding count={activeReferences.length} onCapture={() => go({ kind: 'new-reference', target: lastDiagram.current })} />;
+    if (route.kind === 'new-reference') return <ReferenceWorkbench target={route.target} candidates={candidates} groups={referenceGroups} captures={captures} setCaptures={setCaptures}
+      onCreated={referenceChanged} onGroupCreated={groupChanged} onOpenReference={id => go({ kind: 'reference', id })} />;
     if (route.kind === 'prompt') return current ? <PromptEditor references={references} key={`${current.id}:${latestVersion(current).version}:${route.version ?? ''}`} prompt={current} version={route.version} onSaved={savedPrompt} onDirty={setDirty}
-      onRun={prompt => setLaunch({ workflow: prompt.workflow, promptIds: [prompt.id] })} onDuplicate={prompt => go({ kind: 'new-prompt', workflow: prompt.workflow, from: prompt.id })} />
+      onRun={prompt => setLaunch({ workflow: prompt.workflow, promptIds: [prompt.id] })} onDuplicate={(prompt, version) => go({ kind: 'new-prompt', workflow: prompt.workflow, from: prompt.id, fromVersion: version })} />
       : prompts && <p className="evals-message">Prompt not found.</p>;
     if (route.kind === 'new-prompt') {
       const from = route.from ? prompts?.find(prompt => prompt.id === route.from) : undefined;
       if (route.from && !prompts) return null;
-      return <PromptEditor references={references} key={`new:${route.workflow}:${route.from ?? ''}`} draft={{ workflow: route.workflow, from }} onSaved={savedPrompt} onDirty={setDirty}
+      return <PromptEditor references={references} key={`new:${route.workflow}:${route.from ?? ''}:${route.fromVersion ?? ''}`} draft={{ workflow: route.workflow, from, fromVersion: route.fromVersion }} onSaved={savedPrompt} onDirty={setDirty}
         onRun={() => {}} onDuplicate={() => {}} />;
     }
     if (route.kind === 'canvas') return generated && (canvas ? <div className="output-view"><CanvasPreview key={canvas.id} canvasId={canvas.id} bare /></div>
@@ -303,10 +347,17 @@ function EvalsWorkspace() {
     if (route.kind === 'run') {
       if (!runs) return null;
       if (!run) return <p className="evals-message">Run not found.</p>;
-      return shownCell ? <OutputView key={`${run.id}:${shownCell.key}`} cell={shownCell} run={run} /> : <p className="evals-message">This run has no outputs.</p>;
+      return shownCell ? <>
+        {outputIndex >= 0 && <nav className="output-navigation" aria-label="Output navigation">
+          <button aria-keyshortcuts="ArrowLeft" disabled={outputIndex === 0} onClick={() => moveOutput(-1)}>← Previous output</button>
+          <span title={outputItems[outputIndex].label} aria-live="polite">{outputIndex + 1} / {outputItems.length} · {outputItems[outputIndex].label}</span>
+          <button aria-keyshortcuts="ArrowRight" disabled={outputIndex === outputItems.length - 1} onClick={() => moveOutput(1)}>Next output →</button>
+        </nav>}
+        <OutputView key={`${run.id}:${shownCell.key}`} cell={shownCell} run={run} />
+      </> : <p className="evals-message">This run has no outputs.</p>;
     }
-    if (route.kind === 'judgements') return <JudgementsPane items={(judgements ?? []).filter(item => route.judgementId === item.id || (route.id ? item.runIds.includes(route.id) : !item.runIds.some(id => runs?.some(run => run.id === id))))}
-      selectedId={route.judgementId} prompts={prompts ?? []} onSelect={judgementId => go({ ...route, judgementId })}
+    if (route.kind === 'judgements') return <JudgementsPane items={judgementItems}
+      selectedId={route.judgementId} initialEntry={route.entry} prompts={prompts ?? []} onSelect={(judgementId, entry) => go({ kind: 'judgements', judgementId, entry })}
       onDelete={item => remove(`Delete judgement “${item.title}”?${item.runIds.length > 1 ? ' This removes it from every attached run.' : ''}`, () => deleteJudgement(item.id), () => false)} />;
     if (route.kind === 'session') return session ? <ComparisonView key={session.id} session={session} prompts={prompts ?? []} />
       : !error && <p role="status" className="evals-message">Loading comparison…</p>;
@@ -340,20 +391,24 @@ function EvalsWorkspace() {
       <h1><button type="button" className="evals-home-link" onClick={() => go({ kind: 'home' })}>Evals</button></h1>
       <span className="evals-muted">Prompt workflows, runs and comparisons</span>
       <span className="evals-spacer" />
+      <button type="button" aria-current={inReferences ? 'page' : undefined} className={inReferences ? 'is-active' : undefined} onClick={() => go({ kind: 'references' })}>References</button>
       <button type="button" aria-haspopup="menu" onClick={event => { const box = event.currentTarget.getBoundingClientRect(); promptsMenu({ x: box.left, y: box.bottom + 4 }); }}>Prompts ▾</button>
-      <button type="button" onClick={() => setTemplatesOpen(true)}>Layout templates</button>
-      <button type="button" onClick={() => setLaunch('compare')}>New comparison</button>
+      <button type="button" className="evals-header-secondary" onClick={() => setTemplatesOpen(true)}>Layout templates</button>
+      <button type="button" className="evals-header-secondary" onClick={() => setLaunch('compare')}>New comparison</button>
+      <details className="evals-header-more"><summary>More</summary><div>
+        <button type="button" onClick={() => setTemplatesOpen(true)}>Layout templates</button>
+        <button type="button" onClick={() => setLaunch('compare')}>New comparison</button>
+      </div></details>
       <button type="button" className="is-primary" onClick={() => setLaunch({ workflow: route.kind === 'prompt' && current ? current.workflow : 'roll-up' })}>New run</button>
     </header>
     <div className="evals-layout" ref={layout} style={{ gridTemplateColumns: `${navWidth}px 5px minmax(0, 1fr)` }}>
       <nav className="evals-nav" aria-label="Evals">
-        <div role="tablist" aria-label="Explorer" className="evals-tabs evals-nav-tabs">
-          <button type="button" role="tab" aria-selected={navTab === 'outputs'} onClick={() => setNavTab('outputs')}>Experiments</button>
-          <button type="button" role="tab" aria-selected={navTab === 'references'} onClick={() => setNavTab('references')}>References{activeReferences.length > 0 && <span className="evals-count">{activeReferences.length}</span>}</button>
-        </div>
-        {navTab === 'references' ? (references ? <ReferenceList references={activeReferences} current={route.kind === 'reference' ? route.id : undefined}
-            onOpen={id => go({ kind: 'reference', id })} onNew={() => go({ kind: 'new-reference' })}
-            onArchive={reference => void updateReference(reference.id, { archived: true }).then(referenceChanged).catch(onError)} />
+        {inReferences ? (references ? <ReferenceExplorer tab={route.kind === 'new-reference' ? 'canvas' : 'references'} references={activeReferences} groups={referenceGroups}
+            current={route.kind === 'reference' ? route.id : undefined} captureCount={captures.length} candidates={candidates} candidatesError={candidatesError}
+            currentDiagramKey={route.kind === 'new-reference' && route.target ? diagramLeafKey(route.target.source, route.target.diagramId) : undefined}
+            onTab={tab => go(tab === 'canvas' ? { kind: 'new-reference', target: lastDiagram.current } : { kind: 'references' })} onExit={() => go({ kind: 'home' })}
+            onOpenDiagram={openDiagram} onOpen={openReference} onMenu={setMenu} onArchive={archiveReference} onMove={moveReference}
+            onCreateGroup={createGroup} onRenameGroup={renameGroup} onDeleteGroup={deleteGroup} />
           : <p role="status" className="evals-muted">Loading…</p>)
         : runs && generated && sessions && experiments && judgements ? <>
           <ExperimentExplorer experiments={experiments} runs={runs} judgements={judgements ?? []} selection={selection} onOpen={treeActions.open} />

@@ -26,13 +26,15 @@ export const renameEvalRunSchema = z.object({ name: z.string().trim().max(120) }
 export const evalEfforts = ['low', 'medium', 'high', 'xhigh'] as const;
 
 /** Prompt text is pinned into the run; later prompt edits never change what a run means. */
-export interface EvalRunPrompt { promptId: string; version?: number; name: string; stages: Record<string, string>;
+export interface EvalRunPrompt { templateBase?: import('./promptTemplateBase').PromptTemplateBase; parents?: import('./evalPrompt').PromptParent[]; contentHash?: string; derivation?: import('./evalPrompt').PromptDerivation; promptId: string; version?: number; name: string; stages: Record<string, string>;
   /** Text of the references the stages cite, frozen when the run starts. */
-  references?: Record<string, { name: string; ascii: string }> }
+  references?: Record<string, { name: string; ascii: string; comment?: string }> }
 export type EvalCellStatus = 'queued' | 'generating' | 'finished' | 'failed' | 'skipped' | 'cancelled';
 export interface EvalRunCell {
   layoutPlacements?: import('../../core/diagrams/layoutTemplate').LayoutPlacement[];
   candidateName?: string;
+  /** Exact proposal output, retained independently of display canvas edits. */
+  proposalTree?: string;
   key: string; promptId?: string; promptVersion?: number; promptName?: string; pass: number; stage: string;
   status: EvalCellStatus; canvasId?: string; checkpointId?: string; explanation?: string; error?: string;
   usage?: Record<string, number>; startedAt?: string; completedAt?: string;

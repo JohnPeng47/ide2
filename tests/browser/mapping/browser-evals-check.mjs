@@ -292,28 +292,39 @@ try {
   await page.keyboard.press('Escape');
   await expect(tree.getByRole('button', { name: 'Judgements', exact: true }).first()).toBeVisible();
 
-  // References: select part of a diagram with the Mapping selection tools and save the copied ASCII.
-  await nav.getByRole('tab', { name: /References/ }).click();
-  await nav.getByRole('button', { name: '+ New' }).click();
-  const picker = page.getByLabel('Canvas', { exact: true });
-  await picker.selectOption({ index: 1 });
-  const grid = page.locator('.reference-canvas [data-grid-box]').first();
-  await expect(grid).toBeVisible({ timeout: 15000 });
+  // References live behind the header button: capture selections from one diagram, then tick which to promote.
+  assert.equal(await nav.getByRole('tab').count(), 0, 'The Experiments explorer has no tabs');
+  await page.getByRole('button', { name: 'References', exact: true }).click();
+  await nav.getByRole('tab', { name: /Canvas/ }).click();
+  const diagrams = nav.getByRole('tree', { name: 'Diagrams' });
+  await expect(diagrams.getByRole('button', { name: /^Expand/ }).first()).toBeVisible({ timeout: 15000 });
+  for (let expand = diagrams.getByRole('button', { name: /^Expand/ }); await expand.count();) await expand.first().click();
+  await diagrams.locator('[role=treeitem]:not([aria-expanded]) .evals-tree-label').first().click();
+  // Only the chosen diagram is on the canvas.
+  const grid = page.locator('.reference-canvas [data-grid-box]:not(.is-container)');
+  await expect(grid).toHaveCount(1, { timeout: 15000 });
   const box = await grid.boundingBox(), columns = Number(await grid.getAttribute('data-grid-columns')), rows = Number(await grid.getAttribute('data-grid-rows'));
   const cell = (column, row) => ({ x: box.x + (column + .5) * box.width / columns, y: box.y + (row + .5) * box.height / rows });
   const from = cell(0, 0), to = cell(Math.min(columns - 1, 12), Math.min(rows - 1, 1));
   await page.keyboard.down('Control');
   await page.mouse.move(from.x, from.y); await page.mouse.down(); await page.mouse.move(to.x, to.y, { steps: 5 }); await page.mouse.up();
   await page.keyboard.up('Control');
-  await expect(page.getByLabel('Excerpt preview')).toBeVisible();
-  const excerpt = await page.getByLabel('Excerpt preview').textContent();
+  await expect(page.getByLabel('Selection preview')).toBeVisible();
+  const excerpt = await page.getByLabel('Selection preview').textContent();
   assert.ok(excerpt.trim().length > 0 && excerpt.split('\n').length <= 2, `excerpt: ${excerpt}`);
+  await page.getByRole('button', { name: 'Capture selection' }).click();
+  await expect(page.getByRole('button', { name: 'Already captured' })).toBeDisabled();
   await shot(page, '09c-new-reference');
-  await page.getByRole('complementary', { name: 'Reference draft' }).getByLabel('Reference name').fill('Overview top');
-  await page.getByRole('button', { name: 'Save reference' }).click();
+  await page.getByRole('complementary', { name: 'Reference captures' }).getByLabel('Reference name').fill('Overview top');
+  await page.getByLabel('Group for promoted references').selectOption({ label: 'New group…' });
+  await page.getByLabel('New group name').fill('Top excerpts');
+  await page.getByRole('button', { name: /^Promote 1 to reference$/ }).click();
+  await page.getByRole('button', { name: 'Open Overview top' }).click();
   await expect(page.getByText('{{ref:overview-top}}').first()).toBeVisible();
   assert.equal(await page.getByLabel('Reference text').textContent(), excerpt);
-  await expect(nav.getByRole('button', { name: /^Overview top/ })).toBeVisible();
+  await expect(page.getByLabel('Reference group')).toHaveValue('top-excerpts');
+  const library = nav.getByRole('tree', { name: 'References' });
+  await expect(library.getByRole('treeitem', { name: /Top excerpts/ }).getByRole('button', { name: 'Overview top' })).toBeVisible();
   // Prompts cite it from the References picker; the preview shows the frozen text in place.
   await page.getByRole('button', { name: 'Prompts ▾' }).click();
   await page.getByRole('menuitem', { name: '+ New alternatives prompt' }).click();
@@ -328,9 +339,10 @@ try {
   for (let i = 0; i < 16; i++) await page.keyboard.press('Backspace');
   await shot(page, '09d-prompt-reference');
   await page.getByRole('button', { name: 'Create prompt' }).click();
-  await nav.getByRole('button', { name: /^Overview top/ }).click();
+  await page.getByRole('button', { name: 'References', exact: true }).click();
+  await nav.getByRole('button', { name: 'Overview top', exact: true }).click();
   await expect(page.locator('.reference-facts')).toContainText('New alternatives prompt');
-  await nav.getByRole('tab', { name: 'Experiments' }).click();
+  await nav.getByRole('button', { name: '← Experiments' }).click();
 
   // Manual comparisons can pick generated canvases; Mapping links to Evals.
   await page.getByRole('button', { name: 'New comparison', exact: true }).click();

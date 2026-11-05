@@ -57,7 +57,7 @@ export const TemplateEditor = forwardRef<TemplateEditorHandle, {
   };
   const sync = () => { if (mirror.current && area.current) { mirror.current.scrollTop = area.current.scrollTop; mirror.current.scrollLeft = area.current.scrollLeft; } };
   return <div className="template-editor" data-readonly={readOnly || undefined}>
-    <pre ref={mirror} aria-hidden="true">{tokenizeTemplate(value).map(token => token.kind === 'text' ? token.text
+    <pre ref={mirror} aria-hidden="true">{tokenizeTemplate(value).map(token => token.kind === 'text' ? token.text.split(/(<\/?[a-zA-Z][^<>\n]*>)/g).map((part, index) => part.startsWith('<') ? <span className="prompt-tag" key={`${token.start}:${index}`}>{part}</span> : part)
       : <mark key={token.start} className={known.has(token.name!) ? 'template-token' : 'template-token is-unknown'}>{token.text}</mark>)}{'\n'}</pre>
     <textarea ref={area} aria-label={label} spellCheck={false} value={value} readOnly={readOnly}
       aria-keyshortcuts={`${isMac ? 'Meta' : 'Control'}+Z ${isMac ? 'Meta+Shift' : 'Control+Shift'}+Z Tab Shift+Tab Alt+ArrowUp Alt+ArrowDown`}

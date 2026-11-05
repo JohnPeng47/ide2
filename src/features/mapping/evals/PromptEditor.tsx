@@ -1,15 +1,17 @@
+import { PromptSectionsEditor } from './PromptSectionsEditor';
+import { defaultPromptTemplateBase, legacyPromptTemplateBase, parsePromptSections, renderPromptSections, structurePrompt } from '../../../../domain/mapping/evals/promptTemplateBase';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { ConfirmDialog } from './ConfirmDialog';
 import { composePrompt, evalWorkflows, promptHasErrors, validatePromptStages, type EvalWorkflowId } from '../../../../domain/mapping/evals/evalWorkflows';
 import { latestVersion, type EvalPrompt } from '../../../../domain/mapping/evals/evalPrompt';
 import { referenceKey, templateReferences, templateVariables } from '../../../../domain/mapping/evals/promptTemplate';
 import { referenceToken, renderReference, type EvalReference } from '../../../../domain/mapping/evals/evalReference';
-import { archivePrompt, savePrompt } from './evalsApi';
+import { archivePrompt, savePrompt, listPrompts, snapshotPrompts } from './evalsApi';
 import { errorMessage, relativeTime } from './evalsFormat';
 import { TemplateEditor, isMac, modKey, type TemplateChange, type TemplateEditorHandle } from './TemplateEditor';
 import { canRedo, canUndo, createHistory, record, redo, undo, type EditHistory, type HistoryStep, type TextSelection } from './editHistory';
 
-export type PromptDraft = { workflow: EvalWorkflowId; from?: EvalPrompt };
+export type PromptDraft = { workflow: EvalWorkflowId; from?: EvalPrompt; fromVersion?: number };
 
 export function PromptEditor({ prompt, draft, version, references, onSaved, onDirty, onRun, onDuplicate }: {
   prompt?: EvalPrompt; draft?: PromptDraft;
@@ -18,17 +20,25 @@ export function PromptEditor({ prompt, draft, version, references, onSaved, onDi
   /** Opens on this version instead of the latest. */
   version?: number;
   onSaved: (prompt: EvalPrompt) => void; onDirty: (dirty: boolean) => void;
-  onRun: (prompt: EvalPrompt) => void; onDuplicate: (prompt: EvalPrompt) => void;
+  onRun: (prompt: EvalPrompt) => void; onDuplicate: (prompt: EvalPrompt, version: number) => void;
 }) {
   const workflow = evalWorkflows[prompt?.workflow ?? draft!.workflow];
   const latest = prompt && latestVersion(prompt);
   const opened = prompt?.versions.find(item => item.version === version) ?? latest;
-  const initialStages = opened?.stages ?? (draft?.from ? latestVersion(draft.from).stages : workflow.defaultPrompt.stages);
+  const sourceVersion = draft?.from && (draft.from.versions.find(v => v.version === draft.fromVersion) ?? latestVersion(draft.from));
+  const initialStages = opened?.stages ?? sourceVersion?.stages ?? Object.fromEntries(Object.entries(workflow.defaultPrompt.stages).map(([key, text]) => [key, structurePrompt(text)]));
+
   const [viewing, setViewing] = useState(opened?.version);
+  const viewedVersion = prompt?.versions.find(v => v.version === viewing);
+  const templateBase = viewedVersion?.templateBase ?? sourceVersion?.templateBase ?? (viewedVersion || sourceVersion ? legacyPromptTemplateBase((viewedVersion ?? sourceVersion)!.stages) : defaultPromptTemplateBase);
   const baseStages = prompt?.versions.find(item => item.version === viewing)?.stages ?? initialStages;
   const [name, setName] = useState(prompt?.name ?? (draft?.from ? `${draft.from.name} copy`.slice(0, 120) : `New ${workflow.label.toLowerCase()} prompt`));
   const [description, setDescription] = useState(prompt?.description ?? '');
+  const [dimension, setDimension] = useState(''), [dimensionValue, setDimensionValue] = useState('');
+  const viewedDerivation = prompt?.versions.find(v => v.version === viewing)?.derivation;
   const [note, setNote] = useState('');
+  const [parentsCatalog, setParentsCatalog] = useState<EvalPrompt[]>([]), [mergeParent, setMergeParent] = useState(''), [snapshotNotice, setSnapshotNotice] = useState('');
+  useEffect(() => { void listPrompts().then(setParentsCatalog).catch(() => {}); }, []);
   const [stageId, setStageId] = useState(workflow.stages[0].id);
   const [history, setHistory] = useState(() => createHistory(initialStages, workflow.stages[0].id));
   const stages = history.entries[history.index].value;
@@ -39,7 +49,13 @@ export function PromptEditor({ prompt, draft, version, references, onSaved, onDi
   const pending = useRef<{ signature: string; requestId: string }>(undefined);
   const stage = workflow.stages.find(item => item.id === stageId)!;
   const referenceIds = useMemo(() => references && new Set(references.map(item => item.id)), [references]);
-  const issues = useMemo(() => validatePromptStages(workflow, stages, referenceIds), [workflow, stages, referenceIds]);
+  const [checkedStages, setCheckedStages] = useState(stages);
+  useEffect(() => { const timer = setTimeout(() => setCheckedStages(stages), 2000); return () => clearTimeout(timer); }, [stages]);
+  const issues = useMemo(() => {
+    const result = validatePromptStages(workflow, stages, referenceIds);
+    for (const [key, text] of Object.entries(checkedStages)) (result[key] ??= []).push(...parsePromptSections(text, templateBase).issues);
+    return result;
+  }, [workflow, stages, checkedStages, referenceIds, templateBase]);
   const known = useMemo(() => new Set([...workflow.variables.map(variable => variable.name), ...(references ?? []).map(item => referenceKey(item.id))]), [workflow, references]);
   const used = new Set(templateVariables(stages[stageId] ?? ''));
   const cited = new Set(templateReferences(stages[stageId] ?? ''));
@@ -48,17 +64,23 @@ export function PromptEditor({ prompt, draft, version, references, onSaved, onDi
   const pickable = (references ?? []).filter(item => (!item.archivedAt || cited.has(item.id))
     && `${item.name}\n${item.id}`.toLowerCase().includes(referenceQuery.toLowerCase()));
   const peeked = references?.find(item => item.id === peek);
-  const stagesChanged = JSON.stringify(stages) !== JSON.stringify(prompt ? baseStages : initialStages) || !!prompt && viewing !== latest!.version;
-  const dirty = !prompt || stagesChanged || name !== prompt.name || description !== (prompt.description ?? '');
+  const textChanged = JSON.stringify(stages) !== JSON.stringify(prompt ? baseStages : initialStages);
+  const stagesChanged = textChanged || !!prompt && viewing !== latest!.version || !!mergeParent;
+  const dirty = !!mergeParent || !prompt || textChanged || name !== prompt.name || description !== (prompt.description ?? '');
   useEffect(() => { onDirty(!!prompt && dirty); }, [dirty, prompt, onDirty]);
   useEffect(() => () => onDirty(false), [onDirty]);
   const errors = promptHasErrors(issues), stageErrors = (id: string) => issues[id]?.filter(issue => issue.severity === 'error').length ?? 0;
   const [pendingVersion, setPendingVersion] = useState<number>();
   const applyVersion = (version: number) => { setViewing(version); setHistory(createHistory(prompt!.versions.find(item => item.version === version)!.stages, stageId)); };
-  const view = (version: number) => { if (stagesChanged) setPendingVersion(version); else applyVersion(version); };
+  const view = (version: number) => { if (textChanged) setPendingVersion(version); else applyVersion(version); };
   const save = async () => {
-    const body = { workflow: workflow.id, name: name.trim(), stages, ...(description.trim() || prompt?.description ? { description: description.trim() } : {}),
-      ...(note.trim() ? { note: note.trim() } : {}), ...(prompt ? { promptId: prompt.id, baseVersion: latest!.version } : {}) };
+    const tagErrors = Object.values(stages).flatMap(text => parsePromptSections(text, templateBase).issues);
+    if (tagErrors.length) { setCheckedStages(stages); setError(tagErrors.map(i => i.message).join(' ' )); return; }
+    const merge = mergeParent ? JSON.parse(mergeParent) as { promptId: string; version: number } : undefined;
+    const body = { ...(merge && prompt ? { parents: [{ promptId: prompt.id, version: viewing!, relation: 'merge' as const }, { ...merge, relation: 'merge' as const }] } : {}), templateBase, workflow: workflow.id, name: name.trim(), stages, ...(description.trim() || prompt?.description ? { description: description.trim() } : {}),
+      ...(note.trim() ? { note: note.trim() } : {}), ...(prompt ? { promptId: prompt.id, baseVersion: latest!.version, derivation: { parent: { promptId: prompt.id, version: viewing! }, kind: 'revision' as const } }
+        : draft?.from && sourceVersion ? { derivation: { parent: { promptId: draft.from.id, version: sourceVersion.version }, kind: dimension.trim() ? 'variation' as const : 'fork' as const,
+          ...(dimension.trim() ? { dimension: { id: dimension.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 80), name: dimension.trim(), value: dimensionValue.trim() } } : {}) } } : {}) };
     const signature = JSON.stringify(body);
     if (pending.current?.signature !== signature) pending.current = { signature, requestId: crypto.randomUUID() };
     setBusy(true); setError('');
@@ -73,7 +95,7 @@ export function PromptEditor({ prompt, draft, version, references, onSaved, onDi
     variable.type === 'canvas' ? `"‹${workflow.inputs.find(input => input.name === variable.name)?.label ?? variable.name}›"`
       : variable.name === 'references' ? '‹selected reference titles and ASCII examples›' : variable.name === 'passes' ? '1' : variable.name === 'pass' ? '1'
       : variable.name === 'previous' ? 'previous-1.json ("‹earlier alternative›")' : `"‹${variable.name} name›"`]
-    ).concat((references ?? []).map(item => [referenceKey(item.id), renderReference(item.ascii)])));
+    ).concat((references ?? []).map(item => [referenceKey(item.id), renderReference(item.ascii, item.comment)])));
   const edit = (change: TemplateChange) => setHistory(current => record(current,
     { value: { ...current.entries[current.index].value, [stageId]: change.value }, scope: stageId, before: change.before, after: change.after, kind: change.kind }));
   // Undo can cross stages: switch to the stage the change was in, then restore its caret.
@@ -84,7 +106,7 @@ export function PromptEditor({ prompt, draft, version, references, onSaved, onDi
   useLayoutEffect(() => {
     if (restore.current?.scope === stageId) { editor.current?.focusRange(restore.current.selection.start, restore.current.selection.end); restore.current = undefined; }
   });
-  const canSave = !busy && !errors && dirty && !!name.trim();
+  const canSave = !busy && !errors && (dirty || stagesChanged) && !!name.trim() && (!draft?.from || (!dimension.trim() && !dimensionValue.trim()) || (!!dimension.trim() && !!dimensionValue.trim()));
   const shortcuts = useRef({ save: () => {}, canSave }); shortcuts.current = { save: () => void save(), canSave };
   useEffect(() => {
     const key = (event: globalThis.KeyboardEvent) => {
@@ -117,9 +139,10 @@ export function PromptEditor({ prompt, draft, version, references, onSaved, onDi
           {[...prompt.versions].reverse().map(item => <option key={item.version} value={item.version}>
             v{item.version}{item.version === latest!.version ? ' (latest)' : ''} · {relativeTime(item.createdAt)}</option>)}
         </select></label>}
-        {prompt && <button type="button" onClick={() => onDuplicate(prompt)}>Duplicate</button>}
+        {prompt && <button type="button" onClick={() => onDuplicate(prompt, viewing!)}>Fork prompt</button>}
         {prompt && <button type="button" disabled={busy} onClick={() => void archive()}>{prompt.archivedAt ? 'Restore' : 'Archive'}</button>}
-        {prompt && !prompt.archivedAt && <button type="button" disabled={dirty} title={dirty ? 'Save before running' : undefined} onClick={() => onRun(prompt)}>Run…</button>}
+        {prompt && !prompt.archivedAt && <button type="button" disabled={dirty || stagesChanged} title={dirty || stagesChanged ? 'Save before running' : undefined} onClick={() => onRun(prompt)}>Run…</button>}
+        <button type="button" disabled={busy} onClick={async () => { setBusy(true); try { const snapshot = await snapshotPrompts(); setSnapshotNotice(`Project prompt snapshot saved: ${snapshot.id}`); } catch (error) { setError(errorMessage(error)); } finally { setBusy(false); } }}>Snapshot project prompts</button>
         <span className="evals-button-group">
           <button type="button" aria-label="Undo" title={`Undo (${mod}Z)`} disabled={!canUndo(history)} onClick={() => step(undo)}>↶</button>
           <button type="button" aria-label="Redo" title={`Redo (${isMac ? '⇧⌘Z' : 'Ctrl+Y'})`} disabled={!canRedo(history)} onClick={() => step(redo)}>↷</button>
@@ -128,10 +151,21 @@ export function PromptEditor({ prompt, draft, version, references, onSaved, onDi
       </div>
     </header>
     {prompt && viewing !== latest!.version && <p className="evals-notice" role="status">Viewing v{viewing}. Saving creates v{latest!.version + 1} from this text.</p>}
+    {draft?.from && sourceVersion && <p className="evals-notice">Variation of {draft.from.name} · v{sourceVersion.version}. This parent version stays pinned when its prompt changes.</p>}
+    {!!viewedVersion?.parents?.length && <p className="evals-notice">Parents: {viewedVersion.parents!.map((p, i) => <span key={i}>{i ? ' · ' : ''}{p.relation}: <a href={`?prompt=${p.promptId}&version=${p.version}`}>{parentsCatalog.find(item => item.id === p.promptId)?.name ?? p.promptId} v{p.version}</a></span>)}{viewedDerivation?.dimension && ` · ${viewedDerivation.dimension.name}: ${viewedDerivation.dimension.value}`}</p>}
+    {viewedDerivation && !viewedVersion?.parents?.length && <p className="evals-notice">{viewedDerivation.kind} of <a href={`?prompt=${encodeURIComponent(viewedDerivation.parent.promptId)}&version=${viewedDerivation.parent.version}`}>{viewedDerivation.parent.promptId} · v{viewedDerivation.parent.version}</a>{viewedDerivation.dimension && ` · ${viewedDerivation.dimension.name}: ${viewedDerivation.dimension.value}`}</p>}
+    {snapshotNotice && <p role="status" className="evals-notice">{snapshotNotice}</p>}
     {error && <p role="alert" className="evals-error">{error}</p>}
     <div className="prompt-editor-body">
       <div className="prompt-editor-main">
         <div className="prompt-meta">
+          {prompt && <label>Merge parent (optional)<select aria-label="Merge parent" value={mergeParent} onChange={event => setMergeParent(event.target.value)}><option value="">No merge</option>{parentsCatalog.filter(p => p.workflow === workflow.id).flatMap(p => p.versions.filter(v => p.id !== prompt.id || v.version !== viewing).map(v => <option key={`${p.id}:${v.version}`} value={JSON.stringify({ promptId: p.id, version: v.version })}>{p.name} · v{v.version}</option>))}</select><small>Edit the combined text below; saving records both exact parent versions.</small></label>}
+
+          {draft?.from && <>
+            <label>Changed dimension<input aria-label="Changed dimension" list="prompt-dimensions" maxLength={120} value={dimension} onChange={e => setDimension(e.target.value)} placeholder="e.g. Expression" /></label>
+            <datalist id="prompt-dimensions"><option value="Expression" /><option value="Organizing focus" /><option value="Tree topology" /></datalist>
+            <label>Dimension setting<input aria-label="Dimension setting" maxLength={500} value={dimensionValue} onChange={e => setDimensionValue(e.target.value)} placeholder="e.g. 100% code / 0% natural language" /></label>
+          </>}
           <label>Description<input value={description} maxLength={500} placeholder="What this prompt tries" onChange={event => setDescription(event.target.value)} /></label>
           {prompt && stagesChanged && <label>Version note<input value={note} maxLength={500} placeholder={`What changed in v${latest!.version + 1}`} onChange={event => setNote(event.target.value)} /></label>}
         </div>
@@ -142,14 +176,14 @@ export function PromptEditor({ prompt, draft, version, references, onSaved, onDi
         </div>}
         <p className="evals-muted">{stage.description}</p>
         <p className="evals-muted">This is the full prompt. Include input files, template guidance, and output requirements here. Execution only fills the visible variables.</p>
-        <TemplateEditor ref={editor} label={`${stage.label} instructions`} known={known} value={stages[stageId] ?? ''}
+        <PromptSectionsEditor base={templateBase} ref={editor} label={`${stage.label} instructions`} known={known} value={stages[stageId] ?? ''}
           onChange={edit} onUndo={() => step(undo)} onRedo={() => step(redo)} />
         <p className="prompt-shortcuts" aria-label="Keyboard shortcuts"><kbd>{mod}Z</kbd> undo <kbd>{isMac ? '⇧⌘Z' : 'Ctrl+Y'}</kbd> redo <kbd>{mod}S</kbd> save
           <kbd>Tab</kbd>/<kbd>⇧Tab</kbd> indent <kbd>{isMac ? '⌥' : 'Alt+'}↑↓</kbd> move line <kbd>{isMac ? '⇧⌥' : 'Shift+Alt+'}↑↓</kbd> duplicate line <kbd>Esc</kbd> then <kbd>Tab</kbd> leaves the editor</p>
 
         <button type="button" className="evals-link" aria-expanded={preview} onClick={() => setPreview(value => !value)}>{preview ? 'Hide' : 'Show'} full prompt preview</button>
         {preview && <pre className="prompt-preview" aria-label="Full prompt preview">{(() => {
-          try { return composePrompt(workflow, stageId, stages[stageId] ?? '', sample); } catch (error) { return errorMessage(error); }
+          try { return composePrompt(workflow, stageId, stages[stageId] ?? '', sample, templateBase); } catch (error) { return errorMessage(error); }
         })()}</pre>}
       </div>
       <aside className="prompt-sidebar" aria-label="Template variables">
@@ -176,7 +210,7 @@ export function PromptEditor({ prompt, draft, version, references, onSaved, onDi
             {item.archivedAt && <span className="evals-badge is-muted">archived</span>}
             <small>{item.name} · {item.ascii.split('\n').length} lines</small>
           </button>)}</div>}
-        {peeked && <pre className="reference-ascii prompt-reference-peek" aria-label={`Preview of ${peeked.name}`}>{peeked.ascii}</pre>}
+        {peeked && <pre className="reference-ascii prompt-reference-peek" aria-label={`Preview of ${peeked.name}`}>{renderReference(peeked.ascii, peeked.comment)}</pre>}
         <h3>Files <LockIcon /></h3>
         <ul className="prompt-files">{stage.files.map(file => <li key={file.name}><code>{file.name}</code><small>{file.description}</small></li>)}</ul>
         <h3>Checks</h3>

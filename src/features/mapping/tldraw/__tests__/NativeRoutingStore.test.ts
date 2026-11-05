@@ -26,7 +26,7 @@ it('reuses routes for unrelated movement and updates routes when a blocker moves
   const root = diagramContentNodes(diagram.content).find(n => n.label === 'Blocker')!;
   store.sync(new Map([['grid:blocker', { ...grids.get('grid:blocker')!, layoutKey: 'folded',
     view: { contentRevisionId: diagram.content.revisionId, collapsedContentNodeIds: [root.id] } }]]), [edge]);
-  expect(store.obstacles.get()).toHaveLength(1);
+  expect(store.obstacles.get().filter(r => r.kind === 'text')).toHaveLength(1);
   expect(draw()).not.toBe(detour);
   store.sync(new Map(), [edge]); expect(draw().path).toBe(direct.path);
 });
@@ -46,6 +46,28 @@ it('invalidates a cached route when a guide becomes text at the same coordinates
   sync('I'); expect(store.obstacles.get().map(r => [r.x, r.y, r.width, r.height])).toEqual(geometry);
   const detour = draw(); expect(detour).not.toBe(direct); expect(detour.path).not.toBe(direct.path);
   expect(draw()).toBe(detour);
+});
+it('transforms measured text obstacles and rejects measurements from an obsolete layout', () => {
+  const diagram = revisionFixture().create({ id: 'blocker', revision: 0, ascii: 'Blocker', structureKind: 'tree' }).diagram;
+  const transform = atom('measured blocker transform', Mat.Translate(120, 0));
+  const editor = { getShape: () => ({ id: 'blocker' }), getShapePageTransform: () => transform.get() } as unknown as Editor;
+  const store = new NativeRoutingStore(() => editor);
+  const model = { layoutKey: 'first', diagram, cell: { width: 8.4, height: 18 } };
+  const sync = (layoutKey: string) => store.sync(new Map([['grid:blocker', { ...model, layoutKey }]]), []);
+  sync('first');
+  const estimated = store.obstacles.get();
+  const measured = [{ displayNodeId: 'grid:blocker', kind: 'text' as const, x: 0, y: 40, width: 52, height: 15 }];
+  store.setMeasurements('grid:blocker', 'first', measured);
+  expect(store.obstacles.get()).toEqual([{ ...measured[0], x: 120 }]);
+  const cached = store.obstacles.get();
+  store.setMeasurements('grid:blocker', 'first', measured);
+  expect(store.obstacles.get()).toBe(cached);
+  transform.set(Mat.Translate(150, 20));
+  expect(store.obstacles.get()).toEqual([{ ...measured[0], x: 150, y: 60 }]);
+  transform.set(Mat.Translate(120, 0)); sync('second');
+  expect(store.obstacles.get()).toEqual(estimated);
+  store.setMeasurements('grid:blocker', 'first', measured);
+  expect(store.obstacles.get()).toEqual(estimated);
 });
 
 it('caches batch lanes, keeps endpoint positions, and drops obsolete lanes when edges disappear', () => {

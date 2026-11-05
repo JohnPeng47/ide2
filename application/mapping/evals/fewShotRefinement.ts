@@ -52,7 +52,7 @@ export async function executeFewShot(input: {
   const save = async () => { report.updatedAt = new Date().toISOString(); await judgements.saveProgress(report); };
   const assess = async <T>(cell: EvalRunCell, schema: z.ZodType<T>, files: Record<string, unknown>, validate: (value: T) => void = () => {}) => {
     Object.assign(cell, { status: 'generating', startedAt: new Date().toISOString() }); await persist();
-    const body = composePrompt(evalWorkflows[run.workflow], cell.stage, prompt.stages[cell.stage], { round: String(cell.pass), references: '', pass: '1', passes: '1' });
+    const body = composePrompt(evalWorkflows[run.workflow], cell.stage, prompt.stages[cell.stage], { round: String(cell.pass), references: '', pass: '1', passes: '1' }, prompt.templateBase);
     const usage: Record<string, number> = {};
     let attemptFiles = files;
     for (let attempt = 0; ; attempt++) {

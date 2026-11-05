@@ -1,6 +1,7 @@
 import { flattenGrid, resolveScene } from '../../../domain/core/diagrams/lineGrid';
 import type { GridBox } from '../../../domain/core/diagrams/lineGrid';
 import { revisionScope } from '../../../domain/core/diagrams/diagramRevisionReview';
+import { diagramTitle } from '../../../domain/core/diagrams/promoteDiagram';
 import { randomUUID } from 'node:crypto';
 import { ApplicationError } from '../../core/errors';
 import { sha256 } from '../../../domain/core/sha256';
@@ -23,7 +24,7 @@ export function diagramTargets(history: CanvasHistoryRecord, checkpointId = hist
   const { scene } = documentFromHistory(history, checkpointId);
   const visit = (box: GridBox): CompareDiagramTarget[] => box.kind === 'container' ? box.children.flatMap(visit) : [{
     diagramId: `grid:${box.id}`, revisionId: scene.contents[box.contentId].revisionId,
-    name: scene.contents[box.contentId].content.ascii.split('\n').find(line => line.trim())?.slice(0, 200) || box.id
+    name: diagramTitle(scene.contents[box.contentId].content.ascii)?.slice(0, 200) || box.id
   }];
   return visit(scene.root);
 }
@@ -54,9 +55,8 @@ export class CompareSessionService {
   }
   async candidates(): Promise<CompareCandidate[]> {
     const { records, index } = await this.workspaceState();
-    const generated = await Promise.all((await this.generated?.list() ?? [])
-      .map(record => this.generated!.read(record.id)));
-    const generatedById = new Map(generated.flatMap(canvas => canvas ? [[canvas.id, canvas] as const] : []));
+    const generated = await this.generated?.readAll() ?? [];
+    const generatedById = new Map(generated.map(canvas => [canvas.id, canvas] as const));
     const workspace: CompareCandidate[] = index.documentIds.flatMap(documentId => {
       const prefix = documentPrefix(documentId), metadata = records[prefix + 'metadata'] as MappingDocumentSnapshot;
       const provenance = generatedById.get(documentId)?.generated;
@@ -69,7 +69,7 @@ export class CompareSessionService {
           diagrams: diagramTargets(history, view.finalCheckpointId!), ...origin
         }))];
     });
-    return [...workspace, ...generated.flatMap(canvas => canvas && !workspace.some(item => item.documentId === canvas.id && !item.viewId && item.checkpointId === canvas.history.headId) ? [{ documentId: canvas.id, checkpointId: canvas.history.headId, name: canvas.name,
+    return [...workspace, ...generated.flatMap(canvas => !workspace.some(item => item.documentId === canvas.id && !item.viewId && item.checkpointId === canvas.history.headId) ? [{ documentId: canvas.id, checkpointId: canvas.history.headId, name: canvas.name,
       canvasName: canvas.generated.contextName, diagrams: diagramTargets(canvas.history), generated: canvas.generated }] : [])];
   }
   async list() {

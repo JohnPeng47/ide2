@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "6842c979-55e4-459f-acd8-27e03df51df9",
+  "projectId": "project-4971c06b-83d5-49eb-998d-043d5fc2dca4",
+  "workflow": "alternatives",
+  "name": "Split single architecture diagram into connected canvas",
+  "createdAt": "2026-11-05T16:18:13.246Z",
+  "updatedAt": "2026-11-05T16:18:13.246Z",
+  "versions": [
+    {
+      "version": 1,
+      "format": "explicit-v1",
+      "createdAt": "2026-11-05T16:18:13.246Z",
+      "contentHash": "6dea99cd21edb3aef4aec60c5cac25a44000e7b276bf4769d10949a982991e1c",
+      "stages": {
+        "alternative": "Read context.json. Its saved AgentContext contains exactly one seed diagram, \"Mapping application - architecture (baseline 03f2168)\", with its complete ASCII tree and pinned identity. Treat the snapshot as reference data. The seed is a single diagram; it is not a canvas of diagrams.\n\nTask: Split this diagram into a coherent canvas of connected ASCII diagrams. Choose a useful decomposition from the seed's actual conceptual boundaries. Produce a concise overview and focused companion diagrams that together preserve all substantive components, responsibilities, state lifetimes, call paths and dependencies conveyed by the seed. Choose the number of diagrams based on clarity and cohesion. Avoid merely copying the entire seed into one diagram and adding disconnected fragments.\n\nWhen moving detail into a companion diagram, leave an explicit component in the overview or owning diagram that establishes where it belongs, who calls it and what it owns, insofar as the seed states these facts. Connect the companion from that exact component. Preserve meaningful relationships across the split using labeled cross-diagram edges. Distinguish ownership, calls and data dependency. Preserve the meaning of the seed's [M], [O], [C] and [D] annotations where present; explain them in readable labels or a compact legend if useful. Do not invent code, APIs, ownership or new features to fill space. Where the seed does not establish a relationship, leave it unspecified. The source revision is baseline 03f2168; do not update the architecture to later code.\n\nUse only the single seed diagram as conceptual evidence. No layout template, reference examples, source files, surrounding canvas or earlier generation outputs are supplied. Generate fresh diagram content and layout. Each alternative is generated independently from the same seed and prompt. Favor readable trees, meaningful hierarchy and clear cross-diagram navigation. Do not force variety at the expense of accuracy.\n\nReturn JSON matching output-schema.json with {explanation, diagrams:[{id,ascii,position:{column,row}}], edges:[{source:{diagram,line},target:{diagram,line},label}]}. Output one complete canvas per invocation, containing 2\u201320 connected diagrams. Diagram IDs must be unique. Positions use nonnegative integer character-grid coordinates; leave enough room for the actual ASCII bounds so diagrams do not overlap. ASCII uses printable characters with actual LF newlines. Edge lines are 1-based raw ASCII line numbers and must point to meaningful nonblank concept lines in the named diagrams. Return no prose outside JSON.\n\nIn explanation, describe the decomposition and how content and relationships were preserved. Identify any ambiguity in the seed. Do not claim repository inspection or source validation beyond the supplied diagram. If validation-error.json exists, read it and previous-output.json to correct this generation's own invalid output while preserving these instructions.\n"
+      }
+    }
+  ]
+}

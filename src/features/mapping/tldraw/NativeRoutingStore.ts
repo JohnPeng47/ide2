@@ -1,4 +1,4 @@
-import { atom, computed, type Computed, type Editor } from 'tldraw';
+import { atom, computed, type Atom, type Computed, type Editor } from 'tldraw';
 import { diagramRoutingObstacles, type RoutingObstacle } from '../../../../domain/mapping/workspace/routingObstacles';
 import { ConnectionRouter, type RoutingInput } from '../../../../domain/mapping/workspace/connectionRouter';
 import { previewEdge, type FloatingBoxArrow } from '../../../../domain/mapping/workspace/connectionLayout';
@@ -14,6 +14,7 @@ interface RoutingDiagram { layoutKey: string; diagram?: Diagram; view?: DiagramV
 /** Transient routing geometry. No DOM reads or document writes; camera changes are not dependencies. */
 export class NativeRoutingStore {
   private readonly owners = atom<Owner[]>('routing obstacle owners', []);
+  private readonly measurements = new Map<string, Atom<{ layoutKey: string; obstacles: RoutingObstacle[] } | undefined>>();
   private readonly router = new ConnectionRouter();
   private settled = new Map<string, FloatingBoxArrow>();
   private readonly completed = atom<{ key: string; arrows: Map<string, FloatingBoxArrow> } | undefined>('completed canvas routing', undefined);
@@ -27,7 +28,18 @@ export class NativeRoutingStore {
     private createWorker: (() => Worker) | undefined = typeof Worker === 'undefined' ? undefined
       : () => new Worker(new URL('./routing.worker.ts', import.meta.url), { type: 'module' })) {}
 
+  private measurement(id: string) {
+    let record = this.measurements.get(id);
+    if (!record) { record = atom<{ layoutKey: string; obstacles: RoutingObstacle[] } | undefined>(`routing measurements ${id}`, undefined); this.measurements.set(id, record); }
+    return record;
+  }
+  setMeasurements(id: string, layoutKey: string, obstacles: RoutingObstacle[]) {
+    const record = this.measurement(id), next = { layoutKey, obstacles };
+    if (JSON.stringify(record.get()) !== JSON.stringify(next)) record.set(next);
+  }
+
   sync(grids: ReadonlyMap<string, RoutingDiagram>, edges: readonly DiagramConnection[]) {
+    for (const id of this.measurements.keys()) if (!grids.has(id)) this.measurements.delete(id);
     const prior = this.owners.get(), byId = new Map(prior.map(owner => [owner.id, owner]));
     const owners: Owner[] = [];
     for (const [id, model] of grids) {
@@ -35,11 +47,13 @@ export class NativeRoutingStore {
       const old = byId.get(id);
       if (old?.layoutKey === model.layoutKey) { owners.push(old); continue; }
       const local = diagramRoutingObstacles(id, model.diagram.content, model.view, model.cell);
+      const measurement = this.measurement(id);
       owners.push({ id, layoutKey: model.layoutKey, world: computed(`routing obstacles ${id}`, () => {
         const editor = this.editor(), shapeId = mappingShapeId(id);
         if (!editor?.getShape(shapeId)) return [];
         const transform = editor.getShapePageTransform(shapeId);
-        return local.map(rect => {
+        const measured = measurement.get();
+        return (measured?.layoutKey === model.layoutKey ? measured.obstacles : local).map(rect => {
           const corners = transform.applyToPoints([{ x: rect.x, y: rect.y }, { x: rect.x + rect.width, y: rect.y },
             { x: rect.x, y: rect.y + rect.height }, { x: rect.x + rect.width, y: rect.y + rect.height }]);
           const xs = corners.map(p => p.x), ys = corners.map(p => p.y);

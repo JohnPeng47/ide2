@@ -55,6 +55,8 @@ export interface ChatGeneration {
 }
 export interface ChatGenerationRequest { error?: string; requestId: string; signature: string; runId: string; candidates: { viewId: string; chatId: string; name: string }[] }
 export interface ChatSession {
+  /** Owned by another feature: read-only, without canvas tools or approval prompts, and not listed in Agent Chat. */
+  background?: true;
   generation?: ChatGeneration;
   generationRequests?: ChatGenerationRequest[];
   toolDefinitions?: { type: 'function'; name: string; description: string; inputSchema: Record<string, unknown> }[];

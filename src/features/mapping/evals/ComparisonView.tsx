@@ -1,4 +1,5 @@
-import { Component, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useArrowNavigation, type BoundaryNavigation } from './evalNavigation';
+import { Component, useMemo, useState, type ReactNode } from 'react';
 import { compareDiagramLabels, compareSteps, type CompareCanvasCopy, type ComparePageSession } from '../../../../domain/mapping/compare/comparePageSession';
 import type { EvalPrompt } from '../../../../domain/mapping/evals/evalPrompt';
 import { evalWorkflows } from '../../../../domain/mapping/evals/evalWorkflows';
@@ -14,23 +15,17 @@ class ComparisonBoundary extends Component<{ children: ReactNode }, { error?: st
   render() { return this.state.error ? <p role="alert" className="evals-message">Unable to display this comparison: {this.state.error}</p> : this.props.children; }
 }
 
-export function ComparisonView({ session, prompts }: { session: ComparePageSession; prompts: EvalPrompt[] }) {
+export function ComparisonView({ session, prompts, initialEntry, hasPrevious, hasNext, onBoundary }: { session: ComparePageSession; prompts: EvalPrompt[] } & BoundaryNavigation) {
   const diagramLabels = useMemo(() => compareDiagramLabels(session), [session]);
   const steps = useMemo(() => compareSteps(session), [session]);
-  const [position, setPosition] = useState(0);
+  const [position, setPosition] = useState(() => initialEntry === 'last' ? Math.max(0, steps.length - 1) : 0);
   const [rail, setRail] = useState(true), [notes, setNotes] = useState(true), [diff, setDiff] = useState(false);
-  useEffect(() => {
-    const navigate = (event: KeyboardEvent) => {
-      if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight' || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || event.isComposing) return;
-      const target = event.target;
-      if (target instanceof Element && target.closest('.compare-document, .evals-drawer, input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="textbox"], [role="combobox"], [role="separator"], [role="slider"], [role="menu"], [role="listbox"]')) return;
-      event.preventDefault(); event.stopPropagation();
-      setPosition(current => Math.max(0, Math.min(steps.length - 1, current + (event.key === 'ArrowRight' ? 1 : -1))));
-    };
-    // Capture before the canvas handles arrow keys so navigation also works inside either pane.
-    window.addEventListener('keydown', navigate, true);
-    return () => window.removeEventListener('keydown', navigate, true);
-  }, [steps.length]);
+  const move = (direction: number) => {
+    const next = position + direction;
+    if (next < 0 || next >= steps.length) { onBoundary?.(direction); return; }
+    setPosition(next);
+  };
+  useArrowNavigation(move);
   const step = steps[position], comparison = step?.compare;
   if (!comparison) return <p className="evals-message">This session has no comparisons.</p>;
   const copyFor = (side: 'A' | 'B') => session.canvases.find(copy => copy.id === comparison[side].canvasCopyId)!;
@@ -44,9 +39,9 @@ export function ComparisonView({ session, prompts }: { session: ComparePageSessi
       <div className="comparison-title"><strong>{session.title}</strong><span title={step.point?.title ?? comparison.title}>{step.point?.title ?? comparison.title}</span></div>
       {diffable && <button type="button" onClick={() => setDiff(true)}>Prompt diff A ↔ B</button>}
       <div className="comparison-stepper">
-        <button type="button" title="Previous comparison step (←)" aria-keyshortcuts="ArrowLeft" disabled={position === 0} onClick={() => setPosition(position - 1)}>Previous</button>
+        <button type="button" title="Previous comparison step (←)" aria-keyshortcuts="ArrowLeft" disabled={position === 0 && !hasPrevious} onClick={() => move(-1)}>Previous</button>
         <span aria-live="polite">{position + 1} / {steps.length}</span>
-        <button type="button" title="Next comparison step (→)" aria-keyshortcuts="ArrowRight" disabled={position === steps.length - 1} onClick={() => setPosition(position + 1)}>Next</button>
+        <button type="button" title="Next comparison step (→)" aria-keyshortcuts="ArrowRight" disabled={position === steps.length - 1 && !hasNext} onClick={() => move(1)}>Next</button>
       </div>
       <button type="button" aria-pressed={rail} onClick={() => setRail(value => !value)}>Steps</button>
     </header>

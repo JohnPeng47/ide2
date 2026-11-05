@@ -5,7 +5,7 @@ import type { Judgement } from '../../../domain/mapping/evals/judgement';
 import { LayoutTemplateService, type LayoutTemplateStore } from '../../../application/mapping/evals/layoutTemplateService';
 import { EvalPromptService } from '../../../application/mapping/evals/evalPromptService';
 import { EvalReferenceService } from '../../../application/mapping/evals/evalReferenceService';
-import type { EvalReference } from '../../../domain/mapping/evals/evalReference';
+import type { EvalReference, EvalReferenceGroup } from '../../../domain/mapping/evals/evalReference';
 import { GeneratedCanvasCatalog } from '../../../application/mapping/evals/generatedCanvasCatalog';
 import { FileRollUpRunStore } from '../../../infrastructure/mapping/rollup/fileRollUpRunStore';
 import { JsonDirectoryStore } from '../../../infrastructure/mapping/evals/jsonDirectoryStore';
@@ -25,6 +25,8 @@ import { FileCompareSessionStore } from '../../../infrastructure/mapping/compare
 import { WorkspaceRecordStore } from '../../../infrastructure/mapping/persistence/workspace/workspaceRecordStore';
 import { MappingChatMcpBinding } from '../../../infrastructure/mapping/agent-chat/chatMcpBinding';
 import { AgentChatService } from '../../../application/mapping/agent-chat/agentChatService';
+import { ReferenceGenerationService } from '../../../application/mapping/evals/referenceGenerationService';
+import type { ReferenceGenerationSession } from '../../../domain/mapping/evals/referenceGeneration';
 import { ChatDiagramTools } from '../../../application/mapping/agent-chat/chatDiagramTools';
 import { StdioCodexConnection } from '../../../infrastructure/mapping/agent-chat/codexConnection';
 import { FileChatStore } from '../../../infrastructure/mapping/agent-chat/chatStore';
@@ -126,12 +128,13 @@ export function createBackend(projectRoot: string, diagramsDirectory: string, co
   const workspace = new MappingWorkspaceService(store, new MappingWorkspaceStore(store.storeRoot, store.diagramPersistence), diagramContextStore);
   const generatedCanvases = new GeneratedCanvasCatalog(store);
   const compareSessions = new CompareSessionService(workspace, new FileCompareSessionStore(store.storeRoot), generatedCanvases, store);
-  const evalReferences = new EvalReferenceService(new JsonDirectoryStore<EvalReference>(store.storeRoot, 'eval-references'), store);
-  const evalPrompts = new EvalPromptService(new JsonDirectoryStore<EvalPrompt>(store.storeRoot, 'eval-prompts'), store, evalReferences);
+  const evalReferences = new EvalReferenceService(new JsonDirectoryStore<EvalReference>(store.storeRoot, 'eval-references'), store, new JsonDirectoryStore<EvalReferenceGroup>(store.storeRoot, 'eval-reference-groups'));
+  const evalPrompts = new EvalPromptService(new JsonDirectoryStore<EvalPrompt>(store.storeRoot, 'eval-prompts'), store, evalReferences, new JsonDirectoryStore<import('../../../domain/mapping/evals/evalPrompt').PromptProjectSnapshot>(store.storeRoot, 'eval-prompt-snapshots'));
   const evalRunStore = new JsonDirectoryStore<EvalRun>(store.storeRoot, 'eval-runs');
   const evalRuns = new EvalRunService(compareSessions, workspace, store, contextLibrary, evalPrompts, generatedCanvases,
     evalRunStore, fake ? new FakeEvalRuntime() : new CodexEvalRuntime(options.piEnabled === true), new FileRollUpRunStore(store.storeRoot));
   evalRuns.layoutTemplates = new LayoutTemplateService(new JsonDirectoryStore<Awaited<ReturnType<LayoutTemplateStore['list']>>[number]>(store.storeRoot, 'layout-templates'), compareSessions, store);
+  evalRuns.referenceGenerations = new ReferenceGenerationService(new JsonDirectoryStore<ReferenceGenerationSession>(store.storeRoot, 'eval-reference-sessions'), agentChat, evalRuns);
   evalRuns.replayLegacy = (run, requestId) => agentChat.rerunAlternatives(run, requestId);
   evalRuns.cancelLegacy = id => agentChat.cancelGeneration(id);
   void agentChat.observeGenerations((children, parent, historical) => evalRuns.recordLegacy(children, parent, historical)).catch(error => console.error('Generation reconciliation failed', error));

@@ -19,8 +19,12 @@ export function singleBoxScene(scene: LineGridScene, boxId: string): LineGridSce
 export function promotedCanvasName(scene: LineGridScene, boxId: string, fallback: string): string {
   const box = findBox(scene.root, boxId);
   const ascii = box?.kind === 'diagram' ? scene.contents[box.contentId]?.content.ascii ?? '' : '';
-  const title = ascii.split('\n').map(line => line.trim()).find(line => /[A-Za-z0-9]/.test(line) && !/^[=\-+|_ ]+$/.test(line));
-  return (title ?? fallback).slice(0, 120);
+  return (diagramTitle(ascii) ?? fallback).slice(0, 120);
+}
+
+/** The first line of a diagram that says something: not blank and not a rule of `=`, `-` or similar. */
+export function diagramTitle(ascii: string): string | undefined {
+  return ascii.split('\n').map(line => line.trim()).find(line => /[A-Za-z0-9]/.test(line) && !/^[=\-+|_ ]+$/.test(line));
 }
 
 function findBox(box: GridBox, id: string): GridBox | undefined {

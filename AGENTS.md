@@ -62,3 +62,6 @@ Call them directly through MCP, outside `exec.code`.
 
 - Write eval-specific instructions directly in the versioned prompt; do not use a generic `{{task}}` variable.
 - State template usage, input files, and generation constraints explicitly in the visible prompt; do not inject hidden instructions at runtime.
+- Create prompt variations with `derivation: {parent: {promptId, version}, kind: "variation", dimension?: {id, name, value}}`; pin the exact parent version and use a stable dimension ID across its poles.
+- Revisions and edited relaunches record their parent versions automatically. Runs retain the exact prompt text, version, content hash, and derivation they used.
+- Experiment Overview derives its prompt tree from these relationships and output references; do not construct `promptTree` metadata for new experiments. Legacy lineage is backfilled explicitly with verified content hashes, never guessed from names.

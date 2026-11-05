@@ -1,4 +1,5 @@
 import { fewShotProgressSchema } from '../../../domain/mapping/evals/fewShot';
+import { diagramChangeTreeResultSchema } from '../../../domain/mapping/evals/diagramChangeTree';
 import { ApplicationError } from '../../core/errors';
 import type { ComparisonRun } from '../../../domain/mapping/compare/comparisonGeneration';
 import type { ComparePageSession, CompareCanvasCopy } from '../../../domain/mapping/compare/comparePageSession';
@@ -54,7 +55,7 @@ export class JudgementService {
         comparisons: canvasesCompared.map(pair => ({ ...pair, A: { ...pair.A, kind: 'canvas' }, B: { ...pair.B, kind: 'canvas' } }))
       }) });
       for (const result of results) {
-        if (result.data && result.kind !== 'few-shot-progress' && result.kind !== 'comparison-report') {
+        if (result.data && result.kind !== 'few-shot-progress' && result.kind !== 'comparison-report' && result.kind !== 'diagram-change-tree') {
           const used = new Set(result.data.comparisons.flatMap(pair => [pair.A.canvasCopyId, pair.B.canvasCopyId]));
           result.canvases = canvases.filter(copy => used.has(copy.id));
           result.subjects = subjects(result.canvases);
@@ -77,6 +78,18 @@ export class JudgementService {
     for (const item of existing) if (item.source.kind === 'comparison' && !item.deletedAt && !sources.has(item.source.id)) await this.store.save({ ...item, deletedAt: new Date().toISOString() });
   }
   /** Native workflow results share the same durable store, without legacy import ownership. */
+  saveDeterministic(item: Extract<Judgement, { kind: 'diagram-change-tree' }>) {
+    return this.serialize(async () => {
+      const previous = await this.store.read(item.id);
+      if (previous) {
+        if (previous.deletedAt || previous.source.fingerprint !== item.source.fingerprint) throw new ApplicationError('conflict', 'Judgement request ID already used.');
+        return previous;
+      }
+      diagramChangeTreeResultSchema.parse(item.data);
+      await this.store.save(structuredClone(item));
+      return item;
+    });
+  }
   saveProgress(item: Extract<Judgement, { kind: 'few-shot-progress' }>) {
     return this.serialize(async () => {
       const previous = await this.store.read(item.id);

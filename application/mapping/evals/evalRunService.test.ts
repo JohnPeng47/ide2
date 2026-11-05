@@ -8,7 +8,7 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { EvalRunService } from './evalRunService';
 import { EvalPromptService } from './evalPromptService';
 import { EvalReferenceService } from './evalReferenceService';
-import type { EvalReference } from '../../../domain/mapping/evals/evalReference';
+import type { EvalReference, EvalReferenceGroup } from '../../../domain/mapping/evals/evalReference';
 import { GeneratedCanvasCatalog } from './generatedCanvasCatalog';
 import { CompareSessionService } from '../compare/compareSessionService';
 import { AgentContextLibrary } from '../agent/agentContextLibrary';
@@ -42,7 +42,7 @@ async function fixture() {
   const projects = { loadProject: async () => ({ id: 'test-project', repositories: [] }), projectCatalogs: catalogs } as unknown as ConstructorParameters<typeof EvalRunService>[2];
   const canvases = new GeneratedCanvasCatalog(projects);
   const comparisons = new CompareSessionService(workspace, new FileCompareSessionStore(root), canvases);
-  const references = new EvalReferenceService(new JsonDirectoryStore<EvalReference>(root, 'eval-references'), projects);
+  const references = new EvalReferenceService(new JsonDirectoryStore<EvalReference>(root, 'eval-references'), projects, new JsonDirectoryStore<EvalReferenceGroup>(root, 'eval-reference-groups'));
   const prompts = new EvalPromptService(new JsonDirectoryStore<EvalPrompt>(root, 'eval-prompts'), projects, references);
   const runtime = new FakeEvalRuntime();
   const service = new EvalRunService(comparisons, workspace, projects, contexts, prompts, canvases, new JsonDirectoryStore<EvalRun>(root, 'eval-runs'), runtime, new FileRollUpRunStore(root));
@@ -473,6 +473,22 @@ it('cites saved references in prompts and freezes their text into runs', async (
   expect(seen[0]).toContain('Match this shape:\n```text\n+-- store\n|   `-- tokens\n```');
 });
 
+it('imports a reference comment into the prompt and pins it, so later edits reach only later runs', async () => {
+  const f = await fixture();
+  const reference = await f.references.create({ requestId: crypto.randomUUID(), name: 'Noted', ascii: 'Root\n`-- leaf', comment: 'Keep this nesting.', source: f.sources[0], sourceName: 'View', canvasName: 'Canvas' });
+  const prompt = await f.prompts.save({ requestId: crypto.randomUUID(), workflow: 'roll-up', name: 'Cites', stages: { r2: `Match:\n{{ref:${reference.id}}}`, g2: 'ok' } });
+  const original = f.runtime.generate.bind(f.runtime), seen: string[] = [];
+  f.runtime.generate = async input => { seen.push(input.prompt); return original(input); };
+  const first = await f.service.start(f.rollUp({ passes: 1, prompts: [{ promptId: prompt.id, version: 1 }] }));
+  await f.references.update(reference.id, { comment: 'Changed after the run started.' });
+  await settle(f, first.id);
+  expect(first.prompts[0].references?.[reference.id].comment).toBe('Keep this nesting.');
+  expect(seen[0]).toContain('Match:\n```text\nRoot\n`-- leaf\n```\nKeep this nesting.');
+  const second = await f.service.start(f.rollUp({ passes: 1, prompts: [{ promptId: prompt.id, version: 1 }] }));
+  expect(second.prompts[0].references?.[reference.id].comment).toBe('Changed after the run started.');
+  await settle(f, second.id);
+});
+
 
 it('skips checkpoint hydration when view headers show that migration is already complete', async () => {
   const f = await fixture();
@@ -592,4 +608,53 @@ it('generates five independent samples with identical prompts and pinned selecte
   expect(seen[0]).toBe('### Synthetic tree\n```text\nRoot\n`-- leaf\n```\n1/1');
   expect(run.references?.[0].name).toBe('Synthetic tree');
   expect((await f.service.read(run.id)).cells).toHaveLength(10);
+});
+
+it('relaunches one selected generation with edited text while preserving pins and original prompt versions', async () => {
+  const f = await fixture();
+  const context = await f.contexts.create({ requestId: crypto.randomUUID(), name: 'Attempt context', context: 'Pinned code evidence' });
+  const upstream = await f.service.start({ requestId: crypto.randomUUID(), workflow: 'alternatives', prompts: [{ promptId: 'builtin-alternatives', version: 1 }], inputs: { context: { agentContextId: context.agentContextId } }, passes: 1 });
+  await settle(f, upstream.id);
+  const upstreamCell = (await f.service.read(upstream.id)).cells[0];
+  const reference = await f.references.create({ requestId: crypto.randomUUID(), name: 'Pinned reference', ascii: 'Root\n`-- Leaf', source: f.sources[0], sourceName: 'Source', canvasName: 'Canvas' });
+  const template = await f.layouts.save({ requestId: crypto.randomUUID(), name: 'Pinned layout', capture: await f.layouts.capture(f.sources[0]) });
+  const text = `Read context.json, layout-template.json and previous-1.json. {{references}} {{ref:${reference.id}}}`;
+  const prompt = await f.prompts.save({ requestId: crypto.randomUUID(), workflow: 'alternatives', name: 'Original', stages: { alternative: text } });
+  const source = await f.service.start({ requestId: crypto.randomUUID(), workflow: 'alternatives', prompts: [{ promptId: prompt.id, version: 1 }], inputs: { context: { agentContextId: context.agentContextId } }, previous: [upstreamCell.canvasId], layoutTemplateId: template.id, referenceIds: [reference.id], passes: 3, model: 'test-model', effort: 'high' });
+  await settle(f, source.id);
+  const before = await f.service.read(source.id);
+  await f.references.update(reference.id, { name: 'Changed library name', archived: true });
+  await f.layouts.delete(template.id);
+  await f.service.deleteCanvas(upstreamCell.canvasId!);
+  const stages = { alternative: text + '\nShow ownership explicitly.' }, requestId = crypto.randomUUID();
+  const results = await Promise.all([f.service.launchEdited(source.id, before.cells[2].key, stages, requestId), f.service.launchEdited(source.id, before.cells[2].key, stages, requestId)]);
+  expect(results[0].id).toBe(results[1].id);
+  await settle(f, results[0].id);
+  const after = await f.service.read(requestId);
+  expect(after.status).toBe('finished'); expect(after.cells).toHaveLength(1);
+  expect(after.request).toMatchObject({ passes: 1, model: 'test-model', effort: 'high', parentRunId: source.id });
+  expect(after.prompts[0].stages).toEqual(stages);
+  expect(after.prompts[0].references).toEqual(before.prompts[0].references);
+  expect(after.references).toEqual(before.references); expect(after.previous).toEqual(before.previous); expect(after.layoutTemplate).toEqual(before.layoutTemplate);
+  expect(after.contexts).toEqual(before.contexts); expect(after.inputs).toEqual(before.inputs);
+  expect(await f.service.read(source.id)).toEqual(before);
+  expect((await f.prompts.read(prompt.id)).versions).toHaveLength(1);
+  expect(after.prompts[0].promptId).not.toBe(prompt.id);
+  await expect(f.service.launchEdited(source.id, before.cells[2].key, { alternative: text + 'different' }, requestId)).rejects.toThrow('request ID');
+  await expect(f.service.launchEdited(source.id, before.cells[2].key, { alternative: '{{unknown}} layout-template.json' }, crypto.randomUUID())).rejects.toThrow('edited prompt');
+});
+
+it('prepares proposal trees without execution and retains invalid tree syntax as immutable judgement evidence', async () => {
+  const f = await fixture();
+  const context = await f.contexts.create({ requestId: crypto.randomUUID(), name: 'Pinned changes', context: 'Before: local storage. After: shared persistence.' });
+  const prompt = await f.prompts.save({ requestId: crypto.randomUUID(), workflow: 'diagram-change-proposal', name: 'Proposal baseline', stages: { proposal: 'Read context.json and return {tree}, an ASCII proposal tree.' } });
+  const tree = 'Proposed diagram changes\n  `-- Core                              existing canvas\n      `-- [9] An unknown strategy';
+  const generate = vi.spyOn(f.runtime, 'generate').mockResolvedValue({ output: { tree } } as never);
+  const prepared = await f.service.prepareForReview({ requestId: crypto.randomUUID(), workflow: 'diagram-change-proposal', prompts: [{ promptId: prompt.id, version: 1 }], inputs: { context: { agentContextId: context.agentContextId } }, passes: 1, model: 'test', effort: 'high' });
+  expect(generate).not.toHaveBeenCalled(); expect(await f.service.list()).toHaveLength(0);
+  const run = await f.service.launchPrepared(prepared); await settle(f, run.id);
+  const result = await f.service.read(run.id);
+  expect(result.status).toBe('finished'); expect(result.cells[0].proposalTree).toBe(tree);
+  expect(generate).toHaveBeenCalledTimes(1);
+  expect(Object.keys(generate.mock.calls[0][0].files)).toEqual(['context.json']);
 });

@@ -6,12 +6,21 @@ import { initialCanvasState } from '../../../../domain/mapping/workspace/mapping
 import { saveMappingProjectDiagram } from '../workspace/mappingProjectApi';
 import { listGenerated } from './evalsApi';
 
-/** Copy one diagram of a generated canvas into a new standard canvas with its own fresh history. */
-export async function promoteDiagramToCanvas(canvasId: string, sourceHistory: CanvasHistoryRecord, boxId: string, canvasName: string) {
-  const scene = singleBoxScene(documentFromHistory(sourceHistory).scene, boxId);
+/** One diagram of a canvas as its own document with a fresh history. */
+export function singleDiagramDocument(sourceHistory: CanvasHistoryRecord, boxId: string) {
+  const source = documentFromHistory(sourceHistory);
+  // A fresh history resolves diagrams through the revision registry, so the source's revisions must enter it first,
+  // whether or not this source has been displayed. Older revisions stay unvalidated until something reads them.
+  new DefaultCanvasHistoryService('current').openContext(source, sourceHistory.snapshots[sourceHistory.headId].view, sourceHistory);
+  const scene = singleBoxScene(source.scene, boxId);
   const document = mappingDocumentFromScene(scene);
   const histories = new DefaultCanvasHistoryService();
-  const history = histories.exportContext(histories.openContext(document, initialCanvasState()));
+  return { scene, document, history: histories.exportContext(histories.openContext(document, initialCanvasState())) };
+}
+
+/** Copy one diagram of a generated canvas into a new standard canvas with its own fresh history. */
+export async function promoteDiagramToCanvas(canvasId: string, sourceHistory: CanvasHistoryRecord, boxId: string, canvasName: string) {
+  const { scene, document, history } = singleDiagramDocument(sourceHistory, boxId);
   // The generated canvas's repository keeps source navigation working on the promoted copy.
   const repositoryId = (await listGenerated()).find(record => record.id === canvasId)?.repositoryId;
   const result = await saveMappingProjectDiagram({ name: promotedCanvasName(scene, boxId, canvasName), type: 'standard',

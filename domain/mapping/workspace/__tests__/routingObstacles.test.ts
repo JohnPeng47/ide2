@@ -1,7 +1,7 @@
 import { expect, it } from 'vitest';
 import { revisionFixture } from '../../../../tests/support/diagramRevisions';
 import { diagramContentNodes } from '../../../core/diagrams/diagramContentNodes';
-import { connectionObstacles, diagramRoutingObstacles } from '../routingObstacles';
+import { connectionObstacles, diagramRoutingObstacles, diagramBoundaryObstacles, DIAGRAM_ROUTING_CLEARANCE } from '../routingObstacles';
 import { routeCost, routeEdge, type RoutePoint, type RouteObstacle } from '../edgeRouting';
 import type { EndpointRect } from '../endpointGeometry';
 
@@ -23,7 +23,7 @@ it('caches coarse text obstacles and retains guides when an endpoint label is ex
   const nodes = diagramContentNodes(diagram.content), parent = nodes.find(n => n.label === 'Parent')!, child = nodes.find(n => n.label === 'Child')!;
   const obstacles = diagramRoutingObstacles('grid:test', diagram.content, undefined, { width: 8, height: 18 });
   expect(diagramRoutingObstacles('grid:test', diagram.content, undefined, { width: 8, height: 18 })).toBe(obstacles);
-  expect(obstacles).toHaveLength(7); // Four labels and three complete guide spans.
+  expect(obstacles).toHaveLength(11); // Four labels, three guides, and four clearance bands.
   expect(obstacles.filter(r => r.kind === 'guide')).toHaveLength(3);
   expect(obstacles.filter(r => r.contentNodeId).every(r => r.kind === 'text')).toBe(true);
   const filtered = connectionObstacles(obstacles, { displayNodeId: 'grid:test', contentNodeId: child.id });
@@ -41,6 +41,39 @@ it('avoids hard text rectangles using a short orthogonal detour', () => {
   const points = routeEdge(source, target, obstacles)!;
   expect(points).toBeDefined(); avoids(points, obstacles);
   expect(points.length).toBeLessThanOrEqual(6);
+});
+it('uses rendered span bounds without replacing the cached grid estimates', () => {
+  const diagram = revisionFixture().create({ id: 'measured', revision: 0, structureKind: 'tree',
+    ascii: 'Root\n|\n`-- Child\nUnparsed note' }).diagram;
+  const cell = { width: 8.4, height: 18 };
+  const estimated = diagramRoutingObstacles('grid:measured', diagram.content, undefined, cell);
+  const measured = diagramRoutingObstacles('grid:measured', diagram.content, undefined, cell,
+    (row, start, end) => ({ x: start * 7.8, y: row * 18.2 + 1, width: (end - start) * 7.8, height: 15 }));
+  expect(measured.map(r => r.kind)).toEqual(estimated.map(r => r.kind));
+  expect(measured.find(r => r.contentNodeId && r.y > 0)).toMatchObject({ x: 28.2, y: 34.4, width: 45, height: 21 });
+  expect(measured.filter(r => r.kind === 'text').at(-1)).toMatchObject({ kind: 'text', x: -3, height: 21 });
+  expect(diagramRoutingObstacles('grid:measured', diagram.content, undefined, cell)).toBe(estimated);
+});
+it('keeps long parallel runs away from diagram borders but permits direct endpoint crossings', () => {
+  const borders = diagramBoundaryObstacles('diagram', { x: 300, y: 0, width: 400, height: 1000 });
+  const source = { x: 0, y: 100, side: 'right' as const }, target = { x: 300, y: 900, side: 'left' as const };
+  const points = routeEdge(source, target, borders)!;
+  expect(points).toBeDefined();
+  for (let i = 1; i < points.length; i++) {
+    if (points[i].x === points[i - 1].x && Math.abs(points[i].y - points[i - 1].y) > 100)
+      expect(points[i].x).toBeLessThanOrEqual(300 - DIAGRAM_ROUTING_CLEARANCE);
+  }
+  const across = { ...source, y: 500 }, inside = { ...target, x: 350, y: 500 };
+  expect(routeEdge(across, inside, borders)).toEqual([across, inside]);
+  expect(connectionObstacles(borders, { displayNodeId: 'diagram' })).toEqual(borders);
+  // The same rule applies to horizontal runs along the top or bottom.
+  const transpose = (p: { x: number; y: number }) => ({ x: p.y, y: p.x });
+  const horizontalBorders = borders.map(r => ({ ...r, ...transpose(r), width: r.height, height: r.width }));
+  const horizontal = routeEdge({ ...transpose(source), side: 'bottom' }, { ...transpose(target), side: 'top' }, horizontalBorders)!;
+  for (let i = 1; i < horizontal.length; i++) {
+    if (horizontal[i].y === horizontal[i - 1].y && Math.abs(horizontal[i].x - horizontal[i - 1].x) > 100)
+      expect(horizontal[i].y).toBeLessThanOrEqual(300 - DIAGRAM_ROUTING_CLEARANCE);
+  }
 });
 it('keeps unparsed notes and punctuation labels hard while allowing guide-only rows', () => {
   const diagram = revisionFixture().create({ id: 'test', revision: 0, structureKind: 'tree',

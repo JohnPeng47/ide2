@@ -7,8 +7,8 @@ export interface GeneratedCanvas {
   key: string;
   agentContextId: string;
   contextName: string;
-  stage: 'r2' | 'g2' | 'alternative' | 'legacy';
-  workflow?: 'roll-up' | 'alternatives' | 'few-shot-refinement';
+  stage: 'r2' | 'g2' | 'alternative' | 'proposal' | 'legacy';
+  workflow?: 'roll-up' | 'alternatives' | 'few-shot-refinement' | 'diagram-change-proposal';
   /** Absent for legacy canvases: their prompt is unknown. */
   prompt?: { id: string; version?: number; name: string };
   /** Immutable text captured at generation time, independent of the prompt library. */

@@ -33,7 +33,7 @@ interface NavNode extends DeletableTreeNode {
   children?: NavNode[];
 }
 export interface PickedOutput { canvasId: string; checkpointId?: string; label: string; runId?: string }
-const WORKFLOWS: { id: EvalWorkflowId; label: string }[] = [{ id: 'few-shot-refinement', label: 'Few-shot refinement' }, { id: 'alternatives', label: 'Alternatives' }, { id: 'roll-up', label: 'Roll-ups' }];
+const WORKFLOWS: { id: EvalWorkflowId; label: string }[] = [{ id: 'diagram-change-proposal', label: 'Diagram change proposals' }, { id: 'few-shot-refinement', label: 'Few-shot refinement' }, { id: 'alternatives', label: 'Alternatives' }, { id: 'roll-up', label: 'Roll-ups' }];
 const STORAGE = 'evals-tree-toggled';
 const cellLabel = (cell: EvalRunCell, workflow: EvalWorkflowId) =>
   [cell.promptName ? promptLabel({ name: cell.promptName, version: cell.promptVersion }) : cell.candidateName ?? UNKNOWN_PROMPT, `sample ${cell.pass}`, workflow === 'few-shot-refinement' ? cell.stage === 'alternative' ? `round ${Math.ceil(cell.pass / 3)} · alternative ${(cell.pass - 1) % 3 + 1}` : cell.stage : workflow === 'roll-up' ? cell.stage : ''].filter(Boolean).join(' · ');
@@ -180,7 +180,7 @@ export function EvalsTree({ runs, generated, judgements = [], selection, actions
 }
 
 /** Enter or blur saves; Escape cancels (`undefined`). */
-function RenameField({ value, label, onDone }: { value: string; label: string; onDone: (name?: string) => void }) {
+export function RenameField({ value, label, onDone }: { value: string; label: string; onDone: (name?: string) => void }) {
   const [text, setText] = useState(value), done = useRef(false);
   const finish = (name?: string) => { if (done.current) return; done.current = true; onDone(name); };
   return <input className="evals-tree-rename" aria-label={label} value={text} maxLength={120} autoFocus onFocus={event => event.target.select()}

@@ -1,4 +1,4 @@
-import { clearSegment, type RouteObstacle, type RoutePoint } from './edgeRouting';
+import { clearSegment, isHardObstacle, routeCost, type RouteObstacle, type RoutePoint } from './edgeRouting';
 
 export interface LaneRoute { id: string; points: readonly RoutePoint[]; obstacles: readonly RouteObstacle[] }
 const spacing = 6, stub = 8, epsilon = 0.001;
@@ -51,7 +51,15 @@ export function separateEdgeLanes(routes: readonly LaneRoute[]): Map<string, rea
   const score = (points: readonly RoutePoint[]) => segments(points).reduce((sum, s) => sum + overlap(s), 0);
   for (const route of [...routes].sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0)) {
     let points = route.points;
-    const blockers = route.obstacles.filter(rect => rect.kind !== 'guide');
+    const blockers = route.obstacles.filter(isHardObstacle);
+    const clearance = route.obstacles.filter(rect => rect.kind === 'clearance');
+    // Short endpoint joins must still fan out into lanes inside the border band.
+    // Protect the longer runs so lane separation cannot push a trunk back in.
+    const clearanceCost = (candidate: readonly RoutePoint[]) => candidate.slice(1).reduce((cost, b, i) => {
+      const a = candidate[i], length = Math.abs(b.x - a.x) + Math.abs(b.y - a.y);
+      return cost + (length <= stub * 2 ? 0 : routeCost([a, b], clearance) - length);
+    }, 0);
+    const originalClearanceCost = clearanceCost(points);
     for (let pass = 0; pass < Math.min(48, route.points.length * 2); pass++) {
       let best = points, bestScore = score(points);
       if (bestScore < epsilon) break;
@@ -60,6 +68,7 @@ export function separateEdgeLanes(routes: readonly LaneRoute[]): Map<string, rea
         for (const offset of [spacing, -spacing, spacing * 2, -spacing * 2, spacing * 3, -spacing * 3]) {
           const candidate = shift(points, i, offset);
           if (!candidate || !sameApproach(route.points, candidate)) continue;
+          if (clearance.length && clearanceCost(candidate) > originalClearanceCost + epsilon) continue;
           const cost = score(candidate);
           if (cost >= bestScore - epsilon) continue;
           if (!candidate.slice(1).every((b, j) => clearSegment(candidate[j], b, blockers))) continue;

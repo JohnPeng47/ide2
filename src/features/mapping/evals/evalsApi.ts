@@ -1,10 +1,11 @@
-import type { EvalExperiment, SaveExperiment } from '../../../../domain/mapping/evals/experiment';
+import type { GenerateReferences, ReferenceGenerationSession } from '../../../../domain/mapping/evals/referenceGeneration';
+import type { EvalExperiment, SaveExperiment, RelaunchExperiment } from '../../../../domain/mapping/evals/experiment';
 import type { EvalPrompt, SaveEvalPrompt } from '../../../../domain/mapping/evals/evalPrompt';
 import type { EvalRunRequest, EvalRunSummary } from '../../../../domain/mapping/evals/evalRun';
 import type { GeneratedCanvasRecord } from '../../../../domain/core/diagrams/generatedCanvas';
 import type { ProjectRepresentationRecord } from '../../../../domain/core/representations/projectCatalog';
 import type { CompareCanvasCopy, CompareSource } from '../../../../domain/mapping/compare/comparePageSession';
-import type { EvalReference } from '../../../../domain/mapping/evals/evalReference';
+import type { EvalReference, EvalReferenceGroup } from '../../../../domain/mapping/evals/evalReference';
 import type { Judgement, JudgementSummary } from '../../../../domain/mapping/evals/judgement';
 import type { LayoutCapture, LayoutTemplate } from '../../../../domain/core/diagrams/layoutTemplate';
 
@@ -16,6 +17,7 @@ async function request<T>(path: string, body?: unknown, method?: 'DELETE' | 'PAT
   if (!response.ok) throw Error(value.error ?? `Evals request failed (${response.status})`);
   return value;
 }
+export const relaunchExperiment = (id: string, input: RelaunchExperiment) => request<{ experiment: EvalExperiment; runId: string }>(`/experiments/${encodeURIComponent(id)}/relaunch`, input);
 export const listExperiments = () => request<EvalExperiment[]>('/experiments');
 export const saveExperiment = (input: SaveExperiment) => request<EvalExperiment>('/experiments', input);
 export const listPrompts = () => request<EvalPrompt[]>('/prompts');
@@ -57,5 +59,18 @@ export const deleteContextOutputs = (agentContextId: string, workflow: string) =
   request<{ deleted: true }>(`/contexts/${encodeURIComponent(agentContextId)}/outputs?${new URLSearchParams({ workflow })}`, undefined, 'DELETE');
 export const listReferences = (archived = false) => request<EvalReference[]>(`/references${archived ? '?archived=true' : ''}`);
 export const createReference = (input: Omit<EvalReference, 'schemaVersion' | 'id' | 'projectId' | 'createdAt' | 'updatedAt' | 'archivedAt'>) => request<EvalReference>('/references', input);
-export const updateReference = (id: string, input: { name?: string; archived?: boolean }) => request<EvalReference>(`/references/${encodeURIComponent(id)}`, input, 'PATCH');
+export const updateReference = (id: string, input: { name?: string; archived?: boolean; groupId?: string | null; comment?: string }) => request<EvalReference>(`/references/${encodeURIComponent(id)}`, input, 'PATCH');
+export const listReferenceGroups = () => request<EvalReferenceGroup[]>('/reference-groups');
+export const createReferenceGroup = (input: { requestId: string; name: string }) => request<EvalReferenceGroup>('/reference-groups', input);
+export const renameReferenceGroup = (id: string, name: string) => request<EvalReferenceGroup>(`/reference-groups/${encodeURIComponent(id)}`, { name }, 'PATCH');
+export const deleteReferenceGroup = (id: string) => request<{ deleted: true }>(`/reference-groups/${encodeURIComponent(id)}`, undefined, 'DELETE');
+export const openReferenceSession = (input: { source: CompareSource; boxId: string; revisionId: string }) => request<ReferenceGenerationSession>('/reference-sessions', input);
+export const generateReferences = (id: string, input: GenerateReferences) => request<{ requestId: string }>(`/reference-sessions/${encodeURIComponent(id)}/generate`, input);
+export const loadReferenceSources = (id: string, input: { requestId: string }) => request<{ requestId: string }>(`/reference-sessions/${encodeURIComponent(id)}/load-sources`, input);
 export const captureCanvas = (source: CompareSource) => request<CompareCanvasCopy>('/capture', { source });
+
+export const approveExperiment = (id: string, input: { requestId: string; expectedRevision: number }) => request<EvalExperiment>(`/experiments/${encodeURIComponent(id)}/approve`, input);
+
+export const snapshotPrompts = () => request<import('../../../../domain/mapping/evals/evalPrompt').PromptProjectSnapshot>('/prompt-snapshots', { requestId: crypto.randomUUID(), name: `Prompt snapshot ${new Date().toISOString()}` });
+
+export const judgeExperiment = (id: string, input: { requestId: string; expectedRevision: number; comparisonId: string }) => request<EvalExperiment>(`/experiments/${encodeURIComponent(id)}/judge`, input);

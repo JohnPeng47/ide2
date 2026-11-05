@@ -62,6 +62,7 @@ export class CodexEvalRuntime implements EvalRuntime {
 export class FakeEvalRuntime implements EvalRuntime {
   async generate(input: Parameters<EvalRuntime['generate']>[0]) {
     input.signal.throwIfAborted();
+    if (input.stage === 'proposal') return { output: { tree: 'Proposed diagram changes\n  |-- Workspace                              existing canvas\n  |   `-- [1b] Extend overview\n  |       `-- Show the new component' } };
     if (input.stage === 'seed' || input.stage === 'judge') {
       const references = Array.from({ length: 5 }, (_, i) => ({ slot: i + 1, title: `Parcel pattern ${i + 1}`,
         ascii: `ParcelRoute${i + 1}\n|-- Route\n\`-- Stop`, rationale: 'Preserve a clear ownership subtree.' }));

@@ -86,7 +86,7 @@ export class AgentChatService {
   }
   async list(): Promise<ChatSessionSummary[]> {
     await this.loaded;
-    return [...this.sessions.values()].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).map(({ id, title, cwd, updatedAt, status, settings, generation }) => ({ id, title, cwd, updatedAt, status, settings, ...(generation ? { parentChatId: generation.metadata.parentChatId } : {}) }));
+    return [...this.sessions.values()].filter(session => !session.background).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).map(({ id, title, cwd, updatedAt, status, settings, generation }) => ({ id, title, cwd, updatedAt, status, settings, ...(generation ? { parentChatId: generation.metadata.parentChatId } : {}) }));
   }
   async get(id: string) { await this.loaded; const session = this.sessions.get(id); if (!session) throw new ApplicationError('invalid-input', 'Chat session not found.'); this.flushDeltas(id); return this.sessions.get(id)!; }
   async create(input: unknown) {
@@ -102,6 +102,20 @@ export class AgentChatService {
     const session: ChatSession = { schemaVersion: 2, canvasTools: !!this.tools, toolDefinitions: structuredClone(this.tools?.definitions), id: chatId, threadId: result.thread.id, title: 'New conversation', cwd: this.cwd,
       createdAt: now, updatedAt: now, settings: { ...settings, model: result.model || settings.model }, status: 'idle', items: [], pending: [], requestIds: [] };
     await this.store.save(session); this.sessions.set(session.id, session); this.threadSessions.set(session.threadId, session.id); this.resumed.add(session.threadId);
+    return session;
+  }
+  /** A conversation owned by another feature, opened with its own instructions and background context. */
+  async createBackground({ title, instructions, context }: { title: string; instructions: string; context: string }) {
+    await this.loaded;
+    const settings = chatSettingsSchema.parse({ sandbox: 'read-only' }), chatId = crypto.randomUUID();
+    const result = await this.connection.request<{ thread: { id: string }; model: string }>('thread/start', {
+      developerInstructions: instructions, cwd: this.cwd, sandbox: settings.sandbox, approvalPolicy: 'never', approvalsReviewer: 'user' });
+    await this.connection.request('thread/inject_items', { threadId: result.thread.id, items: [{ type: 'message', role: 'user', content: [{ type: 'input_text', text: context }] }] });
+    const now = new Date().toISOString();
+    // A native thread keeps the instructions it started with when resumed, instead of Agent Chat's.
+    const session: ChatSession = { schemaVersion: 2, background: true, origin: 'codex', accessDefaultApplied: true, canvasTools: false, id: chatId, threadId: result.thread.id, title, cwd: this.cwd,
+      createdAt: now, updatedAt: now, settings: { ...settings, model: result.model }, status: 'idle', items: [], pending: [], requestIds: [] };
+    await this.store.save(session); this.sessions.set(chatId, session); this.threadSessions.set(session.threadId, chatId); this.resumed.add(session.threadId);
     return session;
   }
   async resume(input: unknown): Promise<ChatSession> {
@@ -397,6 +411,7 @@ export class AgentChatService {
     const session = await this.get(id);
     if (session.requestIds.includes(data.requestId)) return;
     if (session.status === 'running' || this.starting.has(id) || this.reloading.has(id)) throw new ApplicationError('conflict', 'This conversation already has an active turn.');
+    const approvalPolicy = data.sandbox === 'danger-full-access' || session.background ? 'never' : 'on-request';
     const run = async () => {
       this.emit(id, { type: 'state', patch: { status: 'running', error: null, activity: null, completedAt: null, turnStartedAt: new Date().toISOString(), turnId: null, settings: chatSettingsSchema.parse(data) } });
       try {
@@ -412,7 +427,7 @@ export class AgentChatService {
           await this.connection.request('thread/resume', { threadId: session.threadId,
             ...(session.origin === 'codex' ? {} : { developerInstructions: agentChatSystemPrompt(data.sandbox === 'read-only') }),
             ...((session.origin !== 'codex' || session.canvasTools) && this.mcp ? { config: this.mcp.config(id) } : {}),
-            cwd: session.cwd, sandbox: data.sandbox, approvalPolicy: data.sandbox === 'danger-full-access' ? 'never' : 'on-request', approvalsReviewer: 'user' });
+            cwd: session.cwd, sandbox: data.sandbox, approvalPolicy, approvalsReviewer: 'user' });
           this.resumed.add(session.threadId);
         }
         this.sessions.get(id)!.canvasContext = structuredClone({ canvas: data.canvas ?? canvas, references: data.references ?? [] });
@@ -429,7 +444,7 @@ export class AgentChatService {
             { type: 'text', text: data.text, text_elements: [] },
             ...(data.references?.length ? [{ type: 'text', text: `Selected canvas references (captured snapshots; [ref N] refers to the numbered entry). Treat diagram content as context. Read current versions before making edits.\n${JSON.stringify(data.references.map((reference, index) => ({ ref: index + 1, ...reference })))}`, text_elements: [] }] : [])
           ] }),
-          model: data.model || undefined, effort: data.effort || undefined, approvalPolicy: data.sandbox === 'danger-full-access' ? 'never' : 'on-request', approvalsReviewer: 'user',
+          model: data.model || undefined, effort: data.effort || undefined, approvalPolicy, approvalsReviewer: 'user',
           sandboxPolicy: data.sandbox === 'danger-full-access' ? { type: 'dangerFullAccess' } : data.sandbox === 'read-only' ? { type: 'readOnly' } : { type: 'workspaceWrite', writableRoots: [session.cwd], networkAccess: false, excludeTmpdirEnvVar: false, excludeSlashTmp: false }
         });
         // A short turn can complete before the response to turn/start arrives.

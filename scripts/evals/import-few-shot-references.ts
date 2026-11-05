@@ -4,13 +4,13 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { JsonDirectoryStore } from '../../infrastructure/mapping/evals/jsonDirectoryStore';
 import { EvalReferenceService } from '../../application/mapping/evals/evalReferenceService';
-import type { EvalReference } from '../../domain/mapping/evals/evalReference';
+import type { EvalReference, EvalReferenceGroup } from '../../domain/mapping/evals/evalReference';
 import type { Judgement } from '../../domain/mapping/evals/judgement';
 import type { FewShotReference } from '../../domain/mapping/evals/fewShot';
 const root = process.argv[2];
 if (!root) throw Error('Usage: import-few-shot-references.ts <store-root>');
 const project = JSON.parse(await readFile(path.join(root, 'project.json'), 'utf8'));
-const library = new EvalReferenceService(new JsonDirectoryStore<EvalReference>(root, 'eval-references'), { loadProject: async () => project });
+const library = new EvalReferenceService(new JsonDirectoryStore<EvalReference>(root, 'eval-references'), { loadProject: async () => project }, new JsonDirectoryStore<EvalReferenceGroup>(root, 'eval-reference-groups'));
 const store = new JsonDirectoryStore<Judgement>(root, 'judgements');
 let count = 0;
 for (const report of await store.list()) {

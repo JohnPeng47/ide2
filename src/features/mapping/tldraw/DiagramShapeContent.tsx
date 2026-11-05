@@ -16,7 +16,7 @@ import { mappingShapeId } from './shapeProjection';
 const Text = memo(function Text({ model }: { model: Pick<GridModel, 'id' | 'diagram' | 'view' | 'jumps' | 'selectedContent' | 'layoutKey' | 'node'> }) {
   const runtime = useContext(CanvasRuntimeContext)!;
   const jump = useValue('diagram jump availability', () => runtime.interaction.get().jumps, [runtime]);
-  const register = useLocalAnchors(runtime, model.id, model.layoutKey);
+  const { registerEndpoint: register, registerText } = useLocalAnchors(runtime, model.id, model.layoutKey);
   const registerDisplayed = useCallback((owner: DiagramTextOwner, element: Element | null) => {
     if (owner.nodeRef && model.node.layout === 'grid') {
       const id = Object.entries(model.node.nodeRefs ?? {}).find(([, ref]) => ref === owner.nodeRef)?.[0];
@@ -38,7 +38,7 @@ const Text = memo(function Text({ model }: { model: Pick<GridModel, 'id' | 'diag
   const byNode = new Map<string, (typeof highlights)[number]>();
   for (const highlight of highlights) for (const id of highlightNodeIds(highlight))
     if (!byNode.has(id)) byNode.set(id, highlight);
-  return <DiagramText style={whole ? { backgroundColor: `${highlightColor(whole.color)}33`, outline: `2px solid ${highlightColor(whole.color)}` } : undefined}
+  return <DiagramText ref={registerText} style={whole ? { backgroundColor: `${highlightColor(whole.color)}33`, outline: `2px solid ${highlightColor(whole.color)}` } : undefined}
     data-highlight-id={whole?.id} className="mapping-poc-ascii" rows={rows} data-graph="A" data-line-count={rows.length}
     data-revision={model.diagram!.revision} registerEndpoint={registerDisplayed}
     nodeProps={owner => {

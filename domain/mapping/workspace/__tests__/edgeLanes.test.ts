@@ -1,6 +1,7 @@
 import { expect, it } from 'vitest';
 import { separateEdgeLanes, type LaneRoute } from '../edgeLanes';
 import { clearSegment, type RoutePoint } from '../edgeRouting';
+import { diagramBoundaryObstacles } from '../routingObstacles';
 const route = (id: string, points: RoutePoint[], obstacles: LaneRoute['obstacles'] = []): LaneRoute => ({ id, points, obstacles });
 const horizontal = [{ x: 0, y: 0 }, { x: 100, y: 0 }];
 
@@ -39,4 +40,26 @@ it('leaves simple crossings and disjoint collinear runs unchanged', () => {
     route('c', [{ x: 100, y: 0 }, { x: 200, y: 0 }])];
   const lanes = separateEdgeLanes(routes);
   for (const r of routes) expect(lanes.get(r.id)).toBe(r.points);
+});
+it('spaces shared trunks away from the diagram clearance band', () => {
+  const points = [{ x: 100, y: 100 }, { x: 276, y: 100 }, { x: 276, y: 900 }, { x: 350, y: 900 }];
+  const borders = diagramBoundaryObstacles('diagram', { x: 300, y: 0, width: 400, height: 1000 });
+  const lanes = separateEdgeLanes([route('a', points, borders), route('b', points, borders)]);
+  const shifted = lanes.get('b')!;
+  const trunks = shifted.slice(1).filter((p, i) => p.x === shifted[i].x && Math.abs(p.y - shifted[i].y) > 100);
+  expect(trunks.length).toBeGreaterThan(0);
+  expect(trunks.every(p => p.x < 276)).toBe(true);
+  expect(lanes.get('b')![0]).toEqual(points[0]);
+  expect(lanes.get('b')!.at(-1)).toEqual(points.at(-1));
+  expect(lanes.get('b')!.some(p => p.x === 282)).toBe(false);
+});
+it('allows short endpoint joins to fan out inside clearance bands', () => {
+  const points = [{ x: 100, y: 7.5 }, { x: 300, y: 7.5 }];
+  const borders = [...diagramBoundaryObstacles('source', { x: 0, y: 0, width: 100, height: 50 }),
+    ...diagramBoundaryObstacles('target', { x: 300, y: 0, width: 100, height: 50 })];
+  const lanes = separateEdgeLanes(['a', 'b', 'c'].map(id => route(id, points, borders)));
+  expect(new Set([...lanes.values()].map(points => JSON.stringify(points))).size).toBe(3);
+  for (const lane of lanes.values()) {
+    expect(lane[0]).toEqual(points[0]); expect(lane.at(-1)).toEqual(points.at(-1));
+  }
 });

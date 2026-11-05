@@ -1,0 +1,100 @@
+{
+  "requestId": "9b91034e-e576-4fc5-baa8-d7ce47e760df",
+  "experiment": {
+    "name": "Single diagram \u2192 canvas \u00b7 Mapping architecture",
+    "description": "Split the standalone Mapping application architecture diagram (baseline 03f2168) into a connected canvas. Three independent alternatives from one pinned diagram, gpt-6-astra/high. Prepared for manual prompt review and approval before generation.",
+    "workflow": {
+      "id": "diagram-to-canvas",
+      "name": "Split diagram into canvas",
+      "version": 1,
+      "stages": [
+        {
+          "id": "split",
+          "name": "Generate canvas",
+          "dependsOn": []
+        }
+      ]
+    },
+    "cases": [
+      {
+        "id": "mapping-architecture",
+        "name": "Diagram seed - Mapping application architecture 03f2168",
+        "agentContextId": "saved-agent-context-50502ac9-72fc-48c3-b413-cc30e66b9ed1",
+        "contentHash": "0258003617b6df41e4a9f79572f7d2f35b8be976b458c0d89a0bd205df4d516b"
+      }
+    ],
+    "conditions": [
+      {
+        "id": "baseline",
+        "name": "Single-diagram decomposition",
+        "description": "Same prompt and seed for all three independent alternatives; no fixed layout template."
+      }
+    ],
+    "samples": [
+      {
+        "id": "alternative-1",
+        "caseId": "mapping-architecture",
+        "conditionId": "baseline",
+        "number": 1,
+        "attempt": 1,
+        "outputs": []
+      },
+      {
+        "id": "alternative-2",
+        "caseId": "mapping-architecture",
+        "conditionId": "baseline",
+        "number": 2,
+        "attempt": 1,
+        "outputs": []
+      },
+      {
+        "id": "alternative-3",
+        "caseId": "mapping-architecture",
+        "conditionId": "baseline",
+        "number": 3,
+        "attempt": 1,
+        "outputs": []
+      }
+    ],
+    "comparisons": [],
+    "plannedRuns": [
+      {
+        "request": {
+          "requestId": "f220be35-25c8-48ab-bcd9-1f2ef343166d",
+          "workflow": "alternatives",
+          "prompts": [
+            {
+              "promptId": "6842c979-55e4-459f-acd8-27e03df51df9",
+              "version": 1
+            }
+          ],
+          "inputs": {
+            "context": {
+              "agentContextId": "saved-agent-context-50502ac9-72fc-48c3-b413-cc30e66b9ed1"
+            }
+          },
+          "passes": 3,
+          "model": "gpt-6-astra",
+          "effort": "high"
+        },
+        "outputs": [
+          {
+            "sampleId": "alternative-1",
+            "stageId": "split",
+            "cellKey": "6842c979-55e4-459f-acd8-27e03df51df9:1:alternative"
+          },
+          {
+            "sampleId": "alternative-2",
+            "stageId": "split",
+            "cellKey": "6842c979-55e4-459f-acd8-27e03df51df9:2:alternative"
+          },
+          {
+            "sampleId": "alternative-3",
+            "stageId": "split",
+            "cellKey": "6842c979-55e4-459f-acd8-27e03df51df9:3:alternative"
+          }
+        ]
+      }
+    ]
+  }
+}

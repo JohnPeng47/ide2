@@ -30,6 +30,8 @@ const components: TLComponents = { InFrontOfTheCanvas: ApplicationOverlay };
 export function MappingEditorCanvas(props: {
   session: CanvasSession; children: ReactNode; enabled: boolean; className?: string;
   focusBox?: DiagramFocus; initialTransform?: CanvasTransform; onTransformChange?: (value: CanvasTransform) => void;
+  /** Open with the content centered at full size. Content larger than the pane starts at its top-left, so its beginning is on screen. */
+  centerContent?: boolean;
 }) {
   const canvasRuntime = useMemo(() => new CanvasRuntime(props.session), [props.session]);
   useLayoutEffect(() => canvasRuntime.connect(), [canvasRuntime]);
@@ -59,7 +61,12 @@ export function MappingEditorCanvas(props: {
     const element = root.current!;
     element.addEventListener('pointerdown', stopUiPointer, true);
     const saved = initial.current;
-    if (saved) editor.setCamera(restoreMappingCamera(saved));
+    const content = props.centerContent ? editor.getCurrentPageBounds() : undefined;
+    if (content) {
+      const pane = element.getBoundingClientRect(), margin = 48;
+      const start = (available: number, size: number) => size + margin * 2 > available ? margin : (available - size) / 2;
+      editor.setCamera({ x: start(pane.width, content.w) - content.x, y: start(pane.height, content.h) - content.y, z: 1 });
+    } else if (saved) editor.setCamera(restoreMappingCamera(saved));
     else {
       editor.setCamera({ x: 360, y: 100, z: 1 });
     }
