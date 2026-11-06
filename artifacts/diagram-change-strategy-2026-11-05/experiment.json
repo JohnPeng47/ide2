@@ -1,0 +1,1403 @@
+{
+  "name": "Diagram change strategy selection",
+  "description": "Baseline of the original four decision rules, using the seven ChangeSession v2 AgentContexts saved November 3, 2026. Three independent samples per case (21 total), gpt-6-sol/high. Output: the Proposed diagram changes ASCII tree only. Decision thresholds are unchanged; input access is adapted to pinned snapshots and the output contract is explicit. Deterministic syntax and strategy-count assessment is separate from generation; no architectural quality score or target strategy frequency.",
+  "phases": [
+    {
+      "id": "baseline",
+      "name": "Baseline",
+      "description": "Original decision rules; tree-only output. Seven pinned contexts × three samples. Generation awaits review. The deterministic judgement is planned and must be run separately after generation; it parses tags and reports format errors without repairing outputs."
+    }
+  ],
+  "workflow": {
+    "id": "diagram-change-proposal",
+    "name": "Propose diagram changes",
+    "version": 1,
+    "stages": [
+      {
+        "id": "proposal",
+        "name": "Proposed changes tree",
+        "dependsOn": []
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "context-1",
+      "name": "ChangeSession v2 01 - Canvas workspace, authoring and navigation",
+      "agentContextId": "saved-agent-context-16ba6214-8c1a-4617-b165-3242ac53e23b",
+      "contentHash": "552ea9469cc2b027ce7cb8f9f1b7d8de7c42863b48ea0267c9e0cb033e00618d"
+    },
+    {
+      "id": "context-2",
+      "name": "ChangeSession v2 02 - Tldraw runtime, selection and controller edits",
+      "agentContextId": "saved-agent-context-db04f7f1-5aa5-4159-8466-79d0799722b0",
+      "contentHash": "5c9a0e457d2e8ed370cbfa605e472c62c54f714bca773b4c85b30f7ca5e340fa"
+    },
+    {
+      "id": "context-3",
+      "name": "ChangeSession v2 03 - Revisions, history and saved CanvasViews",
+      "agentContextId": "saved-agent-context-6e3d2462-84a5-4c3a-8d8d-b065c8c0e521",
+      "contentHash": "331929dbcd77fd6b487de5d3f9d2319322414093b2fab2aeed60d3d78ed7a4b9"
+    },
+    {
+      "id": "context-4",
+      "name": "ChangeSession v2 04 - Alternatives and ChangeSession review",
+      "agentContextId": "saved-agent-context-911f0ae2-d2c6-4ce6-bd26-dc91590bd709",
+      "contentHash": "269fec17c77e511b89f6295cca36bd37af58faefe10f4f17b3d5a4805026df1c"
+    },
+    {
+      "id": "context-5",
+      "name": "ChangeSession v2 05 - AgentChat, generation and Canvas API",
+      "agentContextId": "saved-agent-context-b4df6a6c-83f6-428f-9247-7bd2f2548e7c",
+      "contentHash": "a82096318fdb465f19ee0370ccc90a10b7f1bac7de80d39acdafb8bcf4af2566"
+    },
+    {
+      "id": "context-6",
+      "name": "ChangeSession v2 06 - Saved AgentContexts and source evidence",
+      "agentContextId": "saved-agent-context-c002f3b1-d0c5-4f6b-aa22-43fd518afe51",
+      "contentHash": "0ab380f7d18b5d13fb2df66ae51ea017e17de2dff835a261b0ace267ac0a9087"
+    },
+    {
+      "id": "context-7",
+      "name": "ChangeSession v2 07 - Persistence and durable storage",
+      "agentContextId": "saved-agent-context-3cc6fe05-807a-40e6-98aa-df864234bb8e",
+      "contentHash": "5bf775fbd29e845fb95ccd4a9857dbe8863df46549401d134a788795350a672f"
+    }
+  ],
+  "conditions": [
+    {
+      "id": "original",
+      "name": "Original decision rules",
+      "description": "No prompt-strengthening or strategy-frequency target. Same gpt-6-sol/high settings for every sample."
+    }
+  ],
+  "plannedRuns": [
+    {
+      "request": {
+        "requestId": "1393c196-b590-4abb-890a-1fdb2f916f35",
+        "workflow": "diagram-change-proposal",
+        "prompts": [
+          {
+            "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+            "version": 3
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-16ba6214-8c1a-4617-b165-3242ac53e23b"
+          }
+        },
+        "passes": 3,
+        "model": "gpt-6-sol",
+        "effort": "high",
+        "contextDelivery": "session"
+      },
+      "outputs": [
+        {
+          "sampleId": "context-1-sample-1",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:1:proposal"
+        },
+        {
+          "sampleId": "context-1-sample-2",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:2:proposal"
+        },
+        {
+          "sampleId": "context-1-sample-3",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:3:proposal"
+        }
+      ]
+    },
+    {
+      "request": {
+        "requestId": "56c19388-79c6-455b-b3d0-596bfcf32c99",
+        "workflow": "diagram-change-proposal",
+        "prompts": [
+          {
+            "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+            "version": 3
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-db04f7f1-5aa5-4159-8466-79d0799722b0"
+          }
+        },
+        "passes": 3,
+        "model": "gpt-6-sol",
+        "effort": "high",
+        "contextDelivery": "session"
+      },
+      "outputs": [
+        {
+          "sampleId": "context-2-sample-1",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:1:proposal"
+        },
+        {
+          "sampleId": "context-2-sample-2",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:2:proposal"
+        },
+        {
+          "sampleId": "context-2-sample-3",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:3:proposal"
+        }
+      ]
+    },
+    {
+      "request": {
+        "requestId": "13888f46-f668-4279-aecf-34716496b2f4",
+        "workflow": "diagram-change-proposal",
+        "prompts": [
+          {
+            "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+            "version": 3
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-6e3d2462-84a5-4c3a-8d8d-b065c8c0e521"
+          }
+        },
+        "passes": 3,
+        "model": "gpt-6-sol",
+        "effort": "high",
+        "contextDelivery": "session"
+      },
+      "outputs": [
+        {
+          "sampleId": "context-3-sample-1",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:1:proposal"
+        },
+        {
+          "sampleId": "context-3-sample-2",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:2:proposal"
+        },
+        {
+          "sampleId": "context-3-sample-3",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:3:proposal"
+        }
+      ]
+    },
+    {
+      "request": {
+        "requestId": "b7fd2f80-b6a3-4779-a9c1-b4c11bec86ec",
+        "workflow": "diagram-change-proposal",
+        "prompts": [
+          {
+            "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+            "version": 3
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-911f0ae2-d2c6-4ce6-bd26-dc91590bd709"
+          }
+        },
+        "passes": 3,
+        "model": "gpt-6-sol",
+        "effort": "high",
+        "contextDelivery": "session"
+      },
+      "outputs": [
+        {
+          "sampleId": "context-4-sample-1",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:1:proposal"
+        },
+        {
+          "sampleId": "context-4-sample-2",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:2:proposal"
+        },
+        {
+          "sampleId": "context-4-sample-3",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:3:proposal"
+        }
+      ]
+    },
+    {
+      "request": {
+        "requestId": "fe307187-77c1-47d3-9e7d-d81e8a326414",
+        "workflow": "diagram-change-proposal",
+        "prompts": [
+          {
+            "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+            "version": 3
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-b4df6a6c-83f6-428f-9247-7bd2f2548e7c"
+          }
+        },
+        "passes": 3,
+        "model": "gpt-6-sol",
+        "effort": "high",
+        "contextDelivery": "session"
+      },
+      "outputs": [
+        {
+          "sampleId": "context-5-sample-1",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:1:proposal"
+        },
+        {
+          "sampleId": "context-5-sample-2",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:2:proposal"
+        },
+        {
+          "sampleId": "context-5-sample-3",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:3:proposal"
+        }
+      ]
+    },
+    {
+      "request": {
+        "requestId": "f61d32b5-b7d6-40f1-9c39-217fcd596102",
+        "workflow": "diagram-change-proposal",
+        "prompts": [
+          {
+            "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+            "version": 3
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-c002f3b1-d0c5-4f6b-aa22-43fd518afe51"
+          }
+        },
+        "passes": 3,
+        "model": "gpt-6-sol",
+        "effort": "high",
+        "contextDelivery": "session"
+      },
+      "outputs": [
+        {
+          "sampleId": "context-6-sample-1",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:1:proposal"
+        },
+        {
+          "sampleId": "context-6-sample-2",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:2:proposal"
+        },
+        {
+          "sampleId": "context-6-sample-3",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:3:proposal"
+        }
+      ]
+    },
+    {
+      "request": {
+        "requestId": "7df72b53-cf26-46bb-a018-dadfc5d4cdf3",
+        "workflow": "diagram-change-proposal",
+        "prompts": [
+          {
+            "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+            "version": 3
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-3cc6fe05-807a-40e6-98aa-df864234bb8e"
+          }
+        },
+        "passes": 3,
+        "model": "gpt-6-sol",
+        "effort": "high",
+        "contextDelivery": "session"
+      },
+      "outputs": [
+        {
+          "sampleId": "context-7-sample-1",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:1:proposal"
+        },
+        {
+          "sampleId": "context-7-sample-2",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:2:proposal"
+        },
+        {
+          "sampleId": "context-7-sample-3",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:3:proposal"
+        }
+      ]
+    }
+  ],
+  "samples": [
+    {
+      "id": "context-1-sample-1",
+      "phaseId": "baseline",
+      "caseId": "context-1",
+      "conditionId": "original",
+      "number": 1,
+      "attempt": 1,
+      "outputs": []
+    },
+    {
+      "id": "context-1-sample-2",
+      "phaseId": "baseline",
+      "caseId": "context-1",
+      "conditionId": "original",
+      "number": 2,
+      "attempt": 1,
+      "outputs": []
+    },
+    {
+      "id": "context-1-sample-3",
+      "phaseId": "baseline",
+      "caseId": "context-1",
+      "conditionId": "original",
+      "number": 3,
+      "attempt": 1,
+      "outputs": []
+    },
+    {
+      "id": "context-2-sample-1",
+      "phaseId": "baseline",
+      "caseId": "context-2",
+      "conditionId": "original",
+      "number": 1,
+      "attempt": 1,
+      "outputs": []
+    },
+    {
+      "id": "context-2-sample-2",
+      "phaseId": "baseline",
+      "caseId": "context-2",
+      "conditionId": "original",
+      "number": 2,
+      "attempt": 1,
+      "outputs": []
+    },
+    {
+      "id": "context-2-sample-3",
+      "phaseId": "baseline",
+      "caseId": "context-2",
+      "conditionId": "original",
+      "number": 3,
+      "attempt": 1,
+      "outputs": []
+    },
+    {
+      "id": "context-3-sample-1",
+      "phaseId": "baseline",
+      "caseId": "context-3",
+      "conditionId": "original",
+      "number": 1,
+      "attempt": 1,
+      "outputs": []
+    },
+    {
+      "id": "context-3-sample-2",
+      "phaseId": "baseline",
+      "caseId": "context-3",
+      "conditionId": "original",
+      "number": 2,
+      "attempt": 1,
+      "outputs": []
+    },
+    {
+      "id": "context-3-sample-3",
+      "phaseId": "baseline",
+      "caseId": "context-3",
+      "conditionId": "original",
+      "number": 3,
+      "attempt": 1,
+      "outputs": []
+    },
+    {
+      "id": "context-4-sample-1",
+      "phaseId": "baseline",
+      "caseId": "context-4",
+      "conditionId": "original",
+      "number": 1,
+      "attempt": 1,
+      "outputs": []
+    },
+    {
+      "id": "context-4-sample-2",
+      "phaseId": "baseline",
+      "caseId": "context-4",
+      "conditionId": "original",
+      "number": 2,
+      "attempt": 1,
+      "outputs": []
+    },
+    {
+      "id": "context-4-sample-3",
+      "phaseId": "baseline",
+      "caseId": "context-4",
+      "conditionId": "original",
+      "number": 3,
+      "attempt": 1,
+      "outputs": []
+    },
+    {
+      "id": "context-5-sample-1",
+      "phaseId": "baseline",
+      "caseId": "context-5",
+      "conditionId": "original",
+      "number": 1,
+      "attempt": 1,
+      "outputs": []
+    },
+    {
+      "id": "context-5-sample-2",
+      "phaseId": "baseline",
+      "caseId": "context-5",
+      "conditionId": "original",
+      "number": 2,
+      "attempt": 1,
+      "outputs": []
+    },
+    {
+      "id": "context-5-sample-3",
+      "phaseId": "baseline",
+      "caseId": "context-5",
+      "conditionId": "original",
+      "number": 3,
+      "attempt": 1,
+      "outputs": []
+    },
+    {
+      "id": "context-6-sample-1",
+      "phaseId": "baseline",
+      "caseId": "context-6",
+      "conditionId": "original",
+      "number": 1,
+      "attempt": 1,
+      "outputs": []
+    },
+    {
+      "id": "context-6-sample-2",
+      "phaseId": "baseline",
+      "caseId": "context-6",
+      "conditionId": "original",
+      "number": 2,
+      "attempt": 1,
+      "outputs": []
+    },
+    {
+      "id": "context-6-sample-3",
+      "phaseId": "baseline",
+      "caseId": "context-6",
+      "conditionId": "original",
+      "number": 3,
+      "attempt": 1,
+      "outputs": []
+    },
+    {
+      "id": "context-7-sample-1",
+      "phaseId": "baseline",
+      "caseId": "context-7",
+      "conditionId": "original",
+      "number": 1,
+      "attempt": 1,
+      "outputs": []
+    },
+    {
+      "id": "context-7-sample-2",
+      "phaseId": "baseline",
+      "caseId": "context-7",
+      "conditionId": "original",
+      "number": 2,
+      "attempt": 1,
+      "outputs": []
+    },
+    {
+      "id": "context-7-sample-3",
+      "phaseId": "baseline",
+      "caseId": "context-7",
+      "conditionId": "original",
+      "number": 3,
+      "attempt": 1,
+      "outputs": []
+    }
+  ],
+  "comparisons": [
+    {
+      "id": "baseline-tree-parse",
+      "phaseId": "baseline",
+      "name": "Strategy selection and tree syntax",
+      "description": "Parser v1: validates the root, canvas labels, branch hierarchy and operation tags; counts [1a], [1b], [2], [3], [4] and output incidence for 3/4. Retains raw text and line-level errors, including recognized operations in invalid trees. Does not judge structural correctness, coverage, attachment validity or whether 3/4 should have been chosen.",
+      "conditionIds": [
+        "original"
+      ],
+      "caseIds": [
+        "context-1",
+        "context-2",
+        "context-3",
+        "context-4",
+        "context-5",
+        "context-6",
+        "context-7"
+      ],
+      "judgementIds": [],
+      "evaluator": {
+        "kind": "deterministic",
+        "parser": "diagram-change-tree",
+        "version": 1
+      }
+    }
+  ],
+  "generationReview": {
+    "status": "awaiting-approval",
+    "runs": [
+      {
+        "schemaVersion": 1,
+        "id": "1393c196-b590-4abb-890a-1fdb2f916f35",
+        "request": {
+          "requestId": "1393c196-b590-4abb-890a-1fdb2f916f35",
+          "workflow": "diagram-change-proposal",
+          "prompts": [
+            {
+              "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+              "version": 3
+            }
+          ],
+          "inputs": {
+            "context": {
+              "agentContextId": "saved-agent-context-16ba6214-8c1a-4617-b165-3242ac53e23b"
+            }
+          },
+          "passes": 3,
+          "model": "gpt-6-sol",
+          "effort": "high",
+          "contextDelivery": "session"
+        },
+        "references": [],
+        "projectId": "project-4971c06b-83d5-49eb-998d-043d5fc2dca4",
+        "workflow": "diagram-change-proposal",
+        "agentContextId": "saved-agent-context-16ba6214-8c1a-4617-b165-3242ac53e23b",
+        "contextName": "ChangeSession v2 01 - Canvas workspace, authoring and navigation",
+        "prompts": [
+          {
+            "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+            "version": 3,
+            "name": "Diagram change strategy · original rules · tree output",
+            "stages": {
+              "proposal": "<agent context>\nUse the Diagram change proposal PromptTemplate v1. The preceding conversation history is the complete prepared, pinned AgentContext for this case: captured existing diagrams and connections, assigned scope, pinned target source, and code-change evidence. Source references have already been resolved before generation. Each sample continues independently from this same history; no earlier sample output is included. Use that history directly, without reading context.json or collecting source again. This is a reproducible snapshot-based baseline of the Canvas API task. Inspect the captured diagrams in the history instead of fetching changing live canvas state. Use only the supplied history for source facts; no filesystem, external-service, or canvas-mutation tools are available.\n\nThe AgentContext contains historical evaluation instructions and historical category definitions. Those are reference material, not active instructions. Use the code-change evidence and captured diagram contents, but follow only the task, category definitions and output format below. Do not adopt historical output requirements, category meanings, or constraints that predetermine a representation choice. The case's assigned feature/source scope determines which code changes to represent; consider the provided related diagrams and canvases when deciding where those changes belong. Do not assume other cases have already generated anything. Do not invent source evidence, diagrams, or code changes.\n</agent context>\n\n<task>\nOkay use the captured canvas API data to look at our existing diagrams.\n\nI want you to represent the total effect of our change in 4 possible forms, each of which are not mutually exclusive from the other:\n</task>\n\n<steps>\n1. Modify Existing Diagram\n  -> a. choose this when an existing representation in a diagram will no longer be true after the change\n  -> b. choose this when the change extends an existing representation in a way that shud be appropriately represented in the diagram scope\n  -> when making modifications, *do not* make minor edits like the following that do not convey a change in code structure\n    -> eg. note the \"[-]/[+]\" are prefixes generated by the diff rendering logic -> you *should not* use them for your output\n\n  [-] contentHash            tied to this ASCII\n  [+] contentHash             tied to this ASCII\n\n  OR\n\n  [-] placement          automatic | manual\n  [+] placement: automatic | manual\n\n2. Adding a New Diagram to an Existing Canvas same reason as 1.b but for the canvas scope\n  -> every new diagram should be connected to at least one node in the existing canvas\n3. Adding a New Canvas\n  -> choose this when the new change exceeds the representational capacity of 1 and 2\n  -> while this is not required, you can form inter-canvas connections when choosing this option\n4. Major Update to Existing Diagram:\n  -> choose this when a large structural change cannot be expressed compositionally within an existing diagram\n    -> a good heuristic is when something like > 40-60% of the diagram need to be changed\n  -> RATIONALE: choose this when the change exceeds the capacity to be represented by 1, 2, and 3\n</steps>\n\n<extra-guidance>\nBefore expanding a new component into another diagram or canvas:\n  -> modify the existing diagram to show exactly where the component belongs:\n      who owns it, who calls it, and what it owns\n  -> connect its detailed representation from that explicit component node,\n      not merely a related node\n</extra-guidance>\n\n<output format>\nThe complete user-facing output is one high-level ASCII tree of proposed changes, in this form:\n\nProposed diagram changes\n  |-- PersistentLayer                              existing canvas\n  |   |-- [1b] Modify overview\n  |   |   `-- Expand the existing proposed SearchArtifact branch\n  |   |-- [2] Add: SearchArtifact model and storage\n  |   `-- [2] Add: Artifact generation and lifecycle\n  |\n  |-- Canvas domain model - implemented at 4f2ba39   existing canvas\n  |   |-- [1b] Modify overview\n  |   |   `-- Add transient search state and result navigation\n  |   |-- [1b] Extend [D] Controller edits / agent access\n  |   |   `-- Show persistence-backed search integration\n  |   `-- [2] Add: Search execution and result reveal\n  ...\n\nThe example illustrates format only; use actual names and changes supported by this case's evidence.\nUse the exact root \"Proposed diagram changes\". Indent canvas branches two spaces from the root, then four additional columns per child level. End each canvas branch with two or more spaces followed by \"existing canvas\" or \"new canvas\".\nFor existing canvases, place each operation directly below its canvas, tagged [1a], [1b], [2], or [4] according to the definitions above. Put brief descriptions, ownership changes, and exact component attachment intentions beneath the operation. Do not tag descriptive child lines as additional operations.\nFor a new canvas, tag the canvas branch itself [3] and mark it \"new canvas\"; list its planned diagrams as untagged children. Count a new canvas once at its canvas branch. Do not label its own diagrams [2], which means adding to an existing canvas.\nMultiple operation types may appear in one output. Choose based on the supplied decision rules; no strategy is required merely to fill a category.\nReturn exactly this JSON object shape: {\"tree\":\"Proposed diagram changes\\n...\"}. The tree field is the entire visible output, with actual newline characters after JSON decoding. Do not include separate modified diagrams, a second recap, prose outside the tree, code fences, or diff-renderer prefixes. The application displays this tree as one output artifact; that display artifact is not a proposal to add a source canvas. If supplementary JSON data follows this prompt with validation-error.json and previous-output.json fields, use that feedback to correct only the output envelope. Do not repair proposal-tree syntax or strategy choices merely to satisfy the deterministic judgement.\n</output format>\n"
+            },
+            "templateBase": {
+              "id": "diagram-change-proposal",
+              "version": 1,
+              "name": "Diagram change proposal",
+              "tags": [
+                {
+                  "name": "agent context",
+                  "parent": null
+                },
+                {
+                  "name": "task",
+                  "parent": null
+                },
+                {
+                  "name": "steps",
+                  "parent": null
+                },
+                {
+                  "name": "extra-guidance",
+                  "parent": null
+                },
+                {
+                  "name": "output format",
+                  "parent": null
+                }
+              ]
+            },
+            "parents": [
+              {
+                "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+                "version": 2,
+                "relation": "revision"
+              }
+            ],
+            "contentHash": "62189c9d300b8860d3e6dd691e7b310dbcf1604a666840af0b8150893f6613fd",
+            "derivation": {
+              "parent": {
+                "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+                "version": 2
+              },
+              "kind": "revision"
+            }
+          }
+        ],
+        "contexts": {
+          "context": {
+            "agentContextId": "saved-agent-context-16ba6214-8c1a-4617-b165-3242ac53e23b",
+            "name": "ChangeSession v2 01 - Canvas workspace, authoring and navigation",
+            "contentHash": "552ea9469cc2b027ce7cb8f9f1b7d8de7c42863b48ea0267c9e0cb033e00618d"
+          }
+        },
+        "status": "queued",
+        "createdAt": "2026-11-06T03:23:41.733Z",
+        "cells": [
+          {
+            "key": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:1:proposal",
+            "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+            "promptVersion": 3,
+            "promptName": "Diagram change strategy · original rules · tree output",
+            "pass": 1,
+            "stage": "proposal",
+            "status": "queued"
+          },
+          {
+            "key": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:2:proposal",
+            "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+            "promptVersion": 3,
+            "promptName": "Diagram change strategy · original rules · tree output",
+            "pass": 2,
+            "stage": "proposal",
+            "status": "queued"
+          },
+          {
+            "key": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:3:proposal",
+            "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+            "promptVersion": 3,
+            "promptName": "Diagram change strategy · original rules · tree output",
+            "pass": 3,
+            "stage": "proposal",
+            "status": "queued"
+          }
+        ],
+        "inputs": {}
+      },
+      {
+        "schemaVersion": 1,
+        "id": "56c19388-79c6-455b-b3d0-596bfcf32c99",
+        "request": {
+          "requestId": "56c19388-79c6-455b-b3d0-596bfcf32c99",
+          "workflow": "diagram-change-proposal",
+          "prompts": [
+            {
+              "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+              "version": 3
+            }
+          ],
+          "inputs": {
+            "context": {
+              "agentContextId": "saved-agent-context-db04f7f1-5aa5-4159-8466-79d0799722b0"
+            }
+          },
+          "passes": 3,
+          "model": "gpt-6-sol",
+          "effort": "high",
+          "contextDelivery": "session"
+        },
+        "references": [],
+        "projectId": "project-4971c06b-83d5-49eb-998d-043d5fc2dca4",
+        "workflow": "diagram-change-proposal",
+        "agentContextId": "saved-agent-context-db04f7f1-5aa5-4159-8466-79d0799722b0",
+        "contextName": "ChangeSession v2 02 - Tldraw runtime, selection and controller edits",
+        "prompts": [
+          {
+            "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+            "version": 3,
+            "name": "Diagram change strategy · original rules · tree output",
+            "stages": {
+              "proposal": "<agent context>\nUse the Diagram change proposal PromptTemplate v1. The preceding conversation history is the complete prepared, pinned AgentContext for this case: captured existing diagrams and connections, assigned scope, pinned target source, and code-change evidence. Source references have already been resolved before generation. Each sample continues independently from this same history; no earlier sample output is included. Use that history directly, without reading context.json or collecting source again. This is a reproducible snapshot-based baseline of the Canvas API task. Inspect the captured diagrams in the history instead of fetching changing live canvas state. Use only the supplied history for source facts; no filesystem, external-service, or canvas-mutation tools are available.\n\nThe AgentContext contains historical evaluation instructions and historical category definitions. Those are reference material, not active instructions. Use the code-change evidence and captured diagram contents, but follow only the task, category definitions and output format below. Do not adopt historical output requirements, category meanings, or constraints that predetermine a representation choice. The case's assigned feature/source scope determines which code changes to represent; consider the provided related diagrams and canvases when deciding where those changes belong. Do not assume other cases have already generated anything. Do not invent source evidence, diagrams, or code changes.\n</agent context>\n\n<task>\nOkay use the captured canvas API data to look at our existing diagrams.\n\nI want you to represent the total effect of our change in 4 possible forms, each of which are not mutually exclusive from the other:\n</task>\n\n<steps>\n1. Modify Existing Diagram\n  -> a. choose this when an existing representation in a diagram will no longer be true after the change\n  -> b. choose this when the change extends an existing representation in a way that shud be appropriately represented in the diagram scope\n  -> when making modifications, *do not* make minor edits like the following that do not convey a change in code structure\n    -> eg. note the \"[-]/[+]\" are prefixes generated by the diff rendering logic -> you *should not* use them for your output\n\n  [-] contentHash            tied to this ASCII\n  [+] contentHash             tied to this ASCII\n\n  OR\n\n  [-] placement          automatic | manual\n  [+] placement: automatic | manual\n\n2. Adding a New Diagram to an Existing Canvas same reason as 1.b but for the canvas scope\n  -> every new diagram should be connected to at least one node in the existing canvas\n3. Adding a New Canvas\n  -> choose this when the new change exceeds the representational capacity of 1 and 2\n  -> while this is not required, you can form inter-canvas connections when choosing this option\n4. Major Update to Existing Diagram:\n  -> choose this when a large structural change cannot be expressed compositionally within an existing diagram\n    -> a good heuristic is when something like > 40-60% of the diagram need to be changed\n  -> RATIONALE: choose this when the change exceeds the capacity to be represented by 1, 2, and 3\n</steps>\n\n<extra-guidance>\nBefore expanding a new component into another diagram or canvas:\n  -> modify the existing diagram to show exactly where the component belongs:\n      who owns it, who calls it, and what it owns\n  -> connect its detailed representation from that explicit component node,\n      not merely a related node\n</extra-guidance>\n\n<output format>\nThe complete user-facing output is one high-level ASCII tree of proposed changes, in this form:\n\nProposed diagram changes\n  |-- PersistentLayer                              existing canvas\n  |   |-- [1b] Modify overview\n  |   |   `-- Expand the existing proposed SearchArtifact branch\n  |   |-- [2] Add: SearchArtifact model and storage\n  |   `-- [2] Add: Artifact generation and lifecycle\n  |\n  |-- Canvas domain model - implemented at 4f2ba39   existing canvas\n  |   |-- [1b] Modify overview\n  |   |   `-- Add transient search state and result navigation\n  |   |-- [1b] Extend [D] Controller edits / agent access\n  |   |   `-- Show persistence-backed search integration\n  |   `-- [2] Add: Search execution and result reveal\n  ...\n\nThe example illustrates format only; use actual names and changes supported by this case's evidence.\nUse the exact root \"Proposed diagram changes\". Indent canvas branches two spaces from the root, then four additional columns per child level. End each canvas branch with two or more spaces followed by \"existing canvas\" or \"new canvas\".\nFor existing canvases, place each operation directly below its canvas, tagged [1a], [1b], [2], or [4] according to the definitions above. Put brief descriptions, ownership changes, and exact component attachment intentions beneath the operation. Do not tag descriptive child lines as additional operations.\nFor a new canvas, tag the canvas branch itself [3] and mark it \"new canvas\"; list its planned diagrams as untagged children. Count a new canvas once at its canvas branch. Do not label its own diagrams [2], which means adding to an existing canvas.\nMultiple operation types may appear in one output. Choose based on the supplied decision rules; no strategy is required merely to fill a category.\nReturn exactly this JSON object shape: {\"tree\":\"Proposed diagram changes\\n...\"}. The tree field is the entire visible output, with actual newline characters after JSON decoding. Do not include separate modified diagrams, a second recap, prose outside the tree, code fences, or diff-renderer prefixes. The application displays this tree as one output artifact; that display artifact is not a proposal to add a source canvas. If supplementary JSON data follows this prompt with validation-error.json and previous-output.json fields, use that feedback to correct only the output envelope. Do not repair proposal-tree syntax or strategy choices merely to satisfy the deterministic judgement.\n</output format>\n"
+            },
+            "templateBase": {
+              "id": "diagram-change-proposal",
+              "version": 1,
+              "name": "Diagram change proposal",
+              "tags": [
+                {
+                  "name": "agent context",
+                  "parent": null
+                },
+                {
+                  "name": "task",
+                  "parent": null
+                },
+                {
+                  "name": "steps",
+                  "parent": null
+                },
+                {
+                  "name": "extra-guidance",
+                  "parent": null
+                },
+                {
+                  "name": "output format",
+                  "parent": null
+                }
+              ]
+            },
+            "parents": [
+              {
+                "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+                "version": 2,
+                "relation": "revision"
+              }
+            ],
+            "contentHash": "62189c9d300b8860d3e6dd691e7b310dbcf1604a666840af0b8150893f6613fd",
+            "derivation": {
+              "parent": {
+                "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+                "version": 2
+              },
+              "kind": "revision"
+            }
+          }
+        ],
+        "contexts": {
+          "context": {
+            "agentContextId": "saved-agent-context-db04f7f1-5aa5-4159-8466-79d0799722b0",
+            "name": "ChangeSession v2 02 - Tldraw runtime, selection and controller edits",
+            "contentHash": "5c9a0e457d2e8ed370cbfa605e472c62c54f714bca773b4c85b30f7ca5e340fa"
+          }
+        },
+        "status": "queued",
+        "createdAt": "2026-11-06T03:23:41.800Z",
+        "cells": [
+          {
+            "key": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:1:proposal",
+            "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+            "promptVersion": 3,
+            "promptName": "Diagram change strategy · original rules · tree output",
+            "pass": 1,
+            "stage": "proposal",
+            "status": "queued"
+          },
+          {
+            "key": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:2:proposal",
+            "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+            "promptVersion": 3,
+            "promptName": "Diagram change strategy · original rules · tree output",
+            "pass": 2,
+            "stage": "proposal",
+            "status": "queued"
+          },
+          {
+            "key": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:3:proposal",
+            "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+            "promptVersion": 3,
+            "promptName": "Diagram change strategy · original rules · tree output",
+            "pass": 3,
+            "stage": "proposal",
+            "status": "queued"
+          }
+        ],
+        "inputs": {}
+      },
+      {
+        "schemaVersion": 1,
+        "id": "13888f46-f668-4279-aecf-34716496b2f4",
+        "request": {
+          "requestId": "13888f46-f668-4279-aecf-34716496b2f4",
+          "workflow": "diagram-change-proposal",
+          "prompts": [
+            {
+              "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+              "version": 3
+            }
+          ],
+          "inputs": {
+            "context": {
+              "agentContextId": "saved-agent-context-6e3d2462-84a5-4c3a-8d8d-b065c8c0e521"
+            }
+          },
+          "passes": 3,
+          "model": "gpt-6-sol",
+          "effort": "high",
+          "contextDelivery": "session"
+        },
+        "references": [],
+        "projectId": "project-4971c06b-83d5-49eb-998d-043d5fc2dca4",
+        "workflow": "diagram-change-proposal",
+        "agentContextId": "saved-agent-context-6e3d2462-84a5-4c3a-8d8d-b065c8c0e521",
+        "contextName": "ChangeSession v2 03 - Revisions, history and saved CanvasViews",
+        "prompts": [
+          {
+            "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+            "version": 3,
+            "name": "Diagram change strategy · original rules · tree output",
+            "stages": {
+              "proposal": "<agent context>\nUse the Diagram change proposal PromptTemplate v1. The preceding conversation history is the complete prepared, pinned AgentContext for this case: captured existing diagrams and connections, assigned scope, pinned target source, and code-change evidence. Source references have already been resolved before generation. Each sample continues independently from this same history; no earlier sample output is included. Use that history directly, without reading context.json or collecting source again. This is a reproducible snapshot-based baseline of the Canvas API task. Inspect the captured diagrams in the history instead of fetching changing live canvas state. Use only the supplied history for source facts; no filesystem, external-service, or canvas-mutation tools are available.\n\nThe AgentContext contains historical evaluation instructions and historical category definitions. Those are reference material, not active instructions. Use the code-change evidence and captured diagram contents, but follow only the task, category definitions and output format below. Do not adopt historical output requirements, category meanings, or constraints that predetermine a representation choice. The case's assigned feature/source scope determines which code changes to represent; consider the provided related diagrams and canvases when deciding where those changes belong. Do not assume other cases have already generated anything. Do not invent source evidence, diagrams, or code changes.\n</agent context>\n\n<task>\nOkay use the captured canvas API data to look at our existing diagrams.\n\nI want you to represent the total effect of our change in 4 possible forms, each of which are not mutually exclusive from the other:\n</task>\n\n<steps>\n1. Modify Existing Diagram\n  -> a. choose this when an existing representation in a diagram will no longer be true after the change\n  -> b. choose this when the change extends an existing representation in a way that shud be appropriately represented in the diagram scope\n  -> when making modifications, *do not* make minor edits like the following that do not convey a change in code structure\n    -> eg. note the \"[-]/[+]\" are prefixes generated by the diff rendering logic -> you *should not* use them for your output\n\n  [-] contentHash            tied to this ASCII\n  [+] contentHash             tied to this ASCII\n\n  OR\n\n  [-] placement          automatic | manual\n  [+] placement: automatic | manual\n\n2. Adding a New Diagram to an Existing Canvas same reason as 1.b but for the canvas scope\n  -> every new diagram should be connected to at least one node in the existing canvas\n3. Adding a New Canvas\n  -> choose this when the new change exceeds the representational capacity of 1 and 2\n  -> while this is not required, you can form inter-canvas connections when choosing this option\n4. Major Update to Existing Diagram:\n  -> choose this when a large structural change cannot be expressed compositionally within an existing diagram\n    -> a good heuristic is when something like > 40-60% of the diagram need to be changed\n  -> RATIONALE: choose this when the change exceeds the capacity to be represented by 1, 2, and 3\n</steps>\n\n<extra-guidance>\nBefore expanding a new component into another diagram or canvas:\n  -> modify the existing diagram to show exactly where the component belongs:\n      who owns it, who calls it, and what it owns\n  -> connect its detailed representation from that explicit component node,\n      not merely a related node\n</extra-guidance>\n\n<output format>\nThe complete user-facing output is one high-level ASCII tree of proposed changes, in this form:\n\nProposed diagram changes\n  |-- PersistentLayer                              existing canvas\n  |   |-- [1b] Modify overview\n  |   |   `-- Expand the existing proposed SearchArtifact branch\n  |   |-- [2] Add: SearchArtifact model and storage\n  |   `-- [2] Add: Artifact generation and lifecycle\n  |\n  |-- Canvas domain model - implemented at 4f2ba39   existing canvas\n  |   |-- [1b] Modify overview\n  |   |   `-- Add transient search state and result navigation\n  |   |-- [1b] Extend [D] Controller edits / agent access\n  |   |   `-- Show persistence-backed search integration\n  |   `-- [2] Add: Search execution and result reveal\n  ...\n\nThe example illustrates format only; use actual names and changes supported by this case's evidence.\nUse the exact root \"Proposed diagram changes\". Indent canvas branches two spaces from the root, then four additional columns per child level. End each canvas branch with two or more spaces followed by \"existing canvas\" or \"new canvas\".\nFor existing canvases, place each operation directly below its canvas, tagged [1a], [1b], [2], or [4] according to the definitions above. Put brief descriptions, ownership changes, and exact component attachment intentions beneath the operation. Do not tag descriptive child lines as additional operations.\nFor a new canvas, tag the canvas branch itself [3] and mark it \"new canvas\"; list its planned diagrams as untagged children. Count a new canvas once at its canvas branch. Do not label its own diagrams [2], which means adding to an existing canvas.\nMultiple operation types may appear in one output. Choose based on the supplied decision rules; no strategy is required merely to fill a category.\nReturn exactly this JSON object shape: {\"tree\":\"Proposed diagram changes\\n...\"}. The tree field is the entire visible output, with actual newline characters after JSON decoding. Do not include separate modified diagrams, a second recap, prose outside the tree, code fences, or diff-renderer prefixes. The application displays this tree as one output artifact; that display artifact is not a proposal to add a source canvas. If supplementary JSON data follows this prompt with validation-error.json and previous-output.json fields, use that feedback to correct only the output envelope. Do not repair proposal-tree syntax or strategy choices merely to satisfy the deterministic judgement.\n</output format>\n"
+            },
+            "templateBase": {
+              "id": "diagram-change-proposal",
+              "version": 1,
+              "name": "Diagram change proposal",
+              "tags": [
+                {
+                  "name": "agent context",
+                  "parent": null
+                },
+                {
+                  "name": "task",
+                  "parent": null
+                },
+                {
+                  "name": "steps",
+                  "parent": null
+                },
+                {
+                  "name": "extra-guidance",
+                  "parent": null
+                },
+                {
+                  "name": "output format",
+                  "parent": null
+                }
+              ]
+            },
+            "parents": [
+              {
+                "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+                "version": 2,
+                "relation": "revision"
+              }
+            ],
+            "contentHash": "62189c9d300b8860d3e6dd691e7b310dbcf1604a666840af0b8150893f6613fd",
+            "derivation": {
+              "parent": {
+                "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+                "version": 2
+              },
+              "kind": "revision"
+            }
+          }
+        ],
+        "contexts": {
+          "context": {
+            "agentContextId": "saved-agent-context-6e3d2462-84a5-4c3a-8d8d-b065c8c0e521",
+            "name": "ChangeSession v2 03 - Revisions, history and saved CanvasViews",
+            "contentHash": "331929dbcd77fd6b487de5d3f9d2319322414093b2fab2aeed60d3d78ed7a4b9"
+          }
+        },
+        "status": "queued",
+        "createdAt": "2026-11-06T03:23:41.852Z",
+        "cells": [
+          {
+            "key": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:1:proposal",
+            "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+            "promptVersion": 3,
+            "promptName": "Diagram change strategy · original rules · tree output",
+            "pass": 1,
+            "stage": "proposal",
+            "status": "queued"
+          },
+          {
+            "key": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:2:proposal",
+            "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+            "promptVersion": 3,
+            "promptName": "Diagram change strategy · original rules · tree output",
+            "pass": 2,
+            "stage": "proposal",
+            "status": "queued"
+          },
+          {
+            "key": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:3:proposal",
+            "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+            "promptVersion": 3,
+            "promptName": "Diagram change strategy · original rules · tree output",
+            "pass": 3,
+            "stage": "proposal",
+            "status": "queued"
+          }
+        ],
+        "inputs": {}
+      },
+      {
+        "schemaVersion": 1,
+        "id": "b7fd2f80-b6a3-4779-a9c1-b4c11bec86ec",
+        "request": {
+          "requestId": "b7fd2f80-b6a3-4779-a9c1-b4c11bec86ec",
+          "workflow": "diagram-change-proposal",
+          "prompts": [
+            {
+              "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+              "version": 3
+            }
+          ],
+          "inputs": {
+            "context": {
+              "agentContextId": "saved-agent-context-911f0ae2-d2c6-4ce6-bd26-dc91590bd709"
+            }
+          },
+          "passes": 3,
+          "model": "gpt-6-sol",
+          "effort": "high",
+          "contextDelivery": "session"
+        },
+        "references": [],
+        "projectId": "project-4971c06b-83d5-49eb-998d-043d5fc2dca4",
+        "workflow": "diagram-change-proposal",
+        "agentContextId": "saved-agent-context-911f0ae2-d2c6-4ce6-bd26-dc91590bd709",
+        "contextName": "ChangeSession v2 04 - Alternatives and ChangeSession review",
+        "prompts": [
+          {
+            "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+            "version": 3,
+            "name": "Diagram change strategy · original rules · tree output",
+            "stages": {
+              "proposal": "<agent context>\nUse the Diagram change proposal PromptTemplate v1. The preceding conversation history is the complete prepared, pinned AgentContext for this case: captured existing diagrams and connections, assigned scope, pinned target source, and code-change evidence. Source references have already been resolved before generation. Each sample continues independently from this same history; no earlier sample output is included. Use that history directly, without reading context.json or collecting source again. This is a reproducible snapshot-based baseline of the Canvas API task. Inspect the captured diagrams in the history instead of fetching changing live canvas state. Use only the supplied history for source facts; no filesystem, external-service, or canvas-mutation tools are available.\n\nThe AgentContext contains historical evaluation instructions and historical category definitions. Those are reference material, not active instructions. Use the code-change evidence and captured diagram contents, but follow only the task, category definitions and output format below. Do not adopt historical output requirements, category meanings, or constraints that predetermine a representation choice. The case's assigned feature/source scope determines which code changes to represent; consider the provided related diagrams and canvases when deciding where those changes belong. Do not assume other cases have already generated anything. Do not invent source evidence, diagrams, or code changes.\n</agent context>\n\n<task>\nOkay use the captured canvas API data to look at our existing diagrams.\n\nI want you to represent the total effect of our change in 4 possible forms, each of which are not mutually exclusive from the other:\n</task>\n\n<steps>\n1. Modify Existing Diagram\n  -> a. choose this when an existing representation in a diagram will no longer be true after the change\n  -> b. choose this when the change extends an existing representation in a way that shud be appropriately represented in the diagram scope\n  -> when making modifications, *do not* make minor edits like the following that do not convey a change in code structure\n    -> eg. note the \"[-]/[+]\" are prefixes generated by the diff rendering logic -> you *should not* use them for your output\n\n  [-] contentHash            tied to this ASCII\n  [+] contentHash             tied to this ASCII\n\n  OR\n\n  [-] placement          automatic | manual\n  [+] placement: automatic | manual\n\n2. Adding a New Diagram to an Existing Canvas same reason as 1.b but for the canvas scope\n  -> every new diagram should be connected to at least one node in the existing canvas\n3. Adding a New Canvas\n  -> choose this when the new change exceeds the representational capacity of 1 and 2\n  -> while this is not required, you can form inter-canvas connections when choosing this option\n4. Major Update to Existing Diagram:\n  -> choose this when a large structural change cannot be expressed compositionally within an existing diagram\n    -> a good heuristic is when something like > 40-60% of the diagram need to be changed\n  -> RATIONALE: choose this when the change exceeds the capacity to be represented by 1, 2, and 3\n</steps>\n\n<extra-guidance>\nBefore expanding a new component into another diagram or canvas:\n  -> modify the existing diagram to show exactly where the component belongs:\n      who owns it, who calls it, and what it owns\n  -> connect its detailed representation from that explicit component node,\n      not merely a related node\n</extra-guidance>\n\n<output format>\nThe complete user-facing output is one high-level ASCII tree of proposed changes, in this form:\n\nProposed diagram changes\n  |-- PersistentLayer                              existing canvas\n  |   |-- [1b] Modify overview\n  |   |   `-- Expand the existing proposed SearchArtifact branch\n  |   |-- [2] Add: SearchArtifact model and storage\n  |   `-- [2] Add: Artifact generation and lifecycle\n  |\n  |-- Canvas domain model - implemented at 4f2ba39   existing canvas\n  |   |-- [1b] Modify overview\n  |   |   `-- Add transient search state and result navigation\n  |   |-- [1b] Extend [D] Controller edits / agent access\n  |   |   `-- Show persistence-backed search integration\n  |   `-- [2] Add: Search execution and result reveal\n  ...\n\nThe example illustrates format only; use actual names and changes supported by this case's evidence.\nUse the exact root \"Proposed diagram changes\". Indent canvas branches two spaces from the root, then four additional columns per child level. End each canvas branch with two or more spaces followed by \"existing canvas\" or \"new canvas\".\nFor existing canvases, place each operation directly below its canvas, tagged [1a], [1b], [2], or [4] according to the definitions above. Put brief descriptions, ownership changes, and exact component attachment intentions beneath the operation. Do not tag descriptive child lines as additional operations.\nFor a new canvas, tag the canvas branch itself [3] and mark it \"new canvas\"; list its planned diagrams as untagged children. Count a new canvas once at its canvas branch. Do not label its own diagrams [2], which means adding to an existing canvas.\nMultiple operation types may appear in one output. Choose based on the supplied decision rules; no strategy is required merely to fill a category.\nReturn exactly this JSON object shape: {\"tree\":\"Proposed diagram changes\\n...\"}. The tree field is the entire visible output, with actual newline characters after JSON decoding. Do not include separate modified diagrams, a second recap, prose outside the tree, code fences, or diff-renderer prefixes. The application displays this tree as one output artifact; that display artifact is not a proposal to add a source canvas. If supplementary JSON data follows this prompt with validation-error.json and previous-output.json fields, use that feedback to correct only the output envelope. Do not repair proposal-tree syntax or strategy choices merely to satisfy the deterministic judgement.\n</output format>\n"
+            },
+            "templateBase": {
+              "id": "diagram-change-proposal",
+              "version": 1,
+              "name": "Diagram change proposal",
+              "tags": [
+                {
+                  "name": "agent context",
+                  "parent": null
+                },
+                {
+                  "name": "task",
+                  "parent": null
+                },
+                {
+                  "name": "steps",
+                  "parent": null
+                },
+                {
+                  "name": "extra-guidance",
+                  "parent": null
+                },
+                {
+                  "name": "output format",
+                  "parent": null
+                }
+              ]
+            },
+            "parents": [
+              {
+                "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+                "version": 2,
+                "relation": "revision"
+              }
+            ],
+            "contentHash": "62189c9d300b8860d3e6dd691e7b310dbcf1604a666840af0b8150893f6613fd",
+            "derivation": {
+              "parent": {
+                "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+                "version": 2
+              },
+              "kind": "revision"
+            }
+          }
+        ],
+        "contexts": {
+          "context": {
+            "agentContextId": "saved-agent-context-911f0ae2-d2c6-4ce6-bd26-dc91590bd709",
+            "name": "ChangeSession v2 04 - Alternatives and ChangeSession review",
+            "contentHash": "269fec17c77e511b89f6295cca36bd37af58faefe10f4f17b3d5a4805026df1c"
+          }
+        },
+        "status": "queued",
+        "createdAt": "2026-11-06T03:23:41.904Z",
+        "cells": [
+          {
+            "key": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:1:proposal",
+            "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+            "promptVersion": 3,
+            "promptName": "Diagram change strategy · original rules · tree output",
+            "pass": 1,
+            "stage": "proposal",
+            "status": "queued"
+          },
+          {
+            "key": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:2:proposal",
+            "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+            "promptVersion": 3,
+            "promptName": "Diagram change strategy · original rules · tree output",
+            "pass": 2,
+            "stage": "proposal",
+            "status": "queued"
+          },
+          {
+            "key": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:3:proposal",
+            "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+            "promptVersion": 3,
+            "promptName": "Diagram change strategy · original rules · tree output",
+            "pass": 3,
+            "stage": "proposal",
+            "status": "queued"
+          }
+        ],
+        "inputs": {}
+      },
+      {
+        "schemaVersion": 1,
+        "id": "fe307187-77c1-47d3-9e7d-d81e8a326414",
+        "request": {
+          "requestId": "fe307187-77c1-47d3-9e7d-d81e8a326414",
+          "workflow": "diagram-change-proposal",
+          "prompts": [
+            {
+              "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+              "version": 3
+            }
+          ],
+          "inputs": {
+            "context": {
+              "agentContextId": "saved-agent-context-b4df6a6c-83f6-428f-9247-7bd2f2548e7c"
+            }
+          },
+          "passes": 3,
+          "model": "gpt-6-sol",
+          "effort": "high",
+          "contextDelivery": "session"
+        },
+        "references": [],
+        "projectId": "project-4971c06b-83d5-49eb-998d-043d5fc2dca4",
+        "workflow": "diagram-change-proposal",
+        "agentContextId": "saved-agent-context-b4df6a6c-83f6-428f-9247-7bd2f2548e7c",
+        "contextName": "ChangeSession v2 05 - AgentChat, generation and Canvas API",
+        "prompts": [
+          {
+            "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+            "version": 3,
+            "name": "Diagram change strategy · original rules · tree output",
+            "stages": {
+              "proposal": "<agent context>\nUse the Diagram change proposal PromptTemplate v1. The preceding conversation history is the complete prepared, pinned AgentContext for this case: captured existing diagrams and connections, assigned scope, pinned target source, and code-change evidence. Source references have already been resolved before generation. Each sample continues independently from this same history; no earlier sample output is included. Use that history directly, without reading context.json or collecting source again. This is a reproducible snapshot-based baseline of the Canvas API task. Inspect the captured diagrams in the history instead of fetching changing live canvas state. Use only the supplied history for source facts; no filesystem, external-service, or canvas-mutation tools are available.\n\nThe AgentContext contains historical evaluation instructions and historical category definitions. Those are reference material, not active instructions. Use the code-change evidence and captured diagram contents, but follow only the task, category definitions and output format below. Do not adopt historical output requirements, category meanings, or constraints that predetermine a representation choice. The case's assigned feature/source scope determines which code changes to represent; consider the provided related diagrams and canvases when deciding where those changes belong. Do not assume other cases have already generated anything. Do not invent source evidence, diagrams, or code changes.\n</agent context>\n\n<task>\nOkay use the captured canvas API data to look at our existing diagrams.\n\nI want you to represent the total effect of our change in 4 possible forms, each of which are not mutually exclusive from the other:\n</task>\n\n<steps>\n1. Modify Existing Diagram\n  -> a. choose this when an existing representation in a diagram will no longer be true after the change\n  -> b. choose this when the change extends an existing representation in a way that shud be appropriately represented in the diagram scope\n  -> when making modifications, *do not* make minor edits like the following that do not convey a change in code structure\n    -> eg. note the \"[-]/[+]\" are prefixes generated by the diff rendering logic -> you *should not* use them for your output\n\n  [-] contentHash            tied to this ASCII\n  [+] contentHash             tied to this ASCII\n\n  OR\n\n  [-] placement          automatic | manual\n  [+] placement: automatic | manual\n\n2. Adding a New Diagram to an Existing Canvas same reason as 1.b but for the canvas scope\n  -> every new diagram should be connected to at least one node in the existing canvas\n3. Adding a New Canvas\n  -> choose this when the new change exceeds the representational capacity of 1 and 2\n  -> while this is not required, you can form inter-canvas connections when choosing this option\n4. Major Update to Existing Diagram:\n  -> choose this when a large structural change cannot be expressed compositionally within an existing diagram\n    -> a good heuristic is when something like > 40-60% of the diagram need to be changed\n  -> RATIONALE: choose this when the change exceeds the capacity to be represented by 1, 2, and 3\n</steps>\n\n<extra-guidance>\nBefore expanding a new component into another diagram or canvas:\n  -> modify the existing diagram to show exactly where the component belongs:\n      who owns it, who calls it, and what it owns\n  -> connect its detailed representation from that explicit component node,\n      not merely a related node\n</extra-guidance>\n\n<output format>\nThe complete user-facing output is one high-level ASCII tree of proposed changes, in this form:\n\nProposed diagram changes\n  |-- PersistentLayer                              existing canvas\n  |   |-- [1b] Modify overview\n  |   |   `-- Expand the existing proposed SearchArtifact branch\n  |   |-- [2] Add: SearchArtifact model and storage\n  |   `-- [2] Add: Artifact generation and lifecycle\n  |\n  |-- Canvas domain model - implemented at 4f2ba39   existing canvas\n  |   |-- [1b] Modify overview\n  |   |   `-- Add transient search state and result navigation\n  |   |-- [1b] Extend [D] Controller edits / agent access\n  |   |   `-- Show persistence-backed search integration\n  |   `-- [2] Add: Search execution and result reveal\n  ...\n\nThe example illustrates format only; use actual names and changes supported by this case's evidence.\nUse the exact root \"Proposed diagram changes\". Indent canvas branches two spaces from the root, then four additional columns per child level. End each canvas branch with two or more spaces followed by \"existing canvas\" or \"new canvas\".\nFor existing canvases, place each operation directly below its canvas, tagged [1a], [1b], [2], or [4] according to the definitions above. Put brief descriptions, ownership changes, and exact component attachment intentions beneath the operation. Do not tag descriptive child lines as additional operations.\nFor a new canvas, tag the canvas branch itself [3] and mark it \"new canvas\"; list its planned diagrams as untagged children. Count a new canvas once at its canvas branch. Do not label its own diagrams [2], which means adding to an existing canvas.\nMultiple operation types may appear in one output. Choose based on the supplied decision rules; no strategy is required merely to fill a category.\nReturn exactly this JSON object shape: {\"tree\":\"Proposed diagram changes\\n...\"}. The tree field is the entire visible output, with actual newline characters after JSON decoding. Do not include separate modified diagrams, a second recap, prose outside the tree, code fences, or diff-renderer prefixes. The application displays this tree as one output artifact; that display artifact is not a proposal to add a source canvas. If supplementary JSON data follows this prompt with validation-error.json and previous-output.json fields, use that feedback to correct only the output envelope. Do not repair proposal-tree syntax or strategy choices merely to satisfy the deterministic judgement.\n</output format>\n"
+            },
+            "templateBase": {
+              "id": "diagram-change-proposal",
+              "version": 1,
+              "name": "Diagram change proposal",
+              "tags": [
+                {
+                  "name": "agent context",
+                  "parent": null
+                },
+                {
+                  "name": "task",
+                  "parent": null
+                },
+                {
+                  "name": "steps",
+                  "parent": null
+                },
+                {
+                  "name": "extra-guidance",
+                  "parent": null
+                },
+                {
+                  "name": "output format",
+                  "parent": null
+                }
+              ]
+            },
+            "parents": [
+              {
+                "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+                "version": 2,
+                "relation": "revision"
+              }
+            ],
+            "contentHash": "62189c9d300b8860d3e6dd691e7b310dbcf1604a666840af0b8150893f6613fd",
+            "derivation": {
+              "parent": {
+                "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+                "version": 2
+              },
+              "kind": "revision"
+            }
+          }
+        ],
+        "contexts": {
+          "context": {
+            "agentContextId": "saved-agent-context-b4df6a6c-83f6-428f-9247-7bd2f2548e7c",
+            "name": "ChangeSession v2 05 - AgentChat, generation and Canvas API",
+            "contentHash": "a82096318fdb465f19ee0370ccc90a10b7f1bac7de80d39acdafb8bcf4af2566"
+          }
+        },
+        "status": "queued",
+        "createdAt": "2026-11-06T03:23:41.954Z",
+        "cells": [
+          {
+            "key": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:1:proposal",
+            "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+            "promptVersion": 3,
+            "promptName": "Diagram change strategy · original rules · tree output",
+            "pass": 1,
+            "stage": "proposal",
+            "status": "queued"
+          },
+          {
+            "key": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:2:proposal",
+            "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+            "promptVersion": 3,
+            "promptName": "Diagram change strategy · original rules · tree output",
+            "pass": 2,
+            "stage": "proposal",
+            "status": "queued"
+          },
+          {
+            "key": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:3:proposal",
+            "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+            "promptVersion": 3,
+            "promptName": "Diagram change strategy · original rules · tree output",
+            "pass": 3,
+            "stage": "proposal",
+            "status": "queued"
+          }
+        ],
+        "inputs": {}
+      },
+      {
+        "schemaVersion": 1,
+        "id": "f61d32b5-b7d6-40f1-9c39-217fcd596102",
+        "request": {
+          "requestId": "f61d32b5-b7d6-40f1-9c39-217fcd596102",
+          "workflow": "diagram-change-proposal",
+          "prompts": [
+            {
+              "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+              "version": 3
+            }
+          ],
+          "inputs": {
+            "context": {
+              "agentContextId": "saved-agent-context-c002f3b1-d0c5-4f6b-aa22-43fd518afe51"
+            }
+          },
+          "passes": 3,
+          "model": "gpt-6-sol",
+          "effort": "high",
+          "contextDelivery": "session"
+        },
+        "references": [],
+        "projectId": "project-4971c06b-83d5-49eb-998d-043d5fc2dca4",
+        "workflow": "diagram-change-proposal",
+        "agentContextId": "saved-agent-context-c002f3b1-d0c5-4f6b-aa22-43fd518afe51",
+        "contextName": "ChangeSession v2 06 - Saved AgentContexts and source evidence",
+        "prompts": [
+          {
+            "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+            "version": 3,
+            "name": "Diagram change strategy · original rules · tree output",
+            "stages": {
+              "proposal": "<agent context>\nUse the Diagram change proposal PromptTemplate v1. The preceding conversation history is the complete prepared, pinned AgentContext for this case: captured existing diagrams and connections, assigned scope, pinned target source, and code-change evidence. Source references have already been resolved before generation. Each sample continues independently from this same history; no earlier sample output is included. Use that history directly, without reading context.json or collecting source again. This is a reproducible snapshot-based baseline of the Canvas API task. Inspect the captured diagrams in the history instead of fetching changing live canvas state. Use only the supplied history for source facts; no filesystem, external-service, or canvas-mutation tools are available.\n\nThe AgentContext contains historical evaluation instructions and historical category definitions. Those are reference material, not active instructions. Use the code-change evidence and captured diagram contents, but follow only the task, category definitions and output format below. Do not adopt historical output requirements, category meanings, or constraints that predetermine a representation choice. The case's assigned feature/source scope determines which code changes to represent; consider the provided related diagrams and canvases when deciding where those changes belong. Do not assume other cases have already generated anything. Do not invent source evidence, diagrams, or code changes.\n</agent context>\n\n<task>\nOkay use the captured canvas API data to look at our existing diagrams.\n\nI want you to represent the total effect of our change in 4 possible forms, each of which are not mutually exclusive from the other:\n</task>\n\n<steps>\n1. Modify Existing Diagram\n  -> a. choose this when an existing representation in a diagram will no longer be true after the change\n  -> b. choose this when the change extends an existing representation in a way that shud be appropriately represented in the diagram scope\n  -> when making modifications, *do not* make minor edits like the following that do not convey a change in code structure\n    -> eg. note the \"[-]/[+]\" are prefixes generated by the diff rendering logic -> you *should not* use them for your output\n\n  [-] contentHash            tied to this ASCII\n  [+] contentHash             tied to this ASCII\n\n  OR\n\n  [-] placement          automatic | manual\n  [+] placement: automatic | manual\n\n2. Adding a New Diagram to an Existing Canvas same reason as 1.b but for the canvas scope\n  -> every new diagram should be connected to at least one node in the existing canvas\n3. Adding a New Canvas\n  -> choose this when the new change exceeds the representational capacity of 1 and 2\n  -> while this is not required, you can form inter-canvas connections when choosing this option\n4. Major Update to Existing Diagram:\n  -> choose this when a large structural change cannot be expressed compositionally within an existing diagram\n    -> a good heuristic is when something like > 40-60% of the diagram need to be changed\n  -> RATIONALE: choose this when the change exceeds the capacity to be represented by 1, 2, and 3\n</steps>\n\n<extra-guidance>\nBefore expanding a new component into another diagram or canvas:\n  -> modify the existing diagram to show exactly where the component belongs:\n      who owns it, who calls it, and what it owns\n  -> connect its detailed representation from that explicit component node,\n      not merely a related node\n</extra-guidance>\n\n<output format>\nThe complete user-facing output is one high-level ASCII tree of proposed changes, in this form:\n\nProposed diagram changes\n  |-- PersistentLayer                              existing canvas\n  |   |-- [1b] Modify overview\n  |   |   `-- Expand the existing proposed SearchArtifact branch\n  |   |-- [2] Add: SearchArtifact model and storage\n  |   `-- [2] Add: Artifact generation and lifecycle\n  |\n  |-- Canvas domain model - implemented at 4f2ba39   existing canvas\n  |   |-- [1b] Modify overview\n  |   |   `-- Add transient search state and result navigation\n  |   |-- [1b] Extend [D] Controller edits / agent access\n  |   |   `-- Show persistence-backed search integration\n  |   `-- [2] Add: Search execution and result reveal\n  ...\n\nThe example illustrates format only; use actual names and changes supported by this case's evidence.\nUse the exact root \"Proposed diagram changes\". Indent canvas branches two spaces from the root, then four additional columns per child level. End each canvas branch with two or more spaces followed by \"existing canvas\" or \"new canvas\".\nFor existing canvases, place each operation directly below its canvas, tagged [1a], [1b], [2], or [4] according to the definitions above. Put brief descriptions, ownership changes, and exact component attachment intentions beneath the operation. Do not tag descriptive child lines as additional operations.\nFor a new canvas, tag the canvas branch itself [3] and mark it \"new canvas\"; list its planned diagrams as untagged children. Count a new canvas once at its canvas branch. Do not label its own diagrams [2], which means adding to an existing canvas.\nMultiple operation types may appear in one output. Choose based on the supplied decision rules; no strategy is required merely to fill a category.\nReturn exactly this JSON object shape: {\"tree\":\"Proposed diagram changes\\n...\"}. The tree field is the entire visible output, with actual newline characters after JSON decoding. Do not include separate modified diagrams, a second recap, prose outside the tree, code fences, or diff-renderer prefixes. The application displays this tree as one output artifact; that display artifact is not a proposal to add a source canvas. If supplementary JSON data follows this prompt with validation-error.json and previous-output.json fields, use that feedback to correct only the output envelope. Do not repair proposal-tree syntax or strategy choices merely to satisfy the deterministic judgement.\n</output format>\n"
+            },
+            "templateBase": {
+              "id": "diagram-change-proposal",
+              "version": 1,
+              "name": "Diagram change proposal",
+              "tags": [
+                {
+                  "name": "agent context",
+                  "parent": null
+                },
+                {
+                  "name": "task",
+                  "parent": null
+                },
+                {
+                  "name": "steps",
+                  "parent": null
+                },
+                {
+                  "name": "extra-guidance",
+                  "parent": null
+                },
+                {
+                  "name": "output format",
+                  "parent": null
+                }
+              ]
+            },
+            "parents": [
+              {
+                "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+                "version": 2,
+                "relation": "revision"
+              }
+            ],
+            "contentHash": "62189c9d300b8860d3e6dd691e7b310dbcf1604a666840af0b8150893f6613fd",
+            "derivation": {
+              "parent": {
+                "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+                "version": 2
+              },
+              "kind": "revision"
+            }
+          }
+        ],
+        "contexts": {
+          "context": {
+            "agentContextId": "saved-agent-context-c002f3b1-d0c5-4f6b-aa22-43fd518afe51",
+            "name": "ChangeSession v2 06 - Saved AgentContexts and source evidence",
+            "contentHash": "0ab380f7d18b5d13fb2df66ae51ea017e17de2dff835a261b0ace267ac0a9087"
+          }
+        },
+        "status": "queued",
+        "createdAt": "2026-11-06T03:23:41.992Z",
+        "cells": [
+          {
+            "key": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:1:proposal",
+            "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+            "promptVersion": 3,
+            "promptName": "Diagram change strategy · original rules · tree output",
+            "pass": 1,
+            "stage": "proposal",
+            "status": "queued"
+          },
+          {
+            "key": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:2:proposal",
+            "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+            "promptVersion": 3,
+            "promptName": "Diagram change strategy · original rules · tree output",
+            "pass": 2,
+            "stage": "proposal",
+            "status": "queued"
+          },
+          {
+            "key": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:3:proposal",
+            "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+            "promptVersion": 3,
+            "promptName": "Diagram change strategy · original rules · tree output",
+            "pass": 3,
+            "stage": "proposal",
+            "status": "queued"
+          }
+        ],
+        "inputs": {}
+      },
+      {
+        "schemaVersion": 1,
+        "id": "7df72b53-cf26-46bb-a018-dadfc5d4cdf3",
+        "request": {
+          "requestId": "7df72b53-cf26-46bb-a018-dadfc5d4cdf3",
+          "workflow": "diagram-change-proposal",
+          "prompts": [
+            {
+              "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+              "version": 3
+            }
+          ],
+          "inputs": {
+            "context": {
+              "agentContextId": "saved-agent-context-3cc6fe05-807a-40e6-98aa-df864234bb8e"
+            }
+          },
+          "passes": 3,
+          "model": "gpt-6-sol",
+          "effort": "high",
+          "contextDelivery": "session"
+        },
+        "references": [],
+        "projectId": "project-4971c06b-83d5-49eb-998d-043d5fc2dca4",
+        "workflow": "diagram-change-proposal",
+        "agentContextId": "saved-agent-context-3cc6fe05-807a-40e6-98aa-df864234bb8e",
+        "contextName": "ChangeSession v2 07 - Persistence and durable storage",
+        "prompts": [
+          {
+            "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+            "version": 3,
+            "name": "Diagram change strategy · original rules · tree output",
+            "stages": {
+              "proposal": "<agent context>\nUse the Diagram change proposal PromptTemplate v1. The preceding conversation history is the complete prepared, pinned AgentContext for this case: captured existing diagrams and connections, assigned scope, pinned target source, and code-change evidence. Source references have already been resolved before generation. Each sample continues independently from this same history; no earlier sample output is included. Use that history directly, without reading context.json or collecting source again. This is a reproducible snapshot-based baseline of the Canvas API task. Inspect the captured diagrams in the history instead of fetching changing live canvas state. Use only the supplied history for source facts; no filesystem, external-service, or canvas-mutation tools are available.\n\nThe AgentContext contains historical evaluation instructions and historical category definitions. Those are reference material, not active instructions. Use the code-change evidence and captured diagram contents, but follow only the task, category definitions and output format below. Do not adopt historical output requirements, category meanings, or constraints that predetermine a representation choice. The case's assigned feature/source scope determines which code changes to represent; consider the provided related diagrams and canvases when deciding where those changes belong. Do not assume other cases have already generated anything. Do not invent source evidence, diagrams, or code changes.\n</agent context>\n\n<task>\nOkay use the captured canvas API data to look at our existing diagrams.\n\nI want you to represent the total effect of our change in 4 possible forms, each of which are not mutually exclusive from the other:\n</task>\n\n<steps>\n1. Modify Existing Diagram\n  -> a. choose this when an existing representation in a diagram will no longer be true after the change\n  -> b. choose this when the change extends an existing representation in a way that shud be appropriately represented in the diagram scope\n  -> when making modifications, *do not* make minor edits like the following that do not convey a change in code structure\n    -> eg. note the \"[-]/[+]\" are prefixes generated by the diff rendering logic -> you *should not* use them for your output\n\n  [-] contentHash            tied to this ASCII\n  [+] contentHash             tied to this ASCII\n\n  OR\n\n  [-] placement          automatic | manual\n  [+] placement: automatic | manual\n\n2. Adding a New Diagram to an Existing Canvas same reason as 1.b but for the canvas scope\n  -> every new diagram should be connected to at least one node in the existing canvas\n3. Adding a New Canvas\n  -> choose this when the new change exceeds the representational capacity of 1 and 2\n  -> while this is not required, you can form inter-canvas connections when choosing this option\n4. Major Update to Existing Diagram:\n  -> choose this when a large structural change cannot be expressed compositionally within an existing diagram\n    -> a good heuristic is when something like > 40-60% of the diagram need to be changed\n  -> RATIONALE: choose this when the change exceeds the capacity to be represented by 1, 2, and 3\n</steps>\n\n<extra-guidance>\nBefore expanding a new component into another diagram or canvas:\n  -> modify the existing diagram to show exactly where the component belongs:\n      who owns it, who calls it, and what it owns\n  -> connect its detailed representation from that explicit component node,\n      not merely a related node\n</extra-guidance>\n\n<output format>\nThe complete user-facing output is one high-level ASCII tree of proposed changes, in this form:\n\nProposed diagram changes\n  |-- PersistentLayer                              existing canvas\n  |   |-- [1b] Modify overview\n  |   |   `-- Expand the existing proposed SearchArtifact branch\n  |   |-- [2] Add: SearchArtifact model and storage\n  |   `-- [2] Add: Artifact generation and lifecycle\n  |\n  |-- Canvas domain model - implemented at 4f2ba39   existing canvas\n  |   |-- [1b] Modify overview\n  |   |   `-- Add transient search state and result navigation\n  |   |-- [1b] Extend [D] Controller edits / agent access\n  |   |   `-- Show persistence-backed search integration\n  |   `-- [2] Add: Search execution and result reveal\n  ...\n\nThe example illustrates format only; use actual names and changes supported by this case's evidence.\nUse the exact root \"Proposed diagram changes\". Indent canvas branches two spaces from the root, then four additional columns per child level. End each canvas branch with two or more spaces followed by \"existing canvas\" or \"new canvas\".\nFor existing canvases, place each operation directly below its canvas, tagged [1a], [1b], [2], or [4] according to the definitions above. Put brief descriptions, ownership changes, and exact component attachment intentions beneath the operation. Do not tag descriptive child lines as additional operations.\nFor a new canvas, tag the canvas branch itself [3] and mark it \"new canvas\"; list its planned diagrams as untagged children. Count a new canvas once at its canvas branch. Do not label its own diagrams [2], which means adding to an existing canvas.\nMultiple operation types may appear in one output. Choose based on the supplied decision rules; no strategy is required merely to fill a category.\nReturn exactly this JSON object shape: {\"tree\":\"Proposed diagram changes\\n...\"}. The tree field is the entire visible output, with actual newline characters after JSON decoding. Do not include separate modified diagrams, a second recap, prose outside the tree, code fences, or diff-renderer prefixes. The application displays this tree as one output artifact; that display artifact is not a proposal to add a source canvas. If supplementary JSON data follows this prompt with validation-error.json and previous-output.json fields, use that feedback to correct only the output envelope. Do not repair proposal-tree syntax or strategy choices merely to satisfy the deterministic judgement.\n</output format>\n"
+            },
+            "templateBase": {
+              "id": "diagram-change-proposal",
+              "version": 1,
+              "name": "Diagram change proposal",
+              "tags": [
+                {
+                  "name": "agent context",
+                  "parent": null
+                },
+                {
+                  "name": "task",
+                  "parent": null
+                },
+                {
+                  "name": "steps",
+                  "parent": null
+                },
+                {
+                  "name": "extra-guidance",
+                  "parent": null
+                },
+                {
+                  "name": "output format",
+                  "parent": null
+                }
+              ]
+            },
+            "parents": [
+              {
+                "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+                "version": 2,
+                "relation": "revision"
+              }
+            ],
+            "contentHash": "62189c9d300b8860d3e6dd691e7b310dbcf1604a666840af0b8150893f6613fd",
+            "derivation": {
+              "parent": {
+                "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+                "version": 2
+              },
+              "kind": "revision"
+            }
+          }
+        ],
+        "contexts": {
+          "context": {
+            "agentContextId": "saved-agent-context-3cc6fe05-807a-40e6-98aa-df864234bb8e",
+            "name": "ChangeSession v2 07 - Persistence and durable storage",
+            "contentHash": "5bf775fbd29e845fb95ccd4a9857dbe8863df46549401d134a788795350a672f"
+          }
+        },
+        "status": "queued",
+        "createdAt": "2026-11-06T03:23:42.037Z",
+        "cells": [
+          {
+            "key": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:1:proposal",
+            "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+            "promptVersion": 3,
+            "promptName": "Diagram change strategy · original rules · tree output",
+            "pass": 1,
+            "stage": "proposal",
+            "status": "queued"
+          },
+          {
+            "key": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:2:proposal",
+            "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+            "promptVersion": 3,
+            "promptName": "Diagram change strategy · original rules · tree output",
+            "pass": 2,
+            "stage": "proposal",
+            "status": "queued"
+          },
+          {
+            "key": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:3:proposal",
+            "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+            "promptVersion": 3,
+            "promptName": "Diagram change strategy · original rules · tree output",
+            "pass": 3,
+            "stage": "proposal",
+            "status": "queued"
+          }
+        ],
+        "inputs": {}
+      }
+    ]
+  },
+  "schemaVersion": 1,
+  "id": "f1ee9846-f13d-448d-9628-99e7c3bd6d1a",
+  "projectId": "project-4971c06b-83d5-49eb-998d-043d5fc2dca4",
+  "revision": 3,
+  "createdAt": "2026-11-05T23:40:53.175Z",
+  "updatedAt": "2026-11-06T03:23:42.037Z"
+}

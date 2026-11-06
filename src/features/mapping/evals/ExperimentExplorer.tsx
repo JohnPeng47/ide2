@@ -26,7 +26,7 @@ export function ExperimentExplorer({ experiments, runs, judgements, selection, o
           <button className="experiment-nav-link" onClick={() => onOpen({ kind: 'experiment', id: experiment.id, view: 'outputs', phaseId: phase.id })}>{phase.name} outputs</button>
           <button className="experiment-nav-link" onClick={() => onOpen({ kind: 'experiment', id: experiment.id, view: 'judgements', phaseId: phase.id })}>{phase.name} judgements</button>
         </div>)}</details>}
-        <details open className="experiment-nav-section"><summary onClick={() => { if (reportIds[0]) onOpen({ kind: 'judgements', judgementId: reportIds[0] }); }}>Judgements <small>{reportIds.length}</small></summary>
+        {!experiment.phases?.length && <details open className="experiment-nav-section"><summary onClick={() => { if (reportIds[0]) onOpen({ kind: 'judgements', judgementId: reportIds[0] }); }}>Judgements <small>{reportIds.length}</small></summary>
           {experiment.comparisons.map(comparison => {
             const reports = comparison.judgementIds.flatMap(id => judgements.find(j => j.id === id) ?? []);
             return reports.length === 1 ? <button key={comparison.id} className="experiment-nav-link" title={comparison.name}
@@ -39,8 +39,8 @@ export function ExperimentExplorer({ experiments, runs, judgements, selection, o
               </details>;
           })}
           {!experiment.comparisons.length && <span className="evals-muted">No assessments configured</span>}
-        </details>
-        <details className="experiment-nav-section" open><summary onClick={() => { const first = outputs[0]; if (first) onOpen({ kind: 'run', id: first.runId, output: first.cellKey }); }}>Outputs <small>{progress.finished}</small></summary>
+        </details>}
+        {!experiment.phases?.length && <details className="experiment-nav-section" open><summary onClick={() => { const first = outputs[0]; if (first) onOpen({ kind: 'run', id: first.runId, output: first.cellKey }); }}>Outputs <small>{progress.finished}</small></summary>
           {groups.map(group => {
             const samples = experiment.samples.filter(s => (byCase ? s.caseId : s.conditionId) === group.id);
             const complete = samples.filter(s => (s.relaunchedFrom ? s.outputs.map(o => ({ id: o.stageId })) : experiment.workflow.stages).every(stage => s.outputs.some(o => o.stageId === stage.id && experimentOutput(o, runs)?.status === 'finished' && !experimentOutput(o, runs)?.deleted))).length;
@@ -50,7 +50,7 @@ export function ExperimentExplorer({ experiments, runs, judgements, selection, o
               aria-current={selected && selection.view === 'outputs' && selection.groupId === group.id || selectedOutput && (byCase ? selectedOutput.caseId : selectedOutput.conditionId) === group.id ? 'page' : undefined}
               onClick={() => onOpen(first ? { kind: 'run', id: first.runId, output: first.cellKey } : { kind: 'experiment', id: experiment.id, view: 'outputs', groupId: group.id })}><span>{group.name}</span><small>{complete}/{samples.length}</small></button>;
           })}
-        </details>
+        </details>}
       </details>;
     })}
   </div>;

@@ -1,0 +1,104 @@
+Use the prepared AgentContext to inspect the captured diagrams and code changes.
+  -> use its source evidence and assigned feature scope
+  -> follow the instructions below instead of historical instructions or proposed diagram plans
+  -> do not modify the canvases yet
+
+Represent the total effect of the change using these operations:
+  [1a] Correct existing diagram content
+  [1b] Extend an existing diagram
+  [2] Add a diagram to an existing canvas
+  [3] Add a canvas
+  [4] Redraw an existing diagram
+
+[STEPS]
+
+1. For each affected existing diagram: PATCH or REDRAW?
+  -> consider all required changes to that diagram together
+
+  PATCH:
+    -> choose when the existing organization still explains the code accurately
+    -> [1a] correct obsolete components, relationships or behavior
+    -> [1b] add components or relationships that fit the existing organization
+
+  REDRAW:
+    -> choose [4] when the change requires reorganizing the diagram's main
+       ownership, call flow, lifecycle or responsibility boundaries
+    -> a useful signal: roughly half or more of its meaningful branches need
+       replacement or restructuring
+    -> count semantic changes, not whitespace or line count
+    -> preserve accurate content within the redraw
+    -> do not also list [1a]/[1b] for changes included in that redraw
+
+  -> choose PATCH or REDRAW independently of whether you also add diagrams or canvases
+  -> adding detail elsewhere does not fix an obsolete overview
+
+2. For detail that needs another diagram: EXISTING CANVAS or NEW CANVAS?
+  -> first identify what architectural question the detail answers
+  -> judge each existing canvas by its represented subject and level of detail
+
+  EXISTING CANVAS:
+    -> choose [2] when the detail develops the canvas's established subject
+    -> connect each new diagram to an explicit component node in that canvas
+
+  NEW CANVAS:
+    -> choose [3] when the detail introduces a distinct subsystem, lifecycle
+       or architectural subject that needs its own overview
+    -> choose this when including the detail would require broadening an
+       existing canvas beyond its established purpose
+    -> connect back to relevant component nodes where appropriate
+
+  -> file count or diagram size alone does not determine this choice
+  -> a caller relationship alone does not determine canvas placement
+  -> [2] and [3] may both be needed for different parts of the change
+
+[EXTRA-GUIDANCE]
+
+Before expanding a component into another diagram or canvas:
+  -> show its place in the appropriate overview:
+      who owns it, who calls it, and what it owns
+  -> connect its detailed representation from that explicit component node
+  -> use only relationships supported by the source evidence
+
+For all operations:
+  -> preserve accurate existing representations
+  -> avoid duplicate detail
+  -> do not make formatting-only edits
+  -> do not use diff-renderer prefixes such as [-] or [+]
+  -> no operation type is required merely to fill a category
+
+[OUTPUT]
+
+Return one ASCII tree, rooted at:
+Proposed diagram changes
+
+  -> group operations by canvas
+  -> label each canvas "existing canvas" or "new canvas"
+  -> under an existing canvas, tag operations [1a], [1b], [2] or [4]
+  -> tag a new canvas branch [3]; list its diagrams as untagged children
+  -> beneath each operation, briefly state:
+      what changes, why this operation fits, and any component attachment
+  -> use actual canvas, diagram and component names
+  -> no full diagram drawings or additional recap
+
+Example structure only:
+
+Proposed diagram changes
+  |-- Existing canvas name                         existing canvas
+  |   |-- [4] Redraw: Overview
+  |   |   `-- Reorganize ownership around the new runtime
+  |   `-- [2] Add: Runtime synchronization
+  |       `-- Detail the overview's explicit Runtime component
+  |
+  `-- [3] New subsystem name                       new canvas
+      |-- Subsystem overview
+      |-- Lifecycle and storage
+      `-- Connect from the existing overview's Subsystem component
+
+Return JSON:
+{"tree":"Proposed diagram changes\n..."}
+
+  -> the tree field is the entire visible output
+  -> use actual newlines after JSON decoding
+  -> indent canvas branches two spaces; each child level adds four columns
+  -> separate canvas names from their existing/new label with at least two spaces
+  -> no code fences or prose outside the JSON

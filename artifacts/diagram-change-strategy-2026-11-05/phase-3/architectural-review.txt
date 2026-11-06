@@ -1,0 +1,159 @@
+Phase 3 architectural review: astra/high, two samples per context
+
+Completion and assessment
+All 14 responses completed without generation failures. The native deterministic
+diagram-change-tree v1 judgement is attached to phase-3-tree-parse:
+e23bab0c-c3f9-4330-88b1-5cf6a56f4a74. All 14 trees pass its syntax checks.
+Totals: [1a] 151; [1b] 169; [2] 52; [3] 11; [4] 64.
+Seven outputs use [3]; all fourteen use [4]. Syntax success does not establish
+correctness of architectural decisions, component ownership or attachment.
+
+Controls and limits
+Same exact Phase 2 prompt v1 and the same seven derived, pinned AgentContexts.
+Changed model from gpt-6-sol/high to gpt-6-astra/high and samples from three to two.
+The architectural evidence is the captured diagrams and source at
+81f05a2bf9efa2334985d2298dcbd7b044dc4c1e, not the present working tree.
+Phase 2 had only 17 completed responses and none for context 03; direct aggregate
+comparisons therefore have different case coverage and sample counts. No causal
+or statistical reliability claim follows from this small comparison.
+
+Same qualitative criteria as the Phase 2 review
+- Patch versus redraw: does the existing organizing structure survive, or do
+  major ownership/call-flow/lifecycle relationships need replacement?
+- Existing versus new canvas: does the detail develop an established subject,
+  or require a distinct overview beyond that subject?
+- Preserve correct content, identify explicit attachment components, and avoid
+  duplicating detail. Neither file count nor a quota for operation types decides.
+- Inspect explanations against the original diagrams, not merely the chosen tag.
+
+Overall finding
+Astra is more selective about new canvases and more explicit about reusing
+existing detail. It still overuses redraw for some stable overviews and data/API
+inventories. This is a partial improvement, not a resolved selection problem.
+Several outputs assert that something needs its own overview without comparing
+it with the strongest existing-canvas alternative.
+
+01: Canvas workspace, authoring and navigation
+Phase 2 proposed 4, 4, 5 new canvases; Phase 3 proposes 2 and 3.
+Both Phase 3 samples keep focused canvas projection as [2] workspace detail;
+sample 1 also places search/reveal in the existing workspace canvas. These are
+better fits than splitting every workspace feature into a new canvas.
+Prompt composition has a distinct coordinator/draft/request lifecycle and is a
+defensible new canvas. Source-window/navigation remains borderline: sample 2
+argues that source reading exceeds canvas geometry, but the nearest existing
+canvas represents broad workspace ownership, ProjectedPane, source-pane state
+and persistence, not geometry alone. Sample 1 combines source reading with
+coverage/treemaps, giving a stronger cross-cutting subject, though [2] is still
+a reasonable alternative. Treemaps can also justify a shared metric overview.
+Both redraw MappingPage and its copies while preserving workspace/session,
+controller, history, selection and persistence. Their explanations establish
+new components and removal of DiagramService, but do not establish that most
+of the existing ownership organization fails. Keep this flagged as borderline.
+
+02: Tldraw runtime, selection and controller edits
+Both samples use [2] for runtime projection/settlement/undo and transient
+geometry/routing. This is defensible: it develops the existing domain canvas,
+with explicit attachments and separate questions. The Phase 2 dedicated runtime
+canvas was also defensible; fewer [3] choices here is not automatically better.
+Controller-flow redraw is justified by native Editor geometry/undo, settled
+semantic commands, headless fallback and buffered exec. Both samples explain it.
+Both redraw unified selection. This is likely excessive under the same criterion
+used for Phase 2: whole/region coexistence, captured contentNodeIds and native
+drag ownership change rules/adapters, but state, commands, previews, consumers,
+focus and panels retain the original organizing boundaries. Patch those branches
+and attach the already-proposed gesture/native-ownership detail.
+
+03: Revisions, history and CanvasViews
+Both samples use no new canvases. Their only redraws are the removed
+DiagramService diagram in C00 and its copies in C12/C14. These are justified.
+They add checkpoint encoding detail under persistence and working-copy,
+generation-publication and comparison detail under Saved CanvasViews.
+This is a well-calibrated strategy selection on the inspected boundaries.
+Phase 2 had no completed outputs for this context, so no direct comparison.
+
+04: Alternatives and ChangeSession review
+Both samples propose one DiffSession workflow canvas, keeping push initiation
+inside that workflow and shared comparison projection in an existing
+presentation canvas. This directly avoids Phase 2's fragmentation examples.
+The workflow has its own capture/analyze/materialize/run/recovery responsibilities
+and does not own proposal acceptance; the new canvas is well motivated.
+Sample 2 redraws Baseline/proposed -> unified review to center shared
+diffDiagramContent/projectDiagramDiffRows. The captured diagram already has a
+diff -> row projection -> render flow. Extracting/reusing projection code does
+not by itself invalidate that structure. Prefer patching the implementation
+boundary and attaching shared detail unless a further structural change is shown.
+
+05: AgentChat, generation and Canvas API
+Sample 1 uses two new canvases for chat and managed generation; sample 2 combines
+them. Both are plausible because chat has conversation/tool/persistence ownership
+and child generation has isolated controllers and settlement/publication.
+Both explicitly attach shared API/batch details instead of repeating them.
+Both still redraw the API inventory. New bound/unbound and native/chat tool
+distinctions are substantive, but the old transport/read/edit/generation/proposal
+groups can contain them. A full regrouping is an editorial option rather than
+a demonstrated necessity. Backend responsibility redraw is more defensible
+than inventory redraw because new orchestration owners cross old service groups.
+The expanded request-domain redraw is debatable: batches/create/extend introduce
+different envelopes, but it should not silently broaden a diagram whose subject
+was specifically EditDiagramInput. A patch plus separate request-family detail
+is a viable alternative. The old DiagramService and controller-flow redraws
+remain strongly supported.
+
+06: Saved AgentContexts and source evidence
+Both keep saved library lifecycle, pinned/lazy sources and diagram-associated
+contexts as [2] within the existing AgentContext canvas. This is coherent and
+avoids another canvas covering closely related context identity/conversion.
+Sample 1 redraws both EditDiagramInput and the AgentContext domain object;
+sample 2 patches them while retaining the same three added detail subjects.
+The latter is better calibrated: captured D3 already separates immutable state,
+construction/validation, conversion, serialization and boundaries. Pinned
+agentContext.ts retains those responsibilities while adding descriptors,
+attachments and explicit resolution. Those additions need explanation but do
+not require replacing the top-level organization. D1 target/preconditions,
+context and request identity similarly remain useful branches.
+The main edit call flow and obsolete DiagramService redraws remain defensible.
+
+07: Persistence and durable storage
+Sample 1 repeats Phase 2's excessive PersistentLayer redraw. Captured C04 already
+separates catalog publication, immutable records, workspace records/autosave,
+explicit publication and proposal storage. Additional context/activity stores
+fit by extension; checkpoint capture and encoding deserve [2] detail.
+Sample 2 patches PersistentLayer, a better choice, but adds Background execution
+- durable state and recovery as a new canvas. This is borderline: contrasting
+cross-restart lifecycles is a coherent architectural question, but the proposed
+diagrams mostly enumerate FileChatStore, workflow artifacts and push records,
+which can also be storage detail. Sample 1 puts closely related activity/recovery
+detail inside PersistentLayer. The new canvas needs a clearer lifecycle-level
+distinction to demonstrate why existing persistence detail is insufficient.
+Both correctly redraw the removed DiagramService and reuse existing C07 detail.
+
+Interpreting counts
+64 redraw entries do not imply 64 independent redesigns. Twenty-four entries
+are old [G] DiagramService diagrams, including copied versions. For example,
+context 03 has three redraw entries per output but one underlying redesign.
+All outputs containing [4] is therefore not itself evidence of overcorrection.
+Specific stable structures being redrawn provide the stronger evidence.
+
+Comparison summary
+                             Phase 2 sol/high       Phase 3 astra/high
+Completed                    17/21                  14/14
+Valid parser trees           16/17                  14/14
+Outputs selecting [3]        13/17 strict; 14 intent 7/14
+Outputs selecting [4]        15/17                  14/14
+Recognized [3] operations    28; 30 by manual intent 11
+Recognized [4] operations    56                     64
+
+Recommendation
+Retain the independent decisions and avoid adding a target strategy frequency.
+The next prompt refinement should ask a redraw to identify which existing
+major relationships cannot survive a patch, and a new canvas to identify the
+closest existing canvas and the specific subject boundary it would exceed.
+These are the same refinements suggested after Phase 2. Use a balanced example.
+No prompt, context, output or parser change was applied in this review.
+
+Evidence
+completed-responses.json: all 14 original trees, context/sample identifiers and
+usage. judgement.json: exact native deterministic results.
+../phase-2/contexts/01/saved-context.json: captured C00-C07, C09, C11, C12, C14.
+../phase-2/contexts/{02..07}/saved-context.json: per-case scope and source ranges.
+../phase-2/architectural-review.txt: the previous review and decision criteria.

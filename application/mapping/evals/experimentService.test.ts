@@ -150,12 +150,12 @@ it('keeps baseline outputs fixed while preparing and approving a later phase ind
   const records = new Map<string, StoredExperiment>();
   const prepared = new Map<string, any>(); const launches: string[] = [];
   const service = new ExperimentService({ list: async () => [...records.values()], read: async id => records.get(id) ?? null, save: async e => { records.set(e.id, structuredClone(e)); } }, {
-    read: async id => prepared.get(id),
+    read: async (id: string) => prepared.get(id),
     prepareForReview: async (request: any) => {
       const run = { id: request.requestId, projectId: 'project', agentContextId: 'context', request, inputs: {}, contexts: { context: { agentContextId: 'context', contentHash: 'hash' } }, cells: [{ key: 'p:1:proposal' }], prompts: [] };
       prepared.set(run.id, run); return run;
-    }, launchPrepared: async run => { launches.push(run.id); return run; }
-  } as ConstructorParameters<typeof ExperimentService>[1], { loadProject: async () => ({ id: 'project' }) }, { read: async () => ({ contentHash: 'hash' }) });
+    }, launchPrepared: async (run: import('../../../domain/mapping/evals/evalRun').EvalRun) => { launches.push(run.id); return run; }
+  } as unknown as ConstructorParameters<typeof ExperimentService>[1], { loadProject: async () => ({ id: 'project' }) }, { read: async () => ({ contentHash: 'hash' }) });
   const plan = (sampleId: string) => ({ request: { requestId: crypto.randomUUID(), workflow: 'diagram-change-proposal', prompts: [{ promptId: 'p', version: 1 }], inputs: { context: { agentContextId: 'saved-agent-context-11111111-1111-4111-8111-111111111111' } }, passes: 1, model: 'gpt-6-sol', effort: 'high' }, outputs: [{ sampleId, stageId: 'generate', cellKey: 'p:1:proposal' }] });
   const initial = { ...design, phases: [{ id: 'one', name: 'Baseline', description: '' }], comparisons: [], samples: [{ ...design.samples[0], phaseId: 'one', outputs: [] }], plannedRuns: [plan('b1')] };
   let saved = await service.save({ requestId: crypto.randomUUID(), experiment: initial });
@@ -181,7 +181,7 @@ it('deterministically judges only completed phase outputs and retains raw eviden
   const tree = 'Proposed diagram changes\n  `-- Core                              existing canvas\n      `-- [4] Rewrite overview';
   Object.assign(f.sourceRuns[0].cells[0], { proposalTree: tree, canvasId: 'canvas', checkpointId: 'checkpoint' });
   const service = new ExperimentService({ list: async () => [...f.records.values()], read: async id => f.records.get(id) ?? null, save: async e => { f.records.set(e.id, structuredClone(e)); } }, {
-    read: async id => f.sourceRuns.find(r => r.id === id), judgements: { list: async () => [], read: async id => storedJudgements.get(id), saveDeterministic: async j => { storedJudgements.set(j.id, j); return j; } }
+    read: async (id: string) => f.sourceRuns.find(r => r.id === id), judgements: { list: async () => [], read: async (id: string) => storedJudgements.get(id), saveDeterministic: async (j: import('../../../domain/mapping/evals/judgement').Judgement) => { storedJudgements.set(j.id, j); return j; } }
   } as unknown as ConstructorParameters<typeof ExperimentService>[1], { loadProject: async () => ({ id: 'project' }) }, { read: async () => ({ contentHash: 'hash' }) });
   const saved = await service.save({ requestId: crypto.randomUUID(), experiment: d });
   expect(storedJudgements.size).toBe(0);

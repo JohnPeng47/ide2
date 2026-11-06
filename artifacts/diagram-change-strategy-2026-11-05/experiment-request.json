@@ -1,0 +1,555 @@
+{
+  "requestId": "f1ee9846-f13d-448d-9628-99e7c3bd6d1a",
+  "experiment": {
+    "name": "Diagram change strategy selection",
+    "description": "Baseline of the original four decision rules, using the seven ChangeSession v2 AgentContexts saved November 3, 2026. Three independent samples per case (21 total), gpt-6-sol/high. Output: the Proposed diagram changes ASCII tree only. Decision thresholds are unchanged; input access is adapted to pinned snapshots and the output contract is explicit. Deterministic syntax and strategy-count assessment is separate from generation; no architectural quality score or target strategy frequency.",
+    "phases": [
+      {
+        "id": "baseline",
+        "name": "Baseline",
+        "description": "Original decision rules; tree-only output. Seven pinned contexts × three samples. Generation awaits review. The deterministic judgement is planned and must be run separately after generation; it parses tags and reports format errors without repairing outputs."
+      }
+    ],
+    "workflow": {
+      "id": "diagram-change-proposal",
+      "name": "Propose diagram changes",
+      "version": 1,
+      "stages": [
+        {
+          "id": "proposal",
+          "name": "Proposed changes tree",
+          "dependsOn": []
+        }
+      ]
+    },
+    "cases": [
+      {
+        "id": "context-1",
+        "name": "ChangeSession v2 01 - Canvas workspace, authoring and navigation",
+        "agentContextId": "saved-agent-context-16ba6214-8c1a-4617-b165-3242ac53e23b",
+        "contentHash": "552ea9469cc2b027ce7cb8f9f1b7d8de7c42863b48ea0267c9e0cb033e00618d"
+      },
+      {
+        "id": "context-2",
+        "name": "ChangeSession v2 02 - Tldraw runtime, selection and controller edits",
+        "agentContextId": "saved-agent-context-db04f7f1-5aa5-4159-8466-79d0799722b0",
+        "contentHash": "5c9a0e457d2e8ed370cbfa605e472c62c54f714bca773b4c85b30f7ca5e340fa"
+      },
+      {
+        "id": "context-3",
+        "name": "ChangeSession v2 03 - Revisions, history and saved CanvasViews",
+        "agentContextId": "saved-agent-context-6e3d2462-84a5-4c3a-8d8d-b065c8c0e521",
+        "contentHash": "331929dbcd77fd6b487de5d3f9d2319322414093b2fab2aeed60d3d78ed7a4b9"
+      },
+      {
+        "id": "context-4",
+        "name": "ChangeSession v2 04 - Alternatives and ChangeSession review",
+        "agentContextId": "saved-agent-context-911f0ae2-d2c6-4ce6-bd26-dc91590bd709",
+        "contentHash": "269fec17c77e511b89f6295cca36bd37af58faefe10f4f17b3d5a4805026df1c"
+      },
+      {
+        "id": "context-5",
+        "name": "ChangeSession v2 05 - AgentChat, generation and Canvas API",
+        "agentContextId": "saved-agent-context-b4df6a6c-83f6-428f-9247-7bd2f2548e7c",
+        "contentHash": "a82096318fdb465f19ee0370ccc90a10b7f1bac7de80d39acdafb8bcf4af2566"
+      },
+      {
+        "id": "context-6",
+        "name": "ChangeSession v2 06 - Saved AgentContexts and source evidence",
+        "agentContextId": "saved-agent-context-c002f3b1-d0c5-4f6b-aa22-43fd518afe51",
+        "contentHash": "0ab380f7d18b5d13fb2df66ae51ea017e17de2dff835a261b0ace267ac0a9087"
+      },
+      {
+        "id": "context-7",
+        "name": "ChangeSession v2 07 - Persistence and durable storage",
+        "agentContextId": "saved-agent-context-3cc6fe05-807a-40e6-98aa-df864234bb8e",
+        "contentHash": "5bf775fbd29e845fb95ccd4a9857dbe8863df46549401d134a788795350a672f"
+      }
+    ],
+    "conditions": [
+      {
+        "id": "original",
+        "name": "Original decision rules",
+        "description": "No prompt-strengthening or strategy-frequency target. Same gpt-6-sol/high settings for every sample."
+      }
+    ],
+    "samples": [
+      {
+        "id": "context-1-sample-1",
+        "phaseId": "baseline",
+        "caseId": "context-1",
+        "conditionId": "original",
+        "number": 1,
+        "attempt": 1,
+        "outputs": []
+      },
+      {
+        "id": "context-1-sample-2",
+        "phaseId": "baseline",
+        "caseId": "context-1",
+        "conditionId": "original",
+        "number": 2,
+        "attempt": 1,
+        "outputs": []
+      },
+      {
+        "id": "context-1-sample-3",
+        "phaseId": "baseline",
+        "caseId": "context-1",
+        "conditionId": "original",
+        "number": 3,
+        "attempt": 1,
+        "outputs": []
+      },
+      {
+        "id": "context-2-sample-1",
+        "phaseId": "baseline",
+        "caseId": "context-2",
+        "conditionId": "original",
+        "number": 1,
+        "attempt": 1,
+        "outputs": []
+      },
+      {
+        "id": "context-2-sample-2",
+        "phaseId": "baseline",
+        "caseId": "context-2",
+        "conditionId": "original",
+        "number": 2,
+        "attempt": 1,
+        "outputs": []
+      },
+      {
+        "id": "context-2-sample-3",
+        "phaseId": "baseline",
+        "caseId": "context-2",
+        "conditionId": "original",
+        "number": 3,
+        "attempt": 1,
+        "outputs": []
+      },
+      {
+        "id": "context-3-sample-1",
+        "phaseId": "baseline",
+        "caseId": "context-3",
+        "conditionId": "original",
+        "number": 1,
+        "attempt": 1,
+        "outputs": []
+      },
+      {
+        "id": "context-3-sample-2",
+        "phaseId": "baseline",
+        "caseId": "context-3",
+        "conditionId": "original",
+        "number": 2,
+        "attempt": 1,
+        "outputs": []
+      },
+      {
+        "id": "context-3-sample-3",
+        "phaseId": "baseline",
+        "caseId": "context-3",
+        "conditionId": "original",
+        "number": 3,
+        "attempt": 1,
+        "outputs": []
+      },
+      {
+        "id": "context-4-sample-1",
+        "phaseId": "baseline",
+        "caseId": "context-4",
+        "conditionId": "original",
+        "number": 1,
+        "attempt": 1,
+        "outputs": []
+      },
+      {
+        "id": "context-4-sample-2",
+        "phaseId": "baseline",
+        "caseId": "context-4",
+        "conditionId": "original",
+        "number": 2,
+        "attempt": 1,
+        "outputs": []
+      },
+      {
+        "id": "context-4-sample-3",
+        "phaseId": "baseline",
+        "caseId": "context-4",
+        "conditionId": "original",
+        "number": 3,
+        "attempt": 1,
+        "outputs": []
+      },
+      {
+        "id": "context-5-sample-1",
+        "phaseId": "baseline",
+        "caseId": "context-5",
+        "conditionId": "original",
+        "number": 1,
+        "attempt": 1,
+        "outputs": []
+      },
+      {
+        "id": "context-5-sample-2",
+        "phaseId": "baseline",
+        "caseId": "context-5",
+        "conditionId": "original",
+        "number": 2,
+        "attempt": 1,
+        "outputs": []
+      },
+      {
+        "id": "context-5-sample-3",
+        "phaseId": "baseline",
+        "caseId": "context-5",
+        "conditionId": "original",
+        "number": 3,
+        "attempt": 1,
+        "outputs": []
+      },
+      {
+        "id": "context-6-sample-1",
+        "phaseId": "baseline",
+        "caseId": "context-6",
+        "conditionId": "original",
+        "number": 1,
+        "attempt": 1,
+        "outputs": []
+      },
+      {
+        "id": "context-6-sample-2",
+        "phaseId": "baseline",
+        "caseId": "context-6",
+        "conditionId": "original",
+        "number": 2,
+        "attempt": 1,
+        "outputs": []
+      },
+      {
+        "id": "context-6-sample-3",
+        "phaseId": "baseline",
+        "caseId": "context-6",
+        "conditionId": "original",
+        "number": 3,
+        "attempt": 1,
+        "outputs": []
+      },
+      {
+        "id": "context-7-sample-1",
+        "phaseId": "baseline",
+        "caseId": "context-7",
+        "conditionId": "original",
+        "number": 1,
+        "attempt": 1,
+        "outputs": []
+      },
+      {
+        "id": "context-7-sample-2",
+        "phaseId": "baseline",
+        "caseId": "context-7",
+        "conditionId": "original",
+        "number": 2,
+        "attempt": 1,
+        "outputs": []
+      },
+      {
+        "id": "context-7-sample-3",
+        "phaseId": "baseline",
+        "caseId": "context-7",
+        "conditionId": "original",
+        "number": 3,
+        "attempt": 1,
+        "outputs": []
+      }
+    ],
+    "comparisons": [
+      {
+        "id": "baseline-tree-parse",
+        "phaseId": "baseline",
+        "name": "Strategy selection and tree syntax",
+        "description": "Parser v1: validates the root, canvas labels, branch hierarchy and operation tags; counts [1a], [1b], [2], [3], [4] and output incidence for 3/4. Retains raw text and line-level errors, including recognized operations in invalid trees. Does not judge structural correctness, coverage, attachment validity or whether 3/4 should have been chosen.",
+        "conditionIds": [
+          "original"
+        ],
+        "caseIds": [
+          "context-1",
+          "context-2",
+          "context-3",
+          "context-4",
+          "context-5",
+          "context-6",
+          "context-7"
+        ],
+        "judgementIds": [],
+        "evaluator": {
+          "kind": "deterministic",
+          "parser": "diagram-change-tree",
+          "version": 1
+        }
+      }
+    ],
+    "plannedRuns": [
+      {
+        "request": {
+          "requestId": "1393c196-b590-4abb-890a-1fdb2f916f35",
+          "workflow": "diagram-change-proposal",
+          "prompts": [
+            {
+              "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+              "version": 1
+            }
+          ],
+          "inputs": {
+            "context": {
+              "agentContextId": "saved-agent-context-16ba6214-8c1a-4617-b165-3242ac53e23b"
+            }
+          },
+          "passes": 3,
+          "model": "gpt-6-sol",
+          "effort": "high"
+        },
+        "outputs": [
+          {
+            "sampleId": "context-1-sample-1",
+            "stageId": "proposal",
+            "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:1:proposal"
+          },
+          {
+            "sampleId": "context-1-sample-2",
+            "stageId": "proposal",
+            "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:2:proposal"
+          },
+          {
+            "sampleId": "context-1-sample-3",
+            "stageId": "proposal",
+            "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:3:proposal"
+          }
+        ]
+      },
+      {
+        "request": {
+          "requestId": "56c19388-79c6-455b-b3d0-596bfcf32c99",
+          "workflow": "diagram-change-proposal",
+          "prompts": [
+            {
+              "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+              "version": 1
+            }
+          ],
+          "inputs": {
+            "context": {
+              "agentContextId": "saved-agent-context-db04f7f1-5aa5-4159-8466-79d0799722b0"
+            }
+          },
+          "passes": 3,
+          "model": "gpt-6-sol",
+          "effort": "high"
+        },
+        "outputs": [
+          {
+            "sampleId": "context-2-sample-1",
+            "stageId": "proposal",
+            "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:1:proposal"
+          },
+          {
+            "sampleId": "context-2-sample-2",
+            "stageId": "proposal",
+            "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:2:proposal"
+          },
+          {
+            "sampleId": "context-2-sample-3",
+            "stageId": "proposal",
+            "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:3:proposal"
+          }
+        ]
+      },
+      {
+        "request": {
+          "requestId": "13888f46-f668-4279-aecf-34716496b2f4",
+          "workflow": "diagram-change-proposal",
+          "prompts": [
+            {
+              "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+              "version": 1
+            }
+          ],
+          "inputs": {
+            "context": {
+              "agentContextId": "saved-agent-context-6e3d2462-84a5-4c3a-8d8d-b065c8c0e521"
+            }
+          },
+          "passes": 3,
+          "model": "gpt-6-sol",
+          "effort": "high"
+        },
+        "outputs": [
+          {
+            "sampleId": "context-3-sample-1",
+            "stageId": "proposal",
+            "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:1:proposal"
+          },
+          {
+            "sampleId": "context-3-sample-2",
+            "stageId": "proposal",
+            "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:2:proposal"
+          },
+          {
+            "sampleId": "context-3-sample-3",
+            "stageId": "proposal",
+            "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:3:proposal"
+          }
+        ]
+      },
+      {
+        "request": {
+          "requestId": "b7fd2f80-b6a3-4779-a9c1-b4c11bec86ec",
+          "workflow": "diagram-change-proposal",
+          "prompts": [
+            {
+              "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+              "version": 1
+            }
+          ],
+          "inputs": {
+            "context": {
+              "agentContextId": "saved-agent-context-911f0ae2-d2c6-4ce6-bd26-dc91590bd709"
+            }
+          },
+          "passes": 3,
+          "model": "gpt-6-sol",
+          "effort": "high"
+        },
+        "outputs": [
+          {
+            "sampleId": "context-4-sample-1",
+            "stageId": "proposal",
+            "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:1:proposal"
+          },
+          {
+            "sampleId": "context-4-sample-2",
+            "stageId": "proposal",
+            "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:2:proposal"
+          },
+          {
+            "sampleId": "context-4-sample-3",
+            "stageId": "proposal",
+            "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:3:proposal"
+          }
+        ]
+      },
+      {
+        "request": {
+          "requestId": "fe307187-77c1-47d3-9e7d-d81e8a326414",
+          "workflow": "diagram-change-proposal",
+          "prompts": [
+            {
+              "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+              "version": 1
+            }
+          ],
+          "inputs": {
+            "context": {
+              "agentContextId": "saved-agent-context-b4df6a6c-83f6-428f-9247-7bd2f2548e7c"
+            }
+          },
+          "passes": 3,
+          "model": "gpt-6-sol",
+          "effort": "high"
+        },
+        "outputs": [
+          {
+            "sampleId": "context-5-sample-1",
+            "stageId": "proposal",
+            "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:1:proposal"
+          },
+          {
+            "sampleId": "context-5-sample-2",
+            "stageId": "proposal",
+            "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:2:proposal"
+          },
+          {
+            "sampleId": "context-5-sample-3",
+            "stageId": "proposal",
+            "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:3:proposal"
+          }
+        ]
+      },
+      {
+        "request": {
+          "requestId": "f61d32b5-b7d6-40f1-9c39-217fcd596102",
+          "workflow": "diagram-change-proposal",
+          "prompts": [
+            {
+              "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+              "version": 1
+            }
+          ],
+          "inputs": {
+            "context": {
+              "agentContextId": "saved-agent-context-c002f3b1-d0c5-4f6b-aa22-43fd518afe51"
+            }
+          },
+          "passes": 3,
+          "model": "gpt-6-sol",
+          "effort": "high"
+        },
+        "outputs": [
+          {
+            "sampleId": "context-6-sample-1",
+            "stageId": "proposal",
+            "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:1:proposal"
+          },
+          {
+            "sampleId": "context-6-sample-2",
+            "stageId": "proposal",
+            "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:2:proposal"
+          },
+          {
+            "sampleId": "context-6-sample-3",
+            "stageId": "proposal",
+            "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:3:proposal"
+          }
+        ]
+      },
+      {
+        "request": {
+          "requestId": "7df72b53-cf26-46bb-a018-dadfc5d4cdf3",
+          "workflow": "diagram-change-proposal",
+          "prompts": [
+            {
+              "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+              "version": 1
+            }
+          ],
+          "inputs": {
+            "context": {
+              "agentContextId": "saved-agent-context-3cc6fe05-807a-40e6-98aa-df864234bb8e"
+            }
+          },
+          "passes": 3,
+          "model": "gpt-6-sol",
+          "effort": "high"
+        },
+        "outputs": [
+          {
+            "sampleId": "context-7-sample-1",
+            "stageId": "proposal",
+            "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:1:proposal"
+          },
+          {
+            "sampleId": "context-7-sample-2",
+            "stageId": "proposal",
+            "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:2:proposal"
+          },
+          {
+            "sampleId": "context-7-sample-3",
+            "stageId": "proposal",
+            "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:3:proposal"
+          }
+        ]
+      }
+    ]
+  }
+}

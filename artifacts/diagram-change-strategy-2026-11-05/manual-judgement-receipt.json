@@ -1,0 +1,35 @@
+{
+  "judgementId": "1535f471-fc13-48a1-a42e-e13b570e4e8b",
+  "experimentId": "f1ee9846-f13d-448d-9628-99e7c3bd6d1a",
+  "comparisonId": "baseline-tree-parse",
+  "assessedOutputs": 19,
+  "expectedOutputs": 21,
+  "excluded": [
+    {
+      "runId": "7df72b53-cf26-46bb-a018-dadfc5d4cdf3",
+      "outputKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:2:proposal",
+      "context": "ChangeSession v2 07 - Persistence and durable storage",
+      "sample": 2,
+      "status": "failed",
+      "error": "Eval agent failed: fetch failed"
+    },
+    {
+      "runId": "7df72b53-cf26-46bb-a018-dadfc5d4cdf3",
+      "outputKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:3:proposal",
+      "context": "ChangeSession v2 07 - Persistence and durable storage",
+      "sample": 3,
+      "status": "failed",
+      "error": "Eval agent failed: Codex error: Our servers are currently overloaded. Please try again later."
+    }
+  ],
+  "validOutputs": 16,
+  "totals": {
+    "2": 25,
+    "3": 0,
+    "4": 0,
+    "1a": 79,
+    "1b": 59
+  },
+  "outputsUsing3": 0,
+  "outputsUsing4": 0
+}

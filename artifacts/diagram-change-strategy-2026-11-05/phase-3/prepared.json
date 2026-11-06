@@ -1,0 +1,2553 @@
+{
+  "name": "Diagram change strategy selection",
+  "description": "Baseline of the original four decision rules, using the seven ChangeSession v2 AgentContexts saved November 3, 2026. Three independent samples per case (21 total), gpt-6-sol/high. Output: the Proposed diagram changes ASCII tree only. Decision thresholds are unchanged; input access is adapted to pinned snapshots and the output contract is explicit. Deterministic syntax and strategy-count assessment is separate from generation; no architectural quality score or target strategy frequency.\n\nPhase 2 adds seven derived contexts and 21 planned outputs using revised visible strategy rules. It separates patch versus redraw decisions from existing versus new canvas decisions, judges cumulative changes per diagram, and removes the rule to exhaust [1a]/[1b]/[2]/[3] before redraw along with historical N-detail diagram plans. Both prompt and input changed, so phase comparisons describe observed outcomes rather than an isolated prompt effect.",
+  "phases": [
+    {
+      "id": "baseline",
+      "name": "Baseline",
+      "description": "Original decision rules; tree-only output. Seven pinned contexts × three samples. Generation awaits review. The deterministic judgement is planned and must be run separately after generation; it parses tags and reports format errors without repairing outputs."
+    },
+    {
+      "id": "phase-2",
+      "name": "Phase 2 · revised strategy",
+      "description": "Seven derived contexts × three independent samples, gpt-6-sol/high, session context delivery. The visible prompt first decides patch versus redraw for each existing diagram using cumulative changes, then decides existing versus new canvas for additional detail. The rule to exhaust [1a]/[1b]/[2]/[3] before redraw and historical N-detail diagram plans are removed. Prompt and input context both changed from baseline, so this comparison is descriptive rather than an isolated causal test. Generation and deterministic assessment require separate review."
+    },
+    {
+      "id": "phase-3",
+      "name": "Astra high · unchanged Phase 2 prompt",
+      "description": "Same exact Phase 2 prompt v1 and the same seven pinned derived AgentContexts. Two independent samples per context (14 outputs), gpt-6-astra/high, session context delivery. Only the model and sample count change from Phase 2; no architectural-review recommendations or formatting repairs were added to the prompt. Deterministic parser v1 has its own phase assessment."
+    }
+  ],
+  "workflow": {
+    "id": "diagram-change-proposal",
+    "name": "Propose diagram changes",
+    "version": 1,
+    "stages": [
+      {
+        "id": "proposal",
+        "name": "Proposed changes tree",
+        "dependsOn": []
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "context-1",
+      "name": "ChangeSession v2 01 - Canvas workspace, authoring and navigation",
+      "agentContextId": "saved-agent-context-16ba6214-8c1a-4617-b165-3242ac53e23b",
+      "contentHash": "552ea9469cc2b027ce7cb8f9f1b7d8de7c42863b48ea0267c9e0cb033e00618d"
+    },
+    {
+      "id": "context-2",
+      "name": "ChangeSession v2 02 - Tldraw runtime, selection and controller edits",
+      "agentContextId": "saved-agent-context-db04f7f1-5aa5-4159-8466-79d0799722b0",
+      "contentHash": "5c9a0e457d2e8ed370cbfa605e472c62c54f714bca773b4c85b30f7ca5e340fa"
+    },
+    {
+      "id": "context-3",
+      "name": "ChangeSession v2 03 - Revisions, history and saved CanvasViews",
+      "agentContextId": "saved-agent-context-6e3d2462-84a5-4c3a-8d8d-b065c8c0e521",
+      "contentHash": "331929dbcd77fd6b487de5d3f9d2319322414093b2fab2aeed60d3d78ed7a4b9"
+    },
+    {
+      "id": "context-4",
+      "name": "ChangeSession v2 04 - Alternatives and ChangeSession review",
+      "agentContextId": "saved-agent-context-911f0ae2-d2c6-4ce6-bd26-dc91590bd709",
+      "contentHash": "269fec17c77e511b89f6295cca36bd37af58faefe10f4f17b3d5a4805026df1c"
+    },
+    {
+      "id": "context-5",
+      "name": "ChangeSession v2 05 - AgentChat, generation and Canvas API",
+      "agentContextId": "saved-agent-context-b4df6a6c-83f6-428f-9247-7bd2f2548e7c",
+      "contentHash": "a82096318fdb465f19ee0370ccc90a10b7f1bac7de80d39acdafb8bcf4af2566"
+    },
+    {
+      "id": "context-6",
+      "name": "ChangeSession v2 06 - Saved AgentContexts and source evidence",
+      "agentContextId": "saved-agent-context-c002f3b1-d0c5-4f6b-aa22-43fd518afe51",
+      "contentHash": "0ab380f7d18b5d13fb2df66ae51ea017e17de2dff835a261b0ace267ac0a9087"
+    },
+    {
+      "id": "context-7",
+      "name": "ChangeSession v2 07 - Persistence and durable storage",
+      "agentContextId": "saved-agent-context-3cc6fe05-807a-40e6-98aa-df864234bb8e",
+      "contentHash": "5bf775fbd29e845fb95ccd4a9857dbe8863df46549401d134a788795350a672f"
+    },
+    {
+      "id": "phase-2-context-1",
+      "name": "ChangeSession v2 01 - Canvas workspace, authoring and navigation · revised context",
+      "agentContextId": "saved-agent-context-7da6c79f-6a82-400a-afd5-5ca9dde2a799",
+      "contentHash": "e2b687206a7c8e0dff6574006a2d8da4b7d13c878ff55c138eff5c5e28392b71"
+    },
+    {
+      "id": "phase-2-context-2",
+      "name": "ChangeSession v2 02 - Tldraw runtime, selection and controller edits · revised context",
+      "agentContextId": "saved-agent-context-cfd702c9-f140-4747-b7b3-b2b8e7926b0a",
+      "contentHash": "2898f9f05e12941aa40c0919a7f09555789682580dff61ac5743a664fde3265d"
+    },
+    {
+      "id": "phase-2-context-3",
+      "name": "ChangeSession v2 03 - Revisions, history and saved CanvasViews · revised context",
+      "agentContextId": "saved-agent-context-b2878bac-2820-4dfd-a18e-82a4adc0beb3",
+      "contentHash": "9359502bef338bc5a8c0a347489766ce645a01bde60a2d0577ef845a73d0e33e"
+    },
+    {
+      "id": "phase-2-context-4",
+      "name": "ChangeSession v2 04 - Alternatives and ChangeSession review · revised context",
+      "agentContextId": "saved-agent-context-e1777bbd-f788-4a47-8442-73a5530d9531",
+      "contentHash": "b6388f6a9daf9977748ac8180126c2df6540734f084e81d8acda30ac4c9e5deb"
+    },
+    {
+      "id": "phase-2-context-5",
+      "name": "ChangeSession v2 05 - AgentChat, generation and Canvas API · revised context",
+      "agentContextId": "saved-agent-context-e8cc44b9-5f45-4579-9011-ba4fe3852620",
+      "contentHash": "3f27635117e3f14382541854d66c01811024f7a2b582721a48317213db305e7c"
+    },
+    {
+      "id": "phase-2-context-6",
+      "name": "ChangeSession v2 06 - Saved AgentContexts and source evidence · revised context",
+      "agentContextId": "saved-agent-context-2152f3d9-6286-4fe3-b773-559e8b08419d",
+      "contentHash": "902926eccacdd91cf30dfc20b376555fab9eeddb64491626375ac6cfc68ab93f"
+    },
+    {
+      "id": "phase-2-context-7",
+      "name": "ChangeSession v2 07 - Persistence and durable storage · revised context",
+      "agentContextId": "saved-agent-context-6487e589-09e2-48e4-8683-093cbeb54267",
+      "contentHash": "6608ea6828402b385bab3f8ab56e47da1e5f9d340d8421be59421a672674d4d9"
+    }
+  ],
+  "conditions": [
+    {
+      "id": "original",
+      "name": "Original decision rules",
+      "description": "No prompt-strengthening or strategy-frequency target. Same gpt-6-sol/high settings for every sample."
+    },
+    {
+      "id": "revised-strategy",
+      "name": "Revised strategy and derived contexts",
+      "description": "Prompt variation from baseline v3 and freshly derived AgentContexts. Historical diagram assignments and preselected detail-diagram plans are superseded by visible instructions. Model and sampling match baseline."
+    },
+    {
+      "id": "revised-strategy-astra-high",
+      "name": "Revised strategy · astra high",
+      "description": "Reuses the Phase 2 prompt and contexts unchanged; gpt-6-astra at high effort with two samples per context."
+    }
+  ],
+  "plannedRuns": [
+    {
+      "request": {
+        "requestId": "1393c196-b590-4abb-890a-1fdb2f916f35",
+        "workflow": "diagram-change-proposal",
+        "prompts": [
+          {
+            "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+            "version": 3
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-16ba6214-8c1a-4617-b165-3242ac53e23b"
+          }
+        },
+        "passes": 3,
+        "model": "gpt-6-sol",
+        "effort": "high",
+        "contextDelivery": "session"
+      },
+      "outputs": [
+        {
+          "sampleId": "context-1-sample-1",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:1:proposal"
+        },
+        {
+          "sampleId": "context-1-sample-2",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:2:proposal"
+        },
+        {
+          "sampleId": "context-1-sample-3",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:3:proposal"
+        }
+      ]
+    },
+    {
+      "request": {
+        "requestId": "56c19388-79c6-455b-b3d0-596bfcf32c99",
+        "workflow": "diagram-change-proposal",
+        "prompts": [
+          {
+            "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+            "version": 3
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-db04f7f1-5aa5-4159-8466-79d0799722b0"
+          }
+        },
+        "passes": 3,
+        "model": "gpt-6-sol",
+        "effort": "high",
+        "contextDelivery": "session"
+      },
+      "outputs": [
+        {
+          "sampleId": "context-2-sample-1",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:1:proposal"
+        },
+        {
+          "sampleId": "context-2-sample-2",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:2:proposal"
+        },
+        {
+          "sampleId": "context-2-sample-3",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:3:proposal"
+        }
+      ]
+    },
+    {
+      "request": {
+        "requestId": "13888f46-f668-4279-aecf-34716496b2f4",
+        "workflow": "diagram-change-proposal",
+        "prompts": [
+          {
+            "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+            "version": 3
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-6e3d2462-84a5-4c3a-8d8d-b065c8c0e521"
+          }
+        },
+        "passes": 3,
+        "model": "gpt-6-sol",
+        "effort": "high",
+        "contextDelivery": "session"
+      },
+      "outputs": [
+        {
+          "sampleId": "context-3-sample-1",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:1:proposal"
+        },
+        {
+          "sampleId": "context-3-sample-2",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:2:proposal"
+        },
+        {
+          "sampleId": "context-3-sample-3",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:3:proposal"
+        }
+      ]
+    },
+    {
+      "request": {
+        "requestId": "b7fd2f80-b6a3-4779-a9c1-b4c11bec86ec",
+        "workflow": "diagram-change-proposal",
+        "prompts": [
+          {
+            "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+            "version": 3
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-911f0ae2-d2c6-4ce6-bd26-dc91590bd709"
+          }
+        },
+        "passes": 3,
+        "model": "gpt-6-sol",
+        "effort": "high",
+        "contextDelivery": "session"
+      },
+      "outputs": [
+        {
+          "sampleId": "context-4-sample-1",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:1:proposal"
+        },
+        {
+          "sampleId": "context-4-sample-2",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:2:proposal"
+        },
+        {
+          "sampleId": "context-4-sample-3",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:3:proposal"
+        }
+      ]
+    },
+    {
+      "request": {
+        "requestId": "fe307187-77c1-47d3-9e7d-d81e8a326414",
+        "workflow": "diagram-change-proposal",
+        "prompts": [
+          {
+            "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+            "version": 3
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-b4df6a6c-83f6-428f-9247-7bd2f2548e7c"
+          }
+        },
+        "passes": 3,
+        "model": "gpt-6-sol",
+        "effort": "high",
+        "contextDelivery": "session"
+      },
+      "outputs": [
+        {
+          "sampleId": "context-5-sample-1",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:1:proposal"
+        },
+        {
+          "sampleId": "context-5-sample-2",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:2:proposal"
+        },
+        {
+          "sampleId": "context-5-sample-3",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:3:proposal"
+        }
+      ]
+    },
+    {
+      "request": {
+        "requestId": "f61d32b5-b7d6-40f1-9c39-217fcd596102",
+        "workflow": "diagram-change-proposal",
+        "prompts": [
+          {
+            "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+            "version": 3
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-c002f3b1-d0c5-4f6b-aa22-43fd518afe51"
+          }
+        },
+        "passes": 3,
+        "model": "gpt-6-sol",
+        "effort": "high",
+        "contextDelivery": "session"
+      },
+      "outputs": [
+        {
+          "sampleId": "context-6-sample-1",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:1:proposal"
+        },
+        {
+          "sampleId": "context-6-sample-2",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:2:proposal"
+        },
+        {
+          "sampleId": "context-6-sample-3",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:3:proposal"
+        }
+      ]
+    },
+    {
+      "request": {
+        "requestId": "7df72b53-cf26-46bb-a018-dadfc5d4cdf3",
+        "workflow": "diagram-change-proposal",
+        "prompts": [
+          {
+            "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+            "version": 3
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-3cc6fe05-807a-40e6-98aa-df864234bb8e"
+          }
+        },
+        "passes": 3,
+        "model": "gpt-6-sol",
+        "effort": "high",
+        "contextDelivery": "session"
+      },
+      "outputs": [
+        {
+          "sampleId": "context-7-sample-1",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:1:proposal"
+        },
+        {
+          "sampleId": "context-7-sample-2",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:2:proposal"
+        },
+        {
+          "sampleId": "context-7-sample-3",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:3:proposal"
+        }
+      ]
+    },
+    {
+      "request": {
+        "requestId": "90711e7b-3944-436d-928f-e14c6b059c92",
+        "workflow": "diagram-change-proposal",
+        "prompts": [
+          {
+            "promptId": "1619ce41-4040-4ac1-bd8d-2d474fd7a595",
+            "version": 1
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-7da6c79f-6a82-400a-afd5-5ca9dde2a799"
+          }
+        },
+        "passes": 3,
+        "model": "gpt-6-sol",
+        "effort": "high",
+        "contextDelivery": "session"
+      },
+      "outputs": [
+        {
+          "sampleId": "phase-2-context-1-sample-1",
+          "stageId": "proposal",
+          "cellKey": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:1:proposal"
+        },
+        {
+          "sampleId": "phase-2-context-1-sample-2",
+          "stageId": "proposal",
+          "cellKey": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:2:proposal"
+        },
+        {
+          "sampleId": "phase-2-context-1-sample-3",
+          "stageId": "proposal",
+          "cellKey": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:3:proposal"
+        }
+      ]
+    },
+    {
+      "request": {
+        "requestId": "5f6b8942-8c5a-429d-a826-0088b73211dc",
+        "workflow": "diagram-change-proposal",
+        "prompts": [
+          {
+            "promptId": "1619ce41-4040-4ac1-bd8d-2d474fd7a595",
+            "version": 1
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-cfd702c9-f140-4747-b7b3-b2b8e7926b0a"
+          }
+        },
+        "passes": 3,
+        "model": "gpt-6-sol",
+        "effort": "high",
+        "contextDelivery": "session"
+      },
+      "outputs": [
+        {
+          "sampleId": "phase-2-context-2-sample-1",
+          "stageId": "proposal",
+          "cellKey": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:1:proposal"
+        },
+        {
+          "sampleId": "phase-2-context-2-sample-2",
+          "stageId": "proposal",
+          "cellKey": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:2:proposal"
+        },
+        {
+          "sampleId": "phase-2-context-2-sample-3",
+          "stageId": "proposal",
+          "cellKey": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:3:proposal"
+        }
+      ]
+    },
+    {
+      "request": {
+        "requestId": "3938e771-77a1-47f7-b69c-149905aa6738",
+        "workflow": "diagram-change-proposal",
+        "prompts": [
+          {
+            "promptId": "1619ce41-4040-4ac1-bd8d-2d474fd7a595",
+            "version": 1
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-b2878bac-2820-4dfd-a18e-82a4adc0beb3"
+          }
+        },
+        "passes": 3,
+        "model": "gpt-6-sol",
+        "effort": "high",
+        "contextDelivery": "session"
+      },
+      "outputs": [
+        {
+          "sampleId": "phase-2-context-3-sample-1",
+          "stageId": "proposal",
+          "cellKey": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:1:proposal"
+        },
+        {
+          "sampleId": "phase-2-context-3-sample-2",
+          "stageId": "proposal",
+          "cellKey": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:2:proposal"
+        },
+        {
+          "sampleId": "phase-2-context-3-sample-3",
+          "stageId": "proposal",
+          "cellKey": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:3:proposal"
+        }
+      ]
+    },
+    {
+      "request": {
+        "requestId": "14464e9f-61da-44d8-8b51-c0c5d9924413",
+        "workflow": "diagram-change-proposal",
+        "prompts": [
+          {
+            "promptId": "1619ce41-4040-4ac1-bd8d-2d474fd7a595",
+            "version": 1
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-e1777bbd-f788-4a47-8442-73a5530d9531"
+          }
+        },
+        "passes": 3,
+        "model": "gpt-6-sol",
+        "effort": "high",
+        "contextDelivery": "session"
+      },
+      "outputs": [
+        {
+          "sampleId": "phase-2-context-4-sample-1",
+          "stageId": "proposal",
+          "cellKey": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:1:proposal"
+        },
+        {
+          "sampleId": "phase-2-context-4-sample-2",
+          "stageId": "proposal",
+          "cellKey": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:2:proposal"
+        },
+        {
+          "sampleId": "phase-2-context-4-sample-3",
+          "stageId": "proposal",
+          "cellKey": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:3:proposal"
+        }
+      ]
+    },
+    {
+      "request": {
+        "requestId": "86b74df8-2d47-4fa6-9ddd-24c399b838d6",
+        "workflow": "diagram-change-proposal",
+        "prompts": [
+          {
+            "promptId": "1619ce41-4040-4ac1-bd8d-2d474fd7a595",
+            "version": 1
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-e8cc44b9-5f45-4579-9011-ba4fe3852620"
+          }
+        },
+        "passes": 3,
+        "model": "gpt-6-sol",
+        "effort": "high",
+        "contextDelivery": "session"
+      },
+      "outputs": [
+        {
+          "sampleId": "phase-2-context-5-sample-1",
+          "stageId": "proposal",
+          "cellKey": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:1:proposal"
+        },
+        {
+          "sampleId": "phase-2-context-5-sample-2",
+          "stageId": "proposal",
+          "cellKey": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:2:proposal"
+        },
+        {
+          "sampleId": "phase-2-context-5-sample-3",
+          "stageId": "proposal",
+          "cellKey": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:3:proposal"
+        }
+      ]
+    },
+    {
+      "request": {
+        "requestId": "9215966c-ad76-485b-a6a3-e0527ba8b8d4",
+        "workflow": "diagram-change-proposal",
+        "prompts": [
+          {
+            "promptId": "1619ce41-4040-4ac1-bd8d-2d474fd7a595",
+            "version": 1
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-2152f3d9-6286-4fe3-b773-559e8b08419d"
+          }
+        },
+        "passes": 3,
+        "model": "gpt-6-sol",
+        "effort": "high",
+        "contextDelivery": "session"
+      },
+      "outputs": [
+        {
+          "sampleId": "phase-2-context-6-sample-1",
+          "stageId": "proposal",
+          "cellKey": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:1:proposal"
+        },
+        {
+          "sampleId": "phase-2-context-6-sample-2",
+          "stageId": "proposal",
+          "cellKey": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:2:proposal"
+        },
+        {
+          "sampleId": "phase-2-context-6-sample-3",
+          "stageId": "proposal",
+          "cellKey": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:3:proposal"
+        }
+      ]
+    },
+    {
+      "request": {
+        "requestId": "1ad55cdf-4a8c-4b68-a273-62ed4d7bea2e",
+        "workflow": "diagram-change-proposal",
+        "prompts": [
+          {
+            "promptId": "1619ce41-4040-4ac1-bd8d-2d474fd7a595",
+            "version": 1
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-6487e589-09e2-48e4-8683-093cbeb54267"
+          }
+        },
+        "passes": 3,
+        "model": "gpt-6-sol",
+        "effort": "high",
+        "contextDelivery": "session"
+      },
+      "outputs": [
+        {
+          "sampleId": "phase-2-context-7-sample-1",
+          "stageId": "proposal",
+          "cellKey": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:1:proposal"
+        },
+        {
+          "sampleId": "phase-2-context-7-sample-2",
+          "stageId": "proposal",
+          "cellKey": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:2:proposal"
+        },
+        {
+          "sampleId": "phase-2-context-7-sample-3",
+          "stageId": "proposal",
+          "cellKey": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:3:proposal"
+        }
+      ]
+    },
+    {
+      "request": {
+        "requestId": "ac2583b6-3c2e-4c15-8e47-66d9d244c262",
+        "workflow": "diagram-change-proposal",
+        "prompts": [
+          {
+            "promptId": "1619ce41-4040-4ac1-bd8d-2d474fd7a595",
+            "version": 1
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-7da6c79f-6a82-400a-afd5-5ca9dde2a799"
+          }
+        },
+        "passes": 2,
+        "model": "gpt-6-astra",
+        "effort": "high",
+        "contextDelivery": "session"
+      },
+      "outputs": [
+        {
+          "sampleId": "phase-3-context-1-sample-1",
+          "stageId": "proposal",
+          "cellKey": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:1:proposal"
+        },
+        {
+          "sampleId": "phase-3-context-1-sample-2",
+          "stageId": "proposal",
+          "cellKey": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:2:proposal"
+        }
+      ]
+    },
+    {
+      "request": {
+        "requestId": "e5c8f54d-1d08-43e5-b38d-5ebab7a8dad7",
+        "workflow": "diagram-change-proposal",
+        "prompts": [
+          {
+            "promptId": "1619ce41-4040-4ac1-bd8d-2d474fd7a595",
+            "version": 1
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-cfd702c9-f140-4747-b7b3-b2b8e7926b0a"
+          }
+        },
+        "passes": 2,
+        "model": "gpt-6-astra",
+        "effort": "high",
+        "contextDelivery": "session"
+      },
+      "outputs": [
+        {
+          "sampleId": "phase-3-context-2-sample-1",
+          "stageId": "proposal",
+          "cellKey": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:1:proposal"
+        },
+        {
+          "sampleId": "phase-3-context-2-sample-2",
+          "stageId": "proposal",
+          "cellKey": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:2:proposal"
+        }
+      ]
+    },
+    {
+      "request": {
+        "requestId": "6bf02e32-6abc-4dca-b77f-219017485926",
+        "workflow": "diagram-change-proposal",
+        "prompts": [
+          {
+            "promptId": "1619ce41-4040-4ac1-bd8d-2d474fd7a595",
+            "version": 1
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-b2878bac-2820-4dfd-a18e-82a4adc0beb3"
+          }
+        },
+        "passes": 2,
+        "model": "gpt-6-astra",
+        "effort": "high",
+        "contextDelivery": "session"
+      },
+      "outputs": [
+        {
+          "sampleId": "phase-3-context-3-sample-1",
+          "stageId": "proposal",
+          "cellKey": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:1:proposal"
+        },
+        {
+          "sampleId": "phase-3-context-3-sample-2",
+          "stageId": "proposal",
+          "cellKey": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:2:proposal"
+        }
+      ]
+    },
+    {
+      "request": {
+        "requestId": "bfffab73-690e-444c-be22-12c3fc340db9",
+        "workflow": "diagram-change-proposal",
+        "prompts": [
+          {
+            "promptId": "1619ce41-4040-4ac1-bd8d-2d474fd7a595",
+            "version": 1
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-e1777bbd-f788-4a47-8442-73a5530d9531"
+          }
+        },
+        "passes": 2,
+        "model": "gpt-6-astra",
+        "effort": "high",
+        "contextDelivery": "session"
+      },
+      "outputs": [
+        {
+          "sampleId": "phase-3-context-4-sample-1",
+          "stageId": "proposal",
+          "cellKey": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:1:proposal"
+        },
+        {
+          "sampleId": "phase-3-context-4-sample-2",
+          "stageId": "proposal",
+          "cellKey": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:2:proposal"
+        }
+      ]
+    },
+    {
+      "request": {
+        "requestId": "eb88b1ae-f048-4714-8232-dd6b4506d348",
+        "workflow": "diagram-change-proposal",
+        "prompts": [
+          {
+            "promptId": "1619ce41-4040-4ac1-bd8d-2d474fd7a595",
+            "version": 1
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-e8cc44b9-5f45-4579-9011-ba4fe3852620"
+          }
+        },
+        "passes": 2,
+        "model": "gpt-6-astra",
+        "effort": "high",
+        "contextDelivery": "session"
+      },
+      "outputs": [
+        {
+          "sampleId": "phase-3-context-5-sample-1",
+          "stageId": "proposal",
+          "cellKey": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:1:proposal"
+        },
+        {
+          "sampleId": "phase-3-context-5-sample-2",
+          "stageId": "proposal",
+          "cellKey": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:2:proposal"
+        }
+      ]
+    },
+    {
+      "request": {
+        "requestId": "a7130248-b9a8-4880-a68b-1d1a8d8772cf",
+        "workflow": "diagram-change-proposal",
+        "prompts": [
+          {
+            "promptId": "1619ce41-4040-4ac1-bd8d-2d474fd7a595",
+            "version": 1
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-2152f3d9-6286-4fe3-b773-559e8b08419d"
+          }
+        },
+        "passes": 2,
+        "model": "gpt-6-astra",
+        "effort": "high",
+        "contextDelivery": "session"
+      },
+      "outputs": [
+        {
+          "sampleId": "phase-3-context-6-sample-1",
+          "stageId": "proposal",
+          "cellKey": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:1:proposal"
+        },
+        {
+          "sampleId": "phase-3-context-6-sample-2",
+          "stageId": "proposal",
+          "cellKey": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:2:proposal"
+        }
+      ]
+    },
+    {
+      "request": {
+        "requestId": "3dfb656e-8c3f-43e8-81d7-58d3dbb49d5a",
+        "workflow": "diagram-change-proposal",
+        "prompts": [
+          {
+            "promptId": "1619ce41-4040-4ac1-bd8d-2d474fd7a595",
+            "version": 1
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-6487e589-09e2-48e4-8683-093cbeb54267"
+          }
+        },
+        "passes": 2,
+        "model": "gpt-6-astra",
+        "effort": "high",
+        "contextDelivery": "session"
+      },
+      "outputs": [
+        {
+          "sampleId": "phase-3-context-7-sample-1",
+          "stageId": "proposal",
+          "cellKey": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:1:proposal"
+        },
+        {
+          "sampleId": "phase-3-context-7-sample-2",
+          "stageId": "proposal",
+          "cellKey": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:2:proposal"
+        }
+      ]
+    }
+  ],
+  "samples": [
+    {
+      "id": "context-1-sample-1",
+      "phaseId": "baseline",
+      "caseId": "context-1",
+      "conditionId": "original",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "1393c196-b590-4abb-890a-1fdb2f916f35",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:1:proposal"
+        }
+      ]
+    },
+    {
+      "id": "context-1-sample-2",
+      "phaseId": "baseline",
+      "caseId": "context-1",
+      "conditionId": "original",
+      "number": 2,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "1393c196-b590-4abb-890a-1fdb2f916f35",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:2:proposal"
+        }
+      ]
+    },
+    {
+      "id": "context-1-sample-3",
+      "phaseId": "baseline",
+      "caseId": "context-1",
+      "conditionId": "original",
+      "number": 3,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "1393c196-b590-4abb-890a-1fdb2f916f35",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:3:proposal"
+        }
+      ]
+    },
+    {
+      "id": "context-2-sample-1",
+      "phaseId": "baseline",
+      "caseId": "context-2",
+      "conditionId": "original",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "56c19388-79c6-455b-b3d0-596bfcf32c99",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:1:proposal"
+        }
+      ]
+    },
+    {
+      "id": "context-2-sample-2",
+      "phaseId": "baseline",
+      "caseId": "context-2",
+      "conditionId": "original",
+      "number": 2,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "56c19388-79c6-455b-b3d0-596bfcf32c99",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:2:proposal"
+        }
+      ]
+    },
+    {
+      "id": "context-2-sample-3",
+      "phaseId": "baseline",
+      "caseId": "context-2",
+      "conditionId": "original",
+      "number": 3,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "56c19388-79c6-455b-b3d0-596bfcf32c99",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:3:proposal"
+        }
+      ]
+    },
+    {
+      "id": "context-3-sample-1",
+      "phaseId": "baseline",
+      "caseId": "context-3",
+      "conditionId": "original",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "13888f46-f668-4279-aecf-34716496b2f4",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:1:proposal"
+        }
+      ]
+    },
+    {
+      "id": "context-3-sample-2",
+      "phaseId": "baseline",
+      "caseId": "context-3",
+      "conditionId": "original",
+      "number": 2,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "13888f46-f668-4279-aecf-34716496b2f4",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:2:proposal"
+        }
+      ]
+    },
+    {
+      "id": "context-3-sample-3",
+      "phaseId": "baseline",
+      "caseId": "context-3",
+      "conditionId": "original",
+      "number": 3,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "13888f46-f668-4279-aecf-34716496b2f4",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:3:proposal"
+        }
+      ]
+    },
+    {
+      "id": "context-4-sample-1",
+      "phaseId": "baseline",
+      "caseId": "context-4",
+      "conditionId": "original",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "b7fd2f80-b6a3-4779-a9c1-b4c11bec86ec",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:1:proposal"
+        }
+      ]
+    },
+    {
+      "id": "context-4-sample-2",
+      "phaseId": "baseline",
+      "caseId": "context-4",
+      "conditionId": "original",
+      "number": 2,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "b7fd2f80-b6a3-4779-a9c1-b4c11bec86ec",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:2:proposal"
+        }
+      ]
+    },
+    {
+      "id": "context-4-sample-3",
+      "phaseId": "baseline",
+      "caseId": "context-4",
+      "conditionId": "original",
+      "number": 3,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "b7fd2f80-b6a3-4779-a9c1-b4c11bec86ec",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:3:proposal"
+        }
+      ]
+    },
+    {
+      "id": "context-5-sample-1",
+      "phaseId": "baseline",
+      "caseId": "context-5",
+      "conditionId": "original",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "fe307187-77c1-47d3-9e7d-d81e8a326414",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:1:proposal"
+        }
+      ]
+    },
+    {
+      "id": "context-5-sample-2",
+      "phaseId": "baseline",
+      "caseId": "context-5",
+      "conditionId": "original",
+      "number": 2,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "fe307187-77c1-47d3-9e7d-d81e8a326414",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:2:proposal"
+        }
+      ]
+    },
+    {
+      "id": "context-5-sample-3",
+      "phaseId": "baseline",
+      "caseId": "context-5",
+      "conditionId": "original",
+      "number": 3,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "fe307187-77c1-47d3-9e7d-d81e8a326414",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:3:proposal"
+        }
+      ]
+    },
+    {
+      "id": "context-6-sample-1",
+      "phaseId": "baseline",
+      "caseId": "context-6",
+      "conditionId": "original",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "f61d32b5-b7d6-40f1-9c39-217fcd596102",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:1:proposal"
+        }
+      ]
+    },
+    {
+      "id": "context-6-sample-2",
+      "phaseId": "baseline",
+      "caseId": "context-6",
+      "conditionId": "original",
+      "number": 2,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "f61d32b5-b7d6-40f1-9c39-217fcd596102",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:2:proposal"
+        }
+      ]
+    },
+    {
+      "id": "context-6-sample-3",
+      "phaseId": "baseline",
+      "caseId": "context-6",
+      "conditionId": "original",
+      "number": 3,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "f61d32b5-b7d6-40f1-9c39-217fcd596102",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:3:proposal"
+        }
+      ]
+    },
+    {
+      "id": "context-7-sample-1",
+      "phaseId": "baseline",
+      "caseId": "context-7",
+      "conditionId": "original",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "7df72b53-cf26-46bb-a018-dadfc5d4cdf3",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:1:proposal"
+        }
+      ]
+    },
+    {
+      "id": "context-7-sample-2",
+      "phaseId": "baseline",
+      "caseId": "context-7",
+      "conditionId": "original",
+      "number": 2,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "7df72b53-cf26-46bb-a018-dadfc5d4cdf3",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:2:proposal"
+        }
+      ]
+    },
+    {
+      "id": "context-7-sample-3",
+      "phaseId": "baseline",
+      "caseId": "context-7",
+      "conditionId": "original",
+      "number": 3,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "7df72b53-cf26-46bb-a018-dadfc5d4cdf3",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:3:proposal"
+        }
+      ]
+    },
+    {
+      "id": "phase-2-context-1-sample-1",
+      "phaseId": "phase-2",
+      "caseId": "phase-2-context-1",
+      "conditionId": "revised-strategy",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "90711e7b-3944-436d-928f-e14c6b059c92",
+          "cellKey": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:1:proposal"
+        }
+      ]
+    },
+    {
+      "id": "phase-2-context-1-sample-2",
+      "phaseId": "phase-2",
+      "caseId": "phase-2-context-1",
+      "conditionId": "revised-strategy",
+      "number": 2,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "90711e7b-3944-436d-928f-e14c6b059c92",
+          "cellKey": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:2:proposal"
+        }
+      ]
+    },
+    {
+      "id": "phase-2-context-1-sample-3",
+      "phaseId": "phase-2",
+      "caseId": "phase-2-context-1",
+      "conditionId": "revised-strategy",
+      "number": 3,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "90711e7b-3944-436d-928f-e14c6b059c92",
+          "cellKey": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:3:proposal"
+        }
+      ]
+    },
+    {
+      "id": "phase-2-context-2-sample-1",
+      "phaseId": "phase-2",
+      "caseId": "phase-2-context-2",
+      "conditionId": "revised-strategy",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "5f6b8942-8c5a-429d-a826-0088b73211dc",
+          "cellKey": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:1:proposal"
+        }
+      ]
+    },
+    {
+      "id": "phase-2-context-2-sample-2",
+      "phaseId": "phase-2",
+      "caseId": "phase-2-context-2",
+      "conditionId": "revised-strategy",
+      "number": 2,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "5f6b8942-8c5a-429d-a826-0088b73211dc",
+          "cellKey": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:2:proposal"
+        }
+      ]
+    },
+    {
+      "id": "phase-2-context-2-sample-3",
+      "phaseId": "phase-2",
+      "caseId": "phase-2-context-2",
+      "conditionId": "revised-strategy",
+      "number": 3,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "5f6b8942-8c5a-429d-a826-0088b73211dc",
+          "cellKey": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:3:proposal"
+        }
+      ]
+    },
+    {
+      "id": "phase-2-context-3-sample-1",
+      "phaseId": "phase-2",
+      "caseId": "phase-2-context-3",
+      "conditionId": "revised-strategy",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "3938e771-77a1-47f7-b69c-149905aa6738",
+          "cellKey": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:1:proposal"
+        }
+      ]
+    },
+    {
+      "id": "phase-2-context-3-sample-2",
+      "phaseId": "phase-2",
+      "caseId": "phase-2-context-3",
+      "conditionId": "revised-strategy",
+      "number": 2,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "3938e771-77a1-47f7-b69c-149905aa6738",
+          "cellKey": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:2:proposal"
+        }
+      ]
+    },
+    {
+      "id": "phase-2-context-3-sample-3",
+      "phaseId": "phase-2",
+      "caseId": "phase-2-context-3",
+      "conditionId": "revised-strategy",
+      "number": 3,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "3938e771-77a1-47f7-b69c-149905aa6738",
+          "cellKey": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:3:proposal"
+        }
+      ]
+    },
+    {
+      "id": "phase-2-context-4-sample-1",
+      "phaseId": "phase-2",
+      "caseId": "phase-2-context-4",
+      "conditionId": "revised-strategy",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "14464e9f-61da-44d8-8b51-c0c5d9924413",
+          "cellKey": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:1:proposal"
+        }
+      ]
+    },
+    {
+      "id": "phase-2-context-4-sample-2",
+      "phaseId": "phase-2",
+      "caseId": "phase-2-context-4",
+      "conditionId": "revised-strategy",
+      "number": 2,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "14464e9f-61da-44d8-8b51-c0c5d9924413",
+          "cellKey": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:2:proposal"
+        }
+      ]
+    },
+    {
+      "id": "phase-2-context-4-sample-3",
+      "phaseId": "phase-2",
+      "caseId": "phase-2-context-4",
+      "conditionId": "revised-strategy",
+      "number": 3,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "14464e9f-61da-44d8-8b51-c0c5d9924413",
+          "cellKey": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:3:proposal"
+        }
+      ]
+    },
+    {
+      "id": "phase-2-context-5-sample-1",
+      "phaseId": "phase-2",
+      "caseId": "phase-2-context-5",
+      "conditionId": "revised-strategy",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "86b74df8-2d47-4fa6-9ddd-24c399b838d6",
+          "cellKey": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:1:proposal"
+        }
+      ]
+    },
+    {
+      "id": "phase-2-context-5-sample-2",
+      "phaseId": "phase-2",
+      "caseId": "phase-2-context-5",
+      "conditionId": "revised-strategy",
+      "number": 2,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "86b74df8-2d47-4fa6-9ddd-24c399b838d6",
+          "cellKey": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:2:proposal"
+        }
+      ]
+    },
+    {
+      "id": "phase-2-context-5-sample-3",
+      "phaseId": "phase-2",
+      "caseId": "phase-2-context-5",
+      "conditionId": "revised-strategy",
+      "number": 3,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "86b74df8-2d47-4fa6-9ddd-24c399b838d6",
+          "cellKey": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:3:proposal"
+        }
+      ]
+    },
+    {
+      "id": "phase-2-context-6-sample-1",
+      "phaseId": "phase-2",
+      "caseId": "phase-2-context-6",
+      "conditionId": "revised-strategy",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "9215966c-ad76-485b-a6a3-e0527ba8b8d4",
+          "cellKey": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:1:proposal"
+        }
+      ]
+    },
+    {
+      "id": "phase-2-context-6-sample-2",
+      "phaseId": "phase-2",
+      "caseId": "phase-2-context-6",
+      "conditionId": "revised-strategy",
+      "number": 2,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "9215966c-ad76-485b-a6a3-e0527ba8b8d4",
+          "cellKey": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:2:proposal"
+        }
+      ]
+    },
+    {
+      "id": "phase-2-context-6-sample-3",
+      "phaseId": "phase-2",
+      "caseId": "phase-2-context-6",
+      "conditionId": "revised-strategy",
+      "number": 3,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "9215966c-ad76-485b-a6a3-e0527ba8b8d4",
+          "cellKey": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:3:proposal"
+        }
+      ]
+    },
+    {
+      "id": "phase-2-context-7-sample-1",
+      "phaseId": "phase-2",
+      "caseId": "phase-2-context-7",
+      "conditionId": "revised-strategy",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "1ad55cdf-4a8c-4b68-a273-62ed4d7bea2e",
+          "cellKey": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:1:proposal"
+        }
+      ]
+    },
+    {
+      "id": "phase-2-context-7-sample-2",
+      "phaseId": "phase-2",
+      "caseId": "phase-2-context-7",
+      "conditionId": "revised-strategy",
+      "number": 2,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "1ad55cdf-4a8c-4b68-a273-62ed4d7bea2e",
+          "cellKey": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:2:proposal"
+        }
+      ]
+    },
+    {
+      "id": "phase-2-context-7-sample-3",
+      "phaseId": "phase-2",
+      "caseId": "phase-2-context-7",
+      "conditionId": "revised-strategy",
+      "number": 3,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "1ad55cdf-4a8c-4b68-a273-62ed4d7bea2e",
+          "cellKey": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:3:proposal"
+        }
+      ]
+    },
+    {
+      "id": "phase-3-context-1-sample-1",
+      "phaseId": "phase-3",
+      "caseId": "phase-2-context-1",
+      "conditionId": "revised-strategy-astra-high",
+      "number": 1,
+      "attempt": 1,
+      "outputs": []
+    },
+    {
+      "id": "phase-3-context-1-sample-2",
+      "phaseId": "phase-3",
+      "caseId": "phase-2-context-1",
+      "conditionId": "revised-strategy-astra-high",
+      "number": 2,
+      "attempt": 1,
+      "outputs": []
+    },
+    {
+      "id": "phase-3-context-2-sample-1",
+      "phaseId": "phase-3",
+      "caseId": "phase-2-context-2",
+      "conditionId": "revised-strategy-astra-high",
+      "number": 1,
+      "attempt": 1,
+      "outputs": []
+    },
+    {
+      "id": "phase-3-context-2-sample-2",
+      "phaseId": "phase-3",
+      "caseId": "phase-2-context-2",
+      "conditionId": "revised-strategy-astra-high",
+      "number": 2,
+      "attempt": 1,
+      "outputs": []
+    },
+    {
+      "id": "phase-3-context-3-sample-1",
+      "phaseId": "phase-3",
+      "caseId": "phase-2-context-3",
+      "conditionId": "revised-strategy-astra-high",
+      "number": 1,
+      "attempt": 1,
+      "outputs": []
+    },
+    {
+      "id": "phase-3-context-3-sample-2",
+      "phaseId": "phase-3",
+      "caseId": "phase-2-context-3",
+      "conditionId": "revised-strategy-astra-high",
+      "number": 2,
+      "attempt": 1,
+      "outputs": []
+    },
+    {
+      "id": "phase-3-context-4-sample-1",
+      "phaseId": "phase-3",
+      "caseId": "phase-2-context-4",
+      "conditionId": "revised-strategy-astra-high",
+      "number": 1,
+      "attempt": 1,
+      "outputs": []
+    },
+    {
+      "id": "phase-3-context-4-sample-2",
+      "phaseId": "phase-3",
+      "caseId": "phase-2-context-4",
+      "conditionId": "revised-strategy-astra-high",
+      "number": 2,
+      "attempt": 1,
+      "outputs": []
+    },
+    {
+      "id": "phase-3-context-5-sample-1",
+      "phaseId": "phase-3",
+      "caseId": "phase-2-context-5",
+      "conditionId": "revised-strategy-astra-high",
+      "number": 1,
+      "attempt": 1,
+      "outputs": []
+    },
+    {
+      "id": "phase-3-context-5-sample-2",
+      "phaseId": "phase-3",
+      "caseId": "phase-2-context-5",
+      "conditionId": "revised-strategy-astra-high",
+      "number": 2,
+      "attempt": 1,
+      "outputs": []
+    },
+    {
+      "id": "phase-3-context-6-sample-1",
+      "phaseId": "phase-3",
+      "caseId": "phase-2-context-6",
+      "conditionId": "revised-strategy-astra-high",
+      "number": 1,
+      "attempt": 1,
+      "outputs": []
+    },
+    {
+      "id": "phase-3-context-6-sample-2",
+      "phaseId": "phase-3",
+      "caseId": "phase-2-context-6",
+      "conditionId": "revised-strategy-astra-high",
+      "number": 2,
+      "attempt": 1,
+      "outputs": []
+    },
+    {
+      "id": "phase-3-context-7-sample-1",
+      "phaseId": "phase-3",
+      "caseId": "phase-2-context-7",
+      "conditionId": "revised-strategy-astra-high",
+      "number": 1,
+      "attempt": 1,
+      "outputs": []
+    },
+    {
+      "id": "phase-3-context-7-sample-2",
+      "phaseId": "phase-3",
+      "caseId": "phase-2-context-7",
+      "conditionId": "revised-strategy-astra-high",
+      "number": 2,
+      "attempt": 1,
+      "outputs": []
+    }
+  ],
+  "comparisons": [
+    {
+      "id": "baseline-tree-parse",
+      "phaseId": "baseline",
+      "name": "Strategy selection and tree syntax",
+      "description": "Parser v1: validates the root, canvas labels, branch hierarchy and operation tags; counts [1a], [1b], [2], [3], [4] and output incidence for 3/4. Retains raw text and line-level errors, including recognized operations in invalid trees. Does not judge structural correctness, coverage, attachment validity or whether 3/4 should have been chosen.",
+      "conditionIds": [
+        "original"
+      ],
+      "caseIds": [
+        "context-1",
+        "context-2",
+        "context-3",
+        "context-4",
+        "context-5",
+        "context-6",
+        "context-7"
+      ],
+      "judgementIds": [
+        "1535f471-fc13-48a1-a42e-e13b570e4e8b"
+      ],
+      "evaluator": {
+        "kind": "deterministic",
+        "parser": "diagram-change-tree",
+        "version": 1
+      }
+    },
+    {
+      "id": "phase-2-tree-parse",
+      "phaseId": "phase-2",
+      "name": "Phase 2 strategy selection and tree syntax",
+      "description": "Deterministic diagram-change-tree parser v1, scoped only to Phase 2 outputs. Validates tree syntax and counts [1a], [1b], [2], [3], [4]. Reports errors and raw operations without repairing outputs or judging architectural correctness.",
+      "conditionIds": [
+        "revised-strategy"
+      ],
+      "caseIds": [
+        "phase-2-context-1",
+        "phase-2-context-2",
+        "phase-2-context-3",
+        "phase-2-context-4",
+        "phase-2-context-5",
+        "phase-2-context-6",
+        "phase-2-context-7"
+      ],
+      "judgementIds": [
+        "15111526-31b0-4d4f-87fe-1625fd3ab4ba"
+      ],
+      "evaluator": {
+        "kind": "deterministic",
+        "parser": "diagram-change-tree",
+        "version": 1
+      }
+    },
+    {
+      "id": "phase-3-tree-parse",
+      "phaseId": "phase-3",
+      "name": "Phase 3 strategy selection and tree syntax",
+      "description": "Same deterministic diagram-change-tree parser v1 as prior phases. Counts strategy choices and reports syntax errors without judging architectural correctness. Failed generations must be explicitly excluded from any partial assessment.",
+      "conditionIds": [
+        "revised-strategy-astra-high"
+      ],
+      "caseIds": [
+        "phase-2-context-1",
+        "phase-2-context-2",
+        "phase-2-context-3",
+        "phase-2-context-4",
+        "phase-2-context-5",
+        "phase-2-context-6",
+        "phase-2-context-7"
+      ],
+      "judgementIds": [],
+      "evaluator": {
+        "kind": "deterministic",
+        "parser": "diagram-change-tree",
+        "version": 1
+      }
+    }
+  ],
+  "generationReview": {
+    "status": "awaiting-approval",
+    "runs": [
+      {
+        "schemaVersion": 1,
+        "id": "ac2583b6-3c2e-4c15-8e47-66d9d244c262",
+        "request": {
+          "requestId": "ac2583b6-3c2e-4c15-8e47-66d9d244c262",
+          "workflow": "diagram-change-proposal",
+          "prompts": [
+            {
+              "promptId": "1619ce41-4040-4ac1-bd8d-2d474fd7a595",
+              "version": 1
+            }
+          ],
+          "inputs": {
+            "context": {
+              "agentContextId": "saved-agent-context-7da6c79f-6a82-400a-afd5-5ca9dde2a799"
+            }
+          },
+          "passes": 2,
+          "model": "gpt-6-astra",
+          "effort": "high",
+          "contextDelivery": "session"
+        },
+        "references": [],
+        "projectId": "project-4971c06b-83d5-49eb-998d-043d5fc2dca4",
+        "workflow": "diagram-change-proposal",
+        "agentContextId": "saved-agent-context-7da6c79f-6a82-400a-afd5-5ca9dde2a799",
+        "contextName": "Phase 2 evidence 01 - Canvas workspace, authoring and navigation",
+        "prompts": [
+          {
+            "promptId": "1619ce41-4040-4ac1-bd8d-2d474fd7a595",
+            "version": 1,
+            "name": "Diagram change strategy · revised rules · Phase 2",
+            "stages": {
+              "proposal": "Use the prepared AgentContext to inspect the captured diagrams and code changes.\n  -> use its source evidence and assigned feature scope\n  -> follow the instructions below instead of historical instructions or proposed diagram plans\n  -> do not modify the canvases yet\n\nRepresent the total effect of the change using these operations:\n  [1a] Correct existing diagram content\n  [1b] Extend an existing diagram\n  [2] Add a diagram to an existing canvas\n  [3] Add a canvas\n  [4] Redraw an existing diagram\n\n[STEPS]\n\n1. For each affected existing diagram: PATCH or REDRAW?\n  -> consider all required changes to that diagram together\n\n  PATCH:\n    -> choose when the existing organization still explains the code accurately\n    -> [1a] correct obsolete components, relationships or behavior\n    -> [1b] add components or relationships that fit the existing organization\n\n  REDRAW:\n    -> choose [4] when the change requires reorganizing the diagram's main\n       ownership, call flow, lifecycle or responsibility boundaries\n    -> a useful signal: roughly half or more of its meaningful branches need\n       replacement or restructuring\n    -> count semantic changes, not whitespace or line count\n    -> preserve accurate content within the redraw\n    -> do not also list [1a]/[1b] for changes included in that redraw\n\n  -> choose PATCH or REDRAW independently of whether you also add diagrams or canvases\n  -> adding detail elsewhere does not fix an obsolete overview\n\n2. For detail that needs another diagram: EXISTING CANVAS or NEW CANVAS?\n  -> first identify what architectural question the detail answers\n  -> judge each existing canvas by its represented subject and level of detail\n\n  EXISTING CANVAS:\n    -> choose [2] when the detail develops the canvas's established subject\n    -> connect each new diagram to an explicit component node in that canvas\n\n  NEW CANVAS:\n    -> choose [3] when the detail introduces a distinct subsystem, lifecycle\n       or architectural subject that needs its own overview\n    -> choose this when including the detail would require broadening an\n       existing canvas beyond its established purpose\n    -> connect back to relevant component nodes where appropriate\n\n  -> file count or diagram size alone does not determine this choice\n  -> a caller relationship alone does not determine canvas placement\n  -> [2] and [3] may both be needed for different parts of the change\n\n[EXTRA-GUIDANCE]\n\nBefore expanding a component into another diagram or canvas:\n  -> show its place in the appropriate overview:\n      who owns it, who calls it, and what it owns\n  -> connect its detailed representation from that explicit component node\n  -> use only relationships supported by the source evidence\n\nFor all operations:\n  -> preserve accurate existing representations\n  -> avoid duplicate detail\n  -> do not make formatting-only edits\n  -> do not use diff-renderer prefixes such as [-] or [+]\n  -> no operation type is required merely to fill a category\n\n[OUTPUT]\n\nReturn one ASCII tree, rooted at:\nProposed diagram changes\n\n  -> group operations by canvas\n  -> label each canvas \"existing canvas\" or \"new canvas\"\n  -> under an existing canvas, tag operations [1a], [1b], [2] or [4]\n  -> tag a new canvas branch [3]; list its diagrams as untagged children\n  -> beneath each operation, briefly state:\n      what changes, why this operation fits, and any component attachment\n  -> use actual canvas, diagram and component names\n  -> no full diagram drawings or additional recap\n\nExample structure only:\n\nProposed diagram changes\n  |-- Existing canvas name                         existing canvas\n  |   |-- [4] Redraw: Overview\n  |   |   `-- Reorganize ownership around the new runtime\n  |   `-- [2] Add: Runtime synchronization\n  |       `-- Detail the overview's explicit Runtime component\n  |\n  `-- [3] New subsystem name                       new canvas\n      |-- Subsystem overview\n      |-- Lifecycle and storage\n      `-- Connect from the existing overview's Subsystem component\n\nReturn JSON:\n{\"tree\":\"Proposed diagram changes\\n...\"}\n\n  -> the tree field is the entire visible output\n  -> use actual newlines after JSON decoding\n  -> indent canvas branches two spaces; each child level adds four columns\n  -> separate canvas names from their existing/new label with at least two spaces\n  -> no code fences or prose outside the JSON\n"
+            },
+            "templateBase": {
+              "id": "diagram-change-proposal",
+              "version": 1,
+              "name": "Diagram change proposal",
+              "tags": [
+                {
+                  "name": "agent context",
+                  "parent": null
+                },
+                {
+                  "name": "task",
+                  "parent": null
+                },
+                {
+                  "name": "steps",
+                  "parent": null
+                },
+                {
+                  "name": "extra-guidance",
+                  "parent": null
+                },
+                {
+                  "name": "output format",
+                  "parent": null
+                }
+              ]
+            },
+            "parents": [
+              {
+                "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+                "version": 3,
+                "relation": "variation"
+              }
+            ],
+            "contentHash": "78d4161c0aabbeee867b1308b7952b9a8a92b9b0a82ad19d12cfe6634b08c389",
+            "derivation": {
+              "parent": {
+                "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+                "version": 3
+              },
+              "kind": "variation",
+              "dimension": {
+                "id": "diagram-change-strategy-rules",
+                "name": "Diagram change strategy rules",
+                "value": "phase-2-revised"
+              }
+            }
+          }
+        ],
+        "contexts": {
+          "context": {
+            "agentContextId": "saved-agent-context-7da6c79f-6a82-400a-afd5-5ca9dde2a799",
+            "name": "Phase 2 evidence 01 - Canvas workspace, authoring and navigation",
+            "contentHash": "e2b687206a7c8e0dff6574006a2d8da4b7d13c878ff55c138eff5c5e28392b71"
+          }
+        },
+        "status": "queued",
+        "createdAt": "2026-11-06T16:57:15.014Z",
+        "cells": [
+          {
+            "key": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:1:proposal",
+            "promptId": "1619ce41-4040-4ac1-bd8d-2d474fd7a595",
+            "promptVersion": 1,
+            "promptName": "Diagram change strategy · revised rules · Phase 2",
+            "pass": 1,
+            "stage": "proposal",
+            "status": "queued"
+          },
+          {
+            "key": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:2:proposal",
+            "promptId": "1619ce41-4040-4ac1-bd8d-2d474fd7a595",
+            "promptVersion": 1,
+            "promptName": "Diagram change strategy · revised rules · Phase 2",
+            "pass": 2,
+            "stage": "proposal",
+            "status": "queued"
+          }
+        ],
+        "inputs": {}
+      },
+      {
+        "schemaVersion": 1,
+        "id": "e5c8f54d-1d08-43e5-b38d-5ebab7a8dad7",
+        "request": {
+          "requestId": "e5c8f54d-1d08-43e5-b38d-5ebab7a8dad7",
+          "workflow": "diagram-change-proposal",
+          "prompts": [
+            {
+              "promptId": "1619ce41-4040-4ac1-bd8d-2d474fd7a595",
+              "version": 1
+            }
+          ],
+          "inputs": {
+            "context": {
+              "agentContextId": "saved-agent-context-cfd702c9-f140-4747-b7b3-b2b8e7926b0a"
+            }
+          },
+          "passes": 2,
+          "model": "gpt-6-astra",
+          "effort": "high",
+          "contextDelivery": "session"
+        },
+        "references": [],
+        "projectId": "project-4971c06b-83d5-49eb-998d-043d5fc2dca4",
+        "workflow": "diagram-change-proposal",
+        "agentContextId": "saved-agent-context-cfd702c9-f140-4747-b7b3-b2b8e7926b0a",
+        "contextName": "Phase 2 evidence 02 - Tldraw runtime, selection and controller edits",
+        "prompts": [
+          {
+            "promptId": "1619ce41-4040-4ac1-bd8d-2d474fd7a595",
+            "version": 1,
+            "name": "Diagram change strategy · revised rules · Phase 2",
+            "stages": {
+              "proposal": "Use the prepared AgentContext to inspect the captured diagrams and code changes.\n  -> use its source evidence and assigned feature scope\n  -> follow the instructions below instead of historical instructions or proposed diagram plans\n  -> do not modify the canvases yet\n\nRepresent the total effect of the change using these operations:\n  [1a] Correct existing diagram content\n  [1b] Extend an existing diagram\n  [2] Add a diagram to an existing canvas\n  [3] Add a canvas\n  [4] Redraw an existing diagram\n\n[STEPS]\n\n1. For each affected existing diagram: PATCH or REDRAW?\n  -> consider all required changes to that diagram together\n\n  PATCH:\n    -> choose when the existing organization still explains the code accurately\n    -> [1a] correct obsolete components, relationships or behavior\n    -> [1b] add components or relationships that fit the existing organization\n\n  REDRAW:\n    -> choose [4] when the change requires reorganizing the diagram's main\n       ownership, call flow, lifecycle or responsibility boundaries\n    -> a useful signal: roughly half or more of its meaningful branches need\n       replacement or restructuring\n    -> count semantic changes, not whitespace or line count\n    -> preserve accurate content within the redraw\n    -> do not also list [1a]/[1b] for changes included in that redraw\n\n  -> choose PATCH or REDRAW independently of whether you also add diagrams or canvases\n  -> adding detail elsewhere does not fix an obsolete overview\n\n2. For detail that needs another diagram: EXISTING CANVAS or NEW CANVAS?\n  -> first identify what architectural question the detail answers\n  -> judge each existing canvas by its represented subject and level of detail\n\n  EXISTING CANVAS:\n    -> choose [2] when the detail develops the canvas's established subject\n    -> connect each new diagram to an explicit component node in that canvas\n\n  NEW CANVAS:\n    -> choose [3] when the detail introduces a distinct subsystem, lifecycle\n       or architectural subject that needs its own overview\n    -> choose this when including the detail would require broadening an\n       existing canvas beyond its established purpose\n    -> connect back to relevant component nodes where appropriate\n\n  -> file count or diagram size alone does not determine this choice\n  -> a caller relationship alone does not determine canvas placement\n  -> [2] and [3] may both be needed for different parts of the change\n\n[EXTRA-GUIDANCE]\n\nBefore expanding a component into another diagram or canvas:\n  -> show its place in the appropriate overview:\n      who owns it, who calls it, and what it owns\n  -> connect its detailed representation from that explicit component node\n  -> use only relationships supported by the source evidence\n\nFor all operations:\n  -> preserve accurate existing representations\n  -> avoid duplicate detail\n  -> do not make formatting-only edits\n  -> do not use diff-renderer prefixes such as [-] or [+]\n  -> no operation type is required merely to fill a category\n\n[OUTPUT]\n\nReturn one ASCII tree, rooted at:\nProposed diagram changes\n\n  -> group operations by canvas\n  -> label each canvas \"existing canvas\" or \"new canvas\"\n  -> under an existing canvas, tag operations [1a], [1b], [2] or [4]\n  -> tag a new canvas branch [3]; list its diagrams as untagged children\n  -> beneath each operation, briefly state:\n      what changes, why this operation fits, and any component attachment\n  -> use actual canvas, diagram and component names\n  -> no full diagram drawings or additional recap\n\nExample structure only:\n\nProposed diagram changes\n  |-- Existing canvas name                         existing canvas\n  |   |-- [4] Redraw: Overview\n  |   |   `-- Reorganize ownership around the new runtime\n  |   `-- [2] Add: Runtime synchronization\n  |       `-- Detail the overview's explicit Runtime component\n  |\n  `-- [3] New subsystem name                       new canvas\n      |-- Subsystem overview\n      |-- Lifecycle and storage\n      `-- Connect from the existing overview's Subsystem component\n\nReturn JSON:\n{\"tree\":\"Proposed diagram changes\\n...\"}\n\n  -> the tree field is the entire visible output\n  -> use actual newlines after JSON decoding\n  -> indent canvas branches two spaces; each child level adds four columns\n  -> separate canvas names from their existing/new label with at least two spaces\n  -> no code fences or prose outside the JSON\n"
+            },
+            "templateBase": {
+              "id": "diagram-change-proposal",
+              "version": 1,
+              "name": "Diagram change proposal",
+              "tags": [
+                {
+                  "name": "agent context",
+                  "parent": null
+                },
+                {
+                  "name": "task",
+                  "parent": null
+                },
+                {
+                  "name": "steps",
+                  "parent": null
+                },
+                {
+                  "name": "extra-guidance",
+                  "parent": null
+                },
+                {
+                  "name": "output format",
+                  "parent": null
+                }
+              ]
+            },
+            "parents": [
+              {
+                "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+                "version": 3,
+                "relation": "variation"
+              }
+            ],
+            "contentHash": "78d4161c0aabbeee867b1308b7952b9a8a92b9b0a82ad19d12cfe6634b08c389",
+            "derivation": {
+              "parent": {
+                "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+                "version": 3
+              },
+              "kind": "variation",
+              "dimension": {
+                "id": "diagram-change-strategy-rules",
+                "name": "Diagram change strategy rules",
+                "value": "phase-2-revised"
+              }
+            }
+          }
+        ],
+        "contexts": {
+          "context": {
+            "agentContextId": "saved-agent-context-cfd702c9-f140-4747-b7b3-b2b8e7926b0a",
+            "name": "Phase 2 evidence 02 - Tldraw runtime, selection and controller edits",
+            "contentHash": "2898f9f05e12941aa40c0919a7f09555789682580dff61ac5743a664fde3265d"
+          }
+        },
+        "status": "queued",
+        "createdAt": "2026-11-06T16:57:15.078Z",
+        "cells": [
+          {
+            "key": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:1:proposal",
+            "promptId": "1619ce41-4040-4ac1-bd8d-2d474fd7a595",
+            "promptVersion": 1,
+            "promptName": "Diagram change strategy · revised rules · Phase 2",
+            "pass": 1,
+            "stage": "proposal",
+            "status": "queued"
+          },
+          {
+            "key": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:2:proposal",
+            "promptId": "1619ce41-4040-4ac1-bd8d-2d474fd7a595",
+            "promptVersion": 1,
+            "promptName": "Diagram change strategy · revised rules · Phase 2",
+            "pass": 2,
+            "stage": "proposal",
+            "status": "queued"
+          }
+        ],
+        "inputs": {}
+      },
+      {
+        "schemaVersion": 1,
+        "id": "6bf02e32-6abc-4dca-b77f-219017485926",
+        "request": {
+          "requestId": "6bf02e32-6abc-4dca-b77f-219017485926",
+          "workflow": "diagram-change-proposal",
+          "prompts": [
+            {
+              "promptId": "1619ce41-4040-4ac1-bd8d-2d474fd7a595",
+              "version": 1
+            }
+          ],
+          "inputs": {
+            "context": {
+              "agentContextId": "saved-agent-context-b2878bac-2820-4dfd-a18e-82a4adc0beb3"
+            }
+          },
+          "passes": 2,
+          "model": "gpt-6-astra",
+          "effort": "high",
+          "contextDelivery": "session"
+        },
+        "references": [],
+        "projectId": "project-4971c06b-83d5-49eb-998d-043d5fc2dca4",
+        "workflow": "diagram-change-proposal",
+        "agentContextId": "saved-agent-context-b2878bac-2820-4dfd-a18e-82a4adc0beb3",
+        "contextName": "Phase 2 evidence 03 - Revisions, history and saved CanvasViews",
+        "prompts": [
+          {
+            "promptId": "1619ce41-4040-4ac1-bd8d-2d474fd7a595",
+            "version": 1,
+            "name": "Diagram change strategy · revised rules · Phase 2",
+            "stages": {
+              "proposal": "Use the prepared AgentContext to inspect the captured diagrams and code changes.\n  -> use its source evidence and assigned feature scope\n  -> follow the instructions below instead of historical instructions or proposed diagram plans\n  -> do not modify the canvases yet\n\nRepresent the total effect of the change using these operations:\n  [1a] Correct existing diagram content\n  [1b] Extend an existing diagram\n  [2] Add a diagram to an existing canvas\n  [3] Add a canvas\n  [4] Redraw an existing diagram\n\n[STEPS]\n\n1. For each affected existing diagram: PATCH or REDRAW?\n  -> consider all required changes to that diagram together\n\n  PATCH:\n    -> choose when the existing organization still explains the code accurately\n    -> [1a] correct obsolete components, relationships or behavior\n    -> [1b] add components or relationships that fit the existing organization\n\n  REDRAW:\n    -> choose [4] when the change requires reorganizing the diagram's main\n       ownership, call flow, lifecycle or responsibility boundaries\n    -> a useful signal: roughly half or more of its meaningful branches need\n       replacement or restructuring\n    -> count semantic changes, not whitespace or line count\n    -> preserve accurate content within the redraw\n    -> do not also list [1a]/[1b] for changes included in that redraw\n\n  -> choose PATCH or REDRAW independently of whether you also add diagrams or canvases\n  -> adding detail elsewhere does not fix an obsolete overview\n\n2. For detail that needs another diagram: EXISTING CANVAS or NEW CANVAS?\n  -> first identify what architectural question the detail answers\n  -> judge each existing canvas by its represented subject and level of detail\n\n  EXISTING CANVAS:\n    -> choose [2] when the detail develops the canvas's established subject\n    -> connect each new diagram to an explicit component node in that canvas\n\n  NEW CANVAS:\n    -> choose [3] when the detail introduces a distinct subsystem, lifecycle\n       or architectural subject that needs its own overview\n    -> choose this when including the detail would require broadening an\n       existing canvas beyond its established purpose\n    -> connect back to relevant component nodes where appropriate\n\n  -> file count or diagram size alone does not determine this choice\n  -> a caller relationship alone does not determine canvas placement\n  -> [2] and [3] may both be needed for different parts of the change\n\n[EXTRA-GUIDANCE]\n\nBefore expanding a component into another diagram or canvas:\n  -> show its place in the appropriate overview:\n      who owns it, who calls it, and what it owns\n  -> connect its detailed representation from that explicit component node\n  -> use only relationships supported by the source evidence\n\nFor all operations:\n  -> preserve accurate existing representations\n  -> avoid duplicate detail\n  -> do not make formatting-only edits\n  -> do not use diff-renderer prefixes such as [-] or [+]\n  -> no operation type is required merely to fill a category\n\n[OUTPUT]\n\nReturn one ASCII tree, rooted at:\nProposed diagram changes\n\n  -> group operations by canvas\n  -> label each canvas \"existing canvas\" or \"new canvas\"\n  -> under an existing canvas, tag operations [1a], [1b], [2] or [4]\n  -> tag a new canvas branch [3]; list its diagrams as untagged children\n  -> beneath each operation, briefly state:\n      what changes, why this operation fits, and any component attachment\n  -> use actual canvas, diagram and component names\n  -> no full diagram drawings or additional recap\n\nExample structure only:\n\nProposed diagram changes\n  |-- Existing canvas name                         existing canvas\n  |   |-- [4] Redraw: Overview\n  |   |   `-- Reorganize ownership around the new runtime\n  |   `-- [2] Add: Runtime synchronization\n  |       `-- Detail the overview's explicit Runtime component\n  |\n  `-- [3] New subsystem name                       new canvas\n      |-- Subsystem overview\n      |-- Lifecycle and storage\n      `-- Connect from the existing overview's Subsystem component\n\nReturn JSON:\n{\"tree\":\"Proposed diagram changes\\n...\"}\n\n  -> the tree field is the entire visible output\n  -> use actual newlines after JSON decoding\n  -> indent canvas branches two spaces; each child level adds four columns\n  -> separate canvas names from their existing/new label with at least two spaces\n  -> no code fences or prose outside the JSON\n"
+            },
+            "templateBase": {
+              "id": "diagram-change-proposal",
+              "version": 1,
+              "name": "Diagram change proposal",
+              "tags": [
+                {
+                  "name": "agent context",
+                  "parent": null
+                },
+                {
+                  "name": "task",
+                  "parent": null
+                },
+                {
+                  "name": "steps",
+                  "parent": null
+                },
+                {
+                  "name": "extra-guidance",
+                  "parent": null
+                },
+                {
+                  "name": "output format",
+                  "parent": null
+                }
+              ]
+            },
+            "parents": [
+              {
+                "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+                "version": 3,
+                "relation": "variation"
+              }
+            ],
+            "contentHash": "78d4161c0aabbeee867b1308b7952b9a8a92b9b0a82ad19d12cfe6634b08c389",
+            "derivation": {
+              "parent": {
+                "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+                "version": 3
+              },
+              "kind": "variation",
+              "dimension": {
+                "id": "diagram-change-strategy-rules",
+                "name": "Diagram change strategy rules",
+                "value": "phase-2-revised"
+              }
+            }
+          }
+        ],
+        "contexts": {
+          "context": {
+            "agentContextId": "saved-agent-context-b2878bac-2820-4dfd-a18e-82a4adc0beb3",
+            "name": "Phase 2 evidence 03 - Revisions, history and saved CanvasViews",
+            "contentHash": "9359502bef338bc5a8c0a347489766ce645a01bde60a2d0577ef845a73d0e33e"
+          }
+        },
+        "status": "queued",
+        "createdAt": "2026-11-06T16:57:15.136Z",
+        "cells": [
+          {
+            "key": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:1:proposal",
+            "promptId": "1619ce41-4040-4ac1-bd8d-2d474fd7a595",
+            "promptVersion": 1,
+            "promptName": "Diagram change strategy · revised rules · Phase 2",
+            "pass": 1,
+            "stage": "proposal",
+            "status": "queued"
+          },
+          {
+            "key": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:2:proposal",
+            "promptId": "1619ce41-4040-4ac1-bd8d-2d474fd7a595",
+            "promptVersion": 1,
+            "promptName": "Diagram change strategy · revised rules · Phase 2",
+            "pass": 2,
+            "stage": "proposal",
+            "status": "queued"
+          }
+        ],
+        "inputs": {}
+      },
+      {
+        "schemaVersion": 1,
+        "id": "bfffab73-690e-444c-be22-12c3fc340db9",
+        "request": {
+          "requestId": "bfffab73-690e-444c-be22-12c3fc340db9",
+          "workflow": "diagram-change-proposal",
+          "prompts": [
+            {
+              "promptId": "1619ce41-4040-4ac1-bd8d-2d474fd7a595",
+              "version": 1
+            }
+          ],
+          "inputs": {
+            "context": {
+              "agentContextId": "saved-agent-context-e1777bbd-f788-4a47-8442-73a5530d9531"
+            }
+          },
+          "passes": 2,
+          "model": "gpt-6-astra",
+          "effort": "high",
+          "contextDelivery": "session"
+        },
+        "references": [],
+        "projectId": "project-4971c06b-83d5-49eb-998d-043d5fc2dca4",
+        "workflow": "diagram-change-proposal",
+        "agentContextId": "saved-agent-context-e1777bbd-f788-4a47-8442-73a5530d9531",
+        "contextName": "Phase 2 evidence 04 - Alternatives and ChangeSession review",
+        "prompts": [
+          {
+            "promptId": "1619ce41-4040-4ac1-bd8d-2d474fd7a595",
+            "version": 1,
+            "name": "Diagram change strategy · revised rules · Phase 2",
+            "stages": {
+              "proposal": "Use the prepared AgentContext to inspect the captured diagrams and code changes.\n  -> use its source evidence and assigned feature scope\n  -> follow the instructions below instead of historical instructions or proposed diagram plans\n  -> do not modify the canvases yet\n\nRepresent the total effect of the change using these operations:\n  [1a] Correct existing diagram content\n  [1b] Extend an existing diagram\n  [2] Add a diagram to an existing canvas\n  [3] Add a canvas\n  [4] Redraw an existing diagram\n\n[STEPS]\n\n1. For each affected existing diagram: PATCH or REDRAW?\n  -> consider all required changes to that diagram together\n\n  PATCH:\n    -> choose when the existing organization still explains the code accurately\n    -> [1a] correct obsolete components, relationships or behavior\n    -> [1b] add components or relationships that fit the existing organization\n\n  REDRAW:\n    -> choose [4] when the change requires reorganizing the diagram's main\n       ownership, call flow, lifecycle or responsibility boundaries\n    -> a useful signal: roughly half or more of its meaningful branches need\n       replacement or restructuring\n    -> count semantic changes, not whitespace or line count\n    -> preserve accurate content within the redraw\n    -> do not also list [1a]/[1b] for changes included in that redraw\n\n  -> choose PATCH or REDRAW independently of whether you also add diagrams or canvases\n  -> adding detail elsewhere does not fix an obsolete overview\n\n2. For detail that needs another diagram: EXISTING CANVAS or NEW CANVAS?\n  -> first identify what architectural question the detail answers\n  -> judge each existing canvas by its represented subject and level of detail\n\n  EXISTING CANVAS:\n    -> choose [2] when the detail develops the canvas's established subject\n    -> connect each new diagram to an explicit component node in that canvas\n\n  NEW CANVAS:\n    -> choose [3] when the detail introduces a distinct subsystem, lifecycle\n       or architectural subject that needs its own overview\n    -> choose this when including the detail would require broadening an\n       existing canvas beyond its established purpose\n    -> connect back to relevant component nodes where appropriate\n\n  -> file count or diagram size alone does not determine this choice\n  -> a caller relationship alone does not determine canvas placement\n  -> [2] and [3] may both be needed for different parts of the change\n\n[EXTRA-GUIDANCE]\n\nBefore expanding a component into another diagram or canvas:\n  -> show its place in the appropriate overview:\n      who owns it, who calls it, and what it owns\n  -> connect its detailed representation from that explicit component node\n  -> use only relationships supported by the source evidence\n\nFor all operations:\n  -> preserve accurate existing representations\n  -> avoid duplicate detail\n  -> do not make formatting-only edits\n  -> do not use diff-renderer prefixes such as [-] or [+]\n  -> no operation type is required merely to fill a category\n\n[OUTPUT]\n\nReturn one ASCII tree, rooted at:\nProposed diagram changes\n\n  -> group operations by canvas\n  -> label each canvas \"existing canvas\" or \"new canvas\"\n  -> under an existing canvas, tag operations [1a], [1b], [2] or [4]\n  -> tag a new canvas branch [3]; list its diagrams as untagged children\n  -> beneath each operation, briefly state:\n      what changes, why this operation fits, and any component attachment\n  -> use actual canvas, diagram and component names\n  -> no full diagram drawings or additional recap\n\nExample structure only:\n\nProposed diagram changes\n  |-- Existing canvas name                         existing canvas\n  |   |-- [4] Redraw: Overview\n  |   |   `-- Reorganize ownership around the new runtime\n  |   `-- [2] Add: Runtime synchronization\n  |       `-- Detail the overview's explicit Runtime component\n  |\n  `-- [3] New subsystem name                       new canvas\n      |-- Subsystem overview\n      |-- Lifecycle and storage\n      `-- Connect from the existing overview's Subsystem component\n\nReturn JSON:\n{\"tree\":\"Proposed diagram changes\\n...\"}\n\n  -> the tree field is the entire visible output\n  -> use actual newlines after JSON decoding\n  -> indent canvas branches two spaces; each child level adds four columns\n  -> separate canvas names from their existing/new label with at least two spaces\n  -> no code fences or prose outside the JSON\n"
+            },
+            "templateBase": {
+              "id": "diagram-change-proposal",
+              "version": 1,
+              "name": "Diagram change proposal",
+              "tags": [
+                {
+                  "name": "agent context",
+                  "parent": null
+                },
+                {
+                  "name": "task",
+                  "parent": null
+                },
+                {
+                  "name": "steps",
+                  "parent": null
+                },
+                {
+                  "name": "extra-guidance",
+                  "parent": null
+                },
+                {
+                  "name": "output format",
+                  "parent": null
+                }
+              ]
+            },
+            "parents": [
+              {
+                "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+                "version": 3,
+                "relation": "variation"
+              }
+            ],
+            "contentHash": "78d4161c0aabbeee867b1308b7952b9a8a92b9b0a82ad19d12cfe6634b08c389",
+            "derivation": {
+              "parent": {
+                "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+                "version": 3
+              },
+              "kind": "variation",
+              "dimension": {
+                "id": "diagram-change-strategy-rules",
+                "name": "Diagram change strategy rules",
+                "value": "phase-2-revised"
+              }
+            }
+          }
+        ],
+        "contexts": {
+          "context": {
+            "agentContextId": "saved-agent-context-e1777bbd-f788-4a47-8442-73a5530d9531",
+            "name": "Phase 2 evidence 04 - Alternatives and ChangeSession review",
+            "contentHash": "b6388f6a9daf9977748ac8180126c2df6540734f084e81d8acda30ac4c9e5deb"
+          }
+        },
+        "status": "queued",
+        "createdAt": "2026-11-06T16:57:15.189Z",
+        "cells": [
+          {
+            "key": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:1:proposal",
+            "promptId": "1619ce41-4040-4ac1-bd8d-2d474fd7a595",
+            "promptVersion": 1,
+            "promptName": "Diagram change strategy · revised rules · Phase 2",
+            "pass": 1,
+            "stage": "proposal",
+            "status": "queued"
+          },
+          {
+            "key": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:2:proposal",
+            "promptId": "1619ce41-4040-4ac1-bd8d-2d474fd7a595",
+            "promptVersion": 1,
+            "promptName": "Diagram change strategy · revised rules · Phase 2",
+            "pass": 2,
+            "stage": "proposal",
+            "status": "queued"
+          }
+        ],
+        "inputs": {}
+      },
+      {
+        "schemaVersion": 1,
+        "id": "eb88b1ae-f048-4714-8232-dd6b4506d348",
+        "request": {
+          "requestId": "eb88b1ae-f048-4714-8232-dd6b4506d348",
+          "workflow": "diagram-change-proposal",
+          "prompts": [
+            {
+              "promptId": "1619ce41-4040-4ac1-bd8d-2d474fd7a595",
+              "version": 1
+            }
+          ],
+          "inputs": {
+            "context": {
+              "agentContextId": "saved-agent-context-e8cc44b9-5f45-4579-9011-ba4fe3852620"
+            }
+          },
+          "passes": 2,
+          "model": "gpt-6-astra",
+          "effort": "high",
+          "contextDelivery": "session"
+        },
+        "references": [],
+        "projectId": "project-4971c06b-83d5-49eb-998d-043d5fc2dca4",
+        "workflow": "diagram-change-proposal",
+        "agentContextId": "saved-agent-context-e8cc44b9-5f45-4579-9011-ba4fe3852620",
+        "contextName": "Phase 2 evidence 05 - AgentChat, generation and Canvas API",
+        "prompts": [
+          {
+            "promptId": "1619ce41-4040-4ac1-bd8d-2d474fd7a595",
+            "version": 1,
+            "name": "Diagram change strategy · revised rules · Phase 2",
+            "stages": {
+              "proposal": "Use the prepared AgentContext to inspect the captured diagrams and code changes.\n  -> use its source evidence and assigned feature scope\n  -> follow the instructions below instead of historical instructions or proposed diagram plans\n  -> do not modify the canvases yet\n\nRepresent the total effect of the change using these operations:\n  [1a] Correct existing diagram content\n  [1b] Extend an existing diagram\n  [2] Add a diagram to an existing canvas\n  [3] Add a canvas\n  [4] Redraw an existing diagram\n\n[STEPS]\n\n1. For each affected existing diagram: PATCH or REDRAW?\n  -> consider all required changes to that diagram together\n\n  PATCH:\n    -> choose when the existing organization still explains the code accurately\n    -> [1a] correct obsolete components, relationships or behavior\n    -> [1b] add components or relationships that fit the existing organization\n\n  REDRAW:\n    -> choose [4] when the change requires reorganizing the diagram's main\n       ownership, call flow, lifecycle or responsibility boundaries\n    -> a useful signal: roughly half or more of its meaningful branches need\n       replacement or restructuring\n    -> count semantic changes, not whitespace or line count\n    -> preserve accurate content within the redraw\n    -> do not also list [1a]/[1b] for changes included in that redraw\n\n  -> choose PATCH or REDRAW independently of whether you also add diagrams or canvases\n  -> adding detail elsewhere does not fix an obsolete overview\n\n2. For detail that needs another diagram: EXISTING CANVAS or NEW CANVAS?\n  -> first identify what architectural question the detail answers\n  -> judge each existing canvas by its represented subject and level of detail\n\n  EXISTING CANVAS:\n    -> choose [2] when the detail develops the canvas's established subject\n    -> connect each new diagram to an explicit component node in that canvas\n\n  NEW CANVAS:\n    -> choose [3] when the detail introduces a distinct subsystem, lifecycle\n       or architectural subject that needs its own overview\n    -> choose this when including the detail would require broadening an\n       existing canvas beyond its established purpose\n    -> connect back to relevant component nodes where appropriate\n\n  -> file count or diagram size alone does not determine this choice\n  -> a caller relationship alone does not determine canvas placement\n  -> [2] and [3] may both be needed for different parts of the change\n\n[EXTRA-GUIDANCE]\n\nBefore expanding a component into another diagram or canvas:\n  -> show its place in the appropriate overview:\n      who owns it, who calls it, and what it owns\n  -> connect its detailed representation from that explicit component node\n  -> use only relationships supported by the source evidence\n\nFor all operations:\n  -> preserve accurate existing representations\n  -> avoid duplicate detail\n  -> do not make formatting-only edits\n  -> do not use diff-renderer prefixes such as [-] or [+]\n  -> no operation type is required merely to fill a category\n\n[OUTPUT]\n\nReturn one ASCII tree, rooted at:\nProposed diagram changes\n\n  -> group operations by canvas\n  -> label each canvas \"existing canvas\" or \"new canvas\"\n  -> under an existing canvas, tag operations [1a], [1b], [2] or [4]\n  -> tag a new canvas branch [3]; list its diagrams as untagged children\n  -> beneath each operation, briefly state:\n      what changes, why this operation fits, and any component attachment\n  -> use actual canvas, diagram and component names\n  -> no full diagram drawings or additional recap\n\nExample structure only:\n\nProposed diagram changes\n  |-- Existing canvas name                         existing canvas\n  |   |-- [4] Redraw: Overview\n  |   |   `-- Reorganize ownership around the new runtime\n  |   `-- [2] Add: Runtime synchronization\n  |       `-- Detail the overview's explicit Runtime component\n  |\n  `-- [3] New subsystem name                       new canvas\n      |-- Subsystem overview\n      |-- Lifecycle and storage\n      `-- Connect from the existing overview's Subsystem component\n\nReturn JSON:\n{\"tree\":\"Proposed diagram changes\\n...\"}\n\n  -> the tree field is the entire visible output\n  -> use actual newlines after JSON decoding\n  -> indent canvas branches two spaces; each child level adds four columns\n  -> separate canvas names from their existing/new label with at least two spaces\n  -> no code fences or prose outside the JSON\n"
+            },
+            "templateBase": {
+              "id": "diagram-change-proposal",
+              "version": 1,
+              "name": "Diagram change proposal",
+              "tags": [
+                {
+                  "name": "agent context",
+                  "parent": null
+                },
+                {
+                  "name": "task",
+                  "parent": null
+                },
+                {
+                  "name": "steps",
+                  "parent": null
+                },
+                {
+                  "name": "extra-guidance",
+                  "parent": null
+                },
+                {
+                  "name": "output format",
+                  "parent": null
+                }
+              ]
+            },
+            "parents": [
+              {
+                "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+                "version": 3,
+                "relation": "variation"
+              }
+            ],
+            "contentHash": "78d4161c0aabbeee867b1308b7952b9a8a92b9b0a82ad19d12cfe6634b08c389",
+            "derivation": {
+              "parent": {
+                "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+                "version": 3
+              },
+              "kind": "variation",
+              "dimension": {
+                "id": "diagram-change-strategy-rules",
+                "name": "Diagram change strategy rules",
+                "value": "phase-2-revised"
+              }
+            }
+          }
+        ],
+        "contexts": {
+          "context": {
+            "agentContextId": "saved-agent-context-e8cc44b9-5f45-4579-9011-ba4fe3852620",
+            "name": "Phase 2 evidence 05 - AgentChat, generation and Canvas API",
+            "contentHash": "3f27635117e3f14382541854d66c01811024f7a2b582721a48317213db305e7c"
+          }
+        },
+        "status": "queued",
+        "createdAt": "2026-11-06T16:57:15.241Z",
+        "cells": [
+          {
+            "key": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:1:proposal",
+            "promptId": "1619ce41-4040-4ac1-bd8d-2d474fd7a595",
+            "promptVersion": 1,
+            "promptName": "Diagram change strategy · revised rules · Phase 2",
+            "pass": 1,
+            "stage": "proposal",
+            "status": "queued"
+          },
+          {
+            "key": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:2:proposal",
+            "promptId": "1619ce41-4040-4ac1-bd8d-2d474fd7a595",
+            "promptVersion": 1,
+            "promptName": "Diagram change strategy · revised rules · Phase 2",
+            "pass": 2,
+            "stage": "proposal",
+            "status": "queued"
+          }
+        ],
+        "inputs": {}
+      },
+      {
+        "schemaVersion": 1,
+        "id": "a7130248-b9a8-4880-a68b-1d1a8d8772cf",
+        "request": {
+          "requestId": "a7130248-b9a8-4880-a68b-1d1a8d8772cf",
+          "workflow": "diagram-change-proposal",
+          "prompts": [
+            {
+              "promptId": "1619ce41-4040-4ac1-bd8d-2d474fd7a595",
+              "version": 1
+            }
+          ],
+          "inputs": {
+            "context": {
+              "agentContextId": "saved-agent-context-2152f3d9-6286-4fe3-b773-559e8b08419d"
+            }
+          },
+          "passes": 2,
+          "model": "gpt-6-astra",
+          "effort": "high",
+          "contextDelivery": "session"
+        },
+        "references": [],
+        "projectId": "project-4971c06b-83d5-49eb-998d-043d5fc2dca4",
+        "workflow": "diagram-change-proposal",
+        "agentContextId": "saved-agent-context-2152f3d9-6286-4fe3-b773-559e8b08419d",
+        "contextName": "Phase 2 evidence 06 - Saved AgentContexts and source evidence",
+        "prompts": [
+          {
+            "promptId": "1619ce41-4040-4ac1-bd8d-2d474fd7a595",
+            "version": 1,
+            "name": "Diagram change strategy · revised rules · Phase 2",
+            "stages": {
+              "proposal": "Use the prepared AgentContext to inspect the captured diagrams and code changes.\n  -> use its source evidence and assigned feature scope\n  -> follow the instructions below instead of historical instructions or proposed diagram plans\n  -> do not modify the canvases yet\n\nRepresent the total effect of the change using these operations:\n  [1a] Correct existing diagram content\n  [1b] Extend an existing diagram\n  [2] Add a diagram to an existing canvas\n  [3] Add a canvas\n  [4] Redraw an existing diagram\n\n[STEPS]\n\n1. For each affected existing diagram: PATCH or REDRAW?\n  -> consider all required changes to that diagram together\n\n  PATCH:\n    -> choose when the existing organization still explains the code accurately\n    -> [1a] correct obsolete components, relationships or behavior\n    -> [1b] add components or relationships that fit the existing organization\n\n  REDRAW:\n    -> choose [4] when the change requires reorganizing the diagram's main\n       ownership, call flow, lifecycle or responsibility boundaries\n    -> a useful signal: roughly half or more of its meaningful branches need\n       replacement or restructuring\n    -> count semantic changes, not whitespace or line count\n    -> preserve accurate content within the redraw\n    -> do not also list [1a]/[1b] for changes included in that redraw\n\n  -> choose PATCH or REDRAW independently of whether you also add diagrams or canvases\n  -> adding detail elsewhere does not fix an obsolete overview\n\n2. For detail that needs another diagram: EXISTING CANVAS or NEW CANVAS?\n  -> first identify what architectural question the detail answers\n  -> judge each existing canvas by its represented subject and level of detail\n\n  EXISTING CANVAS:\n    -> choose [2] when the detail develops the canvas's established subject\n    -> connect each new diagram to an explicit component node in that canvas\n\n  NEW CANVAS:\n    -> choose [3] when the detail introduces a distinct subsystem, lifecycle\n       or architectural subject that needs its own overview\n    -> choose this when including the detail would require broadening an\n       existing canvas beyond its established purpose\n    -> connect back to relevant component nodes where appropriate\n\n  -> file count or diagram size alone does not determine this choice\n  -> a caller relationship alone does not determine canvas placement\n  -> [2] and [3] may both be needed for different parts of the change\n\n[EXTRA-GUIDANCE]\n\nBefore expanding a component into another diagram or canvas:\n  -> show its place in the appropriate overview:\n      who owns it, who calls it, and what it owns\n  -> connect its detailed representation from that explicit component node\n  -> use only relationships supported by the source evidence\n\nFor all operations:\n  -> preserve accurate existing representations\n  -> avoid duplicate detail\n  -> do not make formatting-only edits\n  -> do not use diff-renderer prefixes such as [-] or [+]\n  -> no operation type is required merely to fill a category\n\n[OUTPUT]\n\nReturn one ASCII tree, rooted at:\nProposed diagram changes\n\n  -> group operations by canvas\n  -> label each canvas \"existing canvas\" or \"new canvas\"\n  -> under an existing canvas, tag operations [1a], [1b], [2] or [4]\n  -> tag a new canvas branch [3]; list its diagrams as untagged children\n  -> beneath each operation, briefly state:\n      what changes, why this operation fits, and any component attachment\n  -> use actual canvas, diagram and component names\n  -> no full diagram drawings or additional recap\n\nExample structure only:\n\nProposed diagram changes\n  |-- Existing canvas name                         existing canvas\n  |   |-- [4] Redraw: Overview\n  |   |   `-- Reorganize ownership around the new runtime\n  |   `-- [2] Add: Runtime synchronization\n  |       `-- Detail the overview's explicit Runtime component\n  |\n  `-- [3] New subsystem name                       new canvas\n      |-- Subsystem overview\n      |-- Lifecycle and storage\n      `-- Connect from the existing overview's Subsystem component\n\nReturn JSON:\n{\"tree\":\"Proposed diagram changes\\n...\"}\n\n  -> the tree field is the entire visible output\n  -> use actual newlines after JSON decoding\n  -> indent canvas branches two spaces; each child level adds four columns\n  -> separate canvas names from their existing/new label with at least two spaces\n  -> no code fences or prose outside the JSON\n"
+            },
+            "templateBase": {
+              "id": "diagram-change-proposal",
+              "version": 1,
+              "name": "Diagram change proposal",
+              "tags": [
+                {
+                  "name": "agent context",
+                  "parent": null
+                },
+                {
+                  "name": "task",
+                  "parent": null
+                },
+                {
+                  "name": "steps",
+                  "parent": null
+                },
+                {
+                  "name": "extra-guidance",
+                  "parent": null
+                },
+                {
+                  "name": "output format",
+                  "parent": null
+                }
+              ]
+            },
+            "parents": [
+              {
+                "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+                "version": 3,
+                "relation": "variation"
+              }
+            ],
+            "contentHash": "78d4161c0aabbeee867b1308b7952b9a8a92b9b0a82ad19d12cfe6634b08c389",
+            "derivation": {
+              "parent": {
+                "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+                "version": 3
+              },
+              "kind": "variation",
+              "dimension": {
+                "id": "diagram-change-strategy-rules",
+                "name": "Diagram change strategy rules",
+                "value": "phase-2-revised"
+              }
+            }
+          }
+        ],
+        "contexts": {
+          "context": {
+            "agentContextId": "saved-agent-context-2152f3d9-6286-4fe3-b773-559e8b08419d",
+            "name": "Phase 2 evidence 06 - Saved AgentContexts and source evidence",
+            "contentHash": "902926eccacdd91cf30dfc20b376555fab9eeddb64491626375ac6cfc68ab93f"
+          }
+        },
+        "status": "queued",
+        "createdAt": "2026-11-06T16:57:15.275Z",
+        "cells": [
+          {
+            "key": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:1:proposal",
+            "promptId": "1619ce41-4040-4ac1-bd8d-2d474fd7a595",
+            "promptVersion": 1,
+            "promptName": "Diagram change strategy · revised rules · Phase 2",
+            "pass": 1,
+            "stage": "proposal",
+            "status": "queued"
+          },
+          {
+            "key": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:2:proposal",
+            "promptId": "1619ce41-4040-4ac1-bd8d-2d474fd7a595",
+            "promptVersion": 1,
+            "promptName": "Diagram change strategy · revised rules · Phase 2",
+            "pass": 2,
+            "stage": "proposal",
+            "status": "queued"
+          }
+        ],
+        "inputs": {}
+      },
+      {
+        "schemaVersion": 1,
+        "id": "3dfb656e-8c3f-43e8-81d7-58d3dbb49d5a",
+        "request": {
+          "requestId": "3dfb656e-8c3f-43e8-81d7-58d3dbb49d5a",
+          "workflow": "diagram-change-proposal",
+          "prompts": [
+            {
+              "promptId": "1619ce41-4040-4ac1-bd8d-2d474fd7a595",
+              "version": 1
+            }
+          ],
+          "inputs": {
+            "context": {
+              "agentContextId": "saved-agent-context-6487e589-09e2-48e4-8683-093cbeb54267"
+            }
+          },
+          "passes": 2,
+          "model": "gpt-6-astra",
+          "effort": "high",
+          "contextDelivery": "session"
+        },
+        "references": [],
+        "projectId": "project-4971c06b-83d5-49eb-998d-043d5fc2dca4",
+        "workflow": "diagram-change-proposal",
+        "agentContextId": "saved-agent-context-6487e589-09e2-48e4-8683-093cbeb54267",
+        "contextName": "Phase 2 evidence 07 - Persistence and durable storage",
+        "prompts": [
+          {
+            "promptId": "1619ce41-4040-4ac1-bd8d-2d474fd7a595",
+            "version": 1,
+            "name": "Diagram change strategy · revised rules · Phase 2",
+            "stages": {
+              "proposal": "Use the prepared AgentContext to inspect the captured diagrams and code changes.\n  -> use its source evidence and assigned feature scope\n  -> follow the instructions below instead of historical instructions or proposed diagram plans\n  -> do not modify the canvases yet\n\nRepresent the total effect of the change using these operations:\n  [1a] Correct existing diagram content\n  [1b] Extend an existing diagram\n  [2] Add a diagram to an existing canvas\n  [3] Add a canvas\n  [4] Redraw an existing diagram\n\n[STEPS]\n\n1. For each affected existing diagram: PATCH or REDRAW?\n  -> consider all required changes to that diagram together\n\n  PATCH:\n    -> choose when the existing organization still explains the code accurately\n    -> [1a] correct obsolete components, relationships or behavior\n    -> [1b] add components or relationships that fit the existing organization\n\n  REDRAW:\n    -> choose [4] when the change requires reorganizing the diagram's main\n       ownership, call flow, lifecycle or responsibility boundaries\n    -> a useful signal: roughly half or more of its meaningful branches need\n       replacement or restructuring\n    -> count semantic changes, not whitespace or line count\n    -> preserve accurate content within the redraw\n    -> do not also list [1a]/[1b] for changes included in that redraw\n\n  -> choose PATCH or REDRAW independently of whether you also add diagrams or canvases\n  -> adding detail elsewhere does not fix an obsolete overview\n\n2. For detail that needs another diagram: EXISTING CANVAS or NEW CANVAS?\n  -> first identify what architectural question the detail answers\n  -> judge each existing canvas by its represented subject and level of detail\n\n  EXISTING CANVAS:\n    -> choose [2] when the detail develops the canvas's established subject\n    -> connect each new diagram to an explicit component node in that canvas\n\n  NEW CANVAS:\n    -> choose [3] when the detail introduces a distinct subsystem, lifecycle\n       or architectural subject that needs its own overview\n    -> choose this when including the detail would require broadening an\n       existing canvas beyond its established purpose\n    -> connect back to relevant component nodes where appropriate\n\n  -> file count or diagram size alone does not determine this choice\n  -> a caller relationship alone does not determine canvas placement\n  -> [2] and [3] may both be needed for different parts of the change\n\n[EXTRA-GUIDANCE]\n\nBefore expanding a component into another diagram or canvas:\n  -> show its place in the appropriate overview:\n      who owns it, who calls it, and what it owns\n  -> connect its detailed representation from that explicit component node\n  -> use only relationships supported by the source evidence\n\nFor all operations:\n  -> preserve accurate existing representations\n  -> avoid duplicate detail\n  -> do not make formatting-only edits\n  -> do not use diff-renderer prefixes such as [-] or [+]\n  -> no operation type is required merely to fill a category\n\n[OUTPUT]\n\nReturn one ASCII tree, rooted at:\nProposed diagram changes\n\n  -> group operations by canvas\n  -> label each canvas \"existing canvas\" or \"new canvas\"\n  -> under an existing canvas, tag operations [1a], [1b], [2] or [4]\n  -> tag a new canvas branch [3]; list its diagrams as untagged children\n  -> beneath each operation, briefly state:\n      what changes, why this operation fits, and any component attachment\n  -> use actual canvas, diagram and component names\n  -> no full diagram drawings or additional recap\n\nExample structure only:\n\nProposed diagram changes\n  |-- Existing canvas name                         existing canvas\n  |   |-- [4] Redraw: Overview\n  |   |   `-- Reorganize ownership around the new runtime\n  |   `-- [2] Add: Runtime synchronization\n  |       `-- Detail the overview's explicit Runtime component\n  |\n  `-- [3] New subsystem name                       new canvas\n      |-- Subsystem overview\n      |-- Lifecycle and storage\n      `-- Connect from the existing overview's Subsystem component\n\nReturn JSON:\n{\"tree\":\"Proposed diagram changes\\n...\"}\n\n  -> the tree field is the entire visible output\n  -> use actual newlines after JSON decoding\n  -> indent canvas branches two spaces; each child level adds four columns\n  -> separate canvas names from their existing/new label with at least two spaces\n  -> no code fences or prose outside the JSON\n"
+            },
+            "templateBase": {
+              "id": "diagram-change-proposal",
+              "version": 1,
+              "name": "Diagram change proposal",
+              "tags": [
+                {
+                  "name": "agent context",
+                  "parent": null
+                },
+                {
+                  "name": "task",
+                  "parent": null
+                },
+                {
+                  "name": "steps",
+                  "parent": null
+                },
+                {
+                  "name": "extra-guidance",
+                  "parent": null
+                },
+                {
+                  "name": "output format",
+                  "parent": null
+                }
+              ]
+            },
+            "parents": [
+              {
+                "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+                "version": 3,
+                "relation": "variation"
+              }
+            ],
+            "contentHash": "78d4161c0aabbeee867b1308b7952b9a8a92b9b0a82ad19d12cfe6634b08c389",
+            "derivation": {
+              "parent": {
+                "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+                "version": 3
+              },
+              "kind": "variation",
+              "dimension": {
+                "id": "diagram-change-strategy-rules",
+                "name": "Diagram change strategy rules",
+                "value": "phase-2-revised"
+              }
+            }
+          }
+        ],
+        "contexts": {
+          "context": {
+            "agentContextId": "saved-agent-context-6487e589-09e2-48e4-8683-093cbeb54267",
+            "name": "Phase 2 evidence 07 - Persistence and durable storage",
+            "contentHash": "6608ea6828402b385bab3f8ab56e47da1e5f9d340d8421be59421a672674d4d9"
+          }
+        },
+        "status": "queued",
+        "createdAt": "2026-11-06T16:57:15.324Z",
+        "cells": [
+          {
+            "key": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:1:proposal",
+            "promptId": "1619ce41-4040-4ac1-bd8d-2d474fd7a595",
+            "promptVersion": 1,
+            "promptName": "Diagram change strategy · revised rules · Phase 2",
+            "pass": 1,
+            "stage": "proposal",
+            "status": "queued"
+          },
+          {
+            "key": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:2:proposal",
+            "promptId": "1619ce41-4040-4ac1-bd8d-2d474fd7a595",
+            "promptVersion": 1,
+            "promptName": "Diagram change strategy · revised rules · Phase 2",
+            "pass": 2,
+            "stage": "proposal",
+            "status": "queued"
+          }
+        ],
+        "inputs": {}
+      }
+    ]
+  },
+  "schemaVersion": 1,
+  "id": "f1ee9846-f13d-448d-9628-99e7c3bd6d1a",
+  "projectId": "project-4971c06b-83d5-49eb-998d-043d5fc2dca4",
+  "revision": 11,
+  "createdAt": "2026-11-05T23:40:53.175Z",
+  "updatedAt": "2026-11-06T16:57:15.325Z"
+}

@@ -32,6 +32,7 @@
     "check:domain-profiles": "node tests/browser/core/browser-domain-profiles-check.mjs",
     "check:markdown": "tsx tests/browser/core/browser-markdown-check.mjs",
     "dev": "node scripts/dev/start-server.mjs --host 127.0.0.1",
+    "dev:reload": "node --import tsx scripts/dev/reload-server.ts",
     "preview": "node scripts/dev/start-server.mjs preview --host 127.0.0.1",
     "test": "vitest run",
     "parse:diagram": "tsx scripts/diagrams/parse-diagram.ts",

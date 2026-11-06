@@ -1,0 +1,120 @@
+{
+  "cases": [
+    {
+      "case": "01",
+      "name": "ChangeSession v2 01 - Canvas workspace, authoring and navigation",
+      "agentContextId": "saved-agent-context-16ba6214-8c1a-4617-b165-3242ac53e23b",
+      "originalHash": "552ea9469cc2b027ce7cb8f9f1b7d8de7c42863b48ea0267c9e0cb033e00618d",
+      "resolvedHash": "d3796a1447f0af2d256a70354883f30ec176517e5653323dd189f6c09d5f0aa9",
+      "resolvedBytes": 630092,
+      "ownedDiagramsPresent": 6,
+      "capturedCanvases": 12,
+      "sourceReferencesResolved": 32,
+      "changedFiles": 27,
+      "assignedFeatures": [
+        4,
+        9,
+        10,
+        11
+      ]
+    },
+    {
+      "case": "02",
+      "name": "ChangeSession v2 02 - Tldraw runtime, selection and controller edits",
+      "agentContextId": "saved-agent-context-db04f7f1-5aa5-4159-8466-79d0799722b0",
+      "originalHash": "5c9a0e457d2e8ed370cbfa605e472c62c54f714bca773b4c85b30f7ca5e340fa",
+      "resolvedHash": "86c6ab1ce433e9811427e3fa2d807397686e950715e919754876082c2358bd98",
+      "resolvedBytes": 556253,
+      "ownedDiagramsPresent": 7,
+      "capturedCanvases": 12,
+      "sourceReferencesResolved": 21,
+      "changedFiles": 21,
+      "assignedFeatures": [
+        6,
+        7
+      ]
+    },
+    {
+      "case": "03",
+      "name": "ChangeSession v2 03 - Revisions, history and saved CanvasViews",
+      "agentContextId": "saved-agent-context-6e3d2462-84a5-4c3a-8d8d-b065c8c0e521",
+      "originalHash": "331929dbcd77fd6b487de5d3f9d2319322414093b2fab2aeed60d3d78ed7a4b9",
+      "resolvedHash": "bc27b823925a0e3821e5e5e37e24741f74d4c9bafc5a0d68758fc97a28340ba8",
+      "resolvedBytes": 416905,
+      "ownedDiagramsPresent": 13,
+      "capturedCanvases": 12,
+      "sourceReferencesResolved": 12,
+      "changedFiles": 13,
+      "assignedFeatures": [
+        1
+      ]
+    },
+    {
+      "case": "04",
+      "name": "ChangeSession v2 04 - Alternatives and ChangeSession review",
+      "agentContextId": "saved-agent-context-911f0ae2-d2c6-4ce6-bd26-dc91590bd709",
+      "originalHash": "269fec17c77e511b89f6295cca36bd37af58faefe10f4f17b3d5a4805026df1c",
+      "resolvedHash": "a7a9e489a3d9d5da73802dd28bb99a3712279d31cfdb61cf2a5b34e919e8ab4c",
+      "resolvedBytes": 475485,
+      "ownedDiagramsPresent": 11,
+      "capturedCanvases": 12,
+      "sourceReferencesResolved": 22,
+      "changedFiles": 22,
+      "assignedFeatures": [
+        4,
+        8
+      ]
+    },
+    {
+      "case": "05",
+      "name": "ChangeSession v2 05 - AgentChat, generation and Canvas API",
+      "agentContextId": "saved-agent-context-b4df6a6c-83f6-428f-9247-7bd2f2548e7c",
+      "originalHash": "a82096318fdb465f19ee0370ccc90a10b7f1bac7de80d39acdafb8bcf4af2566",
+      "resolvedHash": "896e6ae213ed5cc2406bbc8ad4fc0b9eed07ded7302c54595b0b9e1a68663123",
+      "resolvedBytes": 616791,
+      "ownedDiagramsPresent": 2,
+      "capturedCanvases": 10,
+      "sourceReferencesResolved": 25,
+      "changedFiles": 25,
+      "assignedFeatures": [
+        2,
+        5,
+        6
+      ]
+    },
+    {
+      "case": "06",
+      "name": "ChangeSession v2 06 - Saved AgentContexts and source evidence",
+      "agentContextId": "saved-agent-context-c002f3b1-d0c5-4f6b-aa22-43fd518afe51",
+      "originalHash": "0ab380f7d18b5d13fb2df66ae51ea017e17de2dff835a261b0ace267ac0a9087",
+      "resolvedHash": "6cc2020dbe217bc0592cff7c7204783ddd14980424a69ab8262d793b9bb04621",
+      "resolvedBytes": 321658,
+      "ownedDiagramsPresent": 7,
+      "capturedCanvases": 10,
+      "sourceReferencesResolved": 22,
+      "changedFiles": 22,
+      "assignedFeatures": [
+        3,
+        4
+      ]
+    },
+    {
+      "case": "07",
+      "name": "ChangeSession v2 07 - Persistence and durable storage",
+      "agentContextId": "saved-agent-context-3cc6fe05-807a-40e6-98aa-df864234bb8e",
+      "originalHash": "5bf775fbd29e845fb95ccd4a9857dbe8863df46549401d134a788795350a672f",
+      "resolvedHash": "a312d6f57b27d316ba1e8832bbf972fd2a59be80ea30b94f4d5de8cc7f731b22",
+      "resolvedBytes": 411175,
+      "ownedDiagramsPresent": 2,
+      "capturedCanvases": 10,
+      "sourceReferencesResolved": 18,
+      "changedFiles": 16,
+      "assignedFeatures": [
+        12
+      ]
+    }
+  ],
+  "originalContextsUnchanged": true,
+  "scope": "All declared source ranges, owned baseline diagrams, and scoped code-change evidence are present. This checks the supplied snapshot scope, not whole-repository completeness.",
+  "historicalInstructions": "The new visible prompt supersedes historical category, ownership/output, and preselected-strategy constraints."
+}

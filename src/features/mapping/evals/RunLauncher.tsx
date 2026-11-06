@@ -37,6 +37,7 @@ export function RunLauncher({ prompts, runs, initial, onClose, onStarted }: {
   const [workflowId, setWorkflowId] = useState(rerun?.workflow ?? initial.workflow);
   const workflow = evalWorkflows[workflowId];
   const fewShot = workflowId === 'few-shot-refinement';
+  const proposal = workflowId === 'diagram-change-proposal';
   const [targetKey, setTargetKey] = useState(rerun?.inputs.target ? candidateKey(rerun.inputs.target.source) : '');
   // A rerun keeps the exact prompt versions it used, even if a prompt was archived since.
   const [selected, setSelected] = useState<Record<string, number>>(() => rerun
@@ -83,7 +84,7 @@ export function RunLauncher({ prompts, runs, initial, onClose, onStarted }: {
     return () => { closed = true; };
   }, []);
   const switchWorkflow = (id: EvalWorkflowId) => {
-    setWorkflowId(id); if (id === 'few-shot-refinement') { setModel('gpt-6-astra'); setEffort('high'); } setSelected({}); setPicked([]); setContextId(undefined); setPrevious([]); setPasses(evalWorkflows[id].defaultPasses);
+    setWorkflowId(id); if (id === 'diagram-change-proposal') setLayoutTemplateId(''); if (id === 'few-shot-refinement') { setModel('gpt-6-astra'); setEffort('high'); } setSelected({}); setPicked([]); setContextId(undefined); setPrevious([]); setPasses(evalWorkflows[id].defaultPasses);
   };
 
   const numbers = useMemo(() => runNumbers(runs), [runs]);
@@ -174,7 +175,8 @@ export function RunLauncher({ prompts, runs, initial, onClose, onStarted }: {
     const inputs: EvalRunRequest['inputs'] = workflowId === 'roll-up'
       ? { child: sourceOf(candidate(picked[0])!), parent: sourceOf(candidate(picked[1])!) } : { context: { agentContextId: contextId! }, ...(fewShot ? { target: sourceOf(candidate(targetKey)!) } : {}) };
     const body = { referenceIds, workflow: workflowId, prompts: chosen.map(prompt => ({ promptId: prompt.id, version: selected[prompt.id] })), passes: fewShot ? 3 : passes, model: model.trim(), effort,
-      inputs, ...(workflowId !== 'roll-up' && layoutTemplateId ? { layoutTemplateId } : {}), ...(workflowId === 'alternatives' && previous.length ? { previous } : {}), ...(rerun ? { parentRunId: rerun.id } : {}) };
+      inputs, ...(proposal && request?.contextDelivery ? { contextDelivery: request.contextDelivery } : {}),
+      ...((workflowId === 'alternatives' || fewShot) && layoutTemplateId ? { layoutTemplateId } : {}), ...(workflowId === 'alternatives' && previous.length ? { previous } : {}), ...(rerun ? { parentRunId: rerun.id } : {}) };
     const signature = JSON.stringify(body);
     if (pending.current?.signature !== signature) pending.current = { signature, requestId: crypto.randomUUID() };
     setBusy(true); setError('');
@@ -192,11 +194,11 @@ export function RunLauncher({ prompts, runs, initial, onClose, onStarted }: {
       {rerun && <p className="evals-notice" role="status">Filled in from Run #{numbers.get(rerun.id) ?? '?'}. Outputs are filed under Run #{numbers.get(rerun.parentRunId ?? rerun.id) ?? '?'}.</p>}
       <div className="run-launcher-body">
         <section className="run-launcher-tree" aria-label="Inputs">
-          <h3>{workflowId === 'roll-up' ? 'Canvases' : 'AgentContexts'} <small>{workflowId === 'roll-up' ? 'tick a child, then a parent' : 'tick one context, plus earlier alternatives'}</small></h3>
+          <h3>{workflowId === 'roll-up' ? 'Canvases' : 'AgentContexts'} <small>{workflowId === 'roll-up' ? 'tick a child, then a parent' : proposal ? 'tick one context' : 'tick one context, plus earlier alternatives'}</small></h3>
           {loading && !error ? <p role="status" className="evals-muted">Loading…</p>
             : workflowId === 'roll-up'
               ? <SourceTree key="roll-up" label="Canvases" nodes={rollUpTree} checked={checked} onToggle={toggleRollUp} empty="Save a canvas or view in Mapping first." />
-              : <SourceTree key="alternatives" label="AgentContexts" nodes={fewShot ? alternativesTree.filter(node => node.id.startsWith('ctx:')).map(node => ({ ...node, children: undefined })) : alternativesTree} checked={checked} onToggle={toggleAlternative} empty="No saved AgentContexts yet. Save one from Agent Chat." />}
+              : <SourceTree key="alternatives" label="AgentContexts" nodes={fewShot || proposal ? alternativesTree.filter(node => node.id.startsWith('ctx:')).map(node => ({ ...node, children: undefined })) : alternativesTree} checked={checked} onToggle={toggleAlternative} empty="No saved AgentContexts yet. Save one from Agent Chat." />}
           <p className="run-launcher-count" aria-live="polite">{checked.size} selected</p>
         </section>
         <div className="run-launcher-form">
@@ -215,8 +217,8 @@ export function RunLauncher({ prompts, runs, initial, onClose, onStarted }: {
               </> : <>
                 <div className="prompt-context-slot"><code>{'{{context}}'}</code>
                   {context ? <><span>{context.name}</span><small>context.json · {context.messageCount} msgs</small></> : <span className="evals-muted">Tick an AgentContext</span>}</div>
-                <div className="prompt-context-slot"><code>{'{{previous}}'}</code>
-                  {previous.length ? <span>{previous.length} earlier alternative{previous.length === 1 ? '' : 's'}</span> : <span className="evals-muted">none</span>}</div>
+                {!proposal && <div className="prompt-context-slot"><code>{'{{previous}}'}</code>
+                  {previous.length ? <span>{previous.length} earlier alternative{previous.length === 1 ? '' : 's'}</span> : <span className="evals-muted">none</span>}</div>}
                 {previous.length > 0 && <ul className="prompt-context-files">{previous.map((id, i) => <li key={id}>
                   <code>previous-{i + 1}.json</code><span>{name(id)}{rerun?.previousInputs?.some(input => input.source.documentId === id) ? ' · pinned' : ''}</span>
                   <button type="button" className="evals-link" aria-label={`Remove ${name(id)}`} onClick={() => setPrevious(current => current.filter(item => item !== id))}>×</button></li>)}</ul>}
@@ -224,7 +226,7 @@ export function RunLauncher({ prompts, runs, initial, onClose, onStarted }: {
               </>}
             </section>
             {fewShot && candidates && <CanvasPicker label="Target canvas" candidates={candidates} value={targetKey} onChange={setTargetKey} disabled={busy} />}
-            {workflowId !== 'roll-up' && <section aria-label="Layout template"><h3>Layout template <small>optional</small></h3>
+            {(workflowId === 'alternatives' || fewShot) && <section aria-label="Layout template"><h3>Layout template <small>optional</small></h3>
               <label>Layout template<select aria-label="Layout template" value={layoutTemplateId} onChange={event => setLayoutTemplateId(event.target.value)}>
                 <option value="">{fewShot ? "Capture first target diagram: title and size" : "No template"}</option>
                 {rerun?.layoutTemplate && <option value={rerun.layoutTemplate.id}>{rerun.layoutTemplate.name} · pinned from run</option>}

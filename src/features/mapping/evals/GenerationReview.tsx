@@ -1,6 +1,7 @@
 import { PromptSectionsEditor, PromptTextBox } from './PromptSectionsEditor';
 import { legacyPromptTemplateBase, parsePromptSections, type PromptTemplateBase } from '../../../../domain/mapping/evals/promptTemplateBase';
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import type { EvalRunPrompt, EvalRunSummary } from '../../../../domain/mapping/evals/evalRun';
 import type { EvalExperiment } from '../../../../domain/mapping/evals/experiment';
 import { approveExperiment, readPrompt, savePrompt, saveExperiment } from './evalsApi';
 import { errorMessage } from './evalsFormat';
@@ -16,6 +17,16 @@ export function GenerationReview({ experiment: incomingExperiment, onChanged }: 
   useEffect(() => { setReviewed(false); pending.current = undefined; }, [experiment.revision]);
   const review = experiment.generationReview;
   if (!review) return null;
+  // A run binds one input; the same pinned prompt can be shared by many runs.
+  const promptGroups = new Map<string, { prompt: EvalRunPrompt; runs: EvalRunSummary[] }>();
+  for (const run of review.runs) for (const prompt of run.prompts) {
+    const key = JSON.stringify(prompt);
+    const group = promptGroups.get(key) ?? { prompt, runs: [] };
+    group.runs.push(run); promptGroups.set(key, group);
+  }
+  const inputCount = new Set(review.runs.map(run => run.agentContextId)).size;
+  const settings = [...new Set(review.runs.map(run => `${run.request.model} / ${run.request.effort}`))];
+  const pendingRunIds = new Set(review.runs.map(run => run.id));
   const editingPrompt = editing && review.runs.flatMap(run => run.prompts).find(p => p.promptId === editing.promptId && p.version === editing.version);
   const launch = async () => {
     pending.current ??= review.approval ?? { requestId: crypto.randomUUID(), expectedRevision: experiment.revision };
@@ -48,7 +59,7 @@ export function GenerationReview({ experiment: incomingExperiment, onChanged }: 
         attempt.version = result.versions.at(-1)!.version;
       }
       const { id, projectId, schemaVersion, revision, createdAt, updatedAt, generationReview, ...design } = experiment;
-      const plannedRuns = design.plannedRuns?.map(plan => ({ ...plan, request: { ...plan.request, prompts: plan.request.prompts.map(p => p.promptId === editing.promptId && p.version === editing.version ? { ...p, version: attempt.version! } : p) } }));
+      const plannedRuns = design.plannedRuns?.map(plan => !pendingRunIds.has(plan.request.requestId) ? plan : ({ ...plan, request: { ...plan.request, prompts: plan.request.prompts.map(p => p.promptId === editing.promptId && p.version === editing.version ? { ...p, version: attempt.version! } : p) } }));
       const saved = await saveExperiment({ requestId: attempt.experimentRequestId, experimentId: id, expectedRevision: revision, experiment: { ...design, plannedRuns } });
       setSavedExperiment(saved);
       setEditing(keepOpen ? { ...editing, version: attempt.version! } : undefined);
@@ -59,9 +70,19 @@ export function GenerationReview({ experiment: incomingExperiment, onChanged }: 
   return <section className="generation-review" aria-label="Generation review">
     <h3>{review.status === 'started' ? 'Approved generation plan' : 'Review before generation'}</h3>
     <p>{review.status === 'awaiting-approval' ? 'Ready for your approval. Generation has not started.' : review.status === 'starting' ? 'Approval recorded. Finishing launch…' : 'Generation was approved and started.'}</p>
-    {review.runs.map(run => <div key={run.id}>
-      <p><strong>{run.cells.length} generation alternatives</strong> · {run.request.model} / {run.request.effort} · {run.contextName}</p>
-      {run.prompts.map(prompt => <section key={prompt.promptId} className="experiment-prompt-source"><h4>{prompt.name} · v{prompt.version} · exact generation prompt</h4>
+    <p><strong>{review.runs.reduce((sum, run) => sum + run.cells.length, 0)} planned outputs</strong> · {inputCount} input{inputCount === 1 ? '' : 's'} · {settings.length === 1 ? settings[0] : `${settings.length} model settings`}</p>
+    {review.runs.some(run => run.request.contextDelivery === 'session') && <p>Prepared AgentContext sessions · independent samples run sequentially within each input to encourage prompt-cache reuse.</p>}
+    <details className="generation-review-inputs"><summary>Inputs and settings · {inputCount} input{inputCount === 1 ? '' : 's'}</summary>
+      <div className="experiment-table-scroll"><table className="experiment-table" aria-label="Planned generation inputs">
+        <thead><tr><th>Input</th><th>Outputs</th>{settings.length > 1 && <th>Model / effort</th>}<th>Pinned details</th></tr></thead>
+        <tbody>{review.runs.map(run => <tr key={run.id}><th scope="row">{run.contextName}</th><td>{run.cells.length}</td>
+          {settings.length > 1 && <td>{run.request.model} / {run.request.effort}</td>}
+          <td><details><summary>Pinned input and settings</summary><pre>{JSON.stringify({ contexts: run.contexts, inputs: run.inputs, previous: run.previousNames, layoutTemplate: run.layoutTemplate, request: run.request }, null, 2)}</pre></details></td>
+        </tr>)}</tbody>
+      </table></div>
+    </details>
+    {[...promptGroups].map(([key, { prompt, runs }]) => <section key={key} className="experiment-prompt-source"><h4>{prompt.name} · v{prompt.version} · exact generation prompt</h4>
+        {runs.length > 1 && <p className="evals-muted">Shared by {runs.length} input runs · {runs.reduce((sum, run) => sum + run.cells.filter(cell => cell.promptId === prompt.promptId && cell.promptVersion === prompt.version).length, 0)} outputs.{review.status === 'awaiting-approval' && ' Editing this prompt updates all of these planned runs.'}</p>}
         {Object.entries(prompt.stages).map(([stage, text]) => {
           const base = prompt.templateBase ?? legacyPromptTemplateBase(prompt.stages);
           return <section key={stage}><div className="evals-actions"><h4>{stage}</h4>
@@ -72,8 +93,6 @@ export function GenerationReview({ experiment: incomingExperiment, onChanged }: 
         })}
         {Object.values(prompt.references ?? {}).map((reference, index) => <pre key={index}>{reference.ascii}</pre>)}
       </section>)}
-      <details><summary>Pinned input and settings</summary><pre>{JSON.stringify({ contexts: run.contexts, inputs: run.inputs, previous: run.previousNames, layoutTemplate: run.layoutTemplate, request: run.request }, null, 2)}</pre></details>
-    </div>)}
     {review.status !== 'started' && <><label><input type="checkbox" checked={reviewed} disabled={busy || !!editing} onChange={event => setReviewed(event.target.checked)} /> I have reviewed these prompts and settings</label>
       <p><button className="is-primary" disabled={!reviewed || busy || !!editing} onClick={() => void launch()}>{busy ? 'Starting…' : review.status === 'starting' ? 'Finish approved launch' : 'Approve and start generation'}</button></p></>}
     {error && !editing && <p role="alert">{error}</p>}

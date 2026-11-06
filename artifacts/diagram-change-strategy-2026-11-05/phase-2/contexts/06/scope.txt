@@ -1,0 +1,4 @@
+Evidence scope: Saved AgentContexts and source evidence. Evidence distinguishes uploaded conversation captures from explicitly saved immutable contexts. Source ranges can pin Git revisions or content hashes; snapshots retain compact references while source text is resolved separately and lazily. Diagram context associations, whole or subtree edit scopes, generation sessions, and revision issuance, retention and publication are covered by the supplied source and diagrams.
+Comparison base: 03f2168deba364103c2450ca9b8168cd1fc9ddc5
+Pinned code head: 81f05a2bf9efa2334985d2298dcbd7b044dc4c1e
+Repository: repo-ce67f2af4410036fce1ce12f

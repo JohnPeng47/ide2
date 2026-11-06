@@ -1,4 +1,5 @@
 import { diagramChangeProposalSchema } from '../../../domain/mapping/evals/diagramChangeTree';
+import type { AgentContextSnapshot } from '../../../domain/core/agents/agentContext';
 import { executeFewShot, fewShotCells, firstTarget } from './fewShotRefinement';
 import { LegacyGenerationAdapter, legacyEvalRunId } from './legacyGenerationAdapter';
 import type { z } from 'zod';
@@ -31,7 +32,8 @@ import type { GeneratedCanvasSource } from './generatedCanvasCatalog';
 export interface EvalRunStore { list(): Promise<EvalRun[]>; read(id: string): Promise<EvalRun | null>; save(run: EvalRun): Promise<void>; delete(id: string): Promise<void> }
 export interface LegacyRollUpStore { list(): Promise<RollUpRun[]>; read(id: string): Promise<RollUpRun | null>; delete(id: string): Promise<void> }
 export interface EvalRuntime {
-  generate(input: { workflow: EvalWorkflowId; stage: string; prompt: string; schema: z.ZodType; files: Record<string, unknown>; model: string; effort: string; signal: AbortSignal }): Promise<{ output: unknown; usage?: Record<string, number> }>;
+  dispose?(): void;
+  generate(input: { workflow: EvalWorkflowId; stage: string; prompt: string; schema: z.ZodType; files: Record<string, unknown>; agentContext?: AgentContextSnapshot; model: string; effort: string; signal: AbortSignal }): Promise<{ output: unknown; usage?: Record<string, number>; execution?: EvalRunCell['execution'] }>;
 }
 type Generation = Omit<Parameters<EvalRuntime['generate']>[0], 'prompt'> & { body: string; values: Record<string, string>; templateBase?: import('../../../domain/mapping/evals/promptTemplateBase').PromptTemplateBase };
 
@@ -354,10 +356,24 @@ export class EvalRunService {
       }
       run.completedAt = new Date().toISOString(); await this.persist(run); return;
     }
-    const chains = run.prompts.flatMap(prompt => Array.from({ length: run.request.passes }, (_, i) => () => this.chain(run, prompt, i + 1, repositoryId, signal)));
+    let preparedContext: AgentContextSnapshot | undefined;
+    if (run.request.contextDelivery === 'session') {
+      try {
+        const context = run.contexts!.context;
+        const saved = await this.contexts.read(context.agentContextId);
+        if (saved.contentHash !== context.contentHash) throw Error('The AgentContext changed after the run started.');
+        preparedContext = saved.resolvedSnapshot ?? saved.snapshot;
+      } catch (error) {
+        run.error = String(error);
+        for (const cell of run.cells) Object.assign(cell, { status: signal.aborted ? 'cancelled' : 'failed', error: run.error });
+        run.completedAt = new Date().toISOString(); await this.persist(run); return;
+      }
+    }
+    const chains = run.prompts.flatMap(prompt => Array.from({ length: run.request.passes }, (_, i) => () => this.chain(run, prompt, i + 1, repositoryId, signal, preparedContext)));
     let next = 0;
     const worker = async () => { while (next < chains.length) await chains[next++]().catch(() => {}); };
-    await Promise.all(Array.from({ length: Math.min(this.concurrency, chains.length) }, worker));
+    // Finish the first sample before sending the same prefix again. Different cases remain independent.
+    await Promise.all(Array.from({ length: Math.min(preparedContext ? 1 : this.concurrency, chains.length) }, worker));
     run.completedAt = new Date().toISOString();
     if (signal.aborted) run.error = 'Run cancelled.';
     await this.persist(run);
@@ -370,7 +386,7 @@ export class EvalRunService {
     Object.assign(cell, { status: 'generating', startedAt: new Date().toISOString() }); await this.persist(run);
     try {
       signal.throwIfAborted();
-      const { result, usage } = await this.generateValidated(generation, validate);
+      const { result, usage, execution } = await this.generateValidated(generation, validate);
       signal.throwIfAborted();
       const document = documentFromHistory(result.history);
       const saved = await this.projects.projectCatalogs.saveMappingDiagram(run.projectId, { name: name.slice(0, 120), type: 'generated', history: result.history,
@@ -382,7 +398,7 @@ export class EvalRunService {
       (run.outputSnapshots ??= {})[saved.representation.id] = { id: saved.representation.id, name, generated: saved.representation.generated!, history: copyCompareHistory(result.history, result.history.headId) };
       Object.assign(cell, { status: 'finished', canvasId: saved.representation.id, checkpointId: result.history.headId,
         ...(result.layoutPlacements ? { layoutPlacements: result.layoutPlacements } : {}),
-        explanation: result.output.explanation, usage, completedAt: new Date().toISOString() });
+        explanation: result.output.explanation, usage, execution, completedAt: new Date().toISOString() });
       await this.persist(run);
       return result;
     } catch (error) {
@@ -391,7 +407,7 @@ export class EvalRunService {
       throw error;
     }
   }
-  private async chain(run: EvalRun, prompt: EvalRunPrompt, pass: number, repositoryId: string | undefined, signal: AbortSignal) {
+  private async chain(run: EvalRun, prompt: EvalRunPrompt, pass: number, repositoryId: string | undefined, signal: AbortSignal, preparedContext?: AgentContextSnapshot) {
     const label = (copy: CompareCanvasCopy) => JSON.stringify(copy.view.name);
     const values = { ...Object.fromEntries(Object.entries(run.inputs).map(([name, copy]) => [name, label(copy)])),
       ...Object.fromEntries(Object.entries(run.contexts ?? {}).map(([name, context]) => [name, JSON.stringify(context.name)])),
@@ -407,8 +423,10 @@ export class EvalRunService {
       const context = run.contexts!.context, cell = this.cell(run, prompt, pass, stage);
       let saved;
       try {
-        saved = await this.contexts.read(context.agentContextId);
-        if (saved.contentHash !== context.contentHash) throw Error('The AgentContext changed after the run started.');
+        if (!preparedContext) {
+          saved = await this.contexts.read(context.agentContextId);
+          if (saved.contentHash !== context.contentHash) throw Error('The AgentContext changed after the run started.');
+        }
       } catch (error) {
         Object.assign(cell, { status: 'failed', error: error instanceof Error ? error.message : String(error), completedAt: new Date().toISOString() });
         await this.persist(run); throw error;
@@ -416,7 +434,8 @@ export class EvalRunService {
       await this.step(run, cell, signal,
         { ...common, stage, body: prompt.stages[stage],
           schema: proposal ? diagramChangeProposalSchema : run.layoutTemplate ? templateOutputSchema : alternativeOutputSchema,
-          files: { 'context.json': { name: saved.name, description: saved.description, snapshot: saved.resolvedSnapshot ?? saved.snapshot },
+          ...(preparedContext ? { agentContext: preparedContext } : {}),
+          files: { ...(!preparedContext && saved ? { 'context.json': { name: saved.name, description: saved.description, snapshot: saved.resolvedSnapshot ?? saved.snapshot } } : {}),
             ...(run.layoutTemplate ? { 'layout-template.json': run.layoutTemplate.geometry } : {}),
             ...Object.fromEntries((run.previous ?? []).map((copy, i) => [`previous-${i + 1}.json`, canvasContext(copy, false)])) } },
         output => {
@@ -452,7 +471,7 @@ export class EvalRunService {
     for (let attempt = 0; ; attempt++) {
       const response = await this.runtime.generate({ ...input, prompt, files }); input.signal.throwIfAborted();
       for (const [key, value] of Object.entries(response.usage ?? {})) usage[key] = (usage[key] ?? 0) + value;
-      try { return { result: validate(response.output), usage }; }
+      try { return { result: validate(response.output), usage, execution: response.execution }; }
       catch (error) {
         if (attempt >= 2) throw error;
         files = { ...input.files, 'previous-output.json': response.output, 'validation-error.json': { error: String(error) } };
@@ -562,5 +581,5 @@ export class EvalRunService {
     for (const session of await this.comparisons.list())
       if ((await this.comparisons.read(session.id)).canvases.every(copy => copy.generated?.agentContextId === agentContextId && generatedWorkflow(copy.generated) === workflow)) await this.comparisons.delete(session.id);
   }
-  dispose() { for (const abort of this.running.values()) abort.abort(); }
+  dispose() { for (const abort of this.running.values()) abort.abort(); this.runtime.dispose?.(); }
 }

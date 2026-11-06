@@ -1,0 +1,692 @@
+{
+  "experimentId": "f1ee9846-f13d-448d-9628-99e7c3bd6d1a",
+  "revision": 6,
+  "phases": [
+    {
+      "id": "baseline",
+      "name": "Baseline",
+      "description": "Original decision rules; tree-only output. Seven pinned contexts \u00d7 three samples. Generation awaits review. The deterministic judgement is planned and must be run separately after generation; it parses tags and reports format errors without repairing outputs."
+    }
+  ],
+  "cases": [
+    {
+      "id": "context-1",
+      "name": "ChangeSession v2 01 - Canvas workspace, authoring and navigation",
+      "agentContextId": "saved-agent-context-16ba6214-8c1a-4617-b165-3242ac53e23b",
+      "contentHash": "552ea9469cc2b027ce7cb8f9f1b7d8de7c42863b48ea0267c9e0cb033e00618d"
+    },
+    {
+      "id": "context-2",
+      "name": "ChangeSession v2 02 - Tldraw runtime, selection and controller edits",
+      "agentContextId": "saved-agent-context-db04f7f1-5aa5-4159-8466-79d0799722b0",
+      "contentHash": "5c9a0e457d2e8ed370cbfa605e472c62c54f714bca773b4c85b30f7ca5e340fa"
+    },
+    {
+      "id": "context-3",
+      "name": "ChangeSession v2 03 - Revisions, history and saved CanvasViews",
+      "agentContextId": "saved-agent-context-6e3d2462-84a5-4c3a-8d8d-b065c8c0e521",
+      "contentHash": "331929dbcd77fd6b487de5d3f9d2319322414093b2fab2aeed60d3d78ed7a4b9"
+    },
+    {
+      "id": "context-4",
+      "name": "ChangeSession v2 04 - Alternatives and ChangeSession review",
+      "agentContextId": "saved-agent-context-911f0ae2-d2c6-4ce6-bd26-dc91590bd709",
+      "contentHash": "269fec17c77e511b89f6295cca36bd37af58faefe10f4f17b3d5a4805026df1c"
+    },
+    {
+      "id": "context-5",
+      "name": "ChangeSession v2 05 - AgentChat, generation and Canvas API",
+      "agentContextId": "saved-agent-context-b4df6a6c-83f6-428f-9247-7bd2f2548e7c",
+      "contentHash": "a82096318fdb465f19ee0370ccc90a10b7f1bac7de80d39acdafb8bcf4af2566"
+    },
+    {
+      "id": "context-6",
+      "name": "ChangeSession v2 06 - Saved AgentContexts and source evidence",
+      "agentContextId": "saved-agent-context-c002f3b1-d0c5-4f6b-aa22-43fd518afe51",
+      "contentHash": "0ab380f7d18b5d13fb2df66ae51ea017e17de2dff835a261b0ace267ac0a9087"
+    },
+    {
+      "id": "context-7",
+      "name": "ChangeSession v2 07 - Persistence and durable storage",
+      "agentContextId": "saved-agent-context-3cc6fe05-807a-40e6-98aa-df864234bb8e",
+      "contentHash": "5bf775fbd29e845fb95ccd4a9857dbe8863df46549401d134a788795350a672f"
+    }
+  ],
+  "conditions": [
+    {
+      "id": "original",
+      "name": "Original decision rules",
+      "description": "No prompt-strengthening or strategy-frequency target. Same gpt-6-sol/high settings for every sample."
+    }
+  ],
+  "samples": [
+    {
+      "id": "context-1-sample-1",
+      "phaseId": "baseline",
+      "caseId": "context-1",
+      "conditionId": "original",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "1393c196-b590-4abb-890a-1fdb2f916f35",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:1:proposal"
+        }
+      ]
+    },
+    {
+      "id": "context-1-sample-2",
+      "phaseId": "baseline",
+      "caseId": "context-1",
+      "conditionId": "original",
+      "number": 2,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "1393c196-b590-4abb-890a-1fdb2f916f35",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:2:proposal"
+        }
+      ]
+    },
+    {
+      "id": "context-1-sample-3",
+      "phaseId": "baseline",
+      "caseId": "context-1",
+      "conditionId": "original",
+      "number": 3,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "1393c196-b590-4abb-890a-1fdb2f916f35",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:3:proposal"
+        }
+      ]
+    },
+    {
+      "id": "context-2-sample-1",
+      "phaseId": "baseline",
+      "caseId": "context-2",
+      "conditionId": "original",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "56c19388-79c6-455b-b3d0-596bfcf32c99",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:1:proposal"
+        }
+      ]
+    },
+    {
+      "id": "context-2-sample-2",
+      "phaseId": "baseline",
+      "caseId": "context-2",
+      "conditionId": "original",
+      "number": 2,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "56c19388-79c6-455b-b3d0-596bfcf32c99",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:2:proposal"
+        }
+      ]
+    },
+    {
+      "id": "context-2-sample-3",
+      "phaseId": "baseline",
+      "caseId": "context-2",
+      "conditionId": "original",
+      "number": 3,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "56c19388-79c6-455b-b3d0-596bfcf32c99",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:3:proposal"
+        }
+      ]
+    },
+    {
+      "id": "context-3-sample-1",
+      "phaseId": "baseline",
+      "caseId": "context-3",
+      "conditionId": "original",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "13888f46-f668-4279-aecf-34716496b2f4",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:1:proposal"
+        }
+      ]
+    },
+    {
+      "id": "context-3-sample-2",
+      "phaseId": "baseline",
+      "caseId": "context-3",
+      "conditionId": "original",
+      "number": 2,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "13888f46-f668-4279-aecf-34716496b2f4",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:2:proposal"
+        }
+      ]
+    },
+    {
+      "id": "context-3-sample-3",
+      "phaseId": "baseline",
+      "caseId": "context-3",
+      "conditionId": "original",
+      "number": 3,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "13888f46-f668-4279-aecf-34716496b2f4",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:3:proposal"
+        }
+      ]
+    },
+    {
+      "id": "context-4-sample-1",
+      "phaseId": "baseline",
+      "caseId": "context-4",
+      "conditionId": "original",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "b7fd2f80-b6a3-4779-a9c1-b4c11bec86ec",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:1:proposal"
+        }
+      ]
+    },
+    {
+      "id": "context-4-sample-2",
+      "phaseId": "baseline",
+      "caseId": "context-4",
+      "conditionId": "original",
+      "number": 2,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "b7fd2f80-b6a3-4779-a9c1-b4c11bec86ec",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:2:proposal"
+        }
+      ]
+    },
+    {
+      "id": "context-4-sample-3",
+      "phaseId": "baseline",
+      "caseId": "context-4",
+      "conditionId": "original",
+      "number": 3,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "b7fd2f80-b6a3-4779-a9c1-b4c11bec86ec",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:3:proposal"
+        }
+      ]
+    },
+    {
+      "id": "context-5-sample-1",
+      "phaseId": "baseline",
+      "caseId": "context-5",
+      "conditionId": "original",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "fe307187-77c1-47d3-9e7d-d81e8a326414",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:1:proposal"
+        }
+      ]
+    },
+    {
+      "id": "context-5-sample-2",
+      "phaseId": "baseline",
+      "caseId": "context-5",
+      "conditionId": "original",
+      "number": 2,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "fe307187-77c1-47d3-9e7d-d81e8a326414",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:2:proposal"
+        }
+      ]
+    },
+    {
+      "id": "context-5-sample-3",
+      "phaseId": "baseline",
+      "caseId": "context-5",
+      "conditionId": "original",
+      "number": 3,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "fe307187-77c1-47d3-9e7d-d81e8a326414",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:3:proposal"
+        }
+      ]
+    },
+    {
+      "id": "context-6-sample-1",
+      "phaseId": "baseline",
+      "caseId": "context-6",
+      "conditionId": "original",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "f61d32b5-b7d6-40f1-9c39-217fcd596102",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:1:proposal"
+        }
+      ]
+    },
+    {
+      "id": "context-6-sample-2",
+      "phaseId": "baseline",
+      "caseId": "context-6",
+      "conditionId": "original",
+      "number": 2,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "f61d32b5-b7d6-40f1-9c39-217fcd596102",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:2:proposal"
+        }
+      ]
+    },
+    {
+      "id": "context-6-sample-3",
+      "phaseId": "baseline",
+      "caseId": "context-6",
+      "conditionId": "original",
+      "number": 3,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "f61d32b5-b7d6-40f1-9c39-217fcd596102",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:3:proposal"
+        }
+      ]
+    },
+    {
+      "id": "context-7-sample-1",
+      "phaseId": "baseline",
+      "caseId": "context-7",
+      "conditionId": "original",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "7df72b53-cf26-46bb-a018-dadfc5d4cdf3",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:1:proposal"
+        }
+      ]
+    },
+    {
+      "id": "context-7-sample-2",
+      "phaseId": "baseline",
+      "caseId": "context-7",
+      "conditionId": "original",
+      "number": 2,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "7df72b53-cf26-46bb-a018-dadfc5d4cdf3",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:2:proposal"
+        }
+      ]
+    },
+    {
+      "id": "context-7-sample-3",
+      "phaseId": "baseline",
+      "caseId": "context-7",
+      "conditionId": "original",
+      "number": 3,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "proposal",
+          "runId": "7df72b53-cf26-46bb-a018-dadfc5d4cdf3",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:3:proposal"
+        }
+      ]
+    }
+  ],
+  "plannedRuns": [
+    {
+      "request": {
+        "requestId": "1393c196-b590-4abb-890a-1fdb2f916f35",
+        "workflow": "diagram-change-proposal",
+        "prompts": [
+          {
+            "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+            "version": 3
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-16ba6214-8c1a-4617-b165-3242ac53e23b"
+          }
+        },
+        "passes": 3,
+        "model": "gpt-6-sol",
+        "effort": "high",
+        "contextDelivery": "session"
+      },
+      "outputs": [
+        {
+          "sampleId": "context-1-sample-1",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:1:proposal"
+        },
+        {
+          "sampleId": "context-1-sample-2",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:2:proposal"
+        },
+        {
+          "sampleId": "context-1-sample-3",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:3:proposal"
+        }
+      ]
+    },
+    {
+      "request": {
+        "requestId": "56c19388-79c6-455b-b3d0-596bfcf32c99",
+        "workflow": "diagram-change-proposal",
+        "prompts": [
+          {
+            "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+            "version": 3
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-db04f7f1-5aa5-4159-8466-79d0799722b0"
+          }
+        },
+        "passes": 3,
+        "model": "gpt-6-sol",
+        "effort": "high",
+        "contextDelivery": "session"
+      },
+      "outputs": [
+        {
+          "sampleId": "context-2-sample-1",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:1:proposal"
+        },
+        {
+          "sampleId": "context-2-sample-2",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:2:proposal"
+        },
+        {
+          "sampleId": "context-2-sample-3",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:3:proposal"
+        }
+      ]
+    },
+    {
+      "request": {
+        "requestId": "13888f46-f668-4279-aecf-34716496b2f4",
+        "workflow": "diagram-change-proposal",
+        "prompts": [
+          {
+            "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+            "version": 3
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-6e3d2462-84a5-4c3a-8d8d-b065c8c0e521"
+          }
+        },
+        "passes": 3,
+        "model": "gpt-6-sol",
+        "effort": "high",
+        "contextDelivery": "session"
+      },
+      "outputs": [
+        {
+          "sampleId": "context-3-sample-1",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:1:proposal"
+        },
+        {
+          "sampleId": "context-3-sample-2",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:2:proposal"
+        },
+        {
+          "sampleId": "context-3-sample-3",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:3:proposal"
+        }
+      ]
+    },
+    {
+      "request": {
+        "requestId": "b7fd2f80-b6a3-4779-a9c1-b4c11bec86ec",
+        "workflow": "diagram-change-proposal",
+        "prompts": [
+          {
+            "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+            "version": 3
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-911f0ae2-d2c6-4ce6-bd26-dc91590bd709"
+          }
+        },
+        "passes": 3,
+        "model": "gpt-6-sol",
+        "effort": "high",
+        "contextDelivery": "session"
+      },
+      "outputs": [
+        {
+          "sampleId": "context-4-sample-1",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:1:proposal"
+        },
+        {
+          "sampleId": "context-4-sample-2",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:2:proposal"
+        },
+        {
+          "sampleId": "context-4-sample-3",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:3:proposal"
+        }
+      ]
+    },
+    {
+      "request": {
+        "requestId": "fe307187-77c1-47d3-9e7d-d81e8a326414",
+        "workflow": "diagram-change-proposal",
+        "prompts": [
+          {
+            "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+            "version": 3
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-b4df6a6c-83f6-428f-9247-7bd2f2548e7c"
+          }
+        },
+        "passes": 3,
+        "model": "gpt-6-sol",
+        "effort": "high",
+        "contextDelivery": "session"
+      },
+      "outputs": [
+        {
+          "sampleId": "context-5-sample-1",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:1:proposal"
+        },
+        {
+          "sampleId": "context-5-sample-2",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:2:proposal"
+        },
+        {
+          "sampleId": "context-5-sample-3",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:3:proposal"
+        }
+      ]
+    },
+    {
+      "request": {
+        "requestId": "f61d32b5-b7d6-40f1-9c39-217fcd596102",
+        "workflow": "diagram-change-proposal",
+        "prompts": [
+          {
+            "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+            "version": 3
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-c002f3b1-d0c5-4f6b-aa22-43fd518afe51"
+          }
+        },
+        "passes": 3,
+        "model": "gpt-6-sol",
+        "effort": "high",
+        "contextDelivery": "session"
+      },
+      "outputs": [
+        {
+          "sampleId": "context-6-sample-1",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:1:proposal"
+        },
+        {
+          "sampleId": "context-6-sample-2",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:2:proposal"
+        },
+        {
+          "sampleId": "context-6-sample-3",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:3:proposal"
+        }
+      ]
+    },
+    {
+      "request": {
+        "requestId": "7df72b53-cf26-46bb-a018-dadfc5d4cdf3",
+        "workflow": "diagram-change-proposal",
+        "prompts": [
+          {
+            "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+            "version": 3
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-3cc6fe05-807a-40e6-98aa-df864234bb8e"
+          }
+        },
+        "passes": 3,
+        "model": "gpt-6-sol",
+        "effort": "high",
+        "contextDelivery": "session"
+      },
+      "outputs": [
+        {
+          "sampleId": "context-7-sample-1",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:1:proposal"
+        },
+        {
+          "sampleId": "context-7-sample-2",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:2:proposal"
+        },
+        {
+          "sampleId": "context-7-sample-3",
+          "stageId": "proposal",
+          "cellKey": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8:3:proposal"
+        }
+      ]
+    }
+  ],
+  "comparisons": [
+    {
+      "id": "baseline-tree-parse",
+      "phaseId": "baseline",
+      "name": "Strategy selection and tree syntax",
+      "description": "Parser v1: validates the root, canvas labels, branch hierarchy and operation tags; counts [1a], [1b], [2], [3], [4] and output incidence for 3/4. Retains raw text and line-level errors, including recognized operations in invalid trees. Does not judge structural correctness, coverage, attachment validity or whether 3/4 should have been chosen.",
+      "conditionIds": [
+        "original"
+      ],
+      "caseIds": [
+        "context-1",
+        "context-2",
+        "context-3",
+        "context-4",
+        "context-5",
+        "context-6",
+        "context-7"
+      ],
+      "judgementIds": [
+        "1535f471-fc13-48a1-a42e-e13b570e4e8b"
+      ],
+      "evaluator": {
+        "kind": "deterministic",
+        "parser": "diagram-change-tree",
+        "version": 1
+      }
+    }
+  ],
+  "fileHashes": {
+    ".diagrams-local/canvas-domain-model/agent-contexts/saved-agent-context-16ba6214-8c1a-4617-b165-3242ac53e23b.json": "0dbb31de72404db1c8b28396fb3142300952e7aa72732c04eaa9050bd0e776ea",
+    ".diagrams-local/canvas-domain-model/agent-contexts/saved-agent-context-db04f7f1-5aa5-4159-8466-79d0799722b0.json": "462cfddadb756c2d9f31f09ecf56032e28455fbb2f8eeb19581aafd2968ace75",
+    ".diagrams-local/canvas-domain-model/agent-contexts/saved-agent-context-6e3d2462-84a5-4c3a-8d8d-b065c8c0e521.json": "c0273dacf1059e68ebb927ea91a8997c34f9355358b77140abd0542b1a515eb5",
+    ".diagrams-local/canvas-domain-model/agent-contexts/saved-agent-context-911f0ae2-d2c6-4ce6-bd26-dc91590bd709.json": "64461a932fd445d14e6da7849197b0690772048fbeebcf2a72102ef35d7f79a9",
+    ".diagrams-local/canvas-domain-model/agent-contexts/saved-agent-context-b4df6a6c-83f6-428f-9247-7bd2f2548e7c.json": "d98b840e16d5603b24f3e625826ae7f2c008f83ceb7f63804b2ff77a2518bc8d",
+    ".diagrams-local/canvas-domain-model/agent-contexts/saved-agent-context-c002f3b1-d0c5-4f6b-aa22-43fd518afe51.json": "7fc9fd9cef4732fd4121dfab0438ccc73946d2360ee6eed6d5593098883c8bee",
+    ".diagrams-local/canvas-domain-model/agent-contexts/saved-agent-context-3cc6fe05-807a-40e6-98aa-df864234bb8e.json": "1e78432e108e2f3bc1bdd451b4a928b52cc19879520df465d715911566b8875e",
+    ".diagrams-local/canvas-domain-model/eval-runs/1393c196-b590-4abb-890a-1fdb2f916f35.json": "fe9b90a8c486cd4c5e0fe16df128ef357518cea8204b722ee758685fcba71056",
+    ".diagrams-local/canvas-domain-model/eval-runs/56c19388-79c6-455b-b3d0-596bfcf32c99.json": "445a7a06eafab8e804e3f9f5052ded26a4c334ba51cd6a89508f2b5d0a3a6bee",
+    ".diagrams-local/canvas-domain-model/eval-runs/13888f46-f668-4279-aecf-34716496b2f4.json": "bc9db339b31a449f483edd6bbfa3a53ae2d1a215e19a07e1a544190953153977",
+    ".diagrams-local/canvas-domain-model/eval-runs/b7fd2f80-b6a3-4779-a9c1-b4c11bec86ec.json": "cceb870ff0c739d340bf24892cf2a57a9bcaffe507c79136c4c70bab8b1455cf",
+    ".diagrams-local/canvas-domain-model/eval-runs/fe307187-77c1-47d3-9e7d-d81e8a326414.json": "cd168a143c8b052e1fdf833622f4a0807ad38d85b8e6f735b214081a32a5306f",
+    ".diagrams-local/canvas-domain-model/eval-runs/f61d32b5-b7d6-40f1-9c39-217fcd596102.json": "e8dc26ff760b528095abf353e2b9ec9ba6b74e48afeb00f136be968cc1e23ec4",
+    ".diagrams-local/canvas-domain-model/eval-runs/7df72b53-cf26-46bb-a018-dadfc5d4cdf3.json": "80bb1a0727765167f3a225eb7181e3d1bd68d9948b010637438f5ed2c6bf43de",
+    ".diagrams-local/canvas-domain-model/judgements/1535f471-fc13-48a1-a42e-e13b570e4e8b.json": "38c06f97f39c592d2dfa6cc0130b4cce055f533bdf1ec4303cfa9a2cecdee719"
+  }
+}

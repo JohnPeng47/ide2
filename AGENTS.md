@@ -1,3 +1,7 @@
+# Development server
+
+- After completing its task and checks, the agent must run `npm run dev:reload` from its project working directory to refresh all running Vite dev-server instances started from that directory; do not reload during intermediate edits or refresh instances from other worktrees.
+
 # Canvas API
 
 Connect to the running application's MCP server:

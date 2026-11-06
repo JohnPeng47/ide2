@@ -2,6 +2,7 @@ import react from "@vitejs/plugin-react";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
+import { manualReload } from "./scripts/dev/manual-reload";
 import { diagramApi } from "./src/server/app/vitePlugin";
 
 const ROOT = fileURLToPath(new URL(".", import.meta.url));
@@ -29,6 +30,7 @@ export default defineConfig({
     }
   },
   plugins: [
+    manualReload(),
     react(),
     diagramApi(
       PROJECT_ROOT,

@@ -1,0 +1,25 @@
+Deferred follow-up: neutralize strategy-selection inputs
+
+The seven AgentContexts contain historical instructions assigning ownership of
+existing parent diagrams and naming proposed detail diagrams (N1, N3, etc.).
+The baseline outputs closely follow these preassigned plans. A later prompt
+overrides those instructions, but their presence may still bias strategy choice.
+
+Before a later experiment phase, create versioned evidence-only derivatives:
+- Preserve pinned code changes, source evidence, captured canvases/connections,
+  and the feature/source scope assigned to each case.
+- Remove historical strategy definitions, existing-diagram edit assignments,
+  preselected detail diagrams, and instructions that prescribe representation.
+- Recheck evidence coverage and record original/derived context IDs and hashes.
+- Treat this as a separate experimental change from revising the decision prompt,
+  so differences in outputs can be attributed to prompt versus input changes.
+
+Requested as a follow-up only. No AgentContexts were changed by this note.
+
+Follow-up implemented for Phase 2 at the user's subsequent request:
+- Seven immutable evidence-only derivatives are saved; originals are unchanged.
+- Exact evidence-preservation audits and original/derived mappings are in phase-2/.
+- Phase 2 combines the revised decision prompt with cleaned contexts, matching
+  the user's requested setup. Its visible description records this combined
+  intervention; it is not an isolated test of prompt versus context changes.
+- Phase 2 is prepared for review, with no generation or judgement launched.

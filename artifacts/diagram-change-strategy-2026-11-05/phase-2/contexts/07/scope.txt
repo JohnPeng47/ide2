@@ -1,0 +1,4 @@
+Evidence scope: Persistence and durable storage. Evidence covers workspace checkpoint deltas, shared immutable items and text, retention dependencies, bounded durable writes, restore, and checkpoint capture and flush before canvas publication. Persisted state includes issued revisions, views, working copies, presentation choices, alternatives, review, contexts, chat and generation, workflow runs, and push integration. Rendering remains a separate responsibility from storage. The captured PersistentLayer SearchArtifact branch is proposed and unimplemented at the pinned code head.
+Comparison base: 03f2168deba364103c2450ca9b8168cd1fc9ddc5
+Pinned code head: 81f05a2bf9efa2334985d2298dcbd7b044dc4c1e
+Repository: repo-ce67f2af4410036fce1ce12f

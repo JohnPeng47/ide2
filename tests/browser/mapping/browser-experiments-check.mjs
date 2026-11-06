@@ -132,7 +132,7 @@ try {
   const review = page.getByRole('region', { name: 'Generation review' });
   await expect(review).toContainText('Generation has not started');
   await expect(review).toContainText(prompt.versions[0].stages.alternative);
-  await expect(review).toContainText('3 generation alternatives');
+  await expect(review).toContainText('3 planned outputs');
   await expect(review).toContainText('gpt-6-astra / high');
   const approve = review.getByRole('button', { name: 'Approve and start generation' });
   await expect(approve).toBeDisabled();

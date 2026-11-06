@@ -18,9 +18,12 @@ export const evalRunRequestSchema = z.object({
   passes: z.number().int().min(1).max(20).default(1),
   model: z.string().trim().min(1).max(100).default('gpt-6-sol'),
   effort: z.enum(['low', 'medium', 'high', 'xhigh']).default('high'),
+  /** Omitted on historical runs, which continue to use context.json. */
+  contextDelivery: z.literal('session').optional(),
   /** Reruns are filed under the original run and share its AgentContext. */
   parentRunId: id.optional()
-}).strict();
+}).strict().refine(input => !input.contextDelivery || input.workflow === 'diagram-change-proposal',
+  'Session context delivery is supported by diagram-change-proposal.');
 export type EvalRunRequest = z.infer<typeof evalRunRequestSchema>;
 export const renameEvalRunSchema = z.object({ name: z.string().trim().max(120) }).strict();
 export const evalEfforts = ['low', 'medium', 'high', 'xhigh'] as const;
@@ -38,6 +41,7 @@ export interface EvalRunCell {
   key: string; promptId?: string; promptVersion?: number; promptName?: string; pass: number; stage: string;
   status: EvalCellStatus; canvasId?: string; checkpointId?: string; explanation?: string; error?: string;
   usage?: Record<string, number>; startedAt?: string; completedAt?: string;
+  execution?: { runtime: 'pi-agent-context'; sessionId: string; contextHash: string; cacheKey: string };
   /** Set on summaries when the output canvas was deleted. */
   deleted?: boolean;
 }

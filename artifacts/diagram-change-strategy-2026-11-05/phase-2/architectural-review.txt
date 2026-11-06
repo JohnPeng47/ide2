@@ -1,0 +1,130 @@
+Phase 2 architectural review
+
+Scope: 17 completed outputs, compared with the captured diagrams in the derived
+AgentContexts and selected source files at pinned head
+81f05a2bf9efa2334985d2298dcbd7b044dc4c1e. This is a qualitative review of strategy
+selection, not an exhaustive correctness audit or a new deterministic judgement.
+Context 03 has no completed output; it is not rated here. No runs were launched,
+outputs repaired, prompts edited, or judgement scores changed for this review.
+
+Conclusion
+There is some overcorrection, particularly unsupported redraws and fragmentation
+of closely related detail into new canvases. Many new choices are defensible.
+The issue is an inconsistent decision threshold, not simply a high [3]/[4] rate.
+
+Strong examples of overcorrection
+
+1. Context 07, samples 2 and 3: [4] PersistentLayer.
+   The proposed organization is catalog publication, workspace checkpoint
+   records, and separate stores. Captured C04/D00 already has DiagramStore /
+   CanvasCatalogStore, DiagramRevisionStore, MappingWorkspaceStore /
+   WorkspaceRecordStore, Workspace autosave, Explicit catalog publication,
+   and DiagramChangeSessionStore as explicit branches. Encoded checkpoint
+   records, flush/capture before publication, and additional stores fit these
+   boundaries. Prefer targeted corrections/extensions plus [2] checkpoint
+   detail. Sample 1 demonstrates that alternative. The pinned
+   workspaceRecordStore.ts capture() supports the new storage detail without
+   demonstrating a replacement of the overview's organizing structure.
+
+2. Context 05, samples 1 and 2: [4] Mapping page: exposed interfaces.
+   Captured C03/D00 is organized by MCP, HTTP, WebSocket, and shared project
+   routes, with subgroups for reads, editing, generation and proposals.
+   More endpoints and an obsolete fixed tool count do not by themselves
+   invalidate that organization. Prefer patch/extend and execution details.
+   Sample 3 does exactly that for the same evidence. Backend regrouping is more
+   debatable, but the outputs still need to explain why its existing execution,
+   live-state, proposal/publication, and application-feature groups fail.
+
+3. Context 02, sample 3: [4] CanvasSession in Unified selection.
+   Coexisting whole-diagram/region items and captured node membership require
+   real corrections. However, pinned selectionState.ts retains SelectionState,
+   one command reducer, distinct native synchronization, and separate focus,
+   panels and previews. These fit captured C01/D00's existing state / commands /
+   adapters / preview / consumers / panels organization. Prefer patch/extend;
+   native gesture ownership can be explained in the proposed runtime detail.
+
+4. Context 01, sample 3: [3] Source windows and navigation.
+   Captured C00 already contains ProjectedPane and source-pane persistence.
+   Pinned SourceWindowPanel.tsx consumes the existing session document,
+   presentation and controller state. A source-window detail diagram in that
+   canvas has a concrete fit; samples 1 and 2 choose it. Sample 3 describes
+   the component's behavior but does not establish why the canvas scope fails.
+   Focused canvas projection is another borderline split: copying placements,
+   layout and child persistence can plausibly develop the workspace subject.
+
+5. Context 04, sample 2: [3] Shared diagram comparison projection.
+   Captured C07 already covers presentation alternatives, row projection,
+   SidePanels, and review versus presentation. C11 also covers presentation
+   choices. Rendering-only correspondence, diff rows, folding and consumers can
+   be [2] detail there. Sample 3 places shared diff/row projection in C11.
+   This finding does not imply that independently persisted comparison sessions
+   or the DiffSession workflow necessarily belong in the same canvas.
+
+Defensible choices
+
+- [4] The old [G] DiagramService: the service is absent at the pinned head;
+  immutable revision operations, explicit retention, generation orchestration,
+  and canvas publication replace its sole-writer organization. Captured C07/D01
+  already illustrates those separate responsibilities.
+- [4] Controller edits / agent access: live Editor geometry and undo versus
+  settled domain checkpoints, plus default buffered exec and flush boundaries,
+  materially change the old edit flow. A redraw is defensible here, although
+  not every output describes these changes correctly.
+- [3] Tldraw runtime: MappingEditorRuntime owns a distinct synchronization,
+  geometry, undo/hydration and gesture-settlement problem. A dedicated overview
+  is reasonable; the existing domain overview must still identify its boundary.
+- [3] AgentChat and managed generation: conversation turns/bindings/persistence
+  and isolated child-generation settlement have substantial independent
+  lifecycles. Separate canvases are defensible; combining related detail is
+  also possible and should be judged on the questions each overview answers.
+- [3] DiffSession orchestration, optionally including push integration: pinned
+  workflow run state, capture, staged agent execution, cancellation and recovery
+  extend beyond ChangeSession's proposal editing/review/acceptance lifecycle.
+  Splitting push into yet another canvas is plausible but not necessary solely
+  because it has its own service.
+- [3] Saved AgentContexts: borderline rather than clearly wrong. A reusable
+  library, immutable records and pinned/lazy source resolution extend beyond
+  the existing edit-diagram call-flow canvas. The output should explicitly
+  compare this scope with adding detail to that existing canvas. Context 05
+  chooses [2] for related saved-context detail, but it has a different assigned
+  scope from context 06, so this is not a controlled same-input comparison.
+
+Counting and quality caveats
+
+- 56 recognized [4] operations are not 56 distinct architectural decisions.
+  Context 02 sample 3 repeats MappingPage, [D], and [G] across C00, C12 and C14:
+  nine entries for three diagram families, plus CanvasSession = ten entries.
+  Those are separately captured canvases; updating each can be legitimate.
+- Context 01 proposes 4, 4, and 5 new canvases across its three samples. That
+  alone does not prove excess; its broad feature scope includes several systems.
+- Context 04 sample 1 says to keep the separate-commit exec contract, whereas
+  the pinned implementation includes default buffered batches. A redraw label
+  is not evidence that the proposed replacement is accurate.
+- Finished outputs choosing [3]: 14/17 by manual intent, 13/17 by strict parser.
+  [4]: 15/17. No balanced target frequency follows from these observations.
+- Prompt and input contexts both changed from baseline; this review cannot
+  isolate which intervention caused the observed change.
+
+Prompt issues and suggested next revision (not applied)
+
+- The only example contains [4], [2], and [3], but no [1a]/[1b]. This may prime
+  expansion; it is a plausible contributor, not an experimentally proven cause.
+- 'Distinct subsystem, lifecycle or architectural subject' is broad enough to
+  fit most new features. Require [3] to identify the nearest existing canvas
+  and the specific scope boundary that placing the detail there would cross.
+- Require [4] to name the existing main branches that must change ownership,
+  order or relationships, and explain why local patching cannot preserve an
+  accurate organization. More fields/endpoints or a new renderer alone are
+  insufficient. Do not require exhausting new-canvas options before redraw.
+- For ambiguous cases where both choices communicate the change equally well,
+  prefer the smaller representational change. This is a tie-breaker, not a ban
+  on redraws or new canvases.
+- Balance or remove the example rather than replacing the current bias with a
+  blanket preference for patches. Freeze contexts for the next prompt-only test.
+
+Evidence locations
+manual-assessment-data.json: completed outputs, failed-output exclusions and
+strict parser results. References above use its context and sample fields.
+contexts/01/saved-context.json: captured C00-C07, C09, C11, C12, C14 diagrams.
+contexts/02,04,05,06,07/saved-context.json: per-case scope and pinned source ranges.
+prompt.txt: the exact Phase 2 prompt and output example.

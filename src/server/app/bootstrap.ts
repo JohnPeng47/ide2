@@ -9,7 +9,8 @@ import type { EvalReference, EvalReferenceGroup } from '../../../domain/mapping/
 import { GeneratedCanvasCatalog } from '../../../application/mapping/evals/generatedCanvasCatalog';
 import { FileRollUpRunStore } from '../../../infrastructure/mapping/rollup/fileRollUpRunStore';
 import { JsonDirectoryStore } from '../../../infrastructure/mapping/evals/jsonDirectoryStore';
-import { CodexEvalRuntime, FakeEvalRuntime } from '../../../infrastructure/mapping/evals/evalRuntime';
+import { FakeEvalRuntime } from '../../../infrastructure/mapping/evals/evalRuntime';
+import { AgentContextEvalRuntime } from '../../../infrastructure/mapping/evals/agentContextEvalRuntime';
 import type { EvalPrompt } from '../../../domain/mapping/evals/evalPrompt';
 import type { EvalRun } from '../../../domain/mapping/evals/evalRun';
 import { ComparisonGenerationService } from '../../../application/mapping/compare/comparisonGenerationService';
@@ -97,8 +98,7 @@ export function createBackend(projectRoot: string, diagramsDirectory: string, co
   const store = new DiagramStore(projectRoot, diagramsDirectory);
   const contextSources = new FileAgentContextSources(store.storeRoot, async sourceId => {
     if (sourceId.startsWith('repo-')) {
-      const repository = (await store.repositories.list()).find(repository => repository.id === sourceId);
-      if (repository?.checkoutRoots[0]) return { kind: 'git-worktree', root: repository.checkoutRoots[0] };
+      return { kind: 'git-worktree', root: await store.repositories.resolveCheckoutRoot(sourceId) };
     }
     const project = await store.loadProject();
     if (!project) throw Error('AGENT_CONTEXT_SOURCE_UNAVAILABLE: project is not initialized');
@@ -132,7 +132,7 @@ export function createBackend(projectRoot: string, diagramsDirectory: string, co
   const evalPrompts = new EvalPromptService(new JsonDirectoryStore<EvalPrompt>(store.storeRoot, 'eval-prompts'), store, evalReferences, new JsonDirectoryStore<import('../../../domain/mapping/evals/evalPrompt').PromptProjectSnapshot>(store.storeRoot, 'eval-prompt-snapshots'));
   const evalRunStore = new JsonDirectoryStore<EvalRun>(store.storeRoot, 'eval-runs');
   const evalRuns = new EvalRunService(compareSessions, workspace, store, contextLibrary, evalPrompts, generatedCanvases,
-    evalRunStore, fake ? new FakeEvalRuntime() : new CodexEvalRuntime(options.piEnabled === true), new FileRollUpRunStore(store.storeRoot));
+    evalRunStore, fake ? new FakeEvalRuntime() : new AgentContextEvalRuntime(projectRoot, options.piEnabled === true), new FileRollUpRunStore(store.storeRoot));
   evalRuns.layoutTemplates = new LayoutTemplateService(new JsonDirectoryStore<Awaited<ReturnType<LayoutTemplateStore['list']>>[number]>(store.storeRoot, 'layout-templates'), compareSessions, store);
   evalRuns.referenceGenerations = new ReferenceGenerationService(new JsonDirectoryStore<ReferenceGenerationSession>(store.storeRoot, 'eval-reference-sessions'), agentChat, evalRuns);
   evalRuns.replayLegacy = (run, requestId) => agentChat.rerunAlternatives(run, requestId);

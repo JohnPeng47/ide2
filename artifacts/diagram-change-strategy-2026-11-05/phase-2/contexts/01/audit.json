@@ -1,0 +1,131 @@
+{
+  "key": "01",
+  "provenance": {
+    "originalAgentContextId": "saved-agent-context-16ba6214-8c1a-4617-b165-3242ac53e23b",
+    "originalContentHash": "552ea9469cc2b027ce7cb8f9f1b7d8de7c42863b48ea0267c9e0cb033e00618d",
+    "derivedAgentContextId": "saved-agent-context-7da6c79f-6a82-400a-afd5-5ca9dde2a799",
+    "derivedContentHash": "e2b687206a7c8e0dff6574006a2d8da4b7d13c878ff55c138eff5c5e28392b71"
+  },
+  "originalMessageRoles": [
+    "user"
+  ],
+  "derivedMessageRoles": [
+    "user"
+  ],
+  "blockCount": 46,
+  "sourceReferenceCount": 32,
+  "sourceRangeBlocksExact": true,
+  "sourceManifestExact": true,
+  "codeDeltaBlockExact": true,
+  "codeDeltaArtifactExact": true,
+  "canvasCaptures": [
+    {
+      "key": "C00",
+      "diagramCount": 7,
+      "edgeCount": 11,
+      "asciiAndBindingsPreserved": true,
+      "connectionsPreserved": true,
+      "assignmentFieldsRemoved": 14
+    },
+    {
+      "key": "C01",
+      "diagramCount": 1,
+      "edgeCount": 0,
+      "asciiAndBindingsPreserved": true,
+      "connectionsPreserved": true,
+      "assignmentFieldsRemoved": 2
+    },
+    {
+      "key": "C02",
+      "diagramCount": 7,
+      "edgeCount": 6,
+      "asciiAndBindingsPreserved": true,
+      "connectionsPreserved": true,
+      "assignmentFieldsRemoved": 14
+    },
+    {
+      "key": "C03",
+      "diagramCount": 2,
+      "edgeCount": 4,
+      "asciiAndBindingsPreserved": true,
+      "connectionsPreserved": true,
+      "assignmentFieldsRemoved": 4
+    },
+    {
+      "key": "C04",
+      "diagramCount": 1,
+      "edgeCount": 0,
+      "asciiAndBindingsPreserved": true,
+      "connectionsPreserved": true,
+      "assignmentFieldsRemoved": 2
+    },
+    {
+      "key": "C05",
+      "diagramCount": 6,
+      "edgeCount": 5,
+      "asciiAndBindingsPreserved": true,
+      "connectionsPreserved": true,
+      "assignmentFieldsRemoved": 12
+    },
+    {
+      "key": "C06",
+      "diagramCount": 1,
+      "edgeCount": 0,
+      "asciiAndBindingsPreserved": true,
+      "connectionsPreserved": true,
+      "assignmentFieldsRemoved": 2
+    },
+    {
+      "key": "C07",
+      "diagramCount": 4,
+      "edgeCount": 3,
+      "asciiAndBindingsPreserved": true,
+      "connectionsPreserved": true,
+      "assignmentFieldsRemoved": 8
+    },
+    {
+      "key": "C09",
+      "diagramCount": 1,
+      "edgeCount": 0,
+      "asciiAndBindingsPreserved": true,
+      "connectionsPreserved": true,
+      "assignmentFieldsRemoved": 2
+    },
+    {
+      "key": "C11",
+      "diagramCount": 5,
+      "edgeCount": 4,
+      "asciiAndBindingsPreserved": true,
+      "connectionsPreserved": true,
+      "assignmentFieldsRemoved": 10
+    },
+    {
+      "key": "C12",
+      "diagramCount": 10,
+      "edgeCount": 21,
+      "asciiAndBindingsPreserved": true,
+      "connectionsPreserved": true,
+      "assignmentFieldsRemoved": 20
+    },
+    {
+      "key": "C14",
+      "diagramCount": 9,
+      "edgeCount": 18,
+      "asciiAndBindingsPreserved": true,
+      "connectionsPreserved": true,
+      "assignmentFieldsRemoved": 18
+    }
+  ],
+  "originalFirstBlockSha256": "890fae6cad496f4107b0999e597ad88e0a82e3b877f276f966d99b835cec2788",
+  "derivedFirstBlockSha256": "eead92dfb131eacf706cb03d48f55801fd2a63eeba19f2e0b3429717c2b1a5ce",
+  "removedBiases": [
+    "evaluation contract and output-format instructions",
+    "parent-diagram edit ownership and access assignments",
+    "preselected new-diagram and migration instructions",
+    "representation recommendations and evaluation checks"
+  ],
+  "checkedAt": "2026-11-06T04:51:40.438Z",
+  "supersededDraftAgentContextId": "saved-agent-context-5a53c775-5072-4731-ad04-8bf39728c89a",
+  "supersededDraftContentHash": "7630072e6f6109c3348f1d1f2e750afaf2872dce2bb0655b2c164c5c206fbaf0",
+  "supersededDraftGroup": "Diagram change strategy - Phase 2 superseded drafts"
+}

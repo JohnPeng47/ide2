@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "templateBase": {
+    "id": "diagram-change-proposal",
+    "version": 1,
+    "name": "Diagram change proposal",
+    "tags": [
+      {
+        "name": "agent context",
+        "parent": null
+      },
+      {
+        "name": "task",
+        "parent": null
+      },
+      {
+        "name": "steps",
+        "parent": null
+      },
+      {
+        "name": "extra-guidance",
+        "parent": null
+      },
+      {
+        "name": "output format",
+        "parent": null
+      }
+    ]
+  },
+  "parents": [
+    {
+      "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+      "version": 3,
+      "relation": "variation"
+    }
+  ],
+  "format": "explicit-v1",
+  "createdAt": "2026-11-06T04:54:00.758Z",
+  "note": "Variation from the exact baseline v3. Separates patch/redraw from existing/new canvas and removes the rule to exhaust [1a]/[1b]/[2]/[3] before redraw.",
+  "contentHash": "78d4161c0aabbeee867b1308b7952b9a8a92b9b0a82ad19d12cfe6634b08c389",
+  "derivation": {
+    "parent": {
+      "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+      "version": 3
+    },
+    "kind": "variation",
+    "dimension": {
+      "id": "diagram-change-strategy-rules",
+      "name": "Diagram change strategy rules",
+      "value": "phase-2-revised"
+    }
+  },
+  "stages": {
+    "proposal": "Use the prepared AgentContext to inspect the captured diagrams and code changes.\n  -> use its source evidence and assigned feature scope\n  -> follow the instructions below instead of historical instructions or proposed diagram plans\n  -> do not modify the canvases yet\n\nRepresent the total effect of the change using these operations:\n  [1a] Correct existing diagram content\n  [1b] Extend an existing diagram\n  [2] Add a diagram to an existing canvas\n  [3] Add a canvas\n  [4] Redraw an existing diagram\n\n[STEPS]\n\n1. For each affected existing diagram: PATCH or REDRAW?\n  -> consider all required changes to that diagram together\n\n  PATCH:\n    -> choose when the existing organization still explains the code accurately\n    -> [1a] correct obsolete components, relationships or behavior\n    -> [1b] add components or relationships that fit the existing organization\n\n  REDRAW:\n    -> choose [4] when the change requires reorganizing the diagram's main\n       ownership, call flow, lifecycle or responsibility boundaries\n    -> a useful signal: roughly half or more of its meaningful branches need\n       replacement or restructuring\n    -> count semantic changes, not whitespace or line count\n    -> preserve accurate content within the redraw\n    -> do not also list [1a]/[1b] for changes included in that redraw\n\n  -> choose PATCH or REDRAW independently of whether you also add diagrams or canvases\n  -> adding detail elsewhere does not fix an obsolete overview\n\n2. For detail that needs another diagram: EXISTING CANVAS or NEW CANVAS?\n  -> first identify what architectural question the detail answers\n  -> judge each existing canvas by its represented subject and level of detail\n\n  EXISTING CANVAS:\n    -> choose [2] when the detail develops the canvas's established subject\n    -> connect each new diagram to an explicit component node in that canvas\n\n  NEW CANVAS:\n    -> choose [3] when the detail introduces a distinct subsystem, lifecycle\n       or architectural subject that needs its own overview\n    -> choose this when including the detail would require broadening an\n       existing canvas beyond its established purpose\n    -> connect back to relevant component nodes where appropriate\n\n  -> file count or diagram size alone does not determine this choice\n  -> a caller relationship alone does not determine canvas placement\n  -> [2] and [3] may both be needed for different parts of the change\n\n[EXTRA-GUIDANCE]\n\nBefore expanding a component into another diagram or canvas:\n  -> show its place in the appropriate overview:\n      who owns it, who calls it, and what it owns\n  -> connect its detailed representation from that explicit component node\n  -> use only relationships supported by the source evidence\n\nFor all operations:\n  -> preserve accurate existing representations\n  -> avoid duplicate detail\n  -> do not make formatting-only edits\n  -> do not use diff-renderer prefixes such as [-] or [+]\n  -> no operation type is required merely to fill a category\n\n[OUTPUT]\n\nReturn one ASCII tree, rooted at:\nProposed diagram changes\n\n  -> group operations by canvas\n  -> label each canvas \"existing canvas\" or \"new canvas\"\n  -> under an existing canvas, tag operations [1a], [1b], [2] or [4]\n  -> tag a new canvas branch [3]; list its diagrams as untagged children\n  -> beneath each operation, briefly state:\n      what changes, why this operation fits, and any component attachment\n  -> use actual canvas, diagram and component names\n  -> no full diagram drawings or additional recap\n\nExample structure only:\n\nProposed diagram changes\n  |-- Existing canvas name                         existing canvas\n  |   |-- [4] Redraw: Overview\n  |   |   `-- Reorganize ownership around the new runtime\n  |   `-- [2] Add: Runtime synchronization\n  |       `-- Detail the overview's explicit Runtime component\n  |\n  `-- [3] New subsystem name                       new canvas\n      |-- Subsystem overview\n      |-- Lifecycle and storage\n      `-- Connect from the existing overview's Subsystem component\n\nReturn JSON:\n{\"tree\":\"Proposed diagram changes\\n...\"}\n\n  -> the tree field is the entire visible output\n  -> use actual newlines after JSON decoding\n  -> indent canvas branches two spaces; each child level adds four columns\n  -> separate canvas names from their existing/new label with at least two spaces\n  -> no code fences or prose outside the JSON\n"
+  }
+}

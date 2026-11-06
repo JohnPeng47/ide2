@@ -268,7 +268,7 @@ it('adds a valid built-in version when a workflow input is renamed', async () =>
 it('seeds built-in prompts and versions edits with conflict detection and template validation', async () => {
   const f = await fixture();
   const list = await f.prompts.list();
-  expect(list.filter(p => p.builtin).map(p => p.workflow).sort()).toEqual(['alternatives', 'alternatives', 'few-shot-refinement', 'roll-up']);
+  expect(list.filter(p => p.builtin).map(p => p.workflow).sort()).toEqual(['alternatives', 'alternatives', 'diagram-change-proposal', 'few-shot-refinement', 'roll-up']);
   await expect(f.prompts.save({ requestId: crypto.randomUUID(), workflow: 'roll-up', name: 'Bad', stages: { r2: '{{nope}}', g2: 'ok' } })).rejects.toThrow('Fix the prompt errors');
   const saved = await f.prompts.save({ requestId: crypto.randomUUID(), workflow: 'roll-up', promptId: f.strict.id, baseVersion: 1, name: 'Strict 2', stages: { r2: 'New {{pass}}', g2: 'New' } });
   expect(saved.versions.map(v => v.version)).toEqual([1, 2]);
@@ -657,4 +657,35 @@ it('prepares proposal trees without execution and retains invalid tree syntax as
   expect(result.status).toBe('finished'); expect(result.cells[0].proposalTree).toBe(tree);
   expect(generate).toHaveBeenCalledTimes(1);
   expect(Object.keys(generate.mock.calls[0][0].files)).toEqual(['context.json']);
+});
+
+it('resolves session context once and runs independent samples sequentially without a context file', async () => {
+  const f = await fixture();
+  const context = await f.contexts.create({ requestId: crypto.randomUUID(), name: 'Collected context', context: 'Source and existing diagrams.' });
+  const prompt = await f.prompts.save({ requestId: crypto.randomUUID(), workflow: 'diagram-change-proposal', name: 'Session proposal',
+    stages: { proposal: '<agent context>Use the preceding prepared history.</agent context>\n<task>Return JSON {"tree":"Proposed diagram changes"}.</task>' } });
+  const read = vi.spyOn(f.contexts, 'read');
+  let active = 0, peak = 0;
+  const generate = vi.spyOn(f.runtime, 'generate').mockImplementation(async () => {
+    active++; peak = Math.max(peak, active);
+    await new Promise(resolve => setTimeout(resolve, 5)); active--;
+    return { output: { tree: 'Proposed diagram changes' }, usage: { cacheRead: 80 },
+      execution: { runtime: 'pi-agent-context', sessionId: crypto.randomUUID(), contextHash: 'resolved-hash', cacheKey: 'shared-key' } } as never;
+  });
+  const prepared = await f.service.prepareForReview({ requestId: crypto.randomUUID(), workflow: 'diagram-change-proposal',
+    prompts: [{ promptId: prompt.id, version: 1 }], inputs: { context: { agentContextId: context.agentContextId } }, passes: 3,
+    contextDelivery: 'session', model: 'gpt-6-sol', effort: 'high' });
+  expect(generate).not.toHaveBeenCalled(); expect(await f.service.list()).toHaveLength(0);
+  expect(read.mock.calls.every(call => call[1] === false)).toBe(true);
+  read.mockClear();
+  const run = await f.service.launchPrepared(prepared); await settle(f, run.id);
+  expect(read).toHaveBeenCalledOnce(); expect(peak).toBe(1);
+  expect(generate).toHaveBeenCalledTimes(3);
+  const inputs = generate.mock.calls.map(([input]) => input);
+  expect(inputs.every(input => Object.keys(input.files).length === 0)).toBe(true);
+  expect(inputs[0].agentContext?.messages[0].content[0]).toMatchObject({ type: 'text', text: 'Source and existing diagrams.' });
+  expect(inputs[1].agentContext).toEqual(inputs[0].agentContext);
+  const result = await f.service.read(run.id);
+  expect(result.status).toBe('finished');
+  expect(result.cells.every(cell => cell.usage?.cacheRead === 80 && cell.execution?.cacheKey === 'shared-key')).toBe(true);
 });

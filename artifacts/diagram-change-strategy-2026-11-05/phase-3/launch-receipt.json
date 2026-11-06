@@ -1,0 +1,28 @@
+{
+  "experimentId": "f1ee9846-f13d-448d-9628-99e7c3bd6d1a",
+  "phaseId": "phase-3",
+  "revision": 13,
+  "model": "gpt-6-astra",
+  "effort": "high",
+  "contextDelivery": "session",
+  "contexts": 7,
+  "samplesPerContext": 2,
+  "totalOutputs": 14,
+  "prompt": {
+    "promptId": "1619ce41-4040-4ac1-bd8d-2d474fd7a595",
+    "version": 1
+  },
+  "runIds": [
+    "ac2583b6-3c2e-4c15-8e47-66d9d244c262",
+    "e5c8f54d-1d08-43e5-b38d-5ebab7a8dad7",
+    "6bf02e32-6abc-4dca-b77f-219017485926",
+    "bfffab73-690e-444c-be22-12c3fc340db9",
+    "eb88b1ae-f048-4714-8232-dd6b4506d348",
+    "a7130248-b9a8-4880-a68b-1d1a8d8772cf",
+    "3dfb656e-8c3f-43e8-81d7-58d3dbb49d5a"
+  ],
+  "status": {
+    "queued": 14
+  },
+  "launchedAt": "2026-11-06T16:57:51.959Z"
+}

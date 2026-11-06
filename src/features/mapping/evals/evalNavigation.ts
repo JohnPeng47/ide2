@@ -26,12 +26,13 @@ export function useArrowNavigation(move: (direction: number) => void, enabled = 
 
 /** The same case/condition/sample/stage order drives entry points and traversal. */
 export function experimentOutputSequence(experiment: EvalExperiment, runs: EvalRunSummary[]) {
-  return experiment.cases.flatMap(input => experiment.conditions.flatMap(condition => experiment.samples
-    .filter(sample => sample.caseId === input.id && sample.conditionId === condition.id)
+  const phases = experiment.phases?.length ? experiment.phases : [{ id: undefined, name: '' }];
+  return phases.flatMap(phase => experiment.cases.flatMap(input => experiment.conditions.flatMap(condition => experiment.samples
+    .filter(sample => sample.phaseId === phase.id && sample.caseId === input.id && sample.conditionId === condition.id)
     .sort((a, b) => a.number - b.number || a.attempt - b.attempt)
     .flatMap(sample => experiment.workflow.stages.flatMap(stage => {
       const output = sample.outputs.find(item => item.stageId === stage.id), cell = output && experimentOutput(output, runs);
       return output && cell?.status === 'finished' && cell.canvasId && !cell.deleted
-        ? [{ ...output, caseId: input.id, conditionId: condition.id, label: `${input.name} · ${condition.name} · sample ${sample.number} · ${stage.name}` }] : [];
-    }))));
+        ? [{ ...output, caseId: input.id, conditionId: condition.id, phaseId: phase.id, label: `${phase.name ? phase.name + ' · ' : ''}${input.name} · ${condition.name} · sample ${sample.number} · ${stage.name}` }] : [];
+    })))));
 }

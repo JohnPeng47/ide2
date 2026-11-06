@@ -1,0 +1,62 @@
+{
+  "judgementId": "15111526-31b0-4d4f-87fe-1625fd3ab4ba",
+  "experimentId": "f1ee9846-f13d-448d-9628-99e7c3bd6d1a",
+  "comparisonId": "phase-2-tree-parse",
+  "assessedOutputs": 17,
+  "expectedOutputs": 21,
+  "excluded": [
+    {
+      "context": 2,
+      "sample": 1,
+      "runId": "5f6b8942-8c5a-429d-a826-0088b73211dc",
+      "outputKey": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:1:proposal",
+      "status": "failed",
+      "error": "Diagram must contain 1–20000 printable ASCII characters with LF newlines",
+      "hasRetainedTree": true
+    },
+    {
+      "context": 3,
+      "sample": 1,
+      "runId": "3938e771-77a1-47f7-b69c-149905aa6738",
+      "outputKey": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:1:proposal",
+      "status": "failed",
+      "error": "[\n  {\n    \"expected\": \"object\",\n    \"code\": \"invalid_type\",\n    \"path\": [],\n    \"message\": \"Invalid input: expected object, received string\"\n  }\n]",
+      "hasRetainedTree": false
+    },
+    {
+      "context": 3,
+      "sample": 2,
+      "runId": "3938e771-77a1-47f7-b69c-149905aa6738",
+      "outputKey": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:2:proposal",
+      "status": "failed",
+      "error": "Diagram must contain 1–20000 printable ASCII characters with LF newlines",
+      "hasRetainedTree": true
+    },
+    {
+      "context": 3,
+      "sample": 3,
+      "runId": "3938e771-77a1-47f7-b69c-149905aa6738",
+      "outputKey": "1619ce41-4040-4ac1-bd8d-2d474fd7a595:3:proposal",
+      "status": "failed",
+      "error": "[\n  {\n    \"expected\": \"object\",\n    \"code\": \"invalid_type\",\n    \"path\": [],\n    \"message\": \"Invalid input: expected object, received string\"\n  }\n]",
+      "hasRetainedTree": true
+    }
+  ],
+  "validOutputs": 16,
+  "totals": {
+    "2": 37,
+    "3": 28,
+    "4": 56,
+    "1a": 73,
+    "1b": 115
+  },
+  "outputsUsing3": 13,
+  "outputsUsing4": 15,
+  "manualObservation": {
+    "outputsIntending3": 14,
+    "newCanvasOperationsIncludingMisplacedTags": 30,
+    "note": "Context 05 sample 1 has two new canvas branches with trailing [3] tags; strict parser v1 excludes these. Raw outputs and parser result unchanged."
+  },
+  "protectedFilesVerified": 15,
+  "experimentRevision": 10
+}

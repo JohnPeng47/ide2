@@ -27,9 +27,10 @@ export function ExperimentView({ experiment, route, runs, prompts, judgements, o
   return <div className="experiment-view">
     <header><h2>{experiment.name}</h2><p>{experiment.description}</p><p className="evals-muted">{progress.finished}/{progress.total} stage outputs · {experiment.cases.length} input cases · {experiment.conditions.length} conditions · {experiment.samples.length} sample attempts</p></header>
     <nav className="evals-actions" aria-label="Experiment views">{(['overview', 'judgements', 'outputs'] as const).map(tab => <button key={tab} aria-current={view === tab ? 'page' : undefined}
-      onClick={() => onOpen({ kind: 'experiment', id: experiment.id, view: tab })}>{tab === 'overview' ? 'Overview' : tab === 'judgements' ? 'Judgements' : 'Outputs'}</button>)}</nav>
+      onClick={() => onOpen({ kind: 'experiment', id: experiment.id, view: tab, phaseId: route.phaseId })}>{tab === 'overview' ? 'Overview' : tab === 'judgements' ? 'Judgements' : 'Outputs'}</button>)}</nav>
     {view !== 'outputs' && !!experiment.phases?.length && <section className="experiment-phases" aria-label="Phases"><h3>Phases</h3>
-      {experiment.phases.filter(p => !route.phaseId || p.id === route.phaseId).map((phase, index) => {
+      {experiment.phases.filter(p => !route.phaseId || p.id === route.phaseId).map(phase => {
+        const index = experiment.phases!.findIndex(p => p.id === phase.id);
         const phaseSamples = experiment.samples.filter(s => s.phaseId === phase.id);
         const progress = experimentProgress({ ...experiment, samples: phaseSamples }, runs);
         return <section className="experiment-phase" key={phase.id} aria-label={`Phase ${index + 1}: ${phase.name}`}>
@@ -45,6 +46,9 @@ export function ExperimentView({ experiment, route, runs, prompts, judgements, o
     {view !== 'outputs' && !experiment.phases?.length && <><h3>Comparisons</h3>{assessments()}</>}
     {view === 'outputs' && <><h3>{phase ? `${phase.name} outputs` : group?.name ?? 'Workflow outputs'}</h3><p className="evals-muted">{experiment.workflow.name} · v{experiment.workflow.version}</p>
       {!!experiment.phases?.length && <label>Phase <select aria-label="Output phase" value={route.phaseId ?? ''} onChange={event => onOpen({ ...route, phaseId: event.target.value || undefined })}><option value="">All phases</option>{experiment.phases.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select></label>}
+      {byCase && <label>Input <select aria-label="Output input" value={route.groupId ?? ''} onChange={event => onOpen({ ...route, groupId: event.target.value || undefined })}>
+        <option value="">All inputs</option>{experiment.cases.map(input => <option key={input.id} value={input.id}>{input.name}</option>)}
+      </select></label>}
       <p className="experiment-pipeline">{experiment.workflow.stages.map(s => s.name).join(' → ')}</p>
       {view === 'outputs' && (byCase ? experiment.conditions : experiment.cases).length > 1 && <label>Filter {byCase ? 'condition' : 'input case'} <select value={filter} onChange={e => setFilter(e.target.value)}><option value="">All</option>{(byCase ? experiment.conditions : experiment.cases).map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>}
       <div className="experiment-table-scroll"><table className="experiment-table" aria-label="Workflow outputs"><thead><tr><th>Input / condition / sample</th>{experiment.workflow.stages.map(stage => <th key={stage.id} title={stage.dependsOn.length ? `Requires: ${stage.dependsOn.join(', ')}` : 'Initial stage'}>{stage.name}</th>)}</tr></thead><tbody>

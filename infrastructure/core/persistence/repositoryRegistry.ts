@@ -62,12 +62,19 @@ export class GitRepositoryRegistry implements RepositoryRegistry {
   }
   private async availableRoot(repository: Repository) {
     let root: string | undefined;
-    for (const candidate of repository.checkoutRoots) {
+    // A saved worktree may have been removed since the repository was registered.
+    // The current checkout is also usable, but only for the same Git repository.
+    for (const candidate of new Set([...repository.checkoutRoots, this.checkoutRoot])) {
       const location = await discoverRepository(candidate).catch(() => undefined);
-      if (location?.repositoryIdentity === repository.identity) { root = candidate; break; }
+      if (location?.repositoryIdentity === repository.identity) { root = location.checkoutRoot; break; }
     }
     if (!root) throw Error('Repository checkout is unavailable');
     return root;
+  }
+  async resolveCheckoutRoot(repositoryId: string) {
+    const repository = (await this.list()).find(repository => repository.id === repositoryId);
+    if (!repository) throw Error('Unknown repositoryId');
+    return this.availableRoot(repository);
   }
   async captureHunks(context: RepositoryContext) {
     repositoryContextSchema.parse(context);

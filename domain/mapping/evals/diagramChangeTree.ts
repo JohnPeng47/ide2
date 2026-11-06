@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export const strategyCodes = ['1a', '1b', '2', '3', '4'] as const;
 export type StrategyCode = typeof strategyCodes[number];
-export const diagramChangeProposalSchema = z.object({ tree: z.string().min(1).max(100000) }).strict();
+export const diagramChangeProposalSchema = z.object({ tree: z.string().min(1).max(50000) }).strict();
 const countsSchema = z.object({ '1a': z.number().int().nonnegative(), '1b': z.number().int().nonnegative(), '2': z.number().int().nonnegative(), '3': z.number().int().nonnegative(), '4': z.number().int().nonnegative() }).strict();
 export const diagramChangeTreeResultSchema = z.object({
   parser: z.literal('diagram-change-tree'), version: z.literal(1),
@@ -35,10 +35,12 @@ export function parseDiagramChangeTree(text: string) {
     const branch = raw.match(/^([ |│]*)(?:\|--|`--|├──|└──)\s+(.+)$/);
     if (!branch) { issue(line, 'Expected a tree branch; prose and code fences are not tree output'); return; }
     const depth = branch[1].length, label = branch[2];
+    if (depth < 2 || (depth - 2) % 4 !== 0) issue(line, 'Indent child branches in four-column steps');
     if (lastDepth >= 0 && depth > lastDepth + 4) issue(line, 'Tree skips an indentation level');
     lastDepth = depth;
     const canvasMatch = label.match(/^(.*?)\s{2,}(existing canvas|new canvas)\s*$/i);
     if (canvasMatch) {
+      if (depth !== 2) issue(line, 'Canvas branches must be indented two spaces');
       if (canvasDepth >= 0 && depth !== canvasDepth) issue(line, 'Canvas branches must share one indentation level');
       canvasDepth = depth; canvasKind = canvasMatch[2].toLowerCase(); operationDepth = -1;
       canvas = canvasMatch[1].trim();
@@ -56,7 +58,7 @@ export function parseDiagramChangeTree(text: string) {
       if (!tag[2].trim()) { issue(line, 'Operation needs a description'); return; }
       const code = tag[1] as StrategyCode;
       if (code === '3') { issue(line, 'Put [3] on the new canvas branch, not a diagram operation'); return; }
-      if (canvasKind === 'new canvas' && ['1a', '1b', '4'].includes(code)) issue(line, 'Existing-diagram operations require an existing canvas');
+      if (canvasKind === 'new canvas' && ['1a', '1b', '2', '4'].includes(code)) issue(line, 'This operation requires an existing canvas');
       counts[code]++; operations.push({ line, canvas, code, description: tag[2] }); operationDepth = depth;
     } else if (!canvas || depth <= canvasDepth || (canvasKind === 'existing canvas' && (operationDepth < 0 || depth <= operationDepth))) {
       issue(line, 'Expected a tagged operation under this canvas');
