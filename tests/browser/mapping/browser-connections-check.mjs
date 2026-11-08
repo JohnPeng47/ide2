@@ -59,12 +59,18 @@ try {
     })()`),'Edges must render above diagram shapes');
     assert.equal(await read('!!document.querySelector(".diagram-connections-panel")||[...document.querySelectorAll(".mapping-grid-tools button")].some(b=>b.textContent.startsWith("Connections"))'),false);
     if (!nodeFocus) {
-    const before=await camera();await key('[','BracketLeft',219);await settle();assert.equal(await camera(),before,'Unfocused brackets moved the canvas');
+    const before=await camera();await key('ArrowLeft','ArrowLeft',37);await settle();assert.equal(await camera(),before,'Unfocused arrows moved the canvas');
     const horizontal=await edgePoint('horizontal');assert.ok(horizontal);await clickAt(horizontal);
     await waitFor(focused);await waitForSelector(cdp,'.edge-focus-hint');
     assert.equal(await read('document.querySelectorAll("[data-edge-endpoint]").length'),2);
+    assert.equal(await read('document.querySelector("[aria-keyshortcuts=ArrowLeft]")?.getAttribute("aria-keyshortcuts")'), 'ArrowLeft');
+    assert.equal(await read('document.querySelector("[aria-keyshortcuts=ArrowRight]")?.getAttribute("aria-keyshortcuts")'), 'ArrowRight');
+    assert.equal(await read('document.querySelector(".edge-focus-hint").textContent'), '←→');
+    const beforeBrackets = await camera();
+    await key('[','BracketLeft',219); await key(']','BracketRight',221); await settle();
+    assert.equal(await camera(), beforeBrackets, 'Old bracket shortcuts still navigate');
     assert.equal(await read('document.querySelector(".edge-focus-hint").dataset.orientation'),'horizontal');
-    assert.ok(await read(`(()=>{const r=document.querySelector('.edge-focus-hint').getBoundingClientRect();return r.bottom<${horizontal.y}&&Math.abs(r.x+r.width/2-${horizontal.x})<2})()`),'Horizontal hint must sit above the click');
+    await waitFor(async()=>await read(`(()=>{const r=document.querySelector('.edge-focus-hint').getBoundingClientRect();return r.bottom<${horizontal.y}&&Math.abs(r.x+r.width/2-${horizontal.x})<2})()`));
     if(process.env.EDGE_SCREENSHOT)await captureScreenshot(cdp,{output:process.env.EDGE_SCREENSHOT});
     const assertFocus = async () => {
       assert.equal(await focused(),true,'Panning cleared edge focus');
@@ -94,14 +100,14 @@ try {
     await click('.diagram-canvas__controls button:first-child');await assertFocus();
     if(process.env.EDGE_SCREENSHOT)await captureScreenshot(cdp,{output:process.env.EDGE_SCREENSHOT.replace('.png','-panned.png')});
     const zoom=await read('document.querySelector(".diagram-connection-hit").getScreenCTM().a');
-    await key('[','BracketLeft',219);await waitFor(()=>centered('overview'));
-    await key(']','BracketRight',221);await waitFor(()=>centered('second'));
+    await key('ArrowLeft','ArrowLeft',37);await waitFor(()=>centered('overview'));
+    await key('ArrowRight','ArrowRight',39);await waitFor(()=>centered('second'));
     assert.equal(await read('document.querySelector(".diagram-connection-hit").getScreenCTM().a'),zoom,'Endpoint navigation changed zoom');
     assert.equal(await focused(),true);
     await stableCamera();
     await key('Escape','Escape',27);await waitFor(async()=>!await focused());
     assert.equal(await read('document.querySelectorAll(".edge-focus-hint,[data-edge-endpoint]").length'),0,'Escape left edge focus UI behind');
-    const afterEscape=await camera();await key('[','BracketLeft',219);await settle();assert.equal(await camera(),afterEscape);
+    const afterEscape=await camera();await key('ArrowLeft','ArrowLeft',37);await settle();assert.equal(await camera(),afterEscape);
     // Reset through the public canvas control before clicking another segment of the same edge.
     await click('[title="Reset zoom and center diagram"]');
     await waitFor(async()=>!!await edgePoint('vertical'));
@@ -117,8 +123,9 @@ try {
     await key('Enter','Enter',13);await waitFor(async()=>!await focused());
     await clickAt(vertical);await waitFor(focused);
     await click('[aria-label="Filter diagrams"]');await waitFor(async()=>!await focused());
-    const beforeTyping=await camera();await key('[','BracketLeft',219);await key(']','BracketRight',221);await settle();
-    assert.equal(await camera(),beforeTyping,'Typing brackets moved the canvas');
+    const beforeTyping=await camera();await key('[','BracketLeft',219);await key(']','BracketRight',221);
+    await key('ArrowLeft','ArrowLeft',37);await key('ArrowRight','ArrowRight',39);await settle();
+    assert.equal(await camera(),beforeTyping,'Arrow keys in a text input moved the canvas');
     assert.ok(await read(`document.querySelector('[aria-label="Filter diagrams"]').value.includes('[]')`));
     }
     if (nodeFocus) {
@@ -132,10 +139,10 @@ try {
       'Connected edge controls must not overlap');
     if(process.env.EDGE_SCREENSHOT)await captureScreenshot(cdp,{output:process.env.EDGE_SCREENSHOT.replace('.png','-node.png')});
     const nodeZoom=await read('document.querySelector(".diagram-connection-hit").getScreenCTM().a');
-    await key(']','BracketRight',221);await waitFor(()=>centered('second',3));
-    await key(']','BracketRight',221);await waitFor(()=>centered('second',4));
-    await key(']','BracketRight',221);await waitFor(()=>centered('second',3));
-    await key('[','BracketLeft',219);await waitFor(()=>centered('second',2));
+    await key('ArrowRight','ArrowRight',39);await waitFor(()=>centered('second',3));
+    await key('ArrowRight','ArrowRight',39);await waitFor(()=>centered('second',4));
+    await key('ArrowRight','ArrowRight',39);await waitFor(()=>centered('second',3));
+    await key('ArrowLeft','ArrowLeft',37);await waitFor(()=>centered('second',2));
     assert.equal(await read('document.querySelector(".diagram-connection-hit").getScreenCTM().a'),nodeZoom);
     await click('[data-focused-edge="route"] [aria-label="Focus source node"]');await waitFor(()=>centered('overview'));
     await stableCamera();
@@ -149,7 +156,7 @@ try {
     }
     assert.equal(await readFile(catalogPath,'utf8'),original,'Edge focus changed the saved diagram');
     assert.deepEqual(errors,[]);
-    console.log(nodeFocus ? 'PASS: plain node clicks highlight incoming/outgoing edges and cycle bracket jumps; click-away and Escape clear focus without saving changes.' : 'PASS: edge toggle, endpoint hints, panning, bracket navigation, text input and unchanged diagram.');
+    console.log(nodeFocus ? 'PASS: plain node clicks highlight incoming/outgoing edges and cycle left/right arrow jumps; click-away and Escape clear focus without saving changes.' : 'PASS: edge toggle, endpoint hints, panning, arrow navigation, text input and unchanged diagram.');
   });
 }finally{if(server&&server.exitCode===null){server.kill('SIGTERM');await new Promise(resolve=>server.once('exit',resolve));}await rm(root,{recursive:true,force:true});}
 

@@ -1,0 +1,66 @@
+{
+  "group": "Shopify strategy corpus — importance tiers — 2026-11-06",
+  "contexts": [
+    {
+      "tier": "low",
+      "agentContextId": "saved-agent-context-54b4fb36-ac2b-4fc4-b42b-732646602ad5",
+      "name": "Shopify corpus — low",
+      "description": "Importance: low. Observed surrounding narrative, chronology, discovery/search hits not promoted by an audited claim, and secondary product history. Primary corpus evidence only; immutable file slices. Source pane w3M:p3J; session 623e7e34-acab-4056-9fad-cdcbdbc863ce. Selection and limitations: artifacts/shopify-tiered-contexts-2026-11-06/manifest.json.",
+      "createdAt": "2026-11-06T21:51:52.559Z",
+      "group": "Shopify strategy corpus — importance tiers — 2026-11-06",
+      "contentHash": "d44fb087ae508bd46c1eebe7e13c42946b1e73e3a4a41cdfdabffde514808424",
+      "messageCount": 1,
+      "source": {
+        "agentType": "saved-context",
+        "sourceSessionId": "54b4fb36-ac2b-4fc4-b42b-732646602ad5",
+        "format": "messages-v1"
+      },
+      "rangeCount": 520,
+      "lineCount": 2966,
+      "fileCount": 38,
+      "resolvedBytes": 323945
+    },
+    {
+      "tier": "mid",
+      "agentContextId": "saved-agent-context-7277c937-9224-45c7-9937-6a8a684333ed",
+      "name": "Shopify corpus — mid",
+      "description": "Importance: mid. Operating scale, financial reference tables and product, merchant, channel, buyer and partner mechanisms supporting or qualifying the core conclusion. Primary corpus evidence only; immutable file slices. Source pane w3M:p3J; session 623e7e34-acab-4056-9fad-cdcbdbc863ce. Selection and limitations: artifacts/shopify-tiered-contexts-2026-11-06/manifest.json.",
+      "createdAt": "2026-11-06T21:51:53.994Z",
+      "group": "Shopify strategy corpus — importance tiers — 2026-11-06",
+      "contentHash": "3bdc856ab0734dbd4c14e541b880ca6726b3acc36af6495b65ffdd7bb80c8570",
+      "messageCount": 1,
+      "source": {
+        "agentType": "saved-context",
+        "sourceSessionId": "7277c937-9224-45c7-9937-6a8a684333ed",
+        "format": "messages-v1"
+      },
+      "rangeCount": 109,
+      "lineCount": 160,
+      "fileCount": 34,
+      "resolvedBytes": 72396
+    },
+    {
+      "tier": "high",
+      "agentContextId": "saved-agent-context-4790724a-dc3b-4e32-b60c-97b43ea64a64",
+      "name": "Shopify corpus — high",
+      "description": "Importance: high. Evidence necessary to evaluate the core flywheel, GMV monetization/net take, capital allocation and FCF attribution, cohort and disclosure limitations, logistics costs and exit, international confounds, and AI causality/materiality. Primary corpus evidence only; immutable file slices. Source pane w3M:p3J; session 623e7e34-acab-4056-9fad-cdcbdbc863ce. Selection and limitations: artifacts/shopify-tiered-contexts-2026-11-06/manifest.json.",
+      "createdAt": "2026-11-06T21:52:02.372Z",
+      "group": "Shopify strategy corpus — importance tiers — 2026-11-06",
+      "contentHash": "27d91465fb5abd3743e9e2d9619ba640d4038d07129afb8528eacaaf1305db9c",
+      "messageCount": 1,
+      "source": {
+        "agentType": "saved-context",
+        "sourceSessionId": "4790724a-dc3b-4e32-b60c-97b43ea64a64",
+        "format": "messages-v1"
+      },
+      "rangeCount": 653,
+      "lineCount": 1222,
+      "fileCount": 43,
+      "resolvedBytes": 446702
+    }
+  ],
+  "totalUniqueLines": 4348,
+  "totalFiles": 43,
+  "manifest": "manifest.json",
+  "verified": "Three saved members; immutable hashes match; all ranges resolve byte-for-byte to captured slices; tiers are disjoint; source-only model inputs."
+}

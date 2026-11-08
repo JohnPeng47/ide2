@@ -1,0 +1,98 @@
+Shipping and fulfillment               FY2018 - Q3 2026 | spine: control
+|
+|-- Software and partners: 2019 - 2021
+|   |-- [S] Q2 2019: "$1 billion over the next five years"
+|   |   `-- [S] mostly variable cost; partners supply warehouses
+|   |-- [R] Q4 2019: 6 River Systems: $393.7M plus $64.1M retention equity
+|   |-- [S] 2020: small Ottawa R&D warehouse; option on two others
+|   |-- [S] Q3 2021: "no change in direction"
+|   `-- [S] $117M spent through 2021
+|       `-- [I] net cash loss + capex; not comparable with the gross $1B
+|
+|-- Announced move toward self-operation: Q4 2021 - 2022
+|   |-- Plan
+|   |   |-- [S] Feb 2022: consolidate; "operate more of them ourselves"
+|   |   |-- [S] About $1B capex planned for 2023-24
+|   |   `-- [S] About $2B total through 2024, per the same call
+|   |-- Bigger bet
+|   |   |-- [R] July 2022: Deliverr, $1.97B purchase price
+|   |   |-- [R] Plus $293.7M equity treated as compensation
+|   |   `-- [S] Q2 2022: "the vertical integration of our logistics. It's the bet"
+|   |-- [X] Shopify moved to owning fulfillment through mid-2023
+|   |   |-- [S] 2022 capex guide: $200M -> $125M
+|   |   |-- [R] Actual 2022 capex, company-wide: $50M
+|   |   |-- [S] 2023 logistics capex: $33M, about 3% of the plan
+|   |   `-- [S] "asset light" language from Q1 2022
+|   `-- [I] announced, scaled back in 2022, largely unfunded
+|
+|-- Exit to a partner: 2023
+|   |-- Decision
+|   |   |-- [S] Feb 15, 2023: "continue to integrate SFN"
+|   |   |-- [S] May 4, 2023: sale announced, 78 days later
+|   |   `-- [R] June 6, 2023: majority of assets sold to Flexport
+|   |-- [R] Impairment $1,340M, net of $528M non-cash consideration
+|   |-- [S] Accelerated stock compensation $165M
+|   |-- [R] Stake received: 13% on a fully-diluted basis
+|   |-- [S] Combined stake high teens; right to name a director
+|   `-- [R] 6 River Systems: buyer and price not stated in the corpus
+|
+|-- Partner phase: late 2023 onward
+|   |-- [R] Nov 2023: commercial agreement with Flexport
+|   |-- [R] Flexport is preferred provider of Shop Promise
+|   |-- [R] Dec 2023: $260M convertible note
+|   |-- [S] SFN app stays inside Shopify, now a 3PL network
+|   |-- [S] 2025 partners: Amazon MCF, DHL, GoBolt, Maple, Big Blue
+|   |-- Flexport partnership -[D:untestable]-> merchants well served
+|   |   |-- [S] last Flexport mention on a call: Q4 2023
+|   |   `-- [R] no merchant outcomes disclosed after the sale
+|   `-- [R] Shop Promise: two-day promises (2022) -> five days or less (FY23)
+|
+|-- What the stake has produced
+|   |-- [R] Carrying value: $780M 2023 | $642M 2024 | $602M 2025
+|   |-- [R] Share of Flexport losses: $58M | $138M | $40M
+|   |-- [R] Revenue under the agreement: nil in 2024 and 2025
+|   |   `-- [R] elimination accounting may explain part of this
+|   |-- [R] Shopify pays Flexport for co-marketing: $4M, then $9M
+|   |-- [R] Note fair value $326M, plus $67M interest over two years
+|   `-- [X] the stake has created value so far
+|       `-- [I] avoided logistics losses may be the real value; n/d
+|
+|-- What changed for Shopify
+|   |-- [S] Q1 2024 revenue growth: 23% reported, 29% excluding logistics
+|   |-- [I] Logistics: about 4% of revenue; negative gross profit (estimate)
+|   |-- [S] Gross margin tailwind: 300-400bp from removal
+|   |   `-- [S] gross margin excluding logistics "essentially flat"
+|   |-- [S] Capex fell to about $4M a quarter
+|   `-- exit -[D:assoc]-> better economics; overlaps layoffs and pricing
+|
+|-- What stayed: Shopify Shipping
+|   |-- [S] Launched 2015; sells labels at negotiated rates
+|   |-- [S] Adoption: under 40% 2018 | 45% 2019 | 52% 2020
+|   |   `-- [S] over half in Q1 2021; no adoption figure since
+|   |-- [R] Shipping labels still named as revenue, FY25
+|   `-- [S] 2025: duty-paid labels; more carriers and fulfillment partners
+|
+`-- How to read this bet
+    |-- Management's language
+    |   |-- [S] 2022: "durable source of energy to the flywheel"
+    |   |-- [S] 2023: "a side effort"; "main quest versus side quest"
+    |   `-- [S] never called a mistake in the corpus
+    |-- [I] failed bet, fast exit: both can be true
+    |-- [I] most of the planned capex was never spent
+    |-- [R] Largest capital deployment 2018-25; 10 months from close to exit call
+    `-- [I] merchant need remains; Shopify keeps the interface, not warehouses
+
+Legend
+  [R] reported: in a filing, or computed directly from filing figures
+  [S] stated by management on a call or in narrative; not independently verified
+  [I] inferred by us; rests on an assumption or interpretation
+  [X] claim that the corpus contradicts
+  a -[D:grade]-> b  dependency: b needs or is fed by a
+  a -[C:grade]-> b  sequence: a led to or preceded b
+  a -[O:grade]-> b  control: a holds or manages b
+  a -[M:grade]-> b  structure: a belongs to or connects with b
+  grades: mech (true by arithmetic or definition) | causal (controlled test; none found)
+          assoc (figures move together) | data (management figure, unverifiable)
+          claim (asserted, no figure) | untestable (corpus lacks the data)
+          contra (contradicted by the corpus)
+  => NN  detail lives on canvas NN | n/d  not disclosed | bp  basis points

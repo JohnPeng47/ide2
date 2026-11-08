@@ -222,6 +222,7 @@ export function publishMappingDiagram(catalog: ProjectRepresentationCatalogRecor
     evidence, mappings, ...(source?.provenance ? { provenance: source.provenance } : {}), createdAt: timestamp
   };
   const representation: ProjectRepresentationRecord = {
+    canvasProjectId: input.canvasProjectId ?? current?.canvasProjectId,
     schemaVersion: 1, id, projectId, repositoryId: input.repositoryId ?? current?.repositoryId ?? (source ? catalog.representations[source.representationId]?.repositoryId : undefined), handle: current?.handle ?? id, name: input.name.trim(),
     type: canvasTypeOf({ type: input.type ?? current?.type, canvas: history.snapshots[history.headId].view as { projectionLayout?: unknown } }),
     ...(input.generated ?? current?.generated ? { generated: input.generated ?? current?.generated } : {}),

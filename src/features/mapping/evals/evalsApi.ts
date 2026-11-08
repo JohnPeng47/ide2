@@ -8,6 +8,7 @@ import type { CompareCanvasCopy, CompareSource } from '../../../../domain/mappin
 import type { EvalReference, EvalReferenceGroup } from '../../../../domain/mapping/evals/evalReference';
 import type { Judgement, JudgementSummary } from '../../../../domain/mapping/evals/judgement';
 import type { LayoutCapture, LayoutTemplate } from '../../../../domain/core/diagrams/layoutTemplate';
+import { importDiagramRevision } from '../../../../domain/core/diagrams/diagramRevisionStore';
 
 const base = `${import.meta.env.BASE_URL}api/mapping/evals`;
 async function request<T>(path: string, body?: unknown, method?: 'DELETE' | 'PATCH'): Promise<T> {
@@ -41,6 +42,11 @@ export const renameRun = (id: string, name: string) => request<EvalRunSummary>(`
 export const cancelRun = (id: string) => request<{ cancelled: true }>(`/runs/${encodeURIComponent(id)}/cancel`, {});
 export const listGenerated = () => request<ProjectRepresentationRecord[]>('/canvases');
 export const readGenerated = (id: string, checkpointId?: string) => request<GeneratedCanvasRecord>(`/canvases/${encodeURIComponent(id)}${checkpointId ? `?checkpoint=${encodeURIComponent(checkpointId)}` : ''}`);
+export async function readOutputResult(runId: string, cellKey: string) {
+  const result = await request<import('../../../../domain/mapping/evals/evalOutputResult').EvalOutputResult>(`/runs/${encodeURIComponent(runId)}/output-result?cell=${encodeURIComponent(cellKey)}`);
+  Object.values(result.diagramRevisions).forEach(importDiagramRevision);
+  return result;
+}
 export const migrateGenerated = () => request<{ migrated: number }>('/migrate', {});
 export type AgentContextSummary = ReturnType<typeof import('../../../../domain/core/agents/savedAgentContext').summarizeAgentContext>;
 export const listContexts = async (query = '') => {
@@ -74,3 +80,8 @@ export const approveExperiment = (id: string, input: { requestId: string; expect
 export const snapshotPrompts = () => request<import('../../../../domain/mapping/evals/evalPrompt').PromptProjectSnapshot>('/prompt-snapshots', { requestId: crypto.randomUUID(), name: `Prompt snapshot ${new Date().toISOString()}` });
 
 export const judgeExperiment = (id: string, input: { requestId: string; expectedRevision: number; comparisonId: string }) => request<EvalExperiment>(`/experiments/${encodeURIComponent(id)}/judge`, input);
+
+export const listPromotionTargets = () => request<{ groups: { id: string; name: string }[]; repositories: { id: string; name: string }[];
+  canvases: { id: string; name: string; canvasProjectId?: string; revisionId: string }[] }>('/promotion-targets');
+export const promoteOutput = (runId: string, input: import('../../../../domain/mapping/evals/outputPromotion').OutputPromotion) =>
+  request<import('../../../../domain/mapping/evals/outputPromotion').PromotionReceipt>(`/runs/${encodeURIComponent(runId)}/promote`, input);

@@ -1,0 +1,53 @@
+{
+  "requestId": "400a1ef8-d1ee-4cd9-812e-e8ebe6aa6123",
+  "workflow": "linked-canvases",
+  "name": "Shopify - inter-canvas navigation",
+  "description": "Phase 2: link the nine completed Phase 1 canvases from the Company Map root. Buyer Network is excluded explicitly.",
+  "note": "New multi-canvas workflow. Input lineage is pinned by Phase 1 run IDs and checkpoints; this is a subsequent task, not a single-canvas prompt variation.",
+  "templateBase": {
+    "id": "canvas-prompt",
+    "version": 1,
+    "name": "Canvas prompt structure",
+    "tags": [
+      {
+        "name": "agent context",
+        "parent": null
+      },
+      {
+        "name": "task",
+        "parent": null
+      },
+      {
+        "name": "diagram-style",
+        "parent": null
+      },
+      {
+        "name": "diagram-guidelines",
+        "parent": "diagram-style"
+      },
+      {
+        "name": "references",
+        "parent": "diagram-style"
+      },
+      {
+        "name": "canvas-style",
+        "parent": null
+      },
+      {
+        "name": "canvas-guidelines",
+        "parent": "canvas-style"
+      },
+      {
+        "name": "references",
+        "parent": "canvas-style"
+      },
+      {
+        "name": "output format",
+        "parent": null
+      }
+    ]
+  },
+  "stages": {
+    "linked": "<agent context>\nRead context.json for the Phase 1 input provenance and canvases.json for the complete nine pinned canvases, keyed c1 through c9. The first input, c1, is Shopify Company Map. These are generated outputs from the same experiment, including their exact diagrams, evidence labels, positions, edges, and jumps. Use only these inputs. No layout template or few-shot references are supplied. No repository inspection or external research.\nBuyer Network (Shopify 04) failed in Phase 1 and is explicitly excluded from this run at the user's request. Do not invent its missing canvas or create a jump to it. Existing references to that missing subject may remain clearly identified as text without a jump.\n</agent context>\n\n<task>\nOkay we are gonna add inter-canvas links between the different canvases. A note on the topology of the inter-canvas connections:\n- while the canvas interface is consisdered a flat structure, u should consider the relative importance of canvases as a graph navigational problem with the starting root node at the first diagram, and optimizing for minimum distance between both importance and compositional hierarchy\n\nTake the Shopify Company Map diagram and re-generate / modify it so that it has *some* connection to the other canvases via an inter-canvas jump.\n\nOperate on the nine supplied canvases as one set. Use the Company Map canvas (c1) and its central Company Map diagram as the entry point. Modify or regenerate that central diagram to provide useful navigation. Keep important subjects near the root; prefer a short path through the containing subject for finer detail where that improves comprehension. All eight other included canvases must be reachable from Company Map by directed jumps, but a direct root link to every canvas is not required. Explain the topology and any tradeoff between importance, hierarchy, and visual clutter. Navigation does not establish causal or evidential relationships.\nPreserve all nine canvases and their supporting diagrams. Make limited text changes needed for navigation, concentrating changes in the Company Map central diagram; preserve its identity and repair internal edge anchors as needed. Retain evidence tags [R]/[S]/[I]/[X], relation grades, dates, uncertainty, and factual meaning. Do not add new factual conclusions or a tenth canvas. Preserve useful existing inter-canvas links explicitly in the complete returned jumps array. Treat references to excluded Buyer Network as unavailable, not as a tenth navigable canvas.\n</task>\n\n<output format>\nReturn JSON matching output-schema.json: {explanation, rootCanvas, canvases, jumps}.\nProduce 2–20 canvases. Each canvas has a short unique id. A new canvas is {kind:\"new\",id,name,diagrams:[{id,ascii,position:{column,row}}],edges:[{source:{diagram,line},target:{diagram,line},label}]}. An existing canvas is {kind:\"existing\",id,sourceCanvas,edits:[{diagram,ascii}]}; sourceCanvas is the c1/c2/etc key from canvases.json. Include every supplied canvas exactly once. Existing canvases retain their diagrams, positions, edges and evidence; edits replace only the named diagram's full ASCII. Use edits:[] for unchanged canvases. New diagram positions use nonnegative character-grid coordinates with room for their text.\nEach jump is {source:{canvas,diagram,line,startColumn,endColumn},target:{canvas,diagram,line}}. Canvas references use output-local canvas IDs. New diagram references use their output-local IDs; existing diagram references use exact grid: IDs from canvases.json. Source spans are on one line, 1-based and inclusive, measured after edits. Target diagram may be null to open the whole canvas; target line may be null to focus the diagram. A target line requires a diagram and must identify a meaningful concept line. Jumps must connect different canvases. Do not invent persisted document/revision IDs.\nThe jumps array is the complete inter-canvas navigation for this output: preserve useful existing links explicitly, accounting for edited text and renamed canvas IDs. Do not overlap jump source spans. Every canvas must be reachable from rootCanvas by directed jumps. Put the intended starting canvas in rootCanvas; the viewer opens it first. Explain the topology. Use actual LF newlines in ASCII. Return no prose outside JSON. If validation-error.json exists, read it and previous-output.json and correct the output.\nFor this run, return exactly nine existing canvases, each referencing one supplied c1–c9 key, and no new canvases. Set rootCanvas to the output-local ID corresponding to c1. Return one complete linked output, including unchanged target canvases. The application preserves before/after snapshots without altering Phase 1 outputs. In explanation, note the excluded Buyer Network input and explain the chosen navigation.\n</output format>"
+  }
+}

@@ -1,4 +1,15 @@
+import { backfillPlacementLineage } from '../../../domain/mapping/evals/placementLineage';
+import { placementSnapshot } from '../../../domain/core/diagrams/diagramPlacement';
+import { outputPromotionSchema, prepareOutputPromotion } from '../../../domain/mapping/evals/outputPromotion';
+import { stateKey } from '../../../domain/core/diagrams/canvasHistory';
+import { historyFromRevision } from '../../../domain/core/diagrams/projectDiagramCanvas';
+import { initialCanvasState } from '../../../domain/mapping/workspace/mappingWorkspace';
+import { recordDocument } from '../../../domain/mapping/workspace/workspaceRecords';
+import { connectionBox } from '../../../domain/core/diagrams/diagramConnection';
+import { linkedCanvasesOutputSchema } from '../../../domain/mapping/evals/linkedCanvases';
+import { materializeLinkedCanvases } from './linkedCanvasesMaterializer';
 import { diagramChangeProposalSchema } from '../../../domain/mapping/evals/diagramChangeTree';
+import { captureChangeSessionOutput, summarizeEvalOutput } from '../../../domain/mapping/evals/evalOutputResult';
 import type { AgentContextSnapshot } from '../../../domain/core/agents/agentContext';
 import { executeFewShot, fewShotCells, firstTarget } from './fewShotRefinement';
 import { LegacyGenerationAdapter, legacyEvalRunId } from './legacyGenerationAdapter';
@@ -38,6 +49,8 @@ export interface EvalRuntime {
 type Generation = Omit<Parameters<EvalRuntime['generate']>[0], 'prompt'> & { body: string; values: Record<string, string>; templateBase?: import('../../../domain/mapping/evals/promptTemplateBase').PromptTemplateBase };
 
 export class EvalRunService {
+  readChangeSession?: (id: string) => Promise<import('../../../domain/mapping/changes/diagramChangeSession').DiagramChangeSession>;
+  private resultWrites = new Map<string, Promise<unknown>>();
   experiments?: import('./experimentService').ExperimentService;
   judgements?: import('./judgementService').JudgementService;
   layoutTemplates?: LayoutTemplateService;
@@ -82,6 +95,81 @@ export class EvalRunService {
     });
     void this.ready.catch(() => {});
   }
+  async promotionTargets() {
+    const project = await this.projects.loadProject();
+    if (!project) throw Error('Project is not initialized');
+    const catalog = await this.projects.projectCatalogs.loadRepresentationCatalog(project.id, 'current');
+    return { groups: Object.values(catalog.canvasProjects ?? {}), repositories: project.repositories ?? [],
+      canvases: Object.values(catalog.representations).filter(c => c.status === 'settled' && c.type !== 'generated' && c.type !== 'projection')
+        .map(c => ({ id: c.id, name: c.name, canvasProjectId: c.canvasProjectId, revisionId: c.currentRevisionId })) };
+  }
+  async promotionSource(id: string, key: string) {
+    const run = await this.read(id), cell = run.cells.find(c => c.key === key);
+    if (!cell || cell.status !== 'finished') throw Error('Choose a completed output');
+    if (run.outputResults?.[key]) return structuredClone(run.outputResults[key]);
+    if (!cell.canvasId) throw Error('Output canvas is unavailable');
+    const saved = await this.canvas(cell.canvasId, cell.checkpointId);
+    const history = structuredClone(saved.history);
+    if (cell.checkpointId) history.headId = cell.checkpointId;
+    const document = documentFromHistory(history);
+    return { schemaVersion: 1 as const, placementSnapshot: saved.placementSnapshot ?? placementSnapshot([{ id: cell.canvasId, scene: document.scene }]), diagramRevisions: history.diagramRevisions, canvases: [{ id: cell.canvasId,
+      representationId: cell.canvasId, name: saved.name, baseline: null, version: 0,
+      proposed: { document, canvas: initialCanvasState() } }] };
+  }
+  async promoteOutput(id: string, raw: unknown) {
+    const input = outputPromotionSchema.parse(raw), signature = sha256(JSON.stringify({ runId: id, ...input }));
+    const project = await this.projects.loadProject();
+    if (!project) throw Error('Project is not initialized');
+    const catalog = await this.projects.projectCatalogs.loadRepresentationCatalog(project.id, 'current');
+    const prior = catalog.outputPromotions?.[input.requestId];
+    if (prior) { if (prior.signature !== signature) throw Error('REQUEST_ID_CONFLICT'); return prior.receipt; }
+    const result = await this.promotionSource(id, input.cellKey);
+    const target = input.destination === 'existing-canvas' ? catalog.representations[input.targetCanvasId!] : undefined;
+    if (input.destination === 'existing-canvas' && (!target || target.status !== 'settled' || target.type === 'generated' || target.type === 'projection' || target.currentRevisionId !== input.expectedRevisionId))
+      throw Error('Destination canvas changed. Reopen promotion to choose its latest version.');
+    if (target) {
+      const workspace = await this.workspace.loadRecords();
+      const index = workspace?.records.workspace as WorkspaceIndex | undefined;
+      for (const documentId of index?.documentIds ?? []) {
+        const doc = recordDocument(workspace!.records, documentId);
+        if ((doc.savedRepresentationId ?? doc.representationId) !== target.id) continue;
+        const baseline = catalog.revisions[doc.revisionId];
+        const baselineDoc = baseline && documentFromHistory(historyFromRevision(baseline));
+        if (!baselineDoc || doc.name !== doc.savedName || stateKey(doc.document) !== stateKey(baselineDoc))
+          throw Error('The destination has unsaved edits. Save it in Mapping, then reopen promotion.');
+      }
+    }
+    const group = input.destination === 'new-project' ? { id: `canvas-project-${input.requestId}`, name: input.name } : undefined;
+    const documents = prepareOutputPromotion(result, { ...input, canvasProjectId: group?.id ?? target?.canvasProjectId ?? input.canvasProjectId }, target ? {
+      history: historyFromRevision(catalog.revisions[target.currentRevisionId]), name: target.name,
+      repositoryId: target.repositoryId, canvasProjectId: target.canvasProjectId } : undefined);
+    if (!this.projects.projectCatalogs.publishOutputPromotion) throw Error('Output promotion unavailable');
+    return this.projects.projectCatalogs.publishOutputPromotion(project.id, { requestId: input.requestId, signature, placementSource: { runId: id, cellKey: input.cellKey }, canvasProject: group, documents });
+  }
+  async backfillPlacementTracking(id: string, raw: unknown) {
+    const input = outputPromotionSchema.parse(raw);
+    if (input.diagramId || input.destination === 'existing-canvas') throw Error('Historical backfill requires a whole-canvas promotion');
+    const signature = sha256(JSON.stringify({ runId: id, ...input }));
+    const write = (this.resultWrites.get(id) ?? Promise.resolve()).then(async () => {
+      const run = await this.read(id);
+      if (run.status !== 'finished') throw Error('Backfill requires a completed run');
+      const result = await this.promotionSource(id, input.cellKey);
+      const catalog = await this.projects.projectCatalogs.loadRepresentationCatalog(run.projectId);
+      const prior = catalog.outputPromotions?.[input.requestId];
+      if (!prior || prior.signature !== signature) throw Error('Original promotion request does not match the pinned run and output');
+      const lineage = backfillPlacementLineage(result, { runId: id, cellKey: input.cellKey }, prior.receipt, catalog);
+      if (!this.projects.projectCatalogs.backfillPromotionPlacementLineage) throw Error('Placement backfill unavailable');
+      const receipt = await this.projects.projectCatalogs.backfillPromotionPlacementLineage(run.projectId, { requestId: input.requestId, signature, lineage });
+      const pinned = run.outputResults?.[input.cellKey];
+      if (pinned && !pinned.placementSnapshot) {
+        pinned.placementSnapshot = placementSnapshot(pinned.canvases.map(c => ({ id: c.id, scene: c.proposed.document.scene })));
+        await this.persist(run);
+      }
+      return receipt;
+    });
+    this.resultWrites.set(id, write.catch(() => {}));
+    return write;
+  }
   async outputSnapshot(id: string, checkpointId: string) {
     await this.ready;
     for (const run of await this.store.list()) {
@@ -89,6 +177,41 @@ export class EvalRunService {
       if (output?.history.headId === checkpointId) return structuredClone(output);
     }
     return null;
+  }
+  async outputResult(id: string, cellKey: string) {
+    const run = await this.read(id);
+    if (!run.cells.some(cell => cell.key === cellKey) || !Object.hasOwn(run.outputResults ?? {}, cellKey))
+      throw new ApplicationError('invalid-input', 'Output result not found.');
+    return structuredClone(run.outputResults![cellKey]);
+  }
+  /** Attach a completed executor's proposal without accepting it or starting any generation. */
+  async captureOutputResult(id: string, input: { cellKey: string; changeSessionId: string; expectedVersion: number }) {
+    const write = (this.resultWrites.get(id) ?? Promise.resolve()).then(async () => {
+      const run = await this.read(id), cell = run.cells.find(cell => cell.key === input.cellKey);
+      if (!cell || ['__proto__', 'constructor', 'prototype'].includes(input.cellKey)) throw new ApplicationError('invalid-input', 'Output cell not found.');
+      const existing = Object.hasOwn(run.outputResults ?? {}, cell.key) ? run.outputResults![cell.key] : undefined;
+      if (existing?.changeSession?.id === input.changeSessionId && existing.changeSession.version === input.expectedVersion)
+        return summarizeEvalOutput(existing);
+      if (existing || cell.canvasId) throw new ApplicationError('conflict', 'This output is already pinned. Create another output for a different result.');
+      if (this.live.has(id) || this.deleted.has(id) || cell.status === 'cancelled' || cell.status === 'skipped')
+        throw new ApplicationError('conflict', 'This output cannot accept an external result.');
+      if (!this.readChangeSession) throw new ApplicationError('invalid-input', 'Change-session capture is unavailable.');
+      const session = await this.readChangeSession(input.changeSessionId);
+      if (session.projectId !== run.projectId || session.id !== input.changeSessionId || session.version !== input.expectedVersion)
+        throw new ApplicationError('conflict', 'Change session does not match the requested project and version.');
+      const result = captureChangeSessionOutput(session);
+      if (this.deleted.has(id)) throw new ApplicationError('conflict', 'Run was deleted.');
+      (run.outputResults ??= {})[cell.key] = result;
+      cell.output = summarizeEvalOutput(result); cell.status = 'finished'; cell.completedAt = new Date().toISOString();
+      delete cell.error;
+      run.status = runStatus(run.cells);
+      if (run.status === 'finished') delete run.error;
+      if (!['queued', 'generating'].includes(run.status)) run.completedAt = cell.completedAt;
+      await this.persist(run);
+      return cell.output;
+    });
+    this.resultWrites.set(id, write.catch(() => {}));
+    return write;
   }
   async recordLegacy(children: import('../../../domain/mapping/agent-chat/agentChat').ChatSession[], parent?: import('../../../domain/mapping/agent-chat/agentChat').ChatSession, historical = false) {
     await this.ready;
@@ -241,6 +364,15 @@ export class EvalRunService {
       const context = await this.contexts.read(value.agentContextId, false).catch(() => { throw new ApplicationError('invalid-input', 'That AgentContext is no longer available.'); });
       contexts[input.name] = { agentContextId: context.agentContextId, name: context.name, contentHash: context.contentHash };
     }
+    const canvasSources = request.canvasSources ?? [];
+    if (new Set(canvasSources.map(source => JSON.stringify(source))).size !== canvasSources.length)
+      throw new ApplicationError('invalid-input', 'Choose distinct input canvases.');
+    const canvasSetInputs = await Promise.all(canvasSources.map(async source => {
+      const pinned = rerun?.canvasInputs?.find(copy => JSON.stringify(copy.source) === JSON.stringify(source));
+      return pinned ? structuredClone(pinned) : (await this.comparisons.capture([source])).canvases[0];
+    }));
+    if (canvasSetInputs.some(copy => copy.view.generation && copy.view.generation.status !== 'finished'))
+      throw new ApplicationError('invalid-input', 'Wait for input canvases to finish generating.');
     const previousIds = [...new Set(request.previous ?? [])];
     if (previousIds.length && request.workflow !== 'alternatives') throw new ApplicationError('invalid-input', 'Only Alternatives runs take earlier alternatives.');
     const previous = await Promise.all(previousIds.map(async id => {
@@ -288,6 +420,7 @@ export class EvalRunService {
       pass: i + 1, stage: stage.id, status: 'queued' as const })))).flat();
     const run: EvalRun = { schemaVersion: 1, ...(reviewOnly ? {} : { number: this.nextNumber++ }), id: request.requestId, requestHash, request, references, projectId: captured.projectId, workflow: workflow.id,
       ...(layoutTemplate ? { layoutTemplate } : {}),
+      ...(canvasSetInputs.length ? { canvasInputs: canvasSetInputs } : {}),
       agentContextId, contextName, prompts, inputs, ...(contextInputs.length ? { contexts } : {}), ...(previous.length ? { previous } : {}), status: 'queued', createdAt: new Date().toISOString(), cells,
       ...(parent ? { parentRunId: parent.id } : {}) };
     if (reviewOnly) return run;
@@ -395,7 +528,7 @@ export class EvalRunService {
           ...(run.layoutTemplate ? { layoutTemplate: run.layoutTemplate, layoutPlacements: result.layoutPlacements } : {}),
           ...(result.viewId ? { storageViewId: result.viewId } : {}) } });
       if (this.deleted.has(run.id)) { await this.projects.projectCatalogs.archiveRepresentation(run.projectId, saved.representation.id); signal.throwIfAborted(); }
-      (run.outputSnapshots ??= {})[saved.representation.id] = { id: saved.representation.id, name, generated: saved.representation.generated!, history: copyCompareHistory(result.history, result.history.headId) };
+      (run.outputSnapshots ??= {})[saved.representation.id] = { id: saved.representation.id, name, generated: saved.representation.generated!, history: copyCompareHistory(result.history, result.history.headId), placementSnapshot: placementSnapshot([{ id: saved.representation.id, scene: documentFromHistory(result.history).scene }]) };
       Object.assign(cell, { status: 'finished', canvasId: saved.representation.id, checkpointId: result.history.headId,
         ...(result.layoutPlacements ? { layoutPlacements: result.layoutPlacements } : {}),
         explanation: result.output.explanation, usage, execution, completedAt: new Date().toISOString() });
@@ -417,6 +550,38 @@ export class EvalRunService {
     const common = { workflow: run.workflow, model: run.request.model, effort: run.request.effort, signal, values, templateBase: prompt.templateBase };
     const provenance = { prompt: { id: prompt.promptId, version: prompt.version, name: prompt.name }, promptStages: structuredClone(prompt.stages) };
     const title = `${prompt.name} v${prompt.version} · sample ${pass}`;
+    if (run.workflow === 'linked-canvases') {
+      const cell = this.cell(run, prompt, pass, 'linked');
+      Object.assign(cell, { status: 'generating', startedAt: new Date().toISOString() }); await this.persist(run);
+      try {
+        signal.throwIfAborted();
+        const context = run.contexts!.context, saved = await this.contexts.read(context.agentContextId);
+        if (saved.contentHash !== context.contentHash) throw Error('The AgentContext changed after the run started.');
+        const canvasInputs = run.canvasInputs ?? [];
+        const generated = await this.generateValidated({ ...common, stage: 'linked', body: prompt.stages.linked,
+          schema: linkedCanvasesOutputSchema, files: {
+            'context.json': { name: saved.name, description: saved.description, snapshot: saved.resolvedSnapshot ?? saved.snapshot },
+            'canvases.json': canvasInputs.map((copy, i) => {
+              const document = documentFromHistory(copy.history), context = canvasContext(copy, false);
+              return { id: `c${i + 1}`, ...context, jumps: [
+                ...(document.jumps ?? []), ...context.diagrams.flatMap(d => {
+                  const box = connectionBox(document.scene, d.id);
+                  return box?.kind === 'diagram' ? (document.scene.contents[box.contentId].jumps ?? []).map(jump => ({ ...jump, sourceDisplayNodeId: d.id })) : [];
+                })
+              ] };
+            })
+          } }, raw => materializeLinkedCanvases(raw, canvasInputs, `linked-${sha256(run.id + ':' + cell.key).slice(0, 16)}`));
+        signal.throwIfAborted();
+        (run.outputResults ??= {})[cell.key] = generated.result.result;
+        Object.assign(cell, { output: summarizeEvalOutput(generated.result.result), status: 'finished',
+          explanation: generated.result.output.explanation, usage: generated.usage, execution: generated.execution, completedAt: new Date().toISOString() });
+        await this.persist(run);
+      } catch (error) {
+        Object.assign(cell, { status: signal.aborted ? 'cancelled' : 'failed', error: signal.aborted ? 'Cancelled.' : error instanceof Error ? error.message : String(error), completedAt: new Date().toISOString() });
+        await this.persist(run); throw error;
+      }
+      return;
+    }
     if (run.workflow === 'alternatives' || run.workflow === 'diagram-change-proposal') {
       const proposal = run.workflow === 'diagram-change-proposal';
       const stage = proposal ? 'proposal' : 'alternative';
@@ -469,6 +634,7 @@ export class EvalRunService {
     let files = input.files;
     const usage: Record<string, number> = {};
     for (let attempt = 0; ; attempt++) {
+      input.signal.throwIfAborted();
       const response = await this.runtime.generate({ ...input, prompt, files }); input.signal.throwIfAborted();
       for (const [key, value] of Object.entries(response.usage ?? {})) usage[key] = (usage[key] ?? 0) + value;
       try { return { result: validate(response.output), usage, execution: response.execution }; }

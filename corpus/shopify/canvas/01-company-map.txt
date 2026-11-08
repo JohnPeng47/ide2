@@ -1,0 +1,90 @@
+Shopify company map                    FY2018 - Q3 2026 | thesis to domain
+|
+|-- [S] Thesis: "make commerce better for everyone"
+|   |-- [S] merchant success drives Shopify's success
+|   |   `-- merchant GMV -[D:mech]-> merchant solutions revenue
+|   |       `-- [R] $8.80B of $11.56B FY25 revenue (76%)
+|   `-- [S] "Businesses do better on Shopify. It is a fact."
+|       `-- [I] the corpus has no off-Shopify comparison group
+|
+|-- Flywheel as management describes it: the wording changes
+|   |-- [S] 2019: merchant flywheel
+|   |   |-- lower barriers -[D:claim]-> more entrepreneurs
+|   |   |-- merchants + tools -[D:claim]-> merchant success
+|   |   `-- success -[D:untestable]-> more entrepreneurship
+|   |-- [S] Q4 2025: Shop flywheel
+|   |   |-- discovery -[D:data]-> buyer intent
+|   |   |-- intent + trust -[D:data]-> conversion
+|   |   `-- conversion -[D:claim]-> buyers return to the Shop app
+|   `-- [S] Q1 2026: commerce intelligence + demand conversion
+|       |-- data -[D:claim]-> smart tools -[D:data]-> merchant success
+|       `-- Shopify now creates demand as well as converting it
+|
+|-- What the figures support
+|   |-- [R] GMV: $41B FY18 -> $378B FY25
+|   |-- [R] Revenue: $1.07B FY18 -> $11.56B FY25
+|   |-- [R] Payments penetration: 40.4% FY18 -> 65.6% FY25
+|   |-- Per dollar of GMV, FY21 -> FY25                     => 03
+|   |   |-- [R] merchant solutions revenue: 1.86% -> 2.33%
+|   |   |-- [R] merchant solutions gross profit: 0.80% -> 0.88%
+|   |   `-- [R] after transaction and loan losses: 0.75% -> 0.77%
+|   |-- [I] FY22 -> FY24 free cash flow gain: about 75% GMV volume  => 02
+|   `-- [I] GMV scale is the largest measured driver; mechanisms are unproven
+|
+|-- Eight strategic domains
+|   |-- Payments and merchant finance                       => 03
+|   |   `-- [I] monetizes GMV; gross take up, net take roughly flat
+|   |-- Buyer network                                       => 04
+|   |   `-- [S] Shop Pay: over 50% of US payments volume, Q4 2025
+|   |-- Merchant on-ramps and range                         => 05
+|   |   `-- [R] exact merchant count ends at 2,063,000 (FY21)
+|   |-- Selling surfaces                                    => 06
+|   |   `-- [S] offline about 6.5% of revenue; B2B base undisclosed
+|   |-- Global reach                                        => 07
+|   |   `-- [R] outside North America: 31.7% of FY25 revenue
+|   |-- Shipping and fulfillment                            => 08
+|   |   `-- [R] largest capital bet; $1.34B impairment on the 2023 exit
+|   |-- Platform and ecosystem                              => 09
+|   |   `-- [R] 21,000+ apps; about $3B in three listed stakes, FY25
+|   `-- Commerce intelligence                               => 10
+|       `-- [S] usage rising fast; AI commerce volume "still small"
+|
+|-- Links between domains
+|   |-- Payments -[D:mech]-> on-Shopify Shop Pay (product gate)
+|   |-- Shop Pay -[D:claim]-> more merchants adopt Payments
+|   |-- Shop Pay Component -[C:claim]-> enterprise replatforming
+|   |-- POS -[M:data]-> entry point: 55% of POS adders new, Q3 2026
+|   |-- Payments availability -[D:assoc]-> international take rate
+|   |-- Catalog + Shop Pay -[D:data]-> agentic channels
+|   |-- partners -[D:claim]-> merchant growth -[D:claim]-> more partners
+|   `-- Capital -[D:data]-> merchant growth
+|       `-- [S] 2019: platform-wide GMV effect "probably not" material
+|
+|-- Six eras                                                => 02
+|   |-- Expand: 2018 - Q1 2020
+|   |-- Surge: Q2 2020 - Q1 2021
+|   |-- Build-ahead: Q2 2021 - Q2 2022
+|   |-- Reckoning: Q3 2022 - Q2 2023
+|   |-- Focused compounding: Q3 2023 - Q1 2025
+|   `-- Reacceleration: Q2 2025 onward
+|
+`-- Evidence profile: 112 audited claims
+    |-- mechanical 13 | measured causal 0 | association 21
+    |-- management data 31 | assertion 19
+    |-- not testable 14 | contradicted 14
+    `-- [I] the corpus describes the flywheel; it does not prove it
+
+Legend
+  [R] reported: in a filing, or computed directly from filing figures
+  [S] stated by management on a call or in narrative; not independently verified
+  [I] inferred by us; rests on an assumption or interpretation
+  [X] claim that the corpus contradicts
+  a -[D:grade]-> b  dependency: b needs or is fed by a
+  a -[C:grade]-> b  sequence: a led to or preceded b
+  a -[O:grade]-> b  control: a holds or manages b
+  a -[M:grade]-> b  structure: a belongs to or connects with b
+  grades: mech (true by arithmetic or definition) | causal (controlled test; none found)
+          assoc (figures move together) | data (management figure, unverifiable)
+          claim (asserted, no figure) | untestable (corpus lacks the data)
+          contra (contradicted by the corpus)
+  => NN  detail lives on canvas NN | n/d  not disclosed | bp  basis points

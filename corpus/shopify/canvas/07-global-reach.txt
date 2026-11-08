@@ -1,0 +1,86 @@
+Global reach                           FY2018 - Q3 2026 | spine: structure
+|
+|-- How much of the company is outside North America
+|   |-- [R] Share of revenue: 25.5% 2019 | 28.6% 2021 | 28.7% 2023 | 31.7% 2025
+|   |-- [S] Merchants outside North America: 45% 2022 | nearly half 2025
+|   |-- [R] North America still 63.8% of FY25 incremental revenue
+|   |-- [S] Half of Q3 2025 constant-currency GMV growth came from outside NA
+|   `-- [R] Basis: merchant location, not buyer location
+|
+|-- "International outperforms": what it really means
+|   |-- [R] Revenue growth vs North America, in points
+|   |   |-- 2020 +11.9 | 2021 +15.5 | 2022 -7.4
+|   |   `-- 2023 +7.9 | 2024 +10.0 | 2025 +8.5
+|   |-- By region, 2025
+|   |   |-- [R] EMEA +42.1%: 74% of incremental international revenue
+|   |   |-- [R] APAC +27.5%: same as North America's +27.6%
+|   |   `-- [R] Latin America +7.2%; $104M base
+|   |-- [X] outperformance applies across all international regions
+|   `-- Europe GMV growth, reported vs constant currency
+|       |-- [S] Q2 2025 49% vs 42% | Q4 2025 45% vs 35% | Q1 2026 48% vs 35%
+|       |-- [S] 2026: Europe 33-35% vs North America 28%, constant currency
+|       `-- [I] FX widens the gap; it doesn't create it
+|
+|-- Localization as the claimed cause
+|   |-- 2018: translated admin
+|   |   |-- [S] Lead conversion improved in translated markets; no figure
+|   |   `-- [S] International merchants 24% -> 29% of base, 2018-19
+|   |-- localization -[D:assoc]-> international growth
+|   |   |-- [R] Rest of World already led by 38 points in 2017, before translation
+|   |   `-- [S] Translation arrived with marketing and partner spend
+|   |-- [S] "own studies": localized content raises GMV; method n/d
+|   `-- [S] Later: Japan yen plans, flagship theme, localized Shop app
+|
+|-- Payments availability                                    => 03
+|   |-- [R] Countries: 13-15 (2019) | 17 (2020) | 22 (2022) | 23 (2024)
+|   |-- [S] 2025: 16 added (15 European + Mexico): 39, then 40 in 2026
+|   |-- [X] "60 new countries" (likely mistranscribed "sixteen")
+|   |-- availability -[D:mech]-> take rate where it launches
+|   |-- availability -[D:assoc]-> international GMV: timing mixed
+|   |   |-- [S] Europe above 35% while country count sat at 22-23
+|   |   `-- [I] launches may follow existing traction
+|   |-- [R] EMEA adoption 74% -> 86% (2022-24), then 83% after new markets
+|   `-- [S] Near term, Europe lowers the global penetration figure
+|
+|-- Cross-border selling
+|   |-- [S] Share of GMV: about 14% 2022 | 15% 2025 | 16% Q1 2026
+|   |   `-- [I] implied $28B -> about $57B; share nearly flat
+|   |-- [S] 28% of store traffic from abroad (2022); conversion gap inferred
+|   |-- Native: Markets -> Markets Pro -> Managed Markets
+|   |   |-- [S] Markets Pro general availability, US, Q3 2023
+|   |   |-- [S] Promised beyond the US in 2024
+|   |   |-- [X] actual: first beyond the US in Q2 2026 (Canada, UK)
+|   |   `-- [S] EY sample: 83% added countries; no control group
+|   |-- Partner: Global-e
+|   |   |-- Shopify -[O:mech]-> Global-E stock: $868M, FY25
+|   |   |-- [R] Stake received as non-cash consideration, 2021
+|   |   `-- [I] partner and competitor; conflict unproven
+|   `-- native vs partner share -[D:untestable]-> no volume disclosed
+|
+|-- Tariffs: 2025 as a stress test
+|   |-- [S] US inbound and outbound: about half of cross-border GMV
+|   |-- [S] China de minimis imports: about 1% of GMV
+|   |-- [S] Duty collection, TariffGuide.ai, duty-paid labels; shipped in days
+|   |-- [S] Merchants raised prices some; no drop in US demand
+|   `-- [S] Expected Q2 2025 tariff impact "did not materialize"
+|
+`-- Allocation to international
+    |-- [S] 2018-26: named as a priority in almost every plan year read
+    |-- [S] 2025: roughly 40% of marketing outside North America
+    |-- [S] Capital expanded to eight countries by early 2026
+    `-- [I] spend by region n/d beyond this marketing figure
+
+Legend
+  [R] reported: in a filing, or computed directly from filing figures
+  [S] stated by management on a call or in narrative; not independently verified
+  [I] inferred by us; rests on an assumption or interpretation
+  [X] claim that the corpus contradicts
+  a -[D:grade]-> b  dependency: b needs or is fed by a
+  a -[C:grade]-> b  sequence: a led to or preceded b
+  a -[O:grade]-> b  control: a holds or manages b
+  a -[M:grade]-> b  structure: a belongs to or connects with b
+  grades: mech (true by arithmetic or definition) | causal (controlled test; none found)
+          assoc (figures move together) | data (management figure, unverifiable)
+          claim (asserted, no figure) | untestable (corpus lacks the data)
+          contra (contradicted by the corpus)
+  => NN  detail lives on canvas NN | n/d  not disclosed | bp  basis points

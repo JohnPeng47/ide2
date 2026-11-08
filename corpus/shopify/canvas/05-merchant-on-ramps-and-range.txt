@@ -1,0 +1,100 @@
+Merchant on-ramps and range            FY2018 - Q3 2026 | spine: structure
+|
+|-- Getting merchants in
+|   |-- Merchant base
+|   |   |-- [R] Exact count: 820,000 | 1,069,000 | 1,749,000 | 2,063,000
+|   |   |   `-- year-end 2018, 2019, 2020, 2021; "millions" after
+|   |   |-- [I] Net adds: 249k 2019 | 680k 2020 | 314k 2021
+|   |   `-- [S] Why it stopped: count alone doesn't reflect company growth
+|   |-- First sale
+|   |   |-- [S] A first sale every 28 seconds (2020), 26 seconds (2025)
+|   |   `-- [S] First-time sellers up 7x since 2018; base n/d
+|   |-- Paid acquisition
+|   |   |-- [S] Average 18-month payback limit
+|   |   |-- [S] Q3 2022 -> Q1 2024: acquisition +180%, CAC -60%
+|   |   |   `-- [I] measured from a weak, reset baseline
+|   |   `-- [S] 2025: roughly 40% of marketing outside North America
+|   `-- Brand (2019)
+|       |-- [S] $30M; test markets nearly doubled unaided awareness
+|       |-- [S] Suspended Q1 2020, before the expected payoff
+|       `-- brand -[D:untestable]-> funnel width and marketing efficiency
+|
+|-- Trials: a live experiment
+|   |-- [S] 14 days -> 90 days free (2020) -> 14 days -> paid trials (2022)
+|   |-- [S] 2024: three months -> one month; revenue arrives sooner
+|   |-- [S] Late 2024: back to three months, after testing
+|   |   `-- [S] longer trials reach GMV milestones earlier; method n/d
+|   |-- [S] MRR growth: +9% Q2 2025 -> +19% Q3 2026, as predicted
+|   `-- trial length -[D:assoc]-> MRR growth; price lapping overlaps
+|
+|-- Pricing
+|   |-- [S] First standard-plan rise in 12 years, Jan-Apr 2023
+|   |   |-- [S] MRR $116M -> $139M in one quarter
+|   |   `-- [S] Biggest absolute growth driver that quarter
+|   |-- [S] 2024: Plus price rise; most existing merchants locked in 3 years
+|   |-- price -[D:claim]-> no harm to retention
+|   |   `-- [R] merchant count was withdrawn a year before the rise
+|   `-- [R] "Under $50 a month" sentence disappears after FY22
+|
+|-- Moving upmarket
+|   |-- Plus
+|   |   |-- [S] Merchants: 5,300 (2018) | 10,000+ (2020) | 14,000+ (2021); ends
+|   |   |-- [S] Share of MRR: 25% 2018 | 29% 2021 | 34% Q1 2023 | 34% Q3 2026
+|   |   |   `-- [I] moved by price and trials as much as by strategy
+|   |   `-- [R] Majority of GMV from Plus and enterprise; % n/d
+|   |-- Upgrades vs new
+|   |   |-- [S] 2018-19: majority of Plus adds were net new to Shopify
+|   |   |-- [S] 2022: about 25% of adds via self-serve upgrade; not repeated
+|   |   `-- [R] "Never re-platform" sentence gone from FY24-25 filings
+|   |-- Enterprise
+|   |   |-- [R] Commerce Components launched Q1 2023; last filed FY23
+|   |   |-- [S] Systems integrators: Accenture, Deloitte, EY, KPMG, IBM
+|   |   |-- [S] $100M+ merchants nearly doubled in two years; base n/d
+|   |   `-- CCS + integrators -[D:claim]-> enterprise adoption
+|   `-- Cost to the base
+|       |-- [I] Non-Plus MRR: $30.5M 2018 -> $135.3M 2025
+|       |-- [I] flat Q3 2021 -> Q3 2022
+|       `-- [S] Merchants under $25M still generate most GMV (Q3 2025)
+|
+|-- Physical retailers as an entry point                     => 06
+|   |-- [S] Retail Plan: $89 a month, Q3 2023
+|   |-- [S] 55% of merchants adding POS were new to Shopify, Q3 2026
+|   |   `-- [I] one quarter; merchant count, not dollars
+|   `-- [I] may include large retailers switching systems
+|
+|-- Merchant outcomes and cohorts
+|   |-- [R] Cohort charts plot revenue; no data labels, no churn
+|   |-- [R] Same-merchant GMV growth: 29% 2017 | 24% 2018 | 21% 2019; ends
+|   |-- [S] Q1 2015 cohort at 5x initial quarterly GMV
+|   |   `-- [I] about 15.4% CAGR; "3x market" implies a 5.1% market
+|   |-- [S] 38 of 39 quarterly cohorts beat US e-commerce since joining
+|   |   `-- [I] measured from partial, ramping first quarters
+|   |-- [I] FY22-24 older cohorts: implied GMV -1% to +7%; below market
+|   |   `-- [I] estimate from chart pixels and company attach rate
+|   |-- [X] "consistent revenue growth coming from each cohort"
+|   |   `-- [I] 2017 and 2020 cohorts flat in one year, at chart resolution
+|   |-- [S] $1M+ merchants: 92% retention; period ambiguous; smaller n/d
+|   `-- [S] Churn: "We haven't given exact numbers"
+|
+`-- Beating the market
+    |-- [S] US merchants' online sales: 23% CAGR vs 8% for US e-commerce
+    |-- [S] Europe: 37% vs 8%
+    |-- [I] numerators include new and migrating merchants
+    |-- [S] growth "evenly split" between new and same-store
+    |-- [I] like-for-like excess: about 3.5-7 points
+    `-- merchant success -[D:assoc]-> Shopify results; no control group
+
+Legend
+  [R] reported: in a filing, or computed directly from filing figures
+  [S] stated by management on a call or in narrative; not independently verified
+  [I] inferred by us; rests on an assumption or interpretation
+  [X] claim that the corpus contradicts
+  a -[D:grade]-> b  dependency: b needs or is fed by a
+  a -[C:grade]-> b  sequence: a led to or preceded b
+  a -[O:grade]-> b  control: a holds or manages b
+  a -[M:grade]-> b  structure: a belongs to or connects with b
+  grades: mech (true by arithmetic or definition) | causal (controlled test; none found)
+          assoc (figures move together) | data (management figure, unverifiable)
+          claim (asserted, no figure) | untestable (corpus lacks the data)
+          contra (contradicted by the corpus)
+  => NN  detail lives on canvas NN | n/d  not disclosed | bp  basis points

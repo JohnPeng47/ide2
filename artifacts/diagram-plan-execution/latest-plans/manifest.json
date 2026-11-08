@@ -1,0 +1,427 @@
+{
+  "schemaVersion": 1,
+  "group": "Plan execution - latest plans",
+  "inputs": [
+    {
+      "context": 1,
+      "plan": 1,
+      "name": "01 Canvas workspace, authoring and navigation - Plan 1",
+      "agentContextId": "saved-agent-context-7bbc7dda-babe-42b2-b884-4ff86c49e19b",
+      "contentHash": "e1513c5f3bb3f305365bbebc6d123b5e1af021a20ea18a06ab5bd5607922534f",
+      "originalAgentContextId": "saved-agent-context-7da6c79f-6a82-400a-afd5-5ca9dde2a799",
+      "originalContentHash": "e2b687206a7c8e0dff6574006a2d8da4b7d13c878ff55c138eff5c5e28392b71",
+      "planHash": "e06acae5e0640ca1bb312b40b8c406412aa3cc45b6342176378c2cf69bfe05bf",
+      "sourceReferenceCount": 32,
+      "sourceOutput": {
+        "runId": "f35510b1-f2ab-4cee-ad8d-246c60da029b",
+        "outputKey": "6a9c0f27-0b23-422f-965d-cc8ca56212e3:1:proposal",
+        "documentId": "representation-51d525ad-df31-4a8a-a2b8-a6359d6e2bbe",
+        "checkpointId": "canvas-revision-2d3865b0-9360-41de-8ab3-fbff04dff16e"
+      },
+      "counts": {
+        "2": 6,
+        "3": 0,
+        "4": 3,
+        "1a": 23,
+        "1b": 18
+      },
+      "categories": {
+        "existingDiagramModifications": 44,
+        "newDiagramsInExistingCanvases": 6,
+        "newCanvases": 0
+      },
+      "savedContextFile": "artifacts/diagram-plan-execution/latest-plans/01-1/saved-context.json"
+    },
+    {
+      "context": 1,
+      "plan": 2,
+      "name": "01 Canvas workspace, authoring and navigation - Plan 2",
+      "agentContextId": "saved-agent-context-8f695ceb-e39a-4b37-a8e3-b23ce9c5dc80",
+      "contentHash": "ee0d535d5f72d84323c9d1f59b554a313aea119b788f595d184574ca43ef60f7",
+      "originalAgentContextId": "saved-agent-context-7da6c79f-6a82-400a-afd5-5ca9dde2a799",
+      "originalContentHash": "e2b687206a7c8e0dff6574006a2d8da4b7d13c878ff55c138eff5c5e28392b71",
+      "planHash": "513cb7cbe033362a296fb3a79841a4e93cea711d6dc54c817131390f68be02f0",
+      "sourceReferenceCount": 32,
+      "sourceOutput": {
+        "runId": "f35510b1-f2ab-4cee-ad8d-246c60da029b",
+        "outputKey": "6a9c0f27-0b23-422f-965d-cc8ca56212e3:2:proposal",
+        "documentId": "representation-231bd157-ff01-4f21-a218-3cbd16ff3006",
+        "checkpointId": "canvas-revision-c50109cd-9ad8-48dc-94d0-8c268dccbf55"
+      },
+      "counts": {
+        "2": 10,
+        "3": 0,
+        "4": 3,
+        "1a": 25,
+        "1b": 24
+      },
+      "categories": {
+        "existingDiagramModifications": 52,
+        "newDiagramsInExistingCanvases": 10,
+        "newCanvases": 0
+      },
+      "savedContextFile": "artifacts/diagram-plan-execution/latest-plans/01-2/saved-context.json"
+    },
+    {
+      "context": 2,
+      "plan": 1,
+      "name": "02 Tldraw runtime, selection and controller edits - Plan 1",
+      "agentContextId": "saved-agent-context-5e9b94b6-9062-4330-be4d-ec45e2a66ead",
+      "contentHash": "58e2455341079def6b2cb817f12d98413f01c8c775c93b5c32ff96223775ff31",
+      "originalAgentContextId": "saved-agent-context-cfd702c9-f140-4747-b7b3-b2b8e7926b0a",
+      "originalContentHash": "2898f9f05e12941aa40c0919a7f09555789682580dff61ac5743a664fde3265d",
+      "planHash": "c2fcd558a3b94d47188f319f4b23d3b43d2cd63177eec7a6e0ebc0565733e905",
+      "sourceReferenceCount": 21,
+      "sourceOutput": {
+        "runId": "13deda75-102d-4001-8481-6afc35a7c655",
+        "outputKey": "6a9c0f27-0b23-422f-965d-cc8ca56212e3:1:proposal",
+        "documentId": "representation-715b216b-246f-4373-b681-0a16e5ed6e19",
+        "checkpointId": "canvas-revision-416b8440-14ba-491c-9c87-ab36084a1c80"
+      },
+      "counts": {
+        "2": 5,
+        "3": 0,
+        "4": 4,
+        "1a": 13,
+        "1b": 16
+      },
+      "categories": {
+        "existingDiagramModifications": 33,
+        "newDiagramsInExistingCanvases": 5,
+        "newCanvases": 0
+      },
+      "savedContextFile": "artifacts/diagram-plan-execution/latest-plans/02-1/saved-context.json"
+    },
+    {
+      "context": 2,
+      "plan": 2,
+      "name": "02 Tldraw runtime, selection and controller edits - Plan 2",
+      "agentContextId": "saved-agent-context-6f5afa68-67d7-4718-89b0-0e11548e7393",
+      "contentHash": "b6af942c61b2c19581b0554baeb475c3892789634632caa8bdd6a92a2f7fb1d0",
+      "originalAgentContextId": "saved-agent-context-cfd702c9-f140-4747-b7b3-b2b8e7926b0a",
+      "originalContentHash": "2898f9f05e12941aa40c0919a7f09555789682580dff61ac5743a664fde3265d",
+      "planHash": "06fb8140215c143a7e168eb3b783ecab3e8cd9ff4f0f72583f2f36a9dedd047f",
+      "sourceReferenceCount": 21,
+      "sourceOutput": {
+        "runId": "13deda75-102d-4001-8481-6afc35a7c655",
+        "outputKey": "6a9c0f27-0b23-422f-965d-cc8ca56212e3:2:proposal",
+        "documentId": "representation-5d688368-fb93-4b8c-83ee-cc5ad5ed90a8",
+        "checkpointId": "canvas-revision-435ac3d5-68ea-4a0d-8c25-1445d313419a"
+      },
+      "counts": {
+        "2": 3,
+        "3": 0,
+        "4": 3,
+        "1a": 17,
+        "1b": 10
+      },
+      "categories": {
+        "existingDiagramModifications": 30,
+        "newDiagramsInExistingCanvases": 3,
+        "newCanvases": 0
+      },
+      "savedContextFile": "artifacts/diagram-plan-execution/latest-plans/02-2/saved-context.json"
+    },
+    {
+      "context": 3,
+      "plan": 1,
+      "name": "03 Revisions, history and saved CanvasViews - Plan 1",
+      "agentContextId": "saved-agent-context-210f8c99-166d-4bef-aa45-2440789516e4",
+      "contentHash": "38fa9689b9ec6c88c06d33c496557a4c0d94973ab64d3ae79416467d2b601fc7",
+      "originalAgentContextId": "saved-agent-context-b2878bac-2820-4dfd-a18e-82a4adc0beb3",
+      "originalContentHash": "9359502bef338bc5a8c0a347489766ce645a01bde60a2d0577ef845a73d0e33e",
+      "planHash": "704e1ac83bbd218eade29b77fa248b4b2dfbc6bd74106d5acb64a459aae4fdb1",
+      "sourceReferenceCount": 12,
+      "sourceOutput": {
+        "runId": "0b95e6ed-cdf8-4c46-aa3f-f7b48bd79da7",
+        "outputKey": "6a9c0f27-0b23-422f-965d-cc8ca56212e3:1:proposal",
+        "documentId": "representation-8f3e3512-4626-46ae-b2fe-3894c7ebbea3",
+        "checkpointId": "canvas-revision-c156321d-9c26-46da-ad0e-9b21cff136bf"
+      },
+      "counts": {
+        "2": 3,
+        "3": 0,
+        "4": 3,
+        "1a": 18,
+        "1b": 17
+      },
+      "categories": {
+        "existingDiagramModifications": 38,
+        "newDiagramsInExistingCanvases": 3,
+        "newCanvases": 0
+      },
+      "savedContextFile": "artifacts/diagram-plan-execution/latest-plans/03-1/saved-context.json"
+    },
+    {
+      "context": 3,
+      "plan": 2,
+      "name": "03 Revisions, history and saved CanvasViews - Plan 2",
+      "agentContextId": "saved-agent-context-d44094f4-b7aa-4c00-8124-051b5c4495d2",
+      "contentHash": "493e8d9327e89ac0d01b9a4611a77fd94bd8e07bd30b25ffa0e2b2cb761c3848",
+      "originalAgentContextId": "saved-agent-context-b2878bac-2820-4dfd-a18e-82a4adc0beb3",
+      "originalContentHash": "9359502bef338bc5a8c0a347489766ce645a01bde60a2d0577ef845a73d0e33e",
+      "planHash": "936aaeb7fab29ffc8f4d77db2efb3e6186aec280511055c22c64c03b534f9196",
+      "sourceReferenceCount": 12,
+      "sourceOutput": {
+        "runId": "0b95e6ed-cdf8-4c46-aa3f-f7b48bd79da7",
+        "outputKey": "6a9c0f27-0b23-422f-965d-cc8ca56212e3:2:proposal",
+        "documentId": "representation-a206002f-eadf-442e-a97e-acd2a773f2e1",
+        "checkpointId": "canvas-revision-dcdc5f30-17a3-4ab0-bbd1-fb9be21d99be"
+      },
+      "counts": {
+        "2": 4,
+        "3": 0,
+        "4": 3,
+        "1a": 19,
+        "1b": 17
+      },
+      "categories": {
+        "existingDiagramModifications": 39,
+        "newDiagramsInExistingCanvases": 4,
+        "newCanvases": 0
+      },
+      "savedContextFile": "artifacts/diagram-plan-execution/latest-plans/03-2/saved-context.json"
+    },
+    {
+      "context": 4,
+      "plan": 1,
+      "name": "04 Alternatives and ChangeSession review - Plan 1",
+      "agentContextId": "saved-agent-context-5d9feae1-98f5-417e-96ed-a2bbdd5d4a30",
+      "contentHash": "800308897bf15ce6e2630feba4d100e183773b39c4d8bdbab84c00ff9d87368f",
+      "originalAgentContextId": "saved-agent-context-e1777bbd-f788-4a47-8442-73a5530d9531",
+      "originalContentHash": "b6388f6a9daf9977748ac8180126c2df6540734f084e81d8acda30ac4c9e5deb",
+      "planHash": "08306aca143dedc1263f54c915e880a9db1815f288ca1d1c5be33e55521b72e0",
+      "sourceReferenceCount": 22,
+      "sourceOutput": {
+        "runId": "5f735e4b-f0c0-4a6b-bca6-b412ec7275aa",
+        "outputKey": "6a9c0f27-0b23-422f-965d-cc8ca56212e3:1:proposal",
+        "documentId": "representation-06996894-878b-4046-bbb1-807d6b0cd700",
+        "checkpointId": "canvas-revision-46a5dc44-200d-42cb-8a74-0da654063ff9"
+      },
+      "counts": {
+        "2": 3,
+        "3": 0,
+        "4": 3,
+        "1a": 21,
+        "1b": 21
+      },
+      "categories": {
+        "existingDiagramModifications": 45,
+        "newDiagramsInExistingCanvases": 3,
+        "newCanvases": 0
+      },
+      "savedContextFile": "artifacts/diagram-plan-execution/latest-plans/04-1/saved-context.json"
+    },
+    {
+      "context": 4,
+      "plan": 2,
+      "name": "04 Alternatives and ChangeSession review - Plan 2",
+      "agentContextId": "saved-agent-context-90387736-37b8-471f-9a2b-568fec73ec20",
+      "contentHash": "ce21c9796770717e500ad9013094509b8dec6bf66e4040953d996719ffa66021",
+      "originalAgentContextId": "saved-agent-context-e1777bbd-f788-4a47-8442-73a5530d9531",
+      "originalContentHash": "b6388f6a9daf9977748ac8180126c2df6540734f084e81d8acda30ac4c9e5deb",
+      "planHash": "36a095443c41196c1f70074e9471d50c0ff9088455ce12da0f7ea1d8959bc06f",
+      "sourceReferenceCount": 22,
+      "sourceOutput": {
+        "runId": "5f735e4b-f0c0-4a6b-bca6-b412ec7275aa",
+        "outputKey": "6a9c0f27-0b23-422f-965d-cc8ca56212e3:2:proposal",
+        "documentId": "representation-45a34f8a-9b54-4cbf-b15a-a688f6c0ce7e",
+        "checkpointId": "canvas-revision-99a2b709-728c-4522-8859-9dd33cb140fe"
+      },
+      "counts": {
+        "2": 4,
+        "3": 0,
+        "4": 3,
+        "1a": 20,
+        "1b": 16
+      },
+      "categories": {
+        "existingDiagramModifications": 39,
+        "newDiagramsInExistingCanvases": 4,
+        "newCanvases": 0
+      },
+      "savedContextFile": "artifacts/diagram-plan-execution/latest-plans/04-2/saved-context.json"
+    },
+    {
+      "context": 5,
+      "plan": 1,
+      "name": "05 AgentChat, generation and Canvas API - Plan 1",
+      "agentContextId": "saved-agent-context-09f37b75-fbc9-4b3f-9778-fa92366438c6",
+      "contentHash": "113c76ff5eb6a233f07bfabd0417dc90030f2bfbce3f88d504b2a84c583a598a",
+      "originalAgentContextId": "saved-agent-context-e8cc44b9-5f45-4579-9011-ba4fe3852620",
+      "originalContentHash": "3f27635117e3f14382541854d66c01811024f7a2b582721a48317213db305e7c",
+      "planHash": "0b72cd9a35fddc1e0a602825dff09bc7bfd3d3cab56647d30eb12f6de468514a",
+      "sourceReferenceCount": 25,
+      "sourceOutput": {
+        "runId": "f88293da-8712-401c-8bcd-631b7861c84f",
+        "outputKey": "6a9c0f27-0b23-422f-965d-cc8ca56212e3:1:proposal",
+        "documentId": "representation-a7dd9e8b-3f98-4cb4-9049-8ded8cb616bb",
+        "checkpointId": "canvas-revision-a5b8b01b-2cd3-4924-8331-c12b7e1b31aa"
+      },
+      "counts": {
+        "2": 4,
+        "3": 1,
+        "4": 1,
+        "1a": 9,
+        "1b": 12
+      },
+      "categories": {
+        "existingDiagramModifications": 22,
+        "newDiagramsInExistingCanvases": 4,
+        "newCanvases": 1
+      },
+      "savedContextFile": "artifacts/diagram-plan-execution/latest-plans/05-1/saved-context.json"
+    },
+    {
+      "context": 5,
+      "plan": 2,
+      "name": "05 AgentChat, generation and Canvas API - Plan 2",
+      "agentContextId": "saved-agent-context-9bbd472b-7c80-4f81-aae7-e76bfb33a4ec",
+      "contentHash": "545d68a244bb54ed5b40bb1360972c34ea993e80ba7ed45445b061f3c4d4e8f8",
+      "originalAgentContextId": "saved-agent-context-e8cc44b9-5f45-4579-9011-ba4fe3852620",
+      "originalContentHash": "3f27635117e3f14382541854d66c01811024f7a2b582721a48317213db305e7c",
+      "planHash": "fb2beee811f9cf29b6e9051aa22f8863aae67b5f784f8a7a90a34adafd4b5f91",
+      "sourceReferenceCount": 25,
+      "sourceOutput": {
+        "runId": "f88293da-8712-401c-8bcd-631b7861c84f",
+        "outputKey": "6a9c0f27-0b23-422f-965d-cc8ca56212e3:2:proposal",
+        "documentId": "representation-a538ed96-0df6-4a68-a886-6c70a2ba5eb3",
+        "checkpointId": "canvas-revision-1e76d0ba-28ba-4b64-b147-583532047580"
+      },
+      "counts": {
+        "2": 4,
+        "3": 1,
+        "4": 2,
+        "1a": 9,
+        "1b": 10
+      },
+      "categories": {
+        "existingDiagramModifications": 21,
+        "newDiagramsInExistingCanvases": 4,
+        "newCanvases": 1
+      },
+      "savedContextFile": "artifacts/diagram-plan-execution/latest-plans/05-2/saved-context.json"
+    },
+    {
+      "context": 6,
+      "plan": 1,
+      "name": "06 Saved AgentContexts and source evidence - Plan 1",
+      "agentContextId": "saved-agent-context-9e5d2e04-fea4-4d6e-8ee5-fbcfaf131ddb",
+      "contentHash": "d93ce15a0da47951945299803c167988c940653aca002751a04d3bf836a4cf36",
+      "originalAgentContextId": "saved-agent-context-2152f3d9-6286-4fe3-b773-559e8b08419d",
+      "originalContentHash": "902926eccacdd91cf30dfc20b376555fab9eeddb64491626375ac6cfc68ab93f",
+      "planHash": "f7d0495540e590549cb362bdcc370d823897a56f384444274d2705210ea100da",
+      "sourceReferenceCount": 22,
+      "sourceOutput": {
+        "runId": "4349e79b-b545-45a3-9d70-e3d74b324ff8",
+        "outputKey": "6a9c0f27-0b23-422f-965d-cc8ca56212e3:1:proposal",
+        "documentId": "representation-2b72f16d-82f6-4f94-ae7b-b64ab8d0c542",
+        "checkpointId": "canvas-revision-799e2629-bad8-4122-ba67-32e7bb1b1d1d"
+      },
+      "counts": {
+        "2": 3,
+        "3": 0,
+        "4": 1,
+        "1a": 7,
+        "1b": 10
+      },
+      "categories": {
+        "existingDiagramModifications": 18,
+        "newDiagramsInExistingCanvases": 3,
+        "newCanvases": 0
+      },
+      "savedContextFile": "artifacts/diagram-plan-execution/latest-plans/06-1/saved-context.json"
+    },
+    {
+      "context": 6,
+      "plan": 2,
+      "name": "06 Saved AgentContexts and source evidence - Plan 2",
+      "agentContextId": "saved-agent-context-5b3aa5fb-bfc5-4c03-8ee8-4655c7b982ca",
+      "contentHash": "ba37b612f0ded6b8c332197826ababf206bc8d2f787fa58f854465f1a47003e8",
+      "originalAgentContextId": "saved-agent-context-2152f3d9-6286-4fe3-b773-559e8b08419d",
+      "originalContentHash": "902926eccacdd91cf30dfc20b376555fab9eeddb64491626375ac6cfc68ab93f",
+      "planHash": "867ece392a5a1468aca087da04f30645d7066761248b9fec2f515e04f5974f89",
+      "sourceReferenceCount": 22,
+      "sourceOutput": {
+        "runId": "4349e79b-b545-45a3-9d70-e3d74b324ff8",
+        "outputKey": "6a9c0f27-0b23-422f-965d-cc8ca56212e3:2:proposal",
+        "documentId": "representation-88d40957-a072-45e4-99e8-226093ef43d7",
+        "checkpointId": "canvas-revision-e3fa6944-cf64-4685-bd80-d2c8641d58ee"
+      },
+      "counts": {
+        "2": 3,
+        "3": 0,
+        "4": 2,
+        "1a": 6,
+        "1b": 8
+      },
+      "categories": {
+        "existingDiagramModifications": 16,
+        "newDiagramsInExistingCanvases": 3,
+        "newCanvases": 0
+      },
+      "savedContextFile": "artifacts/diagram-plan-execution/latest-plans/06-2/saved-context.json"
+    },
+    {
+      "context": 7,
+      "plan": 1,
+      "name": "07 Persistence and durable storage - Plan 1",
+      "agentContextId": "saved-agent-context-e50c74d2-882c-439e-9a90-9f866c1a435f",
+      "contentHash": "d96067fdabc9a5132a5d4a0de501e556a19ce428cd4a2cc483913493085f4fc5",
+      "originalAgentContextId": "saved-agent-context-6487e589-09e2-48e4-8683-093cbeb54267",
+      "originalContentHash": "6608ea6828402b385bab3f8ab56e47da1e5f9d340d8421be59421a672674d4d9",
+      "planHash": "7945f92f43a77b1bc75e72fb3acff9604f96b869b7e156102b0f41d710c78734",
+      "sourceReferenceCount": 18,
+      "sourceOutput": {
+        "runId": "b6d5b06a-473c-4a83-ab52-41fd31a346ff",
+        "outputKey": "6a9c0f27-0b23-422f-965d-cc8ca56212e3:1:proposal",
+        "documentId": "representation-396b9198-5a1c-4ab1-bdf8-58152753b453",
+        "checkpointId": "canvas-revision-4b691330-97c9-435c-926c-77b79cb858ee"
+      },
+      "counts": {
+        "2": 5,
+        "3": 0,
+        "4": 1,
+        "1a": 6,
+        "1b": 6
+      },
+      "categories": {
+        "existingDiagramModifications": 13,
+        "newDiagramsInExistingCanvases": 5,
+        "newCanvases": 0
+      },
+      "savedContextFile": "artifacts/diagram-plan-execution/latest-plans/07-1/saved-context.json"
+    },
+    {
+      "context": 7,
+      "plan": 2,
+      "name": "07 Persistence and durable storage - Plan 2",
+      "agentContextId": "saved-agent-context-6ac69cf5-8df8-4575-a924-f2b6fae63020",
+      "contentHash": "d564e82d68c441c6133a7ae4f6c6c7d6fd521415c27beb0f08349c522d0e30e4",
+      "originalAgentContextId": "saved-agent-context-6487e589-09e2-48e4-8683-093cbeb54267",
+      "originalContentHash": "6608ea6828402b385bab3f8ab56e47da1e5f9d340d8421be59421a672674d4d9",
+      "planHash": "42932677453ab9366b0dee0cb78351a914d29e08a02ef66f6d9b746b19b46d93",
+      "sourceReferenceCount": 18,
+      "sourceOutput": {
+        "runId": "b6d5b06a-473c-4a83-ab52-41fd31a346ff",
+        "outputKey": "6a9c0f27-0b23-422f-965d-cc8ca56212e3:2:proposal",
+        "documentId": "representation-05f45244-835a-4d24-84bd-2aa8ff346919",
+        "checkpointId": "canvas-revision-17fdb637-cffd-42fa-972c-1585c934e479"
+      },
+      "counts": {
+        "2": 4,
+        "3": 0,
+        "4": 1,
+        "1a": 7,
+        "1b": 7
+      },
+      "categories": {
+        "existingDiagramModifications": 15,
+        "newDiagramsInExistingCanvases": 4,
+        "newCanvases": 0
+      },
+      "savedContextFile": "artifacts/diagram-plan-execution/latest-plans/07-2/saved-context.json"
+    }
+  ],
+  "generationLaunched": false
+}

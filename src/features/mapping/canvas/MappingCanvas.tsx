@@ -1,3 +1,4 @@
+import { highlightSelection, selectionHasHighlights, unhighlightSelection } from '../../../../domain/mapping/selection/highlightSelection';
 import { generateDiagram } from '../services/diagramGenerator';
 import { contentNodeRect } from '../../../../domain/core/diagrams/contentNodeGeometry';
 import { CopyDiagramAsciiButton } from '../../../shared/diagrams/CopyDiagramAsciiButton';
@@ -856,11 +857,34 @@ export function MappingPocSelectionCanvas(props: {
       viewport.removeEventListener('pointerup', up, true); viewport.removeEventListener('pointercancel', cancel, true); };
   }, [nativeRuntime, diagramPlacement, movingBoxId, scenePointAtClient]);
 
+  const highlightItems = focusedItem ? [focusedItem] : selectedDiagrams.map(diagramSelectionItem);
+  const hasSelectionHighlights = selectionHasHighlights(controllerState.document, highlightItems);
+  const highlightAction = hasSelectionHighlights ? 'Unhighlight' : 'Highlight';
+  const highlightCurrentSelection = () => {
+    if (isGenerating || diagramPlacement || movingBoxId) return;
+    try {
+      const snapshot = controller.getSnapshot();
+      const items = focusedItem ? [focusedItem] : selectedDiagrams.map(diagramSelectionItem);
+      const removing = selectionHasHighlights(snapshot.document, items);
+      const operations = (removing ? unhighlightSelection : highlightSelection)(snapshot.document, items);
+      if (!operations.length) { setStatusMessage('No new text to highlight'); return; }
+      controller.applyUpdate(snapshot.version, operations);
+      setStatusMessage(removing ? 'Unhighlighted · Undo to restore' : 'Highlighted · Undo to restore');
+    } catch (error) { setStatusMessage(error instanceof Error ? error.message : String(error)); }
+  };
+
   const hotkeyHandler = useRef<(event: globalThis.KeyboardEvent) => void>(() => {});
   useEffect(() => {
     const handle = (event: globalThis.KeyboardEvent) => hotkeyHandler.current(event);
+    // H is also the native editor's hand-tool shortcut. A selected region owns it first.
+    const highlight = (event: globalThis.KeyboardEvent) => {
+      if (event.key.toLowerCase() !== 'h' || event.defaultPrevented) return;
+      hotkeyHandler.current(event);
+      if (event.defaultPrevented) event.stopPropagation();
+    };
+    window.addEventListener('keydown', highlight, true);
     window.addEventListener('keydown', handle);
-    return () => window.removeEventListener('keydown', handle);
+    return () => { window.removeEventListener('keydown', highlight, true); window.removeEventListener('keydown', handle); };
   }, []);
   useLayoutEffect(() => {
     hotkeyHandler.current = (event: globalThis.KeyboardEvent) => {
@@ -926,6 +950,13 @@ export function MappingPocSelectionCanvas(props: {
         }
         return;
       }
+      if (key === 'h' && !event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey && !event.isComposing
+        && !promptOpen && !askOpen && !isGenerating && !diagramPlacement && !movingBoxId
+        && (focusedItem || selectedDiagrams.length)) {
+        event.preventDefault();
+        if (!event.repeat) highlightCurrentSelection();
+        return;
+      }
       if (!selectionRect && event.key.toLowerCase() === 'a' && !event.ctrlKey && !event.metaKey && selectedDiagrams.length) {
         event.preventDefault(); setActionsOpen(value => !value); return;
       }
@@ -952,6 +983,7 @@ export function MappingPocSelectionCanvas(props: {
     };
   }, [
     props.active,
+    highlightCurrentSelection,
     props.onUpdateDiagram,
     props.onUndo,
     props.canWorkspaceUndo,
@@ -1218,6 +1250,7 @@ export function MappingPocSelectionCanvas(props: {
       {!selectionRect && selectedDiagrams.length > 0 && <CanvasSelectionActions stageRef={stageRef}
         count={selectedDiagrams.length} open={actionsOpen} onToggle={() => setActionsOpen(value => !value)}
         disabled={isGenerating || !!diagramPlacement || !!movingBoxId}
+        highlightAction={highlightAction} onHighlight={highlightCurrentSelection}
         onGenerate={() => { props.onUpdateDiagram?.(selectedDiagrams[0]); setActionsOpen(false); }}
         onDelete={() => {
           try {
@@ -1362,10 +1395,10 @@ export function MappingPocSelectionCanvas(props: {
           role="dialog"
           tabIndex={-1}
           aria-label="Selected node operations"
-          aria-keyshortcuts="C N P A"
+          aria-keyshortcuts="C N P A H"
           onKeyDownCapture={event => {
-            if (event.key.toLowerCase() !== 'c') return;
-            // Handle Copy while focus is inside the panel, before canvas shortcuts.
+            if (!['c', 'h'].includes(event.key.toLowerCase())) return;
+            // Handle selection actions before canvas shortcuts while focus is in this panel.
             hotkeyHandler.current(event.nativeEvent);
             if (event.nativeEvent.defaultPrevented) event.stopPropagation();
           }}
@@ -1385,6 +1418,10 @@ export function MappingPocSelectionCanvas(props: {
                 onClick={() => { if (focusedItem) { props.onUpdateDiagram?.(focusedItem.displayNodeId); setActionsOpen(false); } }}>LLM [Ctrl+B, L]</button>}
               {props.onReference && focusedItem && <button type="button" onClick={() => { const reference = focusedReference(); if (reference) props.onReference?.([reference], 'insert', focusedItem.displayNodeId); }}>Add to prompt</button>}
               {props.onReference && focusedItem && <button type="button" onClick={() => { const reference = focusedReference(); if (reference) props.onReference?.([reference], 'copy', focusedItem.displayNodeId); }}>Copy as reference</button>}
+              <button type="button" aria-label={`${highlightAction} selection`} title={`${highlightAction} selection (H)`} aria-keyshortcuts="H"
+                disabled={isGenerating || !!diagramPlacement || !!movingBoxId} onClick={highlightCurrentSelection}>
+                <kbd>H</kbd> {highlightAction}
+              </button>
               <button type="button" aria-label="Copy ASCII + code refs" title="Copy full selected rows and selected code references (C)" aria-keyshortcuts="C Control+C Meta+C" onClick={() => void copySelection()}>
                 <kbd>C</kbd> Copy ASCII + code refs
               </button>

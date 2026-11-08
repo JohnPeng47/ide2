@@ -9,7 +9,7 @@ import type { DiagramAnchor } from '../../core/diagrams/diagramConnection';
 import type { GridBox } from '../../core/diagrams/lineGrid';
 import type { ChangeDocumentState, ChangePreviewDocument } from './diagramChangeSession';
 import type { MappingCanvasState } from '../workspace/mappingWorkspace';
-import { diffChangeDocument } from './changeDocumentDiff';
+import { changeDocumentPreview } from './changeDocumentPreview';
 
 const diagramBoxes = (root: GridBox, origin = { column: 0, row: 0 }): Extract<GridBox, { kind: 'diagram' }>[] => {
   const position = { column: origin.column + root.position.column, row: origin.row + root.position.row };
@@ -110,23 +110,5 @@ export function canvasViewDiff(comparison: CanvasViewComparison) {
   }
   const doc: ChangePreviewDocument = { id: `view:${comparison.view.id}:${comparison.proposed.checkpointId}`,
     name: comparison.view.name, version: 0, baseline: before.state, proposed: after.state };
-  const diff = diffChangeDocument(doc, correspondence);
-  const beforeBoxes = diagramBoxes(before.state.document.scene.root), afterBoxes = diagramBoxes(after.state.document.scene.root);
-  const beforeIds = new Set(beforeBoxes.map(box => `grid:${box.id}`)), afterIds = new Set(afterBoxes.map(box => `grid:${box.id}`));
-  const removedDiagramIds = new Set([...beforeIds].filter(id => !afterIds.has(id)));
-  const modifiedDiagramIds = new Set([...afterIds].filter(id => beforeIds.has(id)));
-  // Retain deleted diagrams as ghost boxes in the preview, without restoring them to the canvas.
-  const ghosts = beforeBoxes.filter(box => removedDiagramIds.has(`grid:${box.id}`)).map(box => {
-    const contentId = `removed:${box.id}:${box.contentId}`;
-    const diagram = before.state.document.scene.contents[box.contentId];
-    doc.proposed.document.scene.contents = { ...doc.proposed.document.scene.contents, [contentId]: { ...diagram, id: contentId } };
-    doc.proposed.document.diagramPresentations = { ...doc.proposed.document.diagramPresentations, [contentId]: before.state.document.diagramPresentations?.[box.contentId] ?? { highlights: diagram.highlights } };
-    return { ...box, contentId, collapsedContentId: undefined, collapsed: false };
-  });
-  if (ghosts.length) {
-    const root = doc.proposed.document.scene.root;
-    doc.proposed.document.scene.root = { id: `view-root:${comparison.view.id}`, kind: 'container', position: { column: 0, row: 0 },
-      collapsed: false, layout: { collisionPolicy: 'push-right', gap: 3 }, children: [root, ...ghosts] };
-  }
-  return { doc, diff, modifiedDiagramIds, removedDiagramIds };
+  return changeDocumentPreview(doc, correspondence);
 }

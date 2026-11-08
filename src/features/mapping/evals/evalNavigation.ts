@@ -1,3 +1,4 @@
+import { hasEvalOutput } from '../../../../domain/mapping/evals/evalRun';
 import { useEffect, useRef } from 'react';
 import { experimentOutput, type EvalExperiment } from '../../../../domain/mapping/evals/experiment';
 import type { EvalRunSummary } from '../../../../domain/mapping/evals/evalRun';
@@ -16,7 +17,7 @@ export function useArrowNavigation(move: (direction: number) => void, enabled = 
     if (!enabled) return;
     const key = (event: KeyboardEvent) => {
       if (!['ArrowLeft', 'ArrowRight'].includes(event.key) || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || event.isComposing || event.defaultPrevented) return;
-      if (event.target instanceof Element && event.target.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="dialog"], [role="tree"], [role="textbox"], [role="separator"], [role="slider"], [role="menu"], [role="listbox"], [role="combobox"], .evals-drawer')) return;
+      if (event.target instanceof Element && event.target.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="dialog"], [role="tree"], [role="textbox"], [role="separator"], [role="slider"], [role="menu"], [role="listbox"], [role="combobox"], [data-output-canvas-navigation], .evals-drawer')) return;
       event.preventDefault(); event.stopPropagation(); latest.current(event.key === 'ArrowRight' ? 1 : -1);
     };
     window.addEventListener('keydown', key, true);
@@ -32,7 +33,7 @@ export function experimentOutputSequence(experiment: EvalExperiment, runs: EvalR
     .sort((a, b) => a.number - b.number || a.attempt - b.attempt)
     .flatMap(sample => experiment.workflow.stages.flatMap(stage => {
       const output = sample.outputs.find(item => item.stageId === stage.id), cell = output && experimentOutput(output, runs);
-      return output && cell?.status === 'finished' && cell.canvasId && !cell.deleted
+      return output && cell?.status === 'finished' && hasEvalOutput(cell)
         ? [{ ...output, caseId: input.id, conditionId: condition.id, phaseId: phase.id, label: `${phase.name ? phase.name + ' · ' : ''}${input.name} · ${condition.name} · sample ${sample.number} · ${stage.name}` }] : [];
     })))));
 }

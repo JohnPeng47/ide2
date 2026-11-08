@@ -1,0 +1,166 @@
+Phase 4: explicit architectural fit, astra/high
+
+Run and judgement
+14/14 responses finished; no failed or excluded outputs. All 14 pass the same
+diagram-change-tree v1 parser. Native judgement attached to phase-4-tree-parse:
+74eebaaa-37d8-4a5d-a9ed-cab84b8b8129.
+Polling used a 30-second scheduling interval; API response time can delay a
+recorded observation. poll-log.jsonl contains the observations.
+
+What changed
+Only the visible prompt changed from Phase 3. Same seven saved AgentContexts,
+same pinned hashes, same astra/high model, two samples per context and session
+delivery. Four approved edits: redraw necessity, closest-canvas scope comparison,
+smaller-change tie-breaker, and a balanced example. The example's two wrapped
+explanations were kept on single lines, with unchanged wording, so it is valid
+under the existing parser. Exact text: prompt.txt; precise changes: prompt.diff.
+The new immutable prompt is 6a9c0f27-0b23-422f-965d-cc8ca56212e3 v1, variation
+of Phase 2/3 prompt 1619ce41-4040-4ac1-bd8d-2d474fd7a595 v1.
+Hashes of 32 prior run/judgement/context/prompt files were verified unchanged.
+
+Same review criteria
+1. Redraw only where the major organizing relationships cannot remain accurate
+   through localized correction/extension; preserve accurate content.
+2. New canvas only where the new overview's architectural question falls outside
+   the closest existing canvas's represented subject. Component count, code size
+   and having a lifecycle are not sufficient on their own.
+3. Explicit component attachments and reuse of existing detail; no strategy quota.
+Evidence remains the captured diagrams and source pinned at
+81f05a2bf9efa2334985d2298dcbd7b044dc4c1e. This is a qualitative strategy review,
+not an exhaustive validation of every asserted code fact or a calibrated score.
+
+Outcome
+The revised prompt improves the previously flagged stable-structure cases and
+does not make redraw/new-canvas choices unreachable. It also introduces or
+exposes some conservative labeling: two outputs describe replacing the obsolete
+DiagramService ownership model but classify it as a patch. Decisions remain
+inconsistent in a few cases. Prefer this prompt for another review round, but do
+not treat lower [3]/[4] counts as proof of optimal architectural organization.
+
+Same-size comparison
+                                       Phase 3             Phase 4
+Finished / planned                     14 / 14             14 / 14
+Parser-valid                           14 / 14             14 / 14
+Outputs using [3]                      7 / 14              2 / 14
+New-canvas operations [3]               11                  2
+Outputs using [4]                      14 / 14             14 / 14
+Redraw operations [4]                   64                  33
+New detail diagrams [2]                 52                  61
+Corrections [1a]                        151                 200
+Extensions [1b]                        169                 192
+
+Counts include distinct captured copies. In Phase 4, 26 of 33 redraw entries are
+the old DiagramService. The others are three copies of controller-flow redraw
+in one output, three edit-call-flow redraws across outputs, and one selection
+redraw. Therefore all outputs containing [4] does not indicate global redraw bias.
+These are independent samples rather than paired random-seed trials; two samples
+per context do not establish a statistically reliable effect or isolate the four
+individual prompt edits from each other.
+
+01: Workspace, authoring and navigation
+Both outputs now use [2] for prompt composition, source windows, search, treemaps
+and focused projection instead of new canvases. They identify page/session/tool
+owners and attach detail there, while separating backend generation and change
+treemap questions onto their existing canvases. Source-window and focused
+projection placement directly resolves earlier over-fragmentation examples.
+Both patch MappingPage instead of redrawing it and redraw the removed
+DiagramService in C00/C12/C14. This preserves the still-useful workspace/session,
+controller, history and persistence organization. Sample 2 proposes ten detail
+diagrams versus six in sample 1; fewer canvases is not necessarily less total
+documentation. Prompt composition and cross-cutting treemaps could still have
+their own coherent overview, but their [2] placements have concrete scope fits.
+
+02: Runtime, selection and controller edits
+Both keep runtime detail on the domain canvas and patch its broad MappingPage
+overview. They explain live Editor geometry/undo, controller semantic commands,
+settlement and headless behavior in explicit detail diagrams.
+Sample 1 still redraws CanvasSession selection. The original state/commands/
+adapters/previews/consumers/panels organization can accommodate coexistence rules,
+captured node IDs and native drag ownership. Under the prior review criterion,
+this remains the clearest unnecessary redraw; sample 2 patches selection.
+Sample 2 redraws controller-flow copies for live/headless and buffered mutation
+paths, which is well justified; sample 1 patches that flow and adds detail. Both
+must make the changed boundaries explicit in the existing diagram, irrespective
+of their operation labels.
+Sample 2 patches [G] DiagramService in C00 and its C12/C14 copies while describing
+separate revision operations, retention and generation. That is the same
+ownership replacement treated as a justified redraw in the preceding reviews.
+This is a conservative labeling inconsistency, not evidence that the change was
+omitted from the proposed content.
+
+03: Revisions, history and CanvasViews
+Both outputs retain the well-calibrated Phase 3 approach: no new canvases, redraw
+only the three copies of the deleted DiagramService, and develop checkpoint,
+dependency/export and CanvasView lifecycle detail in existing subjects.
+Their redraw explanations identify that method branches no longer share one
+owner, rather than relying on the number of changed methods.
+
+04: Alternatives and ChangeSession
+Both patch the existing review/presentation diagrams rather than redrawing a
+diff-to-projection flow that still fits. Shared comparison detail stays in an
+existing presentation canvas. API inventories are extended, not reorganized.
+Both now put DiffSessionWorkflowService runs in the existing ChangeSession
+canvas and push delivery detail in the API/backend canvas. They explicitly
+separate generation of a ready proposal from acceptance and name attachment
+components. These are defensible compact placements. The Phase 3 standalone
+workflow canvas was also defensible: its capture/analyze/materialize/run/recovery
+question goes beyond proposal editing. This remains a scope judgment, not an
+established error or an automatic improvement from eliminating [3].
+
+05: AgentChat, generation and Canvas API
+Both now patch/extend the API inventory and backend overview while adding bound
+read/buffered execution and batching detail. This fixes the earlier unnecessary
+interface-inventory redraw. Both extend/correct EditDiagramInput without
+replacing its useful target/precondition/instruction/context/identity structure.
+Both still choose [3] for AgentChat. Sample 1 compares against the existing
+AgentContext canvas: captured context and an edit task do not explain persistent
+threads, turns, approvals, streaming and tool bindings. Sample 2 compares against
+the API/backend map: enumerating interfaces does not explain ongoing conversation
+and child-chat lifecycle. These are meaningful comparisons with actual canvas
+contents and strong justifications for [3].
+Sample 1 places managed-generation/bridge details in Saved CanvasViews; sample 2
+includes the child-chat execution lifecycle with AgentChat while linking history
+publication to Saved CanvasViews. Both explain ownership instead of creating a
+new canvas for every service.
+Both redraw the main edit call flow for supplied versus generated candidates,
+batch orchestration and application. Sample 1 calls the removed DiagramService
+replacement [1a]; sample 2 correctly identifies its ownership split as [4]. This
+is the second output with conservative DiagramService labeling (after 02/2).
+
+06: Saved contexts and source evidence
+Both keep saved-library, source-resolution and diagram-association detail inside
+the existing AgentContext canvas. Both patch/extend D1 request and D3 domain
+representation, preserving the original organizing responsibilities while adding
+versioned descriptors, portable attachments and explicit source resolution.
+This fixes Phase 3 sample 1's unnecessary data/request-model redraws.
+Both redraw the obsolete DiagramService. Sample 1 patches the main edit flow;
+sample 2 redraws it and explains changed context acquisition, revision ownership
+and publication. That remains a borderline diagram-scope judgment; both include
+the new context paths and application outcomes. No new source/context canvas.
+
+07: Persistence
+Both patch/extend PersistentLayer and use detail diagrams for checkpoint
+publication, encoded records, durable contexts and activity/recovery. They retain
+catalog/workspace/store boundaries already present in the captured diagram.
+Neither redraws PersistentLayer or creates a background-recovery canvas. This
+addresses the earlier overcorrection examples. Both retain the justified
+DiagramService redraw and clearly separate runtime retention from durability.
+
+Remaining issues and next interpretation
+- Selection is still redrawn in 02/1 despite a stable useful organization.
+- DiagramService is patched in 02/2 and 05/1 despite an ownership replacement.
+  Four captured-diagram operations are affected across these two outputs.
+- Workflow and authoring now stay inside broad existing canvases. This can be
+  coherent, but should be reviewed for readability and scope if implemented;
+  the tree-only output cannot establish the final canvas's usability.
+- More explanatory prose and more patches do not prove better coverage or
+  correct attachments. No full diagrams were drawn by this experiment.
+- Do not add a quota to force [3] back up. The meaningful next check is whether
+  the individual closest-canvas and surviving-structure explanations hold up.
+
+Artifacts
+prompt.txt / prompt.diff: exact visible change.
+completed-responses.json: all original trees with context/sample identifiers.
+judgement.json / evaluation-receipt.json: native parser result and checks.
+poll-log.jsonl: observed progress; latest-runs.json: terminal run snapshots.
+../phase-3/architectural-review.txt: unchanged previous criteria and assessments.

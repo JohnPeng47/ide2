@@ -146,7 +146,7 @@ it('rejects a phase judgement whose subjects include another phase', async () =>
   d.samples[0].phaseId = 'one'; d.samples[1].phaseId = 'two'; d.comparisons[0].phaseId = 'one';
   await expect(fixture().service.save({ requestId: crypto.randomUUID(), experiment: d })).rejects.toThrow('phase, cases and conditions');
 });
-it('keeps baseline outputs fixed while preparing and approving a later phase independently', async () => {
+it.each([false, true])('keeps baseline outputs fixed while adding a later phase (initially unphased: %s)', async unphased => {
   const records = new Map<string, StoredExperiment>();
   const prepared = new Map<string, any>(); const launches: string[] = [];
   const service = new ExperimentService({ list: async () => [...records.values()], read: async id => records.get(id) ?? null, save: async e => { records.set(e.id, structuredClone(e)); } }, {
@@ -158,10 +158,12 @@ it('keeps baseline outputs fixed while preparing and approving a later phase ind
   } as unknown as ConstructorParameters<typeof ExperimentService>[1], { loadProject: async () => ({ id: 'project' }) }, { read: async () => ({ contentHash: 'hash' }) });
   const plan = (sampleId: string) => ({ request: { requestId: crypto.randomUUID(), workflow: 'diagram-change-proposal', prompts: [{ promptId: 'p', version: 1 }], inputs: { context: { agentContextId: 'saved-agent-context-11111111-1111-4111-8111-111111111111' } }, passes: 1, model: 'gpt-6-sol', effort: 'high' }, outputs: [{ sampleId, stageId: 'generate', cellKey: 'p:1:proposal' }] });
   const initial = { ...design, phases: [{ id: 'one', name: 'Baseline', description: '' }], comparisons: [], samples: [{ ...design.samples[0], phaseId: 'one', outputs: [] }], plannedRuns: [plan('b1')] };
-  let saved = await service.save({ requestId: crypto.randomUUID(), experiment: initial });
+  const initialDesign = unphased ? { ...initial, phases: undefined, samples: initial.samples.map(({ phaseId: _, ...sample }) => sample) } : initial;
+  let saved = await service.save({ requestId: crypto.randomUUID(), experiment: initialDesign });
   expect(launches).toEqual([]);
   saved = await service.approve(saved.id, { requestId: crypto.randomUUID(), expectedRevision: saved.revision });
   const { id, schemaVersion, projectId, revision, createdAt, updatedAt, generationReview, ...next } = saved;
+  if (unphased) { next.phases = initial.phases; next.samples[0].phaseId = 'one'; }
   next.phases!.push({ id: 'two', name: 'Revision', description: '' });
   next.samples.push({ ...initial.samples[0], id: 'b2', phaseId: 'two' });
   next.plannedRuns!.push(plan('b2') as any);
@@ -171,7 +173,10 @@ it('keeps baseline outputs fixed while preparing and approving a later phase ind
   expect(launches).toHaveLength(1);
   const approved = await service.approve(id, { requestId: crypto.randomUUID(), expectedRevision: reviewed.revision });
   expect(launches).toEqual(next.plannedRuns!.map(p => p.request.requestId));
-  expect(approved.samples[0]).toEqual(saved.samples[0]);
+  expect(approved.samples[0]).toEqual({ ...saved.samples[0], phaseId: 'one' });
+  const reassign = structuredClone(next); reassign.phases!.push({ id: 'three', name: 'Third', description: '' });
+  reassign.samples = structuredClone(approved.samples); reassign.samples[0].phaseId = 'three';
+  await expect(service.save({ requestId: crypto.randomUUID(), experimentId: id, expectedRevision: approved.revision, experiment: reassign })).rejects.toThrow('cannot be reassigned');
 });
 it('deterministically judges only completed phase outputs and retains raw evidence with idempotent attachment', async () => {
   const f = fixture(), d = structuredClone(design), storedJudgements = new Map<string, any>();

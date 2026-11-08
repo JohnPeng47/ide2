@@ -96,6 +96,17 @@ it('pins an explicit Git revision and makes portable contexts independent of the
   expect(imported.sourceFiles).toBeUndefined();
   expect(JSON.stringify((await AgentContext.fromSnapshot(imported).resolveSources(ref => destination.read(ref))).toSnapshot())).toContain('const captured = 42;');
 });
+it('forks pinned source references without recapturing changed corpus files or copying blobs', async () => {
+  const f = await fixture(), parent = await f.library.create(f.input);
+  const before = (await f.library.read(parent.agentContextId)).snapshot;
+  const blobs = await readdir(path.join(f.store, 'agent-context-sources'));
+  await rm(path.join(f.checkout, 'code.ts'));
+  const fork = await f.library.fork({ requestId: crypto.randomUUID(), agentContextId: parent.agentContextId,
+    expectedContentHash: parent.contentHash, name: 'Pinned fork' });
+  expect((await f.library.read(fork.agentContextId)).snapshot).toEqual(before);
+  expect(JSON.stringify((await f.library.read(fork.agentContextId)).resolvedSnapshot)).toContain('const captured = 42;');
+  expect(await readdir(path.join(f.store, 'agent-context-sources'))).toEqual(blobs);
+});
 it('rejects traversal, symlinks, missing sources, out-of-range lines and corrupted blobs', async () => {
   const f = await fixture();
   const capture = (patch: object) => f.sources.capture({ type: 'sourceFile', sourceId: 'source', path: 'code.ts', startLine: 1, ...patch });
@@ -177,4 +188,52 @@ it('exports source-bearing workspace history and imports it into a store without
   expect(JSON.stringify(await destinationStore.resolve(await loadDiagramAgentContext(binding, destinationStore)))).toContain('export const preserved');
   const head = imported.documents[0].history!.snapshots[imported.documents[0].history!.headId];
   expect(head.document.diagramContexts![base.diagramId]).toEqual(bound);
+});
+
+it('captures, resolves, forks and exports sections with pinned files while preserving order and retry identity', async () => {
+  const f = await fixture();
+  await writeFile(path.join(f.checkout, 'other.ts'), 'unselected\nsecond evidence\nprivate tail');
+  const input = { ...f.input, group: 'Outer group', context: [
+    { type: 'text', text: 'Preface' },
+    { type: 'section', name: 'Payments', content: [
+      { type: 'text', text: 'Two sources' },
+      { type: 'sourceFile', sourceId: 'source', path: 'code.ts', startLine: 2, endLine: 2 },
+      { type: 'sourceFile', sourceId: 'source', path: 'other.ts', startLine: 2, endLine: 2 }
+    ] },
+    { type: 'section', name: 'Allocation', content: [{ type: 'text', text: 'Text only' }] }
+  ] };
+  const receipt = await f.library.create(input);
+  const saved = await f.library.read(receipt.agentContextId);
+  expect(saved.group).toBe('Outer group');
+  expect(saved.snapshot.version).toBe(3);
+  expect(saved.snapshot.messages[0].content[1]).toMatchObject({ type: 'section', name: 'Payments', content: [
+    { type: 'text', text: 'Two sources' }, { type: 'sourceRange', path: 'code.ts' }, { type: 'sourceRange', path: 'other.ts' }
+  ] });
+  expect(() => AgentContext.fromSnapshot(saved.snapshot).toPiMessages()).toThrow('UNRESOLVED');
+  expect(saved.resolvedSnapshot!.messages[0].content[1]).toMatchObject({ type: 'section', name: 'Payments', content: [
+    { type: 'text', text: 'Two sources' }, { type: 'text', text: 'code.ts:2-2\nconst captured = 42;' }, { type: 'text', text: 'other.ts:2-2\nsecond evidence' }
+  ] });
+  const portable = await f.sources.portable(saved.snapshot);
+  expect(JSON.stringify(portable)).not.toContain('private tail');
+  expect(portable.messages[0].content[1]).toMatchObject({ type: 'section', name: 'Payments' });
+  await rm(f.checkout, { recursive: true });
+  expect(await f.library.create(input)).toEqual(receipt);
+  const changed = structuredClone(input); changed.context[1].name = 'Changed';
+  await expect(f.library.create(changed)).rejects.toThrow('REQUEST_ID_CONFLICT');
+  const fork = await f.library.fork({ requestId: crypto.randomUUID(), agentContextId: receipt.agentContextId, expectedContentHash: receipt.contentHash, name: 'Fork' });
+  const restarted = new AgentContextLibrary(new FileAgentContextRepository(f.store), new FileAgentContextSources(f.store));
+  expect((await restarted.read(fork.agentContextId)).resolvedSnapshot).toEqual(saved.resolvedSnapshot);
+  const destination = new FileAgentContextSources(path.join(f.root, 'section-export'));
+  const imported = await destination.persist(portable);
+  expect(imported.sourceFiles).toBeUndefined();
+  const resolved = await AgentContext.fromSnapshot(imported).resolveSources(ref => destination.read(ref));
+  expect(resolved.toPiMessages()).toEqual(AgentContext.fromSnapshot(saved.resolvedSnapshot!).toPiMessages());
+  const broken = structuredClone(portable), first = broken.messages[0].content[1];
+  if (first.type !== 'section') throw Error('fixture');
+  const reference = first.content[1];
+  if (reference.type !== 'sourceRange' || reference.version.kind !== 'snapshot') throw Error('fixture');
+  broken.sourceFiles![reference.version.contentHash].lines[0] = 'tampered';
+  expect(() => AgentContext.fromSnapshot(broken)).toThrow('source file hash mismatch');
+  const missing = new FileAgentContextSources(path.join(f.root, 'missing-section-source'));
+  await expect(missing.persist(AgentContext.fromSnapshot(portable).withoutSourceFiles())).rejects.toThrow();
 });

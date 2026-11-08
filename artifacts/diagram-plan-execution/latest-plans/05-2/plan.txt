@@ -1,0 +1,96 @@
+Proposed diagram changes
+  |-- Canvas domain model - baseline 03f2168 (before tldraw)  existing canvas
+  |   |-- [1a] Correct: MappingPage                              baseline 03f2168, before tldraw
+  |   |   `-- Replace the obsolete injected DiagramService content-writer relationship with explicit revision operations and retention; preserve workspace, controller, history and persistence ownership.
+  |   |-- [1a] Correct: [D] Controller edits / agent access
+  |   |   `-- Replace unconditional per-call commits with default buffered execution and optional immediate mode; replace DiagramService.create/revise calls with explicit revision issuance/installation. The UI, agent and controller branches still fit.
+  |   |-- [1b] Extend: [D] Controller edits / agent access
+  |   |   `-- Show DiagramBatchService calling apply-diagram-batch and GenerationCanvasBridge owning isolated child controllers; attach these alongside live-browser and proposal execution, not beneath browser polling.
+  |   |-- [4] Redraw: [G] DiagramService
+  |   |   |-- Replace the single service owner with immutable revision operations, runtime retention, generateDiagram orchestration and separate canvas publication.
+  |   |   `-- The create/read/revise/generate branches no longer belong to one service; retaining that organization would misstate ownership. Preserve immutable revisions and proven node correspondence; reuse the separation already represented in C07's [G].
+  |   `-- [1b] Extend: [E] CanvasHistoryService / coordinated revisions
+  |       `-- Add canvasViews and generation checkpoint dependencies under CanvasHistoryRecord, plus current-only exports and revisionBoundary. Preserve checkpoint navigation and immutable revision bindings; link saved-view lifecycle detail to Saved CanvasViews and branching.
+  |
+  |-- Mapping page - MCP and HTTP API  existing canvas
+  |   |-- [1a] Correct: Mapping page: exposed interfaces at 03f2168
+  |   |   |-- Update exec's default batching, compact node results, internally supplied content hashes and checkpoint-based whole-document publication.
+  |   |   `-- Preserve the interface-group organization; distinguish bound supplied-content diagram tools from unbound prompt-driven tools rather than describing every edit-diagram call as generation.
+  |   |-- [1b] Extend: Mapping page: exposed interfaces at 03f2168
+  |   |   `-- Add canvas.read, bound MCP connections, supplied edit/create/extend batches, CanvasView/context tools, AgentChat session/event/tool interfaces and managed generation controls in their existing interface groups.
+  |   |-- [1a] Correct: Mapping backend: grouped responsibilities (03f2168)
+  |   |   `-- Update execution commit boundaries, lazy identity/read/snapshot access and saveNow's checkpoint publication path. Reading, execution and durable-state responsibilities remain valid groups.
+  |   |-- [1b] Extend: Mapping backend: grouped responsibilities (03f2168)
+  |   |   |-- Show createBackend wiring AgentChatService to StdioCodexConnection, FileChatStore, ChatDiagramTools, MappingChatMcpBinding and GenerationCanvasBridge; retain LocalChatService as a separate feature.
+  |   |   |-- Show AgentDiagrammingSessionService owning ChatCanvasBindings, CanvasReadAliases and DiagramBatchService; GenerationCanvasBridge wraps CanvasSessionBridge and owns child controllers.
+  |   |   `-- Add the supported backend connection PushIntegrationService -> DiffSessionWorkflowService -> ChangeSessionService/AgentDiagrammingSessionService without expanding the separate push workflow here.
+  |   |-- [2] Add: Bound canvas reads and identity resolution
+  |   |   |-- Answer how a turn's target becomes a readable, versioned API document; attach from AgentDiagrammingSessionService's ChatCanvasBindings and CanvasReadAliases nodes.
+  |   |   `-- Detail captured target/access, lazy attachment, binding checks, small/full currentCanvasRead, read-scoped aliases and anchor resolution. This develops the canvas API's established reading responsibility.
+  |   `-- [2] Add: Buffered exec, flush boundaries and mutation receipts
+  |       |-- Attach from AgentDiagrammingSessionService.exec and QuickJsAgentRuntime; show queued handles, applyBatch, CanvasMutationResult and retained retry steps.
+  |       |-- Reads and designated preparatory calls flush pending writes; successful script completion flushes the remainder. Each flush is atomic, not the entire script; earlier flushes survive later failure.
+  |       `-- Explain immediate mode, uncertain-outcome retries and final-state highlight receipts without duplicating controller internals. Retain synchronous restricted JavaScript and byte-based result limits.
+  |
+  |-- AgentContext - implemented call flow and domain models (03f2168)  existing canvas
+  |   |-- [4] Redraw: (O) Edit diagram with AgentContext - baseline 03f2168
+  |   |   |-- Replace the single upload -> model -> revision -> browser pipeline with distinct context resolution, supplied/generated candidate production, single/batch orchestration and target application branches.
+  |   |   |-- Show ChatDiagramTools -> submitDirect -> DiagramBatchService, and prompt-driven calls -> DiagramEditService/generateDiagram; supplied edits bypass model execution.
+  |   |   `-- The former linear organization conflates optional context, generation and publication, and cannot explain shared-snapshot batching or isolated generation targets. Preserve version checks, exact revision retention and application retry semantics.
+  |   |-- [1a] Correct: [D1] EditDiagramInput - request domain
+  |   |   `-- Keep target/precondition/instruction/identity groups, but make edit-mode and replace-mode explicit, distinguish supplied content from prompts, and show scoped targets and optional context/reference sources.
+  |   |-- [1b] Extend: [D1] EditDiagramInput - request domain
+  |   |   `-- Add the DiagramBatchInput envelope and create/extend variants; all operations share one captured document version, with duplicate shared-diagram edits rejected.
+  |   |-- [1b] Extend: [D2] Diagram edit run - asynchronous execution
+  |   |   `-- Add retained variants/creations and DiagramBatchRun ownership of child preparation and one final application. Keep cancellation before application and awaiting-acknowledgement retries; preparation results are not committed canvas edits.
+  |   |-- [1a] Correct: [D4] Diagram-edit agent session - runtime model
+  |   |   `-- Identify this as the generated-candidate branch only; supplied content does not create this runtime session. Extend current task input with pinned references, replacement ranges and template parameters while preserving copied-context isolation.
+  |   |-- [1b] Extend: [D5] Revision and canvas bindings - output domain
+  |   |   `-- Distinguish in-place binding updates, retained review variants and optional presentation alternatives; include creation results and batch application receipts. Preserve exact revision reuse on edit retries.
+  |   `-- [2] Add: AgentContext sources and resolution
+  |       |-- Attach from the redrawn overview's AgentContextService and AgentContextLibrary nodes; show callers resolving context before candidate production.
+  |       |-- Contrast scoped in-memory uploads, durable saved contexts and diagram-owned compiled context, including hashes, source resolution and fingerprint freshness checks.
+  |       `-- This develops the canvas's existing context-capture subject; preserve [D3]'s immutable AgentContext construction/conversion model rather than duplicating it.
+  |
+  |-- 01 - Saved CanvasViews and branching  existing canvas
+  |   |-- [1b] Extend: Saved CanvasViews and branching
+  |   |   |-- Add managed generation beside manual ALTERNATIVES: CanvasHistory.startGeneration pins the parent's saved endpoint and creates candidate views with generation metadata.
+  |   |   `-- Show generationRunning guards and CanvasHistory.updateGeneration accepting only finished result histories. Preserve working-copy, camera, keep/discard and immutable-checkpoint behavior.
+  |   `-- [2] Add: Generation checkpoint capture and publication
+  |       |-- Attach from the overview's explicit CanvasHistory.startGeneration and CanvasHistory.updateGeneration nodes.
+  |       |-- Detail saved-state-only export, dependency retention, candidate ancestry, validated result import and saved-endpoint advancement without switching the current canvas.
+  |       `-- This answers how generated branches become retained CanvasViews; chat execution belongs in AgentChat's overview, not a second copy here.
+  |
+  |-- PersistentLayer  existing canvas
+  |   |-- [1a] Correct: PersistentLayer
+  |   |   `-- Update whole-document save_diagram publication to use a persisted checkpoint and publication receipt; retain the separate single-diagram export path and the distinction between autosave and catalog publication.
+  |   `-- [1b] Extend: PersistentLayer
+  |       |-- Add FileChatStore as a separately wired store, not a DiagramStore-owned catalog: serialized atomic JSON writes retain chat sessions, request identities and generation histories.
+  |       `-- Add FileAgentContextRepository, FileDiagramAgentContextStore and FileAgentContextSources with their actual service connections; distinguish durable context records from AgentContextService's backend-lifetime uploads.
+  |
+  |-- Workspace persistence flow  existing canvas
+  |   |-- [1b] Extend: Workspace persistence flow - baseline 03f2168
+  |   |   `-- Add CanvasCheckpointEncoder output to controller history persistence and show the checkpoint/publication acknowledgement boundary under Separate operations; preserve the browser record-batch pipeline.
+  |   `-- [1a] Correct: Workspace persistence flow - baseline 03f2168
+  |       `-- Clarify that isolated generation controllers persist through GenerationCanvasBridge's callback into FileChatStore; only finished-result publication enters the source canvas's persistence path. Do not imply every agent mutation originates in a browser controller.
+  |
+  |-- ChangeSession - domain model and call tree  existing canvas
+  |   `-- [1a] Correct: [CALLS] ChangeSession operations
+  |       `-- Replace immediate-per-call EDIT wording with buffered exec flushes calling ChangeSessionService.apply, while retaining optional immediate execution, per-session serialization and persisted receipts. The existing lifecycle organization remains accurate.
+  |
+  `-- [3] AgentChat - turns, bindings and managed generation  new canvas
+      |-- AgentChat ownership overview
+      |   |-- Show AgentChatPanel -> AgentChatService -> CodexConnection, ChatStore, ChatTools, ChatMcpBinding and GenerationCanvasBridge; identify session, turn, binding and child-generation ownership explicitly.
+      |   `-- Connect back to AgentChatService in Mapping backend: grouped responsibilities, and to CanvasHistory.startGeneration/updateGeneration in Saved CanvasViews and branching.
+      |-- Conversation turns and tool bindings
+      |   |-- Attach from AgentChatService.startTurn and MappingChatMcpBinding in the new overview.
+      |   `-- Cover create/import/resume, captured canvas references, access policy, request deduplication before turn/start, native versus bound MCP tools, reload, streamed events, approvals and interruption. Imported native threads retain their own prompt/tools until explicit reload.
+      |-- Managed child-chat execution
+      |   |-- Attach from AgentChatService.genAlternatives and GenerationCanvasBridge in the new overview.
+      |   |-- Show 1-8 independent candidates, inherited model/effort/tools, thread fork versus saved-context thread start, one managed turn, isolated controller bindings and serialized receipt-backed mutations.
+      |   `-- Cover cancellation, terminal history retention, finished-only publication, pending-save reconciliation after browser reconnect and failed generation recovery after backend restart; generated chats remain review-only.
+      |-- Chat persistence and event delivery
+      |   |-- Attach from AgentChatService and FileChatStore in the new overview.
+      |   `-- Explain session restoration, interrupted items, buffered deltas, snapshot/replay semantics and atomic session writes; reference PersistentLayer for storage ownership rather than repeating its catalog model.
+      `-- Closest existing canvas: Mapping page - MCP and HTTP API
+          `-- Its actual diagrams inventory interfaces and group backend responsibilities. This overview answers who owns ongoing conversations, native turns, interactive requests and managed child chats; embedding that lifecycle would broaden an API/backend map into a conversation-runtime model.

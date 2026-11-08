@@ -1,4 +1,5 @@
 import { renderTemplate } from '../../../domain/mapping/evals/promptTemplate';
+import { evalOutputFixture } from '../../../tests/support/evalOutputResult';
 import { JudgementService } from './judgementService';
 import type { Judgement } from '../../../domain/mapping/evals/judgement';
 import { mkdtemp, rm } from 'node:fs/promises';
@@ -56,6 +57,37 @@ async function fixture() {
   return { root, service, prompts, references, comparisons, catalogs, contexts, runtime, records, sources, strict, rollUp, projects, workspace, canvases, layouts };
 }
 const settle = (f: Awaited<ReturnType<typeof fixture>>, id: string) => expect.poll(async () => (await f.service.read(id)).status, { timeout: 10000 }).not.toMatch(/queued|generating/);
+
+it('pins a multi-canvas execution result idempotently, survives source deletion, and never generates', async () => {
+  const f = await fixture(), { run, session } = evalOutputFixture();
+  await f.service.list();
+  const store = new JsonDirectoryStore<EvalRun>(f.root, 'eval-runs');
+  await store.save(run);
+  const generate = vi.spyOn(f.runtime, 'generate');
+  f.service.readChangeSession = vi.fn(async () => session);
+  const input = { cellKey: run.cells[0].key, changeSessionId: session.id, expectedVersion: session.version };
+  await expect(f.service.captureOutputResult(run.id, { ...input, expectedVersion: 999 })).rejects.toThrow('version');
+  await expect(f.service.captureOutputResult(run.id, { ...input, cellKey: 'missing' })).rejects.toThrow('cell');
+  const [summary, retry] = await Promise.all([f.service.captureOutputResult(run.id, input), f.service.captureOutputResult(run.id, input)]);
+  expect(retry).toEqual(summary); expect(summary.canvases).toHaveLength(2);
+  const pinned = await f.service.outputResult(run.id, input.cellKey);
+  session.version++; session.documents[0].name = 'Changed after completion';
+  await expect(f.service.captureOutputResult(run.id, { ...input, expectedVersion: session.version })).rejects.toThrow('already pinned');
+  f.service.readChangeSession = async () => { throw Error('Source session deleted'); };
+  await expect(f.service.captureOutputResult(run.id, input)).resolves.toEqual(summary);
+  expect(await f.service.outputResult(run.id, input.cellKey)).toEqual(pinned);
+  const saved = await store.read(run.id);
+  expect(saved!.status).toBe('finished'); expect(saved!.cells).toHaveLength(1);
+  expect(saved!.outputResults![input.cellKey]).toEqual(pinned);
+  const listed = (await f.service.list()).find(item => item.id === run.id)!;
+  expect(listed).not.toHaveProperty('outputResults');
+  expect(listed.cells[0].deleted).toBeUndefined();
+  expect(generate).not.toHaveBeenCalled();
+  const restarted = new EvalRunService(f.comparisons, f.workspace, f.projects, f.contexts, f.prompts, f.canvases, store, f.runtime);
+  expect(await restarted.outputResult(run.id, input.cellKey)).toEqual(pinned);
+  await expect(restarted.outputResult(run.id, 'missing')).rejects.toThrow('not found');
+  restarted.dispose();
+});
 
 it('pins template geometry and descriptions across source deletion, template edits/deletion, restart and reruns', async () => {
   const f = await fixture(), before = JSON.stringify(f.records);
@@ -268,7 +300,7 @@ it('adds a valid built-in version when a workflow input is renamed', async () =>
 it('seeds built-in prompts and versions edits with conflict detection and template validation', async () => {
   const f = await fixture();
   const list = await f.prompts.list();
-  expect(list.filter(p => p.builtin).map(p => p.workflow).sort()).toEqual(['alternatives', 'alternatives', 'diagram-change-proposal', 'few-shot-refinement', 'roll-up']);
+  expect(list.filter(p => p.builtin).map(p => p.workflow).sort()).toEqual(['alternatives', 'alternatives', 'diagram-change-proposal', 'few-shot-refinement', 'linked-canvases', 'roll-up']);
   await expect(f.prompts.save({ requestId: crypto.randomUUID(), workflow: 'roll-up', name: 'Bad', stages: { r2: '{{nope}}', g2: 'ok' } })).rejects.toThrow('Fix the prompt errors');
   const saved = await f.prompts.save({ requestId: crypto.randomUUID(), workflow: 'roll-up', promptId: f.strict.id, baseVersion: 1, name: 'Strict 2', stages: { r2: 'New {{pass}}', g2: 'New' } });
   expect(saved.versions.map(v => v.version)).toEqual([1, 2]);
@@ -688,4 +720,110 @@ it('resolves session context once and runs independent samples sequentially with
   const result = await f.service.read(run.id);
   expect(result.status).toBe('finished');
   expect(result.cells.every(cell => cell.usage?.cacheRead === 80 && cell.execution?.cacheKey === 'shared-key')).toBe(true);
+});
+
+it('prepares linked canvases without launching, retries invalid graphs, and saves one portable output per sample', async () => {
+  const { linkedOutput } = await import('../../../tests/support/linkedCanvasOutput');
+  const f = await fixture();
+  const context = await f.contexts.create({ requestId: crypto.randomUUID(), name: 'Linked evidence', context: 'The overview links to supporting evidence.' });
+  const prompt = await f.prompts.save({ requestId: crypto.randomUUID(), workflow: 'linked-canvases', name: 'Link the inputs', stages: {
+    linked: '<agent context>Read context.json and canvases.json.</agent context><task>Link the existing overview to a new detail canvas.</task><output format>Return the linked canvas set.</output format>'
+  } });
+  let calls = 0;
+  const generate = vi.spyOn(f.runtime, 'generate').mockImplementation(async input => {
+    const sources = input.files['canvases.json'] as { id: string; diagrams: { id: string; ascii: string }[] }[];
+    expect(sources).toHaveLength(1); expect(sources[0].id).toBe('c1');
+    const output: any = linkedOutput();
+    output.canvases[1] = { kind: 'existing', id: 'root', sourceCanvas: 'c1', edits: [] };
+    output.jumps[0].source = { canvas: 'root', diagram: sources[0].diagrams[0].id, line: 1, startColumn: 1, endColumn: 3 };
+    if (++calls === 1) output.jumps[0].target.canvas = 'missing';
+    else expect(input.files['validation-error.json']).toBeTruthy();
+    return { output, usage: { input_tokens: 10 } };
+  });
+  const request = { requestId: crypto.randomUUID(), workflow: 'linked-canvases', prompts: [{ promptId: prompt.id, version: 1 }],
+    inputs: { context: { agentContextId: context.agentContextId } }, canvasSources: [f.sources[0]], passes: 1, model: 'test', effort: 'high' };
+  const prepared = await f.service.prepareForReview(request);
+  expect(generate).not.toHaveBeenCalled();
+  expect(prepared.canvasInputs).toHaveLength(1);
+  const sourceBefore = JSON.stringify(prepared.canvasInputs);
+  const run = await f.service.launchPrepared(prepared); await settle(f, run.id);
+  const finished = await f.service.read(run.id);
+  expect(finished.status).toBe('finished'); expect(finished.cells).toHaveLength(1);
+  expect(finished.cells[0].output?.canvases).toHaveLength(2);
+  expect(finished.cells[0].usage).toMatchObject({ input_tokens: 20 });
+  expect(finished.cells[0].canvasId).toBeUndefined();
+  expect(JSON.stringify(finished.canvasInputs)).toBe(sourceBefore);
+  expect(finished.prompts[0]).toMatchObject({ promptId: prompt.id, version: 1 });
+  const persisted = await new JsonDirectoryStore<EvalRun>(f.root, 'eval-runs').read(run.id);
+  expect(persisted!.outputResults![finished.cells[0].key]).toEqual(await f.service.outputResult(run.id, finished.cells[0].key));
+  expect(persisted!.outputResults![finished.cells[0].key].canvases[0].baseline).not.toBeNull();
+  expect((await f.service.list()).find(r => r.id === run.id)!.canvasInputs![0]).not.toHaveProperty('history');
+  await expect(f.service.prepareForReview({ ...request, requestId: crypto.randomUUID(), canvasSources: [f.sources[0], f.sources[0]] })).rejects.toThrow('distinct');
+  await expect(f.service.prepareForReview({ ...request, requestId: crypto.randomUUID(), workflow: 'alternatives' })).rejects.toThrow('Canvas sets');
+});
+
+it('does not publish a partial canvas bundle when graph validation or cancellation fails', async () => {
+  const { linkedOutput } = await import('../../../tests/support/linkedCanvasOutput');
+  for (const cancel of [false, true]) {
+    const f = await fixture();
+    const context = await f.contexts.create({ requestId: crypto.randomUUID(), name: 'Graph', context: 'Evidence' });
+    vi.spyOn(f.runtime, 'generate').mockImplementation(async input => {
+      if (cancel) await new Promise<void>(resolve => input.signal.addEventListener('abort', () => resolve(), { once: true }));
+      const output = linkedOutput(); output.jumps[0].target.canvas = 'missing'; return { output };
+    });
+    const run = await f.service.start({ requestId: crypto.randomUUID(), workflow: 'linked-canvases', prompts: [{ promptId: 'builtin-linked-canvases', version: 1 }], inputs: { context: { agentContextId: context.agentContextId } }, passes: 1 });
+    if (cancel) { await expect.poll(() => vi.mocked(f.runtime.generate).mock.calls.length).toBe(1); await f.service.cancel(run.id); }
+    await settle(f, run.id);
+    const failed = await f.service.read(run.id);
+    expect(failed.cells[0].status).toBe(cancel ? 'cancelled' : 'failed');
+    expect(failed.outputResults).toBeUndefined(); expect(failed.cells[0].output).toBeUndefined();
+  }
+});
+
+it('promotes frozen outputs into a named canvas project without modifying the run or generating', async () => {
+  const f = await fixture(), { run, session } = evalOutputFixture();
+  await f.service.list();
+  const store = new JsonDirectoryStore<EvalRun>(f.root, 'eval-runs'); await store.save(run);
+  f.service.readChangeSession = async () => session;
+  await f.service.captureOutputResult(run.id, { cellKey: run.cells[0].key, changeSessionId: session.id, expectedVersion: session.version });
+  const before = await store.read(run.id), generate = vi.spyOn(f.runtime, 'generate');
+  const request = { requestId: crypto.randomUUID(), cellKey: run.cells[0].key, destination: 'new-project', name: 'Shopify' };
+  const receipt = await f.service.promoteOutput(run.id, request);
+  expect(receipt.canvases).toHaveLength(2);
+  expect(await f.service.promoteOutput(run.id, request)).toEqual(receipt);
+  expect((await f.service.promotionTargets()).groups).toEqual([{ id: receipt.canvasProjectId, name: 'Shopify' }]);
+  expect(await store.read(run.id)).toEqual(before);
+  expect(generate).not.toHaveBeenCalled();
+  await expect(f.service.promoteOutput(run.id, { ...request, name: 'Different' })).rejects.toThrow('REQUEST_ID_CONFLICT');
+});
+
+it('backfills verified historical promotion metadata without changing output evidence or generating', async () => {
+  const { readFile, writeFile } = await import('node:fs/promises');
+  const f = await fixture(), { run, session } = evalOutputFixture();
+  await f.service.list();
+  const store = new JsonDirectoryStore<EvalRun>(f.root, 'eval-runs'); await store.save(run);
+  f.service.readChangeSession = async () => session;
+  const cellKey = run.cells[0].key;
+  await f.service.captureOutputResult(run.id, { cellKey, changeSessionId: session.id, expectedVersion: session.version });
+  const request = { requestId: crypto.randomUUID(), cellKey, destination: 'new-project', name: 'Shopify' };
+  const promoted = await f.service.promoteOutput(run.id, request);
+  const saved = (await store.read(run.id))!;
+  delete saved.outputResults![cellKey].placementSnapshot;
+  await store.save(saved);
+  const catalogPath = join(f.root, 'canvases/catalog.json');
+  const catalog = JSON.parse(await readFile(catalogPath, 'utf8'));
+  delete catalog.outputPromotions[request.requestId].receipt.placementLineage;
+  await writeFile(catalogPath, JSON.stringify(catalog));
+  const generate = vi.spyOn(f.runtime, 'generate');
+  await expect(f.service.backfillPlacementTracking(run.id, { ...request, name: 'Wrong' })).rejects.toThrow('does not match');
+  const receipt = await f.service.backfillPlacementTracking(run.id, request);
+  expect(receipt.canvases).toEqual(promoted.canvases);
+  expect(receipt.placementLineage?.source).toEqual({ runId: run.id, cellKey });
+  expect(receipt.placementLineage!.diagrams.length).toBeGreaterThan(0);
+  expect(await f.service.backfillPlacementTracking(run.id, request)).toEqual(receipt);
+  const after = (await store.read(run.id))!;
+  expect(after.outputResults![cellKey].placementSnapshot?.diagrams.length).toBeGreaterThan(0);
+  delete after.outputResults![cellKey].placementSnapshot;
+  expect(after).toEqual(saved);
+  expect(generate).not.toHaveBeenCalled();
 });

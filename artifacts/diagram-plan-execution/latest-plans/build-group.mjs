@@ -1,0 +1,60 @@
+import fs from 'node:fs/promises';
+import {randomUUID,createHash} from 'node:crypto';
+import {AgentContext} from '../../../domain/core/agents/agentContext.ts';
+import {parseDiagramChangeTree} from '../../../domain/mapping/evals/diagramChangeTree.ts';
+const directory='artifacts/diagram-plan-execution/latest-plans', root='.diagrams-local/canvas-domain-model';
+const origin=process.env.EVALS_BASE_URL??'http://127.0.0.1:5191';
+const group='Plan execution - latest plans';
+const json=async p=>JSON.parse(await fs.readFile(p,'utf8'));
+const hash=x=>createHash('sha256').update(x).digest('hex');
+const save=(name,value)=>fs.writeFile(`${directory}/${name}.json`,JSON.stringify(value,null,2)+'\n');
+const equal=(a,b,label)=>{if(JSON.stringify(a)!==JSON.stringify(b))throw Error(`${label} differs`)};
+const api=async(path,body)=>{const r=await fetch(`${origin}/api/mapping/${path}`,body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:undefined);const t=await r.text();if(!r.ok)throw Error(`${path}: ${t}`);return JSON.parse(t)};
+const sources=await json('artifacts/diagram-change-strategy-2026-11-05/phase-4/context-mapping.json');
+const plans=(await json('artifacts/diagram-change-strategy-2026-11-05/phase-4/completed-responses.json')).sort((a,b)=>a.context-b.context||a.sample-b.sample);
+if(sources.length!==7||plans.length!==14||new Set(plans.map(p=>`${p.context}:${p.sample}`)).size!==14)throw Error('Expected two latest plans for each of seven sources');
+let ids;try{ids=await json(`${directory}/ids.json`)}catch(e){if(e.code!=='ENOENT')throw e;ids=Object.fromEntries(plans.map(p=>[`${p.context}:${p.sample}`,randomUUID()]));await save('ids',ids)}
+const protectedFiles=[...sources.map(c=>`${root}/agent-contexts/${c.agentContextId}.json`),...new Set(plans.map(p=>`${root}/eval-runs/${p.runId}.json`))];
+const before=await Promise.all(protectedFiles.map(async path=>({path,sha256:hash(await fs.readFile(path))})));
+const originalById=new Map();
+for(const c of sources){const original=await json(`${root}/agent-contexts/${c.agentContextId}.json`);AgentContext.fromSnapshot(original.snapshot);if(original.snapshot.contentHash!==c.contentHash)throw Error('Original context hash mismatch');originalById.set(c.agentContextId,original)}
+const runById=new Map();
+for(const runId of new Set(plans.map(p=>p.runId)))runById.set(runId,await api(`evals/runs/${runId}`));
+const result=[];
+for(const p of plans){
+ const c=sources[p.context-1],original=originalById.get(c.agentContextId),requestId=ids[`${p.context}:${p.sample}`];
+ const run=runById.get(p.runId),cell=run.cells.find(c=>c.key===p.outputKey);
+ if(run.agentContextId!==c.agentContextId||cell?.status!=='finished'||cell.proposalTree!==p.text)throw Error('Plan/context provenance mismatch');
+ const parsed=parseDiagramChangeTree(p.text);if(!parsed.valid)throw Error('Unexpected invalid latest plan');
+ const appended={role:'user',content:[{type:'text',text:'Supplied execution plan'},{type:'text',text:p.text}],timestamp:0};
+ const messages=[...structuredClone(original.snapshot.messages),appended];
+ let snapshot=AgentContext.fromTrajectory({agentType:'saved-context',sourceSessionId:requestId,format:'messages-v1',fromEntryId:'message-0',throughEntryId:`message-${messages.length-1}`,entries:messages.map((message,index)=>({id:`message-${index}`,parentId:index?`message-${index-1}`:null,message}))}).toSnapshot();
+ if(original.snapshot.sourceFiles)snapshot=AgentContext.fromSnapshot({...snapshot,sourceFiles:original.snapshot.sourceFiles}).toSnapshot();
+ const title=c.name.replace(/^ChangeSession v2 \d+ - /,'').replace(/ · revised context$/,'');
+ const name=`${String(p.context).padStart(2,'0')} ${title} - Plan ${p.sample}`;
+ const request={requestId,name,group,description:'Original source files, diffs and captured diagrams, followed by the complete supplied execution plan. Input preparation only; no generation launched.',context:snapshot};
+ await fs.mkdir(`${directory}/${String(p.context).padStart(2,'0')}-${p.sample}`,{recursive:true});
+ const itemPath=`${directory}/${String(p.context).padStart(2,'0')}-${p.sample}`;
+ await fs.writeFile(`${itemPath}/request.json`,JSON.stringify(request,null,2)+'\n');
+ await fs.writeFile(`${itemPath}/plan.txt`,p.text);
+ const created=await api('agent/tools/create-agent-context',request);
+ if(created.agentContextId!==`saved-agent-context-${requestId}`||created.contentHash!==snapshot.contentHash||created.group!==group)throw Error('Saved context mismatch');
+ const saved=await json(`${root}/agent-contexts/${created.agentContextId}.json`);
+ equal(saved.snapshot.messages.slice(0,-1),original.snapshot.messages,'Original evidence prefix');
+ equal(saved.snapshot.messages.at(-1),appended,'Appended plan');
+ AgentContext.fromSnapshot(saved.snapshot);
+ const sourceReferenceCount=saved.snapshot.messages.flatMap(m=>m.content).filter(b=>b.type==='sourceRange').length;
+ const row={context:p.context,plan:p.sample,name,agentContextId:created.agentContextId,contentHash:created.contentHash,originalAgentContextId:c.agentContextId,originalContentHash:c.contentHash,planHash:hash(p.text),sourceReferenceCount,sourceOutput:{runId:p.runId,outputKey:p.outputKey,documentId:p.source.documentId,checkpointId:p.source.checkpointId},counts:parsed.counts,categories:{existingDiagramModifications:parsed.counts['1a']+parsed.counts['1b']+parsed.counts['4'],newDiagramsInExistingCanvases:parsed.counts['2'],newCanvases:parsed.counts['3']},savedContextFile:`${itemPath}/saved-context.json`};
+ await fs.writeFile(row.savedContextFile,JSON.stringify(saved,null,2)+'\n');
+ result.push(row);await save('manifest',{schemaVersion:1,group,inputs:result,generationLaunched:false});
+ console.log(JSON.stringify({saved:result.length,name,agentContextId:created.agentContextId,sourceReferenceCount}));
+}
+for(const {path,sha256} of before)if(hash(await fs.readFile(path))!==sha256)throw Error(`Source changed: ${path}`);
+await save('source-preservation',before);
+const list=await api('agent/tools/list-agent-contexts',{query:'',offset:0,limit:100});
+let all=list.items,next=list.nextOffset;
+while(next!==null){const page=await api('agent/tools/list-agent-contexts',{query:'',offset:next,limit:100});all.push(...page.items);next=page.nextOffset;}
+const members=all.filter(c=>c.group===group);
+equal(members.map(c=>c.agentContextId).sort(),result.map(c=>c.agentContextId).sort(),'Visible group membership');
+await save('creation-receipt',{group,contexts:result.length,originalContexts:7,plans:14,applicability:{existingDiagramModifications:result.filter(c=>c.categories.existingDiagramModifications>0).length,newDiagramsInExistingCanvases:result.filter(c=>c.categories.newDiagramsInExistingCanvases>0).length,newCanvases:result.filter(c=>c.categories.newCanvases>0).length},sourceReferences:result.reduce((sum,c)=>sum+c.sourceReferenceCount,0),protectedFilesVerified:before.length,visibleGroupVerified:true,generationLaunched:false});
+console.log('Group created and verified; generation not launched.');

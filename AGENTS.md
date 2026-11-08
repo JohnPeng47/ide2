@@ -1,6 +1,6 @@
 # Development server
 
-- After completing its task and checks, the agent must run `npm run dev:reload` from its project working directory to refresh all running Vite dev-server instances started from that directory; do not reload during intermediate edits or refresh instances from other worktrees.
+- Only if the agent started the task: after completing that task and its checks, run `npm run dev:reload` from the project working directory to refresh all running Vite dev-server instances started from that directory; do not reload during intermediate edits or refresh instances from other worktrees.
 
 # Canvas API
 
@@ -69,3 +69,11 @@ Call them directly through MCP, outside `exec.code`.
 - Create prompt variations with `derivation: {parent: {promptId, version}, kind: "variation", dimension?: {id, name, value}}`; pin the exact parent version and use a stable dimension ID across its poles.
 - Revisions and edited relaunches record their parent versions automatically. Runs retain the exact prompt text, version, content hash, and derivation they used.
 - Experiment Overview derives its prompt tree from these relationships and output references; do not construct `promptTree` metadata for new experiments. Legacy lineage is backfilled explicitly with verified content hashes, never guessed from names.
+
+## AgentContext forks and comments
+- use fork-agent-context to fork a context
+  > if making changes, make them directly on disk
+    > update the forked context with a comment using add-agent-context-comment describing the change
+- there is a "type" argument in create-agent-context that lets you group different contexts together
+  > this shud mostly be used to group heterogenous context types together
+

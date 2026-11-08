@@ -1,0 +1,46 @@
+Proposed diagram changes
+  |-- Canvas domain model - baseline 03f2168 (before tldraw)  existing canvas
+  |   |-- [1a] Correct: MappingPage                              baseline 03f2168, before tldraw
+  |   |   `-- PATCH: replace the obsolete DiagramService content-owner relationship with explicit revision operations and retention; retain CanvasHistoryService and the separate workspace persistence path. The owner-oriented overview remains useful.
+  |   |-- [1b] Extend: MappingPage                              baseline 03f2168, before tldraw
+  |   |   `-- PATCH: show WorkspacePersistence producing checkpoint deltas and shared items, and the checkpoint capture/flush boundary before catalog publication. Attach these responsibilities to WorkspacePersistence and WorkspaceStorage, not rendering.
+  |   |-- [1a] Correct: [E] CanvasHistoryService / coordinated revisions
+  |   |   `-- PATCH: distinguish expanded portable histories from encoded workspace records; initial/current-only histories can retain revisionBoundary identities without importing ancestry. Preserve immutable checkpoints and coordinated navigation.
+  |   |-- [1b] Extend: [E] CanvasHistoryService / coordinated revisions
+  |   |   `-- PATCH: add canvasViews, workingCopies and generation metadata to the history header; add presentation, alternatives, review and diagram-context references to checkpoints. Retention includes referenced candidate/base revisions, not only current bindings; named views prevent current-only export from dropping their graph.
+  |   `-- [4] Redraw: [G] DiagramService
+  |       `-- Replace the former sole service writer with pure createDiagram/reviseDiagram/deriveDiagram operations, explicit runtime revision retention, generateDiagram orchestration, and separate checkpoint persistence. These ownership and publication relationships replace the diagram's organizing service boundary; preserve immutable identities and proven correspondence.
+  |
+  |-- AgentContext - implemented call flow and domain models (03f2168)  existing canvas
+  |   |-- [1a] Correct: (O) Edit diagram with AgentContext - baseline 03f2168
+  |   |   `-- PATCH: replace synchronous scoped get with AgentContextService.resolve and distinguish backend-lifetime uploads from saved contexts resolved through AgentContextLibrary. Replace the obsolete RevisionedDiagramService generation/retention step; keep generation and canvas application separate.
+  |   `-- [1b] Extend: [D3] AgentContext - implemented domain object and adapter
+  |       `-- PATCH: add sourceRange references, optional portable sourceFiles and source resolution. Keep AgentContext free of file/network ownership; attach persistence to AgentContextLibrary and FileAgentContextSources, detailed under PersistentLayer rather than duplicating storage here.
+  |
+  |-- Mapping page - MCP and HTTP API  existing canvas
+  |   |-- [1a] Correct: Mapping backend: grouped responsibilities (03f2168)
+  |   |   `-- PATCH: replace whole-document saveNow snapshot publication with checkpoint dispatch, MappingDiagramService.publishCheckpoint and saved-receipt acknowledgement. Preserve the separate single-diagram extraction path and proposal publication boundary.
+  |   `-- [1b] Extend: Mapping backend: grouped responsibilities (03f2168)
+  |       `-- PATCH: add MappingWorkspaceService.portableExport and prepareImport under workspace persistence, and AgentContextLibrary under agent-context management. Context dependencies are expanded for export and stored before imported references can be published; existing responsibility groups still fit.
+  |
+  |-- PersistentLayer  existing canvas
+  |   |-- [1a] Correct: PersistentLayer
+  |   |   `-- PATCH: update MappingWorkspaceStore's records to checkpoint deltas, immutable items/text and encoded current views; add the workspace-record-backed catalog publication path alongside existing formats. Preserve separate autosave/catalog publication and mark SearchArtifact persistence PROPOSED and unimplemented at 81f05a2b.
+  |   |-- [1b] Extend: PersistentLayer
+  |   |   `-- PATCH: establish explicit storage branches and callers: AgentContextLibrary -> FileAgentContextRepository; shared FileAgentContextSources -> source blobs; FileDiagramAgentContextStore -> context records; AgentChatService -> FileChatStore; DiffSessionWorkflowService -> FileDiffSessionRunStore; PushIntegrationService -> FilePushIntegrationStore. Existing repository/storage organization accommodates these owners without absorbing rendering.
+  |   |-- [2] Add: Checkpoint capture and catalog publication
+  |   |   `-- Attach from Explicit catalog publication and WorkspaceRecordStore. Explain checkpoint capture and workspace flush before publishCheckpoint, pinning one manifest, checking head/version, hydrating only the selected checkpoint and revision dependencies, and retaining immutable workspace references. Distinguish durable publication from browser acknowledgement, which may fail afterward.
+  |   |-- [2] Add: Agent context storage and portable dependencies
+  |   |   `-- Attach from FileAgentContextRepository, FileDiagramAgentContextStore and their shared FileAgentContextSources component. Explain exclusive saved-context publication, content-addressed diagram contexts, pinned Git source references versus snapshot blobs, dependency validation, selected-evidence portable export and dependency-first import. This develops PersistentLayer's established reference/restore subject.
+  |   `-- [2] Add: Chat, workflow and push persistence
+  |       `-- Attach from FileChatStore, FileDiffSessionRunStore and FilePushIntegrationStore. Show serialized chat-file replacement, history-owned CanvasView generation metadata, workflow run state/artifacts and interrupted-run reads, plus repository connections and exclusive push-generation claims. Keep runtime execution separate and distinguish chat rename-based persistence from explicitly fsynced workspace writes; do not imply automatic execution resumption.
+  |
+  `-- Workspace persistence flow  existing canvas
+      |-- [1a] Correct: Workspace persistence flow - baseline 03f2168
+      |   `-- PATCH: replace full checkpoint/view payload descriptions with encoded records and shared immutable items; add metadata.version and value-based suppression of unchanged records. Replace serial payload writes with at most eight concurrent writers, all settled before blob-directory sync and atomic manifest/receipt publication. The owner-to-storage sequence remains accurate.
+      |-- [1b] Extend: Workspace persistence flow - baseline 03f2168
+      |   `-- PATCH: show CanvasCheckpointEncoder and CanvasValueEncoder beneath the history/view projection path, plus WorkspaceStorage.saveDocument for acknowledged single-canvas commits. Preserve one in-flight batch, identical uncertain retries, explicit flush and restore; current-only validation does not mean the ordinary restore fetch loads only one checkpoint.
+      |-- [2] Add: Checkpoint deltas, shared items and restore
+      |   `-- Attach from CanvasCheckpointEncoder and CanvasValueEncoder. Explain object-boundary splitting, SHA-256 value/text sharing, added/updated/removed references, maximum delta depth 31 and periodic full reference bases. Show head reference maps, legacy checkpoint compatibility, dependency reconstruction and integrity checks without duplicating presentation/rendering logic.
+      `-- [2] Add: Durable batch publication and retry boundary
+          `-- Attach from WorkspaceRecordStore.apply and RecordStorage. Detail semantic checkpoint immutability across re-encoding, immutable revisions/items, expectedRevision and request receipts, bounded writers and dependency-before-manifest durability. Explain identical-request recovery after uncertain publication and explicit commit acknowledgement; abrupt tab termination is not a flush guarantee.

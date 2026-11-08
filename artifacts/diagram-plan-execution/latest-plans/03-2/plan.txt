@@ -1,0 +1,98 @@
+Proposed diagram changes
+  |-- Canvas domain model - baseline 03f2168 (before tldraw)  existing canvas
+  |   |-- [1a] Correct: MappingPage
+  |   |   `-- Replace injected DiagramService and controller service calls with explicit revision-store commands. Preserve workspace/session ownership and CanvasHistoryService; the overview's organization still fits.
+  |   |-- [1b] Extend: MappingPage
+  |   |   `-- Show CanvasHistory-owned CanvasViews, checkpoint encoding, and document alternatives/reviews/contexts at their owners. Distinguish saved CanvasViews from catalog publication before linking their details.
+  |   |-- [1a] Correct: [B] Diagram
+  |   |   `-- Distinguish logical diagramId/revisionId, local id/revision, and content.revisionId. Replace bare-content createDiagram terminology with immutable revision issuance; preserve source-context ownership.
+  |   |-- [1a] Correct: [D] Controller edits / agent access
+  |   |   `-- Use createStoredDiagram/reviseStoredDiagram instead of DiagramService. Distinguish mounted editor-driver undo from headless history navigation; preserve staged semantic batches and checkpoint publication.
+  |   |-- [1b] Extend: [D] Controller edits / agent access
+  |   |   `-- Add retained candidates, explicit review application, presentation-only alternatives, and guarded diagram-context updates under applyUpdate. These extend the existing operation-to-checkpoint flow.
+  |   |-- [1a] Correct: [E] CanvasHistoryService / coordinated revisions
+  |   |   `-- Replace history-owned revision allocation with assertion and retention of already-issued payloads. Preserve composition/binding separation, logical anchors, navigation, and materialized read models.
+  |   |-- [1b] Extend: [E] CanvasHistoryService / coordinated revisions
+  |   |   `-- Add CanvasViews outside undo-restored state, working-copy references, revisionBoundary, dependency-aware exports, and CanvasCheckpointEncoder under persistenceChanges. Introduce checkpointRevisionIds as the dependency-detail attachment.
+  |   |-- [4] Redraw: [G] DiagramService
+  |   |   `-- Replace the deleted sole-writer service with pure create/revise/derive operations, explicit runtime retention, application generation, and controller publication. Its central owner and service-method relationships are obsolete; patching method names would preserve misleading ownership. Retain immutable identities and proven node correspondence; reconnect incoming content-edit edges to the appropriate responsibility.
+  |   `-- [2] Add: Checkpoint revision dependencies and export boundaries
+  |       `-- Attach from [E]'s checkpointRevisionIds. Explain bindings, alternatives, reviews, and revision selections including contextRevisionId as retention roots; distinguish validated diagramContexts from those roots. Show current-only exports with revisionBoundary versus complete histories pinned by saved views. This develops the canvas's existing history subject.
+  |-- AgentContext - implemented call flow and domain models (03f2168)  existing canvas
+  |   |-- [1a] Correct: (O) Edit diagram with AgentContext - baseline 03f2168
+  |   |   `-- Replace RevisionedDiagramService.generate/issue with generateDiagram -> generator.generate -> submitStoredDiagramEdit -> pure issuance -> retention. Capture, generation, retained run output, and application remain valid organizing stages, so PATCH fits.
+  |   `-- [1b] Extend: (O) Edit diagram with AgentContext - baseline 03f2168
+  |       `-- Under generation/submission, add explicit base lookup, base nodeRefs, scoped candidate validation, and cancellation checks before submission. Preserve exact-revision application retries; these extend rather than replace the lifecycle.
+  |-- Mapping page - MCP and HTTP API  existing canvas
+  |   `-- [1a] Correct: Mapping backend: grouped responsibilities (03f2168)
+  |       `-- Within prompt-driven editing, show a generator runtime supplied to agent orchestration and the separate generation/submission path, not RevisionedDiagramService ownership. Preserve application retries and separate workspace/catalog publication groups; receiver evidence alone does not establish a new HTTP route.
+  |-- PersistentLayer  existing canvas
+  |   |-- [1a] Correct: PersistentLayer
+  |   |   `-- Distinguish domain diagramRevisionStore runtime retention from durable DiagramRevisionStore records. Preserve durable storage and explicit catalog publication; CanvasViews are history metadata, not new catalog representations.
+  |   `-- [1b] Extend: PersistentLayer
+  |       `-- At the history persistence boundary, introduce CanvasCheckpointEncoder/CanvasValueEncoder and CanvasViews checkpoint references. Link the encoder node to Workspace persistence flow's codec detail; preserve expanded read models without inventing disk paths. The repository/storage organization remains useful.
+  |-- ChangeSession - domain model and call tree  existing canvas
+  |   |-- [1a] Correct: [MODEL] ChangeSession ownership
+  |   |   `-- Remove DiagramService as the content owner; show controller operations using explicitly retained revisions. Preserve isolated CanvasHistoryService contexts and separate catalog acceptance; proposal ownership remains the organizing subject.
+  |   `-- [1b] Extend: [H] Isolated history and undo/redo
+  |       `-- Extend CanvasHistoryRecord with alternatives/review dependencies, revisionBoundary, and CanvasViews outside checkpoint restoration. Explain that context forks retain saved histories but stop active recording. Attach these to the existing record/fork branches and preserve proposal reset semantics.
+  |-- Workspace persistence flow  existing canvas
+  |   |-- [1b] Extend: Workspace persistence flow - baseline 03f2168
+  |   |   `-- Show CanvasHistory.persistenceChanges owning CanvasCheckpointEncoder and emitting deltas, immutable value/text items, and a head reference map. Include CanvasViews and working-copy references in history metadata. The existing owner-to-storage flow still fits.
+  |   `-- [2] Add: Canvas checkpoint records and bounded restoration
+  |       `-- Attach from the overview's CanvasCheckpointEncoder node. Explain object-boundary splitting, SHA-256 value/text reuse, parent-based deltas capped at depth 31, full-base rollover, and single-checkpoint loading with integrity checks. Preserve legacy snapshot reads; distinguish immutable payloads from mutable transaction links. This answers how existing history is encoded and restored, not a new architectural subject.
+  |-- Canvas domain model - baseline 03f2168 (before tldraw) - Projection (C07)  existing canvas
+  |   |-- [1a] Correct: [G] Revision operations, retention, and generation
+  |   |   `-- State that the DiagramRevision payload is frozen, not the entire DiagramRevisionResult wrapper. Preserve the already-accurate separation of pure operations, runtime retention, generation, and canvas publication.
+  |   |-- [1b] Extend: [G] Revision operations, retention, and generation
+  |   |   `-- Add explicit base/identity-source validation, scoped submission, and cancellation-before-retention under their existing stages. Link checkpoint retention to the shared dependency detail rather than duplicating it.
+  |   `-- [1b] Extend: [B] Diagram - immutable content and presentation
+  |       `-- Add document.diagramContexts as separate metadata keyed by logical diagram identity, not immutable content or placement state. Show controller updates and CanvasHistory ownership validation; this fits the existing ownership-boundary explanation.
+  |-- 01 - Saved CanvasViews and branching  existing canvas
+  |   |-- [1a] Correct: Saved CanvasViews and branching
+  |   |   `-- Specify that dirty comparison excludes viewport and selection fields, not every selection-related consequence. Distinguish camera-preserving open/resume from legacy apply of the saved endpoint. Existing capture/switch/branch/archive organization remains accurate.
+  |   |-- [1b] Extend: Saved CanvasViews and branching
+  |   |   `-- Show CanvasViewControls -> CanvasViewReceiver -> MappingDocumentController -> CanvasHistory, with CanvasViews metadata outside undo-restored state. Add CanvasView.generation and editing/archive guards as explicit detail attachments; preserve working copies, pinned saved-parent branching, and archival behavior.
+  |   |-- [2] Add: Generated CanvasView candidates and publication
+  |   |   `-- Attach from CanvasView.generation and CanvasHistory.startGeneration/updateGeneration in the overview. Explain saved-parent capture, grouped candidates, isolated input history, and finished-result publication to a candidate endpoint without moving the live head. Contrast generation with alternatives, which only creates copies. This develops the existing branching subject.
+  |   `-- [2] Add: CanvasView commands, receipts, and persistence
+  |       `-- Attach from CanvasViewReceiver. Show controller gesture settlement/version checks, receipt retention before persistence, identical-request retry after PERSISTENCE_PENDING, and changed-argument rejection. Receipts are receiver-local, not durable exactly-once delivery. This explains the existing save/switch commands' reliability boundary.
+  |-- Central and side diagrams - Attempt 2  existing canvas
+  |   |-- [1a] Correct: 1  CONTENT ARCHIVE
+  |   |   `-- Replace service identities with logical diagram/revision identities. Preserve parsed-node versus logical-node identity and content/presentation ownership; no restructuring is needed.
+  |   `-- [1b] Extend: 4  FROM SUPPLIED EDIT TO SAVED CANVAS
+  |       `-- After MappingDocumentController publication, distinguish retained revision, canvas checkpoint, and explicitly saved CanvasView endpoint. Introduce CanvasHistory/CanvasViews and link to the existing saved-view canvas rather than repeating its lifecycle. The submission flow remains valid.
+  |-- Roll-up 1 - g2 - Canvas domain model - baseline 03f2168 (before tldraw) (C12)  existing canvas
+  |   |-- [1a] Correct: MappingPage
+  |   |   `-- Remove injected DiagramService ownership and connect controller edits to [R]'s explicit revision lifecycle. Preserve workspace/session/history ownership; newer detail cannot repair an obsolete overview by itself.
+  |   |-- [1b] Extend: MappingPage
+  |   |   `-- Place CanvasViews under CanvasHistory and alternatives/reviews/contexts under document state. Connect to existing [P1]/[P2] detail instead of adding duplicates; these fit the ownership tree.
+  |   |-- [1a] Correct: [B] Diagram
+  |   |   `-- Align local/global revision identities and createDiagram terminology with [R]. Preserve content and source-evidence ownership; the existing structure still fits.
+  |   |-- [1a] Correct: [D] Controller edits / agent access
+  |   |   `-- Replace service calls with stored revision commands and distinguish mounted editor undo from headless navigation. Preserve staged publication and reconnect content-edit edges to the replacement lifecycle.
+  |   |-- [1b] Extend: [D] Controller edits / agent access
+  |   |   `-- Add explicit candidate retention, review application, presentation choices, and guarded context updates under applyUpdate. Connect review application to [P2]; these extend the operation pipeline.
+  |   |-- [1a] Correct: [E] CanvasHistoryService / coordinated revisions
+  |   |   `-- Replace revision allocation with assertion/retention of issued revisions. Preserve the checkpoint-centered organization and canonical anchor projection.
+  |   |-- [1b] Extend: [E] CanvasHistoryService / coordinated revisions
+  |   |   `-- Add CanvasViews, working-copy checkpoints, dependency-aware exports, revisionBoundary, and checkpoint encoding. Connect dependencies to [R]/[P1]/[P2] and link codec detail to Workspace persistence flow rather than duplicating it.
+  |   `-- [4] Redraw: [G] DiagramService
+  |       `-- Replace the deleted service-centered organization with a compact responsibility map linked to [R]: pure operations, runtime retention, generation, and controller publication. All service-method ownership relationships need replacement; retaining the service shell would contradict [R]. Preserve immutability and update service attachment edges without repeating [R]'s detail.
+  `-- Roll-up 2 - g2 - Canvas domain model - baseline 03f2168 (before tldraw) (C14)  existing canvas
+      |-- [1a] Correct: MappingPage
+      |   `-- Remove injected DiagramService ownership and connect controller content edits to [R]. Preserve workspace/session and CanvasHistoryService ownership; PATCH retains the useful overview structure.
+      |-- [1b] Extend: MappingPage
+      |   `-- Place CanvasViews under history and alternatives/reviews/contexts under document state. Connect presentation/review branches to existing [P], avoiding duplicate detail.
+      |-- [1a] Correct: [B] Diagram
+      |   `-- Align local/global identities and construction terminology with [R]; preserve immutable content and source-context ownership.
+      |-- [1a] Correct: [D] Controller edits / agent access
+      |   `-- Replace DiagramService calls with stored revision commands and distinguish editor-driver undo from headless navigation. Preserve the staged operation-to-checkpoint flow and reconnect content-edit attachments.
+      |-- [1b] Extend: [D] Controller edits / agent access
+      |   `-- Add retained candidates, review application, presentation-only alternatives, and context updates under applyUpdate. Link review/application to [P]; the pipeline accommodates these operations.
+      |-- [1a] Correct: [E] CanvasHistoryService / coordinated revisions
+      |   `-- Replace history-issued revisions with assertion/retention of issued payloads. The composition, binding, and checkpoint organization remains valid.
+      |-- [1b] Extend: [E] CanvasHistoryService / coordinated revisions
+      |   `-- Add CanvasViews, working copies, checkpoint encoding, and dependency-aware export boundaries. Connect choices/reviews to [P] and reuse existing saved-view and persistence detail.
+      `-- [4] Redraw: [G] DiagramService
+          `-- Replace sole-service ownership with an operation/retention/generation/publication responsibility map linked to [R]. The deleted central service makes its organization misleading, not merely incomplete. Preserve immutable revision guarantees and update proposed revision operations and checkpoint-binding attachments to implemented relationships.

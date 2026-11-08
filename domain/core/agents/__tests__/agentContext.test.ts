@@ -81,3 +81,34 @@ describe('AgentContext', () => {
     expect(() => AgentContext.fromTrajectory({ ...unknown, agentType: '' })).toThrow();
   });
 });
+
+it('preserves named sections in snapshots and emits ordered, labeled evidence to the SDK', () => {
+  const context = AgentContext.fromMessages('sections', [{ role: 'user', timestamp: 0, content: [
+    { type: 'text', text: 'Shared preface' },
+    { type: 'section', name: 'Payments', content: [{ type: 'text', text: 'First evidence' }, { type: 'text', text: 'Second evidence' }] },
+    { type: 'section', name: 'Allocation', content: [{ type: 'text', text: 'Third evidence' }] },
+    { type: 'text', text: 'Shared ending' }
+  ] }]);
+  expect(context.toSnapshot().version).toBe(3);
+  expect(AgentContext.fromSnapshot(context.toSnapshot()).toSnapshot()).toEqual(context.toSnapshot());
+  const messages: Message[] = context.toPiMessages();
+  expect(messages[0].content).toEqual([
+    { type: 'text', text: 'Shared preface' },
+    { type: 'text', text: '[ContextSection: "Payments"]' },
+    { type: 'text', text: 'First evidence' }, { type: 'text', text: 'Second evidence' },
+    { type: 'text', text: '[/ContextSection]' },
+    { type: 'text', text: '[ContextSection: "Allocation"]' },
+    { type: 'text', text: 'Third evidence' }, { type: 'text', text: '[/ContextSection]' },
+    { type: 'text', text: 'Shared ending' }
+  ]);
+  const renamed = context.toSnapshot().messages;
+  const section = renamed[0].content[1];
+  if (section.type !== 'section') throw Error('fixture');
+  section.name = 'Different meaning';
+  expect(context.withMessages(renamed).contentHash).not.toBe(context.contentHash);
+  expect(() => AgentContext.fromSnapshot({ ...context.toSnapshot(), version: 2 })).toThrow('sections require version 3');
+  const invalid = (section: unknown) => AgentContext.fromTrajectory({ agentType: 'saved-context', sourceSessionId: 'invalid', format: 'messages-v1', fromEntryId: 'm', throughEntryId: 'm', entries: [{ id: 'm', parentId: null, message: { role: 'user', content: [section] } }] });
+  expect(() => invalid({ type: 'section', name: ' ', content: [{ type: 'text', text: 'Facts' }] })).toThrow();
+  expect(() => invalid({ type: 'section', name: 'Empty', content: [] })).toThrow();
+  expect(() => invalid({ type: 'section', name: 'Nested', content: [{ type: 'section', name: 'Child', content: [{ type: 'text', text: 'Facts' }] }] })).toThrow();
+});

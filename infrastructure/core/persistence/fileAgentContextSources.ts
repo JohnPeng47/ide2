@@ -2,7 +2,7 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import path from 'node:path';
 import type { AgentContextSources } from '../../../application/core/ports/agentContextSources';
-import { AgentContext, AGENT_CONTEXT_MAX_BYTES, type AgentContextSnapshot } from '../../../domain/core/agents/agentContext';
+import { AgentContext, agentContextSourceRanges, AGENT_CONTEXT_MAX_BYTES, type AgentContextSnapshot } from '../../../domain/core/agents/agentContext';
 import { sourceRangeSchema, sourceFileSchema, sourceFileHash, sourceRangeText, captureSourceRangeSchema,
   type AgentContextSourceFile, type AgentContextSourceRange, type CaptureSourceRange } from '../../../domain/core/agents/agentContextSource';
 import type { CorpusBinding } from '../../../domain/core/profiles/domainProfile';
@@ -88,7 +88,7 @@ export class FileAgentContextSources implements AgentContextSources {
     for (const file of Object.values(snapshot.sourceFiles ?? {})) await this.blobs.put(file);
     // Check references before publication, including imported descriptors with missing blobs.
     const seen = new Set<string>();
-    for (const message of snapshot.messages) for (const block of message.content) if (block.type === 'sourceRange') {
+    for (const block of agentContextSourceRanges(snapshot.messages)) {
       const key = JSON.stringify(block);
       if (!seen.has(key)) { await this.load(block); seen.add(key); }
     }
@@ -97,21 +97,21 @@ export class FileAgentContextSources implements AgentContextSources {
   async portable(raw: AgentContextSnapshot) {
     const context = AgentContext.fromSnapshot(raw), snapshot = context.toSnapshot();
     const files: Record<string, AgentContextSourceFile> = {};
-    const messages = [];
-    for (const message of snapshot.messages) {
-      const content = [];
-      for (const block of message.content) {
-        if (block.type !== 'sourceRange') { content.push(block); continue; }
-        const file = block.version.kind === 'snapshot' && snapshot.sourceFiles?.[block.version.contentHash]
-          || await this.load(block);
-        // Portable context contains only its selected evidence, not unrelated file lines.
-        const selected = { startLine: block.startLine,
-          lines: file.lines.slice(block.startLine - file.startLine, block.endLine - file.startLine + 1) };
-        const contentHash = sourceFileHash(selected); files[contentHash] = selected;
-        content.push({ ...block, version: { kind: 'snapshot' as const, contentHash } });
-      }
-      messages.push({ ...message, content });
+    const references = new Map<string, AgentContextSourceRange>();
+    for (const block of agentContextSourceRanges(snapshot.messages)) {
+      const key = JSON.stringify(block);
+      if (references.has(key)) continue;
+      const file = block.version.kind === 'snapshot' && snapshot.sourceFiles?.[block.version.contentHash]
+        || await this.load(block);
+      // Portable context contains only its selected evidence, not unrelated file lines.
+      const selected = { startLine: block.startLine,
+        lines: file.lines.slice(block.startLine - file.startLine, block.endLine - file.startLine + 1) };
+      const contentHash = sourceFileHash(selected); files[contentHash] = selected;
+      references.set(key, { ...block, version: { kind: 'snapshot', contentHash } });
     }
+    const replace = (block: { type: string }) => block.type === 'sourceRange' ? references.get(JSON.stringify(block))! : block;
+    const messages = snapshot.messages.map(message => ({ ...message, content: message.content.map(block => block.type === 'section'
+      ? { ...block, content: block.content.map(replace) } : replace(block)) }));
     return context.withMessages(messages, files).toSnapshot();
   }
 }

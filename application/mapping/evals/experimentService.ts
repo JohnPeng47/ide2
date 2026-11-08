@@ -76,7 +76,10 @@ export class ExperimentService {
         for (const output of old.outputs) {
           const before = previous!.samples.find(s => s.id === output.sampleId)!;
           const after = design.samples.find(s => s.id === before.id);
-          if (JSON.stringify(after) !== JSON.stringify(before) || JSON.stringify(design.cases.find(c => c.id === before.caseId)) !== JSON.stringify(previous!.cases.find(c => c.id === before.caseId)))
+          // Introducing phases may label the original round without changing its approved execution.
+          const comparable = after && !previous!.phases?.length && !before.phaseId
+            ? (({ phaseId: _, ...sample }) => sample)(after) : after;
+          if (JSON.stringify(comparable) !== JSON.stringify(before) || JSON.stringify(design.cases.find(c => c.id === before.caseId)) !== JSON.stringify(previous!.cases.find(c => c.id === before.caseId)))
             throw new ApplicationError('conflict', 'Approved samples and inputs cannot be reassigned.');
         }
       }

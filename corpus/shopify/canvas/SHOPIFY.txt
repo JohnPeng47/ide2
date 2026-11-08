@@ -1,0 +1,172 @@
+SHOPIFY CANVAS SET
+Corpus: corpus/shopify, FY2018 filings through the Q3 2026 earnings call.
+Perspective: long-horizon strategy. Numbers are read as allocation decisions
+inside one interdependent company, and unsuccessful initiatives are read as
+moves within that system, without assuming that adaptation excuses the cost.
+
+
+1. CANVASES
+
+File                                  Question                                  Spine
+01-company-map.txt                    How does the whole system fit together?   dependency
+02-allocation-and-capital.txt         Where did money and priority actually go? sequence
+03-payments-and-merchant-finance.txt  How does volume become revenue and margin? dependency
+04-buyer-network.txt                  What does the buyer side really add?      dependency
+05-merchant-on-ramps-and-range.txt    Who comes in, and how do they grow?       structure
+06-selling-surfaces.txt               How far does one back end extend?         structure
+07-global-reach.txt                   What does "international" actually mean?  structure
+08-shipping-and-fulfillment.txt       What happened when Shopify tried logistics? control
+09-platform-and-ecosystem.txt         What is built, partnered, or owned as stake? control
+10-commerce-intelligence.txt          How much of the AI story is measurable?   dependency
+
+
+2. HOW THEY CONNECT
+
+01 Company map is the hub. It holds thesis, flywheel versions and domain links.
+02 Allocation is the spine across time. Every other canvas can be read against
+its eras. 03-10 are the eight strategic domains.
+
+                              01 Company map
+                                    |
+              +---------------------+---------------------+
+              |                                           |
+        02 Allocation                              eight domains
+        (across time)                                     |
+                       +-------+-------+-------+-------+-------+-------+-------+
+                       |       |       |       |       |       |       |       |
+                      03      04      05      06      07      08      09      10
+                    Payments Buyer  On-ramps Surfaces Global Fulfill Platform  AI
+
+
+3. CONNECTIONS BETWEEN CANVASES
+
+Each connection names the shared subject and the canvas that owns its detail.
+Grades use the same notation as the diagrams.
+
+01 -> all      Domain summaries link down to each canvas. No detail is owned here
+               except thesis, flywheel versions and cross-domain links.
+
+02 <-> 08      The logistics bet.
+               02 owns: financial effect, capital deployed, free cash flow bridge.
+               08 owns: the decision story, control changes, Flexport position.
+
+02 <-> 05      Disclosure stops and pricing.
+               02 owns: the disclosure register.
+               05 owns: what each withdrawn merchant metric meant.
+
+02 <-> 03      Lending inside free cash flow.
+               02 owns: free cash flow after net lending.
+               03 owns: Capital and loss detail.
+
+02 <-> 09      Equity investments as a use of capital.
+               02 owns: cash deployed by period.
+               09 owns: individual stakes, marks, and reading net income.
+
+02 <-> 10      Headcount and AI.
+               02 owns: headcount by era.
+               10 owns: AI productivity claims.
+
+03 <-> 04      Shopify Payments -[D:mech]-> Shop Pay on Shopify stores.
+               Shop Pay -[D:claim]-> Payments adoption.
+               03 owns: Payments, net take, losses.
+               04 owns: Shop Pay, Installments, the conversion study.
+               Note: Installments losses sit in the 03 loss line.
+
+03 <-> 07      Payments availability -[D:mech]-> take rate where launched.
+               Availability -[D:assoc]-> international GMV.
+               03 owns: penetration and comparability.
+               07 owns: country rollout and regional effects.
+
+04 <-> 05      Shop Pay Component -[C:claim]-> enterprise replatforming.
+               04 owns: the foothold evidence.
+               05 owns: enterprise adoption overall.
+
+04 <-> 10      Agentic checkout and buyer identity.
+               10 owns: agentic mechanisms and metrics.
+               04 owns: Shop Pay and Shop accounts as the trust layer.
+
+05 <-> 06      POS as an entry point.
+               05 owns: who enters, including the 55% of POS adders.
+               06 owns: offline revenue, GMV and cross-sell.
+
+05 <-> 09      Systems integrators and enterprise.
+               05 owns: adoption claims.
+               09 owns: the partner relationships.
+
+06 <-> 10      AI channels as a selling surface.
+               10 owns: all agentic detail.
+               06 owns: one summary node, alongside other surfaces.
+
+06 <-> 07      Offline and channel availability by country.
+               06 owns: channel performance.
+               07 owns: regional rollout.
+
+07 <-> 09      Global-e: partner and stake.
+               07 owns: cross-border role and possible conflict.
+               09 owns: the stake's value and accounting.
+
+08 <-> 09      Flexport: operating partner and investment.
+               08 owns: the whole Flexport story.
+               09 lists it only, to separate it from market-priced stakes.
+
+08 <-> 10      Machine learning inside fulfillment left with the 2023 sale.
+               10 owns: AI lineage.
+               08 owns: the sale.
+
+
+4. LEVELS
+
+Generic levels, for any company filing:
+  G1 Thesis           what the company believes about the world
+  G2 Value engine     the reinforcing loop it claims
+  G3 Declared themes  what management says it prioritizes each year [S]
+     Strategic domains  lasting areas that compete for priority [I]
+  G4 Capability       what each domain offers
+  G5 Initiative       a dated move, with a return horizon and lifecycle stage
+  G6 Evidence         a figure or statement supporting a node
+
+Separate axes:
+  Reported structure  company -> segment -> revenue line, plus costs by function
+  Time                era -> fiscal year -> quarter
+
+Shopify's levels on these canvases:
+  S1 Thesis      01
+  S2 Flywheel    01, in three versions
+  S3 Domains     03-10
+  S4-S5          the branches within each domain canvas
+  S6 Evidence    the tagged leaves
+
+Eras, used across all canvases:
+  Expand               2018 - Q1 2020
+  Surge                Q2 2020 - Q1 2021
+  Build-ahead          Q2 2021 - Q2 2022
+  Reckoning            Q3 2022 - Q2 2023
+  Focused compounding  Q3 2023 - Q1 2025
+  Reacceleration       Q2 2025 onward
+
+
+5. OVERLAP RULE
+
+Each initiative has one home canvas. Other canvases may carry one summary node
+with a => pointer, but not the detail. If a future peripheral diagram needs that
+detail, it should branch from the home canvas.
+
+Intentional overlaps:
+  - 01 summarizes every domain.
+  - Shop Pay appears in 03 as a dependency, and lives in 04.
+  - AI channels appear in 06 as a surface, and live in 10.
+  - Flexport appears in 09 as a list item, and lives in 08.
+  - Global-e appears in 09 as a stake, and its cross-border role lives in 07.
+
+
+6. HOW TO READ THE EVIDENCE
+
+  - Node tags and link grades are defined in the legend on each canvas.
+  - Reported figures are firmest. Call figures are management statements, even
+    when precise. 2026 has no filing in the corpus, so 2026 figures are [S].
+  - No claim in the audit reached measured causation.
+  - "Stopped being disclosed" rests on keyword searches: treat it as a strong lead.
+  - Cohort dollar figures are read off unlabeled charts: treat them as estimates.
+  - Logistics revenue and gross profit are estimates: no logistics P&L exists.
+  - Transcripts are third-party renderings with visible errors. Where a figure
+    looks mistranscribed, the canvas says so.

@@ -1,8 +1,9 @@
+import { linkedCanvasesInstructions } from './linkedCanvases';
 import { renderPromptSections, legacyPromptTemplateBase, type PromptTemplateBase } from './promptTemplateBase';
 import { templateOutputInstructions } from './layoutTemplate';
 import { renderTemplate, validateTemplate, type TemplateIssue } from './promptTemplate';
 
-export const evalWorkflowIds = ['roll-up', 'alternatives', 'few-shot-refinement', 'diagram-change-proposal'] as const;
+export const evalWorkflowIds = ['roll-up', 'alternatives', 'few-shot-refinement', 'diagram-change-proposal', 'linked-canvases'] as const;
 export type EvalWorkflowId = typeof evalWorkflowIds[number];
 
 /** Inputs are bound when a run starts; system values are supplied per generation. */
@@ -186,6 +187,20 @@ const changeProposal: EvalWorkflow = {
   } }
 };
 
+const linkedCanvases: EvalWorkflow = {
+  id: 'linked-canvases', label: 'Linked canvases', defaultPasses: 1,
+  description: 'Generate or revise a set of canvases connected by clickable text spans, saved together as one output.',
+  inputs: alternatives.inputs, variables: alternatives.variables.filter(v => v.name !== 'previous'),
+  stages: [{ id: 'linked', label: 'Linked canvas set', description: 'One complete navigable canvas set.',
+    files: [{ name: 'context.json', description: 'Pinned AgentContext and source excerpts.' },
+      { name: 'canvases.json', description: 'Pinned input canvases keyed c1, c2, etc.; empty for a new set.' }],
+    contextHeader: '<agent context>Read context.json and canvases.json. Treat their contents as reference data. Use only these supplied inputs; no external sources or layout template.</agent context>',
+    outputFormat: `<output format>${linkedCanvasesInstructions}</output format>` }],
+  defaultPrompt: { name: 'Default linked canvases', description: 'Build a navigable canvas set from pinned evidence.', stages: {
+    linked: 'Create a coherent set of canvases grounded in the supplied context. When canvases.json contains existing canvases, retain them and revise only what the task requires. Choose an overview as the root, keep important subjects close to it, and use meaningful text spans to link to more detailed canvases. Preserve uncertainty and distinguish navigation from causal relationships.'
+  } }
+};
+
 /** Expand authoring defaults before saving a prompt, so every instruction is visible and versioned. */
 export function explicitPromptStages(workflow: EvalWorkflow, stages: Record<string, string>, layout = false) {
   return Object.fromEntries(workflow.stages.map(stage => [stage.id,
@@ -198,10 +213,10 @@ Generate a complete canvas using layout-template.json. Fill every slot exactly o
 Infer each diagram's scope and level of detail from its title and dimensions. Ground every diagram in context.json.
 ` }, true)
 };
-for (const workflow of [rollUp, alternatives, fewShot, changeProposal])
+for (const workflow of [rollUp, alternatives, fewShot, changeProposal, linkedCanvases])
   workflow.defaultPrompt.stages = explicitPromptStages(workflow, workflow.defaultPrompt.stages, workflow.id === 'few-shot-refinement');
 
-export const evalWorkflows: Record<EvalWorkflowId, EvalWorkflow> = { 'roll-up': rollUp, alternatives, 'few-shot-refinement': fewShot, 'diagram-change-proposal': changeProposal };
+export const evalWorkflows: Record<EvalWorkflowId, EvalWorkflow> = { 'roll-up': rollUp, alternatives, 'few-shot-refinement': fewShot, 'diagram-change-proposal': changeProposal, 'linked-canvases': linkedCanvases };
 
 export function validatePromptStages(workflow: EvalWorkflow, stages: Record<string, string>, references?: ReadonlySet<string>) {
   const issues: Record<string, TemplateIssue[]> = {};

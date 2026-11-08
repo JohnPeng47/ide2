@@ -95,7 +95,7 @@ export class AgentDiagrammingSessionService {
   }
   dispose() { this.edits?.dispose(); this.batches?.dispose(); }
   async callBound(token: string, name: AgentToolName, raw: unknown) {
-    const binding = this.chatBindings.capture(token, !['create-agent-context', 'update-agent-context', 'list-agent-contexts', 'read-agent-context'].includes(name)), target = binding.target!;
+    const binding = this.chatBindings.capture(token, !['create-agent-context', 'fork-agent-context', 'add-agent-context-comment', 'read-agent-context-lineage', 'update-agent-context', 'list-agent-contexts', 'read-agent-context'].includes(name)), target = binding.target!;
     const input = { ...(raw as Record<string, unknown>) };
     const targeted = ['exec', 'draw_diagram', 'save_diagram', 'set_diagram_source_mappings', 'edit-diagram', 'create-diagram', 'extend-diagram', 'diagram-agent-context', 'canvas-view'];
     if (name === 'create_diagram_change_session' && !input.canvasId) input.canvasId = target.workspaceInstanceId;
@@ -129,13 +129,16 @@ export class AgentDiagrammingSessionService {
     return this.batches.wait(run.runId);
   }
   async call(name: AgentToolName, raw: unknown, readOnly = false): Promise<unknown> {
-    if (readOnly && !['list-agent-contexts', 'read-agent-context', 'exec', 'canvas-api-search', 'diagram-search', 'diagram-agent-context', 'canvas-view', 'list_repositories', 'edit-diagram-status', 'get_repository_diff_hunks', 'read_change_session_diff_tree'].includes(name)) throw Error('READ_ONLY: canvas mutation requires Workspace access');
+    if (readOnly && !['list-agent-contexts', 'read-agent-context', 'read-agent-context-lineage', 'exec', 'canvas-api-search', 'diagram-search', 'diagram-agent-context', 'canvas-view', 'list_repositories', 'edit-diagram-status', 'get_repository_diff_hunks', 'read_change_session_diff_tree'].includes(name)) throw Error('READ_ONLY: canvas mutation requires Workspace access');
     const schema = agentToolSchemas[name];
     if (!schema) throw new Error('Unknown agent tool');
     const input = schema.parse(raw);
-    if (name === 'create-agent-context' || name === 'update-agent-context' || name === 'read-agent-context' || name === 'list-agent-contexts') {
+    if (name === 'fork-agent-context' || name === 'add-agent-context-comment' || name === 'read-agent-context-lineage' || name === 'create-agent-context' || name === 'update-agent-context' || name === 'read-agent-context' || name === 'list-agent-contexts') {
       const library = this.agentContexts?.library;
       if (!library) throw Error('AGENT_CONTEXT_UNAVAILABLE: saved context library is unavailable');
+      if (name === 'fork-agent-context') return library.fork(input);
+      if (name === 'add-agent-context-comment') return library.addComment(input);
+      if (name === 'read-agent-context-lineage') return library.lineage(input);
       if (name === 'create-agent-context') return library.create(input);
       if (name === 'update-agent-context') return library.update(input);
       if (name === 'list-agent-contexts') return library.list(input);

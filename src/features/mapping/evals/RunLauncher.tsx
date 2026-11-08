@@ -1,10 +1,11 @@
+import { generationModelPresets, generationModelPreset } from '../../../../domain/mapping/evals/generationSettings';
 import type { LayoutTemplate } from '../../../../domain/core/diagrams/layoutTemplate';
 import { LayoutPreview } from './LayoutTemplates';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CompareCandidate } from '../../../../domain/mapping/compare/comparePageSession';
 import type { ProjectRepresentationRecord } from '../../../../domain/core/representations/projectCatalog';
 import { latestVersion, type EvalPrompt } from '../../../../domain/mapping/evals/evalPrompt';
-import { evalEfforts, type EvalRunRequest, type EvalRunSummary } from '../../../../domain/mapping/evals/evalRun';
+import { type EvalRunRequest, type EvalRunSummary } from '../../../../domain/mapping/evals/evalRun';
 import { evalWorkflowIds, evalWorkflows, type EvalWorkflowId } from '../../../../domain/mapping/evals/evalWorkflows';
 import { templateVariables } from '../../../../domain/mapping/evals/promptTemplate';
 import { listCompareCandidates } from './compareApi';
@@ -38,6 +39,8 @@ export function RunLauncher({ prompts, runs, initial, onClose, onStarted }: {
   const workflow = evalWorkflows[workflowId];
   const fewShot = workflowId === 'few-shot-refinement';
   const proposal = workflowId === 'diagram-change-proposal';
+  const linked = workflowId === 'linked-canvases';
+  const [canvasKeys, setCanvasKeys] = useState<string[]>(rerun?.canvasInputs?.map(copy => candidateKey(copy.source)) ?? []);
   const [targetKey, setTargetKey] = useState(rerun?.inputs.target ? candidateKey(rerun.inputs.target.source) : '');
   // A rerun keeps the exact prompt versions it used, even if a prompt was archived since.
   const [selected, setSelected] = useState<Record<string, number>>(() => rerun
@@ -45,7 +48,7 @@ export function RunLauncher({ prompts, runs, initial, onClose, onStarted }: {
     : Object.fromEntries(prompts.filter(prompt => initial.promptIds?.includes(prompt.id)).map(prompt => [prompt.id, latestVersion(prompt).version])));
   const available = prompts.filter(prompt => prompt.workflow === workflowId && (!prompt.archivedAt || selected[prompt.id] !== undefined));
   /** A rerun's canvas inputs, which may be older checkpoints than the canvases now offer. */
-  const pinned = useMemo(() => new Map(Object.values(rerun?.inputs ?? {}).map(input => [candidateKey(input.source), input])), [rerun]);
+  const pinned = useMemo(() => new Map([...Object.values(rerun?.inputs ?? {}), ...(rerun?.canvasInputs ?? [])].map(input => [candidateKey(input.source), input])), [rerun]);
   const [candidates, setCandidates] = useState<CompareCandidate[]>();
   const [contexts, setContexts] = useState<AgentContextSummary[]>(), [generated, setGenerated] = useState<ProjectRepresentationRecord[]>();
   /** Roll-up: ticked canvases in order; the first is the child, the second the parent. */
@@ -60,7 +63,7 @@ export function RunLauncher({ prompts, runs, initial, onClose, onStarted }: {
   const [references, setReferences] = useState<import('../../../../domain/mapping/evals/evalReference').EvalReference[]>([]);
   const [referenceIds, setReferenceIds] = useState<string[]>(request?.referenceIds ?? []);
   const [passes, setPasses] = useState(request?.passes ?? workflow.defaultPasses);
-  const [model, setModel] = useState(request?.model ?? (fewShot ? 'gpt-6-astra' : 'gpt-6-sol')), [effort, setEffort] = useState<EvalRunRequest['effort']>(request?.effort ?? 'high');
+  const [model, setModel] = useState(request?.model ?? (fewShot ? 'gpt-6-astra' : 'gpt-6.1-sol')), [effort, setEffort] = useState<EvalRunRequest['effort']>(request?.effort ?? 'high');
   const [busy, setBusy] = useState(false), [error, setError] = useState('');
   const pending = useRef<{ signature: string; requestId: string }>(undefined);
   useEffect(() => {
@@ -84,7 +87,7 @@ export function RunLauncher({ prompts, runs, initial, onClose, onStarted }: {
     return () => { closed = true; };
   }, []);
   const switchWorkflow = (id: EvalWorkflowId) => {
-    setWorkflowId(id); if (id === 'diagram-change-proposal') setLayoutTemplateId(''); if (id === 'few-shot-refinement') { setModel('gpt-6-astra'); setEffort('high'); } setSelected({}); setPicked([]); setContextId(undefined); setPrevious([]); setPasses(evalWorkflows[id].defaultPasses);
+    setWorkflowId(id); setCanvasKeys([]); if (id === 'diagram-change-proposal' || id === 'linked-canvases') setLayoutTemplateId(''); if (id === 'few-shot-refinement') { setModel('gpt-6-astra'); setEffort('high'); } setSelected({}); setPicked([]); setContextId(undefined); setPrevious([]); setPasses(evalWorkflows[id].defaultPasses);
   };
 
   const numbers = useMemo(() => runNumbers(runs), [runs]);
@@ -156,7 +159,9 @@ export function RunLauncher({ prompts, runs, initial, onClose, onStarted }: {
     .some(body => templateVariables(body).includes(name)));
   const candidate = (key: string) => candidates?.find(item => candidateKey(item) === key) ?? (pinned.has(key) ? { ...pinned.get(key)!.source, name: pinned.get(key)!.name, canvasName: pinned.get(key)!.canvasName } : undefined);
   const context = contexts?.find(item => item.agentContextId === contextId);
+  const modelPreset = generationModelPreset(model, effort);
   const problems = [
+    !modelPreset && 'Choose one of the three model options.',
     referenceIds.length > 0 && chosen.some(p => !Object.values(p.versions.find(v => v.version === selected[p.id])?.stages ?? {}).some(body => templateVariables(body).includes('references'))) && 'Add {{references}} to each selected prompt.',
     !chosen.length && 'Select at least one prompt.',
     fewShot && chosen.length !== 1 && 'Select exactly one refinement prompt.',
@@ -175,7 +180,7 @@ export function RunLauncher({ prompts, runs, initial, onClose, onStarted }: {
     const inputs: EvalRunRequest['inputs'] = workflowId === 'roll-up'
       ? { child: sourceOf(candidate(picked[0])!), parent: sourceOf(candidate(picked[1])!) } : { context: { agentContextId: contextId! }, ...(fewShot ? { target: sourceOf(candidate(targetKey)!) } : {}) };
     const body = { referenceIds, workflow: workflowId, prompts: chosen.map(prompt => ({ promptId: prompt.id, version: selected[prompt.id] })), passes: fewShot ? 3 : passes, model: model.trim(), effort,
-      inputs, ...(proposal && request?.contextDelivery ? { contextDelivery: request.contextDelivery } : {}),
+      inputs, ...(linked ? { canvasSources: canvasKeys.map(key => sourceOf(candidate(key)!)) } : {}), ...(proposal && request?.contextDelivery ? { contextDelivery: request.contextDelivery } : {}),
       ...((workflowId === 'alternatives' || fewShot) && layoutTemplateId ? { layoutTemplateId } : {}), ...(workflowId === 'alternatives' && previous.length ? { previous } : {}), ...(rerun ? { parentRunId: rerun.id } : {}) };
     const signature = JSON.stringify(body);
     if (pending.current?.signature !== signature) pending.current = { signature, requestId: crypto.randomUUID() };
@@ -194,11 +199,19 @@ export function RunLauncher({ prompts, runs, initial, onClose, onStarted }: {
       {rerun && <p className="evals-notice" role="status">Filled in from Run #{numbers.get(rerun.id) ?? '?'}. Outputs are filed under Run #{numbers.get(rerun.parentRunId ?? rerun.id) ?? '?'}.</p>}
       <div className="run-launcher-body">
         <section className="run-launcher-tree" aria-label="Inputs">
-          <h3>{workflowId === 'roll-up' ? 'Canvases' : 'AgentContexts'} <small>{workflowId === 'roll-up' ? 'tick a child, then a parent' : proposal ? 'tick one context' : 'tick one context, plus earlier alternatives'}</small></h3>
+          <h3>{workflowId === 'roll-up' ? 'Canvases' : 'AgentContexts'} <small>{workflowId === 'roll-up' ? 'tick a child, then a parent' : proposal || linked ? 'tick one context' : 'tick one context, plus earlier alternatives'}</small></h3>
           {loading && !error ? <p role="status" className="evals-muted">Loading…</p>
             : workflowId === 'roll-up'
               ? <SourceTree key="roll-up" label="Canvases" nodes={rollUpTree} checked={checked} onToggle={toggleRollUp} empty="Save a canvas or view in Mapping first." />
-              : <SourceTree key="alternatives" label="AgentContexts" nodes={fewShot || proposal ? alternativesTree.filter(node => node.id.startsWith('ctx:')).map(node => ({ ...node, children: undefined })) : alternativesTree} checked={checked} onToggle={toggleAlternative} empty="No saved AgentContexts yet. Save one from Agent Chat." />}
+              : <SourceTree key="alternatives" label="AgentContexts" nodes={fewShot || proposal || linked ? alternativesTree.filter(node => node.id.startsWith('ctx:')).map(node => ({ ...node, children: undefined })) : alternativesTree} checked={checked} onToggle={toggleAlternative} empty="No saved AgentContexts yet. Save one from Agent Chat." />}
+          {linked && <section aria-label="Input canvases"><h3>Input canvases <small>optional · up to 20</small></h3>
+            <SourceTree label="Input canvases" nodes={[
+              ...[...pinned].filter(([key]) => !candidates?.some(c => candidateKey(c) === key)).map(([key, copy]) => ({ id: key, label: copy.name, selectable: true })),
+              ...(candidates ?? []).map(c => ({ id: candidateKey(c), label: c.name, meta: c.canvasName, selectable: true,
+                disabled: canvasKeys.length >= 20 && !canvasKeys.includes(candidateKey(c)) }))
+            ]} checked={new Set(canvasKeys)} onToggle={(node, on) => setCanvasKeys(current => on ? [...new Set([...current, node.id])].slice(0, 20) : current.filter(key => key !== node.id))} empty="No saved canvases. Generate a new set from the AgentContext." />
+            <p>{canvasKeys.length} pinned canvas inputs</p>
+          </section>}
           <p className="run-launcher-count" aria-live="polite">{checked.size} selected</p>
         </section>
         <div className="run-launcher-form">
@@ -217,7 +230,7 @@ export function RunLauncher({ prompts, runs, initial, onClose, onStarted }: {
               </> : <>
                 <div className="prompt-context-slot"><code>{'{{context}}'}</code>
                   {context ? <><span>{context.name}</span><small>context.json · {context.messageCount} msgs</small></> : <span className="evals-muted">Tick an AgentContext</span>}</div>
-                {!proposal && <div className="prompt-context-slot"><code>{'{{previous}}'}</code>
+                {!proposal && !linked && <div className="prompt-context-slot"><code>{'{{previous}}'}</code>
                   {previous.length ? <span>{previous.length} earlier alternative{previous.length === 1 ? '' : 's'}</span> : <span className="evals-muted">none</span>}</div>}
                 {previous.length > 0 && <ul className="prompt-context-files">{previous.map((id, i) => <li key={id}>
                   <code>previous-{i + 1}.json</code><span>{name(id)}{rerun?.previousInputs?.some(input => input.source.documentId === id) ? ' · pinned' : ''}</span>
@@ -257,13 +270,17 @@ export function RunLauncher({ prompts, runs, initial, onClose, onStarted }: {
             </section>}
             <section aria-label="Settings" className="run-settings"><h3>Settings</h3>
               {!fewShot && <label>Samples<input type="number" aria-label="Samples" min={1} max={20} value={passes} onChange={event => setPasses(Math.min(20, Math.max(1, Number(event.target.value) || 1)))} /></label>}
-              <label>Model<input aria-label="Model" value={model} maxLength={100} onChange={event => setModel(event.target.value)} /></label>
-              <label>Effort<select aria-label="Effort" value={effort} onChange={event => setEffort(event.target.value as EvalRunRequest['effort'])}>
-                {evalEfforts.map(item => <option key={item}>{item}</option>)}</select></label>
+              <label>Model<select aria-label="Model" value={modelPreset?.id ?? ''} onChange={event => {
+                const preset = generationModelPresets.find(p => p.id === event.target.value)!;
+                setModel(preset.model); setEffort(preset.effort);
+              }}>
+                {!modelPreset && <option value="" disabled>Choose a model (currently {model} / {effort})</option>}
+                {generationModelPresets.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
+              </select></label>
             </section>
           </fieldset>
           <footer className="evals-drawer-footer">
-            <p aria-live="polite">{fewShot ? <>3 rounds × 3 alternatives = <strong>9 canvases</strong> · one progress Judgement</> : <>{chosen.length} prompt{chosen.length === 1 ? '' : 's'} × {passes} sample{passes === 1 ? '' : 's'}{workflow.stages.length > 1 ? ` × ${workflow.stages.length} stages` : ''} = <strong>{outputs} canvas{outputs === 1 ? '' : 'es'}</strong></>}</p>
+            <p aria-live="polite">{fewShot ? <>3 rounds × 3 alternatives = <strong>9 canvases</strong> · one progress Judgement</> : <>{chosen.length} prompt{chosen.length === 1 ? '' : 's'} × {passes} sample{passes === 1 ? '' : 's'}{workflow.stages.length > 1 ? ` × ${workflow.stages.length} stages` : ''} = <strong>{outputs} {linked ? `linked set${outputs === 1 ? '' : 's'}` : `canvas${outputs === 1 ? '' : 'es'}`}</strong></>}</p>
             {problems.length > 0 && <ul className="evals-problems">{problems.map(problem => <li key={problem}>{problem}</li>)}</ul>}
             {error && <p role="alert" className="evals-error">{error}</p>}
             <div className="evals-actions"><button type="button" onClick={onClose}>Cancel</button>

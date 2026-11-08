@@ -60,7 +60,7 @@ export class ChatDiagramTools implements ChatTools {
   private projectionRequests = new Map<string, { signature: string; prepared: Promise<{ workspaceInstanceId: string; documentId: string; payload: { diagramIds: string[]; expectedVersion: number; requestId: string } }> }>();
   constructor(private agent: Pick<AgentDiagrammingSessionService, 'call' | 'bridge' | 'submitDirect' | 'projection' | 'resolveDiagramArguments'>) {}
   async call(name: string, raw: unknown, session: ChatToolSession) {
-    if (name === 'create-agent-context' || name === 'update-agent-context' || name === 'list-agent-contexts' || name === 'read-agent-context')
+    if (name === 'fork-agent-context' || name === 'add-agent-context-comment' || name === 'read-agent-context-lineage' || name === 'create-agent-context' || name === 'update-agent-context' || name === 'list-agent-contexts' || name === 'read-agent-context')
       return this.agent.call(name, raw, session.settings.sandbox === 'read-only');
     if (name === 'project-diagrams') return this.projectDiagrams(raw, session);
     if (name === 'highlight-node' || name === 'remove-highlights') return this.highlight(name, raw, session);

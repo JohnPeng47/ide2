@@ -1,0 +1,80 @@
+--- phase-2/prompt.txt
++++ phase-4/prompt.txt
+@@ -21,8 +21,13 @@
+     -> [1b] add components or relationships that fit the existing organization
+ 
+   REDRAW:
+-    -> choose [4] when the change requires reorganizing the diagram's main
+-       ownership, call flow, lifecycle or responsibility boundaries
++    -> choose [4] when the change invalidates the diagram's main organization
++    -> identify which existing ownership, call-flow, lifecycle or responsibility
++       relationships must be replaced or rearranged
++    -> explain why correcting or extending those branches would leave the
++       diagram's organization misleading
++    -> more fields, endpoints, callers or implementation detail alone do not
++       require a redraw
+     -> a useful signal: roughly half or more of its meaningful branches need
+        replacement or restructuring
+     -> count semantic changes, not whitespace or line count
+@@ -41,10 +46,13 @@
+     -> connect each new diagram to an explicit component node in that canvas
+ 
+   NEW CANVAS:
+-    -> choose [3] when the detail introduces a distinct subsystem, lifecycle
+-       or architectural subject that needs its own overview
+-    -> choose this when including the detail would require broadening an
+-       existing canvas beyond its established purpose
++    -> choose [3] when the detail needs an overview whose architectural subject
++       falls outside the existing canvases' established purposes
++    -> identify the closest existing canvas
++    -> explain what question the new overview answers and why adding detail
++       to that existing canvas would broaden its purpose
++    -> judge the existing canvas by its actual contents, not just its title
++    -> a new component, service or lifecycle alone does not require a new canvas
+     -> connect back to relevant component nodes where appropriate
+ 
+   -> file count or diagram size alone does not determine this choice
+@@ -65,6 +73,10 @@
+   -> do not make formatting-only edits
+   -> do not use diff-renderer prefixes such as [-] or [+]
+   -> no operation type is required merely to fill a category
++  -> when both choices explain the change equally well:
++      prefer PATCH over REDRAW, and an existing canvas over a new canvas
++  -> do not preserve an organization that has become misleading merely
++     to minimize edits
+ 
+ [OUTPUT]
+ 
+@@ -80,19 +92,23 @@
+   -> use actual canvas, diagram and component names
+   -> no full diagram drawings or additional recap
+ 
+-Example structure only:
++Example structure only; no operation type is required:
+ 
+ Proposed diagram changes
+   |-- Existing canvas name                         existing canvas
+-  |   |-- [4] Redraw: Overview
+-  |   |   `-- Reorganize ownership around the new runtime
+-  |   `-- [2] Add: Runtime synchronization
+-  |       `-- Detail the overview's explicit Runtime component
++  |   |-- [1a] Correct: Interface inventory
++  |   |   `-- Update changed operations within the existing interface groups
++  |   |-- [1b] Extend: Storage overview
++  |   |   `-- Add the new store under the existing persistence owner
++  |   |-- [4] Redraw: Execution flow
++  |   |   `-- Replace the former single owner with separate scheduling and execution owners; the old sequence misrepresents their lifecycle
++  |   `-- [2] Add: Execution synchronization
++  |       `-- Detail the overview's explicit Executor component
+   |
+-  `-- [3] New subsystem name                       new canvas
+-      |-- Subsystem overview
+-      |-- Lifecycle and storage
+-      `-- Connect from the existing overview's Subsystem component
++  `-- [3] Repository event delivery                new canvas
++      |-- Event intake and delivery lifecycle
++      `-- Closest existing canvas: Execution
++          `-- Delivery owns subscriptions, retries and acknowledgements; Execution describes accepted work and its processing
+ 
+ Return JSON:
+ {"tree":"Proposed diagram changes\n..."}

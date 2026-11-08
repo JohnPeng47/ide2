@@ -137,6 +137,7 @@ export function createBackend(projectRoot: string, diagramsDirectory: string, co
   evalRuns.referenceGenerations = new ReferenceGenerationService(new JsonDirectoryStore<ReferenceGenerationSession>(store.storeRoot, 'eval-reference-sessions'), agentChat, evalRuns);
   evalRuns.replayLegacy = (run, requestId) => agentChat.rerunAlternatives(run, requestId);
   evalRuns.cancelLegacy = id => agentChat.cancelGeneration(id);
+  evalRuns.readChangeSession = id => changes.get(id);
   void agentChat.observeGenerations((children, parent, historical) => evalRuns.recordLegacy(children, parent, historical)).catch(error => console.error('Generation reconciliation failed', error));
   generatedCanvases.snapshot = (id, checkpoint) => evalRuns.outputSnapshot(id, checkpoint);
   const comparisonRunStore = new FileComparisonRunStore(store.storeRoot);

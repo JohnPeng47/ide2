@@ -52,6 +52,57 @@ export class CanvasCatalogStore {
     });
   }
 
+  backfillPromotionPlacementLineage(projectId: string, input: { requestId: string; signature: string; lineage: import('../../../domain/mapping/evals/placementLineage').PlacementLineage }) {
+    return this.serialize(async () => {
+      const catalog = await this.readStoredCatalog(projectId);
+      const promotion = catalog?.outputPromotions?.[input.requestId];
+      if (!catalog || !promotion || promotion.signature !== input.signature) throw Error('Promotion request does not match');
+      if (promotion.receipt.placementLineage) {
+        if (JSON.stringify(promotion.receipt.placementLineage) !== JSON.stringify(input.lineage)) throw Error('Placement lineage is immutable');
+        return promotion.receipt;
+      }
+      promotion.receipt.placementLineage = structuredClone(input.lineage);
+      // Metadata-only write: retained canvas/checkpoint references remain byte-for-byte unchanged.
+      await writeJsonAtomic(this.representationCatalogPath(), catalog);
+      return promotion.receipt;
+    });
+  }
+
+  publishOutputPromotion(projectId: string, input: import('../../../domain/mapping/evals/outputPromotion').PromotionPublication) {
+    return this.serialize(async () => {
+      let catalog = await this.readRepresentationCatalog(projectId);
+      const prior = catalog.outputPromotions?.[input.requestId];
+      if (prior) {
+        if (prior.signature !== input.signature) throw Error('REQUEST_ID_CONFLICT');
+        return prior.receipt;
+      }
+      const project = await readJsonIfExists<ProjectRecord>(path.join(this.storeRoot, 'project.json'));
+      if (input.canvasProject) catalog = { ...catalog, canvasProjects: { ...catalog.canvasProjects, [input.canvasProject.id]: input.canvasProject } };
+      const receipt: import('../../../domain/mapping/evals/outputPromotion').PromotionReceipt = { requestId: input.requestId,
+        canvasProjectId: input.canvasProject?.id ?? input.documents[0]?.canvasProjectId, canvases: [] };
+      const promotedAt = new Date().toISOString();
+      if (input.placementSource) receipt.placementLineage = { schemaVersion: 1, coordinateSpace: 'canvas-grid', source: input.placementSource, promotedAt, diagrams: [] };
+      for (const doc of input.documents) {
+        if (doc.canvasProjectId && !catalog.canvasProjects?.[doc.canvasProjectId]) throw Error('Canvas project not found');
+        if (doc.repositoryId && !project?.repositories?.some(r => r.id === doc.repositoryId)) throw Error('Unknown repositoryId');
+        const result = rules.saveMappingDiagram(catalog, projectId, doc, { ...catalogEnvironment(), representationId: doc.id });
+        catalog = result.catalog; receipt.canvases.push({ id: result.representation.id, name: result.representation.name });
+        if (receipt.placementLineage) {
+          if (!doc.placementBindings?.length) throw Error('Promotion placement bindings are required');
+          for (const binding of doc.placementBindings) {
+            if (binding.promoted.canvasId !== result.representation.id) throw Error('Promotion placement canvas mismatch');
+            receipt.placementLineage.diagrams.push({ ...binding, promoted: { ...binding.promoted,
+              checkpointId: doc.history.headId, canvasRevisionId: result.representation.currentRevisionId } });
+          }
+        }
+      }
+      catalog.outputPromotions = { ...catalog.outputPromotions, [input.requestId]: { signature: input.signature, receipt } };
+      // Publish group membership, all remapped canvases and the retry receipt atomically.
+      await this.saveRepresentationCatalog(catalog);
+      return receipt;
+    });
+  }
+
   saveMappingDiagram(projectId: string, input: SaveProjectDiagramInput) {
     return this.serialize(async () => {
       const catalog = await this.readRepresentationCatalog(projectId);

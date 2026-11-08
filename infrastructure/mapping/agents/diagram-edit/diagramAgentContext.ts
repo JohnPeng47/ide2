@@ -1,5 +1,5 @@
 import type { AgentSession } from '@earendil-works/pi-coding-agent';
-import { AgentContext, type AgentContextMessage } from '../../../../domain/core/agents/agentContext';
+import { AgentContext, agentContextModelContent, type AgentContextMessage } from '../../../../domain/core/agents/agentContext';
 
 /** Strip SDK metadata and private reasoning blocks while preserving the complete
  * user/assistant/tool transcript used for subsequent composer requests. */
@@ -28,9 +28,10 @@ export function captureDiagramAgentContext(sessionId: string, messages: Readonly
   // Replace only an unchanged imported prefix. A compacted/edited transcript must not
   // have unrelated messages replaced merely because their text happens to match.
   const original = imported?.original.toSnapshot(), resolved = imported?.resolved.toSnapshot();
-  const semantic = ({ timestamp: _, ...message }: AgentContextMessage) => JSON.stringify(message);
+  const semantic = ({ timestamp: _, ...message }: AgentContextMessage, render = false) => JSON.stringify({ ...message,
+    content: render ? agentContextModelContent(message.content) : message.content });
   const normalized = AgentContext.fromMessages(sessionId, captured).toSnapshot().messages;
-  if (original && resolved && resolved.messages.every((message, index) => normalized[index] && semantic(normalized[index]) === semantic(message))) {
+  if (original && resolved && resolved.messages.every((message, index) => normalized[index] && semantic(normalized[index]) === semantic(message, true))) {
     normalized.splice(0, resolved.messages.length, ...original.messages);
     const context = AgentContext.fromMessages(sessionId, normalized);
     return AgentContext.fromSnapshot({ ...context.toSnapshot(), ...(original.sourceFiles ? { sourceFiles: original.sourceFiles } : {}) }).toSnapshot();

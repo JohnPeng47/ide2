@@ -68,7 +68,7 @@ export function createMappingMcpServer(baseUrl: string, binding = process.env.MA
     const description = binding && isDiagramTool(name)
       ? directDiagramInstructions(name) + diagramOutputFormat(name, 'optional', `${name} using operations[].${name === 'edit-diagram' ? 'edit' : 'diagram'}`)
       : descriptions[name] + (isDiagramTool(name) ? ' Also accepts {sessionId, expectedVersion, requestId, operations:[...]} for an atomic batch. Operations share the base snapshot; generation completes before one persisted undo step. source-mappings is optional and defaults to false.' : '');
-    server.registerTool(name, { description, inputSchema: binding || target ? optionalSession(schema) : schema, annotations: { readOnlyHint: name.endsWith('search') || name === 'edit-diagram-status' || name === 'get_repository_diff_hunks' || name === 'read_change_session_diff_tree' || name === 'list_repositories' || name === 'list-agent-contexts' || name === 'read-agent-context', openWorldHint: false } }, async (input: unknown) => {
+    server.registerTool(name, { description, inputSchema: binding || target ? optionalSession(schema) : schema, annotations: { readOnlyHint: name.endsWith('search') || name === 'edit-diagram-status' || name === 'get_repository_diff_hunks' || name === 'read_change_session_diff_tree' || name === 'list_repositories' || name === 'list-agent-contexts' || name === 'read-agent-context' || name === 'read-agent-context-lineage', openWorldHint: false } }, async (input: unknown) => {
       try {
         const args = { ...(input as Record<string, unknown>) };
         if (target && !binding && !args.changeSessionId) {

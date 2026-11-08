@@ -60,8 +60,18 @@ export class CodexEvalRuntime implements EvalRuntime {
 
 /** Deterministic outputs for tests and offline UI work. */
 export class FakeEvalRuntime implements EvalRuntime {
-  async generate(input: Parameters<EvalRuntime['generate']>[0]) {
+  async generate(input: Parameters<EvalRuntime['generate']>[0]): ReturnType<EvalRuntime['generate']> {
     input.signal.throwIfAborted();
+    if (input.stage === 'linked') {
+      const sources = input.files['canvases.json'] as { id: string; diagrams: { id: string; ascii: string }[] }[];
+      const fresh = (id: string, name: string) => ({ kind: 'new' as const, id, name, diagrams: [{ id: 'overview', ascii: name + '\n`-- Supporting evidence', position: { column: 0, row: 0 } }], edges: [] });
+      const canvases = [...(sources.length ? sources.map(c => ({ kind: 'existing' as const, id: c.id, sourceCanvas: c.id, edits: [] })) : [fresh('root', 'Overview')]), fresh('detail', 'Detail')];
+      const source = (index: number) => sources[index]?.diagrams[0] ?? { id: 'overview', ascii: 'Overview' };
+      return { output: { explanation: 'A navigable set with pinned inputs and supporting detail.', rootCanvas: canvases[0].id, canvases,
+        jumps: canvases.slice(0, -1).map((c, i) => ({ source: { canvas: c.id, diagram: source(i).id,
+          line: source(i).ascii.split('\n').findIndex(line => line.trim()) + 1, startColumn: 1, endColumn: 1 },
+          target: { canvas: canvases[i + 1].id, diagram: null, line: null } })) } };
+    }
     if (input.stage === 'proposal') return { output: { tree: 'Proposed diagram changes\n  |-- Workspace                              existing canvas\n  |   `-- [1b] Extend overview\n  |       `-- Show the new component' } };
     if (input.stage === 'seed' || input.stage === 'judge') {
       const references = Array.from({ length: 5 }, (_, i) => ({ slot: i + 1, title: `Parcel pattern ${i + 1}`,

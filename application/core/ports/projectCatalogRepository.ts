@@ -3,6 +3,8 @@ import { type SaveProjectDiagramInput } from "../../../domain/core/diagrams/proj
 import type { SaveProjectedTreeInput } from '../../../domain/core/representations/catalogCommands';
 import type { ProjectCorpusCompactionCatalogRecord, ProjectFileCompactionInput, ProjectFileCompactionRecord, ProjectRepresentationCatalogRecord, ProjectRepresentationRecord } from "../../../domain/core/representations/projectCatalog";
 export interface ProjectCatalogRepository {
+  backfillPromotionPlacementLineage?(projectId: string, input: { requestId: string; signature: string; lineage: import('../../../domain/mapping/evals/placementLineage').PlacementLineage }): Promise<import('../../../domain/mapping/evals/outputPromotion').PromotionReceipt>;
+  publishOutputPromotion?(projectId: string, input: import("../../../domain/mapping/evals/outputPromotion").PromotionPublication): Promise<import("../../../domain/mapping/evals/outputPromotion").PromotionReceipt>;
   publishCheckpoint?(projectId: string, input: import('../../../domain/core/diagrams/checkpointPublication').CheckpointPublication, capture: () => Promise<import('../../../domain/core/diagrams/checkpointPublication').CapturedCheckpoint>): Promise<import('../../../domain/core/diagrams/checkpointPublication').CheckpointReceipt>;
   acceptCanvasChanges(projectId: string, input: import('../../../domain/core/representations/changeAcceptance').AcceptCanvasChangesInput): Promise<import('../../../domain/core/representations/changeAcceptance').ChangeSessionAcceptance>;
   readonly storeRoot: string;

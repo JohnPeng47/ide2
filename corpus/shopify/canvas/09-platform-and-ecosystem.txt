@@ -1,0 +1,84 @@
+Platform and ecosystem                 FY2018 - Q3 2026 | spine: control
+|
+|-- What Shopify builds itself: the core platform
+|   |-- [R] Multi-tenant, "single branch": every merchant on the latest version
+|   |-- [R] Core built on Ruby on Rails; open source from the beginning
+|   |-- [S] Scale test, BFCM 2023: 967,000 requests per second at peak
+|   |-- [S] "unification" was the central theme of the mid-2024 Edition
+|   |-- [S] Editions: launch showcase from 2022; 150+ updates in mid-2024
+|   `-- [S] Extensibility: Functions, Hydrogen, Oxygen, checkout extensions
+|
+|-- App ecosystem
+|   |-- [R] Apps: 2,500 2018 | 6,000 2020 | 10,000+ 2022 | 21,000+ 2025
+|   |-- Counts mix in quality
+|   |   |-- [S] 2018: count fell about 12% when review was applied
+|   |   |-- [S] Built for Shopify (2023): 675+ of 16,000+ apps, about 4.2%
+|   |   `-- Built for Shopify -[D:untestable]-> better app quality
+|   |-- [I] Shopify's own apps compete in the same store
+|   |   `-- [S] Subscriptions: 62% of installers had no previous subscription app
+|   `-- [S] 2024: "$1 billion" paid to partners for apps
+|
+|-- The 2021 revenue share cut
+|   |-- [R] 0% on a developer's first $1M a year; effective Q3 2021
+|   |-- [S] Cost: about $11M of Q3 2021 subscription revenue
+|   |-- [S] 2021: developer earnings +76% to $411M
+|   |-- rev share cut -[D:assoc]-> developer activity
+|   |   |-- [I] GMV +46.7% + mechanical transfer leave about 9% unexplained
+|   |   `-- [R] App additions show no break: +2,300 2020 | +2,000 2021, 2022
+|   `-- [I] policy covers about 5 of the 12 months behind that +76%
+|
+|-- Partners and referrals
+|   |-- [R] Referring partners: 18,000 2018 | 24,500 2019 | 42,200 2020
+|   |   `-- [R] 40,000+ 2021; not disclosed after
+|   |-- [R] FY22 filing removes the referral clause from its partner sentence
+|   |-- partners -[D:claim]-> merchant growth -[D:claim]-> more partners
+|   |-- [I] partners may follow merchant growth rather than drive it
+|   `-- [I] share of merchants acquired via partners n/d
+|
+|-- Enterprise and systems partners
+|   |-- [S] Global ERP program (2021): Microsoft, Oracle NetSuite, Infor
+|   |-- [S] Integrators: Accenture, Deloitte, EY, KPMG, IBM, Cognizant
+|   |-- [S] Oracle collaboration, WPP partnership
+|   |-- [S] EY used as both partner and evaluator of Shopify POS
+|   `-- integrators -[D:claim]-> enterprise adoption                 => 05
+|
+|-- Commerce partners on Shopify's rails
+|   |-- [S] Stripe, Adyen, PayPal, Klarna
+|   |-- [S] Amazon Buy with Prime app (2023)
+|   |-- [S] Roblox, YouTube Shopping, Perplexity (2024)
+|   `-- [I] partner vs build choice changes by domain                => 08
+|
+|-- Strategic stakes: outside the flywheel
+|   |-- [R] How two lead stakes were obtained
+|   |   |-- Affirm: non-cash consideration, $24.7M initial value (2020)
+|   |   `-- Global-E: non-cash consideration, $192.3M (2021)
+|   |-- [R] FY25 fair value: Affirm $1,511M | Global-E $868M | Klaviyo $599M
+|   |-- [R] Cash into equity and other investments, 2020-25: about $1.9B
+|   |-- [R] Net gains (losses): +$2.86B 2021 | -$2.87B 2022 | +$1.36B 2023
+|   |   `-- [R] +$853M 2024 | -$316M 2025
+|   |-- [I] marks follow share prices, not partnership performance
+|   |-- [R] Non-cash partner revenue: $158M FY23 -> $49M FY25
+|   |-- stakes -[D:claim]-> strategic alignment and value
+|   `-- [R] Flexport: equity-method; separate from these marks        => 08
+|
+`-- Reading net income correctly
+    |-- [R] FY21: net income $2.91B; operating income $269M
+    |-- [R] FY22: net loss $3.46B; operating loss $822M
+    |-- [R] FY24: net income $2.02B; operating income $1.08B
+    |-- [R] FY25: net income $1.23B; operating income $1.47B
+    `-- [I] use operating income as the strategic series
+
+Legend
+  [R] reported: in a filing, or computed directly from filing figures
+  [S] stated by management on a call or in narrative; not independently verified
+  [I] inferred by us; rests on an assumption or interpretation
+  [X] claim that the corpus contradicts
+  a -[D:grade]-> b  dependency: b needs or is fed by a
+  a -[C:grade]-> b  sequence: a led to or preceded b
+  a -[O:grade]-> b  control: a holds or manages b
+  a -[M:grade]-> b  structure: a belongs to or connects with b
+  grades: mech (true by arithmetic or definition) | causal (controlled test; none found)
+          assoc (figures move together) | data (management figure, unverifiable)
+          claim (asserted, no figure) | untestable (corpus lacks the data)
+          contra (contradicted by the corpus)
+  => NN  detail lives on canvas NN | n/d  not disclosed | bp  basis points

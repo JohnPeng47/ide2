@@ -1,0 +1,833 @@
+{
+  "name": "Shopify - central diagrams to full canvases",
+  "description": "Ten independent Shopify canvas expansions from the saved group \"Shopify canvases - central diagram + corpus ranges - 2026-11-07\". One pinned AgentContext and one sample per subject (10 full canvases total), gpt-6-astra/high. Uses a visible Shopify-domain variation of 6842c979-55e4-459f-acd8-27e03df51df9 v5 from the existing Single diagram → canvas experiment: preserve its original 20-40% central reduction and peripheral expansion task; adapt section/evidence access and business-dimension interpretation. Each output is a complete connected central/peripheral canvas (2-20 diagrams within the inherited output contract). No fixed layout template or examples. Prepared for user review; generation must be explicitly approved before launch.",
+  "phases": [
+    {
+      "id": "phase-1",
+      "name": "Independent canvas generation",
+      "description": "Original ten independent Shopify canvas expansions; original prompt versions, pinned inputs, run IDs and outputs retained."
+    },
+    {
+      "id": "phase-2",
+      "name": "Inter-canvas navigation",
+      "description": "Prepared for review, not started. One gpt-6-astra/high sample produces a linked set from nine pinned completed Phase 1 canvases, with Company Map as root. Buyer Network failed and is excluded by user choice. The complete task and span-level jump contract are visible in the pinned prompt. Okay we are gonna add inter-canvas links between the different canvases. A note on the topology of the inter-canvas connections:\n- while the canvas interface is consisdered a flat structure, u should consider the relative importance of canvases as a graph navigational problem with the starting root node at the first diagram, and optimizing for minimum distance between both importance and compositional hierarchy\n\nTake the Shopify Company Map diagram and re-generate / modify it so that it has *some* connection to the other canvases via an inter-canvas jump."
+    }
+  ],
+  "workflow": {
+    "id": "diagram-to-canvas",
+    "name": "Generate and link canvases",
+    "version": 2,
+    "stages": [
+      {
+        "id": "split",
+        "name": "Generate output",
+        "dependsOn": []
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "shopify-01",
+      "name": "Shopify 01 - Shopify company map",
+      "agentContextId": "saved-agent-context-9e1105c4-792d-4533-915d-9144beac2cfb",
+      "contentHash": "6f559de00375bbedd86e57c856c4f2db1b4050530b2af373289f59251c1a775b"
+    },
+    {
+      "id": "shopify-02",
+      "name": "Shopify 02 - Allocation and capital by era",
+      "agentContextId": "saved-agent-context-06d04f94-43a3-4b04-9ad7-7a798597a8a4",
+      "contentHash": "77a2477351cf0dbc7c5dfdea53755797067b865a25ffc6b2d9ddfe84a58b631a"
+    },
+    {
+      "id": "shopify-03",
+      "name": "Shopify 03 - Payments and merchant finance",
+      "agentContextId": "saved-agent-context-6dcc34f8-5132-4399-a31c-dfe5a757cdd6",
+      "contentHash": "fe311a88a72d6854e39e5bc0b3535988cf005b0dea7e9520ee4ccb242957356b"
+    },
+    {
+      "id": "shopify-04",
+      "name": "Shopify 04 - Buyer network",
+      "agentContextId": "saved-agent-context-178bd4c6-f9ab-4541-bb72-cfba07829b17",
+      "contentHash": "45c7349cd8ec683eb133604a194ffbb2bd2a8ecb73ad0ee5ac52cadd847e362f"
+    },
+    {
+      "id": "shopify-05",
+      "name": "Shopify 05 - Merchant on-ramps and range",
+      "agentContextId": "saved-agent-context-55a9eb07-cb0a-4ff0-8bf3-a97fca76fd12",
+      "contentHash": "41f3f80240ee0cae699d57ce0de3b3a12d41ce0968fa91ce26d85f8e26ff47d3"
+    },
+    {
+      "id": "shopify-06",
+      "name": "Shopify 06 - Selling surfaces",
+      "agentContextId": "saved-agent-context-ff0ec6fe-3f71-4217-97c0-baf98ae7f890",
+      "contentHash": "030e474eee0f631cf2512dce41400cdcf3599d317e46730699043b631934a231"
+    },
+    {
+      "id": "shopify-07",
+      "name": "Shopify 07 - Global reach",
+      "agentContextId": "saved-agent-context-5a5d7678-4919-474f-8f4b-cb159c4ef9b6",
+      "contentHash": "c7411eeb5bcd4ea7e1fe597afc052f723e321b25d0567f3b07d1e388b9a03d0f"
+    },
+    {
+      "id": "shopify-08",
+      "name": "Shopify 08 - Shipping and fulfillment",
+      "agentContextId": "saved-agent-context-07448e50-7927-4b6f-aed7-236edc1b69f9",
+      "contentHash": "b9062c1ce1dfa400aec49f74ef2c75d36852a3dc59cb320a005d214824fd29c3"
+    },
+    {
+      "id": "shopify-09",
+      "name": "Shopify 09 - Platform and ecosystem",
+      "agentContextId": "saved-agent-context-9dfe20f8-33ae-4382-a884-5ef3fffbce74",
+      "contentHash": "d7f2fa1e4029058ca3bf4aca36ffe242ce849f63c925941d888fc9545886cec3"
+    },
+    {
+      "id": "shopify-10",
+      "name": "Shopify 10 - Commerce intelligence",
+      "agentContextId": "saved-agent-context-26ac7f52-150c-4139-b569-9f8562aaac1b",
+      "contentHash": "708043c0859edb585da8a31857093e51262119e56ea1dbfce582711de1721698"
+    },
+    {
+      "id": "shopify-linked-nine",
+      "name": "Nine completed Shopify canvases",
+      "agentContextId": "saved-agent-context-44b9a28e-1c0b-4953-934e-93da63565290",
+      "contentHash": "a98f065b9f20cdff9f6ef0fede0ca944762856b5d931b8b477da0a61d00ac10d"
+    }
+  ],
+  "conditions": [
+    {
+      "id": "shopify-expansion",
+      "name": "Central reduction + supported peripheral expansion",
+      "description": "One shared pinned Shopify-domain prompt, one independent full canvas per input; no repeated alternatives."
+    },
+    {
+      "id": "shopify-navigation",
+      "name": "Company Map rooted navigation",
+      "description": "Linked canvas set; prompt 400a1ef8-d1ee-4cd9-812e-e8ebe6aa6123 v1. Nine existing canvases, one saved output; Buyer Network excluded."
+    }
+  ],
+  "plannedRuns": [
+    {
+      "request": {
+        "requestId": "2d61fcfd-bb1b-4c9d-91ab-a3c83d0742d5",
+        "workflow": "alternatives",
+        "prompts": [
+          {
+            "promptId": "68561489-721c-4ac0-b269-3b3f6f662a53",
+            "version": 2
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-9e1105c4-792d-4533-915d-9144beac2cfb"
+          }
+        },
+        "passes": 1,
+        "model": "gpt-6-astra",
+        "effort": "high"
+      },
+      "outputs": [
+        {
+          "sampleId": "shopify-01-sample-1",
+          "stageId": "split",
+          "cellKey": "68561489-721c-4ac0-b269-3b3f6f662a53:1:alternative"
+        }
+      ]
+    },
+    {
+      "request": {
+        "requestId": "1b66fbb3-0c8c-46c3-b970-64e688eea332",
+        "workflow": "alternatives",
+        "prompts": [
+          {
+            "promptId": "68561489-721c-4ac0-b269-3b3f6f662a53",
+            "version": 2
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-06d04f94-43a3-4b04-9ad7-7a798597a8a4"
+          }
+        },
+        "passes": 1,
+        "model": "gpt-6-astra",
+        "effort": "high"
+      },
+      "outputs": [
+        {
+          "sampleId": "shopify-02-sample-1",
+          "stageId": "split",
+          "cellKey": "68561489-721c-4ac0-b269-3b3f6f662a53:1:alternative"
+        }
+      ]
+    },
+    {
+      "request": {
+        "requestId": "b8dd33cb-943d-4edb-9e50-583924abad0a",
+        "workflow": "alternatives",
+        "prompts": [
+          {
+            "promptId": "68561489-721c-4ac0-b269-3b3f6f662a53",
+            "version": 2
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-6dcc34f8-5132-4399-a31c-dfe5a757cdd6"
+          }
+        },
+        "passes": 1,
+        "model": "gpt-6-astra",
+        "effort": "high"
+      },
+      "outputs": [
+        {
+          "sampleId": "shopify-03-sample-1",
+          "stageId": "split",
+          "cellKey": "68561489-721c-4ac0-b269-3b3f6f662a53:1:alternative"
+        }
+      ]
+    },
+    {
+      "request": {
+        "requestId": "94768f35-8fc3-4659-8b62-709507cbe2df",
+        "workflow": "alternatives",
+        "prompts": [
+          {
+            "promptId": "68561489-721c-4ac0-b269-3b3f6f662a53",
+            "version": 2
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-178bd4c6-f9ab-4541-bb72-cfba07829b17"
+          }
+        },
+        "passes": 1,
+        "model": "gpt-6-astra",
+        "effort": "high"
+      },
+      "outputs": [
+        {
+          "sampleId": "shopify-04-sample-1",
+          "stageId": "split",
+          "cellKey": "68561489-721c-4ac0-b269-3b3f6f662a53:1:alternative"
+        }
+      ]
+    },
+    {
+      "request": {
+        "requestId": "de50b9ab-5f8d-4dc4-82a8-085d995f8804",
+        "workflow": "alternatives",
+        "prompts": [
+          {
+            "promptId": "68561489-721c-4ac0-b269-3b3f6f662a53",
+            "version": 2
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-55a9eb07-cb0a-4ff0-8bf3-a97fca76fd12"
+          }
+        },
+        "passes": 1,
+        "model": "gpt-6-astra",
+        "effort": "high"
+      },
+      "outputs": [
+        {
+          "sampleId": "shopify-05-sample-1",
+          "stageId": "split",
+          "cellKey": "68561489-721c-4ac0-b269-3b3f6f662a53:1:alternative"
+        }
+      ]
+    },
+    {
+      "request": {
+        "requestId": "21f48f77-0895-4215-a48b-c4c643f7c1ab",
+        "workflow": "alternatives",
+        "prompts": [
+          {
+            "promptId": "68561489-721c-4ac0-b269-3b3f6f662a53",
+            "version": 2
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-ff0ec6fe-3f71-4217-97c0-baf98ae7f890"
+          }
+        },
+        "passes": 1,
+        "model": "gpt-6-astra",
+        "effort": "high"
+      },
+      "outputs": [
+        {
+          "sampleId": "shopify-06-sample-1",
+          "stageId": "split",
+          "cellKey": "68561489-721c-4ac0-b269-3b3f6f662a53:1:alternative"
+        }
+      ]
+    },
+    {
+      "request": {
+        "requestId": "c3b0adbe-d194-4eec-ac9c-441c635a13c5",
+        "workflow": "alternatives",
+        "prompts": [
+          {
+            "promptId": "68561489-721c-4ac0-b269-3b3f6f662a53",
+            "version": 2
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-5a5d7678-4919-474f-8f4b-cb159c4ef9b6"
+          }
+        },
+        "passes": 1,
+        "model": "gpt-6-astra",
+        "effort": "high"
+      },
+      "outputs": [
+        {
+          "sampleId": "shopify-07-sample-1",
+          "stageId": "split",
+          "cellKey": "68561489-721c-4ac0-b269-3b3f6f662a53:1:alternative"
+        }
+      ]
+    },
+    {
+      "request": {
+        "requestId": "3b060324-64cd-4ebb-8602-5d44f17ec15b",
+        "workflow": "alternatives",
+        "prompts": [
+          {
+            "promptId": "68561489-721c-4ac0-b269-3b3f6f662a53",
+            "version": 2
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-07448e50-7927-4b6f-aed7-236edc1b69f9"
+          }
+        },
+        "passes": 1,
+        "model": "gpt-6-astra",
+        "effort": "high"
+      },
+      "outputs": [
+        {
+          "sampleId": "shopify-08-sample-1",
+          "stageId": "split",
+          "cellKey": "68561489-721c-4ac0-b269-3b3f6f662a53:1:alternative"
+        }
+      ]
+    },
+    {
+      "request": {
+        "requestId": "7c1e35fc-c070-46c7-8ef4-88a39a3d10c9",
+        "workflow": "alternatives",
+        "prompts": [
+          {
+            "promptId": "68561489-721c-4ac0-b269-3b3f6f662a53",
+            "version": 2
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-9dfe20f8-33ae-4382-a884-5ef3fffbce74"
+          }
+        },
+        "passes": 1,
+        "model": "gpt-6-astra",
+        "effort": "high"
+      },
+      "outputs": [
+        {
+          "sampleId": "shopify-09-sample-1",
+          "stageId": "split",
+          "cellKey": "68561489-721c-4ac0-b269-3b3f6f662a53:1:alternative"
+        }
+      ]
+    },
+    {
+      "request": {
+        "requestId": "c4e71625-fbc2-47d7-b01d-2ffe846661e7",
+        "workflow": "alternatives",
+        "prompts": [
+          {
+            "promptId": "68561489-721c-4ac0-b269-3b3f6f662a53",
+            "version": 2
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-26ac7f52-150c-4139-b569-9f8562aaac1b"
+          }
+        },
+        "passes": 1,
+        "model": "gpt-6-astra",
+        "effort": "high"
+      },
+      "outputs": [
+        {
+          "sampleId": "shopify-10-sample-1",
+          "stageId": "split",
+          "cellKey": "68561489-721c-4ac0-b269-3b3f6f662a53:1:alternative"
+        }
+      ]
+    },
+    {
+      "request": {
+        "requestId": "80e2f3f0-a8cb-40a2-8594-6c6f49ba3994",
+        "workflow": "linked-canvases",
+        "prompts": [
+          {
+            "promptId": "400a1ef8-d1ee-4cd9-812e-e8ebe6aa6123",
+            "version": 1
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-44b9a28e-1c0b-4953-934e-93da63565290"
+          }
+        },
+        "canvasSources": [
+          {
+            "documentId": "representation-bdb76e0d-6fd7-4832-b4ce-9c0a081ce3ab",
+            "checkpointId": "canvas-revision-bfb31bf8-decd-460d-982a-1839fbe6c4a1"
+          },
+          {
+            "documentId": "representation-c5baf214-74a9-49e8-a7d0-8c908a3744c0",
+            "checkpointId": "canvas-revision-be68f120-61bc-43f7-8a0c-273a89858a1a"
+          },
+          {
+            "documentId": "representation-436da311-a0a7-485f-ac1a-000f714d3070",
+            "checkpointId": "canvas-revision-ba6bc5e9-2982-47f3-9b56-0407119c9179"
+          },
+          {
+            "documentId": "representation-4ce2281d-d758-4c4d-a3af-ad7fe5ada2d6",
+            "checkpointId": "canvas-revision-6b8fcf57-08b5-4ef3-b577-670ded305bad"
+          },
+          {
+            "documentId": "representation-47c1a0cd-f9ee-43f2-b847-e79b88cb3943",
+            "checkpointId": "canvas-revision-211e9236-4981-485c-998a-7f6601e5191c"
+          },
+          {
+            "documentId": "representation-f40f0cec-e2b2-4bf4-9398-49322ca1e78b",
+            "checkpointId": "canvas-revision-65c4a0be-a8f4-47d5-854b-61f2c4e2ff1a"
+          },
+          {
+            "documentId": "representation-bd5b48c9-bf2c-4841-81c2-1324b3467831",
+            "checkpointId": "canvas-revision-84a6132b-fca5-435c-8dbb-3efae19735ee"
+          },
+          {
+            "documentId": "representation-b96776b0-8272-4ba5-9a34-c5ade9e2b2e1",
+            "checkpointId": "canvas-revision-7b4c6ec9-ad51-42e7-a194-b756176d9cbc"
+          },
+          {
+            "documentId": "representation-075e8ee4-4337-4633-8033-477250bc2103",
+            "checkpointId": "canvas-revision-05e6642c-55f3-4f06-b206-a513e8aebc8e"
+          }
+        ],
+        "passes": 1,
+        "model": "gpt-6-astra",
+        "effort": "high"
+      },
+      "outputs": [
+        {
+          "sampleId": "shopify-linked-nine-sample-1",
+          "stageId": "split",
+          "cellKey": "400a1ef8-d1ee-4cd9-812e-e8ebe6aa6123:1:linked"
+        }
+      ]
+    }
+  ],
+  "samples": [
+    {
+      "id": "shopify-01-sample-1",
+      "phaseId": "phase-1",
+      "caseId": "shopify-01",
+      "conditionId": "shopify-expansion",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "split",
+          "runId": "2d61fcfd-bb1b-4c9d-91ab-a3c83d0742d5",
+          "cellKey": "68561489-721c-4ac0-b269-3b3f6f662a53:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "shopify-02-sample-1",
+      "phaseId": "phase-1",
+      "caseId": "shopify-02",
+      "conditionId": "shopify-expansion",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "split",
+          "runId": "1b66fbb3-0c8c-46c3-b970-64e688eea332",
+          "cellKey": "68561489-721c-4ac0-b269-3b3f6f662a53:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "shopify-03-sample-1",
+      "phaseId": "phase-1",
+      "caseId": "shopify-03",
+      "conditionId": "shopify-expansion",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "split",
+          "runId": "b8dd33cb-943d-4edb-9e50-583924abad0a",
+          "cellKey": "68561489-721c-4ac0-b269-3b3f6f662a53:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "shopify-04-sample-1",
+      "phaseId": "phase-1",
+      "caseId": "shopify-04",
+      "conditionId": "shopify-expansion",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "split",
+          "runId": "94768f35-8fc3-4659-8b62-709507cbe2df",
+          "cellKey": "68561489-721c-4ac0-b269-3b3f6f662a53:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "shopify-05-sample-1",
+      "phaseId": "phase-1",
+      "caseId": "shopify-05",
+      "conditionId": "shopify-expansion",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "split",
+          "runId": "de50b9ab-5f8d-4dc4-82a8-085d995f8804",
+          "cellKey": "68561489-721c-4ac0-b269-3b3f6f662a53:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "shopify-06-sample-1",
+      "phaseId": "phase-1",
+      "caseId": "shopify-06",
+      "conditionId": "shopify-expansion",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "split",
+          "runId": "21f48f77-0895-4215-a48b-c4c643f7c1ab",
+          "cellKey": "68561489-721c-4ac0-b269-3b3f6f662a53:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "shopify-07-sample-1",
+      "phaseId": "phase-1",
+      "caseId": "shopify-07",
+      "conditionId": "shopify-expansion",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "split",
+          "runId": "c3b0adbe-d194-4eec-ac9c-441c635a13c5",
+          "cellKey": "68561489-721c-4ac0-b269-3b3f6f662a53:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "shopify-08-sample-1",
+      "phaseId": "phase-1",
+      "caseId": "shopify-08",
+      "conditionId": "shopify-expansion",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "split",
+          "runId": "3b060324-64cd-4ebb-8602-5d44f17ec15b",
+          "cellKey": "68561489-721c-4ac0-b269-3b3f6f662a53:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "shopify-09-sample-1",
+      "phaseId": "phase-1",
+      "caseId": "shopify-09",
+      "conditionId": "shopify-expansion",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "split",
+          "runId": "7c1e35fc-c070-46c7-8ef4-88a39a3d10c9",
+          "cellKey": "68561489-721c-4ac0-b269-3b3f6f662a53:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "shopify-10-sample-1",
+      "phaseId": "phase-1",
+      "caseId": "shopify-10",
+      "conditionId": "shopify-expansion",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "split",
+          "runId": "c4e71625-fbc2-47d7-b01d-2ffe846661e7",
+          "cellKey": "68561489-721c-4ac0-b269-3b3f6f662a53:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "shopify-linked-nine-sample-1",
+      "phaseId": "phase-2",
+      "caseId": "shopify-linked-nine",
+      "conditionId": "shopify-navigation",
+      "number": 1,
+      "attempt": 1,
+      "outputs": []
+    }
+  ],
+  "comparisons": [],
+  "generationReview": {
+    "status": "awaiting-approval",
+    "runs": [
+      {
+        "schemaVersion": 1,
+        "id": "80e2f3f0-a8cb-40a2-8594-6c6f49ba3994",
+        "request": {
+          "requestId": "80e2f3f0-a8cb-40a2-8594-6c6f49ba3994",
+          "workflow": "linked-canvases",
+          "prompts": [
+            {
+              "promptId": "400a1ef8-d1ee-4cd9-812e-e8ebe6aa6123",
+              "version": 1
+            }
+          ],
+          "inputs": {
+            "context": {
+              "agentContextId": "saved-agent-context-44b9a28e-1c0b-4953-934e-93da63565290"
+            }
+          },
+          "canvasSources": [
+            {
+              "documentId": "representation-bdb76e0d-6fd7-4832-b4ce-9c0a081ce3ab",
+              "checkpointId": "canvas-revision-bfb31bf8-decd-460d-982a-1839fbe6c4a1"
+            },
+            {
+              "documentId": "representation-c5baf214-74a9-49e8-a7d0-8c908a3744c0",
+              "checkpointId": "canvas-revision-be68f120-61bc-43f7-8a0c-273a89858a1a"
+            },
+            {
+              "documentId": "representation-436da311-a0a7-485f-ac1a-000f714d3070",
+              "checkpointId": "canvas-revision-ba6bc5e9-2982-47f3-9b56-0407119c9179"
+            },
+            {
+              "documentId": "representation-4ce2281d-d758-4c4d-a3af-ad7fe5ada2d6",
+              "checkpointId": "canvas-revision-6b8fcf57-08b5-4ef3-b577-670ded305bad"
+            },
+            {
+              "documentId": "representation-47c1a0cd-f9ee-43f2-b847-e79b88cb3943",
+              "checkpointId": "canvas-revision-211e9236-4981-485c-998a-7f6601e5191c"
+            },
+            {
+              "documentId": "representation-f40f0cec-e2b2-4bf4-9398-49322ca1e78b",
+              "checkpointId": "canvas-revision-65c4a0be-a8f4-47d5-854b-61f2c4e2ff1a"
+            },
+            {
+              "documentId": "representation-bd5b48c9-bf2c-4841-81c2-1324b3467831",
+              "checkpointId": "canvas-revision-84a6132b-fca5-435c-8dbb-3efae19735ee"
+            },
+            {
+              "documentId": "representation-b96776b0-8272-4ba5-9a34-c5ade9e2b2e1",
+              "checkpointId": "canvas-revision-7b4c6ec9-ad51-42e7-a194-b756176d9cbc"
+            },
+            {
+              "documentId": "representation-075e8ee4-4337-4633-8033-477250bc2103",
+              "checkpointId": "canvas-revision-05e6642c-55f3-4f06-b206-a513e8aebc8e"
+            }
+          ],
+          "passes": 1,
+          "model": "gpt-6-astra",
+          "effort": "high"
+        },
+        "references": [],
+        "projectId": "project-4971c06b-83d5-49eb-998d-043d5fc2dca4",
+        "workflow": "linked-canvases",
+        "agentContextId": "saved-agent-context-44b9a28e-1c0b-4953-934e-93da63565290",
+        "contextName": "Shopify - nine canvases for inter-canvas navigation",
+        "prompts": [
+          {
+            "promptId": "400a1ef8-d1ee-4cd9-812e-e8ebe6aa6123",
+            "version": 1,
+            "name": "Shopify - inter-canvas navigation",
+            "stages": {
+              "linked": "<agent context>\nRead context.json for the Phase 1 input provenance and canvases.json for the complete nine pinned canvases, keyed c1 through c9. The first input, c1, is Shopify Company Map. These are generated outputs from the same experiment, including their exact diagrams, evidence labels, positions, edges, and jumps. Use only these inputs. No layout template or few-shot references are supplied. No repository inspection or external research.\nBuyer Network (Shopify 04) failed in Phase 1 and is explicitly excluded from this run at the user's request. Do not invent its missing canvas or create a jump to it. Existing references to that missing subject may remain clearly identified as text without a jump.\n</agent context>\n\n<task>\nOkay we are gonna add inter-canvas links between the different canvases. A note on the topology of the inter-canvas connections:\n- while the canvas interface is consisdered a flat structure, u should consider the relative importance of canvases as a graph navigational problem with the starting root node at the first diagram, and optimizing for minimum distance between both importance and compositional hierarchy\n\nTake the Shopify Company Map diagram and re-generate / modify it so that it has *some* connection to the other canvases via an inter-canvas jump.\n\nOperate on the nine supplied canvases as one set. Use the Company Map canvas (c1) and its central Company Map diagram as the entry point. Modify or regenerate that central diagram to provide useful navigation. Keep important subjects near the root; prefer a short path through the containing subject for finer detail where that improves comprehension. All eight other included canvases must be reachable from Company Map by directed jumps, but a direct root link to every canvas is not required. Explain the topology and any tradeoff between importance, hierarchy, and visual clutter. Navigation does not establish causal or evidential relationships.\nPreserve all nine canvases and their supporting diagrams. Make limited text changes needed for navigation, concentrating changes in the Company Map central diagram; preserve its identity and repair internal edge anchors as needed. Retain evidence tags [R]/[S]/[I]/[X], relation grades, dates, uncertainty, and factual meaning. Do not add new factual conclusions or a tenth canvas. Preserve useful existing inter-canvas links explicitly in the complete returned jumps array. Treat references to excluded Buyer Network as unavailable, not as a tenth navigable canvas.\n</task>\n\n<output format>\nReturn JSON matching output-schema.json: {explanation, rootCanvas, canvases, jumps}.\nProduce 2–20 canvases. Each canvas has a short unique id. A new canvas is {kind:\"new\",id,name,diagrams:[{id,ascii,position:{column,row}}],edges:[{source:{diagram,line},target:{diagram,line},label}]}. An existing canvas is {kind:\"existing\",id,sourceCanvas,edits:[{diagram,ascii}]}; sourceCanvas is the c1/c2/etc key from canvases.json. Include every supplied canvas exactly once. Existing canvases retain their diagrams, positions, edges and evidence; edits replace only the named diagram's full ASCII. Use edits:[] for unchanged canvases. New diagram positions use nonnegative character-grid coordinates with room for their text.\nEach jump is {source:{canvas,diagram,line,startColumn,endColumn},target:{canvas,diagram,line}}. Canvas references use output-local canvas IDs. New diagram references use their output-local IDs; existing diagram references use exact grid: IDs from canvases.json. Source spans are on one line, 1-based and inclusive, measured after edits. Target diagram may be null to open the whole canvas; target line may be null to focus the diagram. A target line requires a diagram and must identify a meaningful concept line. Jumps must connect different canvases. Do not invent persisted document/revision IDs.\nThe jumps array is the complete inter-canvas navigation for this output: preserve useful existing links explicitly, accounting for edited text and renamed canvas IDs. Do not overlap jump source spans. Every canvas must be reachable from rootCanvas by directed jumps. Put the intended starting canvas in rootCanvas; the viewer opens it first. Explain the topology. Use actual LF newlines in ASCII. Return no prose outside JSON. If validation-error.json exists, read it and previous-output.json and correct the output.\nFor this run, return exactly nine existing canvases, each referencing one supplied c1–c9 key, and no new canvases. Set rootCanvas to the output-local ID corresponding to c1. Return one complete linked output, including unchanged target canvases. The application preserves before/after snapshots without altering Phase 1 outputs. In explanation, note the excluded Buyer Network input and explain the chosen navigation.\n</output format>"
+            },
+            "templateBase": {
+              "id": "canvas-prompt",
+              "version": 1,
+              "name": "Canvas prompt structure",
+              "tags": [
+                {
+                  "name": "agent context",
+                  "parent": null
+                },
+                {
+                  "name": "task",
+                  "parent": null
+                },
+                {
+                  "name": "diagram-style",
+                  "parent": null
+                },
+                {
+                  "name": "diagram-guidelines",
+                  "parent": "diagram-style"
+                },
+                {
+                  "name": "references",
+                  "parent": "diagram-style"
+                },
+                {
+                  "name": "canvas-style",
+                  "parent": null
+                },
+                {
+                  "name": "canvas-guidelines",
+                  "parent": "canvas-style"
+                },
+                {
+                  "name": "references",
+                  "parent": "canvas-style"
+                },
+                {
+                  "name": "output format",
+                  "parent": null
+                }
+              ]
+            },
+            "parents": [],
+            "contentHash": "bf1e3ce94bcae74a41cdd87c24a8886d664f0f083823a9ca749edba3a3570f9a"
+          }
+        ],
+        "contexts": {
+          "context": {
+            "agentContextId": "saved-agent-context-44b9a28e-1c0b-4953-934e-93da63565290",
+            "name": "Shopify - nine canvases for inter-canvas navigation",
+            "contentHash": "a98f065b9f20cdff9f6ef0fede0ca944762856b5d931b8b477da0a61d00ac10d"
+          }
+        },
+        "status": "queued",
+        "createdAt": "2026-11-08T02:17:48.252Z",
+        "cells": [
+          {
+            "key": "400a1ef8-d1ee-4cd9-812e-e8ebe6aa6123:1:linked",
+            "promptId": "400a1ef8-d1ee-4cd9-812e-e8ebe6aa6123",
+            "promptVersion": 1,
+            "promptName": "Shopify - inter-canvas navigation",
+            "pass": 1,
+            "stage": "linked",
+            "status": "queued"
+          }
+        ],
+        "canvasInputs": [
+          {
+            "source": {
+              "documentId": "representation-bdb76e0d-6fd7-4832-b4ce-9c0a081ce3ab",
+              "checkpointId": "canvas-revision-bfb31bf8-decd-460d-982a-1839fbe6c4a1"
+            },
+            "name": "Shopify - central diagram to full canvas v2 · sample 1",
+            "canvasName": "Shopify 01 - Shopify company map"
+          },
+          {
+            "source": {
+              "documentId": "representation-c5baf214-74a9-49e8-a7d0-8c908a3744c0",
+              "checkpointId": "canvas-revision-be68f120-61bc-43f7-8a0c-273a89858a1a"
+            },
+            "name": "Shopify - central diagram to full canvas v2 · sample 1",
+            "canvasName": "Shopify 02 - Allocation and capital by era"
+          },
+          {
+            "source": {
+              "documentId": "representation-436da311-a0a7-485f-ac1a-000f714d3070",
+              "checkpointId": "canvas-revision-ba6bc5e9-2982-47f3-9b56-0407119c9179"
+            },
+            "name": "Shopify - central diagram to full canvas v2 · sample 1",
+            "canvasName": "Shopify 03 - Payments and merchant finance"
+          },
+          {
+            "source": {
+              "documentId": "representation-4ce2281d-d758-4c4d-a3af-ad7fe5ada2d6",
+              "checkpointId": "canvas-revision-6b8fcf57-08b5-4ef3-b577-670ded305bad"
+            },
+            "name": "Shopify - central diagram to full canvas v2 · sample 1",
+            "canvasName": "Shopify 05 - Merchant on-ramps and range"
+          },
+          {
+            "source": {
+              "documentId": "representation-47c1a0cd-f9ee-43f2-b847-e79b88cb3943",
+              "checkpointId": "canvas-revision-211e9236-4981-485c-998a-7f6601e5191c"
+            },
+            "name": "Shopify - central diagram to full canvas v2 · sample 1",
+            "canvasName": "Shopify 06 - Selling surfaces"
+          },
+          {
+            "source": {
+              "documentId": "representation-f40f0cec-e2b2-4bf4-9398-49322ca1e78b",
+              "checkpointId": "canvas-revision-65c4a0be-a8f4-47d5-854b-61f2c4e2ff1a"
+            },
+            "name": "Shopify - central diagram to full canvas v2 · sample 1",
+            "canvasName": "Shopify 07 - Global reach"
+          },
+          {
+            "source": {
+              "documentId": "representation-bd5b48c9-bf2c-4841-81c2-1324b3467831",
+              "checkpointId": "canvas-revision-84a6132b-fca5-435c-8dbb-3efae19735ee"
+            },
+            "name": "Shopify - central diagram to full canvas v2 · sample 1",
+            "canvasName": "Shopify 08 - Shipping and fulfillment"
+          },
+          {
+            "source": {
+              "documentId": "representation-b96776b0-8272-4ba5-9a34-c5ade9e2b2e1",
+              "checkpointId": "canvas-revision-7b4c6ec9-ad51-42e7-a194-b756176d9cbc"
+            },
+            "name": "Shopify - central diagram to full canvas v2 · sample 1",
+            "canvasName": "Shopify 09 - Platform and ecosystem"
+          },
+          {
+            "source": {
+              "documentId": "representation-075e8ee4-4337-4633-8033-477250bc2103",
+              "checkpointId": "canvas-revision-05e6642c-55f3-4f06-b206-a513e8aebc8e"
+            },
+            "name": "Shopify - central diagram to full canvas v2 · sample 1",
+            "canvasName": "Shopify 10 - Commerce intelligence"
+          }
+        ],
+        "inputs": {}
+      }
+    ]
+  },
+  "schemaVersion": 1,
+  "id": "2c9f0ce0-2b7e-42cb-aa4d-a2302f13fd08",
+  "projectId": "project-4971c06b-83d5-49eb-998d-043d5fc2dca4",
+  "revision": 6,
+  "createdAt": "2026-11-07T18:57:25.137Z",
+  "updatedAt": "2026-11-08T02:17:48.253Z"
+}

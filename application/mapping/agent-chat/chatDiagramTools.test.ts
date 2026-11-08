@@ -161,7 +161,7 @@ it('exposes view ancestry operations to AgentChat and preserves a group request 
 });
 it('exposes saved-context tools without requiring canvas references and forwards access mode', async () => {
   const f = fixture(); delete f.session.canvasContext;
-  for (const name of ['create-agent-context', 'list-agent-contexts', 'read-agent-context']) {
+  for (const name of ['create-agent-context', 'fork-agent-context', 'add-agent-context-comment', 'read-agent-context-lineage', 'list-agent-contexts', 'read-agent-context']) {
     expect(f.tools.definitions.find(tool => tool.name === name)).toBeDefined();
     const input = name === 'create-agent-context' ? { requestId: crypto.randomUUID(), name: 'Facts', context: 'Background' } : name === 'list-agent-contexts' ? {} : { agentContextId: `saved-agent-context-${crypto.randomUUID()}` };
     await f.tools.call(name, input, f.session);

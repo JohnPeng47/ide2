@@ -1,0 +1,516 @@
+{
+  "company": "Shopify Inc.",
+  "as_of": "2026-11-06",
+  "documents": [
+    {
+      "file": "shopify-2018-annual-filing.pdf",
+      "type": "annual_filing",
+      "form": "40-F",
+      "fiscal_year": 2018,
+      "source_url": "https://s27.q4cdn.com/572064924/files/doc_financials/2018/q4/bc6201b1-86cf-44d3-885b-d1f06ca597ce.pdf",
+      "pages": 158,
+      "bytes": 970801,
+      "sha256": "14c903fb5348ab2557fbe92bb52c8c9947db85f8254831e56b97047e2e8c8251"
+    },
+    {
+      "file": "shopify-2018-annual-filing.txt",
+      "type": "annual_filing",
+      "form": "40-F",
+      "fiscal_year": 2018,
+      "source_url": "https://s27.q4cdn.com/572064924/files/doc_financials/2018/q4/bc6201b1-86cf-44d3-885b-d1f06ca597ce.pdf",
+      "pages": 158,
+      "bytes": 615938,
+      "sha256": "0c884496d11a84815932129dd941a13263fff3733c0193ab29c1093f7710c885"
+    },
+    {
+      "file": "shopify-2018-q1-earnings-transcript.txt",
+      "type": "earnings_transcript",
+      "fiscal_year": 2018,
+      "quarter": 1,
+      "call_date": "May 1, 2018",
+      "source_url": "https://stockanalysis.com/stocks/shop/transcripts/61933-q1-2018/",
+      "bytes": 58597,
+      "sha256": "5555282de822f93fa95354dfe259cc9bb07d4f8600535f010add53164f347fe7"
+    },
+    {
+      "file": "shopify-2018-q2-earnings-transcript.txt",
+      "type": "earnings_transcript",
+      "fiscal_year": 2018,
+      "quarter": 2,
+      "call_date": "Jul 31, 2018",
+      "source_url": "https://stockanalysis.com/stocks/shop/transcripts/61932-q2-2018/",
+      "bytes": 58685,
+      "sha256": "ad8f57b03978dd4645d7d3e89a4a041a61172036ab601e4a42d28d31ab867718"
+    },
+    {
+      "file": "shopify-2018-q3-earnings-transcript.txt",
+      "type": "earnings_transcript",
+      "fiscal_year": 2018,
+      "quarter": 3,
+      "call_date": "Oct 25, 2018",
+      "source_url": "https://stockanalysis.com/stocks/shop/transcripts/61931-q3-2018/",
+      "bytes": 56975,
+      "sha256": "9085125ed503616d1b0e46e32603609d9491a578c409305df010acb5a5afddfa"
+    },
+    {
+      "file": "shopify-2018-q4-earnings-transcript.txt",
+      "type": "earnings_transcript",
+      "fiscal_year": 2018,
+      "quarter": 4,
+      "call_date": "Feb 12, 2019",
+      "source_url": "https://stockanalysis.com/stocks/shop/transcripts/61930-q4-2018/",
+      "bytes": 56099,
+      "sha256": "81dd0f02770e6fa43f0be87c6a9227a28838c0f636209bc3c00c6061eefeb2ee"
+    },
+    {
+      "file": "shopify-2019-annual-filing.pdf",
+      "type": "annual_filing",
+      "form": "40-F",
+      "fiscal_year": 2019,
+      "source_url": "https://s27.q4cdn.com/572064924/files/doc_financials/2019/ar/0efb0f8e-be6a-47d9-b0d6-11a92482dbd3.pdf",
+      "pages": 167,
+      "bytes": 1032571,
+      "sha256": "37467747f29e6a4f5967a6c8d98accb8fa1037e84538f113a33d6cd90853c164"
+    },
+    {
+      "file": "shopify-2019-annual-filing.txt",
+      "type": "annual_filing",
+      "form": "40-F",
+      "fiscal_year": 2019,
+      "source_url": "https://s27.q4cdn.com/572064924/files/doc_financials/2019/ar/0efb0f8e-be6a-47d9-b0d6-11a92482dbd3.pdf",
+      "pages": 167,
+      "bytes": 660326,
+      "sha256": "5a04955a790e467657e15a22f6a801ab26f87b2a99fa79f9556d86c6ef9eab7e"
+    },
+    {
+      "file": "shopify-2019-q1-earnings-transcript.txt",
+      "type": "earnings_transcript",
+      "fiscal_year": 2019,
+      "quarter": 1,
+      "call_date": "Apr 30, 2019",
+      "source_url": "https://stockanalysis.com/stocks/shop/transcripts/61928-q1-2019/",
+      "bytes": 55553,
+      "sha256": "5d3f6ec9984513cc4f97b7fb673eca333d2afe83a8226f57ac5b79b06ec834dc"
+    },
+    {
+      "file": "shopify-2019-q2-earnings-transcript.txt",
+      "type": "earnings_transcript",
+      "fiscal_year": 2019,
+      "quarter": 2,
+      "call_date": "Aug 1, 2019",
+      "source_url": "https://stockanalysis.com/stocks/shop/transcripts/61926-q2-2019/",
+      "bytes": 56086,
+      "sha256": "c63a008031cff5906f0436ec88fc23287e954ed59c9bae9e5ffdce1d0cbeaf87"
+    },
+    {
+      "file": "shopify-2019-q3-earnings-transcript.txt",
+      "type": "earnings_transcript",
+      "fiscal_year": 2019,
+      "quarter": 3,
+      "call_date": "Oct 29, 2019",
+      "source_url": "https://stockanalysis.com/stocks/shop/transcripts/61924-q3-2019/",
+      "bytes": 58749,
+      "sha256": "c6d848e308ca638e252f3ece03e5b338ea5ca5d84f19b827b844c4e5ed8bc6e6"
+    },
+    {
+      "file": "shopify-2019-q4-earnings-transcript.txt",
+      "type": "earnings_transcript",
+      "fiscal_year": 2019,
+      "quarter": 4,
+      "call_date": "Feb 12, 2020",
+      "source_url": "https://stockanalysis.com/stocks/shop/transcripts/4121-q4-2019/",
+      "bytes": 55317,
+      "sha256": "2771df833e10d1af4df0c33368e1e90ce117aaa0a49772b0542641d02b600c72"
+    },
+    {
+      "file": "shopify-2020-annual-filing.pdf",
+      "type": "annual_filing",
+      "form": "40-F",
+      "fiscal_year": 2020,
+      "source_url": "https://s27.q4cdn.com/572064924/files/doc_financials/2020/ar/40-F.pdf",
+      "pages": 184,
+      "bytes": 1087930,
+      "sha256": "2228549371e983e6fd38aa07dfcdda48894527f7f96535c3e737b817b824bf57"
+    },
+    {
+      "file": "shopify-2020-annual-filing.txt",
+      "type": "annual_filing",
+      "form": "40-F",
+      "fiscal_year": 2020,
+      "source_url": "https://s27.q4cdn.com/572064924/files/doc_financials/2020/ar/40-F.pdf",
+      "pages": 184,
+      "bytes": 740536,
+      "sha256": "15c121bf74be67a4583f70da456ea4e7e9826ca3b230f2f18a9f599368830871"
+    },
+    {
+      "file": "shopify-2020-q1-earnings-transcript.txt",
+      "type": "earnings_transcript",
+      "fiscal_year": 2020,
+      "quarter": 1,
+      "call_date": "May 6, 2020",
+      "source_url": "https://stockanalysis.com/stocks/shop/transcripts/5325-q1-2020/",
+      "bytes": 56311,
+      "sha256": "2522ff0806f0901f7fd1b35488b810bad2dbeb4d5de3b3ecd2e7199c9ba2164d"
+    },
+    {
+      "file": "shopify-2020-q2-earnings-transcript.txt",
+      "type": "earnings_transcript",
+      "fiscal_year": 2020,
+      "quarter": 2,
+      "call_date": "Jul 29, 2020",
+      "source_url": "https://stockanalysis.com/stocks/shop/transcripts/8637-q2-2020/",
+      "bytes": 54761,
+      "sha256": "195d3d74ea0ab4a4d561586770942c0052e3ddf12ea95178a99867291d159be4"
+    },
+    {
+      "file": "shopify-2020-q3-earnings-transcript.txt",
+      "type": "earnings_transcript",
+      "fiscal_year": 2020,
+      "quarter": 3,
+      "call_date": "Oct 29, 2020",
+      "source_url": "https://stockanalysis.com/stocks/shop/transcripts/972-q3-2020/",
+      "bytes": 54603,
+      "sha256": "a53993e9c1c705fafc6d3afc36e0eec901bbd85549ba5307cd688956a347b037"
+    },
+    {
+      "file": "shopify-2020-q4-earnings-transcript.txt",
+      "type": "earnings_transcript",
+      "fiscal_year": 2020,
+      "quarter": 4,
+      "call_date": "Feb 17, 2021",
+      "source_url": "https://stockanalysis.com/stocks/shop/transcripts/8941-q4-2020/",
+      "bytes": 56700,
+      "sha256": "3b72a32532a6d1d7373037bf0d0e76898ecf320e3c510be50e7dc4b08638007f"
+    },
+    {
+      "file": "shopify-2021-annual-filing.pdf",
+      "type": "annual_filing",
+      "form": "40-F",
+      "fiscal_year": 2021,
+      "source_url": "https://s27.q4cdn.com/572064924/files/doc_financials/2021/q4/99a0d08d-4015-4a0a-a8fb-fe6ec66553c4.pdf",
+      "pages": 192,
+      "bytes": 1171708,
+      "sha256": "35fee4df75e6f667d2fc86af1a7ae0fdf8d29eeac4dd007ce721ff95488609d3"
+    },
+    {
+      "file": "shopify-2021-annual-filing.txt",
+      "type": "annual_filing",
+      "form": "40-F",
+      "fiscal_year": 2021,
+      "source_url": "https://s27.q4cdn.com/572064924/files/doc_financials/2021/q4/99a0d08d-4015-4a0a-a8fb-fe6ec66553c4.pdf",
+      "pages": 192,
+      "bytes": 776139,
+      "sha256": "2310662caf43864c856ee1ba0ce540d086b61dbf33b80636129659395a6d3897"
+    },
+    {
+      "file": "shopify-2021-q1-earnings-transcript.txt",
+      "type": "earnings_transcript",
+      "fiscal_year": 2021,
+      "quarter": 1,
+      "call_date": "Apr 28, 2021",
+      "source_url": "https://stockanalysis.com/stocks/shop/transcripts/4715-q1-2021/",
+      "bytes": 55943,
+      "sha256": "d35ca587478d7a1eb8dd598b9f3178bbfe082b6f4b223e6c57b791f0ff29ea03"
+    },
+    {
+      "file": "shopify-2021-q2-earnings-transcript.txt",
+      "type": "earnings_transcript",
+      "fiscal_year": 2021,
+      "quarter": 2,
+      "call_date": "Jul 28, 2021",
+      "source_url": "https://stockanalysis.com/stocks/shop/transcripts/3192-q2-2021/",
+      "bytes": 55028,
+      "sha256": "7e8101925bfc08fa60c287a8df03360b26db83e1b3a5360df9ec6c1dca8a6b33"
+    },
+    {
+      "file": "shopify-2021-q3-earnings-transcript.txt",
+      "type": "earnings_transcript",
+      "fiscal_year": 2021,
+      "quarter": 3,
+      "call_date": "Oct 28, 2021",
+      "source_url": "https://stockanalysis.com/stocks/shop/transcripts/9074-q3-2021/",
+      "bytes": 56215,
+      "sha256": "2d82f10b395f0916de898c81d98881dedbed5b046325a007803bfaf1953d998c"
+    },
+    {
+      "file": "shopify-2021-q4-earnings-transcript.txt",
+      "type": "earnings_transcript",
+      "fiscal_year": 2021,
+      "quarter": 4,
+      "call_date": "Feb 16, 2022",
+      "source_url": "https://stockanalysis.com/stocks/shop/transcripts/14778-q4-2021/",
+      "bytes": 57007,
+      "sha256": "fcbc0dafde8cf2ea154156de360b50989068b5554ad5ae732d54716b46d5c1cf"
+    },
+    {
+      "file": "shopify-2022-annual-filing.pdf",
+      "type": "annual_filing",
+      "form": "40-F",
+      "fiscal_year": 2022,
+      "source_url": "https://s27.q4cdn.com/572064924/files/doc_financials/2022/ar/4cdd44db-ca94-4d2a-ae03-4dad70a72c58.pdf",
+      "pages": 210,
+      "bytes": 1890157,
+      "sha256": "dc614f722abbd4d428ed389a03aeba43d4b43e3565d41dceb2ba282e3fc4daf5"
+    },
+    {
+      "file": "shopify-2022-annual-filing.txt",
+      "type": "annual_filing",
+      "form": "40-F",
+      "fiscal_year": 2022,
+      "source_url": "https://s27.q4cdn.com/572064924/files/doc_financials/2022/ar/4cdd44db-ca94-4d2a-ae03-4dad70a72c58.pdf",
+      "pages": 210,
+      "bytes": 847499,
+      "sha256": "8e15afc565b075b9522000b8351fb7fa8d9a3a3a1df796c3d4a31146a6d37732"
+    },
+    {
+      "file": "shopify-2022-q1-earnings-transcript.txt",
+      "type": "earnings_transcript",
+      "fiscal_year": 2022,
+      "quarter": 1,
+      "call_date": "May 5, 2022",
+      "source_url": "https://stockanalysis.com/stocks/shop/transcripts/21150-q1-2022/",
+      "bytes": 57912,
+      "sha256": "480eaee1d7faef2fd951e46e301827021d8b93660099a7d82ce0ac337ddf1095"
+    },
+    {
+      "file": "shopify-2022-q2-earnings-transcript.txt",
+      "type": "earnings_transcript",
+      "fiscal_year": 2022,
+      "quarter": 2,
+      "call_date": "Jul 27, 2022",
+      "source_url": "https://stockanalysis.com/stocks/shop/transcripts/27087-q2-2022/",
+      "bytes": 53480,
+      "sha256": "b6a838cb67dd0f17778c72e39aec6facafcae61356929956a0bcef11fe2ef578"
+    },
+    {
+      "file": "shopify-2022-q3-earnings-transcript.txt",
+      "type": "earnings_transcript",
+      "fiscal_year": 2022,
+      "quarter": 3,
+      "call_date": "Oct 27, 2022",
+      "source_url": "https://stockanalysis.com/stocks/shop/transcripts/27347-q3-2022/",
+      "bytes": 60952,
+      "sha256": "f2358b9780dec7fcba036628234bbe7440de65e1200a501894fe9347e7451230"
+    },
+    {
+      "file": "shopify-2022-q4-earnings-transcript.txt",
+      "type": "earnings_transcript",
+      "fiscal_year": 2022,
+      "quarter": 4,
+      "call_date": "Feb 15, 2023",
+      "source_url": "https://stockanalysis.com/stocks/shop/transcripts/40437-q4-2022/",
+      "bytes": 58317,
+      "sha256": "4d058de9dfa2ee75db0e125630627e049cd2c5c81b849a1227a60e13f9a63fb6"
+    },
+    {
+      "file": "shopify-2023-annual-filing.pdf",
+      "type": "annual_filing",
+      "form": "40-F",
+      "fiscal_year": 2023,
+      "source_url": "https://s27.q4cdn.com/572064924/files/doc_financials/2023/q4/f9969259-3407-4da0-b900-1bd5ec143135.pdf",
+      "pages": 200,
+      "bytes": 1824222,
+      "sha256": "2d682faf4077a4b629472c857907cb27ba90f6c3a889c69bd321563d1bce8bc9"
+    },
+    {
+      "file": "shopify-2023-annual-filing.txt",
+      "type": "annual_filing",
+      "form": "40-F",
+      "fiscal_year": 2023,
+      "source_url": "https://s27.q4cdn.com/572064924/files/doc_financials/2023/q4/f9969259-3407-4da0-b900-1bd5ec143135.pdf",
+      "pages": 200,
+      "bytes": 776861,
+      "sha256": "946d480814bd50ddfdfa2066605701c4ad891976a76d435a4bdf916fceef5705"
+    },
+    {
+      "file": "shopify-2023-q1-earnings-transcript.txt",
+      "type": "earnings_transcript",
+      "fiscal_year": 2023,
+      "quarter": 1,
+      "call_date": "May 4, 2023",
+      "source_url": "https://stockanalysis.com/stocks/shop/transcripts/53964-q1-2023/",
+      "bytes": 55953,
+      "sha256": "88b805c931d529047b23240ec06520fcc80e123389da5215f51d23a833798c01"
+    },
+    {
+      "file": "shopify-2023-q2-earnings-transcript.txt",
+      "type": "earnings_transcript",
+      "fiscal_year": 2023,
+      "quarter": 2,
+      "call_date": "Aug 2, 2023",
+      "source_url": "https://stockanalysis.com/stocks/shop/transcripts/67042-q2-2023/",
+      "bytes": 58189,
+      "sha256": "2296e3e86123a2bba065a31254b8b1e71b04b490eb83a8f280f7024074e7e6d5"
+    },
+    {
+      "file": "shopify-2023-q3-earnings-transcript.txt",
+      "type": "earnings_transcript",
+      "fiscal_year": 2023,
+      "quarter": 3,
+      "call_date": "Nov 2, 2023",
+      "source_url": "https://stockanalysis.com/stocks/shop/transcripts/86609-q3-2023/",
+      "bytes": 64130,
+      "sha256": "36c065a814821958481946c10fd940b6889a9a2582c350dd20c70bddafec1cd6"
+    },
+    {
+      "file": "shopify-2023-q4-earnings-transcript.txt",
+      "type": "earnings_transcript",
+      "fiscal_year": 2023,
+      "quarter": 4,
+      "call_date": "Feb 13, 2024",
+      "source_url": "https://stockanalysis.com/stocks/shop/transcripts/123050-q4-2023/",
+      "bytes": 66013,
+      "sha256": "2ea0a0b78abfbf4ceb8dcfa962baf286f9f831b2d238e06d8efad9b73f55a81e"
+    },
+    {
+      "file": "shopify-2024-annual-filing.pdf",
+      "type": "annual_filing",
+      "form": "10-K",
+      "fiscal_year": 2024,
+      "source_url": "https://s27.q4cdn.com/572064924/files/doc_financials/2024/ar/SHOP-10K-Q4-2024.pdf",
+      "pages": 198,
+      "bytes": 2035657,
+      "sha256": "08c623238d903e2c483da047737176d0492054675d6c6d71b22e559548ace31b"
+    },
+    {
+      "file": "shopify-2024-annual-filing.txt",
+      "type": "annual_filing",
+      "form": "10-K",
+      "fiscal_year": 2024,
+      "source_url": "https://s27.q4cdn.com/572064924/files/doc_financials/2024/ar/SHOP-10K-Q4-2024.pdf",
+      "pages": 198,
+      "bytes": 742171,
+      "sha256": "e23af439c9267517d6611ef69edae8a12cbbb0a80b7cdc4e8ee50abb46fdd9aa"
+    },
+    {
+      "file": "shopify-2024-q1-earnings-transcript.txt",
+      "type": "earnings_transcript",
+      "fiscal_year": 2024,
+      "quarter": 1,
+      "call_date": "May 8, 2024",
+      "source_url": "https://stockanalysis.com/stocks/shop/transcripts/166753-q1-2024/",
+      "bytes": 61337,
+      "sha256": "ceff9ce43ee9712a8bb4b540c2d55b79151e2ab0d7a591f6785c6a7621258afb"
+    },
+    {
+      "file": "shopify-2024-q2-earnings-transcript.txt",
+      "type": "earnings_transcript",
+      "fiscal_year": 2024,
+      "quarter": 2,
+      "call_date": "Aug 7, 2024",
+      "source_url": "https://stockanalysis.com/stocks/shop/transcripts/192688-q2-2024/",
+      "bytes": 61345,
+      "sha256": "bdf4ed15d4635bbc36db86965bc604a536d80db2aad5c68bae2c0c7550a17f25"
+    },
+    {
+      "file": "shopify-2024-q3-earnings-transcript.txt",
+      "type": "earnings_transcript",
+      "fiscal_year": 2024,
+      "quarter": 3,
+      "call_date": "Nov 12, 2024",
+      "source_url": "https://stockanalysis.com/stocks/shop/transcripts/219533-q3-2024/",
+      "bytes": 63530,
+      "sha256": "9ebabf36c7f48719e613458cddae4e771fb281be4180fcdbad6aa827f9118a15"
+    },
+    {
+      "file": "shopify-2024-q4-earnings-transcript.txt",
+      "type": "earnings_transcript",
+      "fiscal_year": 2024,
+      "quarter": 4,
+      "call_date": "Feb 11, 2025",
+      "source_url": "https://stockanalysis.com/stocks/shop/transcripts/248479-q4-2024/",
+      "bytes": 62717,
+      "sha256": "4cf6562f343f645542cd2c76796b7cc5613b1d60ab09ac714b933c28e21102db"
+    },
+    {
+      "file": "shopify-2025-annual-filing.pdf",
+      "type": "annual_filing",
+      "form": "10-K",
+      "fiscal_year": 2025,
+      "source_url": "https://d18rn0p25nwr6d.cloudfront.net/CIK-0001594805/d3f5a1eb-0077-485d-9f77-5335d28b500f.pdf",
+      "pages": 135,
+      "bytes": 1858812,
+      "sha256": "a30101e3709d28b54e8204c61ffef3076e465e3fedcdab265f63f3cf6306425f"
+    },
+    {
+      "file": "shopify-2025-annual-filing.txt",
+      "type": "annual_filing",
+      "form": "10-K",
+      "fiscal_year": 2025,
+      "source_url": "https://d18rn0p25nwr6d.cloudfront.net/CIK-0001594805/d3f5a1eb-0077-485d-9f77-5335d28b500f.pdf",
+      "pages": 135,
+      "bytes": 549292,
+      "sha256": "4f23e2ee5d577c17a6685944781fa2634498b2bd0232fdad6029dceeafaf7ac6"
+    },
+    {
+      "file": "shopify-2025-q1-earnings-transcript.txt",
+      "type": "earnings_transcript",
+      "fiscal_year": 2025,
+      "quarter": 1,
+      "call_date": "May 8, 2025",
+      "source_url": "https://stockanalysis.com/stocks/shop/transcripts/314686-q1-2025/",
+      "bytes": 64641,
+      "sha256": "f6894f4b44d2169b326369a98ef0483c9014c7083a59c9835fa76b98b7c68cf2"
+    },
+    {
+      "file": "shopify-2025-q2-earnings-transcript.txt",
+      "type": "earnings_transcript",
+      "fiscal_year": 2025,
+      "quarter": 2,
+      "call_date": "Aug 6, 2025",
+      "source_url": "https://stockanalysis.com/stocks/shop/transcripts/344086-q2-2025/",
+      "bytes": 65138,
+      "sha256": "58642737b79c02e0f265feed6451bec42ee3dd81869399cbc44a13cfcf8e9e88"
+    },
+    {
+      "file": "shopify-2025-q3-earnings-transcript.txt",
+      "type": "earnings_transcript",
+      "fiscal_year": 2025,
+      "quarter": 3,
+      "call_date": "Nov 4, 2025",
+      "source_url": "https://stockanalysis.com/stocks/shop/transcripts/371298-q3-2025/",
+      "bytes": 64392,
+      "sha256": "f02cac6f70f3116b89efe2425758e8d43f9db86888a7ae546fb4f21c376af7a1"
+    },
+    {
+      "file": "shopify-2025-q4-earnings-transcript.txt",
+      "type": "earnings_transcript",
+      "fiscal_year": 2025,
+      "quarter": 4,
+      "call_date": "Feb 11, 2026",
+      "source_url": "https://stockanalysis.com/stocks/shop/transcripts/398721-q4-2025/",
+      "bytes": 60825,
+      "sha256": "c163a9e0211a1e3d9d94dd5720ecf95952881932438f78383b28e3a22c0b323b"
+    },
+    {
+      "file": "shopify-2026-q1-earnings-transcript.txt",
+      "type": "earnings_transcript",
+      "fiscal_year": 2026,
+      "quarter": 1,
+      "call_date": "May 5, 2026",
+      "source_url": "https://stockanalysis.com/stocks/shop/transcripts/555081-q1-2026/",
+      "bytes": 65304,
+      "sha256": "7dd1a7c8468cd7a941493c5455a433cf2414d95ab784c844b1a331a2d646826b"
+    },
+    {
+      "file": "shopify-2026-q2-earnings-transcript.txt",
+      "type": "earnings_transcript",
+      "fiscal_year": 2026,
+      "quarter": 2,
+      "call_date": "Aug 5, 2026",
+      "source_url": "https://stockanalysis.com/stocks/shop/transcripts/660732-q2-2026/",
+      "bytes": 59907,
+      "sha256": "76be5ee8587b5919e56a0bb869f39279548d7c796b522954704c9102a80d2a14"
+    },
+    {
+      "file": "shopify-2026-q3-earnings-transcript.txt",
+      "type": "earnings_transcript",
+      "fiscal_year": 2026,
+      "quarter": 3,
+      "call_date": "Nov 3, 2026",
+      "source_url": "https://stockanalysis.com/stocks/shop/transcripts/725032-q3-2026/",
+      "bytes": 66503,
+      "sha256": "e6dfda5f91bda3c40c68673f2c087321b4d0098c516d71fabebf79a609903f48"
+    }
+  ]
+}

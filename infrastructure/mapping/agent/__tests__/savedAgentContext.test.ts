@@ -101,7 +101,7 @@ it('creates and reads through tools without a canvas, then reuses the ID in sing
   const generate = vi.fn(async (_request: DiagramGenerationRequest) => ({ ascii: 'Generated', structureKind: 'tree' as const }));
   const makeService = () => new AgentDiagrammingSessionService(bridge, {} as MappingDiagramService, {} as DiagramRepository, new QuickJsAgentRuntime(), undefined, { generate }, new AgentContextService(undefined, new AgentContextLibrary(new FileAgentContextRepository(f.root))));
   const first = makeService();
-  const input = { requestId: crypto.randomUUID(), name: 'Reusable', context: 'Facts shared across eval prompts' };
+  const input = { requestId: crypto.randomUUID(), name: 'Reusable', context: [{ type: 'section', name: 'Shared facts', content: [{ type: 'text', text: 'Facts shared across eval prompts' }] }] };
   const token = first.chatBindings.create(); first.chatBindings.bind(token, undefined, false);
   const receipt = await first.callBound(token, 'create-agent-context', input) as { agentContextId: string; contentHash: string };
   const metadata = { agentContextId: receipt.agentContextId, group: 'YC Demo Group' };
@@ -111,6 +111,17 @@ it('creates and reads through tools without a canvas, then reuses the ID in sing
   expect(await first.callBound(token, 'list-agent-contexts', {})).toMatchObject({ items: [receipt] });
   await expect(first.callBound(token, 'create-agent-context', input)).rejects.toThrow('READ_ONLY');
   await expect(first.callBound(token, 'update-agent-context', metadata)).rejects.toThrow('READ_ONLY');
+  const forkInput = { requestId: crypto.randomUUID(), agentContextId: receipt.agentContextId, expectedContentHash: receipt.contentHash, name: 'Tool fork' };
+  await expect(first.callBound(token, 'fork-agent-context', forkInput)).rejects.toThrow('READ_ONLY');
+  const commentInput = { requestId: crypto.randomUUID(), agentContextId: receipt.agentContextId, expectedContentHash: receipt.contentHash, text: 'Reviewed the evidence.' };
+  await expect(first.callBound(token, 'add-agent-context-comment', commentInput)).rejects.toThrow('READ_ONLY');
+  expect(await first.callBound(token, 'read-agent-context-lineage', { agentContextId: receipt.agentContextId })).toMatchObject({ items: [receipt] });
+  first.chatBindings.bind(token, undefined, false);
+  const fork = await first.callBound(token, 'fork-agent-context', forkInput) as { agentContextId: string };
+  expect(await first.callBound(token, 'add-agent-context-comment', { ...commentInput, agentContextId: fork.agentContextId })).toMatchObject({ comments: [{ text: commentInput.text }] });
+  first.chatBindings.bind(token, undefined, true);
+  expect(await first.callBound(token, 'read-agent-context-lineage', { agentContextId: fork.agentContextId })).toMatchObject({ items: [receipt, { ...fork, parentMatches: true }] });
+  expect(dispatch).not.toHaveBeenCalled();
   first.chatBindings.clear(token);
   await expect(first.callBound(token, 'read-agent-context', { agentContextId: receipt.agentContextId })).rejects.toThrow('CHAT_BINDING_UNAVAILABLE');
   first.dispose();
@@ -134,4 +145,72 @@ it('creates and reads through tools without a canvas, then reuses the ID in sing
     await expect(service.call('create-diagram', { ...base, sessionId: attached.value.sessionId, expectedVersion: controller.getSnapshot().version, requestId: 'missing', agentContextId: `saved-agent-context-${crypto.randomUUID()}` })).rejects.toThrow('AGENT_CONTEXT_NOT_FOUND');
     expect(generate).toHaveBeenCalledTimes(2);
   } finally { service.dispose(); }
+});
+
+it('forks pinned context with ancestry, survives disk edits, and traces parent drift across restarts', async () => {
+  const f = await library();
+  const parent = await f.library.create({ requestId: crypto.randomUUID(), name: 'Original', group: 'Corpus', description: 'Evidence', context: 'Original facts' });
+  await f.library.addComment({ agentContextId: parent.agentContextId, expectedContentHash: parent.contentHash, requestId: crypto.randomUUID(), text: 'Original review.' });
+  const parentPath = path.join(f.root, 'agent-contexts', `${parent.agentContextId}.json`);
+  const parentBytes = await readFile(parentPath, 'utf8');
+  const input = { requestId: crypto.randomUUID(), agentContextId: parent.agentContextId, expectedContentHash: parent.contentHash, name: 'Focused fork' };
+  const fork = await f.library.fork(input);
+  expect(fork).toMatchObject({ group: 'Corpus', description: 'Evidence', contentHash: parent.contentHash,
+    lineage: { parentAgentContextId: parent.agentContextId, parentContentHash: parent.contentHash } });
+  expect(fork).not.toHaveProperty('comments');
+  expect(await readFile(parentPath, 'utf8')).toBe(parentBytes);
+  const original = await f.library.read(parent.agentContextId);
+  const editPath = path.join(f.root, 'agent-contexts', `${fork.agentContextId}.json`);
+  const edited = JSON.parse(await readFile(editPath, 'utf8'));
+  edited.snapshot = AgentContext.fromSnapshot(edited.snapshot).withMessages([{ role: 'user', timestamp: 0, content: [{ type: 'text', text: 'Selected facts' }] }]).toSnapshot();
+  await writeFile(editPath, JSON.stringify(edited));
+  const restarted = new AgentContextLibrary(new FileAgentContextRepository(f.root));
+  expect((await restarted.read(fork.agentContextId)).snapshot.messages[0].content).toEqual([{ type: 'text', text: 'Selected facts' }]);
+  expect((await restarted.fork(input)).contentHash).toBe(edited.snapshot.contentHash);
+  await expect(restarted.fork({ ...input, name: 'Conflicting retry' })).rejects.toThrow('REQUEST_ID_CONFLICT');
+  await expect(restarted.fork({ ...input, requestId: crypto.randomUUID(), expectedContentHash: 'a'.repeat(64) })).rejects.toThrow('AGENT_CONTEXT_CHANGED');
+  const child = await restarted.fork({ requestId: crypto.randomUUID(), agentContextId: fork.agentContextId, expectedContentHash: edited.snapshot.contentHash, name: 'Child', group: null });
+  expect(child).not.toHaveProperty('group');
+  expect((await restarted.lineage({ agentContextId: child.agentContextId })).items.map(i => i.agentContextId)).toEqual([parent.agentContextId, fork.agentContextId, child.agentContextId]);
+  expect((await restarted.lineage({ agentContextId: child.agentContextId })).items.slice(1).every(i => i.parentMatches)).toBe(true);
+  expect(await readFile(parentPath, 'utf8')).toBe(parentBytes);
+  // A later external parent edit does not silently rewrite its child's fork point.
+  const changedParent = JSON.parse(parentBytes);
+  changedParent.snapshot = AgentContext.fromSnapshot(original.snapshot).withMessages(edited.snapshot.messages).toSnapshot();
+  await writeFile(parentPath, JSON.stringify(changedParent));
+  const lineage = await restarted.lineage({ agentContextId: child.agentContextId });
+  expect(lineage.items[1]).toMatchObject({ parentMatches: false, lineage: { parentContentHash: parent.contentHash } });
+  expect(lineage.items[2].parentMatches).toBe(true);
+  expect((await restarted.fork(input)).agentContextId).toBe(fork.agentContextId);
+});
+
+it('appends idempotent hash-bound comments concurrently without losing comments or group metadata', async () => {
+  const f = await library(), other = new AgentContextLibrary(new FileAgentContextRepository(f.root));
+  const context = await f.library.create({ requestId: crypto.randomUUID(), name: 'Commented', context: 'Evidence' });
+  const before = (await f.library.read(context.agentContextId)).snapshot;
+  const input = { agentContextId: context.agentContextId, expectedContentHash: context.contentHash, requestId: crypto.randomUUID(), text: 'Removed duplicate evidence to focus the sample.' };
+  await Promise.all([f.library.addComment(input), other.addComment(input),
+    other.addComment({ ...input, requestId: crypto.randomUUID(), text: 'Verified the retained source ranges.' }),
+    f.library.update({ agentContextId: context.agentContextId, group: 'Reviewed' })]);
+  const saved = await other.read(context.agentContextId);
+  expect(saved).toMatchObject({ group: 'Reviewed', contentHash: context.contentHash, snapshot: before });
+  expect(saved.comments).toHaveLength(2);
+  expect(saved.comments![0]).toMatchObject({ contentHash: context.contentHash });
+  expect((await other.list({ query: 'Commented' })).items[0].comments).toEqual(saved.comments);
+  await expect(other.addComment({ ...input, text: 'Different comment' })).rejects.toThrow('REQUEST_ID_CONFLICT');
+  await expect(other.addComment({ ...input, requestId: crypto.randomUUID(), expectedContentHash: 'a'.repeat(64) })).rejects.toThrow('AGENT_CONTEXT_CHANGED');
+  expect((await other.read(context.agentContextId)).comments).toEqual(saved.comments);
+});
+
+it('reports missing and cyclic lineage explicitly', async () => {
+  const f = await library();
+  const parent = await f.library.create({ requestId: crypto.randomUUID(), name: 'Root', context: 'Facts' });
+  const fork = await f.library.fork({ requestId: crypto.randomUUID(), agentContextId: parent.agentContextId, expectedContentHash: parent.contentHash, name: 'Fork' });
+  const file = path.join(f.root, 'agent-contexts', `${parent.agentContextId}.json`);
+  const record = JSON.parse(await readFile(file, 'utf8'));
+  record.lineage = { parentAgentContextId: fork.agentContextId, parentContentHash: fork.contentHash };
+  await writeFile(file, JSON.stringify(record));
+  await expect(f.library.lineage({ agentContextId: fork.agentContextId })).rejects.toThrow('cyclic');
+  await rm(file);
+  await expect(f.library.lineage({ agentContextId: fork.agentContextId })).rejects.toThrow('ancestor is unavailable');
 });

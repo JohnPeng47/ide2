@@ -1,0 +1,102 @@
+Commerce intelligence                  FY2018 - Q3 2026 | spine: dependency
+|
+|-- Timeline: machine learning -> AI tools -> agentic
+|   |-- [R] FY18: analytics and machine learning informing products
+|   |-- [S] 2019-22: ML in fulfillment, Capital underwriting, fraud, Audiences
+|   |   `-- [I] the fulfillment ML left with the 2023 sale           => 08
+|   |-- [R] Q2 2023: Shopify Magic and Sidekick introduced
+|   |-- [S] Q3 2024: new CTO Mikhail Parakhin, formerly at Microsoft
+|   |-- [S] Q2 2025: Shopify Catalog launches; "agentic" first used on calls
+|   `-- [S] Q4 2025 call: UCP co-developed with Google
+|
+|-- Data: the claimed advantage
+|   |-- [R] FY18-22 filings: "A data advantage"; absent FY23-25
+|   |-- [S] Q1 2026: "20 years of commerce data"; "compounding advantage"
+|   |-- data scale -[D:claim]-> compounding advantage
+|   |   |-- [I] no metric ties model quality to data volume
+|   |   `-- [I] 2025 losses outgrew revenue; no support for better underwriting
+|   `-- [R] FY25 risk: "datasets may be insufficient"
+|
+|-- Sidekick: AI for operating a merchant's business
+|   |-- Usage
+|   |   |-- [S] 750,000+ first-time shops, Q3 2025
+|   |   |-- [S] Conversations: about 34M Q2 2026, +14% in Q3 2026
+|   |   |-- [S] Daily active merchants +3.7x, Q3 2026
+|   |   `-- [S] Metric changed three times in six quarters
+|   |-- Outcomes
+|   |   |-- [S] 8% lift in merchants reaching 5 orders in 15 days
+|   |   |   `-- [I] no control disclosed; "after using the guide"
+|   |   |-- [S] Two-thirds of Flows created by Sidekick, Q3 2026
+|   |   |-- [S] Canvas: stores built 20% faster; one month of data
+|   |   `-- Sidekick -[D:data]-> merchant outcomes; usage isn't outcome
+|   |-- History
+|   |   |-- [S] Q2 2023: early access "soon"
+|   |   |-- [S] Sparse on calls until Q4 2024; re-architected Q1 2025
+|   |   |-- [S] "betting on this from day one"
+|   |   `-- [I] cause of the quiet period undisclosed
+|   `-- Cost
+|       |-- [S] Subscription gross margin: 81.7% Q3 2025 -> 79% Q3 2026
+|       |-- [S] Q3 2026: "compressed primarily from" Sidekick spend
+|       `-- [S] Conversations +14%; total Sidekick cost -18%, Q2 -> Q3 2026
+|
+|-- Agentic commerce: AI as a sales channel                  => 06
+|   |-- Catalog
+|   |   |-- [S] Structured data across 1B+ product pages
+|   |   |-- [S] Started "three years ago" (Q3 2026); "two years ago" (Q4 2025)
+|   |   `-- [S] Catalog searches convert 2x general AI search; unadjusted
+|   |-- Protocol and products
+|   |   |-- [S] UCP: open standard; Stripe joined the council in 2026
+|   |   |-- [S] Agentic Storefronts, Universal Cart, Checkout Kit
+|   |   |-- [S] Agentic plan for brands not on Shopify
+|   |   `-- [S] Rival standard raised by analyst: ACP (OpenAI and Stripe)
+|   |-- Reported momentum
+|   |   |-- [S] Traffic: 8x Q1 2026 | 3x Q2 2026 | 2.6x Q3 2026
+|   |   |-- [S] Orders: nearly 13x | 3x | 3.3x
+|   |   |-- [S] Conversion premium: nearly 80% Q2 -> 64% Q3 2026
+|   |   `-- [S] Three-quarters of AI sales outside top 100 categories
+|   |       `-- [I] no base rate; may show no long-tail tilt
+|   |-- Financial weight
+|   |   |-- [S] "the volume is still small"
+|   |   |-- [S] Same economics as an online store transaction
+|   |   |-- [I] no AI GMV, order count or share disclosed anywhere
+|   |   `-- agentic -[D:untestable]-> revenue contribution
+|   `-- Trust layer                                              => 04
+|       `-- [S] Shop Pay as wallet for agents; Shop tracks agent orders
+|
+|-- Position: claimed differentiation
+|   |-- [S] "only platform" in ChatGPT, Copilot and Google, one system
+|   |   `-- [I] untestable: no competitor data in the corpus
+|   |-- Counter-signals in the FY25 filing
+|   |   |-- [R] "does not currently develop its own foundational AI models"
+|   |   |-- [R] model providers may refuse access or acceptable terms
+|   |   |-- [R] merchants may build their own solutions using AI
+|   |   `-- [R] rivals may have greater resources
+|   |-- [S] AI partners can run the front end, e.g. OpenAI
+|   `-- [I] open standards reduce exclusivity by design
+|
+`-- Internal AI: productivity claims
+    |-- [S] Over half of support interactions AI-assisted, Q1 2024
+    |-- [S] AI writes well over 50% of code, Q1 2026
+    |-- [S] 300+ products and features shipped in 2025
+    |-- [S] Q1 2025: AI first before requesting headcount
+    |-- Dating the headcount drop
+    |   |-- [R] 82.5% of the FY22-25 drop came in 2023
+    |   |-- [R] Largest revenue-per-person jump: 2023, before the mandate
+    |   `-- [R] "Employees and contractors" -> "employees" from FY24
+    |-- [X] "flat headcount": filings show 8,100 -> 7,600
+    `-- AI -[D:assoc]-> output per person; share due to AI unknown
+
+Legend
+  [R] reported: in a filing, or computed directly from filing figures
+  [S] stated by management on a call or in narrative; not independently verified
+  [I] inferred by us; rests on an assumption or interpretation
+  [X] claim that the corpus contradicts
+  a -[D:grade]-> b  dependency: b needs or is fed by a
+  a -[C:grade]-> b  sequence: a led to or preceded b
+  a -[O:grade]-> b  control: a holds or manages b
+  a -[M:grade]-> b  structure: a belongs to or connects with b
+  grades: mech (true by arithmetic or definition) | causal (controlled test; none found)
+          assoc (figures move together) | data (management figure, unverifiable)
+          claim (asserted, no figure) | untestable (corpus lacks the data)
+          contra (contradicted by the corpus)
+  => NN  detail lives on canvas NN | n/d  not disclosed | bp  basis points

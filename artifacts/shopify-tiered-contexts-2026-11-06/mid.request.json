@@ -1,0 +1,1933 @@
+{
+  "requestId": "7277c937-9224-45c7-9937-6a8a684333ed",
+  "name": "Shopify corpus — mid",
+  "group": "Shopify strategy corpus — importance tiers — 2026-11-06",
+  "description": "Importance: mid. Operating scale, financial reference tables and product, merchant, channel, buyer and partner mechanisms supporting or qualifying the core conclusion. Primary corpus evidence only; immutable file slices. Source pane w3M:p3J; session 623e7e34-acab-4056-9fad-cdcbdbc863ce. Selection and limitations: artifacts/shopify-tiered-contexts-2026-11-06/manifest.json.",
+  "context": {
+    "version": 2,
+    "source": {
+      "agentType": "saved-context",
+      "sourceSessionId": "7277c937-9224-45c7-9937-6a8a684333ed",
+      "format": "messages-v1"
+    },
+    "range": {
+      "fromEntryId": "context",
+      "throughEntryId": "context"
+    },
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2018-annual-filing.txt",
+            "startLine": 679,
+            "endLine": 679,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "d2670d33b9840a5fc4b604ce4a7aa228f63363c0632999829b450a6dba235123"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2018-annual-filing.txt",
+            "startLine": 742,
+            "endLine": 742,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "8f5969cb2ef84ab92ff0df9f68c518280bd819054a2b1506ecf12504a0a05bed"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2018-annual-filing.txt",
+            "startLine": 4278,
+            "endLine": 4278,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "c9e9c67c29c63a578c1b5e41984e5d69bcd12d6a4976eea3289b0d68a8fe9eaf"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2018-annual-filing.txt",
+            "startLine": 5528,
+            "endLine": 5528,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "7c4fbd6807a6061ed7032990c22257fce49a47843760b78362979bf44e494ff9"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2018-annual-filing.txt",
+            "startLine": 6063,
+            "endLine": 6063,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "07ee141c80f4194f74750c8c5d3cbb804537622b62553a9afafbfdf11c6ec924"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2018-annual-filing.txt",
+            "startLine": 6065,
+            "endLine": 6066,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "ab3e938b9bb286823ee2624b75d7d219e57f0e953de2afeede986c7cc377796e"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2018-q4-earnings-transcript.txt",
+            "startLine": 63,
+            "endLine": 63,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "9dc5f914d9cbeba4c9ebb43743a61a330d8325cea52f60d843b26213c392ca1f"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2018-q4-earnings-transcript.txt",
+            "startLine": 537,
+            "endLine": 537,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "e3ba62d9d28827579c98ddf8e6aa30b9d5e0165e4f775bac6e6c4c04279c6cae"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2019-annual-filing.txt",
+            "startLine": 650,
+            "endLine": 653,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "1beb02ea8e65faf530f89fd3a156bc23d1de0a8f07f0294334c7c927d4aa690c"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2019-annual-filing.txt",
+            "startLine": 768,
+            "endLine": 768,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "58480667cc4c9adcb13bfe72e75b8bd08c04c945fc049c4b088ba35235888344"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2019-annual-filing.txt",
+            "startLine": 4471,
+            "endLine": 4471,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "36dbccf9d263c0284f36084e20b2d39af026a8df3793f34cc788478bb018c5e4"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2019-q1-earnings-transcript.txt",
+            "startLine": 207,
+            "endLine": 207,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "8255d10e8d4d2421861be83cb94cab55947bf8566d416285c0769f6df73a1a72"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2019-q2-earnings-transcript.txt",
+            "startLine": 25,
+            "endLine": 25,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "cae1780cd3e3a99630253eb1fb010c7b0e81954f7f57e291c552f08a3c9d51bb"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2019-q2-earnings-transcript.txt",
+            "startLine": 27,
+            "endLine": 27,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "a1ff1b38cd0dba0545fd3e23674ab0f8fc1ce16bc496d1389a1c2f0d97d73765"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2019-q2-earnings-transcript.txt",
+            "startLine": 29,
+            "endLine": 29,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "4a92f9b1eee8dcabcdf454c5327a830e40b8a941a5f2944733550afe1755a830"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2019-q2-earnings-transcript.txt",
+            "startLine": 33,
+            "endLine": 33,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "85e4eb5faf5e9156848b7d2bd86010a45c9c68e16680dbe173dee8c162c5ce4e"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2019-q2-earnings-transcript.txt",
+            "startLine": 39,
+            "endLine": 39,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "f6e47b22fc263096a4191612e9a375145d33a4bc3690c592321c3aaaccc92945"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2019-q2-earnings-transcript.txt",
+            "startLine": 51,
+            "endLine": 51,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "23665fc6a66ba1d883e9c8bb3f1da319f3c52ff59f7cf85277a0662ef216073f"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2019-q2-earnings-transcript.txt",
+            "startLine": 609,
+            "endLine": 609,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "4db96875a350adbbeab49dbf85b03c2b8c15f8ff70a18d4edebf4533971d0090"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2019-q3-earnings-transcript.txt",
+            "startLine": 59,
+            "endLine": 59,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "939290a8d86ff668a5f598192fa20ee4e70eeb9a0c26305dd08ef0e4d145be66"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2019-q3-earnings-transcript.txt",
+            "startLine": 61,
+            "endLine": 61,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "8a3d7f1a931edc1a6477e402bd0e91c5e96d629885ffd0d959c92d9654eeaf4b"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2019-q3-earnings-transcript.txt",
+            "startLine": 173,
+            "endLine": 173,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "7683d4f5ee8e9ee4a5331f870d8299f91a41a5bf73a0cf31dfc0c00add016b48"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2019-q3-earnings-transcript.txt",
+            "startLine": 289,
+            "endLine": 289,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "0a58fe98176ede9f3d3cf8f18099cf9caebff48a928c164fe5e9c0784d3e04c0"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2019-q3-earnings-transcript.txt",
+            "startLine": 291,
+            "endLine": 291,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "f885224d0e7888f13924f556fb1e00d4ff492adf9bd70b7eba4d912e0a6a2c01"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2019-q4-earnings-transcript.txt",
+            "startLine": 79,
+            "endLine": 79,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "cd2e5cf397740c68751711fe34573b7a85137887de3cccf178c64c1d3e0b42a8"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2020-q1-earnings-transcript.txt",
+            "startLine": 99,
+            "endLine": 99,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "deff8d642ef21c0f62ba4c4ad6388f7f8bc8c0ff8ae521beb5c7ec31ec8a5585"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2020-q1-earnings-transcript.txt",
+            "startLine": 101,
+            "endLine": 101,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "40db949b6bc8b2a9b8239e8275bea17d4427e750d58cb69d56df27dd30eb6a02"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2020-q3-earnings-transcript.txt",
+            "startLine": 79,
+            "endLine": 79,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "b87e35fc28331f6fec10054d93da1a59776f67533e93e4097c61c6f4301a91bd"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2021-annual-filing.txt",
+            "startLine": 580,
+            "endLine": 580,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "22032847a0749e1126c8501089ed2629cf970accb9e7f197c550be4ddeea2945"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2021-annual-filing.txt",
+            "startLine": 721,
+            "endLine": 721,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "eb1d58094b6abfbd98723cd1367a7b4f549b97a73ba2a25a58dacc893f99bf31"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2021-annual-filing.txt",
+            "startLine": 734,
+            "endLine": 735,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "facaf3d79db56126dfb560ba09679ee12ca09db95b6b1c45505f7bf7ddffc522"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2021-annual-filing.txt",
+            "startLine": 7262,
+            "endLine": 7264,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "b586633b34edec53eaf712b179e1b66d74feb9f4ec61bc5c2f9d619bec081725"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2021-q1-earnings-transcript.txt",
+            "startLine": 37,
+            "endLine": 37,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "124dc8ce94739c0bc1495ab70c5a68c0fb23d84e569c873e95dd1a74d1c103c7"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2021-q2-earnings-transcript.txt",
+            "startLine": 35,
+            "endLine": 35,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "25dc300e77c0e4bd0410baacb3212d45cfe9bc2fef6cc9e4a6a6a82737fc0526"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2021-q4-earnings-transcript.txt",
+            "startLine": 25,
+            "endLine": 25,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "718a601ff0e7c8421844b0c08426389922840be4af6b2ca75bc92ebb3f11965a"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2021-q4-earnings-transcript.txt",
+            "startLine": 33,
+            "endLine": 33,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "0fd6ea3b8c8bc270f3983e4014db89c21f4d3d33be008b9850c3b5cf7bbfb1dc"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2021-q4-earnings-transcript.txt",
+            "startLine": 35,
+            "endLine": 35,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "6a05030765b5b516f97c11260f35ea4267342d315964527a1467b6bfcb55368c"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2021-q4-earnings-transcript.txt",
+            "startLine": 37,
+            "endLine": 37,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "6e8f92f3c82dd49942de49bab5f8fb8f44fb01abb562479f774b294e23cf762f"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2022-annual-filing.txt",
+            "startLine": 596,
+            "endLine": 600,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "2f11d2e0fb241338085af495efbde7e9dbd049d705e3ba2afadd0bd8db17e31b"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2022-annual-filing.txt",
+            "startLine": 754,
+            "endLine": 754,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "778455e8f5591870788bb56440782e1e6e72841ae81c245cbadcf34456e208ec"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2022-annual-filing.txt",
+            "startLine": 7474,
+            "endLine": 7474,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "8add6d8ed69d5862ad70367572351ce2126e9bb706c5b40bb34bee89989119ba"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2022-q2-earnings-transcript.txt",
+            "startLine": 47,
+            "endLine": 47,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "188be112be10750265162ec5ad816dd271810cd74ad2769c642733ffacc97dc4"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2022-q2-earnings-transcript.txt",
+            "startLine": 145,
+            "endLine": 145,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "3391c2ab73126efd76aeb2732202e5368355a8c3f28b6e406132330b02137052"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2022-q2-earnings-transcript.txt",
+            "startLine": 307,
+            "endLine": 307,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "5cc3c15dfe69baaab2ab81d67b26405eea555eebfa7174bdea9b8d7a030ef150"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2022-q3-earnings-transcript.txt",
+            "startLine": 19,
+            "endLine": 19,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "3f89e4d56a1b93e85ad88f6b60897b8d5b3f75bd499fecc6d88bd7b27f0b64cb"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2022-q3-earnings-transcript.txt",
+            "startLine": 43,
+            "endLine": 43,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "50322084840a5e5d0e342828afd44b493d0218e4148d4537c7facf05946903c8"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2022-q3-earnings-transcript.txt",
+            "startLine": 53,
+            "endLine": 53,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "a8c2c185219d9f3196bf2554ab558e668e69af155575ef358868ab7ef4422550"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2022-q4-earnings-transcript.txt",
+            "startLine": 55,
+            "endLine": 58,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "15ab1b4b62b208bdc1c61fba8846aaf38beadade1ad018c0def6c47d88812118"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2023-annual-filing.txt",
+            "startLine": 582,
+            "endLine": 586,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "ce8cb0dfe0f93d1cc0f86e276b36e71762ed7ce88557fa4798823a486d4e7cec"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2023-annual-filing.txt",
+            "startLine": 649,
+            "endLine": 649,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "c44e4caac91afa7f57e014bf5d4a7b374c7f30896b55a5ef305094b0820604cd"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2023-annual-filing.txt",
+            "startLine": 652,
+            "endLine": 653,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "da0fd63d756bb0ebca738f76daf8770b59a4dec517c6e98676a9ae00c5e29570"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2023-annual-filing.txt",
+            "startLine": 868,
+            "endLine": 871,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "c954749e0d3c5ef21d63d792030de4a0317492ded1d4afde5a756c82f451c0d0"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2023-annual-filing.txt",
+            "startLine": 5045,
+            "endLine": 5047,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "ef47177306f0691be2ed077c2dd1726fad20aa0c1beb74a9689281814e179960"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2023-annual-filing.txt",
+            "startLine": 5293,
+            "endLine": 5299,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "5918001c8d46915082597cb8ff08948d019f0ae06e910f3916660a84eb6a5e95"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2023-annual-filing.txt",
+            "startLine": 5959,
+            "endLine": 5960,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "2803250ac3284c8dc8a1ad4b2c39e8acdb5f6fe868461029c30eca28dc10cebe"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2023-annual-filing.txt",
+            "startLine": 7329,
+            "endLine": 7333,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "013ee20c3658a60666002247747adb59f1387ea45a98fccc2b0a510a82ed70fa"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2023-q1-earnings-transcript.txt",
+            "startLine": 39,
+            "endLine": 39,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "44abd3a7ca95df17963a60ebe792094222b3d8721b542aa1fa3ac2d9d350b3c5"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2023-q1-earnings-transcript.txt",
+            "startLine": 41,
+            "endLine": 41,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "b51d6803e61b9ff618c05a34a45bdbb90d5beeb941e56a41efcce6bc6db4a149"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2023-q1-earnings-transcript.txt",
+            "startLine": 67,
+            "endLine": 67,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "ddc9a7a1594111e6ef4cdcb6e2439e81aa660774de7908649b645fff2eb39aee"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2023-q1-earnings-transcript.txt",
+            "startLine": 69,
+            "endLine": 69,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "de385d6d045607f0183cef7ae73d922b1d88cc7cada8f51cb7e85efafc86243e"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2023-q1-earnings-transcript.txt",
+            "startLine": 217,
+            "endLine": 217,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "9b126556d806ebd2ea932541f22caf8ab4eba039471effa7adad27c515a9d6dc"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2023-q2-earnings-transcript.txt",
+            "startLine": 225,
+            "endLine": 225,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "61ffb0807e59ac48c52526af3279dff7e58ef6bdd220fb16649a150159b710d4"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2023-q2-earnings-transcript.txt",
+            "startLine": 231,
+            "endLine": 231,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "3689555945b1909322c7437a55dba59fb0009fcb0f7a5cbba216c7a53a784f85"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2023-q3-earnings-transcript.txt",
+            "startLine": 17,
+            "endLine": 17,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "e9038976bfba3da0ced662036c065e89811f463a37802d0e3ae06f599a0d7dff"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2023-q3-earnings-transcript.txt",
+            "startLine": 35,
+            "endLine": 35,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "4ea029e8485b01e90b174c346a8865b3770dcc0fd8bc0e173ed28e3d70fc6a6e"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2023-q3-earnings-transcript.txt",
+            "startLine": 37,
+            "endLine": 37,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "45c7e85a766c8ce97334cb02933e4b6978d6f614013a162530aa1cc40ea3fb60"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2023-q3-earnings-transcript.txt",
+            "startLine": 219,
+            "endLine": 219,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "85affcb5b08a59a4ea09da919f9195f1ececc533ebeb2f96d601ddf084060532"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2023-q3-earnings-transcript.txt",
+            "startLine": 303,
+            "endLine": 303,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "924b998518b3a635d0485b6703af50c80d04f29b5f6aad5a489a2fc06dbcea51"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2023-q4-earnings-transcript.txt",
+            "startLine": 45,
+            "endLine": 45,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "6abd2d8dd445b5ce96dd64428d0b0ac10d2a6efebc22e671a51fb309e4217942"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2023-q4-earnings-transcript.txt",
+            "startLine": 47,
+            "endLine": 47,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "48873a4152a7716314b56d3fd0d60c42abd2dd6985bacf96e5e04721a7a01baf"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2023-q4-earnings-transcript.txt",
+            "startLine": 51,
+            "endLine": 51,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "8b7df342fa62a93088d6a1b4f79ab01819949f8b7a00488c6ddebebac737be63"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2023-q4-earnings-transcript.txt",
+            "startLine": 59,
+            "endLine": 59,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "928fc59090f3039fcbb7a9ac8ff753ec17d9aa957ffb38018a4a6ffb96008f40"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2023-q4-earnings-transcript.txt",
+            "startLine": 351,
+            "endLine": 351,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "47fc0c8f9c5ed9ee3726e1ca5e61fc4d6dce0c3a893cb4326dbf7931a2f2f977"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2023-q4-earnings-transcript.txt",
+            "startLine": 353,
+            "endLine": 353,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "978bb5a2cd65752b23e18148256e7f1ccab76ee45b7a8827f904f472f7f988ce"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2024-annual-filing.txt",
+            "startLine": 2930,
+            "endLine": 2933,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "60fd343c2e0bc2f27b6e54a2872eb129baf2d4f727c52f7362f538857110cf4a"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2024-annual-filing.txt",
+            "startLine": 4961,
+            "endLine": 4962,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "dcff310e269d354b3bf9f0e44d635e5685f1c3f4994a5e62273252858baeb848"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2024-annual-filing.txt",
+            "startLine": 5594,
+            "endLine": 5594,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "1d538a4d8e976905eafc69b529e336887e99c9bcc14ca3a87c7e05194983a651"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2024-annual-filing.txt",
+            "startLine": 5602,
+            "endLine": 5603,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "fba783e71e95d4729cd2a5863d5a78fcd3433ced0407b2d7fafacc628daa2900"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2024-q1-earnings-transcript.txt",
+            "startLine": 253,
+            "endLine": 253,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "df3c98768410eb6427626b491d9b400576d474d222f2713a44ef05b1701e90cd"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2024-q1-earnings-transcript.txt",
+            "startLine": 317,
+            "endLine": 317,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "a1056b88907d92f37ebecbf88211eff49ed11edede5f6ce92e2cfbc45cbe58ab"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2024-q2-earnings-transcript.txt",
+            "startLine": 15,
+            "endLine": 15,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "b88e0ae64407af8cd2bf5fe05169fee99c56b676c22fdd1ee7fdfeab8fa964fb"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2024-q2-earnings-transcript.txt",
+            "startLine": 17,
+            "endLine": 17,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "4bf075a4ccbfc23e63de8b4091abe8ff2cc0758f39eb4fa72806737d3ddd3e79"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2024-q2-earnings-transcript.txt",
+            "startLine": 305,
+            "endLine": 305,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "9a209ec1ef82424503db0974d0c17ca6c7f2388d7b7ddf5289f83230b7e635d7"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2024-q2-earnings-transcript.txt",
+            "startLine": 307,
+            "endLine": 307,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "21b9a52aead766386a8da1b2d4a1b2358bbe84fe9957b3bee8dc53dc3c0ce822"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2024-q3-earnings-transcript.txt",
+            "startLine": 19,
+            "endLine": 19,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "bef3bf1148ef1f47ab19968dd4a6e6e183281dad511dee0baf14993d7b7bea9f"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2024-q3-earnings-transcript.txt",
+            "startLine": 219,
+            "endLine": 223,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "3cd2e959cdf6536aa28af48a7acecbf857ac6ce7a5ecb335217081f14deae7f7"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2024-q4-earnings-transcript.txt",
+            "startLine": 43,
+            "endLine": 43,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "c8e818f6ff553aa55102464c647bd7fc530ccd8703839ad8a722da665aa59791"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2024-q4-earnings-transcript.txt",
+            "startLine": 45,
+            "endLine": 45,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "def99d0e8d5282b86d3173e73d3764a9e7fc7c57117ab35afe3f34e8ab5ef01f"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2024-q4-earnings-transcript.txt",
+            "startLine": 191,
+            "endLine": 191,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "55e26a28d4854dcbcc2be2e234b023017b51d055363810fb5d5f03b7476752c8"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2025-annual-filing.txt",
+            "startLine": 318,
+            "endLine": 318,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "cf98ec8d98e4b74fc1729a4e8148e0205fcdaf56c3b4d782996d13c5575c1002"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2025-annual-filing.txt",
+            "startLine": 2303,
+            "endLine": 2303,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "d3d542f43c7e7b3b7162424fcb7ada787dcaaa339e39c44a944006b8cba04068"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2025-annual-filing.txt",
+            "startLine": 3009,
+            "endLine": 3012,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "a7b4be2b1bf9f02c73ee4321f9ccd40f5e18fa8addb927221198fc523f933c50"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2025-annual-filing.txt",
+            "startLine": 3715,
+            "endLine": 3715,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "d3e189859d510c1644d9c21de586fcfbb016214d666127153cb1debd88f90a03"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2025-annual-filing.txt",
+            "startLine": 3785,
+            "endLine": 3785,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "06745f8be4947c31b658a909c30c7ff719aea98dcc600413c6479dab50cd031d"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2025-annual-filing.txt",
+            "startLine": 4705,
+            "endLine": 4709,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "3b07f2cf0cd228b04459e0fc97e9ad1b07c7fc127ba56d6df8788c5c415fe6ba"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2025-annual-filing.txt",
+            "startLine": 5775,
+            "endLine": 5775,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "813423a7603f945c61a8c326d4136466ea7051312b058fbceaa05e1ae28103ea"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2025-q1-earnings-transcript.txt",
+            "startLine": 47,
+            "endLine": 47,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "0ecf5067fb10fd6225dbd5229fae067266499f4d8a1833560346f2d501d1b1ab"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2025-q2-earnings-transcript.txt",
+            "startLine": 41,
+            "endLine": 41,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "dcc7e0223bf953b10618700b8c43c84bbc42c38a451467e166a985b27dd62038"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2025-q3-earnings-transcript.txt",
+            "startLine": 61,
+            "endLine": 61,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "176a497481b9530a0ead6a9f0c9ed0790fccde4671f54d9ad704dc77b9be81b2"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2025-q3-earnings-transcript.txt",
+            "startLine": 65,
+            "endLine": 65,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "c751f31cf7a56cf0bf04a770f2b2e3fa315014458f34af0ddccf729b0d713b26"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2025-q3-earnings-transcript.txt",
+            "startLine": 289,
+            "endLine": 289,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "87409a00414fa66645cdcf458465eaf1662702fa3c40217ac15dc85f97768df1"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2025-q3-earnings-transcript.txt",
+            "startLine": 291,
+            "endLine": 291,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "fd4cbd8f505488e11adbec9dc1c095d35bd614ae1c309c3339df8c54619e7223"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2025-q3-earnings-transcript.txt",
+            "startLine": 293,
+            "endLine": 293,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "2b73382b3416c833b4ca447b5c109c6f3176bf1ee6368e9c0565f75197e26980"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2026-q1-earnings-transcript.txt",
+            "startLine": 223,
+            "endLine": 223,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "02574bf337a25878fad86604f1f943340a668408aeff4df1bdc2a6f0f77ba0eb"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2026-q2-earnings-transcript.txt",
+            "startLine": 47,
+            "endLine": 47,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "e5a8a4a761e295d6e5abf6a588f35fcd78aa060b676d2796776589976831d8bc"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2026-q2-earnings-transcript.txt",
+            "startLine": 161,
+            "endLine": 161,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "853a1d6acb5b8947f937cf25eaaefe09cedf90c8018a388f7b00c7df7d40a27d"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2026-q2-earnings-transcript.txt",
+            "startLine": 311,
+            "endLine": 311,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "f8e63c26fb30ef685e9817dfb44d7adda572bef5a94156ce10516fd8882b594c"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2026-q2-earnings-transcript.txt",
+            "startLine": 313,
+            "endLine": 313,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "3536d3ff8b60acbb29159ef50daa1524f996c56ac0181846eb5b3e46497d70fe"
+            }
+          },
+          {
+            "type": "sourceRange",
+            "sourceId": "repo-ce67f2af4410036fce1ce12f",
+            "path": "corpus/shopify/shopify-2026-q3-earnings-transcript.txt",
+            "startLine": 57,
+            "endLine": 57,
+            "version": {
+              "kind": "snapshot",
+              "contentHash": "c811cfaee9dfdd59325f6be2eeb5179fb949ccb7a16d85c267b965926639ec41"
+            }
+          }
+        ],
+        "timestamp": 0
+      }
+    ],
+    "contentHash": "3bdc856ab0734dbd4c14e541b880ca6726b3acc36af6495b65ffdd7bb80c8570",
+    "sourceFiles": {
+      "d2670d33b9840a5fc4b604ce4a7aa228f63363c0632999829b450a6dba235123": {
+        "startLine": 679,
+        "lines": [
+          "platform to almost any size. Using Shopify, merchants may never need to re-platform. Our Shopify Plus subscription plan was"
+        ]
+      },
+      "8f5969cb2ef84ab92ff0df9f68c518280bd819054a2b1506ecf12504a0a05bed": {
+        "startLine": 742,
+        "lines": [
+          "photographers, and affiliates has evolved around the Shopify platform. Approximately 18,000 of these partners have referred"
+        ]
+      },
+      "c9e9c67c29c63a578c1b5e41984e5d69bcd12d6a4976eea3289b0d68a8fe9eaf": {
+        "startLine": 4278,
+        "lines": [
+          "Revenues                               $           1,073,229 $                1,857 $             1,075,086        $            673,304 $               1,104 $              674,408"
+        ]
+      },
+      "7c4fbd6807a6061ed7032990c22257fce49a47843760b78362979bf44e494ff9": {
+        "startLine": 5528,
+        "lines": [
+          "margins, as Shopify Payments requires significantly less sales and marketing and research and development expense than Shopify’s core subscription business. The"
+        ]
+      },
+      "07ee141c80f4194f74750c8c5d3cbb804537622b62553a9afafbfdf11c6ec924": {
+        "startLine": 6063,
+        "lines": [
+          "increase in merchant solutions revenues was primarily a result of Shopify Payments revenue growing in the three months ended December 31, 2018 compared to"
+        ]
+      },
+      "ab3e938b9bb286823ee2624b75d7d219e57f0e953de2afeede986c7cc377796e": {
+        "startLine": 6065,
+        "lines": [
+          "regions, and an increase in our Shopify Payments penetration rate, which was 41.5% , resulting in GMV of $5.8 billion that was facilitated using Shopify Payments",
+          "for the three months ended December 31, 2018 . This compares to a penetration rate of 38.5% resulting in GMV of $3.5 billion that was facilitated using Shopify"
+        ]
+      },
+      "9dc5f914d9cbeba4c9ebb43743a61a330d8325cea52f60d843b26213c392ca1f": {
+        "startLine": 63,
+        "lines": [
+          "We are also stepping up our efforts to catalyze new business creation and success as our launch of Shopify Studios last month attests. Overall, the objectives of our brand investments in 2019 are to catalyze entrepreneurship, increase awareness of the Shopify brand, widen the top of the merchant funnel, and drive up the efficiency of our direct marketing spend over time. As with all new investment areas, we expect 2019 to be a learning year for us, with most benefits expected to accrue in 2020 and beyond. The third major focus area for investments in 2019 is product expansion. One thing we have learned over the last 12 years is that merchants love what Shopify does for them, and they would like us to do more."
+        ]
+      },
+      "e3ba62d9d28827579c98ddf8e6aa30b9d5e0165e4f775bac6e6c4c04279c6cae": {
+        "startLine": 537,
+        "lines": [
+          "Yeah. To be clear, more than half of the new Plus merchants in the quarter are brand new to Shopify, less than 50% are upgrades. We're seeing a lot more merchants that are coming to us for the first time and joining Plus. I think one of the most interesting parts of where Plus is at right now is all these different verticals. Initially, again, it was really just an upgrade path for our most successful merchants. Now what we're seeing is, like I mentioned in my prepared remarks, CPGs coming on. We're seeing more traditional retailers that traditionally only existed in shopping malls that are coming on. We're seeing all these different verticals."
+        ]
+      },
+      "1beb02ea8e65faf530f89fd3a156bc23d1de0a8f07f0294334c7c927d4aa690c": {
+        "startLine": 650,
+        "lines": [
+          "A multi-channel front end. Our software enables merchants to easily display, manage, and sell their products across over a dozen",
+          "different sales channels, including web and mobile storefronts, physical retail locations, pop-up shops, social media storefronts,",
+          "native mobile apps, buy buttons, and marketplaces. More than two-thirds of our merchants use two or more channels. The Shopify",
+          "application program interface (\"API\") has been developed to support custom storefronts that let merchants sell anywhere, in any"
+        ]
+      },
+      "58480667cc4c9adcb13bfe72e75b8bd08c04c945fc049c4b088ba35235888344": {
+        "startLine": 768,
+        "lines": [
+          "photographers, and affiliates has evolved around the Shopify platform. Approximately 24,500 of these partners have referred"
+        ]
+      },
+      "36dbccf9d263c0284f36084e20b2d39af026a8df3793f34cc788478bb018c5e4": {
+        "startLine": 4471,
+        "lines": [
+          "Revenues                               $           1,578,173 $                3,148 $             1,581,321        $          1,073,229 $               1,857 $            1,075,086"
+        ]
+      },
+      "8255d10e8d4d2421861be83cb94cab55947bf8566d416285c0769f6df73a1a72": {
+        "startLine": 207,
+        "lines": [
+          "We're seeing not only large CPGs that are building specific brand stores, but we're seeing companies like Levi's and Betsey Johnson and Hasbro, and, you know, companies like Hasbro have never really sold direct to consumer before. We're seeing that all happen on Shopify Plus, which is really great for us. I think you'll continue to see the majority of the Plus adds come from net new, which is great, but we have a very healthy upgrade path, which is really what, it's really important to us. We wanna make sure that the homegrown success stories have a place to grow into as they get really big on Shopify, so they never have to leave, and I think we've done a good job of that."
+        ]
+      },
+      "cae1780cd3e3a99630253eb1fb010c7b0e81954f7f57e291c552f08a3c9d51bb": {
+        "startLine": 25,
+        "lines": [
+          "I want to highlight a few of these new features before updating you on our progress with Shopify Plus and our partner ecosystem as we continue to level the playing field for entrepreneurs. We announced a new online store design experience, making it easier than ever for merchants to design and update their stores while creating their own unique brand and buyer experience. We're adding new functionality to enable businesses of any scale to showcase their products in 3D, AR, and through video, creating a more immersive browsing experience. This also makes Shopify the first major platform ever to natively support 3D. Based on our early tests, buyers interacting with 3D were more than 2x as likely to complete a purchase."
+        ]
+      },
+      "a1ff1b38cd0dba0545fd3e23674ab0f8fc1ce16bc496d1389a1c2f0d97d73765": {
+        "startLine": 27,
+        "lines": [
+          "We announced our long-awaited order editing feature and API, which will enable both merchants and partners to create flexible solutions for managing upsells and changes during the post-purchase process. We announced checkout app extensions, allowing partners to integrate new functionality into Shopify's checkout so that buyers can choose things like recurring payment transactions seamlessly. We made big steps towards connecting merchants and buyers around the world with the announcement of our translations API and multi-currency for all of our merchants. We're incredibly excited about all these announcements, but our biggest news of the day was the Shopify Fulfillment Network. We expect to spend $1 billion over the next five years to democratize fulfillment, making it accessible and affordable for merchants of any size to offer what used to be reserved for only the largest companies in the world."
+        ]
+      },
+      "4a92f9b1eee8dcabcdf454c5327a830e40b8a941a5f2944733550afe1755a830": {
+        "startLine": 29,
+        "lines": [
+          "No other company is as well-positioned as Shopify is to offer this. By leveraging our scale with machine learning, demand forecasting, smart inventory allocation across warehouses, and intelligent order routing, we expect merchants will be able to get their goods to buyers faster and cheaper than any other option they have today while keeping their own brand front and center. We're also focused on an increasingly important part of our business, offline commerce, which we're enhancing so merchants can provide a far better in-store buyer experience. We announced our new point-of-sale software, which is faster, more intuitive, and more scalable point-of-sale software for retailers to grow their brick-and-mortar businesses. Following the launch of our new retail hardware kit in April, we released the cart app extension, which let merchants apply loyalty points and discounts directly into their point of sale."
+        ]
+      },
+      "85e4eb5faf5e9156848b7d2bd86010a45c9c68e16680dbe173dee8c162c5ce4e": {
+        "startLine": 33,
+        "lines": [
+          "Simply put, merchants have a better shot at success when they have timely access to affordable capital. That's why this July, we introduced Shopify Capital to non-Shopify Payments merchants in the U.S., expanding our eligible market and helping even more entrepreneurs accelerate the growth of their business. Shopify Shipping adoption continued to grow with more than 42% of eligible merchants using shipping in the second quarter, which was up from just a third of eligible merchants in the same period last year. Merchants now have access to shipping profiles, which gives merchants the flexibility to define shipping rates by product and source location while improving the accuracy of shipping prices. Of course, Shopify Plus, which had another phenomenal quarter. The agility and flexibility of the platform gives these large merchants the ability to move fast, offer exceptional buying experiences, and grow their business."
+        ]
+      },
+      "f6e47b22fc263096a4191612e9a375145d33a4bc3690c592321c3aaaccc92945": {
+        "startLine": 39,
+        "lines": [
+          "22,000 partners referred merchants to our platform in the last 12 months, up from 19,000 in Q1. This was primarily driven by international growth. Our partners play an important role in helping us localize the platform internationally. In fact, I've been on the ground meeting with partners from around the world. I always come home energized by their enthusiasm to enable our merchants from every corner of the globe. Our App Store also continues to grow with more international partners building new functionality for Shopify. We added another 200 apps, bringing the total number to 2,900 at the end of Q2, and translated the Shopify App Store into 18 languages so that our non-English-speaking merchants can add the specific functionality they need regardless of where they're located. It's incredible what we're getting done at Shopify. We're shipping important features at a strong pace."
+        ]
+      },
+      "23665fc6a66ba1d883e9c8bb3f1da319f3c52ff59f7cf85277a0662ef216073f": {
+        "startLine": 51,
+        "lines": [
+          "Adjusted operating income in Q2 was $4.8 million or 1% of revenue, compared with a loss of $4.3 million or 2% of revenue in the second quarter of 2018. We achieved better than expected adjusted operating results in Q2 due in part to the one-time payment partner pricing benefit I just mentioned and timing of brand spend with Q2 underspend shifted to the second half of 2019. Early indications are that the brand campaign has nearly doubled unaided awareness in our test markets, while there was minimal increase in similar control markets. This has resulted in an increase in traffic to the platform. How and when that takes effect down the funnel and impacts conversion remains to be seen. This is certainly a positive early readout."
+        ]
+      },
+      "4db96875a350adbbeab49dbf85b03c2b8c15f8ff70a18d4edebf4533971d0090": {
+        "startLine": 609,
+        "lines": [
+          "Hi. Thanks for taking the question. Maybe one for Harley. Just on the Shopify Plus business, I know one of the legacy solutions in the space will no longer be supporting their product at the end of next year. I'm curious how much of that has been a factor in acquiring new merchants on the Shopify Plus side, and anything that you can share on how the new merchants coming to the platform on the Shopify Plus business are trending. Thanks, guys."
+        ]
+      },
+      "939290a8d86ff668a5f598192fa20ee4e70eeb9a0c26305dd08ef0e4d145be66": {
+        "startLine": 59,
+        "lines": [
+          "We've spent roughly two-thirds of our approximately $30 million budget allocated toward our brand campaigns and Shopify Studios so far this year and plan to invest the remainder of this budget in Q4. Moving to Shopify Fulfillment Network, our solution to further democratize commerce and help merchants provide fast and affordable shipping for their buyers. We have to get this right for our merchants. That's why we're taking a thoughtful and gated approach to the development of Shopify Fulfillment Network. We continued working with our warehouse partners to bring more nodes online through the Q3 , and we're happy with the performance of our network so far. We are seeing strong demand and continue to add select merchants and partners as we focus on high performance and optimizing for the merchant experience."
+        ]
+      },
+      "8a3d7f1a931edc1a6477e402bd0e91c5e96d629885ffd0d959c92d9654eeaf4b": {
+        "startLine": 61,
+        "lines": [
+          "With the 6 River Systems acquisition now closed, we are better positioned to deliver faster, high-quality fulfillment. Once implemented, we expect to expand throughput and capacity at our partner nodes, boosting productivity by two to three times that of manual processes. We will continue to operate, build, and sell 6 River Systems' solution in addition to making it available to our warehouse partners. As a result of extending this innovative technology beyond Shopify's current market, not only are we helping to change the broader fulfillment industry, we are also expanding our total available market. While the acquisition of 6 River Systems had no impact to our third quarter results, given it closed on October 17th, we expect the acquisition will be additive to Shopify's top line over time."
+        ]
+      },
+      "7683d4f5ee8e9ee4a5331f870d8299f91a41a5bf73a0cf31dfc0c00add016b48": {
+        "startLine": 173,
+        "lines": [
+          "Hey, on the capital piece, we've now given out about $770 million of cumulative cash advances. That continue to grow. It's up 85% since if you look year-over-year from last Q3 in 2018. Our capital business will continue to grow. Is it gonna have a material effect on GMV? Probably not a material effect on it."
+        ]
+      },
+      "0a58fe98176ede9f3d3cf8f18099cf9caebff48a928c164fe5e9c0784d3e04c0": {
+        "startLine": 289,
+        "lines": [
+          "Yeah. Let me just talk a little bit about Shopify Fulfillment Network and what we sort of expect here. Let's take Q3 to begin with. There was minimal impact to gross margin, given we're still ramping the early access program. As we enter Q4 and our peak selling season and we start to ramp fulfillment volumes, we do expect to have slight dilution on our gross margin from that. This is all factored into our Q4 and full year guidance. We do have a path to profitability that we announced at Unite, and we expect to be in product market fit phase through early 2021."
+        ]
+      },
+      "f885224d0e7888f13924f556fb1e00d4ff492adf9bd70b7eba4d912e0a6a2c01": {
+        "startLine": 291,
+        "lines": [
+          "We likely will be dilutive on the gross profit line for Shopify Fulfillment Network until we hit the scale phase, which again, we expect early 2020. We believe the short-term dilution is the right long-term decision for our merchants. We expect fast and affordable fulfillments will energize our flywheel by helping our merchants to sell more."
+        ]
+      },
+      "cd2e5cf397740c68751711fe34573b7a85137887de3cccf178c64c1d3e0b42a8": {
+        "startLine": 79,
+        "lines": [
+          "Building on the foundation we laid in 2019 and encouraged by the increased awareness of and traffic to Shopify, we are confident increasing brand awareness benefits our ability to inspire entrepreneurs and attract more merchants. There you have it. It's a long list, but a worthwhile set of opportunities to set our sights on. Building a global commerce operating system that stands the test of time is something very few companies can do well, and no company can do it without investing. The outsized revenue growth we experience in any one year is the result of calculated investments started years prior. Because we're investing to create more value for more merchants and to empower more entrepreneurs around the world, we expect to see strong top-line growth as a result."
+        ]
+      },
+      "deff8d642ef21c0f62ba4c4ad6388f7f8bc8c0ff8ae521beb5c7ec31ec8a5585": {
+        "startLine": 99,
+        "lines": [
+          "The most pressing of these is capital, which is why we expanded to the U.K. and Canada within weeks of stay-at-home measures being put in place. Extending working capital rapidly and responsibly can make a life-saving difference to a business, and so we worked with partners while taking measures to control losses amidst our expansion. This meant leveraging our dynamic machine learning models and adapting terms so we are helping as many merchants as possible while keeping losses at a prudent level. As we announced in March, we expedited delivery and curbside pickup features on our point-of-sale product so merchants could continue operating under social distancing norms."
+        ]
+      },
+      "40db949b6bc8b2a9b8239e8275bea17d4427e750d58cb69d56df27dd30eb6a02": {
+        "startLine": 101,
+        "lines": [
+          "This is only one example of how POS is pivoting for a period where less commerce is happening in person. Earlier this week, we shipped the all-new Shopify POS, our intuitive point-of-sale software that offers our retail merchants a unified commerce experience bridging online and offline, helping them to adapt to a retail landscape that we expect will look different than before. Finally, the Shopify brand campaign has been suspended in order to free up resources for other initiatives, many of which I just laid out, that are more directly impactful near-term. In a matter of days, our marketing team and others spun up an in-depth COVID response resource center where merchants can get the help they need now."
+        ]
+      },
+      "b87e35fc28331f6fec10054d93da1a59776f67533e93e4097c61c6f4301a91bd": {
+        "startLine": 79,
+        "lines": [
+          "Adjusted net income in this year's third quarter excludes an unrealized gain on an equity investment of $133.2 million or $1.07 per share. Stock-based compensation and related payroll taxes of $75.4 million or $0.60 per share, and other adjustments totaling seven and a half million dollars or $0.06 per share. Finally, our cash equivalents and marketable securities balance was $6.1 billion on September 30th, strengthened by the capital we raised in our third quarter, which provides us more flexibility to pursue our growth strategies. The pandemic has fast-tracked commerce to digital domains, there is incredible demand on both the merchant and consumer sides to enhance the commerce experience. Shopify is in a unique position to help entrepreneurs in this emerging landscape."
+        ]
+      },
+      "22032847a0749e1126c8501089ed2629cf970accb9e7f197c550be4ddeea2945": {
+        "startLine": 580,
+        "lines": [
+          "storefronts, native mobile apps, buy buttons, and marketplaces. More than two-thirds of our merchants have installed two or more"
+        ]
+      },
+      "eb1d58094b6abfbd98723cd1367a7b4f549b97a73ba2a25a58dacc893f99bf31": {
+        "startLine": 721,
+        "lines": [
+          "awareness-driven brand campaigns, authoring various Shopify blogs and podcasts, earned media and public relations campaigns, and"
+        ]
+      },
+      "facaf3d79db56126dfb560ba09679ee12ca09db95b6b1c45505f7bf7ddffc522": {
+        "startLine": 734,
+        "lines": [
+          "our merchant base in two ways: by referring new merchants, and by extending the functionality of the Shopify platform through the",
+          "development of apps. More than 40,000 of these partners referred merchants to Shopify over the last year, and this strong, symbiotic"
+        ]
+      },
+      "b586633b34edec53eaf712b179e1b66d74feb9f4ec61bc5c2f9d619bec081725": {
+        "startLine": 7262,
+        "lines": [
+          " Subscription solutions                    $        1,342,334         $          908,757      $          642,241                     47.7 %                 41.5 %",
+          " Merchant solutions                                 3,269,522                  2,020,734                 935,932                     61.8 %                115.9 %",
+          "Total revenues                             $        4,611,856         $        2,929,491      $        1,578,173                     57.4 %                 85.6 %"
+        ]
+      },
+      "124dc8ce94739c0bc1495ab70c5a68c0fb23d84e569c873e95dd1a74d1c103c7": {
+        "startLine": 37,
+        "lines": [
+          "In our first quarter of 2021, we funded over $300 million to our merchants, up 90% year-over-year, and we are seeing larger merchants take on larger advances. This record level of funding brought us to an incredible $2 billion in cumulative capital funded since the launch of Shopify Capital in 2016. It took four years to fund the first billion and just 1/4 of that time to fund the second. Small businesses are underserved and overwhelmed by today's financial services. We know this because many of our merchants tell us they feel left out of today's banking system, and many of them use their personal accounts to run their business. Through Shopify Balance, we are breaking down the barriers to entrepreneurship by providing critical business banking tools for the unbanked."
+        ]
+      },
+      "25dc300e77c0e4bd0410baacb3212d45cfe9bc2fef6cc9e4a6a6a82737fc0526": {
+        "startLine": 35,
+        "lines": [
+          "Not only does Shopify Capital help fuel our merchants' growth, our data tells us that merchants that accept Capital stay with Shopify longer as they succeed on the platform and take more of Shopify's other solutions, namely Shopify Shipping, apps, themes, and domains. Maybe most importantly, extending capital when their business needs it reinforces the trusted relationship that we have with our merchants, one that goes beyond what they have with their bank or any other vendor. When we talk about Shopify's flywheel, this is exactly what we mean. Shopify Shipping and Shopify Fulfillment Network complete the cart-to-door experience for our merchants' buyers. In Q2, label volume for Shopify Shipping increased quarter-over-quarter, and we focused on transitioning merchants who are a good fit from Shopify Shipping to Shopify Fulfillment Network to benefit from our full-service fulfillment offering."
+        ]
+      },
+      "718a601ff0e7c8421844b0c08426389922840be4af6b2ca75bc92ebb3f11965a": {
+        "startLine": 25,
+        "lines": [
+          "Our merchant base is nearly twice as big as in 2019 as the share of merchants outside of North America continued to grow as part of our mix over the past year. More than 14,000 merchants on Shopify Plus, with approximately 4,000 of these coming on in 2021, the strongest year ever for standard upgrades as well as new merchants joining the platform. Our merchants GMV more than doubled 2019 levels, reaching $175 billion in 2021. In Q4 of 2021, our merchants had their most successful Black Friday Cyber Monday selling period, generating $6.3 billion in GMV, significantly outpacing growth in the broader e-commerce market. In 2021, nearly 600 million shoppers made a purchase from a Shopify merchant, up nearly 31% from 2020."
+        ]
+      },
+      "0fd6ea3b8c8bc270f3983e4014db89c21f4d3d33be008b9850c3b5cf7bbfb1dc": {
+        "startLine": 33,
+        "lines": [
+          "With more merchants around the world using our world-class Point of Sale system, GMV from Point of Sale ended the year at its highest level ever. With our integrated payments hardware ready to be rolled out to even more countries this year, more brands will be able to meet their customers on Main Street while continuing to strengthen those relationships online through own channels like their online store, email campaigns, and social media. As customer acquisition costs rise and new privacy restrictions reduce the efficacy of advertising, embedding commerce into more apps and digital services is critical to help our merchants discover new buyers. Social media and search will play key roles, and Shopify made great progress on both in 2021. In August, we introduced TikTok Shopping, bringing organic product discovery and shopping tabs to TikTok following the launch of our TikTok marketing channel in October 2020."
+        ]
+      },
+      "6a05030765b5b516f97c11260f35ea4267342d315964527a1467b6bfcb55368c": {
+        "startLine": 35,
+        "lines": [
+          "In October last year, we launched our Spotify channel for musicians. Since introducing our TikTok channel, more than 100,000 merchant creators have installed the channel, and merchants are starting to sell via our Spotify integration. Creators selling through these channels have more power to connect directly with their buyers in an inspired moment and offer them a great shopping experience via Shopify Secure Checkout while owning their brands. Our checkout using Shopify Payments is also directly integrated with Google, Facebook and Instagram, enabling merchants to seamlessly sell across these channels. With more channels to sell on, merchants are able to manage orders, returns, and payments all from within the merchant admin. This reinforces the strength of our back office and Shopify's position as a multi-channel leader."
+        ]
+      },
+      "6e8f92f3c82dd49942de49bab5f8fb8f44fb01abb562479f774b294e23cf762f": {
+        "startLine": 37,
+        "lines": [
+          "In Q4, thousands more merchants used these three channels compared to the previous quarter, getting them in front of billions of potential new buyers. While still early, social commerce is growing, with sales via social channel expected to double in the U.S. by 2025, presenting a huge opportunity for entrepreneurs. More buyers are following recommendations and inspiration from the people they trust on social media and discovering new brands to fall in love with. Shopify is equipping our merchants for this future by creating a fantastic shopping experience for buyers with Shop Pay, our accelerated checkout now available on Facebook and Instagram. In Q4, more buyers used Shop Pay to check out on Facebook and Instagram, with sales volume growing four times quarter-over-quarter for Shopify and non-Shopify merchants."
+        ]
+      },
+      "2f11d2e0fb241338085af495efbde7e9dbd049d705e3ba2afadd0bd8db17e31b": {
+        "startLine": 596,
+        "lines": [
+          "A multi-channel front end. Our software enables merchants to easily display, manage, market and sell their products across over a",
+          "dozen different sales channels, including web and mobile storefronts, physical retail locations, pop-up shops, B2B, social media",
+          "storefronts, native mobile apps, buy buttons, and marketplaces. More than 80% of our merchants have installed two or more",
+          "channels. The Shopify application program interface (\"API\") has been developed to support custom storefronts that let merchants",
+          "sell anywhere, in any language."
+        ]
+      },
+      "778455e8f5591870788bb56440782e1e6e72841ae81c245cbadcf34456e208ec": {
+        "startLine": 754,
+        "lines": [
+          "A rich ecosystem of app developers, theme designers and other partners, such as digital and service professionals, marketers,"
+        ]
+      },
+      "8add6d8ed69d5862ad70367572351ce2126e9bb706c5b40bb34bee89989119ba": {
+        "startLine": 7474,
+        "lines": [
+          "is automatically enabled in 100% of Shopify Fulfillment Network merchant storefronts. We expect to continue to invest in and optimize our logistics offerings"
+        ]
+      },
+      "188be112be10750265162ec5ad816dd271810cd74ad2769c642733ffacc97dc4": {
+        "startLine": 47,
+        "lines": [
+          "Early pilot runs have shown that SFN merchants can expect service from origin ports up to 50% faster with cost per pallet much less expensive than average. Once their inventory arrives at domestic ports, merchants have to tackle the second challenge mentioned, distribution. Historically, preparing and routing inventory for distribution across multiple channels has been hard for independent businesses until now. In July, we closed the acquisition of Deliverr and have begun integrating SFN and Deliverr software, network, and operations, which we expect will continue for several quarters. Through Deliverr, we are accelerating the simplification of the distribution phase. The first example of this will be at our Atlanta hub warehouse."
+        ]
+      },
+      "3391c2ab73126efd76aeb2732202e5368355a8c3f28b6e406132330b02137052": {
+        "startLine": 145,
+        "lines": [
+          "Yeah. I might just add one more thing on the POS side. We're seeing more merchants take POS from our existing merchant base. The majority of those adds are coming from the existing base, but we're also seeing a healthy number of new merchants come to Shopify for our POS product. There are multiple levers there that are growing our POS business."
+        ]
+      },
+      "5cc3c15dfe69baaab2ab81d67b26405eea555eebfa7174bdea9b8d7a030ef150": {
+        "startLine": 307,
+        "lines": [
+          "No, there's no change in the current investments that we plan for SFN and Deliverr. I wanna just remind you that the CapEx that you referred to relates to a handful of backbone self-operated hubs in key geographies that will serve a multifunction capability that we believe actually brings operating costs down and makes the network really efficient. With the acquisition of Deliverr and their 40 partner warehouses, will act as spoke warehouses as well as sort centers. This is a very capital-efficient plan. We'll have more to say in the coming quarters as we bring those networks together. But there's no current plan right now to change that view."
+        ]
+      },
+      "3f89e4d56a1b93e85ad88f6b60897b8d5b3f75bd499fecc6d88bd7b27f0b64cb": {
+        "startLine": 19,
+        "lines": [
+          "During the quarter, the outsized pace of offline growth on Shopify continued as we brought on eight new merchants with over 20 locations each and one with over 175 locations. With our commercial teams increasingly selling to larger retailers, Plus merchants accounted for approximately 35% of all Point of Sale Pro sales closed in Q3, and that's up from 14% in the same period a year ago. Well-known brands, including department store Schofields and designer apparel TOTOME, implemented our Point of Sale Pro solutions for their locations, driving Q3 offline GMV growth by 35% year-over-year or 41% in constant currency. Since the beginning of 2021, over half of the rapid adoption of Point of Sale Pro is being driven by new SMB retailers coming to Shopify to get their start as a new omnichannel business."
+        ]
+      },
+      "50322084840a5e5d0e342828afd44b493d0218e4148d4537c7facf05946903c8": {
+        "startLine": 43,
+        "lines": [
+          "During the quarter, we officially signed partnership agreements with Ernst & Young and KPMG, adding to our relationship with Deloitte. Our strategic alliance with Ernst & Young, or EY, serves and scales to the needs of the client's enterprise. EY will be training an initial cohort of 500 technical professionals across their EY wavespace network of 50 locations globally on Shopify and will further support those professionals by enabling up to 10,000 consultants through exposure to the Shopify platform. This access will enable co-creation of unique immersive experiences that will help reimagine the online customer experience and unlock new markets for certain regulated industries and products. In addition, Shopify is thrilled to announce that we signed a collaboration agreement with KPMG in Canada."
+        ]
+      },
+      "a8c2c185219d9f3196bf2554ab558e668e69af155575ef358868ab7ef4422550": {
+        "startLine": 53,
+        "lines": [
+          "Let me share with you some of the initial stats on the rest of the supply chain. We have seen a 75% year-over-year increase in merchant inventory being received into Deliverr cross-docks, a nearly 80% growth quarter-over-quarter in the number of merchants using more than one of our logistics services across all three stages of the supply chain, and a 450% year-over-year increase in orders fulfilled by FMS across both Shopify and partner-run facilities. Finally, and most importantly, we are shifting the conversation with merchants to focus on logistics being a tremendous value driver for their operations. When done right, fast and reliable fulfillment can significantly increase cart size, conversion rate, order value, and turn buyers into repeat customers. In Q3, we completed the rollout of Shop Promise to all SFN merchants."
+        ]
+      },
+      "15ab1b4b62b208bdc1c61fba8846aaf38beadade1ad018c0def6c47d88812118": {
+        "startLine": 55,
+        "lines": [
+          "This global agreement will pave the way for more Mars brands to build and scale their businesses on Shopify, and is a positive signal for others in the industry as Mars joins the ranks of other large CPG brands that are already using Shopify, including Heinz and Nestlé. Our commitment to making commerce better for businesses of all sizes is only growing. To kick off the year, we made a major announcement that we were launching our enterprise retail solution, Commerce Components by Shopify, or CCS. Commerce Components is a modern composable stack where retailers can choose the Shopify components they want, integrate with their existing systems, and create incredible customer experiences. One of the first brands deploying CCS is the toy and entertainment industry leader, Mattel.",
+          "",
+          "Mattel is a merchant with over 400 brands in their portfolio they will be bringing to Shopify, a testament to the durability and scale of our commerce platform. Mattel needed an enterprise partner that could deliver incredible speed, endless flexibility, and the ability to pick and choose the parts of Shopify infrastructure they needed, as well as execute its flash sale model. While it's still early days, extending our reach into the enterprise will be a key investment focus in 2023. As part of our enterprise strategy in 2022, Shopify signed business partnership agreements with Accenture, Deloitte, Ernst & Young, and KPMG to enable greater opportunities for larger brands to adopt Shopify. Last month, we formed an alliance with IBM Consulting.",
+          ""
+        ]
+      },
+      "ce8cb0dfe0f93d1cc0f86e276b36e71762ed7ce88557fa4798823a486d4e7cec": {
+        "startLine": 582,
+        "lines": [
+          "       more than a dozen different sales channels, including web and mobile storefronts, physical retail locations, pop-up shops,",
+          "       directly to other businesses (\"B2B\"), social media storefronts, native mobile apps, buy buttons, and marketplaces. More than",
+          "       90% of our merchants have connected their Shopify stores to two or more channels. Beyond our pre-configured channels, the",
+          "       Shopify application programming interface (\"API\") has been developed to support custom storefronts that let merchants sell",
+          "       anywhere."
+        ]
+      },
+      "c44e4caac91afa7f57e014bf5d4a7b374c7f30896b55a5ef305094b0820604cd": {
+        "startLine": 649,
+        "lines": [
+          "Using Shopify, merchants should never need to re-platform. Our Shopify Plus subscription plan was created to accommodate larger"
+        ]
+      },
+      "da0fd63d756bb0ebca738f76daf8770b59a4dec517c6e98676a9ae00c5e29570": {
+        "startLine": 652,
+        "lines": [
+          "flexibility. With enterprise-level merchants in mind, in January of 2023, we launched Commerce Components by Shopify",
+          "(\"Commerce Components\" or \"CCS\"). Commerce Components is a modern composable stack where retailers can choose from over"
+        ]
+      },
+      "c954749e0d3c5ef21d63d792030de4a0317492ded1d4afde5a756c82f451c0d0": {
+        "startLine": 868,
+        "lines": [
+          "Shop Campaigns (previously Shop Cash Offers) is our buyer acquisition product related to the Shop Cash rewards program in the",
+          "Shop App. Revenues are recognized at the time of purchase when a qualifying transaction occurs. Shop Campaigns allow merchants",
+          "to increase the value of a buyer’s Shop Cash through targeted campaigns aimed at attracting new buyers to participating merchants",
+          "and we earn a fee from the merchant for the buyer acquisition services."
+        ]
+      },
+      "ef47177306f0691be2ed077c2dd1726fad20aa0c1beb74a9689281814e179960": {
+        "startLine": 5045,
+        "lines": [
+          "     comprehensive income (loss), for the year ended December 31, 2023. The components of the sale were as follows:",
+          "",
+          "     Goodwill                                                                                                                                        $             (1,438)"
+        ]
+      },
+      "5918001c8d46915082597cb8ff08948d019f0ae06e910f3916660a84eb6a5e95": {
+        "startLine": 5293,
+        "lines": [
+          "",
+          "Due to the timing of availability in the reporting of financial information from the investee, results are presented on a one-quarter lag. For the year",
+          "ended December 31, 2023, our share of the loss in the investee for the period, including amortization of the basis difference, was $58.",
+          "",
+          "The carrying value of the equity method investment as of December 31, 2023 was $780. As of December 31, 2022, Shopify's investment was not",
+          "accounted for under the equity method and therefore the equity method investment was $nil.",
+          ""
+        ]
+      },
+      "2803250ac3284c8dc8a1ad4b2c39e8acdb5f6fe868461029c30eca28dc10cebe": {
+        "startLine": 5959,
+        "lines": [
+          "19.   Related Parties",
+          ""
+        ]
+      },
+      "013ee20c3658a60666002247747adb59f1387ea45a98fccc2b0a510a82ed70fa": {
+        "startLine": 7329,
+        "lines": [
+          "",
+          "Cost of merchant solutions increased for the year ended December 31, 2023 compared to the same period in 2022. The increase was primarily due to higher",
+          "payment processing fees resulting from an increase in GMV facilitated through Shopify Payments and Shop Cash issued following the program launch in June",
+          "2023, offset by a decrease in costs associated with our logistics operations, and a decrease in acquired intangibles, following the sales of our logistics business",
+          "in the second quarter of 2023. As a percentage of revenues, cost of merchant solutions remained flat for the year ended December 31, 2023 compared to the"
+        ]
+      },
+      "44abd3a7ca95df17963a60ebe792094222b3d8721b542aa1fa3ac2d9d350b3c5": {
+        "startLine": 39,
+        "lines": [
+          "Even as more and more large brands choose Shopify for our unified commerce capabilities, we remain the best commerce offering for SMBs. After Intuit made their decision to sunset their QuickBooks Desktop Point of Sale product, they chose Shopify to be the preferred partner to migrate new retailers in need of a new point-of-sale solution. This partnership recognizes the depth and the quality of Shopify's point-of-sale offering and opens up the funnel for more SMBs and mid-market retailers to join Shopify and leverage our suite of retail solutions. We're already seeing traction from this partnership with thousands of new merchants having chosen to adopt Shopify Point of Sale. Our Shop app is another incredible opportunity for our merchants. Back in February, as part of our Winter Edition release, we announced some of the biggest product updates to Shop since launching in 2020."
+        ]
+      },
+      "b51d6803e61b9ff618c05a34a45bdbb90d5beeb941e56a41efcce6bc6db4a149": {
+        "startLine": 41,
+        "lines": [
+          "We're in the post-cookie mobile era of commerce, where brands are increasingly motivated to build their own mobile experiences to retain ownership of their customer relationships. For most businesses, the technical and financial resources required to build and maintain their own mobile app just does not make sense. Today, Shop gives merchants an out-of-the-box mobile storefront, making it easy for them to leverage Shop's existing buyer audience to drive new and repeat customers to their brand. Of course, when you layer on Shop Pay, which continues to be the best converting checkout on the internet, Shop is becoming one of merchants' most important channels. Another example of how Shopify is staying at the cutting edge of commerce is the AI shopping assistant that Shop launched in March. Shoppers tell the assistant what they are looking for, and it serves up relevant product recommendations from Shopify merchants."
+        ]
+      },
+      "ddc9a7a1594111e6ef4cdcb6e2439e81aa660774de7908649b645fff2eb39aee": {
+        "startLine": 67,
+        "lines": [
+          "Operating expenses were $910 million for the quarter. This represents a sequential increase of 1% over Q4 of 2022 operating expenses of approximately $903 million when excluding the one-time charges from Q4 of $84 million. Compared to Q1 of 2022, the primary drivers of this increase in operating expenses are related to higher compensation expense, including Deliverr. As we have demonstrated over the past three quarters, our operating expense dollars, excluding one-time items, continue to stabilize and grow at a much slower rate. This directly reflects our focus throughout the entire organization to drive increased productivity and efficiency across our teams."
+        ]
+      },
+      "de385d6d045607f0183cef7ae73d922b1d88cc7cada8f51cb7e85efafc86243e": {
+        "startLine": 69,
+        "lines": [
+          "We continue to rigorously evaluate all of our costs, including greater scrutiny on our cloud infrastructure spend, return on our marketing programs and their associated payback periods, in general, an increased internal utilization of automation and technology to replace manually driven processes. Let me share a specific example of what I mean. In Q1, within sales and marketing, expenses declined both year-over-year and sequentially as we have been working to diversify our marketing mix over the past year. Prioritizing areas such as direct mail and audio, we've also optimized payback from established channels like digital search and display. As a result, in recent months, we have seen the payback period for our paid advertising improve by over 50%."
+        ]
+      },
+      "9b126556d806ebd2ea932541f22caf8ab4eba039471effa7adad27c515a9d6dc": {
+        "startLine": 217,
+        "lines": [
+          "On the merchant referring side, I mean, we have this massive network, tens of thousands of these agencies and third parties and systems integrators who are constantly referring new business to Shopify as well. I think being known and being regarded as a company that is great at partnership, that allows for partners to participate in the upside of the business is very important. It's the reason why we probably have one of the most, you know, impressive developer ecosystems on the planet."
+        ]
+      },
+      "61ffb0807e59ac48c52526af3279dff7e58ef6bdd220fb16649a150159b710d4": {
+        "startLine": 225,
+        "lines": [
+          "Hi, thank you for the question. As Shopify is starting to approach the one year point from when you began entering the partnerships with the large system integrators, we were wondering if you could provide an update on how these relationships are materializing and if they're contributing to the funnel for enterprise commerce players. Like, following through with that, like, you've discussed 2023 being an investment year for the enterprise. It would be great to hear how you view the enterprise sales team and if there's an opportunity for additional investment around that channel. Thank you so much."
+        ]
+      },
+      "3689555945b1909322c7437a55dba59fb0009fcb0f7a5cbba216c7a53a784f85": {
+        "startLine": 231,
+        "lines": [
+          "Yeah. Thanks for the question on that. You know, more unequivocally, more large retailers are coming to Shopify. I mentioned some household names like Dollar Shave Club and Nina Ricci, and Anastasia Beverly Hills, but also Hunter Boots and Meta citing for the quarter. In that way, we are certainly seeing more large brands, more large merchants come to the platform. That obviously helps us sign even further. As of now, we have, you know, signed partnership agreements with Deloitte, EY, KPMG, Accenture. Last earnings call, we mentioned IBM Consulting, Cognizant. They continue to build practices around Shopify and Shopify Plus and Commerce Components inside of their own sales teams, and what we've been spending time on is training them up to how to best sell Shopify most effectively."
+        ]
+      },
+      "e9038976bfba3da0ced662036c065e89811f463a37802d0e3ae06f599a0d7dff": {
+        "startLine": 17,
+        "lines": [
+          "Thanks, Carrie, and good morning, everyone. We are here to discuss our latest quarterly results, which reflect Shopify's continued growth and commitment to empowering businesses around the globe. Our Q3 results should be taken as a clear indicator of our ability to reshape Shopify, making us faster, more agile, and ready for sustained profitable growth. GMV was up 22%, revenue was up 25%, growth profit was up 36%, and free cash flow margin was 16%. Simply put, we executed extremely well in Q3, delivering results that reflect the power of our merchant-first business model and the progress we are making to further solidify Shopify's position as the global leader in commerce. At Shopify, we excel in the face of change. It's embedded in our DNA and inspires us to continually learn, innovate, and deliver more products to make commerce better for everyone."
+        ]
+      },
+      "4ea029e8485b01e90b174c346a8865b3770dcc0fd8bc0e173ed28e3d70fc6a6e": {
+        "startLine": 35,
+        "lines": [
+          "It is this increasing optionality and integrated ecosystem that separates us from everybody else. We offer an agile and scalable platform that can open and scale to 1,000 physical retail locations, turn on social channels like TikTok, YouTube, and Instagram with the click of a button, expand to wholesale via Shopify Collective or our B2B solution, connect and sync data with multiple marketplaces like Walmart, Amazon, and eBay through our Marketplace Connect app. And all of this can be done within Shopify, giving brands a single, centralized place to reach a larger base of customers anywhere, anytime, and always. Within retail, our go-to-market efforts continue to yield strong results. Offline GMV increased 26% year-over-year in the quarter, driven primarily by larger retailers joining the platform."
+        ]
+      },
+      "45c7e85a766c8ce97334cb02933e4b6978d6f614013a162530aa1cc40ea3fb60": {
+        "startLine": 37,
+        "lines": [
+          "Nearly a third of point-of-sale GMV in Q3 came from Shopify Plus merchants, and our Point of Sale Pro subscriber base was up 34%. All powerful indicators that our world-class point-of-sale product is fueled by an even stronger go-to-market that is delivering results and bringing more merchants onto the platform. The strength of our unified commerce platform and scalability of our retail channel continues to draw in major omnichannel retailers like Banana Republic Home, Princess Polly, and the Sacramento Kings. We have worked consistently to build out the features and functionality that larger, multi-location retailers require, including powerful, customizable staff permissions, remote management of the point-of-sale products, and innovative professional payment devices like our new Point of Sale Go, which we brought to the U.K. and Ireland in the quarter."
+        ]
+      },
+      "85affcb5b08a59a4ea09da919f9195f1ececc533ebeb2f96d601ddf084060532": {
+        "startLine": 219,
+        "lines": [
+          "These are all different types of merchants in different geographies. And so what you're seeing is a very intentional push to find better on-ramps into Shopify, and one of those on-ramps is, are the SIs, and that is going really, really well. So we now have agreements with Deloitte, EY, KPMG, Accenture, IBM Consulting, Cognizant. We just announced a new one with WPP. And what it's really doing is it's helping very high volume and high complexity merchants and businesses that they already work with daily, really migrate onto Shopify. You know, you have companies like Accenture right now that are actually training entire teams on selling Shopify and working together on these, you know, these high, high-revenue and high-profit projects together, and it's working."
+        ]
+      },
+      "924b998518b3a635d0485b6703af50c80d04f29b5f6aad5a489a2fc06dbcea51": {
+        "startLine": 303,
+        "lines": [
+          "More than 100 million buyers have opted into Shop Pay, and it's already—I mean, the quarter alone, it's facilitated $12 billion of GMV and $110 billion cumulative since we launched it. So we know that Shop Pay is consumers' favorite way to check out from an accelerated perspective, and now, really what we're trying to do is continue to make it easier to check out with Shop Pay, add it into things like Shopify Point of Sale, for example, and expand it across more surfaces. But really making Shop Pay the preferred accelerated checkout across commerce is the goal here. And by creating this opportunity for some very large brands to use Shop Pay off-platform... Again, the goal is not for them just to use Shop Pay off-platform indefinitely, it's to begin a business relationship."
+        ]
+      },
+      "6abd2d8dd445b5ce96dd64428d0b0ac10d2a6efebc22e671a51fb309e4217942": {
+        "startLine": 45,
+        "lines": [
+          "Because we help our merchants run their businesses, we are able to get them the funding they need in a few clicks. This helps brands like Nomad, ChocZero, and Porter Road get the funding they need to support their growth scale and grow their businesses. And we know the Capital product has been effective because we're seeing a repeat renewal rate of over 70%, a testament to our ability to help merchants access the funding they need for growth, particularly ahead of key sale times, including the crucial Q4 holiday shopping season. A newer product that just launched in the summer of 2023, Shop Cash, is a great example of harnessing the power of platform via Shop app to build new ways for merchants to acquire new customers. As we move into 2024, Shop Cash offers will become a part of a broader product suite called Shop Campaigns."
+        ]
+      },
+      "48873a4152a7716314b56d3fd0d60c42abd2dd6985bacf96e5e04721a7a01baf": {
+        "startLine": 47,
+        "lines": [
+          "Brands like Netflix, Nike Strength, and Caraway have already signed up and launched their first Shop Campaigns during the quarter, giving them access to millions of highly qualified buyers in the Shop app and creating a new tool for paid customer acquisition. While still early days, we are very excited about the potential of this product in making it easier for merchants to discover and engage with their customers. Encouraged by the momentum across our product offerings, we know that for most of our merchants, Shopify is the online store. But we know that that's only the start. As commerce has continued to evolve, transactions and brand engagement have moved far beyond the traditional retail or online stores. In order to discover new customers and build deeper connections with existing ones, you need to be online, offline, and everywhere in between."
+        ]
+      },
+      "8b7df342fa62a93088d6a1b4f79ab01819949f8b7a00488c6ddebebac737be63": {
+        "startLine": 51,
+        "lines": [
+          "Or Saje Natural in Canada, which has over 70 retail locations today, chose to migrate over their existing point-of-sale to Shopify, thanks to the features and functionality we offer, including point-of-sale terminal, seamlessly integrated back into the online store, and the capability to now support over 1,000 physical stores. In addition, we're seeing merchants come into Shopify primarily for our point-of-sale: multi-store brands like Evereve and Akira that want to modernize their offline tech stack with our cutting-edge platform. These on-ramps, or entry points, into Shopify further substantiate our role as the unified commerce operating system for merchants, whether they come to us to sell online, offline, or anywhere in between. For the year, our offline revenue was $441 million, which includes revenue from payments, offline subscriptions, and point-of-sale hardware."
+        ]
+      },
+      "928fc59090f3039fcbb7a9ac8ff753ec17d9aa957ffb38018a4a6ffb96008f40": {
+        "startLine": 59,
+        "lines": [
+          "In Q4, the Shop app nearly reached $100 million in GMV in a single month, underscoring the immense value we can bring to our merchants, a feature that is only available if you are on Shopify. We also brought in Shop to include web experience, providing more touchpoints for our merchants to maintain customer relationships. We've continued to unlock new ways for our brands to foster genuine connections with their consumers through the Shop app. After our successful collaboration with Drake last quarter, we partnered with MrBeast on a video that has attracted more than 165 million views. MrBeast invited viewers to use the Shop app to request a holiday gift from Shopify merchants. This helped drive the Shop app into a top-three spot in Apple's free iOS apps chart, and hundreds of thousands of fans participated, with thousands of gifts from Shopify merchants shipped to their doorstep."
+        ]
+      },
+      "47fc0c8f9c5ed9ee3726e1ca5e61fc4d6dce0c3a893cb4326dbf7931a2f2f977": {
+        "startLine": 351,
+        "lines": [
+          "Yeah, I mean, obviously, we've talked a lot about Audiences in the past, which I'm happy to mention as well or talk about too. But in terms of Shop Campaigns, which are sort of formally known as Shop Cash offers, it went into GA in June 2023. And really, the idea is buyers earn Shop Cash when they use Shop Pay at checkout. So, this is a way for us to actually establish Shop Cash as a key buyer acquisition tool. And it allows merchants to provide everything they need to have great increased revenue through higher visibility, much better conversion. And we want to see more and more of our brands use it."
+        ]
+      },
+      "978bb5a2cd65752b23e18148256e7f1ccab76ee45b7a8827f904f472f7f988ce": {
+        "startLine": 353,
+        "lines": [
+          "We think it's a wonderful way for them to get a very strong return on ad spend. And we're already seeing big brands like MrBeast, for example, now using it for a lot of his brands on the Shop app. So, we'll continue to do so. Right now, we know that it could drive up to 24% new customer growth, and it's already helped merchants find over 1 million new buyers. So, given that it's still fairly a new product, we're really quite ambitious with where it's going. We think more of our merchants will use it. And again, it's one of those things that as it gets better, it's another reason that you choose Shopify because in order to use it, you have to be on Shopify. But we think Shop Cash can be a key buyer acquisition tool."
+        ]
+      },
+      "60fd343c2e0bc2f27b6e54a2872eb129baf2d4f727c52f7362f538857110cf4a": {
+        "startLine": 2930,
+        "lines": [
+          "                                                   2024            % Change                 2023              % Change               2022",
+          "                                                                           (in US $ millions, except percentages)",
+          "Research and development                               1,367              (21)%                  1,730                15 %                1,503",
+          "Percentage of total revenues                              15 %                                      25 %                                     27 %"
+        ]
+      },
+      "dcff310e269d354b3bf9f0e44d635e5685f1c3f4994a5e62273252858baeb848": {
+        "startLine": 4961,
+        "lines": [
+          "is presented within \"Net loss on equity method investment\" in the consolidated statement of operations and comprehensive income (loss).",
+          ""
+        ]
+      },
+      "1d538a4d8e976905eafc69b529e336887e99c9bcc14ca3a87c7e05194983a651": {
+        "startLine": 5594,
+        "lines": [
+          "In the year ended December 31, 2024, the Company recognized $4 million of expense in the consolidated statement of operations and"
+        ]
+      },
+      "fba783e71e95d4729cd2a5863d5a78fcd3433ced0407b2d7fafacc628daa2900": {
+        "startLine": 5602,
+        "lines": [
+          "",
+          "19. Shareholders’ Equity"
+        ]
+      },
+      "df3c98768410eb6427626b491d9b400576d474d222f2713a44ef05b1701e90cd": {
+        "startLine": 253,
+        "lines": [
+          "We believe over time, they will take more of those components. Now, the product attach rate is really important to us because it's a proxy for the value we're adding from all the products that we have, whether it's something like capital or it's payments or any of the other Point of Sale , for example, any of the other solutions that we think are really important for merchants to be utilizing to build their business. But in the case of enterprise in particular, I think the reason that you're seeing Overstock and BarkBox and Intersport and Skullcandy, all these brands coming to us at this increased clip is because this is by far the best product. And the total cost of ownership, we just had an independent study validate this, the total cost of ownership for Shopify's enterprise offering is 36% better than competitors. That is unbelievable."
+        ]
+      },
+      "a1056b88907d92f37ebecbf88211eff49ed11edede5f6ce92e2cfbc45cbe58ab": {
+        "startLine": 317,
+        "lines": [
+          "We continue to expand the countries that we're in with Point of Sale. So that being said, we don't, in terms of the Attach Rate, we just don't have the number of just in terms of sheer number, we don't have the same number of offerings for Point of Sale that we also have online. But that's also an opportunity because we're going to be able to migrate more and more functionality to the Point of Sale. And so over time, the Attach Rate and some of the opportunities overall are going to increase. As I believe you know, the Point of Sale, the retail piece for us is primarily a payments piece. There's obviously the subscription element to that. Those two make up the significant majority of the revenues that we get from retail."
+        ]
+      },
+      "b88e0ae64407af8cd2bf5fe05169fee99c56b676c22fdd1ee7fdfeab8fa964fb": {
+        "startLine": 15,
+        "lines": [
+          "Good morning, everyone, and thank you for joining. We cannot wait to walk you through all the outstanding results from the last quarter. Our relentless focus on our mission has not only empowered our merchants, but has also strengthened Shopify significantly. We are at our strongest yet, and we could not be more excited about the future of commerce and the future of Shopify. First, let's break it down at a high level. In Q2, we saw 25% revenue growth when excluding logistics, with gross profit growing faster than revenue. Operating expenses decreased quarter over quarter, and our free cash flow margin more than doubled to 16% from last year."
+        ]
+      },
+      "4bf075a4ccbfc23e63de8b4091abe8ff2cc0758f39eb4fa72806737d3ddd3e79": {
+        "startLine": 17,
+        "lines": [
+          "A couple of other highlights from Q2 were the release of our latest editions at the end of June, with over 150 new product updates and features, passing a massive milestone as we crossed the $1 trillion mark for cumulative GMV that has been processed through Shopify, and our offline business surpassed $100 billion in cumulative GMV. These results reiterate what we've been saying all along: We are building for the long term, and our business model is working. As you may have seen in our recent edition, unification was the central theme. So what do we mean by that? Well, we believe that the mark of great software is that as it scales and grows, each new feature is built as if it were there from the very beginning. Everything works together harmoniously, crafted in consistent style and quality."
+        ]
+      },
+      "9a209ec1ef82424503db0974d0c17ca6c7f2388d7b7ddf5289f83230b7e635d7": {
+        "startLine": 305,
+        "lines": [
+          "What was so interesting and neat about the Shop Week was that merchants have been using Shop App for a while, but the fact that 10,000 merchants on their own posted their best GMV week ever on the Shop App allowed us to reintroduce the power of this incredible app and this tool to them as a main channel. So we'll continue to do that. We're unleashing new ways for merchants to engage and to drive these incredible connections. Also, we think that from an advertising perspective, I mean, you mentioned Shop Campaigns, these are ways that we can also help merchants not only find new buyers but also increase their the lifetime value or the sales and the checkout rates they have with those buyers."
+        ]
+      },
+      "21b9a52aead766386a8da1b2d4a1b2358bbe84fe9957b3bee8dc53dc3c0ce822": {
+        "startLine": 307,
+        "lines": [
+          "And so, you know, we're seeing brands like Feastables and Steve Madden and Spanx now, who consistently come back to us to do this marketing, specifically on the Shop App, using Shop Campaigns to their audiences. And those that use it, their GMV grows, and they grow their user base, so they keep coming back. No new data to give out just yet on the Shop App, but you can—I mean, if you're watching things like our Editions release we did this summer, and you're just, you know, looking at the tea leaves here, you see that the Shop App continuously gets better in time, both for consumers, but also from a merchant perspective, as this incredible channel for them to drive new traffic."
+        ]
+      },
+      "bef3bf1148ef1f47ab19968dd4a6e6e183281dad511dee0baf14993d7b7bea9f": {
+        "startLine": 19,
+        "lines": [
+          "Thanks, Carrie, and thank you all for joining us today. As we say each quarter, Shopify is building for the long term. Our consistent results quarter after quarter confirm that our strategy is working incredibly well. Q3 was another amazing quarter across the board. GMV was up 24%, marking our fifth consecutive quarter where GMV growth was greater than 20%. Revenue was up 26%, operating income more than doubled from last year, and free cash flow margin expanded to 19%. These are not just numbers."
+        ]
+      },
+      "3cd2e959cdf6536aa28af48a7acecbf857ac6ce7a5ecb335217081f14deae7f7": {
+        "startLine": 219,
+        "lines": [
+          "I mean, things like product bundles supported in draft orders. There's now improved conversion tracking and tax collection. There's now new automation with Shopify Flow templates, which means that you can actually assign a sales staff to particular B2B customers if you're a merchant, and the result is that you're seeing companies like Dermalogica and Therabody and Life Fitness and Daily Harvest and Kraft come to us as well, so I think we're closing those gaps fairly rapidly.",
+          "",
+          "I also think that historically, we really focused on existing direct-to-consumer brands on Shopify that also had a strong B2B or wholesale practice. That felt like sort of low-hanging fruit for us. We are now beginning to see merchants that are specifically and exclusively B2B wholesale merchants come to Shopify now for our B2B product.",
+          "",
+          "And eventually, in some cases, we've actually seen them begin to dip their toe in the water on going direct-to-consumer as well. So back to my comment earlier about this unified commerce system. The beauty of Shopify is that you come in for one particular channel, but once you're in the ecosystem, you begin to make that the entirety of your retail operating system. But specifically on your point, those gaps are getting closed pretty quickly. And we just think B2B, it is a huge, I think there's like a $14 billion TAM."
+        ]
+      },
+      "c8e818f6ff553aa55102464c647bd7fc530ccd8703839ad8a722da665aa59791": {
+        "startLine": 43,
+        "lines": [
+          "From top sports teams to major music labels and even one of the largest window covering businesses, Shopify powers them all. This diversity isn't just impressive. It proves that Shopify is the most compelling choice for any business looking to grow quickly, reliably, and at scale. No matter your industry, we have got you covered. In addition to new brands consistently choosing Shopify for its comprehensive enterprise-level offerings, the Shop Pay Commerce Component has also become a compelling entry point into the Shopify ecosystem for enterprise brands. Take Everlane, for example. Everlane was the first merchant to sign up for Shop Pay Commerce Component about 15 months ago, but since then, our partnership has only grown stronger, and by Q4 of this year, we've expanded our agreement with them, bringing more of their operations over to Shopify."
+        ]
+      },
+      "def99d0e8d5282b86d3173e73d3764a9e7fc7c57117ab35afe3f34e8ab5ef01f": {
+        "startLine": 45,
+        "lines": [
+          "We believe this trend should continue to play out over time for the Shop Pay Commerce Component. We expect that enterprise retailers may often begin with a simple integration of Shop Pay and gradually, over time, adopt more and more of Shopify's products and services. Or here's another example. In Q4, we signed three very large shoe brands, Aldo, Sperry, and Call It Spring. That combined will bring both their online and offline businesses to Shopify, including over 400 physical retail locations through point of sale. Initially, these brands were only looking at our Shop Pay commerce component. But after working closely with our team and seeing what our full unified commerce offering can do, they each decided to go all in with us."
+        ]
+      },
+      "55e26a28d4854dcbcc2be2e234b023017b51d055363810fb5d5f03b7476752c8": {
+        "startLine": 191,
+        "lines": [
+          "I mentioned this previously, but one of the cool parts of seeing companies like Everlane, for example, come to us initially simply for a component and then eventually coming on entirely to Shopify. Or another example is Aldo, where the conversation started with the commerce component and ended up turning into the entire unified commerce product that we offer them. We are seeing more and more of these merchants that come. They want to learn about Shopify. And I'll just say from personal experience, we finished NRF in January. Pretty much every retailer and every major brand on the planet is now looking to Shopify or at least coming to introduce themselves to Shopify to figure out how if we can work with them. That was not happening even 12 months ago. And I think the two things that really are helpful to them is one, the product."
+        ]
+      },
+      "cf98ec8d98e4b74fc1729a4e8148e0205fcdaf56c3b4d782996d13c5575c1002": {
+        "startLine": 318,
+        "lines": [
+          "A rich ecosystem of app developers, theme designers and other partners, such as digital and service professionals, marketers, photographers"
+        ]
+      },
+      "d3d542f43c7e7b3b7162424fcb7ada787dcaaa339e39c44a944006b8cba04068": {
+        "startLine": 2303,
+        "lines": [
+          "facilitated gross merchandise volume (\"GMV\") of $378.4 billion, representing an increase of 29% from the year ended December 31, 2024. A"
+        ]
+      },
+      "a7b4be2b1bf9f02c73ee4321f9ccd40f5e18fa8addb927221198fc523f933c50": {
+        "startLine": 3009,
+        "lines": [
+          "                                                                                                                             2025                           2024",
+          "                                                                                                                                       (in US $ millions)",
+          " Cash, cash equivalents and marketable securities(1)                                                                                   5,778                        5,479",
+          " Total assets                                                                                                                         15,189                       13,924"
+        ]
+      },
+      "d3e189859d510c1644d9c21de586fcfbb016214d666127153cb1debd88f90a03": {
+        "startLine": 3715,
+        "lines": [
+          "  Loans and merchant cash advances, net                                                                        1,784                1,224"
+        ]
+      },
+      "06745f8be4947c31b658a909c30c7ff719aea98dcc600413c6479dab50cd031d": {
+        "startLine": 3785,
+        "lines": [
+          "    Net loss on equity method investment                                                           (40)                     (138)                      (58)"
+        ]
+      },
+      "3b07f2cf0cd228b04459e0fc97e9ad1b07c7fc127ba56d6df8788c5c415fe6ba": {
+        "startLine": 4705,
+        "lines": [
+          "and the underlying equity in the net assets of the investee (December 31, 2024 - $642 million). Results are reported with a one-quarter delay",
+          "due to the timing of financial information availability from the investee. For the year ended December 31, 2025, our share of the loss in the",
+          "investee was $40 million",
+          "",
+          ""
+        ]
+      },
+      "813423a7603f945c61a8c326d4136466ea7051312b058fbceaa05e1ae28103ea": {
+        "startLine": 5775,
+        "lines": [
+          "sheets as total consolidated assets. Significant expenses reviewed by the CODM include those that are presented in the consolidated"
+        ]
+      },
+      "0ecf5067fb10fd6225dbd5229fae067266499f4d8a1833560346f2d501d1b1ab": {
+        "startLine": 47,
+        "lines": [
+          "On the merchant-facing side of AI in Q1, key developments for Sidekick included a complete re-architecture of the AI engine for deeper reasoning capabilities, enhancing processing of larger business data sets and accessibility in all supported languages, allowing every Shopify merchant to use Sidekick in their preferred language, and these changes, well, they're working. In fact, our monthly average users of Sidekick continue to climb, more than doubling since the start of 2025. Now, this is still really early days, but the progress we are making is already yielding some really strong results for merchants, both large and small. Sidekick is yet another reason that merchants on Shopify will have an unfair advantage for whatever lies ahead. Okay, switching gears a little, let's talk about the progress we are making in some of our key growth drivers, starting with international."
+        ]
+      },
+      "dcc7e0223bf953b10618700b8c43c84bbc42c38a451467e166a985b27dd62038": {
+        "startLine": 41,
+        "lines": [
+          "Payment preferences are changing fast and Shopify is making sure our merchants are ready for what is next. Now a quick note on Shop Pay. Over the past two and a half years, the user base has more than doubled as more buyers and merchants make it their go-to checkout. That momentum is showing up in the numbers. In fact, in Q2, Shop Pay GMV increased by 65% to $27 billion. Shop Pay is quickly becoming the standard for fast, secure, seamless payments trusted by millions of consumers and merchants, including leading brands like Michael Kors, the latest to sign up for Shop Pay Commerce Component. Honestly, most of you listening have probably used Shop Pay at least once in this past week alone. That is how deep the reach is. Now let's turn to the Shop app, the all-in-one shopping destination for the brands that buyers are passionate about."
+        ]
+      },
+      "176a497481b9530a0ead6a9f0c9ed0790fccde4671f54d9ad704dc77b9be81b2": {
+        "startLine": 61,
+        "lines": [
+          "It's one of the things I love most about what we're building: partnering with generational businesses and setting them up for future generations to come. Meanwhile, some of our other recent signings are now ramping up on Shopify. Since we last spoke, brands like Michael Kors, David's Bridal, Goop, Mejuri, and Dooney & Burke, they're all live on Shopify. That's a serious list of companies I just mentioned, on top of the incredibly diverse brands we mentioned last quarter, which included everything from coffee to luxury outerwear to mining equipment. What's most exciting is that we're increasingly welcoming more brands from all corners of commerce. And this growing merchant diversity, both in the U.S. and all over the world, makes Shopify more resilient, expands our addressable market, and fuels our growth. No matter how the market shifts, Shopify is built to thrive."
+        ]
+      },
+      "c751f31cf7a56cf0bf04a770f2b2e3fa315014458f34af0ddccf729b0d713b26": {
+        "startLine": 65,
+        "lines": [
+          "Our momentum remains strong and steady. Following two years of consistent growth over 100%, we nearly doubled B2B GMV again in Q3, up 98% year-over-year. This isn't just one cohort or one region. We're seeing broad GMV growth across both new and established merchant cohorts. For example, in Canada, Q3 B2B GMV was up over 155% year-over-year. From a vertical perspective, B2B continues to deliver strong results across the board, with Home and Garden standing out at 150% year-over-year GMV growth in Q3. Shopify's platform is delivering for merchants no matter the size, vertical, or market. Now, before I hand it over to Jeff, I want to close out where I started. Shopify is evolving at a pace that is entirely unmatched while maintaining consistent, durable growth. We're three quarters into 2025, and we've delivered exactly what we said we would: relentless growth, consistent margins, and unwavering execution."
+        ]
+      },
+      "87409a00414fa66645cdcf458465eaf1662702fa3c40217ac15dc85f97768df1": {
+        "startLine": 289,
+        "lines": [
+          "Yeah. I mean, look, I think customer acquisition remains one of the hardest problems that merchants face. We've been working on this for quite some time now, and the way we're sort of looking at it is solving this problem in kind of two primary ways. The first is on Shop Campaigns, which I'll get to in a second, specifically to your question. The second is on sort of discovery and merchandising enablement, which Shop App obviously plays a role in with helping merchants drive more traffic, increase lifetime value. And then Shopify Collective plays a role there as well."
+        ]
+      },
+      "fd4cbd8f505488e11adbec9dc1c095d35bd614ae1c309c3339df8c54619e7223": {
+        "startLine": 291,
+        "lines": [
+          "Specifically on campaigns, though, I mean, what we're really trying to do is we want to run commerce-native performance ads across these high-intent services. And our strategy has been and continues to be to reinvest any gains we achieve through the ads business back into the growth. We want to ensure our advertising inventory and our scale continues to grow. And the proof has been really great. I mean, we've seen 9x year-on-year increase in budget commitments from merchants this quarter for campaigns. In fact, if you just look at Q3 2024 to Q3 2025, we've actually seen a 4x year-on-year growth in merchant adoption of campaigns. So it's growing really well. And on the product side, this thing keeps getting better and better. We introduced gross sales, which is this new default high-reach objective in campaigns."
+        ]
+      },
+      "2b73382b3416c833b4ca447b5c109c6f3176bf1ee6368e9c0565f75197e26980": {
+        "startLine": 293,
+        "lines": [
+          "We just shipped an AI-powered ranking improvement, which is showing some really good early results in terms of performance gains. But net-net, I mean, what we're trying to build with campaigns is the scaled ROI-positive ad engine that really brings merchants more buyers and also unlocks more brand discovery to connect new consumers. So again, this is an area that we're going to continue to work on. We think that early signs have been good. But whenever there's a merchant pain point, we always much prefer to solve it for them than have them solve it themselves. And I think customer acquisition is one of those that we're going to keep working on. And it's already going pretty well."
+        ]
+      },
+      "02574bf337a25878fad86604f1f943340a668408aeff4df1bdc2a6f0f77ba0eb": {
+        "startLine": 223,
+        "lines": [
+          "Yeah, I'll start enterprise, and Jeff could jump into OpEx. I mentioned this in the call, but I'm gonna repeat it 'cause I think it's important. The number of merchants doing over $100 million of GMV on Shopify has nearly doubled in the last two years. I think we have now earned the right to be in every serious enterprise conversation, and that's the shift. Our go-to-market engine sort of runs two tracks in parallel. Obviously, SMB is all about velocity, the enterprise is really more about depth. We've built this dedicated team and professional services that embeds into that enterprise motion. Product is unequivocally a major driver. When we show up, we show outcomes, we show speed, we show cost, we show conversion, we show simplicity."
+        ]
+      },
+      "e5a8a4a761e295d6e5abf6a588f35fcd78aa060b676d2796776589976831d8bc": {
+        "startLine": 47,
+        "lines": [
+          "An agent acting on a buyer's behalf needs to know who they are, how they want to pay, and what rules they've set. Through Shop, we've built a buyer network of hundreds of millions of people with identity, preferences, and payments working as one system. Shop app's native GMV grew over 70% in Q2, and one of my favorite features, Cart Sync, represented over 30% of Shop app GMV in this quarter. That is the value of known buyers. Shop Pay is where that trust and identity show up in conversion. In June, Shop Pay surpassed $400 billion in lifetime accelerated GMV. As new surfaces grow, Shop Pay remains the trusted payment layer that travels with the buyer. When you zoom out, here's what you see."
+        ]
+      },
+      "853a1d6acb5b8947f937cf25eaaefe09cedf90c8018a388f7b00c7df7d40a27d": {
+        "startLine": 161,
+        "lines": [
+          "The fact that we're getting these as well suggests to us that there is no necessarily upper bound. There are some merchants that just, it doesn't make sense. There's not that many, but there are times where we may look at a particular type of business model and say, \"A full migration to Shopify may not make sense just yet.\" That's where these things like Shop Pay as a commerce component really plays a great role. We'll say to them, \"Look, start with Shop Pay, even if it's a marketplace, use it. We think you're going to see a conversion uplift. You're going to see this accelerated checkout experience that is going to be far better than whatever you have."
+        ]
+      },
+      "f8e63c26fb30ef685e9817dfb44d7adda572bef5a94156ce10516fd8882b594c": {
+        "startLine": 311,
+        "lines": [
+          "Native GMV was up 70% year-over-year, and we're seeing things like Cart Sync represented 30% of Shop app GMV. Cart Sync is, if you haven't used it, is like magic, this idea that a shopper can move between the merchant's store and the Shop app without the cart breaking, having all your inventory filled there. It's becoming this incredibly rich experience. Shop app is really starting to grow. We have a lot of work there, especially as things like Catalog and the agentic application gets built into it. I would say that both agentic and the Shop app are two major legs of our stool for the future. With that, I just take a moment to close the call."
+        ]
+      },
+      "3536d3ff8b60acbb29159ef50daa1524f996c56ac0181846eb5b3e46497d70fe": {
+        "startLine": 313,
+        "lines": [
+          "I just want to start with something that I think I said last quarter on the call, which was, I said that AI is going to accelerate entrepreneurship more than any other job. Tobi mentioned that to me about a year ago, and I'm seeing that. I totally agree with him. We are already seeing early signs of that happening. Yes, Shopify Catalog is driving higher conversion. We are also, of course, seeing Sidekick helping merchants reach their first sale faster. I want to zoom out from that for a second, because I think the true value of Shopify is so much bigger than any single product or feature, even any quarterly result. The value of Shopify comes from the compounding power of everything we've built over 20 years, all working together. Every new product helps our merchants succeed and drives more transactions."
+        ]
+      },
+      "c811cfaee9dfdd59325f6be2eeb5179fb949ccb7a16d85c267b965926639ec41": {
+        "startLine": 57,
+        "lines": [
+          "As AI creates new ways to shop, they want a platform that keeps them ready for what comes next. That is why we continue to see large merchants join and scale across the platform, like Balmain, Givenchy, Jacquemus, Chaumet, and Acne Studios, these iconic names in luxury retail that all chose Shopify in Q3. Or Alice + Olivia, who scaled from a single founder to a globally recognized fashion label and who just decided to fully replatform onto Shopify after starting with Shop Pay and seeing it become their most used payment method. Or Omaha Steaks. I love this story. This is a 109-year-old company that was running on a custom stack built by their own CEO. They wanted a platform that can keep up with the pace of technology and allow them to focus on their business."
+        ]
+      }
+    }
+  }
+}

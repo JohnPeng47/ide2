@@ -9,6 +9,8 @@ export function CanvasSelectionActions(props: {
   disabled: boolean;
   onToggle(): void;
   onGenerate(): void;
+  highlightAction: 'Highlight' | 'Unhighlight';
+  onHighlight(): void;
   onDelete(): void;
 }) {
   const [viewport, setViewport] = useState<Element | null>(null);
@@ -17,6 +19,9 @@ export function CanvasSelectionActions(props: {
   return createPortal(<div className="mapping-whole-actions" data-mapping-static-ui data-diagram-canvas-static-ui>
     <button type="button" aria-haspopup="menu" aria-expanded={props.open} onClick={props.onToggle}>Actions (A)</button>
     {props.open && <div role="menu" aria-label="Selection actions">
+      <button type="button" role="menuitem" aria-keyshortcuts="H" title={`${props.highlightAction} selection (H)`} disabled={props.disabled} onClick={props.onHighlight}>
+        {props.highlightAction} (H)
+      </button>
       <button type="button" role="menuitem" onClick={props.onGenerate}>LLM [Ctrl+B, L]</button>
       <button type="button" role="menuitem" disabled={props.disabled} onClick={props.onDelete}>
         Delete {props.count === 1 ? 'diagram' : 'diagrams'}

@@ -1,0 +1,85 @@
+import { expect, it } from 'vitest';
+import { highlightSelection } from '../highlightSelection';
+import { diagramSelectionItem, regionSelectionItem } from '../selectionState';
+import { MappingDocumentController } from '../../workspace/mappingDocumentController';
+import { compareWorkspaceFixture } from '../../../../tests/support/compareWorkspace';
+import { diagramPlacements } from '../../../core/diagrams/diagramPlacement';
+
+it('highlights selected nodes without altering content, and avoids duplicate undo entries', () => {
+  const { document, canvas } = compareWorkspaceFixture('project').documents[0];
+  const controller = new MappingDocumentController(document, canvas);
+  const placement = diagramPlacements(document.scene, 'canvas')[0], diagram = document.scene.contents[placement.contentId];
+  const item = regionSelectionItem(diagram, placement.diagramId.slice(5), { startLine: 1, endLine: 1, startColumn: 1, endColumn: 100 });
+  const apply = () => controller.applyUpdate(controller.getSnapshot().version, highlightSelection(controller.getSnapshot().document, [item]));
+  apply();
+  const highlights = controller.getSnapshot().document.diagramPresentations![diagram.id].highlights!;
+  expect(highlights).toHaveLength(1);
+  expect(highlights[0].contentNodeIds).toEqual(item.region!.contentNodeIds);
+  expect(controller.getSnapshot().document.scene).toEqual(document.scene);
+  expect(highlightSelection(controller.getSnapshot().document, [item])).toEqual([]);
+  expect(() => highlightSelection(document, [{ ...item, region: { ...item.region!, sourceAscii: 'stale' } }])).toThrow('changed');
+  const whole = highlightSelection(document, [diagramSelectionItem(placement.diagramId)]);
+  expect(whole[0]).toMatchObject({ method: 'highlight', nodeId: placement.diagramId });
+});
+it('clips text-only rectangular selections to real characters without highlighting the whole diagram', () => {
+  const { document, canvas } = compareWorkspaceFixture('project').documents[0];
+  const p = diagramPlacements(document.scene, 'canvas')[0], d = document.scene.contents[p.contentId];
+  const item = regionSelectionItem(d, p.diagramId.slice(5), { startLine: 1, endLine: 2, startColumn: 2, endColumn: 500 });
+  const textOnly = { ...item, region: { ...item.region!, contentNodeIds: [] } };
+  const controller = new MappingDocumentController(document, canvas);
+  controller.applyUpdate(0, highlightSelection(document, [textOnly]));
+  const highlights = controller.getSnapshot().document.diagramPresentations![d.id].highlights!;
+  expect(highlights).toHaveLength(2);
+  expect(highlights.every(h => h.revisionId === d.revisionId && h.textRange?.startColumn === 2)).toBe(true);
+  expect(highlights.map(h => h.textRange!.endColumn)).toEqual(d.content.ascii.split('\n').slice(0, 2).map(l => l.length));
+});
+
+it('detects any highlighted node in a mixed selection and keeps unselected node targets', async () => {
+  const { selectionHasHighlights, unhighlightSelection } = await import('../highlightSelection');
+  const { document, canvas } = compareWorkspaceFixture('project').documents[0];
+  const controller = new MappingDocumentController(document, canvas);
+  const p = diagramPlacements(document.scene, 'canvas')[0], d = document.scene.contents[p.contentId];
+  const first = regionSelectionItem(d, p.diagramId.slice(5), { startLine: 1, endLine: 1, startColumn: 1, endColumn: 500 });
+  const second = regionSelectionItem(d, p.diagramId.slice(5), { startLine: 2, endLine: 2, startColumn: 1, endColumn: 500 });
+  const both = { ...first, region: { ...first.region!, contentNodeIds: [...first.region!.contentNodeIds!, ...second.region!.contentNodeIds!] } };
+  controller.applyUpdate(0, [{ method: 'highlight', nodeId: p.diagramId, highlightId: 'pink', color: 'pink', contentNodeIds: [...first.region!.contentNodeIds!] }]);
+  expect(selectionHasHighlights(controller.getSnapshot().document, [second])).toBe(false);
+  expect(selectionHasHighlights(controller.getSnapshot().document, [both])).toBe(true);
+  controller.applyUpdate(controller.getSnapshot().version, highlightSelection(controller.getSnapshot().document, [both]));
+  controller.applyUpdate(controller.getSnapshot().version, unhighlightSelection(controller.getSnapshot().document, [first]));
+  expect(selectionHasHighlights(controller.getSnapshot().document, [first])).toBe(false);
+  expect(selectionHasHighlights(controller.getSnapshot().document, [second])).toBe(true);
+  expect(controller.getSnapshot().document.diagramPresentations![d.id].highlights).toHaveLength(1);
+  expect(controller.getSnapshot().document.scene).toEqual(document.scene);
+});
+it('whole-diagram selections remove any highlights and shared instances do not remove the same annotation twice', async () => {
+  const { selectionHasHighlights, unhighlightSelection } = await import('../highlightSelection');
+  const { document, canvas } = compareWorkspaceFixture('project').documents[0];
+  const controller = new MappingDocumentController(document, canvas);
+  const p = diagramPlacements(document.scene, 'canvas')[0], d = document.scene.contents[p.contentId];
+  const region = regionSelectionItem(d, p.diagramId.slice(5), { startLine: 1, endLine: 1, startColumn: 1, endColumn: 500 });
+  controller.applyUpdate(0, highlightSelection(document, [region]));
+  const whole = diagramSelectionItem(p.diagramId);
+  expect(selectionHasHighlights(controller.getSnapshot().document, [whole])).toBe(true);
+  const operations = unhighlightSelection(controller.getSnapshot().document, [whole, whole]);
+  expect(operations).toHaveLength(1);
+  controller.applyUpdate(controller.getSnapshot().version, operations);
+  expect(selectionHasHighlights(controller.getSnapshot().document, [whole])).toBe(false);
+});
+it('detects overlapping revision-pinned text highlights, ignoring stale selections and annotations', async () => {
+  const { selectionHasHighlights, unhighlightSelection } = await import('../highlightSelection');
+  const { document, canvas } = compareWorkspaceFixture('project').documents[0];
+  const p = diagramPlacements(document.scene, 'canvas')[0], d = document.scene.contents[p.contentId];
+  const first = regionSelectionItem(d, p.diagramId.slice(5), { startLine: 1, endLine: 1, startColumn: 2, endColumn: 3 });
+  const textOnly = { ...first, region: { ...first.region!, contentNodeIds: [] } };
+  const controller = new MappingDocumentController(document, canvas);
+  controller.applyUpdate(0, highlightSelection(document, [textOnly]));
+  const snapshot = controller.getSnapshot().document;
+  expect(selectionHasHighlights(snapshot, [first])).toBe(true);
+  expect(selectionHasHighlights(snapshot, [{ ...first, region: { ...first.region!, sourceAscii: 'old' } }])).toBe(false);
+  const stale = structuredClone(snapshot);
+  stale.diagramPresentations![d.id].highlights = [{ id: 'old', color: 'blue', revisionId: 'old', textRange: { startLine: 1, endLine: 1, startColumn: 1, endColumn: 3 } }];
+  expect(selectionHasHighlights(stale, [first])).toBe(false);
+  controller.applyUpdate(controller.getSnapshot().version, unhighlightSelection(snapshot, [first]));
+  expect(selectionHasHighlights(controller.getSnapshot().document, [first])).toBe(false);
+});

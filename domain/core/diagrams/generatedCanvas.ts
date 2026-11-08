@@ -8,7 +8,7 @@ export interface GeneratedCanvas {
   agentContextId: string;
   contextName: string;
   stage: 'r2' | 'g2' | 'alternative' | 'proposal' | 'legacy';
-  workflow?: 'roll-up' | 'alternatives' | 'few-shot-refinement' | 'diagram-change-proposal';
+  workflow?: 'roll-up' | 'alternatives' | 'few-shot-refinement' | 'diagram-change-proposal' | 'linked-canvases';
   /** Absent for legacy canvases: their prompt is unknown. */
   prompt?: { id: string; version?: number; name: string };
   /** Immutable text captured at generation time, independent of the prompt library. */
@@ -26,6 +26,7 @@ export const generatedWorkflow = (generated: Pick<GeneratedCanvas, 'workflow' | 
   generated.workflow ?? (generated.stage === 'r2' || generated.stage === 'g2' ? 'roll-up' : 'alternatives');
 
 export interface GeneratedCanvasRecord {
+  placementSnapshot?: import("./diagramPlacement").PlacementSnapshot;
   id: string; name: string; generated: GeneratedCanvas;
   history: import('./canvasHistory').CanvasHistoryRecord;
 }

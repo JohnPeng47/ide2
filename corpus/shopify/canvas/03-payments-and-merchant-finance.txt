@@ -1,0 +1,88 @@
+Payments and merchant finance          FY2018 - Q3 2026 | spine: dependency
+|
+|-- Shopify Payments (2013): the volume engine
+|   |-- GMV x penetration -[D:mech]-> payments volume
+|   |   `-- [R] FY25 volume gain: 79% from GMV, 21% from penetration
+|   |-- [R] Penetration: 40.4% FY18 | 45.1% FY20 | 53.8% FY22 | 65.6% FY25
+|   |   `-- [S] over 68% in Q3 2026
+|   |-- [I] Series not fully comparable
+|   |   |-- [S] PayPal wallet moved to gross revenue from late 2024
+|   |   `-- [S] size of that effect: "We have not quantified it"
+|   |-- [R] Countries: 15 (2019) | 22 (2022) | 23 (2024) | 39, then 40  => 07
+|   `-- [S] 2025 additions: PayPal, Klarna, USDC, multi-entity support
+|
+|-- From volume to revenue
+|   |-- volume x yield -[D:mech]-> Payments revenue
+|   |   `-- [R] yield steady at 2.68-2.83% FY18-23; n/d after
+|   |-- [R] Merchant solutions per GMV: 1.48% FY18 -> 2.33% FY25
+|   |-- penetration -[D:assoc]-> merchant solutions per GMV
+|   |   |-- [I] arithmetic explains about 83% of the gain
+|   |   `-- [I] adjusted for logistics and non-cash revenue, it still rises
+|   `-- [I] some gain replaces transaction and referral fees
+|
+|-- From revenue to net take: the central test
+|   |-- FY21 -> FY25: penetration +16.7 points
+|   |   |-- [R] merchant solutions per GMV: +46bp
+|   |   |-- [R] gross profit per GMV: +8bp
+|   |   |-- [R] gross profit per GMV after losses: +1.4bp
+|   |   `-- [R] gross profit dollars still grew: $1.40B -> $3.32B
+|   |-- penetration -[D:assoc]-> net take: flat, not rising
+|   |-- [S] penetration "will generally drive lower margins initially"
+|   |-- Possible offsets that could mask a real effect
+|   |   |-- [S] enterprise mix and card mix
+|   |   |-- [R] non-cash partner revenue fading: $158M FY23 -> $49M FY25
+|   |   `-- [I] logistics drag in FY22-23
+|   `-- [S] 2026: gross margin expanding on negotiated partner savings
+|
+|-- Payments as a claimed strategic lever
+|   |-- Payments -[D:claim]-> better operating margins
+|   |   `-- [I] single reportable segment: product costs unobservable
+|   |-- Payments -[D:claim]-> on-ramp to other merchant products
+|   |   `-- [I] no attach data by Payments vs non-Payments merchant
+|   |-- revenue -[D:untestable]-> reinvestment in checkout and finance
+|   |   `-- [R] segment note: resources allocated on consolidated results
+|   `-- [I] adoption fell in 2025 while penetration rose
+|       `-- [R] North America 91% -> 88%; no new NA market explains it
+|
+|-- Shopify Capital (2016): merchant lending
+|   |-- [S] Cumulative: $885M 2019 | over $3B 2021 | about $4.7B 2022
+|   |-- [R] Net receivables: $92M FY18 -> $1.78B FY25
+|   |-- [S] Renewal rate above 70%; definition n/d
+|   |-- Capital -[D:data]-> merchant growth
+|   |   |-- [S] 2019: platform-wide GMV effect "probably not" material
+|   |   `-- [I] underwriting selects merchants already likely to grow
+|   |-- [S] Opened to non-Payments merchants, mid-2019
+|   |-- [R] Lending risk tools: EDC insurance; US loan sales from 2023
+|   `-- [S] Eight countries by early 2026
+|
+|-- Other merchant finance
+|   |-- [S] Shopify Balance: early access Q4 2020; wider rollout 2022
+|   |-- [R] Shopify Credit: launched Q2 2023
+|   |-- [S] Bill Pay: launched 2023
+|   `-- [S] Shopify Finance suite groups these products, Q3 2024
+|
+`-- The cost of the layer: transaction and loan losses
+    |-- [R] % of revenue: 0.8 FY18 | 1.8 FY21 | 2.4 FY22 | 2.6 FY24 | 3.6 FY25
+    |-- [R] Basis points of payments volume: 5.0 FY18 -> 16.8 FY25
+    |-- [I] Capital provisions: about half of losses, FY21-25
+    |-- Q3 2025 spike: 5.2% of revenue
+    |   |-- [S] mostly merchant onboarding experiments
+    |   `-- [S] payments loss rate later described as normalized
+    |-- [X] total losses returned to about 3% of revenue
+    |   `-- [S] 3.1% Q4 2025 | 3.7% Q1 2026 | 3.9% Q2 2026
+    `-- [S] 2026 increase attributed to credit and Capital
+
+Legend
+  [R] reported: in a filing, or computed directly from filing figures
+  [S] stated by management on a call or in narrative; not independently verified
+  [I] inferred by us; rests on an assumption or interpretation
+  [X] claim that the corpus contradicts
+  a -[D:grade]-> b  dependency: b needs or is fed by a
+  a -[C:grade]-> b  sequence: a led to or preceded b
+  a -[O:grade]-> b  control: a holds or manages b
+  a -[M:grade]-> b  structure: a belongs to or connects with b
+  grades: mech (true by arithmetic or definition) | causal (controlled test; none found)
+          assoc (figures move together) | data (management figure, unverifiable)
+          claim (asserted, no figure) | untestable (corpus lacks the data)
+          contra (contradicted by the corpus)
+  => NN  detail lives on canvas NN | n/d  not disclosed | bp  basis points

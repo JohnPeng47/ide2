@@ -1,0 +1,97 @@
+Proposed diagram changes
+  |-- Canvas domain model - baseline 03f2168 (before tldraw)  existing canvas
+  |   |-- [1a] Correct: MappingPage
+  |   |   `-- Replace controller-only geometry and undo ownership with Editor live geometry/undo and controller semantic checkpoints. Headless controllers retain domain navigation; preserve workspace ownership and persistence branches.
+  |   |-- [1b] Extend: MappingPage
+  |   |   `-- Introduce MappingEditorCanvas creating MappingEditorRuntime and CanvasRuntime. Show the runtime attaching the controller's editor driver, projecting commands, and writing back settled gestures before linking its detail.
+  |   |-- [1b] Extend: [A] GridBox / LineGridScene
+  |   |   `-- Preserve parent-relative cells and push-right layout. Add Editor pixel movement followed by rounded, nonnegative absolute-cell writeback and one root layout for settled grid moves; GridBox is not the pointer-frame geometry owner.
+  |   |-- [1a] Correct: [D] Controller edits / agent access
+  |   |   `-- Preserve UI/agent/controller grouping and staged operations. Replace unconditional per-call commits with default buffered exec batches and optional immediate mode; show gesture settlement before version validation and explicit retained-revision commands before checkpoint publication.
+  |   |-- [1b] Extend: [D] Controller edits / agent access
+  |   |   `-- Add MappingEditorRuntime and commitEditorGesture alongside applyUpdate. Native gestures publish one semantic checkpoint; domain commands project into native history; headless proposals have no attached editor driver.
+  |   |-- [1a] Correct: [E] CanvasHistoryService / coordinated revisions
+  |   |   `-- Preserve checkpoint archives, bindings, persistence and transfers. Distinguish mounted Editor undo from headless navigation; expose editorHistory and restoreEditorCheckpoint. Replace content issuance during append with publication of already issued revisions.
+  |   |-- [4] Redraw: [G] DiagramService
+  |   |   |-- Replace the injected sole-writer service organization with explicit revision operations, runtime retention, separate generation orchestration, and controller publication.
+  |   |   `-- These replace the main responsibility boundaries, not merely method names. Preserve immutable revisions and correspondence; keep this overview compact and link to the existing revision-lifecycle detail.
+  |   |-- [2] Add: MappingEditorRuntime - projection, settlement and checkpoint replay
+  |   |   |-- Answer how native geometry and undo coordinate with semantic persistence. Attach from MappingPage's MappingEditorRuntime and [D]'s commitEditorGesture components.
+  |   |   `-- Show checkpoint-reference hydration, projectMappingShapes, idle/forced settlement, grid conversion, pane geometry policies, supported instance duplication, command stopping points and archived-checkpoint restoration. Pointer/camera frames do not write the controller; transfer undo remains a workspace operation.
+  |   `-- [2] Add: CanvasRuntime - transient geometry and routing
+  |       |-- Answer how rendering follows live shapes without semantic edits. Attach from MappingPage's explicit CanvasRuntime component.
+  |       `-- Detail per-owner read models, LocalAnchorStore layout-keyed measurements, NativeRoutingStore shape transforms and ConnectionFocus. These are transient rendering/focus responsibilities, separate from saved geometry and selection membership.
+  |-- Unified selection - state, gestures and WebSocket  existing canvas
+  |   |-- [4] Redraw: CanvasSession
+  |   |   |-- Replace mutually exclusive diagram/region membership and uniform gesture-to-selection flow with application SelectionState, native drag selection and explicit ownership arbitration.
+  |   |   |-- Whole diagrams and regions can coexist. Regions capture ordered contentNodeIds; rectangles are presentation envelopes with legacy membership fallback. Native shape selection enables dragging without replacing application membership.
+  |   |   |-- Membership rules, input routing and capture semantics change across the central branches; adding a native-selection leaf would leave the old interaction model misleading.
+  |   |   `-- Preserve ordered identities, deduplication, independent panels/focus and semantic consumers. Introduce SelectionGestureController, NativeSelectionOwnership and SelectionToolBridge explicitly before connecting their detail.
+  |   |-- [2] Add: Selection gestures and native ownership
+  |   |   |-- Answer which interactions belong to application selection versus tldraw. Attach from CanvasSession's SelectionGestureController and SelectionToolBridge components.
+  |   |   `-- Detail mouse modifier routing, pen completion, touch pan, multi-contact cancellation and transient preview. Commit completed application gestures rather than pointer frames; ownership remains latched beyond DOM release. Remove the obsolete plain-node-click selection claim.
+  |   `-- [2] Add: Selection capture and chat turn binding
+  |       |-- Answer which identities remain captured across selection and document changes. Attach from CanvasSession's SelectionState and chat-action consumer; identify ChatCanvasBindings at that boundary.
+  |       `-- Separate captured ASCII/content revision/node membership from immutable diagram revision references and the host-captured workspace/document target. Show stale-content checks and legacy rectangle fallback separately from callBound's pre-await target capture, attachment reuse, binding checks and read-only enforcement.
+  |-- AgentContext - implemented call flow and domain models (03f2168)  existing canvas
+  |   `-- [1a] Correct: (O) Edit diagram with AgentContext - baseline 03f2168
+  |       |-- Preserve capture, generation, retained-result retry and acknowledgement order. Replace the service-based revision handoff with separate generation/submission/retention and update the controller application boundary to settle pending gestures before version checks.
+  |       `-- At MappingDocumentController, distinguish semantic checkpoint publication from mounted MappingEditorRuntime history projection. The overall asynchronous flow remains valid; do not duplicate AgentContext internals.
+  |-- Mapping page - MCP and HTTP API  existing canvas
+  |   |-- [1a] Correct: Mapping page: exposed interfaces at 03f2168
+  |   |   `-- Replace exec's unconditional separate-commit contract with batched default and immediate option. The existing interface grouping still fits.
+  |   |-- [1b] Extend: Mapping page: exposed interfaces at 03f2168
+  |   |   `-- Add canvas.read and bound-chat invocation within existing canvas editing/reading interfaces. Distinguish small current-content reads from full layout/view reads; neither requires the undo archive.
+  |   |-- [1a] Correct: Mapping backend: grouped responsibilities (03f2168)
+  |   |   `-- Replace per-call mutation commits with flush-scoped batches and compact receipts. Preserve live bridge versus isolated proposal routing; earlier successful flushes survive later failure, but an unflushed tail is not committed after an uncaught script error.
+  |   |-- [1b] Extend: Mapping backend: grouped responsibilities (03f2168)
+  |   |   `-- Under AgentDiagrammingSessionService, expose ExecRun steps/batches and ChatCanvasBindings. Show callBound capturing the active turn before awaiting attachment; these extend the existing execution and request-entry responsibilities.
+  |   `-- [2] Add: Agent exec - buffering, flush boundaries and retry
+  |       |-- Answer when synchronous calls become committed edits. Attach from the backend overview's AgentDiagrammingSessionService / ExecRun component.
+  |       |-- Show queued ID handles, ordered operation batches, flushing before canvas calls, node/edge reads, setSourceMappings and setJumps, plus flushing after successful script completion. Metadata mutations can begin the next batch; they are not universally immediate.
+  |       `-- Detail stable batch request IDs/expected versions, replayed results, uncertain-outcome blocking, final-state receipts and immediate-mode compatibility. One exec can cross multiple commits; the script is not globally atomic.
+  |-- ChangeSession - domain model and call tree  existing canvas
+  |   |-- [1a] Correct: [CALLS] ChangeSession operations
+  |   |   `-- Replace immediate commitment of every mutating call with default exec flush batches routed to ChangeSessionService.apply; retain immediate mode. Existing session serialization and persistence branches remain valid.
+  |   `-- [1b] Extend: [H] Isolated history and undo/redo
+  |       `-- Identify the proposal controller as the headless fallback: no attached MappingEditorRuntime, so undo/redo navigate CanvasHistoryService directly. Preserve isolated contexts, checkpoint recording and reset restrictions.
+  |-- Workspace persistence flow  existing canvas
+  |   `-- [1b] Extend: Workspace persistence flow - baseline 03f2168
+  |       `-- Add MappingEditorRuntime's settled gesture writeback upstream of controller committed history changes. Explicitly exclude pointer-frame geometry, anchor measurements and routing caches from autosave; preserve the downstream record pipeline.
+  |-- Central and side diagrams - Attempt 2  existing canvas
+  |   `-- [1b] Extend: 4  FROM SUPPLIED EDIT TO SAVED CANVAS
+  |       `-- At MappingDocumentController, add pending-gesture settlement and mounted native-history projection. Preserve immutable revision issuance and the atomic supplied-edit batch; distinguish that batch from exec scripts with multiple flush boundaries.
+  |-- Roll-up 1 - g2 - Canvas domain model - baseline 03f2168 (before tldraw)  existing canvas
+  |   |-- [1a] Correct: MappingPage
+  |   |   `-- Apply the live Editor versus settled controller ownership split to this captured copy; preserve workspace and persistence structure.
+  |   |-- [1b] Extend: MappingPage
+  |   |   `-- Introduce MappingEditorCanvas, MappingEditorRuntime and CanvasRuntime with their ownership and controller attachment. Link these explicit components to canonical runtime details rather than duplicating them.
+  |   |-- [1b] Extend: [A] GridBox / LineGridScene
+  |   |   `-- Add native pixel movement and settled cell writeback while retaining domain containment and layout. Attach to the canonical MappingEditorRuntime detail.
+  |   |-- [1a] Correct: [D] Controller edits / agent access
+  |   |   `-- Replace unconditional per-call commits and injected revision writes with flush-scoped exec and retained-revision commands; retain the staged controller flow.
+  |   |-- [1b] Extend: [D] Controller edits / agent access
+  |   |   `-- Add editor-driver settlement and commitEditorGesture, linked to canonical runtime detail. Extra detail elsewhere cannot repair the obsolete entry-point overview.
+  |   |-- [1a] Correct: [E] CanvasHistoryService / coordinated revisions
+  |   |   `-- Distinguish semantic checkpoint archives from mounted native undo and headless navigation; append binds already issued content rather than issuing it.
+  |   |-- [4] Redraw: [G] DiagramService
+  |   |   `-- Replace the obsolete sole-service responsibility model with revision operations, retention, generation and publication. Preserve immutable-content facts and attach to [R] Immutable content and revision lifecycle rather than duplicating its detail.
+  |   `-- [1b] Extend: [R] Immutable content and revision lifecycle
+  |       `-- At controller publication, distinguish semantic checkpoint retention from mounted Editor undo. The existing content/presentation separation remains accurate.
+  `-- Roll-up 2 - g2 - Canvas domain model - baseline 03f2168 (before tldraw)  existing canvas
+      |-- [1a] Correct: MappingPage
+      |   `-- Apply the live Editor versus settled controller ownership split to this copy; preserve its workspace and persistence organization.
+      |-- [1b] Extend: MappingPage
+      |   `-- Introduce MappingEditorCanvas, MappingEditorRuntime and CanvasRuntime, showing ownership and driver attachment before linking canonical runtime detail.
+      |-- [1b] Extend: [A] GridBox / LineGridScene
+      |   `-- Add native pixel movement and settled cell writeback without replacing domain layout. Attach to the canonical MappingEditorRuntime detail.
+      |-- [1a] Correct: [D] Controller edits / agent access
+      |   `-- Replace unconditional per-call commits with flush-scoped exec and replace injected revision writes with explicit retention commands; preserve staged semantic operations.
+      |-- [1b] Extend: [D] Controller edits / agent access
+      |   `-- Add editor-driver settlement and commitEditorGesture. Link these explicit components to canonical runtime detail instead of adding duplicate diagrams.
+      |-- [1a] Correct: [E] CanvasHistoryService / coordinated revisions
+      |   `-- Separate archived checkpoints, mounted native undo and headless navigation; correct append to bind already issued immutable revisions.
+      |-- [4] Redraw: [G] DiagramService
+      |   `-- Replace sole-service ownership with revision operations, runtime retention, generation and controller publication. Preserve accurate revision facts and connect to [R] Content revisions and publication.
+      `-- [1b] Extend: [R] Content revisions and publication
+          `-- Clarify that controller publication archives semantic state while the mounted runtime coordinates native undo. Preserve revision immutability and placement-owned presentation.

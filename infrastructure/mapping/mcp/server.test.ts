@@ -25,6 +25,10 @@ it('keeps one automatic attachment across direct MCP calls and supplies common m
     expect(definitions.find(tool => tool.name === 'list-agent-contexts')?.annotations?.readOnlyHint).toBe(true);
     expect(definitions.find(tool => tool.name === 'read-agent-context')?.annotations?.readOnlyHint).toBe(true);
     expect(definitions.find(tool => tool.name === 'create-agent-context')?.annotations?.readOnlyHint).toBe(false);
+    expect(definitions.find(tool => tool.name === 'fork-agent-context')?.inputSchema.required).toEqual(expect.arrayContaining(['agentContextId', 'expectedContentHash', 'requestId', 'name']));
+    expect(definitions.find(tool => tool.name === 'fork-agent-context')?.annotations?.readOnlyHint).toBe(false);
+    expect(definitions.find(tool => tool.name === 'add-agent-context-comment')?.annotations?.readOnlyHint).toBe(false);
+    expect(definitions.find(tool => tool.name === 'read-agent-context-lineage')?.annotations?.readOnlyHint).toBe(true);
     const tool = (await client.listTools()).tools.find(tool => tool.name === 'exec')!;
     expect(tool.description).toContain('"name":"nodes.highlight"');
     expect(tool.description).toContain('markdownUrl');

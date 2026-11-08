@@ -120,7 +120,7 @@ function previewFocusBounds(viewport: HTMLElement) {
   return { left, top, width: Math.max(0, right - left), height: Math.max(0, bounds.bottom - top) };
 }
 
-export function DiagramDiffCanvas({ initialTransform, onTransformChange, removedDiagramIds, highlightAdded = false, treemapColors, coverage, compact, doc, focusId, focusContentNodeId, serial, onJump, diff, modifiedDiagramIds, migrations, searchFocus, searchMatches }: { initialTransform?: CanvasTransform; onTransformChange?: (value: CanvasTransform) => void; removedDiagramIds?: ReadonlySet<string>; highlightAdded?: boolean; treemapColors?: readonly TreemapDiagramColor[]; coverage?: DiffCoverage; compact?: boolean; doc: ChangePreviewDocument; focusId?: string; focusContentNodeId?: string; migrations: MigrationPreview; serial: number; searchFocus?: DiagramFocus;
+export function DiagramDiffCanvas({ onPromoteDiagram, display = 'diff', initialTransform, onTransformChange, removedDiagramIds, highlightAdded = false, treemapColors, coverage, compact, doc, focusId, focusContentNodeId, serial, onJump, diff, modifiedDiagramIds, migrations, searchFocus, searchMatches }: { onPromoteDiagram?: (id: string) => void; display?: 'regular' | 'diff'; initialTransform?: CanvasTransform; onTransformChange?: (value: CanvasTransform) => void; removedDiagramIds?: ReadonlySet<string>; highlightAdded?: boolean; treemapColors?: readonly TreemapDiagramColor[]; coverage?: DiffCoverage; compact?: boolean; doc: ChangePreviewDocument; focusId?: string; focusContentNodeId?: string; migrations: MigrationPreview; serial: number; searchFocus?: DiagramFocus;
   searchMatches?: readonly DiagramLineSearchResult[];
   diff: ReturnType<typeof diffChangeDocument>; modifiedDiagramIds: ReadonlySet<string>;
   onJump: NonNullable<Parameters<typeof DiagramText>[0]['onJump']> }) {
@@ -128,10 +128,10 @@ export function DiagramDiffCanvas({ initialTransform, onTransformChange, removed
     const state = structuredClone(doc.proposed);
     // Lay out fully expanded diff bounds before freezing. Subsequent local folds
     // retain these positions, and routing reads this same prepared scene.
-    state.document.scene = layoutDiagramComparisons(state.document.scene, diff.diagrams, modifiedDiagramIds);
+    if (display === 'diff') state.document.scene = layoutDiagramComparisons(state.document.scene, diff.diagrams, modifiedDiagramIds);
     state.canvas.diagramViews = {};
     return new ChangePreviewState(state, doc.version);
-  }, [doc.id, doc.version, diff, modifiedDiagramIds]);
+  }, [doc.id, doc.version, diff, modifiedDiagramIds, display]);
   const state = useSyncExternalStore(controller.subscribe, controller.getSnapshot);
   useEffect(() => {
     if (!searchMatches?.length) return;
@@ -177,9 +177,9 @@ export function DiagramDiffCanvas({ initialTransform, onTransformChange, removed
     return ids;
   }, [doc.baseline]);
   const scene = state.document.scene;
-  const diffEnabled = (id: string) => state.canvas.diagramViews?.[id]?.display !== 'regular';
-  const visibleDiffIds = useMemo(() => new Set([...modifiedDiagramIds].filter(id => state.canvas.diagramViews?.[id]?.display !== 'regular')),
-    [modifiedDiagramIds, state.canvas.diagramViews]);
+  const diffEnabled = (id: string) => display === 'diff' && state.canvas.diagramViews?.[id]?.display !== 'regular';
+  const visibleDiffIds = useMemo(() => new Set([...modifiedDiagramIds].filter(id => display === 'diff' && state.canvas.diagramViews?.[id]?.display !== 'regular')),
+    [modifiedDiagramIds, state.canvas.diagramViews, display]);
 
   const text = useMemo(() => projectDiagramComparisons(scene, state.canvas.diagramViews, diff.diagrams, visibleDiffIds, state.document.jumps, migrations.baseline, true, state.document.diagramPresentations, doc.baseline?.document),
     [scene, state.canvas.diagramViews, diff, visibleDiffIds, state.document.jumps, migrations, doc.baseline]);
@@ -271,19 +271,20 @@ export function DiagramDiffCanvas({ initialTransform, onTransformChange, removed
       })}
       {boxes.filter(({ box }) => box.kind === 'diagram').map(({ box, bounds }, index) =>
         <div key={box.id} data-diff-diagram={box.id} style={{ position: 'absolute', left: bounds.column * cell.width, top: bounds.row * cell.height }}>
+          {onPromoteDiagram && <button type="button" className="output-diagram-promote" aria-label={`Promote diagram ${box.id}`} onPointerDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); onPromoteDiagram(`grid:${box.id}`); }}>Promote…</button>}
           {renderText(text.projections.get(`grid:${box.id}`)!.rows, index === 0)}
-          <div style={{ position: 'absolute', left: '100%', top: 0, marginLeft: 8 }}>
+          {display === 'diff' && <div style={{ position: 'absolute', left: '100%', top: 0, marginLeft: 8 }}>
             <DiagramDisplayToggle mode={diffEnabled(`grid:${box.id}`) ? 'diff' : 'regular'} onChange={display => controller.updateCanvas(canvas => ({
               ...canvas, diagramViews: { ...canvas.diagramViews, [`grid:${box.id}`]: {
                 contentRevisionId: scene.contents[(box as Extract<typeof box, { kind: 'diagram' }>).contentId].content.revisionId, collapsedContentNodeIds: [],
                 ...canvas.diagramViews?.[`grid:${box.id}`], display
               } }
             }))} />
-          </div>
+          </div>}
         </div>)}
       {boxes.map(({ box, bounds }) => <div key={box.id} data-grid-box={box.id}
         ref={element => geometry.registerEndpoint({ displayNodeId: `grid:${box.id}` }, element)}
-        className={`change-preview-box${removedDiagramIds?.has(`grid:${box.id}`) ? ' is-removed-diagram' : ''}${box.kind === 'diagram' && !baselineDiagramIds.has(box.id) ? ' is-added-diagram' : ''}${focusId === `grid:${box.id}` ? ' is-change-target' : ''}`}
+        className={`change-preview-box${removedDiagramIds?.has(`grid:${box.id}`) ? ' is-removed-diagram' : ''}${display === 'diff' && box.kind === 'diagram' && !baselineDiagramIds.has(box.id) ? ' is-added-diagram' : ''}${focusId === `grid:${box.id}` ? ' is-change-target' : ''}`}
         style={{ left: bounds.column * cell.width, top: bounds.row * cell.height, width: bounds.columns * cell.width, height: bounds.rows * cell.height }} />)}
       <DiagramSubtreeControls nodes={controlNodes} visibleBoxIds={new Set(boxes.map(b => b.box.id))} cell={cell} disabled={false}
         onCollapse={(nodeId, contentNodeId, collapsed) => controller.collapse(nodeId, contentNodeId, collapsed)} />

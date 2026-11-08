@@ -112,6 +112,7 @@ export interface ProjectRepresentationRevisionRecord {
 }
 
 export interface ProjectRepresentationRecord {
+  canvasProjectId?: string;
   generated?: import('../diagrams/generatedCanvas').GeneratedCanvas;
   type?: import('../diagrams/canvasType').CanvasType;
   repositoryId?: string;
@@ -130,6 +131,8 @@ export interface ProjectRepresentationRecord {
 }
 
 export interface ProjectRepresentationCatalogRecord {
+  canvasProjects?: Record<string, { id: string; name: string }>;
+  outputPromotions?: Record<string, { signature: string; receipt: import("../../mapping/evals/outputPromotion").PromotionReceipt }>;
   repositoryOwnershipVersion?: 1;
   schemaVersion: 1;
   projectId: string;

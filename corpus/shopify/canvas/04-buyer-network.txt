@@ -1,0 +1,89 @@
+Buyer network                          FY2018 - Q3 2026 | spine: dependency
+|
+|-- Shop Pay (2017): checkout -> wallet -> trust layer
+|   |-- Scale
+|   |   |-- [S] Buyers opted in: 30M 2019 | 100M+ 2022 | 150M+ 2023
+|   |   |-- [S] Cumulative GMV: $20B 2020 | $77B 2022 | $127B 2023
+|   |   |-- [S] Q4 GMV: $11B 2022 | $18B 2023 | $27B 2024 | $43B 2025
+|   |   |-- [S] Share of payments volume: 33% 2023 -> 38% 2024
+|   |   `-- [S] Over 50% of US payments volume, Q4 2025
+|   |-- Dependence on Payments
+|   |   |-- Shopify Payments -[D:mech]-> Shop Pay on Shopify stores
+|   |   `-- [R] exceptions: Facebook and Google (2021); off-platform component
+|   |-- Reach beyond Shopify stores
+|   |   |-- [S] Commerce Component GMV up nearly 20x in 2024
+|   |   `-- [S] Q3 2026: wallet for any merchant via some agents     => 10
+|   `-- Shop Pay -[D:claim]-> more merchants adopt Payments
+|       `-- [R] US adoption flat to down as Shop Pay scaled (91% -> 88-90%)
+|
+|-- The conversion claim
+|   |-- [S] Study: overall checkout up to 36% better, 15% on average
+|   |-- [S] Study: Shop Pay +5% when shown, up to +50% when used
+|   |-- What is undisclosed
+|   |   |-- [S] firm name, sample, period and method
+|   |   |-- [I] used against guest checkout; returning buyers self-select
+|   |   `-- [S] same call calls it "external" and "a study that we ... did with"
+|   |-- [I] the 36% figure later shifted from overall checkout to Shop Pay
+|   `-- conversion -[D:claim]-> merchant GMV growth
+|       `-- [I] Shop Pay GMV growth also fits share shift inside checkout
+|
+|-- Shop Pay Installments
+|   |-- [R] Generally available in the US, Q2 2021
+|   |-- [R] Third-party provider bears buyer credit risk (FY22)
+|   |-- [R] Integrated into POS, Q2 2023
+|   `-- [S] Canada and UK 2025; Australia Q3 2026
+|
+|-- Shop app (2020): the destination
+|   |-- [R] Launched Q2 2020, combining Shop Pay and Arrive features
+|   |-- Scale
+|   |   |-- [S] Nearly $100M GMV in one month, Q4 2023
+|   |   |   `-- [I] about 0.4% of total GMV if sustained
+|   |   |-- [S] Native GMV: +84% Q4 2024 | +140% Q2 2025 | +70% Q2 2026
+|   |   `-- [S] Shop GMV more than doubled, Q3 2026; definition unclear
+|   |-- Is the demand new?
+|   |   |-- [S] Cart Sync: over 30% of Shop app GMV, Q2 2026
+|   |   |   `-- [I] those carts began on merchant sites
+|   |   |-- [S] purpose includes repeat purchase
+|   |   `-- Shop app -[D:data]-> incremental merchant demand
+|   `-- [S] Q3 2026: localized app ranked first in Japan's shopping category
+|
+|-- Buying demand for merchants
+|   |-- [R] Shopify Audiences (2022): ad targeting for Plus merchants
+|   |   `-- [S] CAC reductions "up to" 50% (2023); method n/d
+|   |-- [S] Shop Cash (2023) folds into Shop Campaigns (2024)
+|   |-- Shop Campaigns: merchants pay only when a sale happens
+|   |   |-- [S] 2025: revenue doubled; merchant adoption tripled
+|   |   |-- [S] Up to 10 channels by Q3 2026
+|   |   `-- [S] Base and share of revenue n/d
+|   |-- [S] Shopify Product Network: merchants earn commission on referrals
+|   `-- [I] no merchant-level incrementality test is disclosed
+|
+|-- The network claim
+|   |-- merchant + buyer growth -[D:claim]-> compounding network returns
+|   |-- [S] Q1 2019: Lutke was "skirting around the term network effect"
+|   |-- [S] Q3 2026: "compounding return" of merchants and buyers
+|   |-- [I] plausible channel: new stores inherit logged-in buyers
+|   |-- [I] no measure links one side's value to the other side's size
+|   `-- [I] prefer "scale and shared buyer identity" until tested
+|
+`-- Shop Pay as a sales foothold
+    |-- Shop Pay Component -[C:claim]-> full-platform replatforming
+    |-- [S] Usage then replatform: Everlane, Alice + Olivia
+    |-- [S] Sales-stage only: Aldo, Sperry, Call It Spring
+    |-- [S] Expanded the component, not replatformed: Tapestry brands
+    `-- [I] few named cases; no count of component customers or conversions
+
+Legend
+  [R] reported: in a filing, or computed directly from filing figures
+  [S] stated by management on a call or in narrative; not independently verified
+  [I] inferred by us; rests on an assumption or interpretation
+  [X] claim that the corpus contradicts
+  a -[D:grade]-> b  dependency: b needs or is fed by a
+  a -[C:grade]-> b  sequence: a led to or preceded b
+  a -[O:grade]-> b  control: a holds or manages b
+  a -[M:grade]-> b  structure: a belongs to or connects with b
+  grades: mech (true by arithmetic or definition) | causal (controlled test; none found)
+          assoc (figures move together) | data (management figure, unverifiable)
+          claim (asserted, no figure) | untestable (corpus lacks the data)
+          contra (contradicted by the corpus)
+  => NN  detail lives on canvas NN | n/d  not disclosed | bp  basis points

@@ -8,7 +8,7 @@ import { createAssistantMessageEventStream, type Model, type AssistantMessage } 
 import { AgentContext } from '../../../../domain/core/agents/agentContext';
 import { AgentContextEvalRuntime } from '../agentContextEvalRuntime';
 
-it('sends the same resolved prefix through the real Pi SDK and persists separate transcripts without a model call', async () => {
+it.each([false, true])('sends the same resolved prefix through the real Pi SDK and persists separate transcripts (sections=%s)', async sections => {
   const cwd = await mkdtemp(path.join(tmpdir(), 'eval-sdk-'));
   const requests: { history: unknown; options: any }[] = [], managers: SessionManager[] = [];
   const create = SessionManager.create.bind(SessionManager);
@@ -34,7 +34,9 @@ it('sends the same resolved prefix through the real Pi SDK and persists separate
   }
   const runtime = new OfflineRuntime(cwd, true);
   try {
-    const context = AgentContext.fromMessages('source', [{ role: 'user', timestamp: 0, content: [{ type: 'text', text: 'Resolved source evidence' }] }]);
+    const context = AgentContext.fromMessages('source', [{ role: 'user', timestamp: 0, content: sections
+      ? [{ type: 'section', name: 'Evidence', content: [{ type: 'text', text: 'Resolved source evidence' }] }]
+      : [{ type: 'text', text: 'Resolved source evidence' }] }]);
     const request = { workflow: 'diagram-change-proposal' as const, stage: 'proposal', model: model.id, effort: 'high',
       agentContext: context.toSnapshot(), prompt: 'Return the proposed changes as JSON.', files: {}, schema: z.object({ tree: z.string() }), signal: new AbortController().signal };
     const a = await runtime.generate(request), b = await runtime.generate(request);
@@ -51,7 +53,8 @@ it('sends the same resolved prefix through the real Pi SDK and persists separate
     for (const transcript of transcripts) {
       const messages = transcript.trim().split('\n').map(line => JSON.parse(line)).filter(entry => entry.type === 'message');
       expect(messages.map(entry => entry.message.role)).toEqual(['user', 'user', 'assistant']);
-      expect(messages[0].message.content).toEqual([{ type: 'text', text: 'Resolved source evidence' }]);
+      expect(messages[0].message.content).toEqual(context.toPiMessages()[0].content);
+      expect(messages[0].message.content.every((block: { type: string }) => block.type === 'text')).toBe(true);
     }
   } finally { runtime.dispose(); spy.mockRestore(); await rm(cwd, { recursive: true, force: true }); }
 });

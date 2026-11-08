@@ -1,0 +1,91 @@
+Selling surfaces                       FY2018 - Q3 2026 | spine: structure
+|
+|-- One back end across channels: the thesis
+|   |-- [S] "each channel they add makes the others more powerful"
+|   |-- multi-channel -[D:claim]-> merchants do better or stay longer
+|   |   |-- [I] no multi- vs single-channel comparison in the corpus
+|   |   `-- [I] successful merchants may simply add more channels
+|   |-- [R] Metric wording weakens as it rises
+|   |   |-- FY19: over two-thirds "use" two or more channels
+|   |   |-- FY22: over 80% "have installed" two or more
+|   |   |-- FY23: 90% "have connected" two or more
+|   |   `-- no equivalent in the FY24-25 filings
+|   `-- [S] Only channel ranking given once: online, POS, then social
+|
+|-- Online store: the core
+|   |-- [S] "This is our DNA, the core of our business"
+|   |-- [S] GMV by channel n/d
+|   |-- [S] Q3 2026: Canvas store builder, stores built 20% faster   => 10
+|   `-- [S] Hydrogen headless: over $1B GMV in Q4 2023
+|
+|-- Offline: POS and physical retail
+|   |-- Revenue
+|   |   |-- [S] $441M 2023 | $588M 2024 (+33%) | $748M 2025 (+27%)
+|   |   |-- [S] Includes payments, subscriptions and hardware
+|   |   |-- [I] about 6.5% of total revenue, flat
+|   |   `-- [I] not in any filing; can't be tied to audited numbers
+|   |-- GMV growth gap vs company
+|   |   |-- [S] Q1 2022 about +64 points | Q1 2024 +9 | Q4 2024 about 0
+|   |   |-- [S] 2025-26: 0 to -2 points; FX may explain part
+|   |   `-- [X] offline still outgrows the company
+|   |-- Scale
+|   |   |-- [S] Lifetime GMV $100B (mid-2024) -> $200B (Q3 2026)
+|   |   |-- [X] "$300 billion" (same call); arithmetic supports $200B
+|   |   `-- [I] 11-13% of GMV but 6.5% of revenue: monetizes below average
+|   |-- Who drives it
+|   |   |-- [S] "primarily larger retailers joining the platform"
+|   |   |-- [S] Locations of multi-location merchants +52%, Q3 2026
+|   |   `-- [S] External help: Intuit sunset QuickBooks Desktop POS
+|   `-- Direction of cross-sell
+|       |-- [S] Online brands adding stores: Arhaus, FIGS, Thuma
+|       |-- offline -[D:data]-> online: anecdotes only
+|       `-- [S] Q3 2026: stores capture customer profiles via digital receipts
+|
+|-- B2B
+|   |-- [S] GMV growth: about 2x 2023 | 140%+ 2024 | 96% 2025 | 74% Q3 2026
+|   |-- Size
+|   |   |-- [S] "still accounts for a small portion of our GMV" (Q4 2024)
+|   |   |-- [I] 1-3% of 2024 GMV would mean 1-3 points of 2025 growth
+|   |   `-- [S] TAM over $450B with offline; later "$14 billion" for B2B
+|   |-- Source of growth
+|   |   |-- [S] 2023: "primarily stemmed from existing merchants"
+|   |   |-- [S] Plus-only until 2026
+|   |   |-- [I] moving wholesale off DTC storefronts may relabel GMV
+|   |   `-- [S] New verticals: industrial, hardware, automotive
+|   `-- [S] 2018: "I don't think it's gonna be a product" for the wider base
+|
+|-- Social and marketplace channels
+|   |-- [R] Launches: Facebook Shops, Walmart, TikTok, Spotify, YouTube
+|   |-- [S] Partner services growth: 5x -> 3x -> 2x during 2022; then ends
+|   |-- [S] "small percentage" (2021-22); "very nascent" (Q3 2022)
+|   |-- [X] these channels produce meaningful merchant sales
+|   |   `-- [I] untestable after 2022: disclosure stops
+|   |-- [S] JD.com: one call in early 2022; no outcome stated
+|   `-- [S] Roblox "growing quickly" (Q2 2025); no figure
+|
+|-- AI channels: one more surface                            => 10
+|   |-- [S] ChatGPT, Gemini, Copilot via Agentic Storefronts
+|   `-- [S] "still small"; transaction economics same as online store
+|
+`-- Smaller experiments: outcomes mostly unknown
+    |-- [S] NFTs: beta, 2021-22; last mentioned Q1 2022; status unknown
+    |-- [S] Linkpop: one call mention, 2022; status unknown
+    |-- [S] Collabs: last call mention Q2 2023; status unknown
+    |-- [S] Collective: launched 2023; still cited Q3 2025; not lapsed
+    |-- [S] AR and 3D: buyers ">2x" as likely to buy, early test; method n/d
+    `-- [I] silence isn't failure; filings dropped launch lists after FY23
+
+Legend
+  [R] reported: in a filing, or computed directly from filing figures
+  [S] stated by management on a call or in narrative; not independently verified
+  [I] inferred by us; rests on an assumption or interpretation
+  [X] claim that the corpus contradicts
+  a -[D:grade]-> b  dependency: b needs or is fed by a
+  a -[C:grade]-> b  sequence: a led to or preceded b
+  a -[O:grade]-> b  control: a holds or manages b
+  a -[M:grade]-> b  structure: a belongs to or connects with b
+  grades: mech (true by arithmetic or definition) | causal (controlled test; none found)
+          assoc (figures move together) | data (management figure, unverifiable)
+          claim (asserted, no figure) | untestable (corpus lacks the data)
+          contra (contradicted by the corpus)
+  => NN  detail lives on canvas NN | n/d  not disclosed | bp  basis points

@@ -100,7 +100,10 @@ export function JumpChoices({ run, onJump, text, children }: { run: DiagramTextR
     return () => window.removeEventListener('pointerdown', outside, true);
   }, [open]);
   const jumps = run.jumps ?? [run.jump!];
-  return <span ref={ref} className="diagram-jump-container" onKeyDown={event => { if (event.key === 'Escape') { event.stopPropagation(); setOpen(false); } }}>
+  return <span ref={ref} className="diagram-jump-container" onKeyDown={event => {
+    // Ctrl-drag can leave the link focused. A closed menu must not swallow canvas deselection.
+    if (event.key === 'Escape' && open) { event.stopPropagation(); setOpen(false); }
+  }}>
     <button type="button" className="diagram-jump" data-diagram-jump-id={run.jump!.id} data-mapping-static-ui data-diagram-canvas-static-ui
       onPointerDown={event => { if (!event.ctrlKey && event.pointerType === 'mouse') event.stopPropagation(); }}
       onClick={event => { if (event.ctrlKey || event.metaKey) return; event.stopPropagation();

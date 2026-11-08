@@ -1,0 +1,119 @@
+Proposed diagram changes
+  |-- ChangeSession - domain model and call tree  existing canvas
+  |   |-- [1a] Correct: [MODEL] ChangeSession ownership
+  |   |   `-- Remove ChangeSessionService's DiagramService dependency; retain its CanvasHistoryService and isolated controllers. The existing ownership organization still fits.
+  |   |-- [1b] Extend: [MODEL] ChangeSession ownership
+  |   |   `-- Add repositoryId, commits, head, comparisonBase, DiffTree and migrations; identify DiffSessionWorkflowService as a capture/create caller, not an acceptance owner.
+  |   |-- [1a] Correct: [CALLS] ChangeSession operations
+  |   |   `-- Separate capture() from create(); capture repository-owned saved/live canvases or reuse an existing session's original baselines and frozen hunks. Preserve serialized mutations and explicit acceptance.
+  |   |-- [1b] Extend: [CALLS] ChangeSession operations
+  |   |   `-- Add discoverHunks, readDiffTree, readTreemaps, DiffTree replacement and migration updates. Introduce DiffSessionWorkflowService, its stage-specific DiffSessionTools and run store before expanding them below.
+  |   |-- [1a] Correct: [H] Isolated history and undo/redo
+  |   |   `-- Capture forks from current captured state rather than copying the original editing history. Preserve proposal checkpoints, legacy history migration, undo/redo and the new-canvas reset restriction.
+  |   |-- [1b] Extend: [P] Session persistence and reopening
+  |   |   `-- Add pinned context, DiffTree, migrations, scoped DiffTree reads and explicit DiffTree write tracking. Preserve manifest publication and catalog-receipt recovery; workflow artifacts have a separate store.
+  |   |-- [1a] Correct: [D] Baseline/proposed -> unified review
+  |   |   `-- Identify diffDiagramContent and projectDiagramDiffRows as shared domain logic. Previous-side runs may retain captured mappings and before-side ownership, but are not live proposed anchors. Keep heuristic correspondence separate from real anchor continuity.
+  |   |-- [1b] Extend: [D] Baseline/proposed -> unified review
+  |   |   `-- Show presentation comparison as another consumer of the shared diff/projection components. Preserve fold filtering and review-row geometry; neither consumer performs revision-review application or ChangeSession acceptance.
+  |   |-- [1a] Correct: [A] Ready validation and atomic acceptance
+  |   |   `-- An added diagram needs an incoming edge from a diagram present in the baseline; its source node may be newly introduced. Preserve anchor checks, dependency checks, live-original guards and atomic catalog publication.
+  |   |-- [1b] Extend: [A] Ready validation and atomic acceptance
+  |   |   `-- Add DiffTree, repository-ownership and migration validation; carry repository ownership into publication. Full hunk coverage belongs to workflow completion, not general ready validation.
+  |   |-- [2] Add: Pinned capture and DiffTree navigation
+  |   |   |-- Explain how selected commits or comparisonBase-to-head changes become frozen evidence, and how logical DiffTree nodes resolve hunks and diagram destinations.
+  |   |   |-- Include revision-guarded atomic mapping replacement, paginated reads and DiffTreePanel tree/hunks/treemaps navigation with retained panel state.
+  |   |   `-- Attach from [MODEL] ChangeSession ownership -> diffTree and [CALLS] ChangeSession operations -> readDiffTree. This develops the canvas's established proposal-review subject.
+  |   `-- [2] Add: DiffSessionWorkflowService runs
+  |       |-- Explain capture, analyze, materialize and validation in one agent conversation; distinguish read-only analysis from tools bound to one isolated proposal.
+  |       |-- Include request deduplication, frozen baseline/source reads, complete_diff_session coverage checks, artifacts, cancellation and interrupted-run reporting. Completion produces a ready proposal, not acceptance.
+  |       `-- Attach from [CALLS] ChangeSession operations -> DiffSessionWorkflowService; show its DiffSessionTools, runtime session and FileDiffSessionRunStore. Proposal generation fits this existing canvas.
+  |-- Canvas domain model - baseline 03f2168 (before tldraw) - Projection (C07)  existing canvas
+  |   |-- [1a] Correct: [P1] Presentation alternatives - choose what a placement shows
+  |   |   |-- Replace future rendering language with implemented DiagramAlternativeControls and DiagramSidePanelContent behavior.
+  |   |   `-- Clarify that nested choices can remain stored while inactive; effective projection requires the selected parent chain. The placement-choice organization remains accurate.
+  |   |-- [1b] Extend: [P1] Presentation alternatives - choose what a placement shows
+  |   |   |-- Add swap, panel open/close, part selection, regular/diff and flow/overlay controls. Diff alternatives require one whole-diagram part and ignore regular-view folds.
+  |   |   `-- Attach comparison through projectSelectedDiagramRows to the shared diff/projection components in ChangeSession's [D]; do not duplicate their algorithm.
+  |   `-- [1b] Extend: [P2] Review versus presentation - two independent operations
+  |       `-- Attach VariantReview to saved decisions and explicit application. Distinguish those Accept actions from ChangeSession catalog acceptance; preserve optional reviewId and unchanged bindings during presentation selection.
+  |-- Central and side diagrams - Attempt 2  existing canvas
+  |   |-- [1a] Correct: 2  PRESENTATION ALTERNATIVES
+  |   |   `-- Qualify nested selection as effective projection, not a prohibition on storing inactive children; distinguish complete diff comparison from regular-view folding. Existing promotion and placement ownership remain valid.
+  |   |-- [1b] Extend: 2  PRESENTATION ALTERNATIVES
+  |   |   `-- Add DiagramAlternativeControls and DiagramSidePanelContent under Rendering, linked to shared diff/projection components rather than another algorithm diagram.
+  |   `-- [1b] Extend: 3  OPTIONAL REVIEW AND APPLICATION
+  |       `-- Show VariantReview saving decisions, refining candidates and explicitly applying reviewed changes. Preserve dependency checks and three-way merging; identify ChangeSession acceptance as a different operation.
+  |-- Mapping page - MCP and HTTP API  existing canvas
+  |   |-- [1a] Correct: Mapping page: exposed interfaces at 03f2168
+  |   |   `-- Remove the fixed twelve-tool count and qualify edit-diagram as supporting in-place edits or retained variants. The discovery, editing and proposal groups still explain the interfaces.
+  |   |-- [1b] Extend: Mapping page: exposed interfaces at 03f2168
+  |   |   `-- Add repository-hunk discovery, ChangeSession DiffTree reads and workflow start/status/cancel; expose explicit edit/replacement modes and optional presentation promotion within existing groups.
+  |   |-- [1a] Correct: Mapping backend: grouped responsibilities (03f2168)
+  |   |   `-- Replace DiagramService-based generation with DiagramGenerator, generateDiagram and explicit revision retention. Preserve separate direct-edit, live-state and durable-proposal responsibilities.
+  |   |-- [1b] Extend: Mapping backend: grouped responsibilities (03f2168)
+  |   |   |-- Show createBackend composing DiffSessionWorkflowService with ChangeSessionService, AgentDiagrammingSessionService, PiDiffSessionRuntime and FileDiffSessionRunStore.
+  |   |   `-- Add PushIntegrationService with GitPushSource, FilePushIntegrationStore and a workflow port. Link proposal execution to the ChangeSession canvas before detailing event intake here.
+  |   `-- [2] Add: PushIntegrationService intake and workflow handoff
+  |       |-- Explain connection validation, event deduplication, shared pending execution, branch/deletion/unchanged skips, source resolution and persisted generation status.
+  |       |-- Show pinned comparisonBase/head requests and workflow-status reconciliation; a push does not accept a proposal.
+  |       `-- Attach from Mapping backend: grouped responsibilities (03f2168) -> PushIntegrationService. The canvas already covers backend entry points and service integration, so a new canvas is unnecessary.
+  |-- AgentContext - implemented call flow and domain models (03f2168)  existing canvas
+  |   |-- [1a] Correct: (O) Edit diagram with AgentContext - baseline 03f2168
+  |   |   |-- Replace DiagramService.generate with generateDiagram and explicit retained submission; import requested immutable revisions, retaining portable-history compatibility.
+  |   |   `-- Keep capture, generation, retained output and acknowledgement as the main sequence. Ownership corrections do not invalidate that organization.
+  |   |-- [1b] Extend: (O) Edit diagram with AgentContext - baseline 03f2168
+  |   |   |-- Branch into ordinary installation or retained variants/reviews with optional presentation promotion; include saved-variant refinement and pinned prompt-reference resolution.
+  |   |   `-- Attach from DiagramEditService.generate/apply to [D2] and [D5], and link presentation/review detail to C07 rather than duplicating it.
+  |   |-- [1b] Extend: [D1] EditDiagramInput - request domain
+  |   |   `-- Add required edit-mode and replace-mode, subtree targets, variant options, pinned references and presentation-alternative under the existing request groups.
+  |   |-- [1b] Extend: [D2] Diagram edit run - asynchronous execution
+  |   |   `-- Add retained variant applications and returned variant/alternative IDs. Preserve request identity, cancellation boundaries and exact-output reuse on acknowledgement retry.
+  |   `-- [1b] Extend: [D5] Revision and canvas bindings - output domain
+  |       `-- Add review and alternative references to retained candidates without rebinding current content. Distinguish checkpointing candidate metadata from ordinary revision installation.
+  |-- PersistentLayer  existing canvas
+  |   `-- [1b] Extend: PersistentLayer
+  |       |-- Extend DiagramChangeSessionStore with pinned context and DiffTree persistence; add FileDiffSessionRunStore for runs/artifacts and FilePushIntegrationStore for connections/generations.
+  |       `-- Link stores to their owning service details. These extend the persistence inventory without changing the separation of autosave, proposal storage and catalog publication.
+  |-- Canvas domain model - baseline 03f2168 (before tldraw)  existing canvas
+  |   |-- [1a] Correct: MappingPage baseline 03f2168, before tldraw
+  |   |   `-- Remove injected DiagramService content ownership while preserving CanvasHistoryService context ownership. The workspace/controller overview remains useful for this feature scope.
+  |   |-- [1b] Extend: MappingPage baseline 03f2168, before tldraw
+  |   |   `-- Add document.alternatives and revisionReviews beneath document state, with links to C07's presentation and review components.
+  |   |-- [1a] Correct: [D] Controller edits / agent access
+  |   |   `-- Replace DiagramService create/revise calls with explicit stored revision operations. Preserve per-call exec commits and controller operation-batch atomicity.
+  |   |-- [1b] Extend: [D] Controller edits / agent access
+  |   |   `-- Place alternative selection, saved review decisions and reviewed-content application under controller operations; only application may change bound content.
+  |   |-- [1a] Correct: [E] CanvasHistoryService / coordinated revisions
+  |   |   `-- Replace append-time revision issuance with validation/retention of already-issued revisions. Preserve context, checkpoint and navigation ownership.
+  |   |-- [1b] Extend: [E] CanvasHistoryService / coordinated revisions
+  |   |   `-- Include checkpointed alternatives/reviews and their referenced revisions; attach to the document-state components in MappingPage.
+  |   `-- [4] Redraw: [G] DiagramService
+  |       |-- Replace the sole content-writer service with immutable create/revise/derive operations, explicit runtime retention, application generation and controller publication.
+  |       `-- Most responsibility branches now belong to different owners; method patches would preserve false central ownership. Retain immutable ancestry and proven correspondence, linking detailed lifecycle coverage to C07's [G].
+  |-- Roll-up 1 - g2 - Canvas domain model - baseline 03f2168 (before tldraw) (C12)  existing canvas
+  |   |-- [1a] Correct: MappingPage baseline 03f2168, before tldraw
+  |   |   `-- Remove obsolete injected DiagramService ownership; preserve workspace/controller/history organization and connect content publication to [R] Immutable content and revision lifecycle.
+  |   |-- [1b] Extend: MappingPage baseline 03f2168, before tldraw
+  |   |   `-- Add document alternatives and revisionReviews, attached to this canvas's existing [P1] and [P2] detail nodes.
+  |   |-- [1a] Correct: [D] Controller edits / agent access
+  |   |   `-- Replace obsolete service calls with explicit revision operations; preserve commit semantics and link presentation/review operations to existing [P1]/[P2] detail.
+  |   |-- [1a] Correct: [E] CanvasHistoryService / coordinated revisions
+  |   |   `-- Correct append-time issuance to validation of already-issued content; include retention of references required by choices and reviews. Navigation ownership remains accurate.
+  |   |-- [4] Redraw: [G] DiagramService
+  |   |   `-- Replace the obsolete sole-writer organization with operation, retention, generation and publication owners. Its responsibility branches contradict [R]; retain a concise overview linked to that existing detail.
+  |   `-- [1a] Correct: [P1] Presentation alternatives
+  |       `-- Clarify inactive stored nested selections and whole-diagram diff restrictions; link comparison to shared projection. Preserve the placement-choice organization.
+  `-- Roll-up 2 - g2 - Canvas domain model - baseline 03f2168 (before tldraw) (C14)  existing canvas
+      |-- [1a] Correct: MappingPage baseline 03f2168, before tldraw
+      |   `-- Remove injected DiagramService ownership; retain workspace/controller/history relationships and connect publication to [R] Content revisions and publication.
+      |-- [1b] Extend: MappingPage baseline 03f2168, before tldraw
+      |   `-- Add document alternatives and revisionReviews, attached to [P] Placement choices and revision review.
+      |-- [1a] Correct: [D] Controller edits / agent access
+      |   `-- Replace obsolete service calls with explicit revision operations, preserving commit semantics and linking presentation selection versus review application to [P].
+      |-- [1a] Correct: [E] CanvasHistoryService / coordinated revisions
+      |   `-- Correct append-time issuance and include alternative/review revision retention within the still-valid checkpoint lifecycle.
+      |-- [4] Redraw: [G] DiagramService
+      |   `-- Replace centralized content ownership with explicit operations, retention, generation and publication, linked to [R]. Patching method names would leave the main ownership model misleading.
+      `-- [1a] Correct: [P] Placement choices and revision review
+          `-- Clarify effective nested selection and complete whole-diagram diff comparison; distinguish review application from ChangeSession acceptance. Preserve the independent presentation and review branches.

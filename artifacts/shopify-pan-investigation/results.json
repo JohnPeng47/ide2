@@ -1,0 +1,164 @@
+[
+  {
+    "name": "Shopify - central diagram to full canvas v2 · sample 1",
+    "sizes": {
+      "elements": 1675,
+      "spans": 1390,
+      "textChars": 17533,
+      "visibleShapes": 23
+    },
+    "trials": [
+      {
+        "duration": 4141.996088,
+        "p95": 116.69999999999891,
+        "max": 500,
+        "frames": 105,
+        "tasks": [
+          57,
+          61,
+          59,
+          56,
+          64,
+          76,
+          107,
+          81,
+          111,
+          129,
+          172,
+          82
+        ],
+        "metrics": {
+          "LayoutCount": 23,
+          "RecalcStyleCount": 99,
+          "LayoutDuration": 0.055994,
+          "RecalcStyleDuration": 0.172575,
+          "DevToolsCommandDuration": 0.687134,
+          "ScriptDuration": 0.713615,
+          "V8CompileDuration": 0,
+          "TaskDuration": 4.099347,
+          "TaskOtherDuration": 2.4700290000000003
+        }
+      },
+      {
+        "duration": 3005.091472,
+        "p95": 83.29999999999927,
+        "max": 283.40000000000146,
+        "frames": 96,
+        "tasks": [
+          72,
+          57
+        ],
+        "metrics": {
+          "LayoutCount": 11,
+          "RecalcStyleCount": 100,
+          "LayoutDuration": 0.014059000000000002,
+          "RecalcStyleDuration": 0.13556,
+          "DevToolsCommandDuration": 0.367926,
+          "ScriptDuration": 0.3358579999999999,
+          "V8CompileDuration": 0,
+          "TaskDuration": 2.9764850000000003,
+          "TaskOtherDuration": 2.123082
+        }
+      }
+    ]
+  },
+  {
+    "name": "Canvas domain model - baseline 03f2168 (before tldraw)",
+    "sizes": {
+      "elements": 2361,
+      "spans": 1963,
+      "textChars": 17452,
+      "visibleShapes": 25
+    },
+    "trials": [
+      {
+        "duration": 2449.8845409999994,
+        "p95": 50,
+        "max": 316.7000000000007,
+        "frames": 97,
+        "tasks": [
+          53,
+          88
+        ],
+        "metrics": {
+          "LayoutCount": 2,
+          "RecalcStyleCount": 97,
+          "LayoutDuration": 0.000828,
+          "RecalcStyleDuration": 0.111751,
+          "DevToolsCommandDuration": 0.388314,
+          "ScriptDuration": 0.296051,
+          "V8CompileDuration": 0,
+          "TaskDuration": 2.419362,
+          "TaskOtherDuration": 1.6224180000000001
+        }
+      },
+      {
+        "duration": 3313.194537000003,
+        "p95": 66.70000000000073,
+        "max": 266.60000000000036,
+        "frames": 96,
+        "tasks": [
+          52
+        ],
+        "metrics": {
+          "LayoutCount": 7,
+          "RecalcStyleCount": 99,
+          "LayoutDuration": 0.00392,
+          "RecalcStyleDuration": 0.10783899999999999,
+          "DevToolsCommandDuration": 0.30924599999999997,
+          "ScriptDuration": 0.40538300000000005,
+          "V8CompileDuration": 0,
+          "TaskDuration": 3.1564990000000006,
+          "TaskOtherDuration": 2.3301109999999996
+        }
+      }
+    ]
+  },
+  {
+    "name": "SHOPIFY COMPANY MAP | FY2018-Q3 2026 | G1-G3, evidence at G6",
+    "sizes": {
+      "elements": 360,
+      "spans": 291,
+      "textChars": 3120,
+      "visibleShapes": 2
+    },
+    "trials": [
+      {
+        "duration": 1556.052886000005,
+        "p95": 16.800000000000182,
+        "max": 216.60000000000036,
+        "frames": 98,
+        "tasks": [],
+        "metrics": {
+          "LayoutCount": 1,
+          "RecalcStyleCount": 95,
+          "LayoutDuration": 0.000315,
+          "RecalcStyleDuration": 0.029336,
+          "DevToolsCommandDuration": 0.285163,
+          "ScriptDuration": 0.20943900000000001,
+          "V8CompileDuration": 0,
+          "TaskDuration": 1.019548,
+          "TaskOtherDuration": 0.495295
+        }
+      },
+      {
+        "duration": 1826.5440529999978,
+        "p95": 33.399999999999636,
+        "max": 233.30000000000018,
+        "frames": 97,
+        "tasks": [],
+        "metrics": {
+          "LayoutCount": 0,
+          "RecalcStyleCount": 96,
+          "LayoutDuration": 0,
+          "RecalcStyleDuration": 0.039477,
+          "DevToolsCommandDuration": 0.266149,
+          "ScriptDuration": 0.22448700000000002,
+          "V8CompileDuration": 0,
+          "TaskDuration": 1.1414680000000001,
+          "TaskOtherDuration": 0.6113549999999999
+        }
+      }
+    ]
+  }
+]

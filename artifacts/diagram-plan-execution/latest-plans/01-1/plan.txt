@@ -1,0 +1,163 @@
+Proposed diagram changes
+  |-- Canvas domain model - baseline 03f2168 (before tldraw)  existing canvas
+  |   |-- [1a] Correct: MappingPage
+  |   |   |-- PATCH: retain CanvasWorkspace -> CanvasSession -> MappingDocumentController as the semantic ownership backbone.
+  |   |   |-- Remove injected DiagramService; CanvasWorkspace receives CanvasHistoryService, while content creation and retention use explicit revision operations/store functions.
+  |   |   `-- Replace full-history agent snapshots and whole-history Save with requested revision exports and persisted-checkpoint publication.
+  |   |-- [1b] Extend: MappingPage
+  |   |   |-- Add MappingEditorCanvas around MappingPocSelectionCanvas; mount SourceWindowPanel beside the editor, outside its transformed canvas.
+  |   |   |-- Show page-owned PromptComposerCoordinator, CanvasViewReceiver and DiagramSearchService, with their controller/session and persistence connections.
+  |   |   |-- Add Workspace tools, CanvasTreemapContent, ProjectionLayoutPanel and worker-backed projectDiagrams.
+  |   |   `-- These extend rendering, authoring and navigation without replacing workspace ownership; distinguish editor presentation from controller-owned semantic state.
+  |   |-- [1a] Correct: [B] Diagram
+  |   |   `-- PATCH: update revision identities and parser-version assumptions; preserve immutable content, source bindings, mappings and captured evidence.
+  |   |-- [1b] Extend: [B] Diagram
+  |   |   |-- Add DiagramNode placement references and derived DiagramPresentation separately from immutable Diagram content.
+  |   |   `-- Identify document.alternatives, document.diagramPresentations and canvas.diagramViews as presentation inputs; link to existing presentation detail rather than duplicate it.
+  |   |-- [1a] Correct: [C] FloatingBox variants
+  |   |   |-- PATCH: include code-panel projection content and derived connection arrows in the public display registry.
+  |   |   `-- Separate retained ProjectedPane objects from SourceWindowPanel rendering; the window is not a new FloatingBox variant.
+  |   |-- [1a] Correct: [D] Controller edits / agent access
+  |   |   |-- PATCH: replace DiagramService calls with explicit stored revision operations and installation of issued revisions.
+  |   |   `-- Preserve controller operation batches; distinguish apply-diagram-batch and acknowledged revision installation from ordinary apply.
+  |   |-- [1b] Extend: [D] Controller edits / agent access
+  |   |   |-- Add alternative selection, side panels, variant review, canvas-view and project-diagrams command paths.
+  |   |   `-- Show flush-before-acknowledgement for revision/batch receivers, generated diagrams and CanvasViews; ordinary apply does not explicitly await that flush.
+  |   |-- [1a] Correct: [E] CanvasHistoryService / coordinated revisions
+  |   |   |-- PATCH: checkpoints retain issued revisions and bindings; append is not the content-revision issuer.
+  |   |   `-- Preserve checkpoint navigation and coordinated transfers; include retained presentation/review revision references.
+  |   |-- [4] Redraw: [G] DiagramService
+  |   |   |-- Replace the single content-writer service with revision operations, runtime retention, generateDiagram orchestration and controller publication.
+  |   |   |-- Creation, lookup and generation no longer belong to the depicted service; method-label corrections would preserve misleading ownership.
+  |   |   `-- Preserve immutable revisions and proven correspondence; connect publication to [E] and reuse the Projection canvas's detailed revision lifecycle.
+  |   |-- [2] Add: SourceWindowPanel and source navigation
+  |   |   |-- Answer how retained source projections become a workspace window; attach from MappingPage.SourceWindowPanel and [C].ProjectedPane.
+  |   |   |-- Show visibleProjectionIds filtering, expanded source-code/code-panel panes, focused code-panel preference and last-eligible-pane fallback.
+  |   |   |-- Show SessionCodePanel / SourceCodePane rendering, controller-backed content updates and close collapsing all eligible panes without clearing selection.
+  |   |   `-- Include per-document window preferences, active-document preloading, explicit reload, stale-source safeguards and definition/file navigation; this develops existing source-pane responsibilities.
+  |   |-- [2] Add: Prompt composition and pinned references
+  |   |   |-- Attach from MappingPage.PromptComposerCoordinator; answer how selections and revisions become reproducible authoring requests.
+  |   |   |-- Show template/text/reference blocks, automatic selection bindings versus manual chips, revision pickup and canvas placement.
+  |   |   `-- Show panel-owned llmSessionId/context, unsettled-request locking, exact retries and context adoption after completion; connect execution to DiagramEditService on the AgentContext canvas.
+  |   |-- [2] Add: Diagram search and navigation
+  |   |   |-- Attach from MappingPage.DiagramSearchService and Workspace tools.DiagramSearchPanel; answer what is indexed and how results safely reveal a canvas location.
+  |   |   |-- Show current bound content, shared content keys, placement metadata, worker generations/cancellation and project versus proposal scope.
+  |   |   `-- Include revision/hash checks before navigation; distinguish this transient diagram-text index from source-file search or selected-alternative rendering.
+  |   |-- [2] Add: Canvas source treemaps
+  |   |   |-- Attach from MappingPage.CanvasTreemapContent; answer how source mappings allocate area to diagram nodes and files.
+  |   |   |-- Show actual placements including folded diagrams, repository/corpus-specific line universes, source reads and captured-line validation.
+  |   |   `-- Distinguish mapped-range/file scopes, equal shared-line allocation, unmapped remainder and excluded stale/unavailable evidence; include navigation and non-intercepting tint selection.
+  |   `-- [2] Add: Focused canvas projection and layout
+  |       |-- Attach from MappingPage.projectDiagrams and ProjectionLayoutPanel; answer how chosen placements become an independent child canvas.
+  |       |-- Show copy/remapping, presentation-highlight transfer, blank placeholder, source-checkpoint provenance and child publication without replacing existing sessions.
+  |       |-- Show child-only projection undo/redo and cancellable geometry-only layout jobs with version-guarded commits.
+  |       `-- Contrast original spacing with compact constraint-based layout; this remains workspace composition, not a new architectural subject.
+  |-- Unified selection - state, gestures and WebSocket  existing canvas
+  |   |-- [1a] Correct: CanvasSession
+  |   |   |-- PATCH: distinguish retained PanelState lifetime from source-window visibility, which depends on projection visibility and expansion.
+  |   |   `-- Preserve SelectionState as membership authority; closing the source window collapses panes rather than clearing selection.
+  |   `-- [1b] Extend: CanvasSession
+  |       |-- Add PromptComposerCoordinator as a selection consumer producing references and extension anchors.
+  |       `-- Separate automatic reference synchronization from manual references; this fits the existing state/adapter/consumer organization.
+  |-- AgentContext - implemented call flow and domain models (03f2168)  existing canvas
+  |   |-- [1a] Correct: (O) Edit diagram with AgentContext - baseline 03f2168
+  |   |   |-- PATCH: retain capture, validation, generation and installation order; replace DiagramService.generate with generateDiagram or supplied-edit submission and explicit retention.
+  |   |   |-- Replace mandatory full-history import with requested target/reference revision imports, retaining the compatibility history path.
+  |   |   `-- Distinguish uploaded, panel-supplied and compatible diagram-bound context; these changes preserve the orchestration backbone.
+  |   |-- [1b] Extend: (O) Edit diagram with AgentContext - baseline 03f2168
+  |   |   |-- Add create/extend placement, scoped editing, variant creation/refinement and optional presentation-alternative promotion under DiagramEditService.
+  |   |   |-- Show template validation and pinned reference resolution; installation retries reuse retained output.
+  |   |   `-- Contrast version-guarded edits with creation placement against the latest canvas and bounded version-conflict retries.
+  |   |-- [1a] Correct: [D1] EditDiagramInput - request domain
+  |   |   |-- PATCH: require edit-mode and replace-mode; distinguish whole, single-subtree and multiple-subtree targets.
+  |   |   `-- Preserve target/precondition/request identity groups while correcting the former prompt-only request contract.
+  |   |-- [1b] Extend: [D1] EditDiagramInput - request domain
+  |   |   |-- Add templates, pinned references, variants, source-mapping opt-in and mutually constrained context inputs.
+  |   |   `-- Separate creation count and extension origin/source anchors from edit-only options.
+  |   |-- [1b] Extend: [D2] Diagram edit run - asynchronous execution
+  |   |   |-- Add operation, created diagrams, variants, actual runtime session ID and returned conversation context.
+  |   |   `-- Preserve deduplication and acknowledgement states; returned context becomes usable only after successful installation.
+  |   `-- [1b] Extend: [D4] Diagram-edit agent session - runtime model
+  |       |-- Add resolved templates, pinned reference excerpts and replacement scopes to task input.
+  |       `-- Distinguish panel conversation identity from each actual runtime session; retain copied-history isolation and disposal boundaries.
+  |-- Mapping page - MCP and HTTP API  existing canvas
+  |   |-- [1a] Correct: Mapping page: exposed interfaces at 03f2168
+  |   |   |-- PATCH: remove the fixed twelve-tool claim and edit-only inventory while retaining interface groups.
+  |   |   `-- Correct publication to checkpoint capture/acknowledgement and snapshots to targeted revision exports; include context-aware workspace export/import callers.
+  |   |-- [1b] Extend: Mapping page: exposed interfaces at 03f2168
+  |   |   |-- Add evidenced create/extend, batch application, CanvasView, canvas-generation, project-diagrams and diagram-context command families.
+  |   |   `-- Keep browser bridge commands distinct from public tools and HTTP routes; include bounded reads, identity and mutation receipts without inventing endpoint names.
+  |   |-- [1a] Correct: Mapping backend: grouped responsibilities (03f2168)
+  |   |   |-- PATCH: replace the content-service wrapper with DiagramGenerator plus explicit revision operations/retention.
+  |   |   `-- Show GenerationCanvasBridge wrapping CanvasSessionBridge and checkpoint-backed MappingDiagramService publication; the responsibility groups remain valid.
+  |   `-- [1b] Extend: Mapping backend: grouped responsibilities (03f2168)
+  |       |-- Add CanvasApiProjection, AgentChatService/ChatDiagramTools, AgentContextLibrary and FileDiagramAgentContextStore at their evidenced integration boundaries.
+  |       `-- Connect live access, authoring and context persistence; leave unrelated backend feature internals outside this scope.
+  |-- PersistentLayer  existing canvas
+  |   |-- [1a] Correct: PersistentLayer
+  |   |   |-- PATCH: explicit publication flushes workspace records and publishes a captured checkpoint; retain autosave versus catalog-publication separation.
+  |   |   `-- Preserve SearchArtifact persistence as proposed, not implemented; current search indexes diagram content in a worker.
+  |   `-- [1b] Extend: PersistentLayer
+  |       |-- Add saveDocument callers for projection creation/navigation and diagram-context storage at existing persistence boundaries.
+  |       `-- Include context-aware workspace export/import; reuse immutable record-store detail rather than duplicating it.
+  |-- ChangeSession - domain model and call tree  existing canvas
+  |   |-- [1b] Extend: [CALLS] ChangeSession operations
+  |   |   |-- PATCH: add ChangeTreemapContent as a read-only review consumer beside ChangeSessionPreview.
+  |   |   `-- Show known-version polling and stopping at accepted/archived states; preserve mutation and acceptance lifecycle branches.
+  |   `-- [2] Add: Change treemaps and evidence allocation
+  |       |-- Attach from [CALLS].ChangeTreemapContent; answer how captured change evidence becomes file and diagram area.
+  |       |-- Show DiffTree hunks/mappings, baseline/proposed destinations, inherited targets, equal allocation across resolved destinations and Unmapped area.
+  |       `-- Count added/deleted text lines, not context; distinguish covered/raw/shared totals and zero-area metadata/binary changes. Previous destinations are review data, not live anchors.
+  |-- Workspace persistence flow  existing canvas
+  |   |-- [1a] Correct: Workspace persistence flow - baseline 03f2168
+  |   |   |-- PATCH: replace the separate-publication shortcut with sync/flush, version recheck, checkpoint publication and saved-baseline acknowledgement.
+  |   |   `-- Retain the owner-to-record-storage-to-worker-to-server organization; changed callers do not invalidate it.
+  |   `-- [1b] Extend: Workspace persistence flow - baseline 03f2168
+  |       |-- Add revision/batch receivers, CanvasViewReceiver, generated-diagram creation and diagram-context application as flush-before-acknowledgement callers.
+  |       |-- Add projection saveDocument publication/navigation and controller-committed layout changes.
+  |       `-- Separate source content/scroll/camera retention from SourceWindowPanel window preferences; identify context-aware export/import as separate operations.
+  |-- Canvas domain model - baseline 03f2168 (before tldraw) - Projection  existing canvas
+  |   `-- [1a] Correct: [P1] Presentation alternatives - choose what a placement shows
+  |       |-- PATCH: replace the future rendering reference with implemented DiagramAlternativeControls and DiagramSidePanelContent consumers.
+  |       `-- Show inline swapping and regular/diff, flow/overlay panels attached to a placement/nodeRef; preserve presentation selection versus review application and reuse existing lifecycle detail.
+  |-- 01 - Saved CanvasViews and branching  existing canvas
+  |   `-- [1b] Extend: Saved CanvasViews and branching
+  |       |-- PATCH: add MappingDocumentController as command/state owner, CanvasViewControls as UI caller and CanvasViewReceiver as persistence-acknowledged adapter.
+  |       |-- Show display/camera capture before applicable commands and CanvasViewDiffPreview as a separate consumer that hides/disables the live editor while shown.
+  |       `-- These implementation relationships fit the existing saved-state/switch/branch organization; preserve its behavioral content where not contradicted by this evidence.
+  |-- Roll-up 1 - g2 - Canvas domain model - baseline 03f2168 (before tldraw)  existing canvas
+  |   |-- [1a] Correct: MappingPage
+  |   |   `-- PATCH: retain workspace/session/controller ownership; remove injected DiagramService and correct targeted reads and checkpoint publication.
+  |   |-- [1b] Extend: MappingPage
+  |   |   `-- Add explicit editor, source-window, prompt, saved-view, search, treemap and projection-tool nodes with session/controller links before linking their existing details.
+  |   |-- [1a] Correct: [B] Diagram
+  |   |   `-- PATCH: correct revision/parser assumptions and distinguish immutable content from placement/presentation; connect to existing [R] and [P1].
+  |   |-- [1a] Correct: [C] FloatingBox variants
+  |   |   `-- PATCH: include code-panel projections and derived arrows; distinguish retained projection objects from SourceWindowPanel rendering.
+  |   |-- [1a] Correct: [D] Controller edits / agent access
+  |   |   `-- PATCH: replace DiagramService edit calls with stored revision operations; distinguish controller batches from explicit persistence acknowledgement.
+  |   |-- [1b] Extend: [D] Controller edits / agent access
+  |   |   `-- Add presentation/review operations and saved-view/projection command paths; attach review application to existing [P2].
+  |   |-- [1a] Correct: [E] CanvasHistoryService / coordinated revisions
+  |   |   `-- PATCH: append retains issued revisions rather than issuing content; preserve checkpoint navigation and transfer coordination.
+  |   `-- [4] Redraw: [G] DiagramService
+  |       |-- Replace the obsolete single-service owner with revision operations, retention, generation and publication boundaries; a renamed service would remain misleading.
+  |       `-- Connect to existing [R] Immutable content and revision lifecycle; preserve [A], [R], [P1] and [P2] without duplicating their accurate detail.
+  `-- Roll-up 2 - g2 - Canvas domain model - baseline 03f2168 (before tldraw)  existing canvas
+      |-- [1a] Correct: MappingPage
+      |   `-- PATCH: retain semantic workspace ownership; remove injected DiagramService and correct targeted snapshots and checkpoint publication.
+      |-- [1b] Extend: MappingPage
+      |   `-- Add editor, source window, prompt coordinator, saved-view receiver, search, treemap and projection components with explicit callers/owners and links to existing detail.
+      |-- [1a] Correct: [B] Diagram
+      |   `-- PATCH: correct identities/parser assumptions and separate content from placement/presentation; link to existing [R] and [P].
+      |-- [1a] Correct: [C] FloatingBox variants
+      |   `-- PATCH: include code-panel content and derived arrows; distinguish projection lifetime from source-window rendering.
+      |-- [1a] Correct: [D] Controller edits / agent access
+      |   `-- PATCH: replace DiagramService calls with explicit stored revision operations and distinguish mutation from persistence acknowledgement.
+      |-- [1b] Extend: [D] Controller edits / agent access
+      |   `-- Add alternatives/review, CanvasViews and projection command paths; connect presentation and review operations to existing [P].
+      |-- [1a] Correct: [E] CanvasHistoryService / coordinated revisions
+      |   `-- PATCH: retain issued content revisions and presentation references; preserve checkpoint and coordinated-navigation responsibilities.
+      `-- [4] Redraw: [G] DiagramService
+          |-- Replace single-service ownership with explicit revision operations, runtime retention, generation orchestration and controller publication.
+          `-- Connect to existing [R] Content revisions and publication; preserve [A], [R] and [P], avoiding a second copy of their detail.

@@ -61,10 +61,10 @@ export function ConnectionFocus({ runtime, editor, enabled, root }: {
       const target = event.target;
       if (event.isComposing || event.ctrlKey || event.metaKey || event.altKey
         || target instanceof HTMLElement && (target.isContentEditable || target.closest('input,textarea,select,[role=textbox]'))) return;
-      if (event.key !== '[' && event.key !== ']' && event.key !== 'Escape') return;
+      if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight' && event.key !== 'Escape') return;
       event.preventDefault(); event.stopImmediatePropagation();
       if (event.key === 'Escape') runtime.clearConnectionFocus();
-      else pan(event.key === '[' ? 'source' : 'target');
+      else pan(event.key === 'ArrowLeft' ? 'source' : 'target');
     };
     const outside = (event: PointerEvent) => {
       const target = event.target;
@@ -103,8 +103,8 @@ export function ConnectionFocus({ runtime, editor, enabled, root }: {
       x={rect.x - 3} y={rect.y - 3} width={rect.width + 6} height={rect.height + 6} rx={3} />))}</svg>
     {view.map(edge => <div key={edge.id} className="edge-focus-hint" data-focused-edge={edge.id} data-orientation={edge.orientation} style={{ left: edge.point.x, top: edge.point.y }}
       role="group" aria-label="Focused edge endpoints" data-mapping-static-ui data-diagram-canvas-static-ui>
-      <button type="button" aria-label="Focus source node" aria-keyshortcuts="[" title="Focus source node ([)" onClick={() => pan('source', edge.id)}><kbd>[</kbd></button>
-      <button type="button" aria-label="Focus target node" aria-keyshortcuts="]" title="Focus target node (])" onClick={() => pan('target', edge.id)}><kbd>]</kbd></button>
+      <button type="button" aria-label="Focus source node" aria-keyshortcuts="ArrowLeft" title="Focus source node (←)" onClick={() => pan('source', edge.id)}><kbd>←</kbd></button>
+      <button type="button" aria-label="Focus target node" aria-keyshortcuts="ArrowRight" title="Focus target node (→)" onClick={() => pan('target', edge.id)}><kbd>→</kbd></button>
     </div>)}
   </div>;
 }

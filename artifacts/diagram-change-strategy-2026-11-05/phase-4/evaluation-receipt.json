@@ -1,0 +1,202 @@
+{
+  "judgementId": "74eebaaa-37d8-4a5d-a9ed-cab84b8b8129",
+  "completed": 14,
+  "excluded": 0,
+  "parser": "diagram-change-tree",
+  "version": 1,
+  "totals": {
+    "2": 61,
+    "3": 2,
+    "4": 33,
+    "1a": 200,
+    "1b": 192
+  },
+  "validOutputs": 14,
+  "outputsUsing3": 2,
+  "outputsUsing4": 14,
+  "protectedFilesVerified": 32,
+  "perOutput": [
+    {
+      "context": 1,
+      "sample": 1,
+      "counts": {
+        "2": 6,
+        "3": 0,
+        "4": 3,
+        "1a": 23,
+        "1b": 18
+      },
+      "valid": true,
+      "issues": []
+    },
+    {
+      "context": 1,
+      "sample": 2,
+      "counts": {
+        "2": 10,
+        "3": 0,
+        "4": 3,
+        "1a": 25,
+        "1b": 24
+      },
+      "valid": true,
+      "issues": []
+    },
+    {
+      "context": 2,
+      "sample": 1,
+      "counts": {
+        "2": 5,
+        "3": 0,
+        "4": 4,
+        "1a": 13,
+        "1b": 16
+      },
+      "valid": true,
+      "issues": []
+    },
+    {
+      "context": 2,
+      "sample": 2,
+      "counts": {
+        "2": 3,
+        "3": 0,
+        "4": 3,
+        "1a": 17,
+        "1b": 10
+      },
+      "valid": true,
+      "issues": []
+    },
+    {
+      "context": 3,
+      "sample": 1,
+      "counts": {
+        "2": 3,
+        "3": 0,
+        "4": 3,
+        "1a": 18,
+        "1b": 17
+      },
+      "valid": true,
+      "issues": []
+    },
+    {
+      "context": 3,
+      "sample": 2,
+      "counts": {
+        "2": 4,
+        "3": 0,
+        "4": 3,
+        "1a": 19,
+        "1b": 17
+      },
+      "valid": true,
+      "issues": []
+    },
+    {
+      "context": 4,
+      "sample": 1,
+      "counts": {
+        "2": 3,
+        "3": 0,
+        "4": 3,
+        "1a": 21,
+        "1b": 21
+      },
+      "valid": true,
+      "issues": []
+    },
+    {
+      "context": 4,
+      "sample": 2,
+      "counts": {
+        "2": 4,
+        "3": 0,
+        "4": 3,
+        "1a": 20,
+        "1b": 16
+      },
+      "valid": true,
+      "issues": []
+    },
+    {
+      "context": 5,
+      "sample": 1,
+      "counts": {
+        "2": 4,
+        "3": 1,
+        "4": 1,
+        "1a": 9,
+        "1b": 12
+      },
+      "valid": true,
+      "issues": []
+    },
+    {
+      "context": 5,
+      "sample": 2,
+      "counts": {
+        "2": 4,
+        "3": 1,
+        "4": 2,
+        "1a": 9,
+        "1b": 10
+      },
+      "valid": true,
+      "issues": []
+    },
+    {
+      "context": 6,
+      "sample": 1,
+      "counts": {
+        "2": 3,
+        "3": 0,
+        "4": 1,
+        "1a": 7,
+        "1b": 10
+      },
+      "valid": true,
+      "issues": []
+    },
+    {
+      "context": 6,
+      "sample": 2,
+      "counts": {
+        "2": 3,
+        "3": 0,
+        "4": 2,
+        "1a": 6,
+        "1b": 8
+      },
+      "valid": true,
+      "issues": []
+    },
+    {
+      "context": 7,
+      "sample": 1,
+      "counts": {
+        "2": 5,
+        "3": 0,
+        "4": 1,
+        "1a": 6,
+        "1b": 6
+      },
+      "valid": true,
+      "issues": []
+    },
+    {
+      "context": 7,
+      "sample": 2,
+      "counts": {
+        "2": 4,
+        "3": 0,
+        "4": 1,
+        "1a": 7,
+        "1b": 7
+      },
+      "valid": true,
+      "issues": []
+    }
+  ]
+}

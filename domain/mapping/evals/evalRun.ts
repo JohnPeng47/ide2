@@ -12,6 +12,7 @@ export const evalRunRequestSchema = z.object({
   /** Canvas inputs pin a checkpoint; AgentContext inputs are immutable by ID. */
   inputs: z.record(z.string().regex(/^[a-z][a-z0-9_]*$/), z.union([compareSourceSchema, z.object({ agentContextId: savedAgentContextIdSchema }).strict()])),
   /** Earlier generated canvases attached as extra input (Alternatives). */
+  canvasSources: z.array(compareSourceSchema).max(20).optional(),
   previous: z.array(z.string().regex(/^[A-Za-z0-9][A-Za-z0-9_-]{0,80}$/)).max(6).optional(),
   referenceIds: z.array(id).max(30).refine(ids => new Set(ids).size === ids.length, "Select each reference once").optional(),
   layoutTemplateId: id.optional(),
@@ -23,7 +24,8 @@ export const evalRunRequestSchema = z.object({
   /** Reruns are filed under the original run and share its AgentContext. */
   parentRunId: id.optional()
 }).strict().refine(input => !input.contextDelivery || input.workflow === 'diagram-change-proposal',
-  'Session context delivery is supported by diagram-change-proposal.');
+  'Session context delivery is supported by diagram-change-proposal.').refine(input => !input.canvasSources?.length || input.workflow === 'linked-canvases',
+  'Canvas sets are supported by Linked canvases.');
 export type EvalRunRequest = z.infer<typeof evalRunRequestSchema>;
 export const renameEvalRunSchema = z.object({ name: z.string().trim().max(120) }).strict();
 export const evalEfforts = ['low', 'medium', 'high', 'xhigh'] as const;
@@ -34,6 +36,8 @@ export interface EvalRunPrompt { templateBase?: import('./promptTemplateBase').P
   references?: Record<string, { name: string; ascii: string; comment?: string }> }
 export type EvalCellStatus = 'queued' | 'generating' | 'finished' | 'failed' | 'skipped' | 'cancelled';
 export interface EvalRunCell {
+  /** Multi-canvas result metadata; full frozen documents are stored once in the run. */
+  output?: import('./evalOutputResult').EvalOutputSummary;
   layoutPlacements?: import('../../core/diagrams/layoutTemplate').LayoutPlacement[];
   candidateName?: string;
   /** Exact proposal output, retained independently of display canvas edits. */
@@ -47,6 +51,8 @@ export interface EvalRunCell {
 }
 export type EvalRunStatus = 'queued' | 'generating' | 'finished' | 'failed' | 'partial' | 'cancelled';
 export interface EvalRun {
+  canvasInputs?: CompareCanvasCopy[];
+  outputResults?: Record<string, import('./evalOutputResult').EvalOutputResult>;
   layoutTemplate?: import('../../core/diagrams/layoutTemplate').LayoutTemplate;
   number?: number;
   deletedAt?: string;
@@ -70,14 +76,16 @@ export interface EvalRun {
 }
 export interface EvalRunContext { agentContextId: string; name: string; contentHash: string }
 export interface EvalRunInputSummary { source: CompareSource; name: string; canvasName: string; generated?: import('../../core/diagrams/generatedCanvas').GeneratedCanvas }
-export type EvalRunSummary = Omit<EvalRun, 'inputs' | 'previous' | 'requestHash' | 'outputSnapshots'> & { inputs: Record<string, EvalRunInputSummary>; previousNames?: string[]; previousInputs?: EvalRunInputSummary[];
+export type EvalRunSummary = Omit<EvalRun, 'inputs' | 'previous' | 'requestHash' | 'outputSnapshots' | 'outputResults' | 'canvasInputs'> & { inputs: Record<string, EvalRunInputSummary>; previousNames?: string[]; previousInputs?: EvalRunInputSummary[]; canvasInputs?: EvalRunInputSummary[];
   /** Judgements own their attachments, allowing one result to evaluate several runs. */
   judgements?: import('./judgement').JudgementSummary[] };
 
 export const cellKey = (promptId: string | undefined, pass: number, stage: string) => `${promptId ?? 'unknown'}:${pass}:${stage}`;
-export function summarizeEvalRun({ inputs, previous, outputSnapshots: _snapshots, requestHash: _, ...run }: EvalRun): EvalRunSummary {
-  return { ...run, ...(previous?.length ? { previousNames: previous.map(copy => copy.view.name), previousInputs: previous.map(copy => ({ source: copy.source, name: copy.view.name, canvasName: copy.canvasName, ...(copy.generated ? { generated: copy.generated } : {}) })) } : {}), inputs: Object.fromEntries(Object.entries(inputs).map(([name, copy]) => [name, { source: copy.source, name: copy.view.name, canvasName: copy.canvasName }])) };
+export function summarizeEvalRun({ inputs, previous, canvasInputs, outputSnapshots: _snapshots, outputResults: _results, requestHash: _, ...run }: EvalRun): EvalRunSummary {
+  return { ...run, ...(canvasInputs ? { canvasInputs: canvasInputs.map(copy => ({ source: copy.source, name: copy.view.name, canvasName: copy.canvasName })) } : {}), ...(previous?.length ? { previousNames: previous.map(copy => copy.view.name), previousInputs: previous.map(copy => ({ source: copy.source, name: copy.view.name, canvasName: copy.canvasName, ...(copy.generated ? { generated: copy.generated } : {}) })) } : {}), inputs: Object.fromEntries(Object.entries(inputs).map(([name, copy]) => [name, { source: copy.source, name: copy.view.name, canvasName: copy.canvasName }])) };
 }
+/** A bundle is one output; its canvases are navigated inside the preview. */
+export const hasEvalOutput = (cell: EvalRunCell) => !!cell.output?.canvases.length || !!cell.canvasId && !cell.deleted;
 export function runStatus(cells: EvalRunCell[]): EvalRunStatus {
   if (cells.some(cell => cell.status === 'generating')) return 'generating';
   if (cells.some(cell => cell.status === 'queued')) return cells.some(cell => cell.status !== 'queued') ? 'generating' : 'queued';

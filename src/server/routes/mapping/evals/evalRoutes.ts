@@ -90,6 +90,20 @@ export async function handleEvalRoutes(request: Connect.IncomingMessage, respons
     const input = z.object({ ids: z.array(z.string().regex(/^[A-Za-z0-9][A-Za-z0-9_-]{0,80}$/)).min(1) }).strict().parse(await readBody(request));
     await runs.deleteRuns(input.ids); return sendJson(response, 200, { deleted: true });
   }
+  if (route === '/promotion-targets' && method === 'GET') return sendJson(response, 200, await runs.promotionTargets());
+  const placementBackfillMatch = route.match(new RegExp(`^/runs/${segment}/placement-backfill$`));
+  if (placementBackfillMatch && method === 'POST') return sendJson(response, 200, await runs.backfillPlacementTracking(placementBackfillMatch[1], await readBody(request)));
+  const promoteMatch = route.match(new RegExp(`^/runs/${segment}/promote$`));
+  if (promoteMatch && method === 'POST') return sendJson(response, 200, await runs.promoteOutput(promoteMatch[1], await readBody(request)));
+  const sourceMatch = route.match(new RegExp(`^/runs/${segment}/promotion-source$`));
+  if (sourceMatch && method === 'GET') return sendJson(response, 200, await runs.promotionSource(sourceMatch[1], url.searchParams.get('cell') ?? ''));
+  const resultMatch = route.match(new RegExp(`^/runs/${segment}/output-result$`));
+  if (resultMatch && method === 'GET') return sendJson(response, 200, await runs.outputResult(resultMatch[1], url.searchParams.get('cell') ?? ''));
+  if (resultMatch && method === 'POST') {
+    const input = z.object({ cellKey: z.string().min(1).max(300), changeSessionId: z.string().min(1).max(200),
+      expectedVersion: z.number().int().nonnegative() }).strict().parse(await readBody(request));
+    return sendJson(response, 200, await runs.captureOutputResult(resultMatch[1], input));
+  }
   match = route.match(new RegExp(`^/runs/${segment}$`));
   if (match && method === 'GET') {
     const summary = summarizeEvalRun(await runs.read(match[1]));

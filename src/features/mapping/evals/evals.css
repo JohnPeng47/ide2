@@ -343,6 +343,12 @@
 .evals-page .compare-pane-tools > * { font-size: 12px; padding: 4px 8px; background: var(--surface-raised); box-shadow: var(--shadow-popup); }
 .output-view { position: relative; }
 .output-view .canvas-preview { min-height: 0; }
+.output-result-preview { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.output-result-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px 16px; border-bottom: 1px solid var(--border-default); }
+.output-result-toolbar select { min-width: 120px; max-width: min(420px, 100%); flex: 1; }
+.output-result-toolbar [role=group] { display: flex; gap: 4px; }
+.output-result-toolbar button[aria-pressed=true] { background: var(--surface-raised); border-color: var(--text-muted); }
+.output-result-canvas { position: relative; flex: 1; min-height: 0; }
 
 .output-details { padding: 8px 16px; max-height: 30vh; overflow: auto; border-bottom: 1px solid var(--evals-border, #ddd); }
 .output-details p { white-space: pre-wrap; overflow-wrap: anywhere; }
@@ -646,3 +652,11 @@
 .diagram-change-judgement { padding: 20px; overflow: auto; }
 .diagram-change-judgement details { margin: 16px 0; }
 .diagram-change-judgement pre { overflow: auto; white-space: pre; }
+
+.output-promotion-backdrop { position: fixed; inset: 0; z-index: 3000; background: #0008; display: grid; place-items: center; padding: 24px; }
+.output-promotion-dialog { background: var(--surface-raised, #202225); border: 1px solid var(--border-default); border-radius: 10px; width: min(520px, 100%); max-height: 85vh; overflow: auto; padding: 24px; box-shadow: 0 12px 60px #0006; }
+.output-promotion-dialog form, .output-promotion-dialog label { display: flex; flex-direction: column; gap: 10px; }
+.output-promotion-dialog label { margin-bottom: 12px; }
+.output-promotion-dialog input, .output-promotion-dialog select { width: 100%; }
+.output-promotion-dialog form > div { display: flex; justify-content: flex-end; gap: 10px; }
+.output-diagram-promote { position: absolute; bottom: 100%; right: 0; margin-bottom: 4px; white-space: nowrap; z-index: 10; font-size: 12px; }

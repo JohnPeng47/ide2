@@ -471,7 +471,7 @@ function MappingWorkspacePage() {
   const draftAliases = new Set(Object.entries(drafts).map(([id, draft]) => draft.representationId ?? id));
   const diagrams = [...Object.values(snapshot?.catalog?.representations ?? {}).filter(diagram => diagram.status === 'settled' && !draftAliases.has(diagram.id)),
     ...Object.entries(drafts).filter(([, draft]) => !draft.hidden).map(([id, draft]) => ({ id: draft.representationId ?? id, name: draft.name, repositoryId: draft.repositoryId,
-      type: draft.type }))];
+      canvasProjectId: snapshot?.catalog?.representations[draft.representationId ?? id]?.canvasProjectId, type: draft.type }))];
 
   const open = (id: string, data = snapshot, navigate = true) => {
     const existingId = Object.entries(draftRef.current).find(([key, draft]) => key === id || draft.representationId === id)?.[0];
@@ -1271,7 +1271,7 @@ function MappingWorkspacePage() {
               sourceId: drafts[pendingTransfer.sourceId]?.representationId ?? pendingTransfer.sourceId, busy: workspaceBusy, error, progress: transferProgress,
               onCancel: cancelTransfer, onNew: name => void transfer({ name }) } : undefined}
             onTabChange={tab => { setExplorerTab(tab); if (tab === 'diagrams') setChangeMode(undefined); }}
-            changeMode={changeMode} onChangeSelect={selectChangeMode} projectName={snapshot?.project?.name ?? "Project"} repositories={snapshot?.project?.repositories ?? []} diagrams={diagrams}
+            changeMode={changeMode} onChangeSelect={selectChangeMode} canvasProjects={snapshot?.catalog?.canvasProjects} projectName={snapshot?.project?.name ?? "Project"} repositories={snapshot?.project?.repositories ?? []} diagrams={diagrams}
             activeId={active?.representationId ?? activeId} dirtyIds={Object.keys(drafts).filter((id) => dirty(drafts[id])).map(id => drafts[id].representationId ?? id)}
             onDelete={id => void remove(id)} deletingId={deletingId} deleteDisabled={Boolean(deletingId || savingId || workspaceBusy)}
             busyIds={Object.keys(drafts).filter(id => drafts[id].busy).map(id => drafts[id].representationId ?? id)}

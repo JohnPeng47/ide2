@@ -1,3 +1,4 @@
+import { hasEvalOutput } from '../../../../domain/mapping/evals/evalRun';
 import { experimentOutputSequence, useArrowNavigation } from './evalNavigation';
 import { ExperimentExplorer, type ExperimentRoute } from './ExperimentExplorer';
 import { ExperimentView } from './ExperimentView';
@@ -173,7 +174,7 @@ function EvalsWorkspace() {
   const finished = comparisons?.filter(item => item.status === 'finished').length;
   useEffect(() => { if (finished !== undefined) void refreshSessions(); }, [finished, refreshSessions]);
   // New outputs appear as runs progress.
-  const produced = runs?.reduce((sum, item) => sum + item.cells.filter(cell => cell.canvasId).length, 0);
+  const produced = runs?.reduce((sum, item) => sum + item.cells.filter(hasEvalOutput).length, 0);
   useEffect(() => { if (produced !== undefined) void refreshGenerated(); }, [produced, refreshGenerated]);
   // Deleted outputs leave the comparison selection.
   useEffect(() => { if (generated) setPicked(current => current.filter(item => generated.some(canvas => canvas.id === item.canvasId))); }, [generated]);
@@ -235,7 +236,7 @@ function EvalsWorkspace() {
     ? experimentJudgementIds(activeExperiment).flatMap(id => judgements?.find(item => item.id === id) ?? [])
     : judgements ?? [];
   const outputItems = activeExperiment ? experimentOutputSequence(activeExperiment, runs ?? [])
-    : (runs ?? []).flatMap(item => item.cells.filter(cell => cell.status === 'finished' && cell.canvasId && !cell.deleted)
+    : (runs ?? []).flatMap(item => item.cells.filter(cell => cell.status === 'finished' && hasEvalOutput(cell))
       .map(cell => ({ runId: item.id, cellKey: cell.key, label: `${runTitle(item, numbers.get(item.id))} · ${cell.stage} · sample ${cell.pass}` })));
   const outputIndex = route.kind === 'run' ? outputItems.findIndex(item => item.runId === route.id && item.cellKey === shownCell?.key) : -1;
   const moveOutput = (direction: number) => { const next = outputItems[outputIndex + direction]; if (next) go({ kind: 'run', id: next.runId, output: next.cellKey }); };
@@ -267,7 +268,7 @@ function EvalsWorkspace() {
       : target.kind === 'canvas' || target.kind === 'session' ? go({ kind: target.kind, id: target.id }) : undefined,
     deleteRun: item => {
       const family = [item, ...(runs ?? []).filter(other => other.parentRunId === item.id)];
-      const outputs = family.reduce((sum, member) => sum + member.cells.filter(cell => cell.canvasId && !cell.deleted).length, 0);
+      const outputs = family.reduce((sum, member) => sum + member.cells.filter(hasEvalOutput).length, 0);
       void remove(`Delete run #${numbers.get(item.id)}${family.length > 1 ? `, its ${family.length - 1} rerun${family.length > 2 ? 's' : ''}` : ''} and ${outputs} outputs?`,
         () => deleteRun(item.id), current => current.kind === 'run' && family.some(member => member.id === current.id));
     },
