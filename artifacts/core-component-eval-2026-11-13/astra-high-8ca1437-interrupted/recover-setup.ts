@@ -1,0 +1,18 @@
+import {readFile,writeFile,rename} from 'node:fs/promises';
+import {AgentContext} from '../../../domain/core/agents/agentContext';
+import {FileAgentContextRepository} from '../../../infrastructure/core/persistence/fileAgentContextRepository';
+import {JsonDirectoryStore} from '../../../infrastructure/mapping/evals/jsonDirectoryStore';
+const root=process.cwd(),dir=root+'/artifacts/core-component-eval-2026-11-13/astra-high-8ca1437';
+const read=async(p:string)=>JSON.parse(await readFile(p,'utf8'));
+const config=await read(root+'/artifacts/codebase-canvas-2026-11-11/config.json');
+const baseline=await read(root+'/artifacts/core-component-eval-2026-11-13/repository-discovery-01/setup.json');
+const ids=await read(dir+'/ids.json'),repository=new FileAgentContextRepository(config.storeRoot);
+const parent=(await repository.read(baseline.agentContextId))!,record=(await repository.read('saved-agent-context-'+ids.forkRequestId))!;
+const messages=structuredClone(parent.snapshot.messages);(messages[0].content[0] as any).commit='8ca143700ca4d2c870f1101b8cd4601ab68abd41';
+record.snapshot=AgentContext.fromTrajectory({agentType:record.snapshot.source.agentType,sourceSessionId:record.snapshot.source.sourceSessionId,format:'messages-v1',fromEntryId:'context',throughEntryId:'context',entries:[{id:'context',parentId:null,message:messages[0]}]}).toSnapshot();
+const marker=await read(dir+'/model-started.json');if(record.snapshot.contentHash!==marker.contextHash)throw Error('Restored context hash mismatch');
+const file=config.storeRoot+'/agent-contexts/'+record.agentContextId+'.json';await writeFile(file+'.recovery.tmp',JSON.stringify(record));await rename(file+'.recovery.tmp',file);
+const runs=new JsonDirectoryStore<any>(config.storeRoot,'eval-runs');const run=await runs.read(marker.runId);
+run.status='failed';run.error='Interrupted during repository preparation before model-session creation; corrected source-only exclusions require a separate pinned attempt.';run.completedAt=new Date().toISOString();Object.assign(run.cells[0],{status:'failed',error:run.error,completedAt:run.completedAt});await runs.save(run);
+await writeFile(dir+'/status.json',JSON.stringify({status:'failed',phase:'repository-preparation',modelSessionsCreated:0,runId:run.id,error:run.error},null,2));
+console.log('Restored interrupted input provenance; recorded orchestration failure, zero model sessions.');

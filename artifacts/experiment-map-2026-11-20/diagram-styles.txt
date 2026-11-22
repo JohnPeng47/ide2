@@ -1,0 +1,18 @@
++-- Change one style control
+|   +-- Nov 03 · [E02] Diagram style controls
+|   |   +-- Expression — code references ↔ natural language
+|   |   +-- Focus — module contracts ↔ runtime state and lifetimes
+|   |   `-- Tree shape — shallow branches ↔ varied depth
+|   `-- Nov 03 · [E01] Baseline vs weighted 3+1
+|       `-- Use the same source and template as [E02]. Vary the emphasis on
+|           modular structure, calls, ownership, and data dependencies.
++-- Change the written instructions
+|   `-- Nov 11 · [E09] Minimal vs explicit 3+1 tree prompts
+|       +-- [Compare tree prompts](E09/phase-2) within a discovery condition (A1/A2, B1/B2, or C1/C2)
+|       `-- Nov 13–14 · [E10] C1 prompt style study · [Phase 1](E10/prompt-trial)
+|           `-- Reuse four C1 cases. Keep the six short examples and add
+|               3+1 guidance plus a 60/40 code-to-natural-language target.
+`-- Change the examples
+    `-- Nov 14 · [E10] C1 prompt style study · [Phase 2](E10/fewshot-trial)
+        `-- Keep the four cases and instructions. Replace the six short examples
+            with two longer trees, one compiler and one telemetry.

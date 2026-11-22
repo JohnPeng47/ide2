@@ -1,0 +1,175 @@
+{
+  "projectId": "project-4971c06b-83d5-49eb-998d-043d5fc2dca4",
+  "experimentId": "b8ad87a7-698a-45e9-9cc0-b640ede5efa6",
+  "phaseId": "phase-4",
+  "commit": "ea8b12a8a9894b5259c441eadd8f6f0c65e215af",
+  "mainConcurrency": 2,
+  "childConcurrency": 2,
+  "pilot": [
+    "ghostty-v3-canvas-1-astra-6-2-high-scoped-1",
+    "ghostty-v3-canvas-1-sol-6-2-high-scoped-1"
+  ],
+  "conditions": [
+    {
+      "id": "astra-6-2-high-scoped",
+      "name": "Astra 6.2 · high",
+      "model": "gpt-6.2-astra"
+    },
+    {
+      "id": "sol-6-2-high-scoped",
+      "name": "Sol 6.2 · high",
+      "model": "gpt-6.2-sol"
+    }
+  ],
+  "jobs": [
+    {
+      "key": "ghostty-v3-core-3-astra-6-2-high-scoped-1",
+      "caseId": "ghostty-v3-core-3",
+      "conditionId": "astra-6-2-high-scoped",
+      "number": 1,
+      "model": "gpt-6.2-astra",
+      "effort": "high",
+      "childModel": "gpt-6.2-astra",
+      "childEffort": "high",
+      "runId": "ad11db03-eef1-401f-a3ea-903f05f7d29c",
+      "kind": "core",
+      "cellKey": "ff376a21-67fd-4112-8618-6144a0307f66:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-core-3-astra-6-2-high-scoped-2",
+      "caseId": "ghostty-v3-core-3",
+      "conditionId": "astra-6-2-high-scoped",
+      "number": 2,
+      "model": "gpt-6.2-astra",
+      "effort": "high",
+      "childModel": "gpt-6.2-astra",
+      "childEffort": "high",
+      "runId": "6a21dc1d-3a02-4f76-be16-1384a9dd1515",
+      "kind": "core",
+      "cellKey": "ff376a21-67fd-4112-8618-6144a0307f66:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-core-3-sol-6-2-high-scoped-1",
+      "caseId": "ghostty-v3-core-3",
+      "conditionId": "sol-6-2-high-scoped",
+      "number": 1,
+      "model": "gpt-6.2-sol",
+      "effort": "high",
+      "childModel": "gpt-6.2-sol",
+      "childEffort": "high",
+      "runId": "b6645a07-1f85-46e9-a44d-2f7852f79e04",
+      "kind": "core",
+      "cellKey": "ff376a21-67fd-4112-8618-6144a0307f66:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-core-3-sol-6-2-high-scoped-2",
+      "caseId": "ghostty-v3-core-3",
+      "conditionId": "sol-6-2-high-scoped",
+      "number": 2,
+      "model": "gpt-6.2-sol",
+      "effort": "high",
+      "childModel": "gpt-6.2-sol",
+      "childEffort": "high",
+      "runId": "19f6a663-aaa4-4748-8bf3-e8063f7bdba3",
+      "kind": "core",
+      "cellKey": "ff376a21-67fd-4112-8618-6144a0307f66:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-canvas-1-astra-6-2-high-scoped-1",
+      "caseId": "ghostty-v3-canvas-1",
+      "conditionId": "astra-6-2-high-scoped",
+      "number": 1,
+      "model": "gpt-6.2-astra",
+      "effort": "high",
+      "childModel": "gpt-6.2-astra",
+      "childEffort": "high",
+      "runId": "8f9af627-418e-4032-8bbe-258db8246eda",
+      "kind": "canvas",
+      "cellKey": "e45566cf-a9bf-477f-9774-b5758a2785bb:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-canvas-1-astra-6-2-high-scoped-2",
+      "caseId": "ghostty-v3-canvas-1",
+      "conditionId": "astra-6-2-high-scoped",
+      "number": 2,
+      "model": "gpt-6.2-astra",
+      "effort": "high",
+      "childModel": "gpt-6.2-astra",
+      "childEffort": "high",
+      "runId": "68fb6c61-c071-4d52-a49f-643c0c613c39",
+      "kind": "canvas",
+      "cellKey": "e45566cf-a9bf-477f-9774-b5758a2785bb:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-canvas-1-sol-6-2-high-scoped-1",
+      "caseId": "ghostty-v3-canvas-1",
+      "conditionId": "sol-6-2-high-scoped",
+      "number": 1,
+      "model": "gpt-6.2-sol",
+      "effort": "high",
+      "childModel": "gpt-6.2-sol",
+      "childEffort": "high",
+      "runId": "34917656-f1e6-4e1f-8cd6-9d5969672cc0",
+      "kind": "canvas",
+      "cellKey": "e45566cf-a9bf-477f-9774-b5758a2785bb:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-canvas-1-sol-6-2-high-scoped-2",
+      "caseId": "ghostty-v3-canvas-1",
+      "conditionId": "sol-6-2-high-scoped",
+      "number": 2,
+      "model": "gpt-6.2-sol",
+      "effort": "high",
+      "childModel": "gpt-6.2-sol",
+      "childEffort": "high",
+      "runId": "a047d629-b962-48dd-bf3a-3f8c9188e2f2",
+      "kind": "canvas",
+      "cellKey": "e45566cf-a9bf-477f-9774-b5758a2785bb:1:alternative"
+    }
+  ],
+  "cases": [
+    {
+      "key": "ghostty-v3-core-3",
+      "kind": "core",
+      "name": "Ghostty · Central diagram 3",
+      "source": {
+        "experimentId": "08ccc7fa-8ea6-4cfa-b0b7-8819b7fcbf35",
+        "runId": "d8ddfcb7-6be0-4a68-9277-c40a1254248f",
+        "cellKey": "0b3af2dd-ba89-4032-936a-40070a3e167e:1:alternative",
+        "label": "Ghostty · Central diagram 3"
+      },
+      "agentContextId": "saved-agent-context-4679475e-8f5d-4455-91ba-f4e3d46cf4b8",
+      "contentHash": "4c24cea2f1585e10a1390c92e4a7b19033ed3832e1a4861db77a71686f70f897",
+      "diagramCount": 1,
+      "nodeCount": 95
+    },
+    {
+      "key": "ghostty-v3-canvas-1",
+      "kind": "canvas",
+      "name": "Ghostty · Expanded canvas 1",
+      "source": {
+        "experimentId": "7821c7da-cfcd-446d-8d7f-43b26df049fe",
+        "runId": "55bf4eb7-f1e9-4f36-aab2-ead60da799d4",
+        "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative",
+        "label": "Ghostty · Expanded canvas 1",
+        "checkpointId": "canvas-revision-34bf475c-72ec-459c-9519-fc7db199a4a2"
+      },
+      "agentContextId": "saved-agent-context-952866b0-4afc-446f-8220-ab80a40582c5",
+      "contentHash": "f80fdfee53c9c2eecb607117514795b67267e5117b0960c2a77e390d08a58685",
+      "diagramCount": 5,
+      "nodeCount": 152
+    }
+  ],
+  "prompts": {
+    "core": {
+      "promptId": "ff376a21-67fd-4112-8618-6144a0307f66",
+      "version": 5,
+      "contentHash": "2f8e7b1bde3743768f67999066f5576619a931efad9405befecceda9fb80f0ec"
+    },
+    "canvas": {
+      "promptId": "e45566cf-a9bf-477f-9774-b5758a2785bb",
+      "version": 5,
+      "contentHash": "2f8e7b1bde3743768f67999066f5576619a931efad9405befecceda9fb80f0ec"
+    }
+  }
+}

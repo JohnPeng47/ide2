@@ -1,0 +1,132 @@
+Pi coding-agent session core -- AgentSession coordinates behavior and state
+|
+|-- Runtime assembly and lifetime [packages/coding-agent/src/core/sdk.ts; agent-session-runtime.ts]
+|   |-- createAgentSession(): constructs Agent, CacheWarmer and AgentSession
+|   |   |-- Restores transcript, model, thinking level and initial tool selection
+|   |   `-- -> SessionManager.buildSessionContext(), ModelRuntime, SettingsManager
+|   |-- AgentSessionRuntime: holds current session and cwd-bound AgentSessionServices
+|   |   |-- switchSession(), newSession(), fork/import support and host rebinding
+|   |   |-- Replacement -> abort old session, emit session_shutdown, dispose, create next runtime
+|   |   `-- Services retain ModelRuntime, SettingsManager and ResourceLoader references
+|   `-- Application boundary [packages/coding-agent/src/main.ts; modes/]
+|       |-- InteractiveMode, runPrintMode and runRpcMode supply different I/O layers
+|       `-- -> AgentSession commands and subscriptions; runtime host handles replacement
+|
+|-- Session orchestration [packages/coding-agent/src/core/agent-session.ts:409]
+|   |-- Public control: prompt(), steer(), followUp(), abort(), waitForIdle(), subscribe()
+|   |   |-- Private state: active/preflight flags, displayed queues, pending custom messages
+|   |   `-- Holds -> Agent, SessionManager, settings, resources, model runtime and extension runner
+|   |-- Input preparation: _preparePrompt(), _prepareRun(), _startRun()
+|   |   |-- -> ExtensionRunner for commands, input interception and before_agent_start
+|   |   |-- Skills + prompt templates + normalized images + system/tool changes -> starting messages
+|   |   `-- -> Agent.prompt(); retries or boundary continuation -> Agent.continue()
+|   |-- Event bridge: _handleAgentEvent(), _emitAgentSettled()
+|   |   |-- Agent events -> extension handlers first, then public subscribers
+|   |   |-- Completed messages -> SessionManager.appendMessage()/appendCustomMessageEntry()
+|   |   `-- agent_settled marks completion after recovery and extension continuations finish
+|   `-- Cancellation and disposal
+|       |-- Owns run coordination, listeners and cancellation for auxiliary work
+|       `-- dispose() -> abort work, invalidate extension contexts, unsubscribe, cancel cache warming
+|
+|-- Turn engine: Agent [packages/agent/src/agent.ts:193; agent-loop.ts:172]
+|   |-- Live state and scheduling
+|   |   |-- Transcript, selected model, thinking level, executable tools and streaming status
+|   |   `-- Steering/follow-up queues, active-run promise, AbortController and event listeners
+|   |-- runAgentLoop()/runAgentLoopContinue(): provider-independent turn execution
+|   |   |-- Inner loop handles assistant responses, tool results and steering input
+|   |   |-- Outer loop accepts follow-ups after the agent would otherwise stop
+|   |   `-- prepareRequest/prepareNextTurn/finishTurn -> AgentSession-installed hooks
+|   |-- streamAssistantResponse()
+|   |   |-- Context transforms + convertToLlm() -> normalized provider messages
+|   |   `-- Injected streamFunction -> ModelRuntime.streamSimple(); deltas -> lifecycle events
+|   `-- executeToolCalls()/runToolCall()
+|       |-- Argument preparation, before/after hooks, sequential or parallel dispatch
+|       |-- -> callable tool implementations; results return to the conversation
+|       `-- Truncated assistant tool arguments produce failed results instead of executing
+|
+|-- Canonical history: SessionManager [packages/coding-agent/src/core/session-manager.ts:995]
+|   |-- Append-only session tree, persisted as JSONL or held in memory
+|   |   |-- Header, entries, parent links, current leaf, entry index and labels
+|   |   `-- Entry kinds include messages, model/thinking changes, summaries, edits and custom data
+|   |-- append*(), getBranch(), getTree(), branch(), createBranchedSession()
+|   |   |-- Appending creates a child at the current leaf
+|   |   `-- Branching moves the leaf without deleting alternate history
+|   |-- buildSessionProjection()/buildSessionContext() [session-manager.ts:544]
+|   |   |-- Selected branch + latest compaction + context edits -> effective messages and settings
+|   |   `-- -> Agent live context; raw stored history and model-visible history remain distinct
+|   `-- Session inspection and export [agent-session.ts; session-export.ts; export-html/]
+|       |-- Session statistics, usage totals, JSONL export and HTML rendering
+|       `-- Depend on -> stored entries, current projection and tool renderers
+|
+|-- Context maintenance and recovery [packages/coding-agent/src/core/agent-session.ts]
+|   |-- Compaction: compact(), _checkCompaction(), _runAutoCompaction()
+|   |   |-- Helpers: prepareCompaction(), token estimates and compact() [core/compaction/]
+|   |   |-- Branch projection + model limits + settings -> retained context and summary request
+|   |   |-- -> ExtensionRunner may cancel or supply a summary; otherwise -> model stream
+|   |   `-- Summary -> SessionManager.appendCompaction(); refreshed projection -> Agent
+|   |-- Tree navigation: navigateTree() and generateBranchSummary()
+|   |   |-- Leaving/target branches + summary policy -> optional branch summary
+|   |   `-- -> SessionManager branch operations and restored Agent context
+|   `-- Retry policy: _handlePostAgentRun(), _prepareRetry()
+|       |-- Retry budget/backoff, failed response and abortable wait are session-owned
+|       |-- Failed attempts stay in raw history but are omitted from the model projection
+|       `-- Transient failure -> Agent.continue(); context overflow -> compaction recovery
+|
+|-- Tool environment and shell execution [packages/coding-agent/src/core/agent-session.ts; tools/]
+|   |-- Definition-first registry and loadout
+|   |   |-- Built-in/custom/extension definitions, executable registry and pending tool names
+|   |   |-- Allow/deny matching, active/callable exposure and hidden declarations
+|   |   `-- setActiveToolsByName() and prompt preparation -> Agent tools and transcript declarations
+|   |-- Built-in tools [core/tools/index.ts]
+|   |   |-- Default coding set: read, bash, edit, write
+|   |   |-- Additional tools: grep, find, ls, powershell
+|   |   `-- Supporting parts: operation adapters, file-mutation queue, truncation and renderers
+|   |-- NestedToolCallRunner [core/nested-tool-calls.ts]
+|   |   |-- ctx.executeTool() -> registered tools through the normal tool-call hooks
+|   |   `-- Nested calls and usage -> parent tool-result message
+|   `-- executeBash()/recordBashResult() [agent-session.ts:4003; core/bash-executor.ts]
+|       |-- Owns shell cancellation and pending BashExecutionMessage results
+|       |-- -> executeBashWithOperations(); streamed output -> session subscribers
+|       `-- Results -> history/context; insertion waits when necessary to preserve tool-result order
+|
+|-- Extension and resource subsystem [packages/coding-agent/src/core/extensions/; resource-loader.ts]
+|   |-- DefaultResourceLoader: discovers, loads and retains project/global resources
+|   |   |-- Extensions, skills, prompt templates, themes, context files and system-prompt text
+|   |   |-- Package/resource resolution, source metadata and load diagnostics
+|   |   `-- Resources -> AgentSession prompt construction and runtime rebuilding
+|   |-- ExtensionRunner [core/extensions/runner.ts:364]
+|   |   |-- Retains loaded extensions, runtime registrations, mode/UI bindings and error listeners
+|   |   |-- Exposes command/context APIs, event hooks, tools and provider registration
+|   |   |-- Bound actions -> AgentSession; session reads -> SessionManager; model access -> ModelRegistry
+|   |   `-- Input/context/tool/provider/boundary hooks can influence execution, not just observe it
+|   |-- Built-in extensions [packages/coding-agent/src/extensions/index.ts]
+|   |   |-- llama.cpp, codemode, tool-search and MCP
+|   |   `-- Codemode, tool-search and MCP registrations may be replaced by other extensions
+|   `-- AgentSession.reload() [core/agent-session.ts:3815]
+|       |-- Shutdown and invalidate old runner; preserve flags and intended tool selection
+|       `-- -> reload settings/resources, rebuild registry/runner and emit session_start
+|
+|-- Model access and request caching [packages/coding-agent/src/core/model-runtime.ts]
+|   |-- ModelRuntime: canonical model/auth facade implementing pi-ai Models
+|   |   |-- Holds MutableModels, RuntimeCredentials, ModelConfig and availability snapshots
+|   |   |-- Provider composition includes built-ins, configured/extension providers and virtual models
+|   |   |-- getAvailable(), getAuth(), login/logout, registerProvider(), resolveModel(), streamSimple()
+|   |   `-- Model + transcript + credentials/configuration -> resolved provider request
+|   |-- Provider engine boundary
+|   |   |-- -> @earendil-works/pi-ai for catalog, credential and streaming operations
+|   |   `-- SDK request wrapper applies retry/timeout settings and extension provider hooks
+|   |-- Session model selection [core/agent-session.ts:2644]
+|   |   |-- setModel()/cycleModel()/setThinkingLevel() update live selection and clamp capabilities
+|   |   `-- -> Agent state and SessionManager metadata; optional persistence -> SettingsManager
+|   `-- CacheWarmer [core/cache-warmer.ts; core/sdk.ts:335]
+|       |-- Tracks eligible session requests, warming status and context-validity checks
+|       |-- -> ModelRuntime for warming; recorded warming entries -> session events/history
+|       `-- Session settlement drives warming; disposal cancels it
+|
+`-- Configuration policy: SettingsManager [packages/coding-agent/src/core/settings-manager.ts:272]
+    |-- Holds global/project settings, merged effective settings and project-trust state
+    |   `-- Storage, dirty-field tracking, serialized writes and load/save diagnostics
+    |-- Policies: model defaults, tools, queue modes, compaction, retries, transport and shell/image options
+    |   `-- -> Session orchestration, tool construction, context recovery and model requests
+    `-- create()/reload()/setters provide persistent policy without owning the conversation
+        `-- Cwd-bound service creation -> correct project settings for each replacement session

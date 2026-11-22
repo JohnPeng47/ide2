@@ -55,7 +55,7 @@ it('retries timed-out staging with the same browser command and rejects replaced
 it('rejects invalid diagrams and propagates browser failure without dropping the reader', async () => {
   const f = fixture();
   await expect(f.service.copy(f.connectionId, { ...request, text: '─' })).rejects.toMatchObject({ code: 'INVALID_DIAGRAM' });
-  await expect(f.service.copy(f.connectionId, { ...request, text: 'x'.repeat(20001) })).rejects.toMatchObject({ code: 'INVALID_DIAGRAM' });
+  await expect(f.service.copy(f.connectionId, { ...request, text: '   ' })).rejects.toMatchObject({ code: 'INVALID_DIAGRAM' });
   const result = expect(f.service.copy(f.connectionId, request)).rejects.toMatchObject({ code: 'WORKSPACE_BUSY' });
   f.service.copyReply(f.owner, 'workspace', { type: 'diagram.copy.reply', commandId: f.command().commandId,
     result: { ok: false, code: 'WORKSPACE_BUSY', error: 'Canvas busy' } });

@@ -1,0 +1,46 @@
+{
+  "commit": "682c7b93ce3e0a52b579c2b65b4c06bb392e7180",
+  "repositoryPath": "/home/john/softwarez/pi",
+  "eligibleSourceFiles": 1715,
+  "eligibleSourceLines": 368377,
+  "allTrackedSourceFiles": 3597,
+  "allTrackedSourceLines": 794943,
+  "meanSourceLinesSeen": 3058.3333333333335,
+  "meanPercent": 0.8302183180093582,
+  "summedPerRunLines": 9175,
+  "unionSourceLinesSeen": 4872,
+  "unionPercent": 1.3225581401661883,
+  "runs": [
+    {
+      "sample": 1,
+      "runId": "5ff157b0-09da-4b19-bcf2-a8066c83031d",
+      "eligibleSourceLines": 368377,
+      "sourceLinesSeen": 3452,
+      "percent": 0.937083476981462,
+      "sourceFilesSeen": 12,
+      "allSourceLinesSeen": 3452,
+      "outsideEligiblePaths": []
+    },
+    {
+      "sample": 2,
+      "runId": "967708ee-ef6d-4a70-868d-252e4aa5dc4f",
+      "eligibleSourceLines": 368377,
+      "sourceLinesSeen": 2461,
+      "percent": 0.6680655958433886,
+      "sourceFilesSeen": 10,
+      "allSourceLinesSeen": 2461,
+      "outsideEligiblePaths": []
+    },
+    {
+      "sample": 3,
+      "runId": "c5093116-76d6-4fc5-b6a6-cefab77ef511",
+      "eligibleSourceLines": 368377,
+      "sourceLinesSeen": 3262,
+      "percent": 0.8855058812032239,
+      "sourceFilesSeen": 12,
+      "allSourceLinesSeen": 3262,
+      "outsideEligiblePaths": []
+    }
+  ],
+  "method": "Physical source lines including comments/blanks, read and shell outputs; repeated file/line pairs deduplicated per run. Average coverage = sum of three run coverages / (3 \u00d7 eligible source lines). Union deduplicates across all runs. Only complete returned lines count; listings, wc counts, prompts, JSON configs and generated diagrams excluded."
+}

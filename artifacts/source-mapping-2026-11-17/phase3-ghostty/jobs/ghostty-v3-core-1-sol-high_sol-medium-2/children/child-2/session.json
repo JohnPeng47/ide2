@@ -1,0 +1,19 @@
+{
+  "id": "child-2",
+  "name": "input",
+  "assignment": "Map nodes n19-n31 ONLY, input callbacks, encoding, queue IO, writes. Return partial JSON mappings, check line ranges via nl -ba.",
+  "model": "gpt-6-sol",
+  "effort": "medium",
+  "status": "generating",
+  "queuedAt": "2026-11-19T04:14:26.456Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-19T04:14:26.461Z",
+  "sessionId": "01a1f203-52b3-713d-9783-546569065341",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-l6ueouwg-agent-repository-KYeQyW-checkout--/2026-11-19T04-14-26-483Z_01a1f203-52b3-713d-9783-546569065341.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase3-l6ueouwg/agent-repository-KYeQyW/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

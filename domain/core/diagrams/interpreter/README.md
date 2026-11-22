@@ -130,8 +130,8 @@ reviewed tree/graph fixtures, not the Python implementation as an output oracle.
 ## Limits and execution
 
 Malformed drawing normally produces partial results and diagnostics. Invalid
-options and resource-limit violations throw. Defaults bound input to 1,000,000
-UTF-16 units, expanded rows to 100,000 columns, candidates to 100,000, nodes to
+options and resource-limit violations throw. Callers can set `maxChars` to bound input length in UTF-16 units.
+Defaults bound expanded rows to 100,000 columns, candidates to 100,000, nodes to
 10,000, and each track-matching table to 100,000 cells. These are configurable.
 
 This dialect does not infer arbitrary box-and-arrow layouts, diagonal routes,

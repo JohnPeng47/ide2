@@ -1,0 +1,72 @@
+{
+  "status": "finished",
+  "repository": "Ownership · Existing few-shot examples · 1",
+  "runId": "938d0e94-1797-4078-a2f3-6acc3495c919",
+  "characters": 12090,
+  "lines": 153,
+  "nodes": 76,
+  "usage": {
+    "input": 45981,
+    "output": 5335,
+    "cacheRead": 260608,
+    "cacheWrite": 0,
+    "reasoning": 585,
+    "totalTokens": 311924
+  },
+  "execution": {
+    "runtime": "pi-agent-context",
+    "sessionId": "01a1f471-f58f-776f-b6cc-6e8c91866f8a",
+    "contextHash": "c26f9e1d07185d26d78fd7cf31b447b58604b2cae4a040b1dc623aaaf9e7848a",
+    "cacheKey": "eval-468156b9730ce923657bd7fe05939cbb894d68ad9f882529f1e73daca0b757a4",
+    "modelContextHash": "8a8f183eaf67b69ebfbaa94f138b7cbccfc5009cec44976b8edcf4b4c1b3ee33",
+    "repositories": [
+      {
+        "repository": "repo-1",
+        "repositoryPath": "/home/john/softwarez/ghostty",
+        "commit": "ea8b12a8a9894b5259c441eadd8f6f0c65e215af",
+        "exclusions": [
+          "**/*-LICENSE",
+          "**/*.md",
+          "**/*.mdx",
+          "**/*.spec.*",
+          "**/*.test.*",
+          "**/AGENTS.md",
+          "**/CODEX-LICENSE",
+          "**/LICENSE*",
+          "**/Tests/**",
+          "**/__fixtures__/**",
+          "**/__tests__/**",
+          "**/benchmark/**",
+          "**/benchmarks/**",
+          "**/build/**",
+          "**/dist/**",
+          "**/docs/**",
+          "**/examples/**",
+          "**/fixtures/**",
+          "**/node_modules/**",
+          "**/scripts/**",
+          "**/test/**",
+          "**/tests/**",
+          ".agents/**",
+          ".github/**",
+          ".husky/**",
+          ".pi/**",
+          "deps/**",
+          "example/**",
+          "flake.lock",
+          "flatpak/**",
+          "images/**",
+          "nix/**",
+          "package-lock.json",
+          "po/**",
+          "scripts/**",
+          "snap/**",
+          "vendor/**"
+        ],
+        "checkout": "/tmp/agent-repository-nArcYd/checkout",
+        "inspectionSource": "session-transcript"
+      }
+    ]
+  },
+  "outputUrl": "http://127.0.0.1:5191/evals?run=938d0e94-1797-4078-a2f3-6acc3495c919&output=5048e138-dd64-4c4b-8856-cdc2243e12ea%3A1%3Aalternative"
+}

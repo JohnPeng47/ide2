@@ -4,6 +4,7 @@ import { promotedCanvasName, singleBoxScene } from '../../../../domain/core/diag
 import { mappingDocumentFromScene } from '../../../../domain/mapping/workspace/mappingDocument';
 import { initialCanvasState } from '../../../../domain/mapping/workspace/mappingWorkspace';
 import { saveMappingProjectDiagram } from '../workspace/mappingProjectApi';
+import { canvasAgentContextId } from '../../../../domain/core/diagrams/generatedCanvas';
 import { listGenerated } from './evalsApi';
 
 /** One diagram of a canvas as its own document with a fresh history. */
@@ -22,8 +23,8 @@ export function singleDiagramDocument(sourceHistory: CanvasHistoryRecord, boxId:
 export async function promoteDiagramToCanvas(canvasId: string, sourceHistory: CanvasHistoryRecord, boxId: string, canvasName: string) {
   const { scene, document, history } = singleDiagramDocument(sourceHistory, boxId);
   // The generated canvas's repository keeps source navigation working on the promoted copy.
-  const repositoryId = (await listGenerated()).find(record => record.id === canvasId)?.repositoryId;
+  const source = (await listGenerated()).find(record => record.id === canvasId);
   const result = await saveMappingProjectDiagram({ name: promotedCanvasName(scene, boxId, canvasName), type: 'standard',
-    history, scene: document.scene, edges: [], ...(repositoryId ? { repositoryId } : {}) });
+    history, scene: document.scene, edges: [], repositoryId: source?.repositoryId, agentContextId: canvasAgentContextId(source) });
   return result.representation;
 }

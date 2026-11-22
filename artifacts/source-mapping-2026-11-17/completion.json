@@ -1,0 +1,57 @@
+{
+  "experimentId": "b8ad87a7-698a-45e9-9cc0-b640ede5efa6",
+  "finishedSamples": 72,
+  "conditions": {
+    "core-mapping/low": 3,
+    "core-mapping/medium": 3,
+    "core-mapping/high": 3,
+    "core-pi/low": 3,
+    "core-pi/medium": 3,
+    "core-pi/high": 3,
+    "core-opencode/low": 3,
+    "core-opencode/medium": 3,
+    "core-opencode/high": 3,
+    "core-ghostty/low": 3,
+    "core-ghostty/medium": 3,
+    "core-ghostty/high": 3,
+    "canvas-mapping/low": 3,
+    "canvas-mapping/medium": 3,
+    "canvas-mapping/high": 3,
+    "canvas-pi/low": 3,
+    "canvas-pi/medium": 3,
+    "canvas-pi/high": 3,
+    "canvas-opencode/low": 3,
+    "canvas-opencode/medium": 3,
+    "canvas-opencode/high": 3,
+    "canvas-ghostty/low": 3,
+    "canvas-ghostty/medium": 3,
+    "canvas-ghostty/high": 3
+  },
+  "commentSaved": true,
+  "sourceNavigation": [
+    {
+      "repo": "mapping",
+      "ok": true,
+      "path": "domain/mapping/workspace/mappingDocumentController.ts",
+      "mappedRangeMatchesPinnedSource": true
+    },
+    {
+      "repo": "pi",
+      "ok": true,
+      "path": "packages/coding-agent/src/core/agent-session.ts",
+      "mappedRangeMatchesPinnedSource": true
+    },
+    {
+      "repo": "opencode",
+      "ok": true,
+      "path": "packages/core/src/session/sql.ts",
+      "mappedRangeMatchesPinnedSource": true
+    },
+    {
+      "repo": "ghostty",
+      "ok": true,
+      "path": "src/Surface.zig",
+      "mappedRangeMatchesPinnedSource": true
+    }
+  ]
+}

@@ -1,5 +1,13 @@
 import { expect, it } from 'vitest';
-import { defaultPromptTemplateBase as base, emptyPromptStructure, parsePromptSections, renderPromptSections, structurePrompt } from './promptTemplateBase';
+import { defaultPromptTemplateBase as base, emptyPromptStructure, legacyPromptTemplateBase, parsePromptSections, promptTemplateBaseSchema, renderPromptSections, structurePrompt } from './promptTemplateBase';
+it('preserves generic types in examples without capturing them as structural tags', () => {
+  const text = '<task>Inspect code.</task>\nqueue: BoundedQueue<AcceptedBatch>\nMap<Key, Value>\n<output format>Return JSON.</output format>';
+  const captured = promptTemplateBaseSchema.parse(legacyPromptTemplateBase({ alternative: text }));
+  expect(parsePromptSections(text, captured).issues).toEqual([]);
+  expect(renderPromptSections(text, captured)).toBe(text);
+  expect(captured.tags.some(tag => tag.name === 'AcceptedBatch')).toBe(false);
+  expect(parsePromptSections('<Unknown>text</Unknown>', captured).issues.length).toBeGreaterThan(0);
+});
 it('omits recursively empty tags and preserves populated text exactly', () => {
   const text = '<diagram-style>\n<diagram-guidelines> </diagram-guidelines><references>\n</references></diagram-style>\n<task>Keep this.</task>';
   expect(renderPromptSections(text, base)).toBe('\n<task>Keep this.</task>');

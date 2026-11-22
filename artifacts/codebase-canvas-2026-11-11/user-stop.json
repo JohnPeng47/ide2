@@ -1,0 +1,22 @@
+{
+  "at": "2026-11-11T15:07:29.155276+00:00",
+  "reason": "User explicitly requested stopping everything and a brief summary.",
+  "runnerPid": 355707,
+  "supervisorPid": 358424,
+  "childPids": [
+    406913,
+    409792,
+    411015,
+    411530
+  ],
+  "activeJobs": [
+    "feedback/C1/phase2/round1/tree/canvas_commands",
+    "feedback/C1/phase2/round1/tree/persistence",
+    "feedback/C1/phase2/round1/tree/source_evidence",
+    "feedback/C1/phase2/round1/tree/agent_access"
+  ],
+  "completedBeforeStop": 211,
+  "forcedStops": [],
+  "remainingActiveProcesses": [],
+  "verifiedAt": "2026-11-11T15:07:30.059870+00:00"
+}

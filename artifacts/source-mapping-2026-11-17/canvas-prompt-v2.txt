@@ -1,0 +1,11 @@
+Map the provided canvas’s diagram nodes to the source-code line ranges that explain or implement them.
+
+Inspect the source code and choose the smallest meaningful ranges that support each node. A node may map to multiple ranges across multiple files. Leave nodes unmapped when you cannot find supporting code.
+
+Register the mappings, preserving every diagram’s content and the canvas layout.
+
+Inputs and submission: the saved AgentContext contains the pinned repository checkout and diagram-data.json (ASCII and node references). Use the available read/bash tools to inspect that checkout. No layout template or examples are used. Return only JSON: {"diagrams":[{"diagramId":"d1","mappings":[{"node":"n1","path":"relative/file.ts","startLine":10,"endLine":20}]}],"notes":"Any unsupported nodes or uncertainty"}. Include every supplied diagram, using an empty mappings array if needed. Each entry maps one supplied node reference to one repository-relative, 1-based inclusive source range; repeat the node for multiple ranges. Do not change diagram text or layout.
+
+The runner registers these exact node/range choices through the setSourceMappings operation underlying nodes.setSourceMappings. It resolves the supplied node references to their current diagram spans and fills evidence.originalLines from the pinned source. It does not choose, widen or repair source ranges. The checkout is read-only; no canvas tools are exposed inside this evaluation session.
+
+Before submission, read each selected range with line numbers that restart for that file (for example, nl -ba one-file.ts). Do not infer range endpoints from search hits or use cumulative numbering across files. Call validate_source_mappings with your complete candidate JSON, inspect any reported errors, and verify corrected ranges against the source before returning the final JSON. The final JSON must match a candidate that passed this check. This tool checks node references, file existence and line bounds; semantic support still requires your inspection. Validation calls and any within-session corrections are retained as part of the same sample; they are not separate generation attempts.

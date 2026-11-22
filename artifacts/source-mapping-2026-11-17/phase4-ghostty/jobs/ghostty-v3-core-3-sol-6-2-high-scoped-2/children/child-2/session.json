@@ -1,0 +1,19 @@
+{
+  "id": "child-2",
+  "name": "input",
+  "assignment": "Map d1 n24–n35 from diagram; private scratch mktemp -d if needed. Return compact `node scopeCodes | path:start-end:roleCodes ...` when line-number verified, plus notes. Codes scope s structure,e entity,b behavior,r relationship,g guarantee,u subsystem, role d declaration,i implementation,v use. Can use explicit `inherit nX ...` for parent coverage. Do not touch checkout.",
+  "model": "gpt-6.2-sol",
+  "effort": "high",
+  "status": "generating",
+  "queuedAt": "2026-11-22T04:07:34.517Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-22T04:07:34.536Z",
+  "sessionId": "01a20170-1d9a-72c5-877e-a79378f0ec2c",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-sicjwt9e-agent-repository-XwfxvL-checkout--/2026-11-22T04-07-34-554Z_01a20170-1d9a-72c5-877e-a79378f0ec2c.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase4-sicjwt9e/agent-repository-XwfxvL/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

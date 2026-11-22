@@ -1,0 +1,122 @@
+{
+  "output": {
+    "explanation": "The central tree is reduced from 89 to 59 lines (33.7%) and from 6,358 to 4,238 characters (33.3%). Four peripherals expand publication dependencies, incremental record projection, delivery/recovery, and session lifetime changes. Component boundaries express modular structure; branches mix ownership, calls and data dependencies where useful. Positions use measured tree dimensions with gaps, and edges reference meaningful 1-based lines.\n\nSource-grounded refinements: the seed's statement about camera samples is limited to session publication. MappingPage.tsx:1190 forwards camera changes to SourcePaneViewState, and workspacePersistence.ts:79-85 captures view/camera records independently. Unpausing is not itself a replay: setPaused only sets a flag (workspacePersistence.ts:26); the page explicitly updates and syncs afterward (MappingPage.tsx:895-898). Identical encoded-body reuse lasts within a worker instance; worker failure clears the worker handle, so a subsequent request can recreate it and re-encode the retained batch (workspaceStorage.ts:14-33; workspaceStorage.worker.ts:34-38). HTTP rejection classification follows response.json(), so an unreadable 4xx body does not reach the REJECTED branch (workspaceStorage.worker.ts:41-47).\n\nDetails absent from the seed include exact dirty-state dependencies and publication order (canvasSession.ts:69-102), history cursors advancing before acknowledgement and the index's lack of hidden-ID filtering (workspacePersistence.ts:31-34,48-68), copy semantics (canvasWorkspace.ts:42-59), and projection preserving existing sessions while transfer installation seeds replacements (MappingPage.tsx:662-675,733-759).\n\nEvidence is limited to context.json and seed.json. Renderer behavior is described by the supplied CanvasSession comments and page wiring; renderer, controller, view-state and server implementations are not supplied. Their internal timing, normalization guarantees and server-side atomicity/idempotency are therefore not independently established.",
+    "diagrams": [
+      {
+        "id": "central",
+        "ascii": "Browser Workspace Ownership\n|-- Browser composition: MappingWorkspacePage\n|   |-- Creates CanvasWorkspace; selects injected or locally owned WorkspaceStorage\n|   |-- Loads project catalog and stored workspace concurrently\n|   |   `-- Restores drafts or opens a requested/available canvas; attaches persistence\n|   |-- First activation mounts an editor; visited inactive canvases stay mounted\n|   |   `-- Visibility does not end sessions; epoch/reload keys can remount editors\n|   `-- Commands resolve controllers by document ID, including headless sessions\n|-- CanvasWorkspace: owns draft registry and session lifetimes\n|   |-- drafts[id] holds metadata and a stable CanvasSession handle\n|   |-- Document/canvas/history seed -> create session and register controller\n|   |-- Same session handle -> retain editing context and update saved baseline\n|   |   `-- Tracked metadata changes notify persistence\n|   |-- Removed/replaced session -> unsubscribe, unregister controller, dispose\n|   `-- Document changes refresh registry entries; status supplies dirty-scene IDs\n|-- CanvasSession: owns controller, cursor-copy state and saved baseline\n|   |-- Public read/subscribe stores hide their mutable backing stores\n|   |   |-- document: document reference\n|   |   |-- presentation: display and diagramViews\n|   |   |-- selection and controls: separate subscriptions\n|   |   |-- geometry: endpointBounds, cell and version\n|   |   `-- status: isDirty, sceneDirty, canUndo and canRedo\n|   |-- Controller notification -> synchronously publish changed stores\n|   |   `-- Changed canvasRevisionId -> onCommit -> workspace.onPersist([id])\n|   |-- Mounted editor owns live geometry and undo navigation\n|   |   `-- Camera changes also use the separate SourcePaneViewState path\n|   `-- Save acknowledgement updates captured baseline; newer edits may stay dirty\n|-- WorkspacePersistence: translates live owners into incremental records\n|   |-- workspace.onPersist(ids) -> sync affected drafts and workspace index\n|   |-- Session cursor -> persistenceChanges(cursor) -> history record delta\n|   |   `-- First sync/replacement removes obsolete revision/checkpoint records\n|   |-- Metadata, baseline and captured canvas views join each draft's changes\n|   |   `-- Capture viewport on first sync or changed draft viewport reference\n|   |-- View-state subscription -> capture display/camera into view records\n|   |-- Removed draft -> delete document-prefixed records\n|   |-- Active ID/transfers -> index with project ID and document IDs\n|   |-- Deduplicate keys; skip stored content-addressed items -> RecordStorage.batch\n|   `-- Page resumes persistence with explicit unpause, update and sync calls\n|-- Shared delivery: RecordStorage -> WorkspaceStorage -> reusable worker\n|   |-- batch(): update cache synchronously; skip equal values and absent deletions\n|   |   `-- Keep latest pending change per key; default 150 ms debounce, 1 s window\n|   |-- pump(): one flight with requestId, expectedRevision and frozen changes\n|   |   `-- New edits accumulate separately while the flight awaits acknowledgement\n|   |-- Worker normalizes records and caches encoded request body by requestId\n|   |   `-- POST workspace records endpoint; success advances revision/sequence\n|   |-- Uncertain failure retains flight; retry same request, capped backoff\n|   |   `-- Recognized rejection/conflict stops background scheduling\n|   |-- flush(): await acknowledgement of sequence captured at entry\n|   |-- commit(): flush prior writes, retain old cache, submit and await transaction\n|   |   `-- Retry uncertainty; definitive rejection restores cache and abandons flight\n|   `-- load/save/saveDocument/restore share the storage facade\n|       `-- Transfer/projection UI installs prepared state after acknowledgement\n`-- Lifetime boundaries\n    |-- Hidden browser tab -> flush view state and attempt storage flush\n    |-- Pending view/storage changes or dirty/busy drafts -> beforeunload warning\n    |-- Page cleanup detaches persistence and disposes sessions and view state\n    |   |-- Locally owned storage: attempt flush, then dispose and terminate worker\n    |   `-- Injected storage retains its external owner's lifetime\n    `-- Abrupt tab termination has no flush guarantee",
+        "position": {
+          "column": 0,
+          "row": 0
+        }
+      },
+      {
+        "id": "session",
+        "ascii": "Session publication and dirty-state dependencies\n|-- CanvasSession exposes readable facades\n|   |-- getState, getInitialState, subscribe; no backing-store setState\n|   `-- Controller and cursorCopy remain public command/state handles\n|-- One controller notification: compare next snapshot with previous\n|   |-- Changed scene/edges references -> recompute their stateKey values\n|   |-- Publish presentation, selection, controls, geometry, then status\n|   |-- Publish document last among stores, only when its reference changes\n|   `-- Save previous snapshot; changed canvasRevisionId -> commit listeners\n|-- Status derives from current content and saved baseline\n|   |-- sceneDirty = sceneKey differs from savedSceneKey\n|   |-- isDirty = sceneDirty OR edge-key difference OR name != savedName\n|   |-- canUndo/canRedo come from controller snapshot\n|   `-- Publish status only when at least one status field changes\n|-- updateBaseline(input)\n|   |-- Parse changed savedScene/savedEdges and recompute saved keys\n|   |-- Missing savedEdges defaults to an empty array\n|   `-- Replace baseline and republish status without emitting onCommit\n|-- CanvasWorkspace subscriptions separate consumers\n|   |-- document -> replace draft entry, preserving the same session\n|   |-- status -> recompute IDs whose sceneDirty is true\n|   `-- onCommit -> increment changes version and notify persistence\n|-- Headless geometry uses estimated layout\n|   `-- Native anchors are renderer-local; legacy renderer may supply endpoints\n`-- dispose() clears cursor-copy state, controller subscription and commit listeners",
+        "position": {
+          "column": 105,
+          "row": 0
+        }
+      },
+      {
+        "id": "records",
+        "ascii": "Incremental record projection\n|-- WorkspacePersistence constructor\n|   |-- Read active ID and transfers from cached workspace index\n|   |-- Subscribe to workspace.onPersist and view.subscribe\n|   `-- Sync union of stored document IDs and current drafts\n|-- Private bookkeeping\n|   |-- WeakMap<CanvasSession, sequence> tracks history submission cursors\n|   `-- Map<document ID, CanvasDraft> tracks prior draft/viewport references\n|-- sync(ids): inspect each current draft\n|   |-- Missing draft -> delete all cached keys with its document prefix\n|   |-- Present draft -> metadata (including controller version) and baseline\n|   |-- persistenceChanges(cursor) -> historyChanges(id, delta)\n|   |   |-- No cursor: delete obsolete revision/checkpoint keys in same batch\n|   |   |-- No cursor: skip already stored immutable revisions\n|   |   `-- No cursor: skip checkpoint only if prior is delta and JSON is equal\n|   |-- Advance cursor to delta.sequence before network acknowledgement\n|   |-- captureDisplay + canvas snapshot -> canvasViewChanges\n|   `-- First/changed viewport reference -> captureCamera -> optional viewport\n|-- syncView(id): independent of history cursor\n|   `-- Existing draft -> capture display and camera; submit view/viewport records\n|-- Index selects active ID if present, otherwise first draft ID\n|   `-- Also stores projectId, all draft IDs and transfers; no hidden-ID filter\n|-- submit(): last change per key wins; stored /item/ values are skipped\n|   `-- Deletions pass through; RecordStorage handles further value equality\n`-- setPaused only changes a flag; paused sync/syncView return immediately",
+        "position": {
+          "column": 105,
+          "row": 30
+        }
+      },
+      {
+        "id": "delivery",
+        "ascii": "Write acknowledgement, retries and worker ownership\n|-- RecordStorage has three distinct states\n|   |-- cache: latest submitted values visible synchronously\n|   |-- pending: latest changes by key, waiting for a new flight\n|   `-- flight: fixed batch and sequence retained until successful response\n|-- pump() shares running Promise; successful write clears flight/error/failures\n|   `-- revision and persisted sequence advance only on acknowledgement\n|-- Background schedule\n|   |-- Normal delay = min(configured delay, remaining 1 s pending window)\n|   |-- Failure delay = min(30000 ms, 500 ms * 2^min(failures, 6))\n|   `-- Stop for disposed storage, REJECTED, VERSION_CONFLICT, REQUEST_ID_CONFLICT\n|-- Explicit commit differs from background scheduling\n|   |-- First flush earlier writes; capture cache; batch transaction changes\n|   |-- REJECTED -> restore cache, clear pending/flight, mark sequence settled, throw\n|   `-- Other failures -> wait 500 ms and retry while not disposed\n|-- WorkspaceStorage owns lazy worker and numeric request-ID Promise map\n|   |-- Reuse worker; response resolves/rejects matching request and removes entry\n|   |-- Worker error -> reject outstanding requests, terminate and clear handle\n|   `-- Later request can construct a new worker\n|-- Worker owns encoded bodies by batch requestId and known serialized records\n|   |-- Write -> normalize once per cached body; POST identical body on retry\n|   |-- Success -> update known records; drop body\n|   |-- Parsed HTTP 4xx -> drop body and report REJECTED\n|   `-- Transport/server/JSON-read failure -> body remains for retry in this worker\n`-- Worker replacement loses body/known caches\n    |-- Retained main-thread flight can be resent and re-encoded\n    `-- project(snapshot) reads full state first if new worker is uninitialized",
+        "position": {
+          "column": 105,
+          "row": 60
+        }
+      },
+      {
+        "id": "life",
+        "ascii": "Creating, replacing and releasing canvas state\n|-- copyDocument: new session without requiring a mounted editor\n|   |-- Reject missing/hidden/busy source, invalid name or expectedVersion mismatch\n|   |-- Clone canvas; clear selection and reset controls\n|   |-- Retain conversation messages but set thread.pending = false\n|   |-- Fork history; clone viewport; reuse source document input\n|   `-- New draft UUID, savedName = empty, source scene/edge baseline\n|-- Projection: preserve existing session lifetimes\n|   |-- Prepare from source history and cell; recheck source version\n|   |-- saveDocument(child, index, create=true) checks cached metadata collision\n|   `-- After acknowledgement, add only child session; retain existing editors\n|-- Transfer: replace workspace session inputs\n|   |-- Prepare histories, documents, views and transaction\n|   |-- storage.save(snapshot): flush -> worker full-record diff -> commit\n|   `-- After acknowledgement, installWorkspace seeds all drafts\n|       `-- New sessions, new view state and incremented editor epoch\n|-- Page publication save: captured content defines saved baseline\n|   |-- Sync draft and flush; reject if controller version changed\n|   |-- Publish checkpoint with captured revision/version and fresh requestId\n|   `-- Acknowledgement applies captured scene/edges/name; retain newer name edits\n|-- WorkspaceStorage.restore()\n|   `-- Flush, dispose current RecordStorage, clear load Promise, reload via worker\n`-- Teardown responsibilities\n    |-- Session removal/replacement unregisters controller before disposing session\n    |-- Page schedules workspace/local-storage cleanup with a zero-delay timer\n    |   `-- Effect replay cancels that timer; injected storage is not disposed\n    `-- Storage disposal terminates worker and rejects outstanding requests",
+        "position": {
+          "column": 210,
+          "row": 0
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": {
+          "diagram": "central",
+          "line": 16
+        },
+        "target": {
+          "diagram": "session",
+          "line": 1
+        },
+        "label": "Publication and dirty-state dependencies"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 28
+        },
+        "target": {
+          "diagram": "records",
+          "line": 1
+        },
+        "label": "Incremental record projection"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 39
+        },
+        "target": {
+          "diagram": "delivery",
+          "line": 1
+        },
+        "label": "Queue, acknowledgement and worker recovery"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 9
+        },
+        "target": {
+          "diagram": "life",
+          "line": 1
+        },
+        "label": "Session creation, replacement and release"
+      },
+      {
+        "source": {
+          "diagram": "session",
+          "line": 22
+        },
+        "target": {
+          "diagram": "records",
+          "line": 9
+        },
+        "label": "Commit callback requests sync(ids)"
+      },
+      {
+        "source": {
+          "diagram": "records",
+          "line": 23
+        },
+        "target": {
+          "diagram": "delivery",
+          "line": 3
+        },
+        "label": "batch(changes) updates cache and pending writes"
+      }
+    ]
+  },
+  "usage": {
+    "input_tokens": 341522,
+    "cached_input_tokens": 291072,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 8387,
+    "reasoning_output_tokens": 905
+  }
+}

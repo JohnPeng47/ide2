@@ -1,0 +1,19 @@
+{
+  "id": "child-1",
+  "name": "surface-app-boundary",
+  "assignment": "Map nodes n1-n23 (integration, apprt, App, Surface session fields/init) and n91-n92 and n100-n101 (App/config teardown). Return partial JSON. Read numbered lines, keep exclusions.",
+  "model": "gpt-6-sol",
+  "effort": "medium",
+  "status": "generating",
+  "queuedAt": "2026-11-19T04:44:47.114Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-19T04:44:47.118Z",
+  "sessionId": "01a1f21f-1aa9-75dd-82e3-3485669fa3cd",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-168wdcjn-agent-repository-zJWvc2-checkout--/2026-11-19T04-44-47-145Z_01a1f21f-1aa9-75dd-82e3-3485669fa3cd.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase3-168wdcjn/agent-repository-zJWvc2/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

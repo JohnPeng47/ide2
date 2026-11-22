@@ -29,7 +29,7 @@ export function experimentPromptLineage(experiment: EvalExperiment, runs: EvalRu
         const parentRecord = catalog.get(derivation.parent.promptId);
         const parentVersion = parentRecord?.versions.find(v => v.version === derivation.parent.version);
         const pinnedParent = runs.flatMap(r => r.prompts).find(p => p.promptId === derivation.parent.promptId && p.version === derivation.parent.version);
-        const parent = ensure(pinnedParent ?? { ...derivation.parent, name: parentRecord?.name ?? 'Unavailable parent prompt', stages: parentVersion?.stages ?? {}, derivation: parentVersion?.derivation, parents: parentVersion?.parents }, parentRecord?.workflow);
+        const parent = ensure(pinnedParent ?? { ...derivation.parent, name: parentRecord?.name ?? 'Unavailable parent prompt', stages: parentVersion?.stages ?? {}, templateSources: parentVersion?.templateSources, derivation: parentVersion?.derivation, parents: parentVersion?.parents }, parentRecord?.workflow);
         if (derivation.dimension) {
           const groupId = `${parent.id}:dimension:${derivation.dimension.id}`;
           if (!nodes.has(groupId)) nodes.set(groupId, { id: groupId, parentId: parent.id, name: derivation.dimension.name, outputKeys: [] });
@@ -41,7 +41,7 @@ export function experimentPromptLineage(experiment: EvalExperiment, runs: EvalRu
       const key = promptVersionKey(extra.promptId, extra.version);
       if (visiting.has(key)) continue;
       const record = catalog.get(extra.promptId), v = record?.versions.find(v => v.version === extra.version);
-      ensure({ ...extra, name: record?.name ?? 'Unavailable merge parent', stages: v?.stages ?? {}, parents: v?.parents, derivation: v?.derivation }, record?.workflow);
+      ensure({ ...extra, name: record?.name ?? 'Unavailable merge parent', stages: v?.stages ?? {}, templateSources: v?.templateSources, parents: v?.parents, derivation: v?.derivation }, record?.workflow);
       node.description = [node.description, `Merge parent: ${record?.name ?? extra.promptId} v${extra.version}`].filter(Boolean).join(' · ');
     }
     visiting.delete(id);

@@ -1,0 +1,90 @@
+{
+  "passed": true,
+  "checkedAt": "2026-11-19T03:47:05.761Z",
+  "pilot": [
+    "ghostty-v3-canvas-1-sol-high_sol-medium-1",
+    "ghostty-v3-canvas-1-astra-high_sol-medium-1"
+  ],
+  "results": [
+    {
+      "key": "ghostty-v3-canvas-1-sol-high_sol-medium-1",
+      "runId": "83a35411-07d4-4b3a-82ae-649fbede8862",
+      "children": 5,
+      "mappedNodes": 152,
+      "nodes": 152,
+      "usage": {
+        "input": 225016,
+        "output": 25302,
+        "cacheRead": 830720,
+        "cacheWrite": 0,
+        "reasoning": 894,
+        "totalTokens": 1081038
+      },
+      "accounting": {
+        "mainUsage": {
+          "input": 27902,
+          "output": 13632,
+          "cacheRead": 65536,
+          "cacheWrite": 0,
+          "reasoning": 280,
+          "totalTokens": 107070
+        },
+        "mainCost": {
+          "input": 0.055804,
+          "output": 0.13632000000000002,
+          "cacheRead": 0.013107200000000001,
+          "cacheWrite": 0,
+          "total": 0.20523120000000003
+        },
+        "totalCost": {
+          "input": 0.45003200000000004,
+          "output": 0.2530200000000001,
+          "cacheRead": 0.16614400000000001,
+          "cacheWrite": 0,
+          "total": 0.8691960000000002
+        },
+        "children": 5
+      }
+    },
+    {
+      "key": "ghostty-v3-canvas-1-astra-high_sol-medium-1",
+      "runId": "142ee37c-7b3e-4a78-afdd-5d0233ade823",
+      "children": 4,
+      "mappedNodes": 152,
+      "nodes": 152,
+      "usage": {
+        "input": 224324,
+        "output": 26611,
+        "cacheRead": 1048320,
+        "cacheWrite": 0,
+        "reasoning": 1531,
+        "totalTokens": 1299255
+      },
+      "accounting": {
+        "mainUsage": {
+          "input": 76232,
+          "output": 17760,
+          "cacheRead": 585856,
+          "cacheWrite": 0,
+          "reasoning": 1238,
+          "totalTokens": 679848
+        },
+        "mainCost": {
+          "input": 0.7623200000000001,
+          "output": 0.8879999999999999,
+          "cacheRead": 0.5858559999999999,
+          "cacheWrite": 0,
+          "total": 2.236176
+        },
+        "totalCost": {
+          "input": 1.0585040000000001,
+          "output": 0.9765099999999999,
+          "cacheRead": 0.6783488,
+          "cacheWrite": 0,
+          "total": 2.7133628
+        },
+        "children": 4
+      }
+    }
+  ]
+}

@@ -13,8 +13,14 @@
 /* Foreground syntax remains independent of diff/treemap backgrounds. */
 .diagram-content-node:hover, .diagram-content-node.is-selected { outline: 1px solid var(--accent-cyan); outline-offset: 0; }
 .diagram-content-node[data-jump-focus] { outline: 1px solid var(--accent-yellow); }
-.diagram-jump { display: inline; border: 0; border-radius: 0; padding: 0; margin: 0; background: transparent; color: var(--diagram-syntax-reference); font: inherit; letter-spacing: inherit; line-height: inherit; white-space: pre; vertical-align: baseline; cursor: pointer; }
-.diagram-jump:hover, .diagram-jump:focus-visible { outline: 1px solid currentColor; outline-offset: 0; }
+/* Jumps must read as links at rest. Color, underline and tint only: no padding or glyphs, so ASCII columns stay aligned.
+   The container-qualified selector outranks page-level button styles such as `:is(.evals-page, .evals-drawer) button`. */
+.diagram-jump-container > .diagram-jump { display: inline; border: 0; border-radius: 0; padding: 0; margin: 0; font: inherit; letter-spacing: inherit; line-height: inherit; white-space: pre; vertical-align: baseline; cursor: pointer;
+  color: var(--accent-cyan); background: color-mix(in srgb, var(--accent-cyan) 16%, transparent);
+  text-decoration: underline 1px; text-underline-offset: 2px; }
+/* Syntax spans inside a jump take the link color instead of their token colors. */
+.diagram-jump-container > .diagram-jump .diagram-syntax { color: inherit; }
+.diagram-jump-container > .diagram-jump:hover, .diagram-jump-container > .diagram-jump:focus-visible { background: color-mix(in srgb, var(--accent-cyan) 30%, transparent); outline: 1px solid currentColor; outline-offset: 0; text-decoration-thickness: 2px; }
 
 .diagram-mapping-choices { position: fixed; z-index: 100; display: grid; max-width: 280px; max-height: 170px; overflow: auto; border: 1px solid var(--gutter); background: var(--surface-raised); padding: var(--space-2); }
 .diagram-mapping-choices button { border: 0; background: transparent; color: var(--accent-cyan); text-align: left; padding: 5px; cursor: pointer; }

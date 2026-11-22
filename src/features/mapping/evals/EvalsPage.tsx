@@ -1,27 +1,42 @@
+import { promptTemplateIds } from '../../../../domain/mapping/evals/promptTemplateIncludes';
+import { EvalHistory, EvalHistoryContext, useHistoryGestures } from './evalHistory';
+import type { Route } from './evalRoutes';
+import { CostStatistics } from './CostStatistics';
+import { ExperimentHome } from './ExperimentHome';
 import { hasEvalOutput } from '../../../../domain/mapping/evals/evalRun';
-import { experimentOutputSequence, useArrowNavigation } from './evalNavigation';
-import { ExperimentExplorer, type ExperimentRoute } from './ExperimentExplorer';
+import { useArrowNavigation } from './evalNavigation';
+import { ALL_PHASES, commentNavigationOrder, withReportSteps, navigationContext, navigationKey, navigationOrder, navigationPhase, parseNavigationContext, type NavigationTarget } from '../../../../domain/mapping/evals/experimentNavigation';
+import { ViewTreeSidebar } from './ViewTreeSidebar';
+import { ItemToolbarContext } from './ItemToolbar';
+import { OutputSidebarContext } from './OutputSidebar';
+import { OutputCommentContext, OutputCommentsPanel } from './OutputComments';
+import { loadCanvasPreview } from './canvasPreviewCache';
+import { projectExperimentOverview } from '../../../../domain/mapping/evals/experimentOverviewProjection';
+import { ExperimentExplorer } from './ExperimentExplorer';
 import { ExperimentView } from './ExperimentView';
-import { experimentJudgementIds } from '../../../../domain/mapping/evals/experiment';
+import { experimentJudgementIds, type EvalExperiment } from '../../../../domain/mapping/evals/experiment';
 import { LayoutTemplates } from './LayoutTemplates';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useSyncExternalStore, useMemo, useRef, useState } from 'react';
 import { ConfirmDialog, type Confirmation } from './ConfirmDialog';
 import { generatedWorkflow } from '../../../../domain/core/diagrams/generatedCanvas';
 import type { ComparePageSession } from '../../../../domain/mapping/compare/comparePageSession';
 import type { ComparisonRunSummary } from '../../../../domain/mapping/compare/comparisonGeneration';
 import { latestVersion, type EvalPrompt } from '../../../../domain/mapping/evals/evalPrompt';
 import type { EvalRunSummary } from '../../../../domain/mapping/evals/evalRun';
-import { evalWorkflowIds, evalWorkflows, type EvalWorkflowId } from '../../../../domain/mapping/evals/evalWorkflows';
+import { evalWorkflowIds, evalWorkflows } from '../../../../domain/mapping/evals/evalWorkflows';
 import { comparisonRuns, deleteCompareSession, deleteComparisonRun, listCompareSessions, readCompareSession } from './compareApi';
 import { listExperiments, listJudgements, deleteJudgement, listReferences, listReferenceGroups, createReferenceGroup, renameReferenceGroup, deleteReferenceGroup, updateReference, readPrompt, rerunChat, cancelRun, renameRun, deleteContextOutputs, deleteGenerated, deleteRun, deleteRuns, listGenerated, listPrompts, listRuns, migrateGenerated } from './evalsApi';
-import { errorMessage, relativeTime, runActive, runNumbers, runProgress, runTitle, statusLabel } from './evalsFormat';
-import { EvalsTree, type EvalsSelection, type PickedOutput, type TreeActions } from './EvalsTree';
+import { errorMessage, runActive, runNumbers } from './evalsFormat';
+import type { EvalsSelection, PickedOutput, TreeActions } from './EvalsTree';
 import { PopoverMenu, type MenuSection } from './PopoverMenu';
 import { CanvasPreview } from './CanvasPreview';
 import { candidateKey } from './CanvasPicker';
 import { PromptEditor } from './PromptEditor';
+import { promptSnippets } from './promptSnippets';
+import { Drawer } from './Drawer';
 import { RunLauncher, type RunLaunch } from './RunLauncher';
 import { OutputView } from './OutputView';
+import { EvalsSidebarResize } from './EvalsSidebarResize';
 import { CompareBar } from './CompareBar';
 import { ComparisonView } from './ComparisonView';
 import { JudgementsPane } from './JudgementsPane';
@@ -34,44 +49,12 @@ import { MappingServicesContext, type MappingServices } from '../services/Mappin
 import type { EvalReference, EvalReferenceGroup } from '../../../../domain/mapping/evals/evalReference';
 import './evals.css';
 
-type Route = ExperimentRoute | { kind: 'home' } | { kind: 'prompt'; id: string; version?: number } | { kind: 'new-prompt'; workflow: EvalWorkflowId; from?: string; fromVersion?: number }
-  | { kind: 'run'; id: string; output?: string } | { kind: 'session'; id: string } | { kind: 'canvas'; id: string }
-  | { kind: 'references' } | { kind: 'reference'; id: string } | { kind: 'new-reference'; target?: ReferenceTarget } | { kind: 'judgements'; id?: string; judgementId?: string; entry?: 'first' | 'last' };
-function readRoute(): Route {
-  const params = new URLSearchParams(location.search);
-  const id = (key: string) => params.get(key) ?? '';
-  if (params.has('experiment')) return { kind: 'experiment', id: id('experiment'), ...(['overview', 'outputs', 'judgements'].includes(id('view')) ? { view: id('view') as ExperimentRoute['view'] } : {}), ...(params.has('phase') ? { phaseId: id('phase') } : {}), ...(params.has('group') ? { groupId: id('group') } : {}) };
-  if (params.has('prompt')) return { kind: 'prompt', id: id('prompt'), ...(Number(id('version')) > 0 ? { version: Number(id('version')) } : {}) };
-  if (params.has('new-prompt') && evalWorkflowIds.includes(id('new-prompt') as EvalWorkflowId))
-    return { kind: 'new-prompt', workflow: id('new-prompt') as EvalWorkflowId, ...(params.has('from') ? { from: id('from') } : {}), ...(Number(id('from-version')) > 0 ? { fromVersion: Number(id('from-version')) } : {}) };
-  if (params.has('judgements')) return { kind: 'judgements', ...(params.has('run') ? { id: id('run') } : {}), ...(params.has('judgement') ? { judgementId: id('judgement') } : {}), ...(id('entry') === 'last' ? { entry: 'last' as const } : {}) };
-  if (params.has('run')) return { kind: 'run', id: id('run'), ...(params.has('output') ? { output: id('output') } : {}) };
-  if (params.has('reference')) return { kind: 'reference', id: id('reference') };
-  if (params.has('references')) return { kind: 'references' };
-  if (params.has('new-reference')) return { kind: 'new-reference', ...(params.has('document') && params.has('checkpoint') && params.has('diagram')
-    ? { target: { source: { documentId: id('document'), ...(params.has('view') ? { viewId: id('view') } : {}), checkpointId: id('checkpoint') }, diagramId: id('diagram') } } : {}) };
-  if (params.has('canvas')) return { kind: 'canvas', id: id('canvas') };
-  if (params.has('session')) return { kind: 'session', id: id('session') };
-  return { kind: 'home' };
-}
-function routeUrl(route: Route) {
-  const url = new URL(location.href); url.search = '';
-  if (route.kind === 'prompt' || route.kind === 'run' || route.kind === 'session' || route.kind === 'canvas' || route.kind === 'reference') url.searchParams.set(route.kind, route.id);
-  if (route.kind === 'experiment') { url.searchParams.set('experiment', route.id); if (route.view) url.searchParams.set('view', route.view); if (route.groupId) url.searchParams.set('group', route.groupId); if (route.phaseId) url.searchParams.set('phase', route.phaseId); }
-  if (route.kind === 'judgements') { url.searchParams.set('judgements', ''); if (route.id) url.searchParams.set('run', route.id); if (route.judgementId) url.searchParams.set('judgement', route.judgementId); if (route.entry === 'last') url.searchParams.set('entry', 'last'); }
-  if (route.kind === 'references') url.searchParams.set('references', '');
-  if (route.kind === 'new-reference') { url.searchParams.set('new-reference', ''); if (route.target) { const { source, diagramId } = route.target;
-    url.searchParams.set('document', source.documentId); if (source.viewId) url.searchParams.set('view', source.viewId); url.searchParams.set('checkpoint', source.checkpointId); url.searchParams.set('diagram', diagramId); } }
-  if (route.kind === 'run' && route.output) url.searchParams.set('output', route.output);
-  if (route.kind === 'prompt' && route.version) url.searchParams.set('version', String(route.version));
-  if (route.kind === 'new-prompt') { url.searchParams.set('new-prompt', route.workflow); if (route.from) url.searchParams.set('from', route.from); if (route.fromVersion) url.searchParams.set('from-version', String(route.fromVersion)); }
-  return url;
-}
 /** Polls quickly only while work is running. */
 function usePolled<T>(load: () => Promise<T>, active: (value: T) => boolean, onError: (error: unknown) => void) {
   const [value, setValue] = useState<T>();
   const refresh = useRef<() => Promise<void>>(async () => {});
   const revision = useRef(0);
+  const snapshot = useRef<string | undefined>(undefined);
   useEffect(() => {
     let closed = false, timer: ReturnType<typeof setTimeout>;
     let inFlight: Promise<void> | undefined;
@@ -82,7 +65,12 @@ function usePolled<T>(load: () => Promise<T>, active: (value: T) => boolean, onE
       inFlight = (async () => {
         let next = 20000;
         try { const result = await load(); if (closed) return;
-          if (at === revision.current) setValue(result);
+          if (at === revision.current) {
+            // Polls return fresh objects even when nothing changed. Preserve the
+            // existing catalog references so idle readers do not rebuild the UI.
+            const serialized = JSON.stringify(result);
+            if (snapshot.current !== serialized) { snapshot.current = serialized; setValue(result); }
+          }
           else next = 0;
           if (next && active(result)) next = 2500;
         } catch (error) { if (!closed) onError(error); }
@@ -93,7 +81,7 @@ function usePolled<T>(load: () => Promise<T>, active: (value: T) => boolean, onE
     refresh.current = poll; void poll();
     return () => { closed = true; clearTimeout(timer); };
   }, []);
-  const update = useCallback((change: (current: T | undefined) => T | undefined) => { revision.current++; setValue(change); }, []);
+  const update = useCallback((change: (current: T | undefined) => T | undefined) => { revision.current++; snapshot.current = undefined; setValue(change); }, []);
   return [value, useCallback(() => refresh.current(), []), update] as const;
 }
 
@@ -103,13 +91,20 @@ export function EvalsPage({ services }: { services?: MappingServices }) {
   return services ? <MappingServicesContext.Provider value={services}>{page}</MappingServicesContext.Provider> : page;
 }
 function EvalsWorkspace() {
-  const [templatesOpen, setTemplatesOpen] = useState(false);
-  const [route, setRoute] = useState(readRoute);
+  const [navigationHistory] = useState(() => new EvalHistory());
+  const visit = useSyncExternalStore(navigationHistory.subscribe, navigationHistory.snapshot);
+  const { route, view } = visit;
+  const panel = view.panel;
+  const openSnippet = panel?.kind === 'snippet' && promptSnippets.find(item => item.id === panel.id);
+  const templatesOpen = view.panel?.kind === 'templates';
   const [error, setError] = useState('');
   const [confirmation, setConfirmation] = useState<Confirmation>();
   const onError = useCallback((error: unknown) => setError(errorMessage(error)), []);
   const [prompts, setPrompts] = useState<EvalPrompt[]>();
-  const [experiments, refreshExperiments] = usePolled(listExperiments, () => false, onError);
+  const snippetUses = useMemo(() => openSnippet ? prompts?.flatMap(prompt => prompt.versions.flatMap(version =>
+    Object.entries(version.templateSources ?? {}).filter(([, body]) => promptTemplateIds(body).includes(openSnippet.id))
+      .map(([stage]) => ({ prompt, version: version.version, stage })))) : undefined, [openSnippet, prompts]);
+  const [experiments, refreshExperiments, updateExperiments] = usePolled(listExperiments, () => false, onError);
   const [runs, refreshRuns, updateRuns] = usePolled(listRuns, items => items.some(runActive), onError);
   const [sessions, refreshSessions] = usePolled(listCompareSessions, () => false, onError);
   const [comparisons, refreshComparisons] = usePolled(comparisonRuns, items => items.some(item => item.status === 'queued' || item.status === 'generating'), onError);
@@ -133,9 +128,7 @@ function EvalsWorkspace() {
   const referenceChanged = useCallback((reference: EvalReference) => setReferences(current => [reference, ...(current ?? []).filter(item => item.id !== reference.id)]
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))), []);
   const [menu, setMenu] = useState<{ label: string; at: { x: number; y: number }; sections: MenuSection[] }>();
-  const [navWidth, setNavWidth] = useState(() => Number(localStorage.getItem('evals-nav-width')) || 300);
   const layout = useRef<HTMLDivElement>(null);
-  const resize = (width: number) => { const next = Math.round(Math.max(200, Math.min(560, width))); setNavWidth(next); localStorage.setItem('evals-nav-width', String(next)); };
   const dirty = useRef(false);
   const setDirty = useCallback((value: boolean) => { dirty.current = value; }, []);
   const numbers = useMemo(() => runNumbers(runs ?? []), [runs]);
@@ -162,14 +155,13 @@ function EvalsWorkspace() {
     void loadCandidates().then(value => { if (!closed) setCandidates(value); }).catch(error => { if (!closed) setCandidatesError(errorMessage(error)); });
     return () => { closed = true; };
   }, [canvasTab]);
-  useEffect(() => {
-    const back = () => { setRoute(readRoute()); dirty.current = false; };
-    window.addEventListener('popstate', back); return () => window.removeEventListener('popstate', back);
-  }, []);
-  useEffect(() => {
-    const leave = (event: BeforeUnloadEvent) => { if (dirty.current) event.preventDefault(); };
-    window.addEventListener('beforeunload', leave); return () => window.removeEventListener('beforeunload', leave);
-  }, []);
+  useLayoutEffect(() => navigationHistory.connect({
+    dirty: () => dirty.current,
+    confirmLeave: proceed => setConfirmation({ title: 'Discard edits', message: 'Discard unsaved edits?', confirmLabel: 'Discard',
+      onConfirm: () => { dirty.current = false; proceed(); } }),
+    onNavigate: () => { setError(''); setMenu(undefined); setLaunch(undefined); setRenaming(undefined); }
+  }), [navigationHistory]);
+  useHistoryGestures(navigationHistory);
   // A finished LLM comparison publishes a session; refresh the list when one completes.
   const finished = comparisons?.filter(item => item.status === 'finished').length;
   useEffect(() => { if (finished !== undefined) void refreshSessions(); }, [finished, refreshSessions]);
@@ -187,16 +179,12 @@ function EvalsWorkspace() {
     return () => { closed = true; };
   }, [sessionId]);
 
-  const go = (next: Route) => {
-    const navigate = () => { dirty.current = false; setError(''); history.pushState(null, '', routeUrl(next)); setRoute(next); };
-    if (dirty.current) setConfirmation({ title: 'Discard edits', message: 'Discard unsaved prompt edits?', confirmLabel: 'Discard', onConfirm: navigate });
-    else navigate();
-  };
+  const go = navigationHistory.go;
   const savedPrompt = (prompt: EvalPrompt) => {
     setPrompts(previous => [...(previous ?? []).filter(item => item.id !== prompt.id), prompt].sort((a, b) => Number(!!b.builtin) - Number(!!a.builtin) || a.createdAt.localeCompare(b.createdAt)));
     dirty.current = false;
     // After a save the editor shows the latest version, not the one a run link opened.
-    if (route.kind !== 'prompt' || route.id !== prompt.id || route.version) { history.replaceState(null, '', routeUrl({ kind: 'prompt', id: prompt.id })); setRoute({ kind: 'prompt', id: prompt.id }); }
+    if (route.kind !== 'prompt' || route.id !== prompt.id || route.version) { go({ kind: 'prompt', id: prompt.id }, { replace: true }); }
   };
   const openSession = (value: ComparePageSession) => {
     setLaunch(undefined);
@@ -211,13 +199,13 @@ function EvalsWorkspace() {
 
   const current = route.kind === 'prompt' ? prompts?.find(prompt => prompt.id === route.id) : undefined;
   const run = route.kind === 'run' ? runs?.find(item => item.id === route.id) : undefined;
-  const loading = !prompts || !runs || !sessions;
+  const onExperimentSaved = (saved: EvalExperiment) => updateExperiments(current => current?.map(item => item.id === saved.id && item.revision <= saved.revision ? saved : item));
   const refreshAll = () => Promise.all([listPrompts().then(setPrompts), refreshExperiments(), refreshRuns(), refreshGenerated(), refreshSessions(), refreshComparisons(), refreshJudgements()]);
   /** Confirms, deletes, refreshes, and leaves a view whose subject is gone. */
   const remove = (question: string, task: () => Promise<unknown>, leaves: (route: Route) => boolean, removed?: () => void) => {
     setConfirmation({ title: question.startsWith('Delete output') ? 'Delete output' : 'Confirm deletion', message: question, onConfirm: async () => {
       await task(); removed?.();
-      if (leaves(route)) { dirty.current = false; history.pushState(null, '', routeUrl({ kind: 'home' })); setRoute({ kind: 'home' }); }
+      if (leaves(route)) { dirty.current = false; go({ kind: 'home' }); }
       // Remove the acknowledged output immediately; unrelated lists refresh in the background.
       if (removed) void refreshAll(); else await refreshAll();
     } });
@@ -225,22 +213,119 @@ function EvalsWorkspace() {
   // A run opens on the requested output, else its first finished (or first) output.
   const shownCell = run && (run.cells.find(item => item.key === (route.kind === 'run' ? route.output : undefined))
     ?? run.cells.find(item => item.status === 'finished' && !item.deleted) ?? run.cells[0]);
-  const registeredOutputs = new Set((experiments ?? []).flatMap(e => e.samples.flatMap(s => s.outputs.map(o => JSON.stringify([o.runId, o.cellKey])))));
-  const registeredReports = new Set((experiments ?? []).flatMap(experimentJudgementIds));
-  const legacyRuns = (runs ?? []).filter(r => !r.cells.length || r.cells.some(c => !registeredOutputs.has(JSON.stringify([r.id, c.key]))));
-  const registeredCanvases = new Set((runs ?? []).flatMap(r => r.cells.filter(c => registeredOutputs.has(JSON.stringify([r.id, c.key]))).map(c => c.canvasId)));
-  const activeExperiment = (experiments ?? []).find(e => route.kind === 'experiment' ? e.id === route.id
-    : route.kind === 'judgements' ? experimentJudgementIds(e).includes(route.judgementId ?? '')
-    : route.kind === 'run' && e.samples.some(s => s.outputs.some(o => o.runId === route.id && o.cellKey === shownCell?.key)));
+  // ←/→ traverse one fixed list: the experiment overview tree's viewable outputs and finished judgements.
+  // The context comes from the URL (set when opening from an experiment); otherwise from the item's sole owning experiment.
+  // The experiment tree in context: from the URL `nav` (set when opening from an experiment) or the item's sole owner.
+  // `scope` is the explicit phase choice in the URL; without one, the tree narrows to the shown item's phase.
+  // A report is positioned on a step: the one in the URL, else its first.
+  const currentTarget: NavigationTarget | undefined = route.kind === 'run' && route.comment && shownCell ? { kind: 'comment', commentId: route.comment, runId: route.id, cellKey: shownCell.key }
+    : route.kind === 'run' && shownCell ? { kind: 'output', runId: route.id, cellKey: shownCell.key, ...(route.diagram ? { diagram: route.diagram } : {}) }
+    : route.kind === 'judgements' && route.judgementId ? (() => {
+      const first = judgements?.find(item => item.id === route.judgementId)?.steps?.[0]?.key, step = route.step ?? first;
+      return step ? { kind: 'step' as const, judgementId: route.judgementId, step } : { kind: 'judgement' as const, judgementId: route.judgementId };
+    })() : undefined;
+  const navContext = (() => {
+    if (route.kind === 'experiment') {
+      const experiment = experiments?.find(e => e.id === route.id);
+      return experiment && { experiment, scope: route.phaseId, phaseId: route.phaseId };
+    }
+    if (route.kind !== 'run' && route.kind !== 'judgements') return undefined;
+    let experiment: EvalExperiment | undefined, scope: string | undefined;
+    if (route.nav) { const parsed = parseNavigationContext(route.nav); experiment = experiments?.find(e => e.id === parsed.experimentId); scope = parsed.phaseId; }
+    else {
+      const owners = (experiments ?? []).filter(e => route.kind === 'judgements' ? experimentJudgementIds(e).includes(route.judgementId ?? '')
+        : e.samples.some(s => s.outputs.some(o => o.runId === route.id && o.cellKey === shownCell?.key)));
+      if (owners.length === 1) experiment = owners[0];
+    }
+    if (!experiment) return undefined;
+    const phaseId = scope === ALL_PHASES ? undefined : scope ?? (currentTarget && navigationPhase(experiment, currentTarget));
+    return { experiment, scope, phaseId };
+  })();
+  const activeExperiment = route.kind === 'experiment' ? (experiments ?? []).find(e => e.id === route.id) : navContext?.experiment;
+  useEffect(() => {
+    if (!activeExperiment || !runs) return;
+    const outputs = activeExperiment.samples.flatMap(sample => sample.outputs).flatMap(output => {
+      const cell = runs.find(run => run.id === output.runId)?.cells.find(cell => cell.key === output.cellKey);
+      return cell?.canvasId && cell.checkpointId && !cell.output ? [{ cell, source: { runId: output.runId, cellKey: output.cellKey } }] : [];
+    });
+    const index = Math.max(0, outputs.findIndex(output => output.cell.canvasId === shownCell?.canvasId));
+    for (const output of [outputs[index], outputs[index - 1], outputs[index + 1]])
+      if (output) void loadCanvasPreview(output.cell.canvasId!, output.cell.checkpointId, output.source).catch(() => {});
+  }, [activeExperiment, runs, shownCell?.canvasId]);
   const judgementItems = activeExperiment
     ? experimentJudgementIds(activeExperiment).flatMap(id => judgements?.find(item => item.id === id) ?? [])
     : judgements ?? [];
-  const outputItems = activeExperiment ? experimentOutputSequence(activeExperiment, runs ?? [])
-    : (runs ?? []).flatMap(item => item.cells.filter(cell => cell.status === 'finished' && hasEvalOutput(cell))
-      .map(cell => ({ runId: item.id, cellKey: cell.key, label: `${runTitle(item, numbers.get(item.id))} · ${cell.stage} · sample ${cell.pass}` })));
-  const outputIndex = route.kind === 'run' ? outputItems.findIndex(item => item.runId === route.id && item.cellKey === shownCell?.key) : -1;
-  const moveOutput = (direction: number) => { const next = outputItems[outputIndex + direction]; if (next) go({ kind: 'run', id: next.runId, output: next.cellKey }); };
-  useArrowNavigation(moveOutput, route.kind === 'run' && outputIndex >= 0);
+  // One tree drives the sidebar, the navigation bar and ←/→.
+  // Each finished report's pages and findings sit under its judgement and are stops in their own right.
+  const contextTree = useMemo(() => {
+    if (!navContext || !runs) return undefined;
+    let root = projectExperimentOverview(navContext.experiment, runs, navContext.phaseId).overview.root;
+    for (const id of experimentJudgementIds(navContext.experiment)) {
+      const steps = judgements?.find(item => item.id === id)?.steps;
+      if (steps?.length) root = withReportSteps(root, id, steps);
+    }
+    return root;
+  }, [navContext?.experiment, navContext?.phaseId, runs, judgements]);
+  const stepsOf = (judgementId: string) => judgements?.find(item => item.id === judgementId)?.steps;
+  // A judgement with steps is reached through its first step, so it is not a separate stop.
+  const isStop = useCallback((target: NavigationTarget) => target.kind !== 'judgement'
+    || judgements?.find(item => item.id === target.judgementId)?.status === 'finished' && !stepsOf(target.judgementId)?.length, [judgements]);
+  const reviewingComment = route.kind === 'run' && !!route.comment;
+  const navigation = useMemo(() => contextTree && (reviewingComment ? commentNavigationOrder(contextTree) : navigationOrder(contextTree, isStop)), [contextTree, isStop, reviewingComment]);
+  const phaseOptions = useMemo(() => navContext && runs ? (projectExperimentOverview(navContext.experiment, runs).overview.root.children ?? [])
+    .flatMap(node => node.source?.phaseId ? [{ id: node.source.phaseId, label: node.label }] : []) : [], [navContext?.experiment, runs]);
+  const inExperimentItem = (route.kind === 'run' || route.kind === 'judgements') && !!navContext;
+  const sidebarTab = view.sidebar ?? (inExperimentItem ? 'overview' : 'experiments');
+  const setSidebarTab = (sidebar: 'overview' | 'experiments') => { if (sidebar !== sidebarTab) navigationHistory.update({ sidebar }); };
+  const choosePhase = (value: string) => {
+    if (route.kind === 'experiment') go({ ...route, phaseId: value === ALL_PHASES ? undefined : value });
+    else if ((route.kind === 'run' || route.kind === 'judgements') && navContext) go({ ...route, nav: navigationContext(navContext.experiment.id, value) });
+  };
+  const currentKey = currentTarget && navigationKey(currentTarget);
+  const stop = currentKey ? navigation?.stops.get(currentKey) : undefined;
+  const openStop = (target: NavigationTarget) => {
+    const nav = navContext && navigationContext(navContext.experiment.id, navContext.scope);
+    go(target.kind === 'comment' ? { kind: 'run', id: target.runId, output: target.cellKey, comment: target.commentId, nav: navContext && navigationContext(navContext.experiment.id, ALL_PHASES) }
+      : target.kind === 'output' ? { kind: 'run', id: target.runId, output: target.cellKey, nav, ...(target.diagram ? { diagram: target.diagram } : {}) }
+      : { kind: 'judgements', judgementId: target.judgementId, nav, ...(target.kind === 'step' ? { step: target.step } : {}) });
+  };
+  const moveStop = (direction: number) => {
+    const key = direction > 0 ? stop?.next : stop?.prev, next = key && navigation?.stops.get(key);
+    if (next) openStop(next.target);
+  };
+  useArrowNavigation(moveStop, !!stop);
+  const backToOverview = () => navContext && go({ kind: 'experiment', id: navContext.experiment.id, view: 'overview', ...(navContext.phaseId ? { phaseId: navContext.phaseId } : {}) });
+  // Full screen hides the app header for item views; it survives ←/→ and applies again when another item opens.
+  const [fullScreen, setFullScreen] = useState(false);
+  const [toolbarSlot, setToolbarSlot] = useState<HTMLElement | null>(null);
+  const [outputSidebar, setOutputSidebar] = useState<HTMLElement | null>(null);
+  const itemView = route.kind === 'run' || route.kind === 'judgements';
+  useEffect(() => {
+    if (!fullScreen || !itemView) return;
+    const key = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || event.defaultPrevented || document.querySelector('[role="dialog"], .evals-drawer, :fullscreen')) return;
+      if (event.target instanceof Element && event.target.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"])')) return;
+      setFullScreen(false);
+    };
+    window.addEventListener('keydown', key);
+    return () => window.removeEventListener('keydown', key);
+  }, [fullScreen, itemView]);
+  // The tree row label can repeat across samples; the breadcrumb ends with the item's own name instead.
+  const stopName = (target: NavigationTarget) => target.kind === 'comment' ? navContext?.experiment.comments?.find(comment => comment.id === target.commentId)?.text.slice(0, 120) : target.kind === 'step' ? undefined : target.kind === 'judgement' ? judgements?.find(item => item.id === target.judgementId)?.title
+    : (() => {
+      const cell = runs?.find(item => item.id === target.runId)?.cells.find(cell => cell.key === target.cellKey);
+      const diagram = target.diagram && cell?.diagrams?.find(item => item.id === target.diagram)?.title;
+      return diagram ? [cell?.candidateName, diagram].filter(Boolean).join(' · ') : cell?.candidateName;
+    })();
+  const stopLabel = stop && (() => { const name = stopName(stop.target); return name ? [...stop.path, name].join(' · ') : stop.label; })();
+  const navigationBar = stop && navigation && <nav className="output-navigation" aria-label="Experiment navigation">
+    <button className="evals-link" title="Go to experiment overview" onClick={backToOverview}>↖ Overview</button>
+    <button aria-keyshortcuts="ArrowLeft" aria-label="Previous" title="Previous (←)" disabled={!stop.prev} onClick={() => moveStop(-1)}>←</button>
+    <span title={stopLabel} aria-live="polite">{reviewingComment ? 'Comment ' : ''}{stop.index + 1} / {navigation.order.length} · {stopLabel}</span>
+    <button aria-keyshortcuts="ArrowRight" aria-label="Next" title="Next (→)" disabled={!stop.next} onClick={() => moveStop(1)}>→</button>
+    <span className="item-toolbar-slot" ref={setToolbarSlot} />
+    <button aria-pressed={fullScreen} aria-label={fullScreen ? 'Exit full screen' : 'Full screen'} title={fullScreen ? 'Exit full screen (Esc)' : 'Full screen'} onClick={() => setFullScreen(value => !value)}>{fullScreen ? '⤡' : '⤢'}</button>
+  </nav>;
   const selection: EvalsSelection | undefined = route.kind === 'experiment' ? route : route.kind === 'run' ? { kind: 'run', id: route.id, output: shownCell?.key }
     : route.kind === 'judgements' ? { kind: 'judgements', id: route.id, judgementId: route.judgementId }
     : route.kind === 'canvas' || route.kind === 'session' ? { kind: route.kind, id: route.id } : undefined;
@@ -315,14 +400,18 @@ function EvalsWorkspace() {
       setReferenceGroups(current => current.filter(item => item.id !== group.id));
       await refreshReferences();
     } });
-  const promptsMenu = (at: { x: number; y: number }) => setMenu({ label: 'Prompts', at, sections: evalWorkflowIds.map(id => ({ label: evalWorkflows[id].label, items: [
-    ...(prompts ?? []).filter(prompt => prompt.workflow === id).map(prompt => ({ label: prompt.name, detail: `v${latestVersion(prompt).version}${prompt.archivedAt ? ' · archived' : ''}`,
-      muted: !!prompt.archivedAt, onSelect: () => go({ kind: 'prompt', id: prompt.id }) })),
-    { label: `+ New ${evalWorkflows[id].label.toLowerCase()} prompt`, onSelect: () => go({ kind: 'new-prompt', workflow: id }) }
-  ] })) });
+  const promptsMenu = (at: { x: number; y: number }) => setMenu({ label: 'Prompts', at, sections: [
+    { label: 'Prompt snippets', items: promptSnippets.map(snippet => ({ label: snippet.name, copyId: snippet.id, onSelect: () => navigationHistory.openPanel({ kind: 'snippet', id: snippet.id }) })) },
+    ...evalWorkflowIds.map(id => ({ label: evalWorkflows[id].label, items: [
+      ...(prompts ?? []).filter(prompt => prompt.workflow === id).map(prompt => ({ label: prompt.name, detail: `v${latestVersion(prompt).version}${prompt.archivedAt ? ' · archived' : ''}`,
+        muted: !!prompt.archivedAt, onSelect: () => go({ kind: 'prompt', id: prompt.id }) })),
+      { label: `+ New ${evalWorkflows[id].label.toLowerCase()} prompt`, onSelect: () => go({ kind: 'new-prompt', workflow: id }) }
+    ] }))
+  ] });
   const canvas = route.kind === 'canvas' ? generated?.find(item => item.id === route.id) : undefined;
 
   const content = () => {
+    if (route.kind === 'cost-statistics') return <CostStatistics />;
     if (route.kind === 'prompt' && current && route.version && !current.versions.some(version => version.version === route.version))
       return <p className="evals-message">Prompt v{route.version} is not available in the current catalog. Its captured text remains in the run details.</p>;
     if (route.kind === 'reference') {
@@ -330,7 +419,7 @@ function EvalsWorkspace() {
       return reference ? <ReferenceView key={reference.id} reference={reference} groups={referenceGroups} prompts={prompts ?? []} onChanged={referenceChanged} onOpenPrompt={id => go({ kind: 'prompt', id })} />
         : references && <p className="evals-message">Reference not found.</p>;
     }
-    if (route.kind === 'experiment') return !experiments || !runs || !judgements ? <p role="status">Loading experiment…</p> : activeExperiment ? <ExperimentView key={`${activeExperiment.id}:${route.view}:${route.groupId}:${route.phaseId}`} experiment={activeExperiment} onChanged={refreshAll} prompts={prompts ?? []} route={route} runs={runs ?? []} judgements={judgements ?? []} onOpen={go} picked={picked} onPick={(output, on) => setPicked(current => on ? [...current.filter(p => p.canvasId !== output.canvasId), output] : current.filter(p => p.canvasId !== output.canvasId))} /> : <p>Experiment not found.</p>;
+    if (route.kind === 'experiment') return !experiments || !runs || !judgements ? <p role="status">Loading experiment…</p> : activeExperiment ? <ExperimentView onSaved={onExperimentSaved} key={activeExperiment.id} experiment={activeExperiment} availableExperimentTags={experiments.flatMap(item => item.tags ?? [])} availableTags={[...new Set(experiments.flatMap(item => [...(item.commentTags ?? []), ...(item.comments ?? []).flatMap(comment => comment.tags ?? [])]))]} onChanged={refreshAll} prompts={prompts ?? []} route={route} runs={runs ?? []} judgements={judgements ?? []} onOpen={next => go(next.kind === 'run' || next.kind === 'judgements' ? { ...next, nav: navigationContext(activeExperiment.id, route.phaseId) } : next)} picked={picked} onPick={(output, on) => setPicked(current => on ? [...current.filter(p => p.canvasId !== output.canvasId), output] : current.filter(p => p.canvasId !== output.canvasId))} /> : <p>Experiment not found.</p>;
     if (route.kind === 'references') return <ReferencesLanding count={activeReferences.length} onCapture={() => go({ kind: 'new-reference', target: lastDiagram.current })} />;
     if (route.kind === 'new-reference') return <ReferenceWorkbench target={route.target} candidates={candidates} groups={referenceGroups} captures={captures} setCaptures={setCaptures}
       onCreated={referenceChanged} onGroupCreated={groupChanged} onOpenReference={id => go({ kind: 'reference', id })} />;
@@ -349,60 +438,38 @@ function EvalsWorkspace() {
       if (!runs) return null;
       if (!run) return <p className="evals-message">Run not found.</p>;
       return shownCell ? <>
-        {outputIndex >= 0 && <nav className="output-navigation" aria-label="Output navigation">
-          <button aria-keyshortcuts="ArrowLeft" disabled={outputIndex === 0} onClick={() => moveOutput(-1)}>← Previous output</button>
-          <span title={outputItems[outputIndex].label} aria-live="polite">{outputIndex + 1} / {outputItems.length} · {outputItems[outputIndex].label}</span>
-          <button aria-keyshortcuts="ArrowRight" disabled={outputIndex === outputItems.length - 1} onClick={() => moveOutput(1)}>Next output →</button>
-        </nav>}
-        <OutputView key={`${run.id}:${shownCell.key}`} cell={shownCell} run={run} />
+        <OutputCommentsPanel /><OutputView cell={shownCell} run={run} focusDiagram={route.diagram} />
       </> : <p className="evals-message">This run has no outputs.</p>;
     }
-    if (route.kind === 'judgements') return <JudgementsPane items={judgementItems}
-      selectedId={route.judgementId} initialEntry={route.entry} prompts={prompts ?? []} onSelect={(judgementId, entry) => go({ kind: 'judgements', judgementId, entry })}
-      onDelete={item => remove(`Delete judgement “${item.title}”?${item.runIds.length > 1 ? ' This removes it from every attached run.' : ''}`, () => deleteJudgement(item.id), () => false)} />;
+    if (route.kind === 'judgements') return <>{navigationBar}<JudgementsPane items={judgementItems}
+      selectedId={route.judgementId} prompts={prompts ?? []} onSelect={judgementId => go({ kind: 'judgements', judgementId, nav: route.nav })}
+      step={route.step} onStep={step => go({ ...route, step })}
+      onDelete={item => remove(`Delete judgement “${item.title}”?${item.runIds.length > 1 ? ' This removes it from every attached run.' : ''}`, () => deleteJudgement(item.id), () => false)} /></>;
     if (route.kind === 'session') return session ? <ComparisonView key={session.id} session={session} prompts={prompts ?? []} />
       : !error && <p role="status" className="evals-message">Loading comparison…</p>;
-    return home();
+    return <ExperimentHome experiments={experiments} view={route.kind === 'home' && route.view || 'relationships'}
+      onView={view => go({ kind: 'home', view })} onOpen={(id, focusPhase) => go({ kind: 'experiment', id, focusPhase })} />;
   };
 
-  function home() {
-    return <div className="evals-home">
-      {!!experiments?.length && <section aria-label="Experiments"><h2>Experiments</h2><div className="evals-home-cards">{experiments.map(e => <section className="evals-card" key={e.id}><h3><button className="evals-link" onClick={() => go({ kind: 'experiment', id: e.id })}>{e.name}</button></h3><p>{e.description}</p><p>{e.conditions.length} conditions · {e.cases.length} input cases · {experimentJudgementIds(e).length} Judgements</p></section>)}</div></section>}
-      <h2>Generate, then compare</h2>
-      <p className="evals-muted">Write prompt versions for a workflow, run several at once against the same inputs, and compare their outputs side by side.</p>
-      <div className="evals-home-cards">
-        {evalWorkflowIds.map(id => { const workflow = evalWorkflows[id], count = prompts?.filter(prompt => prompt.workflow === id && !prompt.archivedAt).length ?? 0;
-          return <section key={id} className="evals-card" aria-label={`${workflow.label} workflow`}>
-            <h3>{workflow.label}</h3><p>{workflow.description}</p>
-            <p className="evals-muted">{count} prompt{count === 1 ? '' : 's'} · {workflow.stages.map(stage => stage.id).join(' → ')}</p>
-            <div className="evals-actions"><button type="button" onClick={() => go({ kind: 'new-prompt', workflow: id })}>New prompt</button>
-              <button type="button" className="is-primary" onClick={() => setLaunch({ workflow: id })}>New run…</button></div>
-          </section>; })}
-      </div>
-      {!!runs?.length && <section aria-label="Recent runs"><h3>Recent runs</h3><ul className="evals-recent">{runs.slice(0, 5).map(item => <li key={item.id}>
-        <button type="button" className="evals-link" onClick={() => go({ kind: 'run', id: item.id })}>{runTitle(item, numbers.get(item.id))}</button>
-        <span className="evals-status" data-status={item.status}>{statusLabel[item.status]}</span><span className="evals-muted">{runProgress(item)} · {relativeTime(item.createdAt)}</span>
-      </li>)}</ul></section>}
-    </div>;
-  }
-
-  return <main className="evals-page">
+  return <EvalHistoryContext.Provider value={navigationHistory}><main className={`evals-page${fullScreen && itemView ? ' is-full-screen' : ''}`}>
     <header className="evals-header">
       <a href={import.meta.env.BASE_URL}>← Mapping</a>
       <h1><button type="button" className="evals-home-link" onClick={() => go({ kind: 'home' })}>Evals</button></h1>
       <span className="evals-muted">Prompt workflows, runs and comparisons</span>
       <span className="evals-spacer" />
+      <button type="button" aria-current={route.kind === 'home' ? 'page' : undefined} onClick={() => go({ kind: 'home' })}>Home</button>
       <button type="button" aria-current={inReferences ? 'page' : undefined} className={inReferences ? 'is-active' : undefined} onClick={() => go({ kind: 'references' })}>References</button>
       <button type="button" aria-haspopup="menu" onClick={event => { const box = event.currentTarget.getBoundingClientRect(); promptsMenu({ x: box.left, y: box.bottom + 4 }); }}>Prompts ▾</button>
-      <button type="button" className="evals-header-secondary" onClick={() => setTemplatesOpen(true)}>Layout templates</button>
+      <button type="button" className="evals-header-secondary" onClick={() => navigationHistory.openPanel({ kind: 'templates' })}>Layout templates</button>
       <button type="button" className="evals-header-secondary" onClick={() => setLaunch('compare')}>New comparison</button>
       <details className="evals-header-more"><summary>More</summary><div>
-        <button type="button" onClick={() => setTemplatesOpen(true)}>Layout templates</button>
+        <button type="button" onClick={() => navigationHistory.openPanel({ kind: 'templates' })}>Layout templates</button>
         <button type="button" onClick={() => setLaunch('compare')}>New comparison</button>
       </div></details>
-      <button type="button" className="is-primary" onClick={() => setLaunch({ workflow: route.kind === 'prompt' && current ? current.workflow : 'roll-up' })}>New run</button>
+      <button type="button" aria-current={route.kind === 'cost-statistics' ? 'page' : undefined} onClick={() => go({ kind: 'cost-statistics' })}>Cost statistics</button>
+      {!activeExperiment && route.kind !== 'cost-statistics' && <button type="button" className="is-primary" onClick={() => setLaunch({ workflow: route.kind === 'prompt' && current ? current.workflow : 'roll-up' })}>New run</button>}
     </header>
-    <div className="evals-layout" ref={layout} style={{ gridTemplateColumns: `${navWidth}px 5px minmax(0, 1fr)` }}>
+    <div className="evals-layout" ref={layout}>
       <nav className="evals-nav" aria-label="Evals">
         {inReferences ? (references ? <ReferenceExplorer tab={route.kind === 'new-reference' ? 'canvas' : 'references'} references={activeReferences} groups={referenceGroups}
             current={route.kind === 'reference' ? route.id : undefined} captureCount={captures.length} candidates={candidates} candidatesError={candidatesError}
@@ -411,31 +478,70 @@ function EvalsWorkspace() {
             onOpenDiagram={openDiagram} onOpen={openReference} onMenu={setMenu} onArchive={archiveReference} onMove={moveReference}
             onCreateGroup={createGroup} onRenameGroup={renameGroup} onDeleteGroup={deleteGroup} />
           : <p role="status" className="evals-muted">Loading…</p>)
-        : runs && generated && sessions && experiments && judgements ? <>
-          <ExperimentExplorer experiments={experiments} runs={runs} judgements={judgements ?? []} selection={selection} onOpen={treeActions.open} />
-          <details className="experiment-legacy" open={experiments.length ? undefined : true}><summary>Run history <small>{legacyRuns.length}</small></summary>
-          <EvalsTree runs={legacyRuns} generated={generated.filter(c => !registeredCanvases.has(c.id))} judgements={(judgements ?? []).filter(j => !registeredReports.has(j.id))} selection={selection} actions={treeActions} renaming={renaming} onRenameEnd={() => setRenaming(undefined)}
-            picked={picked} onPick={(output, on) => setPicked(current => on ? [...current.filter(item => item.canvasId !== output.canvasId), output] : current.filter(item => item.canvasId !== output.canvasId))} />
-          </details></>
+        : runs && experiments ? <>
+            <div className="explorer-tabs" role="tablist" aria-label="Explorer">
+              <button type="button" role="tab" aria-selected={sidebarTab === 'experiments'} onClick={() => setSidebarTab('experiments')}>Experiments</button>
+              <button type="button" role="tab" aria-selected={sidebarTab === 'overview'} disabled={!contextTree} title={navContext?.experiment.name}
+                onClick={() => setSidebarTab('overview')}>Overview</button>
+            </div>
+            {route.kind === 'run' && <section className="explorer-output" aria-label="Current output">
+              {navigationBar}
+              <div className="explorer-output-controls" ref={setOutputSidebar} />
+            </section>}
+            {sidebarTab === 'overview' && contextTree && navContext ? <div className="explorer-overview">
+              <button type="button" className="evals-link explorer-overview-title" title={navContext.experiment.name}
+                onClick={() => go({ kind: 'experiment', id: navContext.experiment.id, ...(navContext.phaseId ? { phaseId: navContext.phaseId } : {}) })}>{navContext.experiment.name}</button>
+              {phaseOptions.length > 1 && <select aria-label="Phase" value={navContext.phaseId ?? ALL_PHASES} onChange={event => choosePhase(event.target.value)}>
+                <option value={ALL_PHASES}>All phases</option>
+                {phaseOptions.map(phase => <option key={phase.id} value={phase.id}>{phase.label}</option>)}
+              </select>}
+              <ViewTreeSidebar root={contextTree} keyOf={navigationKey} selectable={target => target.kind !== 'judgement' || isStop(target) || !!stepsOf(target.judgementId)?.length} onOpen={openStop}
+                currentKey={currentKey}
+                labelOf={node => node.target ? stopName(node.target) ?? node.label : node.label} flatten={node => /\/(variants|outputs)$/.test(node.id)} />
+            </div> : <ExperimentExplorer experiments={experiments} runs={runs} selection={selection} onOpen={treeActions.open} />}
+          </>
           : <p role="status" className="evals-muted">Loading…</p>}
         {picked.length > 0 && runs && <CompareBar picked={picked} runs={runs} onClear={() => setPicked([])} onSession={openSession} onComparisonStarted={comparisonStarted} />}
       </nav>
-      <div role="separator" aria-label="Resize sidebar" aria-orientation="vertical" aria-valuemin={200} aria-valuemax={560} aria-valuenow={navWidth} tabIndex={0}
-        className="evals-divider evals-nav-divider" onDoubleClick={() => resize(300)}
-        onKeyDown={event => { if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') { event.preventDefault(); resize(navWidth + (event.key === 'ArrowLeft' ? -16 : 16)); } if (event.key === 'Home') resize(300); }}
-        onPointerDown={event => { if (event.button === 0) { event.preventDefault(); event.currentTarget.setPointerCapture(event.pointerId); } }}
-        onPointerMove={event => { if (event.currentTarget.hasPointerCapture(event.pointerId)) resize(event.clientX - layout.current!.getBoundingClientRect().left); }}
-        onPointerUp={event => { if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId); }} />
-      <section className="evals-content">
+      <EvalsSidebarResize layout={layout} />
+      <section className="evals-content"><ItemToolbarContext.Provider value={stop ? toolbarSlot : null}>
+        <OutputSidebarContext.Provider value={route.kind === 'run' ? outputSidebar : null}>
+        <OutputCommentContext.Provider value={route.kind === 'run' && shownCell && activeExperiment ? {
+          experiment: activeExperiment, runId: route.id, cellKey: shownCell.key,
+          activeComment: activeExperiment.comments?.find(comment => comment.id === route.comment),
+          onLeaveComment: () => {
+            const anchor = activeExperiment.comments?.find(comment => comment.id === route.comment)?.anchor;
+            navigationHistory.update({ canvas: anchor ? { id: anchor.canvasId } : view.canvas }, { ...route, comment: undefined });
+          },
+          onSaved: (saved, commentId) => {
+            onExperimentSaved(saved);
+            if (commentId) go({ ...route, comment: commentId, diagram: undefined, nav: navigationContext(saved.id, ALL_PHASES) });
+            else if (route.comment && !saved.comments?.some(comment => comment.id === route.comment)) go({ ...route, comment: undefined });
+          }
+        } : null}>
         {error && <p role="alert" className="evals-error">{error} <button type="button" className="evals-link" onClick={() => setError('')}>Dismiss</button></p>}
-        {activeExperiment && route.kind !== 'experiment' && <div className="experiment-breadcrumb"><button className="evals-link" onClick={() => go({ kind: 'experiment', id: activeExperiment.id })}>{activeExperiment.name}</button><span>› {route.kind === 'judgements' ? 'Judgement' : 'Stage output'}</span><button className="evals-link" onClick={() => go({ kind: 'experiment', id: activeExperiment.id, view: 'outputs' })}>All outputs</button></div>}
-        {loading && route.kind === 'home' ? <p role="status" className="evals-message">Loading…</p> : content()}
-      </section>
+        {activeExperiment && route.kind !== 'experiment' && !stop && <div className="experiment-breadcrumb"><button className="evals-link" onClick={() => go({ kind: 'experiment', id: activeExperiment.id })}>{activeExperiment.name}</button><span>› {route.kind === 'judgements' ? 'Judgement' : 'Stage output'}</span><button className="evals-link" onClick={() => go({ kind: 'experiment', id: activeExperiment.id, view: 'outputs' })}>All outputs</button></div>}
+        {content()}
+        </OutputCommentContext.Provider>
+        </OutputSidebarContext.Provider>
+      </ItemToolbarContext.Provider></section>
     </div>
     {confirmation && <ConfirmDialog {...confirmation} onClose={() => setConfirmation(undefined)} />}
-    {templatesOpen && <LayoutTemplates onClose={() => setTemplatesOpen(false)} />}
+    {templatesOpen && <LayoutTemplates onClose={navigationHistory.closePanel} />}
+    {openSnippet && <Drawer wide title={openSnippet.name} onClose={navigationHistory.closePanel}>
+      <h3>Used in prompts</h3>
+      {snippetUses === undefined ? <p role="status">Loading prompts…</p> : snippetUses.length
+        ? <ul>{snippetUses.map(({ prompt, version, stage }) => <li key={JSON.stringify([prompt.id, version, stage])}>
+          <a href={`?prompt=${encodeURIComponent(prompt.id)}&version=${version}`} onClick={event => {
+            if (event.button || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+            event.preventDefault();
+            navigationHistory.go({ kind: 'prompt', id: prompt.id, version }, { view: { promptStage: stage } });
+          }}>{prompt.name} · v{version} · {stage}</a>
+        </li>)}</ul> : <p>No saved prompt versions reference this template.</p>}
+      <pre className="prompt-snippet-preview">{openSnippet.text}</pre>
+    </Drawer>}
     {launch === 'compare' && <CompareLauncher onClose={() => setLaunch(undefined)} onCreated={openSession} />}
     {menu && <PopoverMenu label={menu.label} at={menu.at} sections={menu.sections} onClose={() => setMenu(undefined)} />}
     {launch && launch !== 'compare' && prompts && <RunLauncher prompts={prompts} runs={runs ?? []} initial={launch} onClose={() => setLaunch(undefined)} onStarted={started} />}
-  </main>;
+  </main></EvalHistoryContext.Provider>;
 }

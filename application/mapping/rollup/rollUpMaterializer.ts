@@ -26,7 +26,7 @@ export function addEdges(c: MappingDocumentController, edges: RollUpOutput['edge
 }
 /** Content edits create revisions. Preserve existing edges using unambiguous
  * textual correspondence instead of retaining stale content-node handles. */
-export function reanchorEditedEdges(c: MappingDocumentController, document: MappingGridDocument, edited: Set<string>) {
+export function reanchorEditedEdges(c: MappingDocumentController, document: MappingGridDocument, edited: Set<string>, labels: ReadonlyMap<string, ReadonlyMap<string, string>> = new Map()) {
   const reanchor = (old: DiagramAnchor) => {
     if (old.kind === 'box' || !edited.has(old.displayNodeId)) return old;
     const box = connectionBox(c.getSnapshot().document.scene, old.displayNodeId);
@@ -35,7 +35,8 @@ export function reanchorEditedEdges(c: MappingDocumentController, document: Mapp
     const content = c.getSnapshot().document.scene.contents[box.contentId].content;
     if (old.revisionId === content.revisionId) return old;
     const original = connectionContentNodes(document.scene.contents[prior.contentId].content).find(node => node.id === old.contentNodeId);
-    const matches = connectionContentNodes(content).filter(node => node.label === original?.label);
+    const label = original && (labels.get(old.displayNodeId)?.get(original.label) ?? original.label);
+    const matches = connectionContentNodes(content).filter(node => node.label === label);
     const node = matches.length === 1 ? matches[0] : matches.find(node => node.line === original?.line);
     if (!node) throw Error(`Preserve the existing attachment text in ${old.displayNodeId}: ${original?.label ?? old.contentNodeId}`);
     return { ...old, contentNodeId: node.id, revisionId: content.revisionId };

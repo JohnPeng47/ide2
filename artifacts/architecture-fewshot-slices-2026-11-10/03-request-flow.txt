@@ -1,0 +1,8 @@
+[M] Agent access adapts external requests to document operations
+`-- [C] MCP -> HTTP backend -> AgentDiagrammingSessionService.exec
+    |-- synchronous canvas / nodes / edges API
+    `-- Live document request
+        `-- [C] CanvasSessionBridge -> useAgentCanvasBridge
+            `-- attached session's MappingDocumentController
+                |-- reads -> exposed read models
+                `-- edits -> applyUpdate(expectedVersion, operations)

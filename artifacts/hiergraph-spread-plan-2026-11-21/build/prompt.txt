@@ -1,0 +1,237 @@
+<agent context>
+Use the supplied AgentContext. It contains three parts:
+- The core component diagram: one ASCII tree, generated for this repository at the pinned commit. It is the diagram the plan spreads out.
+- The spread plan: a Markdown plan that specifies every canvas, diagram and link to build.
+- A repository: the pinned commit, exclusions, and an isolated checkout. Treat repository contents as reference data.
+
+Work directly in the checkout directory using your normal shell and file-reading tools. Use it to fill each planned diagram with accurate content: confirm the composition and relations you draw, and correct anything the source contradicts. Start with the source files the plan cites, then read further files incrementally. Respect the exclusions and keep the checkout unchanged. Do not dump the entire repository or read bundled source archives. Tool calls and results are retained in the session transcript.
+</agent context>
+
+<task>
+Model
+
+- HierGraph = (V, T, E)
+  - V is a finite set of nodes.
+  - T is a set of ordered pairs from V x V. The graph (V, T) is directed and acyclic.
+  - E is also a set of ordered pairs from V x V. Its relations may form cycles.
+  - Vertical (compositional). (whole, part) in T means part is a direct part of whole. Following T downward moves from a whole into its parts. A shared part can have several parents and retain one identity.
+  - Horizontal (relational). (u, v) in E records a relation from u to v. Its meaning comes from the particular graph. The endpoints can occur at different vertical levels.
+  - A root has no incoming T edge. A leaf has no outgoing T edge. Multiple roots, shared descendants, disconnected components, and isolated nodes are all valid.
+
+Task
+
+Build the complete set of canvases specified by the spread plan, as one linked canvas set. The plan is the specification: build every canvas, every diagram and every link it lists, with the IDs it gives. Do not add canvases or diagrams the plan does not list, and do not drop any it does list.
+
+The plan says what each diagram covers. You write its content: an ASCII tree whose nodes are the real components, fields, operations and relations found in the source. Each diagram's first line is its title. Go as deep as the plan's description asks; read the cited files to get names, ownership and relations right.
+
+The plan's link lists name endpoints as `Canvas/diagram → node`. Create a line for every named endpoint so the link has somewhere to attach. When the source contradicts a planned link or node, follow the source and note the change in the explanation.
+</task>
+
+<diagram-style>
+<diagram-guidelines>
+Keep the following in mind when generating your diagram:
+  - there should be 60/40 between code refs and nat lang
+
+Tree validation: Start with one root title, followed by a connector-only line. Place all other content beneath explicit branches. Do not insert annotations, references, legends, or explanatory text between the root title and its first branch.
+
+Root title
+|
+|-- First component
+|   `-- Supporting detail
+`-- Second component
+
+Before returning, verify that every branch belongs to the single root.
+</diagram-guidelines>
+<references>
+Few-shot examples (synthetic style references, not source facts):
+Example 1: Incremental compiler
+Incremental compiler -- reuse follows the module dependency graph
+|
+|-- [M] BuildGraph connects source modules to their compilation artifacts
+|   |-- modules[moduleId]: ModuleUnit
+|   |   |-- sourceHash -> immutable source bytes
+|   |   |-- imports[] -> resolved module identities
+|   |   `-- interfaceHash -> names and types visible to consumers
+|   `-- units[unitId]: AnalysisUnit
+|       |-- mutually dependent modules share one unit
+|       `-- dependencies[] -> units whose interfaces must be available first
+|
+|-- [C] compileUnit(unitId) resolves one reusable result
+|   |-- [D] member source hashes + dependency interfaces + compiler options
+|   |   `-- analysisKey, including the compiler implementation version
+|   |-- ArtifactCache.lookup(analysisKey)
+|   |   |-- Hit -> recover typed modules and diagnostics
+|   |   `-- Miss -> analyze the unit
+|   |       |-- [C] Parser.parse(source) -> syntax with source spans
+|   |       |-- [C] Binder.bind(syntax, dependencyInterfaces)
+|   |       |   `-- Scope
+|   |       |       |-- declarations[name] -> local Symbol
+|   |       |       |-- parent -> enclosing lexical scope
+|   |       |       `-- exports -> symbols visible across the module boundary
+|   |       `-- [C] TypeChecker.check(boundUnit) -> typed modules + diagnostics
+|   `-- Successful analysis -> Emitter.emit(typedModules, target)
+|       |-- [D] typed modules + target version + emission options -> objectKey
+|       `-- ObjectArtifact
+|           |-- object code / exported interface / source map
+|           `-- [O] ArtifactCache retains complete immutable entries
+|               `-- consumers borrow artifacts; eviction follows cache policy
+|
+|-- [C] rebuild(changedPaths) propagates only relevant changes
+|   |-- Capture new source hashes and resolve changed imports
+|   |   `-- [D] updated graph -> regroup cycles and order affected units
+|   |-- Reanalyze affected units
+|   |   |-- Exported interface changed -> invalidate dependent analysis keys
+|   |   `-- Interface unchanged -> consumers can reuse their typed modules
+|   `-- [D] reachable object hashes + runtime + linker options -> bundleKey
+|       `-- Linker.link(objects) produces the executable bundle
+|           `-- changed implementation can require linking without retyping consumers
+|
+`-- [O] BuildScheduler controls transient execution
+    |-- ready queue -> units whose dependency results are available
+    |   `-- independent units may run concurrently
+    |-- running[unitId] -> task + worker lease
+    |   |-- [C] invoke compileUnit(unitId)
+    |   `-- task settlement returns the worker lease
+    |-- cancel(buildId)
+    |   `-- stop scheduling -> signal tasks -> await settlement -> release snapshot
+    `-- BuildResult retains bundle references and source-located diagnostics
+        `-- [D] diagnostic spans + captured sources -> stable reported locations
+
+Example 2: Telemetry ingestion service
+Telemetry ingestion service
+|
+|-- [M] IngestGateway accepts batches from device connections
+|   |-- accept(connection, envelope): BatchReceipt
+|   |   |-- [D] credentials + device registry -> authorized tenant/device
+|   |   `-- [C] decode -> validate envelope -> PartitionRouter.route(batch)
+|   |       |-- Partition key = tenantId + deviceId
+|   |       `-- One device's batches reach the same ordered partition
+|   |-- [O] Retains connection state until disconnect
+|   |   |-- pending[batchId] -> receipt waiter
+|   |   `-- socket close detaches waiters; accepted work can still finish
+|   `-- Admission limit
+|       |-- available capacity -> enqueue batch
+|       `-- full partition queue -> return retryable rejection
+|
+|-- [O] PartitionWorker owns one partition's ingestion progress
+|   |-- Retained state
+|   |   |-- queue: BoundedQueue<AcceptedBatch>
+|   |   |   `-- accepted batches wait here before processing
+|   |   |-- checkpoint: PartitionCheckpoint
+|   |   |   |-- partitionId / committedOffset
+|   |   |   `-- lastSequence[deviceId] -> latest committed device sequence
+|   |   `-- lease: PartitionLease
+|   |       |-- ownerId / epoch / expiresAt
+|   |       `-- [D] current epoch -> authority to commit new progress
+|   |
+|   |-- [C] run() drains the queue one batch at a time
+|   |   `-- process(batch)
+|   |       |-- Establish batch identity
+|   |       |   |-- key = tenantId + deviceId + batchId
+|   |       |   `-- [C] EventStore.lookupReceipt(key)
+|   |       |       |-- Same payload hash -> return committed receipt
+|   |       |       |-- Different payload hash -> reject identity conflict
+|   |       |       `-- Missing receipt -> prepare a new commit
+|   |       |
+|   |       |-- Normalize measurements
+|   |       |   `-- [C] SchemaRegistry.resolve(batch.schemaVersion)
+|   |       |       |-- [M] Exposes versioned field and unit definitions
+|   |       |       `-- [D] raw samples + exact schema -> Measurement[]
+|   |       |           |-- identity: tenantId / deviceId / sequence
+|   |       |           |-- observation: timestamp / metric / value / unit
+|   |       |           `-- provenance: batchId / schemaVersion / payloadHash
+|   |       |
+|   |       |-- Check sequence continuity
+|   |       |   |-- [D] firstSequence + checkpoint.lastSequence[deviceId]
+|   |       |   |   `-- next expected sequence or a detected gap
+|   |       |   |-- Contiguous -> stage measurements
+|   |       |   `-- Gap or overlap -> reject without advancing checkpoint
+|   |       |
+|   |       `-- Commit and acknowledge
+|   |           |-- [C] EventStore.commit(batch, checkpoint, lease.epoch)
+|   |           |   |-- [D] measurements + batch identity + next checkpoint
+|   |           |   |   `-- one durable transaction
+|   |           |   `-- Stale lease epoch -> reject the former owner
+|   |           `-- After confirmed commit
+|   |               |-- Install returned checkpoint
+|   |               `-- Resolve gateway waiters with BatchReceipt
+|   |                   `-- receipt confirms storage, not downstream indexing
+|   |
+|   `-- Lease loss or shutdown
+|       |-- [C] Stop admission and stop dequeuing new work
+|       |-- In-flight commit may have an uncertain outcome
+|       |   `-- retry resolves through its durable batch receipt
+|       `-- [O] Release queue entries and detach remaining waiters
+|           `-- next owner restores progress from EventStore
+|
+|-- [M] EventStore binds stored events to durable progress
+|   |-- [M] Exposes commit / lookupReceipt / restoreCheckpoint / scan
+|   |-- Internal transaction
+|   |   |-- Verify current partition lease epoch
+|   |   |-- Append measurements with partition offsets
+|   |   |-- Insert receipt under the unique batch identity
+|   |   `-- Advance PartitionCheckpoint in the same commit
+|   |       `-- failure rolls back events, receipt and checkpoint together
+|   |-- [O] Retains the durable event log and retry receipts
+|   |   |-- worker restarts leave both intact
+|   |   `-- receipt retention defines the supported retry horizon
+|   `-- scan(partitionId, afterOffset): EventPage
+|       `-- [D] committed log + cursor -> ordered events and next cursor
+|
+`-- [M] ProjectionHost maintains independently rebuildable read models
+    |-- [O] consumers[name]: ProjectionConsumer
+    |   |-- cursor[partitionId] -> last applied event offset
+    |   |-- handler: ProjectionHandler
+    |   `-- cancellation + poll subscription
+    |
+    |-- Registered consumers
+    |   |-- LatestReading
+    |   |   |-- [D] device/metric + sequence -> newest accepted value
+    |   |   `-- older replayed events cannot replace a newer reading
+    |   `-- HourlySummary
+    |       |-- [D] metric + observation timestamp -> aggregation bucket
+    |       `-- count / sum / minimum / maximum
+    |           `-- late observations update their original time bucket
+    |
+    |-- [C] poll() -> EventStore.scan() -> handler.apply(page)
+    |   `-- Projection transaction
+    |       |-- Apply only offsets beyond the stored consumer cursor
+    |       `-- Save changed rows and cursor atomically
+    |           `-- crash before commit -> safely read the same page again
+    |
+    `-- rebuild(name, newVersion)
+        |-- [O] Create separate projection tables and fresh cursors
+        |-- [C] Replay retained events while the current version serves reads
+        `-- [D] rebuilt cursors + captured log positions -> readiness
+            `-- switch readers after catch-up; retire the previous tables
+
+Use the examples as a varied pool of representational choices. Let the supplied evidence determine depth, branching, density, and relationship types; do not copy their domain facts, exact shapes, counts, or require every tag.
+</references>
+</diagram-style>
+
+<canvas-style>
+<canvas-guidelines>
+Edges. Draw an edge only between two different diagrams on the same canvas, for the links the plan lists between them. Never draw an edge whose source and target are in the same diagram: within one diagram, nesting and annotated relation lines already carry T and E.
+
+Jumps. Use few, deliberate jumps: 2–3 out of each canvas on average, about 20–25 across the whole set. Spend them first on entrances, one from each anchor node to the child or same-level canvas it opens, then on the few cross-canvas relations that matter most for following the system's main paths. Every other cross-canvas link in the plan stays an annotated relation line naming its target canvas, diagram and node, without a jump. Compute each jump's startColumn and endColumn from the exact final text of its line, for example with a short script, so the span covers the whole target name and no partial words; do not count columns by hand.
+
+Positioning. Before placing a canvas's diagrams, decide how they relate spatially:
+- Center: the diagram the canvas is about, usually the one its entrance points to (for example the core overview, or the composition diagram of a child canvas).
+- Beside the center: diagrams that directly elaborate or compose parts of the center diagram. Place each one close to the part it elaborates.
+- Periphery: diagrams related more loosely, such as horizontal traces that cross several parts, or optional subsystems.
+Arrange the diagrams in two dimensions around the center, not in a single row or column. The center diagram sits in the middle of the arrangement, with the other diagrams placed on more than one of its sides, not all to its right or all below it.
+
+Spacing. Keep the gap between each diagram and its nearest neighbour roughly the same across the canvas, so that no diagram is isolated in a corner. Diagrams must not overlap: a diagram's width is its longest line and its height is its line count.
+</canvas-guidelines>
+<references>
+</references>
+</canvas-style>
+
+<output format>
+Return JSON matching output-schema.json: {explanation, rootCanvas, canvases, jumps}.
+Produce 2–20 canvases. Each canvas has a short unique id. A new canvas is {kind:"new",id,name,diagrams:[{id,ascii,position:{column,row}}],edges:[{source:{diagram,line},target:{diagram,line},label}]}. An existing canvas is {kind:"existing",id,sourceCanvas,edits:[{diagram,ascii}]}; sourceCanvas is the c1/c2/etc key from canvases.json. Include every supplied canvas exactly once. Existing canvases retain their diagrams, positions, edges and evidence; edits replace only the named diagram's full ASCII. Use edits:[] for unchanged canvases. New diagram positions use nonnegative character-grid coordinates with room for their text.
+Each jump is {source:{canvas,diagram,line,startColumn,endColumn},target:{canvas,diagram,line}}. Canvas references use output-local canvas IDs. New diagram references use their output-local IDs; existing diagram references use exact grid: IDs from canvases.json. Source spans are on one line, 1-based and inclusive, measured after edits. Target diagram may be null to open the whole canvas; target line may be null to focus the diagram. A target line requires a diagram and must identify a meaningful concept line. Jumps must connect different canvases. Do not invent persisted document/revision IDs.
+The jumps array is the complete inter-canvas navigation for this output: preserve useful existing links explicitly, accounting for edited text and renamed canvas IDs. Do not overlap jump source spans. Every canvas must be reachable from rootCanvas by directed jumps. Put the intended starting canvas in rootCanvas; the viewer opens it first. Explain the topology. Use actual LF newlines in ASCII. Return no prose outside JSON. If validation-error.json exists, read it and previous-output.json and correct the output.
+
+canvases.json is empty for this task: every canvas is new. Edge lines and jump lines are 1-based raw ASCII line numbers, where line 1 is the diagram's title line; jump columns are 1-based and inclusive. Each canvas holds at most 20 diagrams and 60 edges. Keep explanation under 3000 characters: summarize the topology, list every deviation from the plan, and note the source corrections you made.
+</output format>

@@ -1,0 +1,240 @@
+{
+  "output": {
+    "validatedCandidate": "d65439932dfeb9b07083d9acb2b52b4d072f6472be3b25ee642eb2a44dafb06c"
+  },
+  "usage": {
+    "input": 960823,
+    "output": 77645,
+    "cacheRead": 9427712,
+    "cacheWrite": 0,
+    "reasoning": 7942,
+    "totalTokens": 10466180
+  },
+  "execution": {
+    "runtime": "pi-agent-context",
+    "sessionId": "01a2014d-57fa-7384-9d87-eb5a4269b87a",
+    "contextHash": "4c24cea2f1585e10a1390c92e4a7b19033ed3832e1a4861db77a71686f70f897",
+    "cacheKey": "eval-db76eda7049d187daab8ebec8e1e95f22bf0c3b30021181bb70bf9e4dab9d7bd",
+    "modelContextHash": "ea71ba67e1579ee0276efee7548f0bf318513e8eeb8383cae0fe88df7bbb2f8b",
+    "repositories": [
+      {
+        "repository": "repo-1",
+        "repositoryPath": "/home/john/softwarez/ghostty",
+        "commit": "ea8b12a8a9894b5259c441eadd8f6f0c65e215af",
+        "exclusions": [
+          "**/*-LICENSE",
+          "**/*.md",
+          "**/*.mdx",
+          "**/*.spec.*",
+          "**/*.test.*",
+          "**/AGENTS.md",
+          "**/CODEX-LICENSE",
+          "**/LICENSE*",
+          "**/Tests/**",
+          "**/__fixtures__/**",
+          "**/__tests__/**",
+          "**/benchmark/**",
+          "**/benchmarks/**",
+          "**/build/**",
+          "**/dist/**",
+          "**/docs/**",
+          "**/examples/**",
+          "**/fixtures/**",
+          "**/node_modules/**",
+          "**/scripts/**",
+          "**/test/**",
+          "**/tests/**",
+          ".agents/**",
+          ".github/**",
+          ".husky/**",
+          ".pi/**",
+          "deps/**",
+          "example/**",
+          "flake.lock",
+          "flatpak/**",
+          "images/**",
+          "nix/**",
+          "package-lock.json",
+          "po/**",
+          "scripts/**",
+          "snap/**",
+          "vendor/**"
+        ],
+        "checkout": "/home/john/.cache/mapping-phase4-1kmg0f14/agent-repository-DG1M8J/checkout",
+        "inspectionSource": "session-transcript"
+      }
+    ],
+    "subagents": {
+      "model": "gpt-6.2-sol",
+      "effort": "high",
+      "concurrency": 2,
+      "sessions": [
+        {
+          "id": "child-1",
+          "name": "input",
+          "assignment": "Map n24–n35 input/bindings/write branch; private scratch via mktemp -d /tmp/input-map.XXXXXX. Return compact node scope and path/ranges/roles (can use short codes and parent union references), plus notes. Include cross-file implementation. Do not map other branches.",
+          "model": "gpt-6.2-sol",
+          "effort": "high",
+          "status": "finished",
+          "queuedAt": "2026-11-22T03:29:48.732Z",
+          "usage": {
+            "input": 188544,
+            "output": 13469,
+            "cacheRead": 1886720,
+            "cacheWrite": 0,
+            "reasoning": 1628,
+            "totalTokens": 2088733
+          },
+          "cost": {
+            "input": 0.37708800000000003,
+            "output": 0.13469,
+            "cacheRead": 0.377344,
+            "cacheWrite": 0,
+            "total": 0.8891220000000001
+          },
+          "startedAt": "2026-11-22T03:29:48.735Z",
+          "sessionId": "01a2014d-8adc-71e7-8f98-61a0de57f920",
+          "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-1kmg0f14-agent-repository-DG1M8J-checkout--/2026-11-22T03-29-48-764Z_01a2014d-8adc-71e7-8f98-61a0de57f920.jsonl",
+          "completedAt": "2026-11-22T03:35:10.241Z"
+        },
+        {
+          "id": "child-2",
+          "name": "output",
+          "assignment": "Map n36–n51 output/parser/mailbox branch. Use mktemp -d /tmp/output-map.XXXXXX if needed. Return compact node scope and path/ranges/roles (short codes and parent union refs OK), plus notes. Include cross-file handoffs.",
+          "model": "gpt-6.2-sol",
+          "effort": "high",
+          "status": "finished",
+          "queuedAt": "2026-11-22T03:29:48.732Z",
+          "usage": {
+            "input": 159524,
+            "output": 7400,
+            "cacheRead": 913408,
+            "cacheWrite": 0,
+            "reasoning": 743,
+            "totalTokens": 1080332
+          },
+          "cost": {
+            "input": 0.31904799999999994,
+            "output": 0.07400000000000001,
+            "cacheRead": 0.1826816,
+            "cacheWrite": 0,
+            "total": 0.5757296000000001
+          },
+          "startedAt": "2026-11-22T03:29:48.735Z",
+          "sessionId": "01a2014d-8ae0-7cdc-b03e-781efe592c8e",
+          "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-1kmg0f14-agent-repository-DG1M8J-checkout--/2026-11-22T03-29-48-768Z_01a2014d-8ae0-7cdc-b03e-781efe592c8e.jsonl",
+          "completedAt": "2026-11-22T03:32:52.293Z"
+        },
+        {
+          "id": "child-3",
+          "name": "terminal",
+          "assignment": "Map n52–n65 terminal/screen/pages branch. Use mktemp -d /tmp/terminal-map.XXXXXX if needed. Return compact node scope and path/ranges/roles (short codes and parent union refs OK), plus notes.",
+          "model": "gpt-6.2-sol",
+          "effort": "high",
+          "status": "finished",
+          "queuedAt": "2026-11-22T03:29:48.732Z",
+          "usage": {
+            "input": 159700,
+            "output": 9221,
+            "cacheRead": 1298944,
+            "cacheWrite": 0,
+            "reasoning": 1518,
+            "totalTokens": 1467865
+          },
+          "cost": {
+            "input": 0.3194,
+            "output": 0.09221000000000001,
+            "cacheRead": 0.25978880000000004,
+            "cacheWrite": 0,
+            "total": 0.6713988
+          },
+          "startedAt": "2026-11-22T03:32:52.294Z",
+          "sessionId": "01a20150-57cf-712a-87f3-ee977c7c4f16",
+          "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-1kmg0f14-agent-repository-DG1M8J-checkout--/2026-11-22T03-32-52-303Z_01a20150-57cf-712a-87f3-ee977c7c4f16.jsonl",
+          "completedAt": "2026-11-22T03:36:42.853Z"
+        },
+        {
+          "id": "child-4",
+          "name": "render",
+          "assignment": "Map n66–n77 renderer branch. Use mktemp -d /tmp/render-map.XXXXXX if needed. Return compact node scope and path/ranges/roles (short codes and parent union refs OK), plus notes. Trace both graphics backends.",
+          "model": "gpt-6.2-sol",
+          "effort": "high",
+          "status": "finished",
+          "queuedAt": "2026-11-22T03:29:48.732Z",
+          "usage": {
+            "input": 215549,
+            "output": 15911,
+            "cacheRead": 2651648,
+            "cacheWrite": 0,
+            "reasoning": 1866,
+            "totalTokens": 2883108
+          },
+          "cost": {
+            "input": 0.43109800000000004,
+            "output": 0.15911000000000003,
+            "cacheRead": 0.5303296000000001,
+            "cacheWrite": 0,
+            "total": 1.1205375999999998
+          },
+          "startedAt": "2026-11-22T03:35:10.241Z",
+          "sessionId": "01a20152-72af-7565-9fd8-42ce20e8bf85",
+          "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-1kmg0f14-agent-repository-DG1M8J-checkout--/2026-11-22T03-35-10-255Z_01a20152-72af-7565-9fd8-42ce20e8bf85.jsonl",
+          "completedAt": "2026-11-22T03:42:34.783Z"
+        },
+        {
+          "id": "child-5",
+          "name": "lifecycle",
+          "assignment": "Map n78–n95 geometry and teardown branches. Use mktemp -d /tmp/lifecycle-map.XXXXXX if needed. Return compact node scope and path/ranges/roles (short codes and parent union refs OK), plus notes.",
+          "model": "gpt-6.2-sol",
+          "effort": "high",
+          "status": "finished",
+          "queuedAt": "2026-11-22T03:29:48.732Z",
+          "usage": {
+            "input": 131816,
+            "output": 13517,
+            "cacheRead": 1256192,
+            "cacheWrite": 0,
+            "reasoning": 1667,
+            "totalTokens": 1401525
+          },
+          "cost": {
+            "input": 0.2636319999999999,
+            "output": 0.13516999999999998,
+            "cacheRead": 0.25123840000000003,
+            "cacheWrite": 0,
+            "total": 0.6500404000000001
+          },
+          "startedAt": "2026-11-22T03:36:42.854Z",
+          "sessionId": "01a20153-dc6e-72b5-9e81-c81077e31cc9",
+          "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-1kmg0f14-agent-repository-DG1M8J-checkout--/2026-11-22T03-36-42-862Z_01a20153-dc6e-72b5-9e81-c81077e31cc9.jsonl",
+          "completedAt": "2026-11-22T03:41:52.847Z"
+        }
+      ]
+    }
+  },
+  "accounting": {
+    "mainUsage": {
+      "input": 105690,
+      "output": 18127,
+      "cacheRead": 1420800,
+      "cacheWrite": 0,
+      "reasoning": 520,
+      "totalTokens": 1544617
+    },
+    "mainCost": {
+      "input": 0.21138,
+      "output": 0.18127,
+      "cacheRead": 0.28416,
+      "cacheWrite": 0,
+      "total": 0.67681
+    },
+    "totalCost": {
+      "input": 1.921646,
+      "output": 0.7764500000000001,
+      "cacheRead": 1.8855424000000003,
+      "cacheWrite": 0,
+      "total": 4.5836384
+    },
+    "children": 5
+  }
+}

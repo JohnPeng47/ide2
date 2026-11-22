@@ -1,0 +1,18 @@
+{
+  "text": "{\"diagrams\":[{\"diagramId\":\"d1\",\"mappings\":[{\"node\":\"n24\",\"path\":\"src/Surface.zig\",\"startLine\":2790,\"endLine\":2982},{\"node\":\"n25\",\"path\":\"src/Surface.zig\",\"startLine\":2984,\"endLine\":3119},{\"node\":\"n26\",\"path\":\"src/Surface.zig\",\"startLine\":3121,\"endLine\":3219},{\"node\":\"n27\",\"path\":\"src/Surface.zig\",\"startLine\":3324,\"endLine\":3397},{\"node\":\"n28\",\"path\":\"src/input/key_encode.zig\",\"startLine\":12,\"endLine\":97},{\"node\":\"n28\",\"path\":\"src/Surface.zig\",\"startLine\":3399,\"endLine\":3419},{\"node\":\"n29\",\"path\":\"src/input/key_encode.zig\",\"startLine\":14,\"endLine\":73},{\"node\":\"n30\",\"path\":\"src/Surface.zig\",\"startLine\":3800,\"endLine\":3875},{\"node\":\"n30\",\"path\":\"src/Surface.zig\",\"startLine\":3915,\"endLine\":4299},{\"node\":\"n30\",\"path\":\"src/Surface.zig\",\"startLine\":6264,\"endLine\":6341},{\"node\":\"n31\",\"path\":\"src/input/mouse_encode.zig\",\"startLine\":12,\"endLine\":172},{\"node\":\"n31\",\"path\":\"src/Surface.zig\",\"startLine\":3813,\"endLine\":3875},{\"node\":\"n32\",\"path\":\"src/terminal/Screen.zig\",\"startLine\":3059,\"endLine\":3097},{\"node\":\"n33\",\"path\":\"src/input/paste.zig\",\"startLine\":4,\"endLine\":125},{\"node\":\"n33\",\"path\":\"src/Surface.zig\",\"startLine\":6264,\"endLine\":6341},{\"node\":\"n34\",\"path\":\"src/Surface.zig\",\"startLine\":895,\"endLine\":920},{\"node\":\"n34\",\"path\":\"src/Surface.zig\",\"startLine\":2938,\"endLine\":2957},{\"node\":\"n35\",\"path\":\"src/Surface.zig\",\"startLine\":895,\"endLine\":920},{\"node\":\"n35\",\"path\":\"src/Surface.zig\",\"startLine\":3915,\"endLine\":4299},{\"node\":\"n36\",\"path\":\"src/termio/Termio.zig\",\"startLine\":437,\"endLine\":463},{\"node\":\"n36\",\"path\":\"src/termio/Thread.zig\",\"startLine\":289,\"endLine\":375},{\"node\":\"n37\",\"path\":\"src/termio/Exec.zig\",\"startLine\":403,\"endLine\":469}]}],\"notes\":\"\"}",
+  "usage": {
+    "input": 29860,
+    "output": 1348,
+    "cacheRead": 89728,
+    "cacheWrite": 0,
+    "reasoning": 50,
+    "totalTokens": 120936
+  },
+  "cost": {
+    "input": 0.05972,
+    "output": 0.01348,
+    "cacheRead": 0.017945600000000003,
+    "cacheWrite": 0,
+    "total": 0.09114560000000001
+  }
+}

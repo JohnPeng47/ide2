@@ -1,5 +1,5 @@
 import type { GenerateReferences, ReferenceGenerationSession } from '../../../../domain/mapping/evals/referenceGeneration';
-import type { EvalExperiment, SaveExperiment, RelaunchExperiment } from '../../../../domain/mapping/evals/experiment';
+import type { EvalExperiment, SaveExperiment, RerunExperiment, RelaunchExperiment, RenameExperiment, AddExperimentComment, UpdateExperimentComment, UpdateExperimentTags } from '../../../../domain/mapping/evals/experiment';
 import type { EvalPrompt, SaveEvalPrompt } from '../../../../domain/mapping/evals/evalPrompt';
 import type { EvalRunRequest, EvalRunSummary } from '../../../../domain/mapping/evals/evalRun';
 import type { GeneratedCanvasRecord } from '../../../../domain/core/diagrams/generatedCanvas';
@@ -18,8 +18,17 @@ async function request<T>(path: string, body?: unknown, method?: 'DELETE' | 'PAT
   if (!response.ok) throw Error(value.error ?? `Evals request failed (${response.status})`);
   return value;
 }
+export const rerunExperiment = (id: string, input: RerunExperiment) => request<{ experiment: EvalExperiment; runId: string }>(`/experiments/${encodeURIComponent(id)}/rerun`, input);
 export const relaunchExperiment = (id: string, input: RelaunchExperiment) => request<{ experiment: EvalExperiment; runId: string }>(`/experiments/${encodeURIComponent(id)}/relaunch`, input);
+export const addExperimentComment = (id: string, input: AddExperimentComment) => request<EvalExperiment>(`/experiments/${encodeURIComponent(id)}/comments`, input);
+export const updateExperimentCommentTags = (id: string, commentId: string, tags: string[]) => request<EvalExperiment>(`/experiments/${encodeURIComponent(id)}/comments/${encodeURIComponent(commentId)}`, { tags }, 'PATCH');
+export const updateExperimentComment = (id: string, commentId: string, input: UpdateExperimentComment) => request<EvalExperiment>(`/experiments/${encodeURIComponent(id)}/comments/${encodeURIComponent(commentId)}`, input, 'PATCH');
+export const deleteExperimentComment = (id: string, commentId: string) => request<EvalExperiment>(`/experiments/${encodeURIComponent(id)}/comments/${encodeURIComponent(commentId)}`, undefined, 'DELETE');
 export const listExperiments = () => request<EvalExperiment[]>('/experiments');
+export const renameExperiment = (id: string, input: RenameExperiment) => request<EvalExperiment>(`/experiments/${encodeURIComponent(id)}`, input, 'PATCH');
+export const updateExperimentTags = (id: string, input: UpdateExperimentTags) => request<EvalExperiment>(`/experiments/${encodeURIComponent(id)}/tags`, input, 'PATCH');
+export const readExperimentOverview = (id: string) => request<import('../../../../domain/mapping/evals/experimentOverview').ExperimentOverview>(`/experiments/${encodeURIComponent(id)}/overview`);
+export const readExperimentBatch = (id: string, refs: string[]) => request<import('../../../../domain/mapping/evals/experimentOverview').ExperimentReadBatchResult>(`/experiments/${encodeURIComponent(id)}/read`, { refs });
 export const saveExperiment = (input: SaveExperiment) => request<EvalExperiment>('/experiments', input);
 export const listPrompts = () => request<EvalPrompt[]>('/prompts');
 export const listLayoutTemplates = () => request<LayoutTemplate[]>('/layout-templates');
@@ -41,7 +50,12 @@ export const rerunChat = (id: string, requestId: string) => request<EvalRunSumma
 export const renameRun = (id: string, name: string) => request<EvalRunSummary>(`/runs/${encodeURIComponent(id)}/rename`, { name });
 export const cancelRun = (id: string) => request<{ cancelled: true }>(`/runs/${encodeURIComponent(id)}/cancel`, {});
 export const listGenerated = () => request<ProjectRepresentationRecord[]>('/canvases');
-export const readGenerated = (id: string, checkpointId?: string) => request<GeneratedCanvasRecord>(`/canvases/${encodeURIComponent(id)}${checkpointId ? `?checkpoint=${encodeURIComponent(checkpointId)}` : ''}`);
+export const readGenerated = (id: string, checkpointId?: string, output?: { runId: string; cellKey: string }) => {
+  const query = new URLSearchParams();
+  if (checkpointId) query.set('checkpoint', checkpointId);
+  if (output && checkpointId) { query.set('run', output.runId); query.set('cell', output.cellKey); }
+  return request<GeneratedCanvasRecord>(`/canvases/${encodeURIComponent(id)}${query.size ? `?${query}` : ''}`);
+};
 export async function readOutputResult(runId: string, cellKey: string) {
   const result = await request<import('../../../../domain/mapping/evals/evalOutputResult').EvalOutputResult>(`/runs/${encodeURIComponent(runId)}/output-result?cell=${encodeURIComponent(cellKey)}`);
   Object.values(result.diagramRevisions).forEach(importDiagramRevision);
@@ -85,3 +99,5 @@ export const listPromotionTargets = () => request<{ groups: { id: string; name: 
   canvases: { id: string; name: string; canvasProjectId?: string; revisionId: string }[] }>('/promotion-targets');
 export const promoteOutput = (runId: string, input: import('../../../../domain/mapping/evals/outputPromotion').OutputPromotion) =>
   request<import('../../../../domain/mapping/evals/outputPromotion').PromotionReceipt>(`/runs/${encodeURIComponent(runId)}/promote`, input);
+
+export const readCostStatistics = () => request<import('../../../../domain/core/usage/codexUsage').CostStatistics>('/cost-statistics');

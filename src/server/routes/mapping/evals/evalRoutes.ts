@@ -1,3 +1,5 @@
+import { projectOutput, projectCopies, projectCopy, projectCheckpoint } from '../../../../../domain/mapping/projections/savedCanvasProjection';
+import { queryProjection } from '../../../../../domain/mapping/projections/projectionType';
 import { z } from 'zod';
 import type { ServerResponse } from 'node:http';
 import type { Connect } from 'vite';
@@ -12,22 +14,45 @@ import { readBody, sendJson } from '../../../http/http';
 const segment = '([A-Za-z0-9][A-Za-z0-9_-]{0,80})';
 export async function handleEvalRoutes(request: Connect.IncomingMessage, response: ServerResponse, url: URL, prompts: EvalPromptService, runs: EvalRunService, references: EvalReferenceService) {
   const route = url.pathname.slice('/api/mapping/evals'.length), method = request.method;
+  const historyMatch = route.match(new RegExp(`^/histories/${segment}$`));
+  if (historyMatch && method === 'GET' && runs.histories) {
+    const timeline = await runs.histories.read(historyMatch[1]);
+    const { documents: _, ...summary } = timeline;
+    return sendJson(response, 200, summary);
+  }
   if (route === '/experiments' && runs.experiments) {
     if (method === 'GET') return sendJson(response, 200, await runs.experiments.list());
     if (method === 'POST') return sendJson(response, 200, await runs.experiments.save(await readBody(request)));
   }
   const experimentMatch = route.match(new RegExp(`^/experiments/${segment}$`));
   if (experimentMatch && method === 'GET' && runs.experiments) return sendJson(response, 200, await runs.experiments.read(experimentMatch[1]));
+  if (experimentMatch && method === 'PATCH' && runs.experiments) return sendJson(response, 200, await runs.experiments.rename(experimentMatch[1], await readBody(request)));
+  const experimentTagsMatch = route.match(new RegExp(`^/experiments/${segment}/tags$`));
+  if (experimentTagsMatch && method === 'PATCH' && runs.experiments) return sendJson(response, 200, await runs.experiments.updateTags(experimentTagsMatch[1], await readBody(request)));
+  const commentMatch = route.match(new RegExp(`^/experiments/${segment}/comments$`));
+  if (commentMatch && method === 'POST' && runs.experiments) return sendJson(response, 200, await runs.experiments.addComment(commentMatch[1], await readBody(request)));
+  const groundTruthMatch = route.match(new RegExp(`^/experiments/${segment}/ground-truth$`));
+  if (groundTruthMatch && method === 'POST' && runs.experiments) return sendJson(response, 200, await runs.experiments.addGroundTruth(groundTruthMatch[1], await readBody(request)));
+  const savedCommentMatch = route.match(new RegExp(`^/experiments/${segment}/comments/${segment}$`));
+  if (savedCommentMatch && method === 'PATCH' && runs.experiments) return sendJson(response, 200, await runs.experiments.updateComment(savedCommentMatch[1], savedCommentMatch[2], await readBody(request)));
+  if (savedCommentMatch && method === 'DELETE' && runs.experiments) return sendJson(response, 200, await runs.experiments.deleteComment(savedCommentMatch[1], savedCommentMatch[2]));
+  const overviewMatch = route.match(new RegExp(`^/experiments/${segment}/overview$`));
+  if (overviewMatch && method === 'GET' && runs.experiments) return sendJson(response, 200, await runs.experiments.overview(overviewMatch[1]));
+  const readMatch = route.match(new RegExp(`^/experiments/${segment}/read$`));
+  if (readMatch && method === 'POST' && runs.experiments) return sendJson(response, 200, await runs.experiments.readBatch(readMatch[1], await readBody(request)));
   const approveMatch = route.match(new RegExp(`^/experiments/${segment}/approve$`));
   if (approveMatch && method === 'POST' && runs.experiments) return sendJson(response, 202, await runs.experiments.approve(approveMatch[1], await readBody(request)));
   const judgeMatch = route.match(new RegExp(`^/experiments/${segment}/judge$`));
   if (judgeMatch && method === 'POST' && runs.experiments) return sendJson(response, 200, await runs.experiments.judge(judgeMatch[1], await readBody(request)));
+  const rerunMatch = route.match(new RegExp(`^/experiments/${segment}/rerun$`));
+  if (rerunMatch && method === 'POST' && runs.experiments) return sendJson(response, 202, await runs.experiments.rerun(rerunMatch[1], await readBody(request)));
   const relaunchMatch = route.match(new RegExp(`^/experiments/${segment}/relaunch$`));
   if (relaunchMatch && method === 'POST' && runs.experiments) return sendJson(response, 202, await runs.experiments.relaunch(relaunchMatch[1], await readBody(request)));
+  if (route === '/judgements/tree-comparisons' && method === 'POST') return sendJson(response, 200, await runs.saveTreeComparison(await readBody(request)));
   if (route === '/judgements' && method === 'GET') return sendJson(response, 200, await runs.judgements?.list(url.searchParams.get('runId') ?? undefined) ?? []);
   const judgementMatch = route.match(new RegExp(`^/judgements/${segment}$`));
   if (judgementMatch && runs.judgements) {
-    if (method === 'GET') return sendJson(response, 200, await runs.judgements.read(judgementMatch[1]));
+    if (method === 'GET') return sendJson(response, 200, projectCopies(await runs.judgements.read(judgementMatch[1]), queryProjection(url)));
     if (method === 'DELETE') { await runs.judgements.delete(judgementMatch[1]); return sendJson(response, 200, { deleted: true }); }
   }
   if (route === '/references') {
@@ -49,7 +74,11 @@ export async function handleEvalRoutes(request: Connect.IncomingMessage, respons
   if (referenceSessionMatch && method === 'POST' && runs.referenceGenerations) return sendJson(response, 202, await runs.referenceGenerations.generate(referenceSessionMatch[1], await readBody(request)));
   const referenceSourcesMatch = route.match(new RegExp(`^/reference-sessions/${segment}/load-sources$`));
   if (referenceSourcesMatch && method === 'POST' && runs.referenceGenerations) return sendJson(response, 202, await runs.referenceGenerations.loadSources(referenceSourcesMatch[1], await readBody(request)));
-  if (route === '/capture' && method === 'POST') return sendJson(response, 200, await runs.captureCanvas(captureCanvasSchema.parse(await readBody(request)).source));
+  if (route === '/capture' && method === 'POST') {
+    const input = captureCanvasSchema.parse(await readBody(request));
+    const copy = await runs.captureCanvas(input.source);
+    return sendJson(response, 200, input.projectionType ? projectCopy(copy, input.projectionType) : copy);
+  }
   if (route.startsWith('/layout-templates') && runs.layoutTemplates) {
     const templates = runs.layoutTemplates;
     if (route === '/layout-templates' && method === 'GET') return sendJson(response, 200, await templates.list());
@@ -96,13 +125,11 @@ export async function handleEvalRoutes(request: Connect.IncomingMessage, respons
   const promoteMatch = route.match(new RegExp(`^/runs/${segment}/promote$`));
   if (promoteMatch && method === 'POST') return sendJson(response, 200, await runs.promoteOutput(promoteMatch[1], await readBody(request)));
   const sourceMatch = route.match(new RegExp(`^/runs/${segment}/promotion-source$`));
-  if (sourceMatch && method === 'GET') return sendJson(response, 200, await runs.promotionSource(sourceMatch[1], url.searchParams.get('cell') ?? ''));
+  if (sourceMatch && method === 'GET') return sendJson(response, 200, projectOutput(await runs.promotionSource(sourceMatch[1], url.searchParams.get('cell') ?? ''), queryProjection(url)));
   const resultMatch = route.match(new RegExp(`^/runs/${segment}/output-result$`));
-  if (resultMatch && method === 'GET') return sendJson(response, 200, await runs.outputResult(resultMatch[1], url.searchParams.get('cell') ?? ''));
+  if (resultMatch && method === 'GET') return sendJson(response, 200, projectOutput(await runs.outputResult(resultMatch[1], url.searchParams.get('cell') ?? ''), queryProjection(url)));
   if (resultMatch && method === 'POST') {
-    const input = z.object({ cellKey: z.string().min(1).max(300), changeSessionId: z.string().min(1).max(200),
-      expectedVersion: z.number().int().nonnegative() }).strict().parse(await readBody(request));
-    return sendJson(response, 200, await runs.captureOutputResult(resultMatch[1], input));
+    return sendJson(response, 200, await runs.captureOutputResult(resultMatch[1], await readBody(request)));
   }
   match = route.match(new RegExp(`^/runs/${segment}$`));
   if (match && method === 'GET') {
@@ -121,7 +148,13 @@ export async function handleEvalRoutes(request: Connect.IncomingMessage, respons
   if (route === '/contexts' && method === 'GET') return sendJson(response, 200, await runs.listContexts(url.searchParams.get('query') ?? '', Number(url.searchParams.get('offset') ?? 0)));
   if (route === '/canvases' && method === 'GET') return sendJson(response, 200, await runs.generated());
   match = route.match(new RegExp(`^/canvases/${segment}$`));
-  if (match && method === 'GET') return sendJson(response, 200, await runs.canvas(match[1], url.searchParams.get('checkpoint') ?? undefined));
+  if (match && method === 'GET') {
+    const output = url.searchParams.has('run') || url.searchParams.has('cell')
+      ? z.object({ runId: z.string().min(1).max(200), cellKey: z.string().min(1).max(300) }).parse({ runId: url.searchParams.get('run'), cellKey: url.searchParams.get('cell') }) : undefined;
+    const type = queryProjection(url), checkpointId = url.searchParams.get('checkpoint') ?? undefined;
+    const canvas = await runs.canvas(match[1], checkpointId, output);
+    return sendJson(response, 200, type ? { id: canvas.id, name: canvas.name, ...projectCheckpoint(canvas.history, type, checkpointId) } : canvas);
+  }
   if (match && method === 'DELETE') { await runs.deleteCanvas(match[1]); return sendJson(response, 200, { deleted: true }); }
   match = route.match(new RegExp(`^/contexts/${segment}/outputs$`));
   if (match && method === 'DELETE') {

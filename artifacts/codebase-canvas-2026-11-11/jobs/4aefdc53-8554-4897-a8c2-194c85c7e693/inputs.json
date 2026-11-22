@@ -1,0 +1,38 @@
+{
+  "fingerprint": "93a4e72703446e77edbe26128b97a89a2b983606bf54f72690265559d8d17933",
+  "files": {
+    "judge-input.json": {
+      "sha256": "f1f84933548a91e221f9da7c02da2783c33642bee3f5c7fbd930b0489d7eec52",
+      "bytes": 347243
+    }
+  },
+  "dependencies": [
+    "initial/B2/tree/runtime",
+    "initial/B2/expand/runtime",
+    "initial/B2/tree/diagrams",
+    "initial/B2/expand/diagrams",
+    "initial/B2/tree/canvas",
+    "initial/B2/expand/canvas",
+    "initial/B2/tree/editor",
+    "initial/B2/expand/editor",
+    "initial/B2/tree/storage",
+    "initial/B2/expand/storage",
+    "initial/B2/tree/source",
+    "initial/B2/expand/source",
+    "initial/B2/tree/agent-api",
+    "initial/B2/expand/agent-api",
+    "initial/B2/tree/contexts",
+    "initial/B2/expand/contexts",
+    "initial/B2/tree/generation",
+    "initial/B2/expand/generation",
+    "initial/B2/tree/chat",
+    "initial/B2/expand/chat",
+    "initial/B2/tree/changes",
+    "initial/B2/expand/changes",
+    "initial/B2/tree/evals",
+    "initial/B2/expand/evals",
+    "initial/B2/tree/analysis",
+    "initial/B2/expand/analysis"
+  ],
+  "round": 1
+}

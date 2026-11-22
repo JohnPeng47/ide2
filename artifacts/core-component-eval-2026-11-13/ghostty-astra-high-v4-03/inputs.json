@@ -1,0 +1,40 @@
+{
+  "model": "gpt-6-astra",
+  "effort": "high",
+  "samples": 3,
+  "conditionId": "ghostty-astra-high-v4",
+  "conditionName": "Ghostty · Astra/high v4",
+  "repositoryName": "Ghostty",
+  "phaseId": "pi",
+  "caseId": "ghostty-source",
+  "experimentId": "08ccc7fa-8ea6-4cfa-b0b7-8819b7fcbf35",
+  "promptId": "0b3af2dd-ba89-4032-936a-40070a3e167e",
+  "promptVersion": 4,
+  "promptSha256": "bb56ca114ae2e4c7f08ff6402992adb95a09d4a760f76e92ee83ae1a4edd1b28",
+  "savedPromptContentHash": "4a4234357bd6f6927342a1a6dab2491999a38c6b4710b0ece0bfe8317a0d83af",
+  "agentContextId": "saved-agent-context-29fbdd95-72d4-4dc1-ad7c-a1b0f8cd7da6",
+  "contextHash": "c26f9e1d07185d26d78fd7cf31b447b58604b2cae4a040b1dc623aaaf9e7848a",
+  "sourceCommit": "ea8b12a8a9894b5259c441eadd8f6f0c65e215af",
+  "repositoryPath": "/home/john/softwarez/ghostty",
+  "eligibleFiles": 1261,
+  "contextRequestId": "29fbdd95-72d4-4dc1-ad7c-a1b0f8cd7da6",
+  "attachRequestId": "79e5e2fd-1f4c-4023-802b-9629ba4ab5dd",
+  "coverageAttachRequestId": "03328f06-c452-4b27-8450-06ce4a88d1c8",
+  "cases": [
+    {
+      "number": 1,
+      "runId": "3d97670a-8d2d-41fe-86c6-7b3914204965",
+      "sampleId": "72e2dd01-94e2-45bb-aa00-d3c648356d26"
+    },
+    {
+      "number": 2,
+      "runId": "87b0635d-e644-43cd-856a-81c73fbc2af6",
+      "sampleId": "5ea03f0a-7d95-4de4-b3ab-9e28ad909cd7"
+    },
+    {
+      "number": 3,
+      "runId": "d8ddfcb7-6be0-4a68-9277-c40a1254248f",
+      "sampleId": "7aa069f0-5f11-46fc-b839-6988aa6fcc94"
+    }
+  ]
+}

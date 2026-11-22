@@ -1,0 +1,100 @@
+{
+  "output": {
+    "explanation": "The central tree retains the five main responsibilities while reducing the seed from 92 to 61 lines (33.7%) and from 6,576 to 4,109 characters (37.5%). Four peripherals attach to specific concepts and expand modular boundaries, data dependencies, calls and resource ownership. Additional source-grounded details include resource identity fields, insertion-order cache eviction, suppression of late asynchronous results, session cleanup and scroll-state behavior. Two seed claims are qualified: projectLanguageService.ts owns sessions per service instance, so sharing across every pane depends on wiring absent from the supplied sources; SourceCodeView.tsx selects only the first line of a multiline navigation destination, with additional conditions on selection restoration. The seed's '--lsp' startup claim is only an error-message instruction in the supplied implementation; the established runtime requirement is a configured language service. Imported mapping traversal, path-validation helpers, DOM-position helpers and application wiring are not supplied, so their internals are not inferred. Evidence is limited to context.json's pinned sources and seed.json. Diagram bounds and 1-based edge anchors were checked.",
+    "diagrams": [
+      {
+        "id": "central",
+        "ascii": "Source Evidence and Navigation\n|-- Resolve explicit source context [resolveDiagramSource]\n|   |-- Load project; require matching projectId\n|   |-- Live diagram -> validate; check supplied contentId\n|   |-- Saved representation -> requested or current revision\n|   |   `-- Require revision membership; select exactly one content diagram\n|   |       `-- Without contentId, select among source-bound diagrams\n|   |-- Source-only query -> registered bindings + project.sources\n|   |   `-- Filter/group by sourceId; reject conflicts or ambiguous binding\n|   |       `-- Conflicts compare corpus root/kind and repositoryIdentity\n|   |-- Supplied sourceId must match the selected diagram\n|   `-- Expose diagram query, binding(), readText() and listFiles()\n|       `-- Missing binding/access -> error; no inferred project repository\n|-- Selected nodes -> mapped evidence [codePanel]\n|   |-- Require sourceContext.contentHash == content.asciiSha256\n|   |-- Index entries with a mapped node, entity and range\n|   |   |-- Repository identity = projectId + resolved sourceId\n|   |   `-- Range = path + inclusive one-based lines + rangeSha256\n|   |-- Sort selections by diagram line/column -> resolveNodeResources\n|   |   `-- Deduplicate resource identities; preserve mapping origins\n|   `-- PanelContent -> ordered source display sections\n|       `-- Split on repository/file change or backwards start; merge overlap\n|-- Read bound repository text [ProjectSourceService + corpus provider]\n|   |-- files() / source() -> resolveDiagramSource -> bound provider\n|   |-- source() requires path; reject NUL-containing text\n|   |   `-- Return path, startLine=1, lines, sourceSha256 and lspEnabled\n|   |-- Provider kinds: git-worktree and filesystem-documents\n|   |   `-- Require matching kind; canonical root must be a directory\n|   |-- Resolve relative segments under root; reject invalid paths\n|   |   |-- Reject absolute paths, NUL, backslashes, empty/dot/dot-dot segments\n|   |   `-- Reject missing segments, traversed symlinks and root escapes\n|   |-- listDirectory -> omit .git; directories first, then name/path\n|   `-- Read regular file -> bytes -> UTF-8 text -> lines\n|       `-- readLines validates one-based inclusive range; clips at EOF\n|-- Inspect and navigate source [UI components]\n|   |-- RepositoryFileExplorer -> CodeRepoService.listDirectory\n|   |   |-- Shared promise cache per service; project/source/directory key\n|   |   `-- Local expansion and subscriptions; refresh, retry, keyboard, onOpen\n|   `-- SourceCodeView consumes preview, range and presentation\n|       |-- Read-only rows, selected ranges, annotations and themed tokens\n|       |-- Folded sections -> hidden-line gap or comment graph\n|       |   `-- Reveal section or graph-node lines; unfold navigation target\n|       |-- Restore scroll or reveal target; select destination's first line\n|       |-- Optional offscreen deferral: no wrap and >240 rendered rows\n|       |   `-- Measured 80-row chunks preserve scroll geometry\n|       `-- Ctrl/Meta-click or F12 -> position -> optional onGoToDefinition\n`-- Optional definitions [ProjectSourceService + ProjectLanguageService]\n    |-- No configured language service -> lsp-disabled\n    |-- Resolve diagram binding -> definitions(corpus, path, position, hash)\n    |-- Validate repository-relative TS/JS path and integer position\n    |-- Read current text; require whole-file sourceSha256 match\n    |   `-- Position must fit current text; rangeSha256 is a separate hash\n    |-- Reuse lazy session per canonical root within service instance\n    |   |-- Spawn language server; require definitions and UTF-16 support\n    |   |-- Queue: didOpen(text) -> definition request -> didClose if alive\n    |   |   `-- AbortSignal cancels RPC; initialization/request timeout = 20s\n    |   `-- Dispose on idle/failure/shutdown; replace dead session on lookup\n    `-- Normalize Location / LocationLink results\n        |-- Repository-relative path + targetSelectionRange or range\n        |-- Non-file URI or rejected relative path -> outsideRoot count\n        `-- Deduplicate locations; return zero-based LSP ranges",
+        "position": {
+          "column": 0,
+          "row": 0
+        }
+      },
+      {
+        "id": "mapping",
+        "ascii": "Mapped evidence identity [codePanel.ts]\n|-- Public domain boundary: mappedResourceHandlers\n|   |-- source-range -> index, identity, buildDisplayModel\n|   `-- No React or file I/O in these handlers\n|-- sourceRangeIndex is internal\n|   |-- Diagram content hash guards mapping freshness\n|   |-- sourceId = entity.sourceId ?? binding.sourceId ?? ''\n|   `-- rangeSha256 = SHA-256(originalLines joined with LF)\n|-- sourceResourceIdentity includes every target discriminator\n|   `-- type, projectId, sourceId, path, startLine, endLine, rangeSha256\n|-- resolveSelectedNodes -> imported resolveNodeResources\n|   `-- Enrich origins with selected/mapped node IDs and labels\n|-- handleNodeSelect owns temporary identity-keyed Map\n|   |-- Equal identities -> append all origins\n|   `-- Panel keeps unique selected IDs, unmapped IDs, revision and hash\n`-- buildSourceRangeDisplayModel preserves incoming order\n    |-- Compare next start with last accumulated range's start\n    |-- Overlap -> extend end, retain contributing items\n    `-- Adjacent nonoverlapping ranges remain separate",
+        "position": {
+          "column": 110,
+          "row": 0
+        }
+      },
+      {
+        "id": "sessions",
+        "ascii": "Definition session ownership [projectLanguageService.ts]\n|-- ProjectLanguageService owns Map<canonical root, LanguageSession>\n|   |-- Scope is one service instance; pane wiring is not supplied\n|   |-- Lookup creates missing session or replaces dead one\n|   `-- dispose -> stop service, dispose sessions, clear Map, remove exit hook\n|-- Internal LanguageSession owns child, RPC, ready promise, queue and timer\n|   |-- Spawn TS language server in canonical root over stdio\n|   |-- Initialization advertises UTF-16 and definition link support\n|   |   `-- workspace/applyEdit returns applied:false\n|   |-- Queue serializes lookup; rejected job does not poison later jobs\n|   |-- didOpen carries verified text, version=1, inferred TS/JS languageId\n|   |-- Request cancellation token listens to AbortSignal\n|   |   `-- finally removes listener, disposes token, closes document if alive\n|   |-- Initialization and definition RPC each have a 20-second bound\n|   `-- Five-minute idle timer is unref'd; rescheduled after lookup\n|-- Module liveSessions set tracks active sessions across instances\n|   `-- One-time SIGINT/SIGTERM handlers dispose sessions, then exit\n`-- Session dispose is idempotent\n    |-- Mark dead; remove from live set; clear idle timer; dispose RPC\n    |-- SIGTERM child PID on Windows, process group elsewhere\n    `-- Dead entry can remain in owner Map until replacement or service disposal",
+        "position": {
+          "column": 110,
+          "row": 25
+        }
+      },
+      {
+        "id": "explorer",
+        "ascii": "Explorer cache and local state [RepositoryFileExplorer.tsx]\n|-- Module WeakMap keyed by CodeRepoService\n|   `-- Per-service Map stores directory-listing promises\n|       |-- Key = JSON.stringify([projectId, sourceId, directory])\n|       |-- Cache hit shares request; insertion beyond 256 evicts oldest key\n|       |-- Hits do not reorder entries: insertion order, not LRU\n|       `-- Rejection deletes entry only if it still holds that request\n|-- Directory instance owns listing, error, expanded paths and attempt\n|   |-- Effect clears old display and requests listing\n|   |-- Cleanup sets active=false; ignores late results without aborting fetch\n|   |-- Retry increments attempt; expansion mounts nested Directory\n|   `-- File button calls onOpen(path)\n|-- Explorer owns generation counter\n|   `-- Refresh evicts all sources for this project in this service cache\n|       `-- Increments this explorer's generation; no broadcast to other explorers\n`-- Keyboard follows currently rendered directory/file buttons\n    |-- Up/Down/Home/End -> focus\n    |-- Right -> expand closed directory\n    `-- Left -> collapse open directory or focus parent",
+        "position": {
+          "column": 0,
+          "row": 64
+        }
+      },
+      {
+        "id": "view",
+        "ascii": "View state and navigation [SourceCodeView.tsx]\n|-- Input data: preview + range + presentation + optional navigationRange\n|   |-- Only valid collapsed-comment sections fully inside preview are used\n|   `-- Graph-node reveal clips original lines to available preview\n|-- Component owns token result, failure flag and expansion sets\n|   |-- Async tokenization depends on path, source, theme and presentation\n|   |   `-- Cleanup ignores late results; absent tokens render original text\n|   `-- Source/section/navigation changes reset graph-node expansion\n|       `-- Section expansion resets to sections containing destination start\n|-- Source identity = path + preview startLine + joined source text\n|   |-- Restore scrollState.read() or initialScroll once per identity\n|   |   `-- Successful restoration returns before reveal/selection work\n|   |-- Otherwise scroll target near 20% down viewport\n|   `-- Multiline navigation selects start line through that line's end\n|       `-- Reapply after tokenization unless inactive or initial scroll supplied\n|-- Optional external scrollState retains offsets\n|   |-- Connect active viewer getter; hidden viewer returns undefined\n|   `-- Ignore hidden zero-offset scroll events\n`-- Internal SourceCodeContent handles offscreen deferral\n    |-- >240 rendered rows, deferOffscreen enabled, wrapping disabled\n    |-- Group by 80 rows; measure width/height before content-visibility:auto\n    `-- ResizeObserver remeasures on width change; cleanup disconnects",
+        "position": {
+          "column": 110,
+          "row": 51
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": {
+          "diagram": "central",
+          "line": 14
+        },
+        "target": {
+          "diagram": "mapping",
+          "line": 1
+        },
+        "label": "resource identity and ordered display"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 53
+        },
+        "target": {
+          "diagram": "sessions",
+          "line": 1
+        },
+        "label": "session ownership and cleanup"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 36
+        },
+        "target": {
+          "diagram": "explorer",
+          "line": 1
+        },
+        "label": "shared requests and local state"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 39
+        },
+        "target": {
+          "diagram": "view",
+          "line": 1
+        },
+        "label": "rendering, folding and navigation state"
+      }
+    ]
+  },
+  "usage": {
+    "input_tokens": 218170,
+    "cached_input_tokens": 192768,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 6391,
+    "reasoning_output_tokens": 346
+  }
+}

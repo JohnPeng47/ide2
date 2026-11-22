@@ -1,3 +1,5 @@
+import { type ProjectionType } from '../projections/projectionType';
+import { projectCanvas } from '../projections/canvasProjection';
 import { presentationHighlights } from '../../core/presentation/diagramPresentation';
 import { getDiagramRevision } from '../../core/diagrams/diagramRevisionStore';
 import type { LiveDocumentSnapshot } from './contracts';
@@ -29,9 +31,15 @@ function textNodes(state: State, selected?: Set<string>): CanvasDisplayNode[] {
   return nodes;
 }
 /** Select on the producer side; source evidence is complete for the selected diagrams. */
-export function currentCanvasRead(state: State, options: { level: 'small' | 'full'; nodeIds?: string[] }) {
+export interface CanvasReadOptions { projectionType?: ProjectionType; level?: 'small' | 'full'; nodeIds?: string[] }
+export function currentCanvasRead(state: State, options: CanvasReadOptions) {
+  if (options.projectionType) {
+    if (options.level) throw Error('Choose projectionType or legacy level');
+    return { version: state.version, projectionType: options.projectionType, ...projectCanvas(state.document, options.projectionType, undefined, options.nodeIds) };
+  }
+  const level = options.level ?? 'small';
   const selected = options.nodeIds && new Set(options.nodeIds);
-  const raw = options.level === 'small' ? textNodes(state, selected) : canvasDisplayNodes(state.document, state.canvas, state.version, state.cell, state.endpointBounds);
+  const raw = level === 'small' ? textNodes(state, selected) : canvasDisplayNodes(state.document, state.canvas, state.version, state.cell, state.endpointBounds);
   const nodes = raw.filter(node => !selected || selected.has(node.id)).map(node => {
     if (node.layout !== 'grid') return node;
     const { textRows: _rows, presentation: _presentation, presentationSettings: _settings, domainNode: _domain, content, contentNodes: _nodes, nodeRefs, diagram, geometry, ...rest } = node;
@@ -40,7 +48,7 @@ export function currentCanvasRead(state: State, options: { level: 'small' | 'ful
     const { contentHash: _sourceHash, ...sourceContext } = diagram?.sourceContext ?? {};
     const activeHighlights = new Set(diagram && activeDiagramHighlights(diagram.content, diagram.highlights, diagram.revisionId).map(h => h.id));
     const activeJumps = new Set(diagram && activeDiagramJumps(diagram.content, diagram.jumps).map(j => j.id));
-    return { ...rest, ...(options.level === 'full' ? { geometry } : {}),
+    return { ...rest, ...(level === 'full' ? { geometry } : {}),
       ...(content ? { content: { ...text, structure: { ...content.structure, nodes: Object.fromEntries(diagramContentNodes(content).map(n => [n.id, {
         ...n, ...(nodeRefs?.[n.id] ? { nodeRef: nodeRefs[n.id] } : {}), sourceRanges: diagram?.sourceContext.mappings.filter(m => m.line === n.line && m.startColumn <= n.endColumn && m.endColumn >= n.startColumn)
           .flatMap(m => { const range = diagram.sourceContext.evidence[m.entityId]?.sourceRanges[m.sourceRangeIndex];
@@ -51,6 +59,6 @@ export function currentCanvasRead(state: State, options: { level: 'small' | 'ful
         jumps: diagram.jumps?.map(j => { const { contentHash: _hash, ...source } = j.source;
           return { ...j, source, status: activeJumps.has(j.id) ? 'active' : 'stale' }; }) } } : {}) };
   });
-  return { level: options.level, version: state.version, nodes,
-    ...(options.level === 'full' ? { edges: state.document.edges, view: state.canvas } : {}) };
+  return { level, version: state.version, nodes,
+    ...(level === 'full' ? { edges: state.document.edges, view: state.canvas } : {}) };
 }

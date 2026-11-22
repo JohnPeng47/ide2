@@ -1,0 +1,62 @@
+Mapping workspace -- editable project diagrams, their canvas state, and saved revisions
+|
+|-- [M] App -> MappingPocPage -> MappingWorkspacePage
+|   |-- createMappingServices() supplies DiagramService, CanvasHistoryService and WorkspaceStorage
+|   |-- [O] activeId, drafts, transfers and snapshot coordinate the open project
+|   |-- open()/restore() turn saved representation revisions or workspace records into drafts
+|   `-- MappingDiagramExplorer, MappingPocSelectionCanvas and ChangeSessionPreview expose those drafts
+|
+|-- [O] CanvasWorkspace owns the live document registry
+|   |-- drafts[id]: CanvasDraft -> metadata + one CanvasSession
+|   |-- setDrafts() creates, replaces or disposes sessions and controller subscriptions
+|   |-- controllers[id] exposes command targets; store/dirtyScenes publish read-only UI updates
+|   `-- copyDocument() forks a source controller's history into a new draft
+|
+|-- [O] CanvasSession owns one document's observable state
+|   |-- MappingDocumentController is the sole editable document owner
+|   |-- document / presentation / selection / controls / geometry stores mirror controller commits
+|   `-- savedScene, savedEdges and savedName form the dirty-status baseline
+|
+|-- [C] MappingDocumentController.applyUpdate(expectedVersion, operations)
+|   |-- Rejects a stale version before staging DiagramOperation[]
+|   |-- Edits MappingGridDocument
+|   |   |-- scene: LineGridScene -> positioned GridBox hierarchy + diagram contents
+|   |   |-- edges: DiagramConnection[] -> anchored connections, not display arrows
+|   |   `-- sections and jumps -> diagram annotations and navigation
+|   |-- Revises diagram contents through RevisionedDiagramService
+|   |   `-- Diagram -> immutable content, sourceContext mappings/evidence, revisionId
+|   |-- Updates MappingCanvasState
+|   |   |-- selection.items -> selection membership
+|   |   |-- display: DisplayState -> owned selection, projection, conversation and detail panes
+|   |   |-- diagramViews -> per-diagram subtree presentation
+|   |   `-- controls.surfaces -> action, prompt and chat controls
+|   `-- updateSnapshot() reconciles anchors and selection, validates connections,
+|       appends recorded edits to history, then notifies CanvasSession subscribers
+|
+|-- [O] DefaultCanvasHistoryService owns CanvasHistory per editing context
+|   |-- CanvasHistoryRecord -> checkpoints, diagramBindings, immutable diagramRevisions,
+|   |   headId, past and future
+|   |-- append() separates canvas composition and view from bound diagram revisions
+|   |-- navigate() supports local undo/redo; linked transfers require workspace navigation
+|   `-- exportContext()/persistenceChanges() supply portable full or incremental records
+|
+|-- [C] Canvas UI and external commands converge on the controller
+|   |-- MappingPocSelectionCanvas reads CanvasSession stores and calls select(),
+|   |   updateCanvas() or applyUpdate() for selections, panes and diagram edits
+|   |-- promptMappingPocSelection()/DiagramService.generate() produce edits that are
+|   |   applied against a captured version or expected diagram revision
+|   `-- useAgentCanvasBridge -> MappingWorkspacePage.handleAgentCommand()
+|       `-- context/snapshot reads and versioned apply commands target controllers
+|
+|-- [O] WorkspacePersistence -> RecordStorage -> WorkspaceStorage worker
+|   |-- Commits workspace index, draft metadata/baselines, canvas view and history deltas
+|   |-- RecordStorage batches writes with expectedRevision and requestId
+|   `-- worker sends records to MappingWorkspaceService; workspaceRecords validates
+|       document histories and cross-canvas transfer references
+|
+`-- [C] Project and cross-canvas publication
+    |-- MappingWorkspacePage.save() -> saveMappingProjectDiagram()
+    |   `-- MappingDiagramService saves canvas history as a project representation revision
+    |-- transfer() -> runWorkspaceTask() prepares source/destination histories
+    |   `-- WorkspaceStorage.save() acknowledges both before installWorkspace() publishes them
+    `-- undo()/redo() navigate both transfer participants and persist the workspace together

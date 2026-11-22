@@ -1,0 +1,19 @@
+{
+  "id": "child-5",
+  "name": "lifecycle",
+  "assignment": "Map n78–n95 geometry and teardown branches. Use mktemp -d /tmp/lifecycle-map.XXXXXX if needed. Return compact node scope and path/ranges/roles (short codes and parent union refs OK), plus notes.",
+  "model": "gpt-6.2-sol",
+  "effort": "high",
+  "status": "generating",
+  "queuedAt": "2026-11-22T03:29:48.732Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-22T03:36:42.854Z",
+  "sessionId": "01a20153-dc6e-72b5-9e81-c81077e31cc9",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-1kmg0f14-agent-repository-DG1M8J-checkout--/2026-11-22T03-36-42-862Z_01a20153-dc6e-72b5-9e81-c81077e31cc9.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase4-1kmg0f14/agent-repository-DG1M8J/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

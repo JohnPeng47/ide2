@@ -1,0 +1,19 @@
+{
+  "id": "child-2",
+  "name": "input",
+  "assignment": "Map n24-n35 user input branch end-to-end; private /tmp/input. Return compact text scopes and path:start-end roles per node (indicate inherited child coverage).",
+  "model": "gpt-6.2-astra",
+  "effort": "high",
+  "status": "generating",
+  "queuedAt": "2026-11-22T03:50:16.234Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-22T03:50:16.237Z",
+  "sessionId": "01a20160-45cb-7ccb-a381-40e1703ad2f3",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-ea05rgun-agent-repository-SbUvQM-checkout--/2026-11-22T03-50-16-267Z_01a20160-45cb-7ccb-a381-40e1703ad2f3.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase4-ea05rgun/agent-repository-SbUvQM/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

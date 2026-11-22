@@ -1,0 +1,18 @@
+{
+  "text": "The **d1 n1–n8 mapping fragment** is in `/tmp/d1-app.json` in the requested JSON shape. It contains 8 scope records and 184 ranges, with child coverage merged into n4 and n2. Node n1 contains coordination anchors for root aggregation. File bounds were checked against commit `ea8b12a8a9894b5259c441eadd8f6f0c65e215af`; `validate_source_mappings` was not available, so there is no validator hash.\n\nCompact handoff below. Paths are relative to `src/` unless marked otherwise. **D** = declaration, **U** = use, **I** = implementation.\n\n| Node | Scope | Principal ranges |\n|---|---|---|\n| n1 | subsystem, relationship | `apprt.zig:39–53` D; `App.zig:22–28,45–58` D, `199–206,531–550` I; `Surface.zig:1–16,74–84,92–108,133–147` D, `477–484,564–590,592–611,623–649,711–725,746–767,829–885` I; `apprt/embedded.zig:518–520,615–624,634–646` UI |\n| n2 | entity, structure, behavior, relationship, subsystem | `App.zig:1–4,22–74` D, `76–613` DI; `apprt/embedded.zig:1714–1728,1743–1748` UI; includes n3–n8 coverage |\n| n3 | structure, behavior, relationship, guarantee | `App.zig:22,27–28,45–47` D, `128` I, `199–260,313–316,544–550` DI; `Surface.zig:3466,3471–3473` U; `apprt/embedded.zig:518–520,641–645` U, `670–672` I; `apprt/gtk/Surface.zig:25–29` I; `apprt/gtk/class/surface.zig:1963–1970,3557–3570` U; `apprt/surface.zig:238–246` U |\n| n4 | structure, behavior, relationship, subsystem | `App.zig:49–51,562–594` D, `129` I, `596–613` DI; `apprt/surface.zig:186–207` DI; `Surface.zig:573,585,711–721` IU; `termio/Termio.zig:342,389–399` I; `termio/Exec.zig:274–315` UI; `datastruct/blocking_queue.zig:29–34,56–72` D, `99–168` I; `apprt/gtk/App.zig:56–59`, `apprt/gtk/class/application.zig:1322–1325`, `apprt/embedded.zig:269–271` IU; repository-root `macos/Sources/Ghostty/Ghostty.App.swift:58–62,119–122,526–534` U/I; includes n5 |\n| n5 | entity, behavior, relationship, guarantee | `apprt/embedded.zig:1730–1736`, `apprt/gtk/class/application.zig:500,569–576` U; `App.zig:161–167,272–306,531–550` DI; `Surface.zig:1017–1241` DI |\n| n6 | structure, behavior, relationship, guarantee | `App.zig:53–55` D, `119–131,141–146` I; `font/SharedGridSet.zig:1–10,38–48,433–438,468–472` D, `52–86,88–154,411–431` DI; `Surface.zig:81–84` D, `528–534,580–585,627,870–871,2535–2572` U/I; `renderer/message.zig:29–43` D; `renderer/Thread.zig:397–400` UI; `renderer/generic.zig:818–821,1317–1322` I |\n| n7 | structure, behavior, relationship, guarantee | `App.zig:57–58` D, `131,148–151` I; `Surface.zig:564–570,580–588` UI; `renderer.zig:35–45`, `renderer/Options.zig:7–9` D; `renderer/generic.zig:712–721` UI; `renderer/Metal.zig:20,44–45` D, `56–71,131–146` I; `renderer/OpenGL.zig:15,47–48` D, `52–73,84–96` I; `renderer/metal/Device.zig:34–66`, `renderer/opengl/Device.zig:37–74,102–105` DI |\n| n8 | entity, behavior, relationship, guarantee | `App.zig:136–159`, `Surface.zig:829–879` DI; `apprt/embedded.zig:634–646`, `apprt/gtk/class/surface.zig:1963–1978` UI; `apprt/gtk/Surface.zig:12–17`, `font/SharedGridSet.zig:64–86`, `renderer/metal/Device.zig:63–66`, `renderer/opengl/Device.zig:102–105` I |\n\n**n8 qualification:** `App.deinit` calls the runtime surface’s `deinit` before releasing fonts and device. Embedded directly unregisters and deinitializes its core surface there. The GTK wrapper’s `deinit` is a no-op; GTK unregisters and deinitializes the core surface in the GObject finalizer instead.",
+  "usage": {
+    "input": 52482,
+    "output": 5386,
+    "cacheRead": 327424,
+    "cacheWrite": 0,
+    "reasoning": 454,
+    "totalTokens": 385292
+  },
+  "cost": {
+    "input": 0.5248200000000001,
+    "output": 0.2693,
+    "cacheRead": 0.327424,
+    "cacheWrite": 0,
+    "total": 1.121544
+  }
+}

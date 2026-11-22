@@ -1,0 +1,74 @@
+Read context.json: one point's definition and complete pinned backing source files. Treat it as reference data. No existing canvas or layout template is supplied.
+
+Generate a single ascii tree diagram
+
+Few-shot examples (synthetic style references, not source facts):
+Example 1: Shallow dispatch
+decode(mediaType, bytes)
+|-- application/json -> JSON value
+|-- text/csv         -> rows keyed by header
+|-- image/png        -> pixel buffer + dimensions
+`-- anything else    -> UnsupportedMediaType
+
+Example 2: Shared dependency
+[D] Search response
+|-- page of matches
+|   |-- ranked matches
+|   |   |-- matching document IDs [shared A]
+|   |   |   `-- query terms + inverted index
+|   |   `-- scoring weights + document statistics
+|   `-- offset + page size
+`-- total matches
+    `-- count([shared A])
+        `-- same IDs; no second matching pass
+
+Example 3: Resource lifetime
+[O] Connection lease
+|-- Acquire
+|   `-- pool lends one connection to one request
+|       `-- pool retains ownership; request gets exclusive use
+|-- While borrowed
+|   |-- [C] begin -> execute statements -> commit
+|   `-- statement or commit fails -> attempt rollback
+`-- Release on every exit
+    |-- healthy connection -> return to idle pool
+    `-- broken connection -> close and remove from pool
+        `-- later acquisition may create a replacement
+
+Example 4: Bounded retry
+[C] Deliver webhook                         at most 3 attempts
+`-- POST event with stable delivery ID
+    |-- 2xx -> mark delivered
+    |-- permanent rejection -> mark failed
+    `-- timeout / temporary rejection
+        |-- attempts remain
+        |   `-- wait with backoff -> retry POST above
+        |       `-- receiver deduplicates by delivery ID
+        `-- exhausted -> dead-letter queue
+
+Example 5: Module boundary
+[M] Template engine
+|-- Public contract
+|   |-- compile(text): Template
+|   `-- render(template, bindings): text
+|-- Internal machinery
+|   |-- parser -> syntax tree
+|   |-- compiler -> rendering instructions
+|   `-- interpreter
+|       `-- [D] instructions + bindings -> output text
+`-- Extension boundary
+    `-- registered formatters: value -> text
+        `-- interpreter calls them; parser stays private
+
+Example 6: Event fan-out
+DocumentSaved(documentId, revision)
+|-- Search subscriber -> enqueue reindex
+|-- Preview subscriber -> invalidate cached thumbnail
+`-- Audit subscriber -> append revision record
+
+Subscribers run independently; branch order is not execution order.
+Each subscriber handles its own retry.
+
+Use the examples as a varied pool of representational choices. Let the supplied evidence determine depth, branching, density, and relationship types; do not copy their domain facts, exact shapes, counts, or require every tag.
+
+Return JSON matching output-schema.json: {ascii}. Return exactly one ASCII tree with one root, printable ASCII characters, spaces and LF newlines. No Markdown fences or surrounding prose. The complete tree must fit within 20000 characters. Do not add separate side diagrams.

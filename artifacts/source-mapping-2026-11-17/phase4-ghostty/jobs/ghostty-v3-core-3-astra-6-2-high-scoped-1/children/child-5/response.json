@@ -1,0 +1,18 @@
+{
+  "text": "The machine-readable d1 subset for **n52–n65** is in `/tmp/terminal/subset.json`, with child ranges expanded into parents and overlaps merged. All selected paths and bounds were checked locally; `validate_source_mappings` was not available.\n\nCompact mapping below. File stems denote `src/terminal/<stem>.zig` unless another path is given. **D** = declaration, **U** = use, **I** = implementation. `+n` includes that child’s ranges.\n\n```text\nn52 [structure, entity, relationship, guarantee, subsystem] +n53 +n56 +n59\n  main D60-61; src/lib_vt.zig U96-98; src/termio/Termio.zig D40-46\n  src/renderer/State.zig D19-20; render U939-947\n  Terminal DI344-404 DI406-430\n\nn53 [behavior, relationship, subsystem] +n54 +n55\n  Terminal D1-4 DI1893-1904 UI2207-2213 DI2272-2277 UI2292-2298\n           DI2301-2314 I2401-2409 DI4275-4324\n  stream_terminal U635-682; Screen DI1929-1936 I2026-2035\n\nn54 [structure, relationship]\n  Terminal D56-68 D253-266 I366-376\n\nn55 [structure, relationship]\n  Terminal D70-87 D167-182 D268-279 I377-387\n\nn56 [structure, entity, relationship] +n57 +n58\n  Terminal D48-49 UI356-370; ScreenSet D17-36 DI55-67\n\nn57 [behavior, guarantee]\n  ScreenSet D1-8 DI38-53 DI74-88 DI90-102\n  Terminal U5680-5683 UI5689-5715 U5758-5762 UI5783-5785\n\nn58 [structure, behavior, relationship]\n  ScreenSet D23-31 I47-52 DI104-109\n  Terminal U5680-5683 UI5740-5747 DI2301-2314 I2401-2409\n\nn59 [structure, entity, relationship, subsystem] +n60 +n61 +n62\n  Screen D1 DI315-367 DI983-993 I1012-1018 UI1034-1044 DI1139-1150\n  Terminal U3400-3408 UI3439-3456 UI3466-3471\n\nn60 [structure]\n  Screen D52-65 D74-75\n\nn61 [structure, relationship]\n  Screen D77-98 D100-119 U348-356 DI3017-3051 UI3095-3097\n\nn62 [structure, entity, relationship] +n63 +n64 +n65\n  Screen D44-50 UI315-346 U361-367\n  PageList D1-4 DI648-708 DI977-988\n\nn63 [structure, relationship, guarantee]\n  PageList D51-63 D88-91 D404-405 D465-470 DI4061-4089 I4110-4128 I4225-4236\n\nn64 [structure, relationship]\n  page D147-162 D173-186 DI1101-1118 DI1120-1133 D2215-2231 D2394-2427\n  PageList D88-91 U7812-7818\n\nn65 [structure, behavior, relationship, guarantee]\n  PageList D472-487 I681-688 I701-708 DI710-719 DI1682-1692 I1813-1825\n           D4061-4062 I4130-4156 DI6309-6334 D7785-7810\n  Screen D58-62 D195-199 D315-319 UI329-345 DI3063-3071 I3095-3097\n  Selection DI129-149\n```\n\nQualifier for n65: tracked pins follow surviving content through reflow. If pruning destroys the referenced content, the code relocates affected pins to the new first page and marks them as garbage, except for the viewport pin.",
+  "usage": {
+    "input": 54448,
+    "output": 3878,
+    "cacheRead": 366720,
+    "cacheWrite": 0,
+    "reasoning": 92,
+    "totalTokens": 425046
+  },
+  "cost": {
+    "input": 0.54448,
+    "output": 0.1939,
+    "cacheRead": 0.36672,
+    "cacheWrite": 0,
+    "total": 1.1051
+  }
+}

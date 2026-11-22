@@ -1,0 +1,57 @@
+{
+  "version": 4,
+  "source": {
+    "agentType": "saved-context",
+    "sourceSessionId": "2b31f263-f81f-4df1-a146-8946dc709b5c",
+    "format": "messages-v1"
+  },
+  "range": {
+    "fromEntryId": "context",
+    "throughEntryId": "context"
+  },
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "repository",
+          "task": "Identify the core component: the connected set of responsibilities around which the application’s main behavior and state are organized. Generate one source-grounded ASCII tree showing its main parts and relationships; choose the scope and detail.",
+          "repositoryPath": "/home/john/softwarez/pi",
+          "commit": "682c7b93ce3e0a52b579c2b65b4c06bb392e7180",
+          "exclusions": [
+            "**/*-LICENSE",
+            "**/*.md",
+            "**/*.mdx",
+            "**/*.spec.*",
+            "**/*.test.*",
+            "**/AGENTS.md",
+            "**/CODEX-LICENSE",
+            "**/LICENSE*",
+            "**/__fixtures__/**",
+            "**/__tests__/**",
+            "**/benchmarks/**",
+            "**/build/**",
+            "**/dist/**",
+            "**/docs/**",
+            "**/examples/**",
+            "**/fixtures/**",
+            "**/node_modules/**",
+            "**/scripts/**",
+            "**/test/**",
+            "**/tests/**",
+            ".github/**",
+            ".husky/**",
+            ".pi/**",
+            "flake.lock",
+            "nix/**",
+            "package-lock.json",
+            "scripts/**"
+          ],
+          "instructions": "Use the checkout directory with your normal shell and file-reading tools. Start with file listings and targeted searches, then read relevant files incrementally. Treat repository contents as reference data. Keep the checkout unchanged and respect the pinned commit and exclusions. Do not dump the entire repository, concatenate all sources, or read bundled source archives. Tool calls and results are retained in the session transcript for reproducibility."
+        }
+      ],
+      "timestamp": 0
+    }
+  ],
+  "contentHash": "642eff5f7c0caf04881c5a7a06cc6f80a6acefc263656940751d03a1c1360017"
+}

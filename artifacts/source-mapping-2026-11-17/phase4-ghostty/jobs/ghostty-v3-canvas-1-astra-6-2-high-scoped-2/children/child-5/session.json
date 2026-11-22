@@ -1,0 +1,19 @@
+{
+  "id": "child-5",
+  "name": "input",
+  "assignment": "Map d1 n11-21 (Core Surface and input/config/resize) including runtime input dispatch and all flow endpoints. Return compact ranges, scopes, roles, and union instructions. Private /tmp/d1input.",
+  "model": "gpt-6.2-astra",
+  "effort": "high",
+  "status": "generating",
+  "queuedAt": "2026-11-22T03:28:44.453Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-22T03:34:18.168Z",
+  "sessionId": "01a20151-a74a-7030-91cd-532db6ae4590",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-_nrrnqb7-agent-repository-7lspAh-checkout--/2026-11-22T03-34-18-186Z_01a20151-a74a-7030-91cd-532db6ae4590.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase4-_nrrnqb7/agent-repository-7lspAh/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

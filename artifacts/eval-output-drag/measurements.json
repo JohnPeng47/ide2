@@ -1,0 +1,187 @@
+{
+  "output": "d812702d-c530-491f-ad70-c5becd60b7c4",
+  "canvas": "Canvas domain model - baseline 03f2168 (before tldraw)",
+  "environment": "Headless Chromium, actual Vite development server, 1500x1000, zoom 25%, six-second/360-move left-button drags across background polling",
+  "notes": "Frame timing uses requestAnimationFrame, not compositor dropped-frame counts. CPU metrics overlap. First idle frame may include prior rendering. Same gesture and instrumentation before and after.",
+  "before": [
+    {
+      "kind": "idle",
+      "elapsed": 6000,
+      "mainThreadMs": 166,
+      "scriptMs": 33,
+      "layoutMs": 0,
+      "styleMs": 0,
+      "frames": 359,
+      "p95": 16.799999999999272,
+      "max": 733.3000000000011,
+      "reads": {},
+      "mutations": {},
+      "longTasks": []
+    },
+    {
+      "kind": "drag",
+      "elapsed": 14021,
+      "mainThreadMs": 9272,
+      "scriptMs": 8179,
+      "layoutMs": 2,
+      "styleMs": 104,
+      "frames": 367,
+      "p95": 16.799999999999272,
+      "max": 2299.9000000000015,
+      "reads": {
+        "DIV": 424,
+        "endpoint": 2016
+      },
+      "mutations": {
+        "attributes:d": 40,
+        "attributes:y": 20
+      },
+      "longTasks": [
+        1128,
+        967,
+        1084,
+        1296,
+        1281,
+        1258,
+        1056
+      ]
+    },
+    {
+      "kind": "drag",
+      "elapsed": 59004,
+      "mainThreadMs": 54950,
+      "scriptMs": 53299,
+      "layoutMs": 9,
+      "styleMs": 121,
+      "frames": 374,
+      "p95": 1116.699999999997,
+      "max": 3499.800000000003,
+      "reads": {
+        "endpoint": 12672,
+        "DIV": 757
+      },
+      "mutations": {
+        "attributes:d": 570,
+        "attributes:y": 285
+      },
+      "longTasks": [
+        1130,
+        1178,
+        958,
+        878,
+        1029,
+        1051,
+        970,
+        849,
+        1169,
+        1276,
+        1102,
+        958,
+        1238,
+        1492,
+        1529,
+        1036,
+        1202,
+        1119,
+        1338,
+        1034,
+        1087,
+        999,
+        937,
+        1448,
+        1923,
+        1562,
+        1244,
+        1123,
+        1010,
+        1068,
+        1031,
+        1060,
+        1038,
+        876,
+        841,
+        910,
+        1080,
+        1062,
+        1005,
+        1224,
+        1004,
+        1339,
+        1193,
+        1338,
+        1313,
+        1187,
+        1038
+      ]
+    }
+  ],
+  "after": [
+    {
+      "kind": "idle",
+      "elapsed": 6000,
+      "mainThreadMs": 165,
+      "scriptMs": 32,
+      "layoutMs": 0,
+      "styleMs": 0,
+      "frames": 360,
+      "p95": 16.799999999999272,
+      "max": 666.7000000000007,
+      "reads": {},
+      "mutations": {},
+      "longTasks": []
+    },
+    {
+      "kind": "drag",
+      "elapsed": 6081,
+      "mainThreadMs": 1219,
+      "scriptMs": 138,
+      "layoutMs": 1,
+      "styleMs": 116,
+      "frames": 369,
+      "p95": 16.799999999999272,
+      "max": 83.29999999999927,
+      "reads": {
+        "DIV": 361
+      },
+      "mutations": {},
+      "longTasks": []
+    },
+    {
+      "kind": "drag",
+      "elapsed": 6098,
+      "mainThreadMs": 1353,
+      "scriptMs": 366,
+      "layoutMs": 0,
+      "styleMs": 94,
+      "frames": 369,
+      "p95": 16.799999999999272,
+      "max": 100.10000000000218,
+      "reads": {
+        "DIV": 361
+      },
+      "mutations": {},
+      "longTasks": []
+    }
+  ],
+  "regression25SecondDrag": {
+    "elapsedMs": 25839.609803,
+    "mainThreadMs": 4413.578,
+    "frameP95Ms": 16.799999999999272,
+    "maxFrameMs": 149.90000000000146,
+    "endpointReads": 0,
+    "pathChanges": 0,
+    "longTasks": [
+      97,
+      106,
+      50,
+      152
+    ],
+    "backgroundRefreshes": 1
+  },
+  "interactionChecks": [
+    "Pan through background refresh",
+    "Zoom",
+    "Fold/unfold",
+    "Next/previous canvas"
+  ]
+}

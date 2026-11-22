@@ -1,0 +1,19 @@
+{
+  "id": "child-3",
+  "name": "output-model",
+  "assignment": "Map nodes n32-n57 child output and terminal model subtrees. Full named declarations, numbered reads. Return partial JSON.",
+  "model": "gpt-6-sol",
+  "effort": "medium",
+  "status": "generating",
+  "queuedAt": "2026-11-19T03:47:37.074Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-19T03:47:37.079Z",
+  "sessionId": "01a1f1ea-c41c-7dc2-b899-bb4a9e8ad88b",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-48iv0kjt-agent-repository-4uNwdD-checkout--/2026-11-19T03-47-37-116Z_01a1f1ea-c41c-7dc2-b899-bb4a9e8ad88b.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase3-48iv0kjt/agent-repository-4uNwdD/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

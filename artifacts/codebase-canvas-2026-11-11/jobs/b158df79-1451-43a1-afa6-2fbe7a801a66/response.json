@@ -1,0 +1,37 @@
+{
+  "output": {
+    "summary": "Phase 3 produces a coherent, connected overview with useful conceptual expansions and meaningful attachment lines. Its main weakness is incomplete separation of overview from detail: the central tree remains dense, while some peripheral content is difficult to discover through its attachments. These are actionable decomposition and navigation issues; the supplied output does not establish source-level errors or which later stage determined exact placement and routing.",
+    "strengths": [
+      "The central tree distinguishes modular boundaries, command flow, ownership and data dependencies at central:2,18,60,77. This provides several useful ways to understand the same system.",
+      "Peripheral diagrams follow concepts rather than file containment. For example, patch:3–10 connects revision edits to affected anchors, collapsed nodes and sections; views:3–11 connects saved endpoints to working copies and opening behavior.",
+      "All five peripherals are connected. Attachments such as central:78 → restore:2 and central:74 → restore:25 identify specific concepts rather than merely connecting diagram titles.",
+      "Detail often explains consequential distinctions: views:8 covers reopening the active view, transfer:14–16 explains edge conversion and stale-anchor rejection, and restore:9–13 distinguishes canonical and legacy anchors.",
+      "The supplied text bounds do not overlap at the assigned positions. Conceptual grouping therefore survives the final placement without diagrams obscuring one another."
+    ],
+    "issues": [
+      {
+        "evidence": "central contains 92 lines, including detailed command staging at central:19–36. Several peripheral explanations are also substantially repeated centrally: central:49–50 and views:9–11 describe opening another view; central:56–59 and transfer:7–27 describe copy/move behavior; central:72–73 and restore:20–23 describe export rules.",
+        "impact": "The central diagram still reads partly as a detailed reference instead of a navigable overview. Its length separates the data-dependency lens at central:77 from the opening architecture, and repeated material reduces the benefit of visiting peripherals. This content burden originates in decomposition; exact canvas spacing or edge routing may be downstream choices.",
+        "recommendation": "Keep the central command lifecycle and distinctions needed to choose a detail path, but move repeated mechanics and local exceptions into their existing peripherals. For example, summarize named-view behavior and export policy centrally while retaining their full procedures in views and restore. Preserve important invariants rather than shortening every branch equally."
+      },
+      {
+        "evidence": "The only attachment into patch is central:25, 'Content: create, insert, replace, patch, receive or review revisions', → patch:2, 'patchDiagram consumes the staged bound revision'. However, patch:12–22 covers the general connection contract and reconciliation, while patch:23–27 covers batch failure, editor settlement and empty native batches.",
+        "impact": "The attachment suggests a patch-specific expansion, but much of the diagram describes broader behavior. Readers following central:39–42 for endpoint reconciliation or central:36–38 for staging and gestures have no direct route to these details. The hierarchy can also imply that general staging behavior belongs specifically to patching.",
+        "recommendation": "Make the peripheral's scope and entrances agree. Retain the cohesive patch-to-anchor explanation, then either relocate the general staging material or provide an explicitly broader grouping and appropriate attachments. Connect central:39–42 to patch:18 and give the staging explanation an entrance from the relevant command node."
+      },
+      {
+        "evidence": "central:46 states 'Service rejects transfer-linked navigation; workspace must coordinate', but the only transfer attachment is central:55 → transfer:2, entering preparation rather than transfer:23, 'prepareTransferNavigation'. Likewise, central:84 names canonical anchor resolution, but restore is entered only through restore:2 and restore:25. Across peripherals, patch:11 explicitly names layoutScene, which is expanded at grid:8, yet no edge connects them.",
+        "impact": "The graph is connected, but navigation mainly supports opening topic summaries. Readers tracing a specific dependency or exception must manually search another tree, even where the output already names the matching operation. This is an attachment-selection limitation, not evidence of a rendering failure.",
+        "recommendation": "Add or retarget a small number of links that support concrete reading paths: coordinated navigation to transfer:23, canonical anchor resolution to restore:6, and patch-driven layout to grid:8. Label each with the actual dependency or transition. Select links for usefulness rather than connecting every repeated term."
+      }
+    ],
+    "regenerationInstructions": "Regenerate Phase 3 around a clearer overview/detail boundary. Preserve the useful conceptual peripherals and architectural lenses, reduce repeated procedures in central, and make peripheral scope match its title and incoming attachments. Provide precise entrances for reconciliation, staging, canonical anchors and coordinated transfer navigation, plus selective links between directly related peripheral operations. Keep consequential exceptions near the behavior they qualify. Do not impose equal branch sizes or a fixed diagram count, infer unsupported source facts, or treat exact positioning and routing as proven Phase 3 defects."
+  },
+  "usage": {
+    "input_tokens": 63116,
+    "cached_input_tokens": 52992,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 1495,
+    "reasoning_output_tokens": 268
+  }
+}

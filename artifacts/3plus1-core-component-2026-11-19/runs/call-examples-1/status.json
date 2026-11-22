@@ -1,0 +1,72 @@
+{
+  "status": "finished",
+  "repository": "Call · Existing few-shot examples · 1",
+  "runId": "a0075b75-ea50-4c2b-b7a1-13496ed95456",
+  "characters": 18647,
+  "lines": 243,
+  "nodes": 226,
+  "usage": {
+    "input": 61540,
+    "output": 6899,
+    "cacheRead": 299264,
+    "cacheWrite": 0,
+    "reasoning": 814,
+    "totalTokens": 367703
+  },
+  "execution": {
+    "runtime": "pi-agent-context",
+    "sessionId": "01a1f471-f551-7da2-8788-652e7b93ff5e",
+    "contextHash": "c26f9e1d07185d26d78fd7cf31b447b58604b2cae4a040b1dc623aaaf9e7848a",
+    "cacheKey": "eval-f6de333eaf63950dab8635208b07448a3a1c3af424a25872ae049f5f1dc12dd3",
+    "modelContextHash": "9515704f913da7e60c8f06dc8db3fa0e55ed11e98cfa4ebe8592f154ec950633",
+    "repositories": [
+      {
+        "repository": "repo-1",
+        "repositoryPath": "/home/john/softwarez/ghostty",
+        "commit": "ea8b12a8a9894b5259c441eadd8f6f0c65e215af",
+        "exclusions": [
+          "**/*-LICENSE",
+          "**/*.md",
+          "**/*.mdx",
+          "**/*.spec.*",
+          "**/*.test.*",
+          "**/AGENTS.md",
+          "**/CODEX-LICENSE",
+          "**/LICENSE*",
+          "**/Tests/**",
+          "**/__fixtures__/**",
+          "**/__tests__/**",
+          "**/benchmark/**",
+          "**/benchmarks/**",
+          "**/build/**",
+          "**/dist/**",
+          "**/docs/**",
+          "**/examples/**",
+          "**/fixtures/**",
+          "**/node_modules/**",
+          "**/scripts/**",
+          "**/test/**",
+          "**/tests/**",
+          ".agents/**",
+          ".github/**",
+          ".husky/**",
+          ".pi/**",
+          "deps/**",
+          "example/**",
+          "flake.lock",
+          "flatpak/**",
+          "images/**",
+          "nix/**",
+          "package-lock.json",
+          "po/**",
+          "scripts/**",
+          "snap/**",
+          "vendor/**"
+        ],
+        "checkout": "/tmp/agent-repository-alRloW/checkout",
+        "inspectionSource": "session-transcript"
+      }
+    ]
+  },
+  "outputUrl": "http://127.0.0.1:5191/evals?run=a0075b75-ea50-4c2b-b7a1-13496ed95456&output=054e7ca0-c62a-49d9-bafa-2fc7750f7f6f%3A1%3Aalternative"
+}

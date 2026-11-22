@@ -1,0 +1,19 @@
+{
+  "id": "child-1",
+  "name": "runtime-session",
+  "assignment": "Map n1-n18 runtime boundary and session assembly. Read numbered source full named function declarations, return partial schema JSON.",
+  "model": "gpt-6-sol",
+  "effort": "medium",
+  "status": "generating",
+  "queuedAt": "2026-11-19T04:10:27.547Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-19T04:10:27.556Z",
+  "sessionId": "01a1f1ff-ad8d-7e87-8fd6-a2b113013e20",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-cmnd_qql-agent-repository-MGh7jV-checkout--/2026-11-19T04-10-27-597Z_01a1f1ff-ad8d-7e87-8fd6-a2b113013e20.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase3-cmnd_qql/agent-repository-MGh7jV/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

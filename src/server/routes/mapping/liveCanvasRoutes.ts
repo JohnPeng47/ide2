@@ -1,3 +1,4 @@
+import { projectionTypeSchema } from '../../../../domain/mapping/projections/projectionType';
 import { AgentContextError } from '../../../../application/mapping/agent/agentContextService';
 import type { IncomingMessage } from 'node:http';
 import type { Duplex } from 'node:stream';
@@ -16,7 +17,10 @@ export async function readShortContext(request: Connect.IncomingMessage, respons
     || url.searchParams.getAll('workspaceInstanceId').length !== 1 || url.searchParams.getAll('documentId').length !== 1)
     return sendJson(response, 400, { code: 'INVALID_REQUEST', error: 'Provide one workspaceInstanceId and one documentId (1–200 characters each)' });
   try {
-    const context = await service.shortContextForCanvas(workspaceInstanceId, documentId);
+    const type = projectionTypeSchema.optional().safeParse(url.searchParams.get('projectionType') ?? undefined);
+    if (!type.success) return sendJson(response, 400, { code: 'INVALID_REQUEST', error: type.error.message });
+    const context = type.data ? await service.projectedContextForCanvas(workspaceInstanceId, documentId, type.data)
+      : await service.shortContextForCanvas(workspaceInstanceId, documentId);
     response.setHeader('X-Canvas-Epoch', context.canvasEpoch);
     response.setHeader('X-Document-Version', String(context.version));
     return sendJson(response, 200, context);
@@ -97,10 +101,10 @@ export function attachLiveCanvasSockets(server: UpgradeServer, service: LiveCanv
             attaching = true;
             let context;
             try {
-              if (message.includeContext) {
+              if (message.includeContext || message.projectionType) {
                 clearTimeout(handshake);
                 handshake = setTimeout(() => ws.close(1008, 'Canvas context timed out'), 30_000);
-                context = await service.contextForCanvas(message.workspaceInstanceId, message.documentId);
+                context = await service.contextForCanvas(message.workspaceInstanceId, message.documentId, message.projectionType);
               }
             } finally { attaching = false; }
             if (ws.readyState !== WebSocket.OPEN) return;
@@ -135,7 +139,7 @@ export function attachLiveCanvasSockets(server: UpgradeServer, service: LiveCanv
           if (!connectionId) throw new LiveCanvasError('READER_REQUIRED', 403);
           if (contextPending || contextAllowance > 0) throw new LiveCanvasError('CONTEXT_BUSY', 409, 'Wait for the pending context request');
           contextPending = true;
-          try { send({ type: 'context.snapshot', requestId, ...await service.context(connectionId) }); }
+          try { send({ type: 'context.snapshot', requestId, ...await service.context(connectionId, message.projectionType) }); }
           finally { contextPending = false; }
         } else {
           if (!workspaceInstanceId) throw new LiveCanvasError('PUBLISHER_REQUIRED', 403);

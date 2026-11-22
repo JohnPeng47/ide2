@@ -1,0 +1,19 @@
+{
+  "id": "child-1",
+  "name": "runtime-assembly",
+  "assignment": "Map nodes n1-n18. Follow instructions full declarations and numbered reads. Return partial JSON.",
+  "model": "gpt-6-sol",
+  "effort": "medium",
+  "status": "generating",
+  "queuedAt": "2026-11-19T03:47:37.074Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-19T03:47:37.078Z",
+  "sessionId": "01a1f1ea-c41b-7427-bbfd-a342a4a6f545",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-48iv0kjt-agent-repository-4uNwdD-checkout--/2026-11-19T03-47-37-115Z_01a1f1ea-c41b-7427-bbfd-a342a4a6f545.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase3-48iv0kjt/agent-repository-4uNwdD/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

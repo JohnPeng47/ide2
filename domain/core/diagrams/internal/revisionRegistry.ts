@@ -26,6 +26,7 @@ class RevisionRegistry {
     if (deferred) this.pendingValidation.add(record.id);
     return stored;
   }
+  find(id: string): DiagramRevision | undefined { return this.records.has(id) ? this.get(id) : undefined; }
   get(id: string): DiagramRevision {
     const record = this.records.get(id);
     if (!record) throw Error(`Unknown diagram revision: ${id}`);

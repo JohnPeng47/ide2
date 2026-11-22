@@ -1,0 +1,268 @@
+{
+  "output": {
+    "validatedCandidate": "bce93b5b7acdd5487fab957f11567086ea95d7093608e8d8867068b40bf64a81"
+  },
+  "usage": {
+    "input": 563798,
+    "output": 47278,
+    "cacheRead": 5095936,
+    "cacheWrite": 0,
+    "reasoning": 2962,
+    "totalTokens": 5707012
+  },
+  "execution": {
+    "runtime": "pi-agent-context",
+    "sessionId": "01a20137-963f-78e1-99e7-ba04e7113d86",
+    "contextHash": "4c24cea2f1585e10a1390c92e4a7b19033ed3832e1a4861db77a71686f70f897",
+    "cacheKey": "eval-08c4a41ecc421fe5c226ea1c38f7e4e7fbbd9844ecc4791ee934eba28b8a9fe1",
+    "modelContextHash": "e1ff8ff1b712c8ee879da59f7d1fac6a0f3e6c6c10c9a746fd7fac11c23db3e7",
+    "repositories": [
+      {
+        "repository": "repo-1",
+        "repositoryPath": "/home/john/softwarez/ghostty",
+        "commit": "ea8b12a8a9894b5259c441eadd8f6f0c65e215af",
+        "exclusions": [
+          "**/*-LICENSE",
+          "**/*.md",
+          "**/*.mdx",
+          "**/*.spec.*",
+          "**/*.test.*",
+          "**/AGENTS.md",
+          "**/CODEX-LICENSE",
+          "**/LICENSE*",
+          "**/Tests/**",
+          "**/__fixtures__/**",
+          "**/__tests__/**",
+          "**/benchmark/**",
+          "**/benchmarks/**",
+          "**/build/**",
+          "**/dist/**",
+          "**/docs/**",
+          "**/examples/**",
+          "**/fixtures/**",
+          "**/node_modules/**",
+          "**/scripts/**",
+          "**/test/**",
+          "**/tests/**",
+          ".agents/**",
+          ".github/**",
+          ".husky/**",
+          ".pi/**",
+          "deps/**",
+          "example/**",
+          "flake.lock",
+          "flatpak/**",
+          "images/**",
+          "nix/**",
+          "package-lock.json",
+          "po/**",
+          "scripts/**",
+          "snap/**",
+          "vendor/**"
+        ],
+        "checkout": "/home/john/.cache/mapping-phase4-7vmfpdh9/agent-repository-RuKCrG/checkout",
+        "inspectionSource": "session-transcript"
+      }
+    ],
+    "subagents": {
+      "model": "gpt-6.2-astra",
+      "effort": "high",
+      "concurrency": 2,
+      "sessions": [
+        {
+          "id": "child-1",
+          "name": "host",
+          "assignment": "Map n2-11, host App and widget branch. Use private /tmp/host; return compact text one line per node: scopes then paths with inclusive ranges and roles (D,U,I). Include parent coverage via references to other node ranges as appropriate. No JSON needed.",
+          "model": "gpt-6.2-astra",
+          "effort": "high",
+          "status": "finished",
+          "queuedAt": "2026-11-22T03:05:57.869Z",
+          "usage": {
+            "input": 61361,
+            "output": 4132,
+            "cacheRead": 408832,
+            "cacheWrite": 0,
+            "reasoning": 100,
+            "totalTokens": 474325
+          },
+          "cost": {
+            "input": 0.6136100000000001,
+            "output": 0.2066,
+            "cacheRead": 0.408832,
+            "cacheWrite": 0,
+            "total": 1.2290420000000002
+          },
+          "startedAt": "2026-11-22T03:05:57.878Z",
+          "sessionId": "01a20137-b5a8-7dbc-9489-1caa7bce3607",
+          "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-7vmfpdh9-agent-repository-RuKCrG-checkout--/2026-11-22T03-05-57-928Z_01a20137-b5a8-7dbc-9489-1caa7bce3607.jsonl",
+          "completedAt": "2026-11-22T03:08:13.476Z"
+        },
+        {
+          "id": "child-2",
+          "name": "resources",
+          "assignment": "Map n12-23 resource and state branch. Use private /tmp/resources. Return compact text scope + path ranges with roles D,U,I per node; parent can reference child ranges.",
+          "model": "gpt-6.2-astra",
+          "effort": "high",
+          "status": "finished",
+          "queuedAt": "2026-11-22T03:05:57.870Z",
+          "usage": {
+            "input": 54417,
+            "output": 3257,
+            "cacheRead": 197376,
+            "cacheWrite": 0,
+            "reasoning": 52,
+            "totalTokens": 255050
+          },
+          "cost": {
+            "input": 0.54417,
+            "output": 0.16285,
+            "cacheRead": 0.19737599999999997,
+            "cacheWrite": 0,
+            "total": 0.904396
+          },
+          "startedAt": "2026-11-22T03:05:57.879Z",
+          "sessionId": "01a20137-b5a3-7374-a6d6-92d6e42fa4cf",
+          "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-7vmfpdh9-agent-repository-RuKCrG-checkout--/2026-11-22T03-05-57-923Z_01a20137-b5a3-7374-a6d6-92d6e42fa4cf.jsonl",
+          "completedAt": "2026-11-22T03:07:26.183Z"
+        },
+        {
+          "id": "child-3",
+          "name": "input",
+          "assignment": "Map n24-35 input branch across implementations. Private /tmp/input. Return compact scope + path ranges with roles D,U,I per node; parent can reference child ranges.",
+          "model": "gpt-6.2-astra",
+          "effort": "high",
+          "status": "finished",
+          "queuedAt": "2026-11-22T03:05:57.870Z",
+          "usage": {
+            "input": 75104,
+            "output": 5630,
+            "cacheRead": 690176,
+            "cacheWrite": 0,
+            "reasoning": 442,
+            "totalTokens": 770910
+          },
+          "cost": {
+            "input": 0.7510400000000002,
+            "output": 0.2815,
+            "cacheRead": 0.690176,
+            "cacheWrite": 0,
+            "total": 1.722716
+          },
+          "startedAt": "2026-11-22T03:07:26.183Z",
+          "sessionId": "01a20139-0e70-763e-82b9-7b6e4f41ab25",
+          "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-7vmfpdh9-agent-repository-RuKCrG-checkout--/2026-11-22T03-07-26-192Z_01a20139-0e70-763e-82b9-7b6e4f41ab25.jsonl",
+          "completedAt": "2026-11-22T03:10:45.418Z"
+        },
+        {
+          "id": "child-4",
+          "name": "output",
+          "assignment": "Map n36-51 child output branch and UI handoffs across files. Private /tmp/output. Return compact scope + path ranges with roles D,U,I per node; parent can reference child ranges.",
+          "model": "gpt-6.2-astra",
+          "effort": "high",
+          "status": "finished",
+          "queuedAt": "2026-11-22T03:05:57.870Z",
+          "usage": {
+            "input": 70191,
+            "output": 3865,
+            "cacheRead": 473728,
+            "cacheWrite": 0,
+            "reasoning": 174,
+            "totalTokens": 547784
+          },
+          "cost": {
+            "input": 0.7019100000000001,
+            "output": 0.19325,
+            "cacheRead": 0.473728,
+            "cacheWrite": 0,
+            "total": 1.368888
+          },
+          "startedAt": "2026-11-22T03:08:13.476Z",
+          "sessionId": "01a20139-c72b-7d87-beb3-41e66cce3b09",
+          "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-7vmfpdh9-agent-repository-RuKCrG-checkout--/2026-11-22T03-08-13-483Z_01a20139-c72b-7d87-beb3-41e66cce3b09.jsonl",
+          "completedAt": "2026-11-22T03:10:02.314Z"
+        },
+        {
+          "id": "child-5",
+          "name": "terminal",
+          "assignment": "Map n52-65 terminal state branch. Private /tmp/terminal. Return compact scope + path ranges with roles D,U,I per node; parent can reference child ranges.",
+          "model": "gpt-6.2-astra",
+          "effort": "high",
+          "status": "finished",
+          "queuedAt": "2026-11-22T03:05:57.870Z",
+          "usage": {
+            "input": 54448,
+            "output": 3878,
+            "cacheRead": 366720,
+            "cacheWrite": 0,
+            "reasoning": 92,
+            "totalTokens": 425046
+          },
+          "cost": {
+            "input": 0.54448,
+            "output": 0.1939,
+            "cacheRead": 0.36672,
+            "cacheWrite": 0,
+            "total": 1.1051
+          },
+          "startedAt": "2026-11-22T03:10:02.314Z",
+          "sessionId": "01a2013b-7050-7117-998b-7bc4a920f992",
+          "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-7vmfpdh9-agent-repository-RuKCrG-checkout--/2026-11-22T03-10-02-320Z_01a2013b-7050-7117-998b-7bc4a920f992.jsonl",
+          "completedAt": "2026-11-22T03:12:00.539Z"
+        },
+        {
+          "id": "child-6",
+          "name": "renderer",
+          "assignment": "Map n66-77 renderer branch including backends. Private /tmp/renderer. Return compact scope + path ranges with roles D,U,I per node; parent can reference child ranges.",
+          "model": "gpt-6.2-astra",
+          "effort": "high",
+          "status": "finished",
+          "queuedAt": "2026-11-22T03:05:57.870Z",
+          "usage": {
+            "input": 104805,
+            "output": 8778,
+            "cacheRead": 837888,
+            "cacheWrite": 0,
+            "reasoning": 645,
+            "totalTokens": 951471
+          },
+          "cost": {
+            "input": 1.0480499999999997,
+            "output": 0.43890000000000007,
+            "cacheRead": 0.8378879999999999,
+            "cacheWrite": 0,
+            "total": 2.3248379999999997
+          },
+          "startedAt": "2026-11-22T03:10:45.419Z",
+          "sessionId": "01a2013c-18b6-7ede-88ce-ec3b0b79805c",
+          "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-7vmfpdh9-agent-repository-RuKCrG-checkout--/2026-11-22T03-10-45-430Z_01a2013c-18b6-7ede-88ce-ec3b0b79805c.jsonl",
+          "completedAt": "2026-11-22T03:14:42.221Z"
+        }
+      ]
+    }
+  },
+  "accounting": {
+    "mainUsage": {
+      "input": 143472,
+      "output": 17738,
+      "cacheRead": 2121216,
+      "cacheWrite": 0,
+      "reasoning": 1457,
+      "totalTokens": 2282426
+    },
+    "mainCost": {
+      "input": 1.4347200000000007,
+      "output": 0.8868999999999999,
+      "cacheRead": 2.1212159999999995,
+      "cacheWrite": 0,
+      "total": 4.442836000000001
+    },
+    "totalCost": {
+      "input": 5.6379800000000015,
+      "output": 2.3638999999999997,
+      "cacheRead": 5.095935999999999,
+      "cacheWrite": 0,
+      "total": 13.097816000000002
+    },
+    "children": 6
+  }
+}

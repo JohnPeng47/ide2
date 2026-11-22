@@ -1,0 +1,5 @@
+decode(mediaType, bytes)
+|-- application/json -> JSON value
+|-- text/csv         -> rows keyed by header
+|-- image/png        -> pixel buffer + dimensions
+`-- anything else    -> UnsupportedMediaType

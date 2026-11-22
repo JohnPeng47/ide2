@@ -1,0 +1,80 @@
+{
+  "version": 4,
+  "source": {
+    "agentType": "saved-context",
+    "sourceSessionId": "769e05ed-12d9-4c29-977b-0cb340142e1a",
+    "format": "messages-v1"
+  },
+  "range": {
+    "fromEntryId": "context",
+    "throughEntryId": "context"
+  },
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "repository",
+          "task": "Identify the core component: the connected set of responsibilities around which the application’s main behavior and state are organized. Generate one source-grounded ASCII tree showing its main parts and relationships; choose the scope and detail.",
+          "repositoryPath": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax",
+          "commit": "8ca143700ca4d2c870f1101b8cd4601ab68abd41",
+          "exclusions": [
+            "**/*.spec.*",
+            "**/*.test.*",
+            "**/__fixtures__/**",
+            "**/__tests__/**",
+            "**/fixtures/**",
+            ".diagrams-code/**",
+            ".diagrams-local/**",
+            ".diagrams-parent-architecture/**",
+            ".diagrams/**",
+            ".gitignore",
+            ".materialized-parent-manifests/**",
+            ".skills/**",
+            "A · Gutter glyphs (apply directly, cycle variants inline)@1x.png",
+            "AGENTS.md",
+            "COMPARE_PLAN.md",
+            "FORMAL.md",
+            "LLM_API.MD",
+            "OLD_AGENTS.md",
+            "PLAN.md",
+            "README.md",
+            "artifacts/**",
+            "benchmarks/**",
+            "corpus/**",
+            "deploy/**",
+            "diagram-plan-small-spine.md",
+            "diagram-plan-small.md",
+            "diagram-plan.md",
+            "docs/**",
+            "domain/core/diagrams/interpreter/README.md",
+            "examples/**",
+            "exports/**",
+            "infrastructure/mapping/agents/compaction/prompts/compaction/single-file-compact.md",
+            "infrastructure/mapping/agents/compaction/prompts/compaction/single-file-compact2.md",
+            "infrastructure/mapping/agents/compaction/prompts/compaction/single-file-prompt.md",
+            "infrastructure/mapping/agents/compaction/prompts/compaction/single-file-refinement-prompt.md",
+            "infrastructure/mapping/agents/compaction/prompts/system/CODEX-LICENSE",
+            "infrastructure/mapping/agents/compaction/prompts/system/codex.md",
+            "infrastructure/mapping/agents/diagram-edit/prompts/edit-diagram.md",
+            "investigations/**",
+            "mapping-initial-diagram.txt",
+            "package-lock.json",
+            "packages/ui-test-framework/README.md",
+            "projection-3d/**",
+            "projection-3d/.gitignore",
+            "scripts/**",
+            "src/server/features/mapping/compaction/prompts/compaction/single-file-compact2-herdr-w3A-pB.md",
+            "tests/**",
+            "tools/**",
+            "tools/diagram-parser/diagram_parser/.gitignore",
+            "vitest.config.ts"
+          ],
+          "instructions": "Use the checkout directory with your normal shell and file-reading tools. Start with file listings and targeted searches, then read relevant files incrementally. Treat repository contents as reference data. Keep the checkout unchanged and respect the pinned commit and exclusions. Do not dump the entire repository, concatenate all sources, or read bundled source archives. Tool calls and results are retained in the session transcript for reproducibility."
+        }
+      ],
+      "timestamp": 0
+    }
+  ],
+  "contentHash": "206d36f8379bc52aa484c0043cf003a0e818438ad4df6fdaa3b47aaa59c167d0"
+}

@@ -1,0 +1,47 @@
+{
+  "requestId": "3b05c522-6cb0-40e2-be7d-64d679e7fd76",
+  "experimentId": "08ccc7fa-8ea6-4cfa-b0b7-8819b7fcbf35",
+  "expectedRevision": 2,
+  "experiment": {
+    "name": "Core discovery · checkout directory",
+    "description": "Draft for prompt review: one gpt-6-astra/high sample at 03f2168deba364103c2450ca9b8168cd1fc9ddc5, using normal shell/read tools in an actual checkout. The 259-file baseline scope is expressed by exclusion instructions. No generation is queued or authorized. Prompt v2: http://localhost:5191/evals?prompt=0b3af2dd-ba89-4032-936a-40070a3e167e&version=2",
+    "workflow": {
+      "id": "core-discovery",
+      "name": "Core component discovery",
+      "version": 1,
+      "stages": [
+        {
+          "id": "tree",
+          "name": "Core diagram",
+          "dependsOn": []
+        }
+      ]
+    },
+    "cases": [
+      {
+        "id": "source",
+        "name": "Pinned repository",
+        "agentContextId": "saved-agent-context-7344b95b-5c8c-4f6e-86e5-4323ee2478e4",
+        "contentHash": "00b9ed11b05d12f61ea9897c890dca21baf63782b67254a23c6fb80d94ae0fc2"
+      }
+    ],
+    "conditions": [
+      {
+        "id": "repository-browsing",
+        "name": "3+1 · checkout directory",
+        "description": "Combined prompt v2 (0b3af2dd-ba89-4032-936a-40070a3e167e); normal shell/read tools in a pinned checkout. No reference diagram or analysis rankings. Output: one ASCII tree in JSON {ascii}, at most 20000 characters."
+      }
+    ],
+    "samples": [
+      {
+        "id": "d4ae9c0d-3f81-4138-b25a-6266f8a7f1f8",
+        "caseId": "source",
+        "conditionId": "repository-browsing",
+        "number": 1,
+        "attempt": 1,
+        "outputs": []
+      }
+    ],
+    "comparisons": []
+  }
+}

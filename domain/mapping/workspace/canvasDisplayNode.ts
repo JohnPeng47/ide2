@@ -45,8 +45,10 @@ export const gridNodeId = (id: string) => `grid:${id}`;
 export const floatingNodeId = (id: string) => `floating:${id}`;
 
 /** Read-only registry over the two existing stores. Geometry has no second writable copy. */
-export function canvasDisplayNodes(document: MappingGridDocument, canvas: MappingCanvasState, version: number, cell = { width: 8, height: 18 }, endpointBounds?: EndpointBounds): CanvasDisplayNode[] {
-  const visible = new Map(flattenGrid(resolveDiagramView(presentationScene(document), canvas.diagramViews)).map(node => [node.box.id, node]));
+export function canvasDisplayNodes(document: MappingGridDocument, canvas: MappingCanvasState, version: number, cell = { width: 8, height: 18 }, endpointBounds?: EndpointBounds, mode: 'workspace' | 'snapshot' = 'workspace'): CanvasDisplayNode[] {
+  // Snapshot previews render the captured rows and supply their own diff presentation.
+  const scene = mode === 'snapshot' ? document.scene : presentationScene(document);
+  const visible = new Map(flattenGrid(resolveDiagramView(scene, canvas.diagramViews)).map(node => [node.box.id, node]));
   const expand = (box: typeof document.scene.root): typeof box => box.kind === 'container'
     ? { ...box, collapsed: false, children: box.children.map(expand) } : { ...box, collapsed: false };
   const expanded = flattenGrid(resolveScene({ ...document.scene, root: expand(document.scene.root) }));
@@ -56,11 +58,11 @@ export function canvasDisplayNodes(document: MappingGridDocument, canvas: Mappin
     const parsed = content && resolveDiagramContent(content);
     const view = canvas.diagramViews?.[gridNodeId(box.id)];
     const projection = parsed && projectDiagramContent(parsed, view);
-    const revision = content && getDiagramRevision(content.revisionId);
+    const revision = content && mode === 'workspace' ? getDiagramRevision(content.revisionId) : undefined;
     const collapsedRefs = new Set([...(view?.collapsedNodeRefs ?? []), ...(view && view.contentRevisionId === parsed?.revisionId ? view.collapsedContentNodeIds : []).flatMap(id => revision?.nodeRefs[id] ? [revision.nodeRefs[id]] : [])]);
-    const choices = alternativeSelections(document, `grid:${box.id}`, content?.id ?? "", revision);
-    const selected = revision && Object.values(choices.revisionSelections ?? {}).some(selection => selection.contentId === content!.id);
-    const diffAlternative = selectedDiffAlternative(document, gridNodeId(box.id));
+    const choices = content && revision ? alternativeSelections(document, `grid:${box.id}`, content.id, revision) : undefined;
+    const selected = revision && choices && Object.values(choices.revisionSelections ?? {}).some(selection => selection.contentId === content?.id);
+    const diffAlternative = mode === 'workspace' ? selectedDiffAlternative(document, gridNodeId(box.id)) : undefined;
     const selectedLines = selected ? resolveRevisionLines(revision, choices, getDiagramRevision, collapsedRefs) : undefined;
     const selectedNodes = new Map<string, Map<number, import('../../core/diagrams/diagramContent').DiagramContentNode>>();
     const selectedSubtrees = selectedLines?.flatMap((line, visibleRow) => {
@@ -75,8 +77,9 @@ export function canvasDisplayNodes(document: MappingGridDocument, canvas: Mappin
     })) : []) }, id: gridNodeId(box.id), boxId: box.id, version, layout: 'grid', kind: box.kind === 'diagram' ? 'diagram' : 'group',
       childIds: box.kind === 'container' ? box.children.map(child => gridNodeId(child.id)) : [], expansion: box.collapsed ? 'collapsed' : 'expanded',
       geometry: { units: 'cells', bounds: visible.get(box.id)?.bounds ?? node.bounds },
-      ...(content ? (() => {
-        const refs = getDiagramRevision(content.revisionId).nodeRefs;
+      ...(content && { content: content.content, diagram: content }),
+      ...(content && revision ? (() => {
+        const refs = revision.nodeRefs;
         const highlights = presentationHighlights(content, document.diagramPresentations?.[content.id], refs);
         const domainNode = diagramNode(gridNodeId(box.id), content);
         const bounds = visible.get(box.id)?.bounds ?? node.bounds;
@@ -86,8 +89,8 @@ export function canvasDisplayNodes(document: MappingGridDocument, canvas: Mappin
             selectedAlternativeIds: document.alternatives?.selected[domainNode.id] ?? [], sidePanelIds: Object.values(document.alternatives?.panels ?? {}).filter(p => p.attachment.diagramPresentationId === domainNode.id).map(p => p.id),
             display: diffAlternative ? 'diff' : view?.display ?? 'regular', baseRevisionId: diffAlternative?.parts[0].baseRevisionId ?? view?.baseRevisionId, collapsed: box.collapsed, collapsedNodeRefs: [...collapsedRefs], highlights } };
         const textRows = selected
-          ? projectSelectedDiagramRows(revision!, document, domainNode.id, getDiagramRevision, document.diagramPresentations?.[content.id], collapsedRefs) : undefined;
-        return { domainNode, presentation, textRows, presentationSettings: document.diagramPresentations?.[content.id], content: content.content, contentNodes: connectionContentNodes(content.content), nodeRefs: refs,
+          ? projectSelectedDiagramRows(revision, document, domainNode.id, getDiagramRevision, document.diagramPresentations?.[content.id], collapsedRefs) : undefined;
+        return { domainNode, presentation, textRows, presentationSettings: document.diagramPresentations?.[content.id], contentNodes: connectionContentNodes(content.content), nodeRefs: refs,
           diagram: highlights === content.highlights ? content : { ...content, highlights } };
       })() : {}) };
   });

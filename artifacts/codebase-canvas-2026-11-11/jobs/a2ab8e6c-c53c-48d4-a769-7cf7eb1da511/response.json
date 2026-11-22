@@ -1,0 +1,130 @@
+{
+  "output": {
+    "explanation": "The central tree retains the full proposal lifecycle while shrinking from 119 to 79 lines (33.6%) and from 7,992 to 5,338 characters (33.2%). Five peripheral trees expand push ingestion, workflow resources, change derivation, acceptance, and storage. Modular boundaries appear as public services and private machinery; call sequences explain execution; ownership explains histories, promises, receipts and payloads; data dependencies connect captured inputs to computed review results. Authored change.dependsOn relationships are distinguished from computation dependencies.\n\nAll details come from the supplied point definition and six embedded source files. Peripheral additions absent from the seed include enabled-check ordering on push replay, workflow map lifetimes, canonical history ownership, four-at-a-time preview loading, bounded caches, and exact hunk-context checks.\n\nSource-grounded corrections: ChangeSessionService.validateReady permits a new or replaced edge source owner when its containing diagram existed in the baseline; it does not require that owner itself to have existed. readTreemaps can fall back to get(), so avoiding full histories and receipts is not unconditional. update can capture hunks when an existing session lacks a DiffTree. Annotation replacement is optional, although any supplied replacement must cover every generated change. Acceptance checks live document content and name, rather than capturedVersion.\n\nThe catalog publication implementation, workflow factory, tool implementation and persistence helpers are outside the supplied source. Their internal atomicity, tool permissions and execution guarantees are therefore not expanded beyond the visible calls and checks. Positions use measured text dimensions with horizontal and vertical gaps; edge references use 1-based raw lines.",
+    "diagrams": [
+      {
+        "id": "central",
+        "ascii": "Git Change Proposals\n|-- Entry: explicit DiffSession request or external push\n|   |-- DiffSessionWorkflowService.start: AI enabled + validated request\n|   |   |-- Baseline session OR repository with commit/comparison context\n|   |   `-- Hash requestId; replay matching requests, reject conflicting reuse\n|   `-- PushIntegrationService.receive -> GitPushSource.resolve -> start\n|       |-- Connection binds repository/external identity; decode event\n|       |-- Deduplicate by connectionId + eventId; share pending execution\n|       |-- New generation requires enabled connection and --pi\n|       |-- Skip non-branch, deleted, unchanged or equal-tree pushes\n|       `-- Resolve pinned endpoints; pass commits, head and comparisonBase\n|-- Capture: ChangeSessionService freezes workflow inputs\n|   |-- Fresh capture: resolve repository context and capture Git hunks\n|   |   |-- Load settled representations in scope; retain saved revision IDs\n|   |   |-- Clone baseline into proposed state; fork isolated history\n|   |   `-- Overlay live drafts; select canvasId if multiple workspaces exist\n|   `-- Baseline-session capture\n|       |-- Reuse pinned context and stored DiffTree hunks\n|       `-- Clone original baselines; exclude newly proposed canvases\n|-- Generate: capture -> analyze -> materialize -> validate\n|   |-- Require pinned context and at least one captured hunk\n|   |-- Persist context/prompts; open agent with step-specific tools\n|   |-- Run agent workflow with changes service and canvas agent API\n|   |-- Require returned proposal to belong to these tools and be ready\n|   |   `-- Completed run leaves a ChangeSession ready for review\n|   `-- Own run lifetime: artifacts, cancellation, interruption and disposal\n|-- Propose: isolated DiagramChangeSession\n|   |-- create: draft, version 0; hash projectId + requestId\n|   |   `-- Clone capture; attach default or supplied DiffTree when pinned\n|   |-- Session owns repository context, DiffTree, metadata and version\n|   |   |-- Documents own baseline/null, proposed state, version and history\n|   |   `-- Session retains derived changes, migrations and request receipts\n|   |-- Shared MappingDocumentController + canvas history service\n|   |   |-- Apply operations, undo, redo or reset an existing baseline\n|   |   `-- Record proposed state/history; refresh changes; return to draft\n|   |-- Derive review changes from baseline versus proposed state\n|   |   |-- New canvas -> type 3; newly added diagram -> type 2\n|   |   |-- Variant selections/reviews or existing diagram changes -> type 1\n|   |   `-- Preserve annotations by change ID; retain prior type 4 for type 1\n|   `-- Mutation discipline\n|       |-- Serialize per session; replay matching receipt before version checks\n|       |-- Reject conflicting request IDs and edits to accepted/archived sessions\n|       `-- Advance session version; persist changed documents and receipt\n|-- Review: inspect, annotate and mark ready\n|   |-- Supplied annotations cover every generated change exactly once\n|   |   `-- Keep targets and permitted types; set titles, reasons, dependencies\n|   |-- Update DiffTree from stored hunks; capture hunks if tree is absent\n|   |-- Read projections\n|   |   |-- Summaries hide archived sessions and sort newest first\n|   |   |-- Preview reads selected baseline/proposal without document history\n|   |   |-- DiffTree exposes mappings and paged hunks, with optional patches\n|   |   `-- Treemaps combine tree and previews; reject mixed session versions\n|   `-- Ready gate: validateReady\n|       |-- Require changes; validate optional DiffTree, ownership and migrations\n|       |-- Dependencies must exist and form an acyclic graph\n|       |-- Validate all proposed connection anchors\n|       `-- Type 2 needs incoming edge whose source box exists in baseline\n|-- Accept: ready proposal -> catalog publication -> accepted\n|   |-- Serialize; require expected session version; revalidate readiness\n|   |-- Accepted replay requires same request ID and original session version\n|   |-- Select documents referenced by generated changes\n|   |-- Compare affected baselines with every matching live project document\n|   |   `-- Changed document content or name -> VERSION_CONFLICT\n|   |-- projectCatalogs.acceptCanvasChanges receives\n|   |   |-- Saved revision IDs as expected originals\n|   |   `-- Proposed documents, exported histories and generated change IDs\n|   `-- Finish session with receipt, accepted status and advanced version\n|       |-- Catalog receipt is authoritative after interrupted session write\n|       `-- Summary reads project acceptance; get/accept repair full record\n`-- Persist: ChangeSessionRecords separates metadata and immutable payloads\n    |-- Format 2 manifest: summary + document/receipt references + optional tree\n    |-- Document records reference states, history header and checkpoints\n    |-- Write: validate identities, state and pinned DiffTree consistency\n    |   |-- Serialize publication per project/session; optional token check\n    |   `-- Store changed payloads, reuse references, then publish manifest\n    |-- Read: summary, preview, DiffTree or full session\n    |   |-- Scoped reads restore only their required payloads\n    |   `-- Full read restores document history and replay receipts\n    `-- Legacy summary cache; other reads can migrate records to a manifest",
+        "position": {
+          "column": 0,
+          "row": 0
+        }
+      },
+      {
+        "id": "push",
+        "ascii": "Push ingestion: identity, replay and pinned Git\n|-- PushIntegrationService exposes connect / receive / get / generations\n|   |-- connect keeps repositoryId + external identity immutable\n|   `-- Private pending map owns in-flight generation promises\n|-- receive: hash(connectionId, eventId) -> generation ID\n|   |-- Pending/stored event replays before enabled flags are checked\n|   |-- Compare decoded event JSON; changed payload -> ID conflict\n|   |-- Recheck pending after async reads; store.createGeneration arbitrates\n|   `-- finally removes pending entry; resolution errors persist as failed\n|-- GitPushSource implements PushSource; registry supplies checkout roots\n|   |-- Accept first discovered checkout with matching repository identity\n|   |-- credentialEnv must resolve when configured\n|   |   `-- Git disables prompts, redirects and replacement objects\n|   |-- Fetch missing before/after commits; verify each as a commit\n|   |   `-- Reject shallow clone; fetch avoids tags and FETCH_HEAD writes\n|   |-- rev-list after ^before --reverse --topo-order\n|   |   |-- New branch omits ^before; maximum 2000 discovered commits\n|   |   `-- Pinned graph supplies commits, independent of moving branch HEAD\n|   |-- Failed ancestry test with exit 1 -> force-push; otherwise update\n|   `-- Compare endpoint tree IDs; new branch uses hashed empty tree\n|-- Different trees -> workflow.start\n|   |-- requestId = generation ID; head = after; comparisonBase = before\n|   `-- Supply discovered commits and optional connection.canvasId\n`-- get refreshes only generations still marked running\n    `-- Copy workflow status, proposal ID and error; save only if changed",
+        "position": {
+          "column": 100,
+          "row": 0
+        }
+      },
+      {
+        "id": "run",
+        "ascii": "Frozen inputs and workflow-owned resources\n|-- Capture supplies the data used by proposal generation\n|   |-- Saved representation -> revision ID + baseline document\n|   |-- Live snapshot overrides by representation ID or document ID\n|   |   |-- Import supplied revisions; retain capturedVersion\n|   |   `-- Recheck repository ownership after snapshot dispatch\n|   |-- Fork history; clone baseline separately into proposed state\n|   `-- Baseline-session route resets document version and undo stacks\n|       `-- Uses original baselines and stored hunks; requires originals\n|-- DiffSessionWorkflowService.start validates one of two inputs\n|   |-- baselineChangeSessionId alone supplies Git/canvas context\n|   `-- repositoryId + nonempty commits, OR comparison context\n|       `-- Comparison needs head, explicit commits array and base/null\n|-- Private starts / active / live maps own distinct lifetimes\n|   |-- starts shares begin() promises; removed after start settles\n|   |-- active retains AbortController; live retains mutable run state\n|   `-- begin launches execute asynchronously and returns a cloned run\n|-- execute creates DiffSessionTools(capture, changes, agent, reader)\n|   |-- Tool callback persists proposal ID as soon as it is assigned\n|   |-- Runtime session selects tools by workflow step\n|   |-- Each step persists request, response, transcript and metrics\n|   `-- Result ID must equal tools.changeSessionId and status be ready\n|-- Finalization persists transcript/performance, disposes session, saves\n|   `-- Execution completion removes active and live entries\n`-- Cancellation and interrupted execution\n    |-- cancel aborts an active run; catch selects cancelled vs failed\n    |-- get reports stored running runs without active/start as interrupted\n    `-- dispose aborts all active runs and disposes runtime",
+        "position": {
+          "column": 100,
+          "row": 31
+        }
+      },
+      {
+        "id": "review",
+        "ascii": "Proposal edits -> derived changes -> readiness\n|-- MappingDocumentController edits proposed state through private helpers\n|   |-- record exports history and current snapshot with nodeOrigins\n|   `-- Canonical history owns undo/redo; legacy past/future become empty\n|-- refreshChanges compares only affected documents\n|   |-- No baseline -> one canvas change, type 3; skip diagram comparison\n|   |-- Revision reviews/selections differ -> variants change, type 1\n|   |-- Union of before/after grid diagram display nodes\n|   |   |-- Compare display-node JSON and incident-edge JSON\n|   |   `-- Difference -> type 1 if previously present, otherwise type 2\n|   `-- Stable change ID preserves title, reasons and dependsOn\n|       `-- Previously annotated type 4 survives a newly derived type 1\n|-- update annotations are an optional complete replacement\n|   |-- Every generated ID exactly once; document/node targets unchanged\n|   `-- Types 1 and 4 may switch; types 2 and 3 must stay fixed\n|-- validateReady: authored dependsOn graph must resolve and be acyclic\n|   |-- DFS visiting set detects cycles; visited set avoids repeated work\n|   `-- These review dependencies are distinct from computation inputs\n|-- Type 2 connectivity uses proposed edge + baseline source box\n|   |-- Edge target must equal the added diagram's node ID\n|   `-- Source owner may be new/replaced if containing diagram existed\n`-- Review projections depend on captured data and coherent versions\n    |-- readDiffTree: explicit hunkIds override node-selected hunk IDs\n    |   `-- Reject unknown hunks; report unmapped nodes; page optional patches\n    |-- readTreemaps: DiffTree + document previews -> buildChangeTreemaps\n    |   |-- Load previews four at a time; compare each effective version\n    |   `-- Recheck summary at end; changed version -> conflict and retry\n    `-- Missing scoped tree reader falls back to get() and full session",
+        "position": {
+          "column": 100,
+          "row": 65
+        }
+      },
+      {
+        "id": "accept",
+        "ascii": "Acceptance: proposal data crosses the catalog boundary\n|-- accept serializes by session ID and calls get\n|   |-- get first repairs ready records that already have catalog receipts\n|   `-- Accepted retry matches requestId + original sessionVersion\n|-- New acceptance requires expected version, ready status, validateReady\n|-- Generated change document IDs select affected documents\n|   |-- Scan every live workspace belonging to the project\n|   |-- Match document ID OR representation ID; skip null baselines\n|   `-- Compare stateKey(document) and name; capturedVersion is not checked\n|-- acceptCanvasChanges receives the publication request\n|   |-- Session ID/version, request ID and all generated change IDs\n|   |-- Per document: savedRevisionId becomes expectedRevisionId\n|   `-- Proposed document + name + repository identity + exported history\n|-- Returned receipt records acceptance and before/after checkpoints\n|   `-- Catalog implementation is outside the supplied source\n`-- finishAcceptance repairs the separate session record\n    |-- Require stored version == receipt.sessionVersion\n    |-- Set accepted, attach receipt, advance version by one\n    |-- Set updatedAt from acceptedAt; write no documents or replay receipts\n    `-- If that write fails, catalog receipt remains authoritative\n        |-- list / effectiveSummary project accepted metadata\n        `-- Later get / accept retries persist the repair",
+        "position": {
+          "column": 190,
+          "row": 0
+        }
+      },
+      {
+        "id": "records",
+        "ascii": "ChangeSessionRecords: public reads, private storage machinery\n|-- Format 2 manifest names one published session generation\n|   |-- Summary + document ID -> immutable document record reference\n|   |-- Receipt-map reference -> request key -> receipt record reference\n|   `-- Optional DiffTree reference must agree with summary\n|-- Stored document separates metadata from payload references\n|   |-- baseline/null, proposed, legacy past/future states\n|   `-- History header + checkpoint ID -> snapshot references\n|-- write validates supplied summary, documents, receipts and tree\n|   |-- Module queue serializes by manifest path within this process\n|   |-- Optional expected token = serialized prior manifest\n|   |-- Merge changed documents/receipts; prune removed document references\n|   |-- Reuse existing tree only if its summary stays unchanged\n|   `-- Persist payloads first; publishJson(manifest) last\n|-- Reads restore only the requested view\n|   |-- readSummary returns metadata without document hydration\n|   |-- readPreview restores selected baseline/proposed; returns a clone\n|   |-- read restores histories + receipts; returns session and token\n|   |-- Preview/full-document caches each retain at most 16 references\n|   `-- restoreDiffTree validates tree, summary and pinned hunk context\n|       |-- Comparison mode: hunk.commit == head and parent == base\n|       `-- Commit mode: hunk.commit belongs to commits; repository matches\n`-- Legacy access has two paths\n    |-- Summary uses inode/size/mtime/ctime-stamped cache\n    `-- Other reads lazily split records and publish a manifest",
+        "position": {
+          "column": 190,
+          "row": 28
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": {
+          "diagram": "central",
+          "line": 6
+        },
+        "target": {
+          "diagram": "push",
+          "line": 1
+        },
+        "label": "Resolve and deduplicate external events"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 12
+        },
+        "target": {
+          "diagram": "run",
+          "line": 2
+        },
+        "label": "Capture supplies frozen generation inputs"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 20
+        },
+        "target": {
+          "diagram": "run",
+          "line": 1
+        },
+        "label": "Frozen inputs and agent-run lifetime"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 36
+        },
+        "target": {
+          "diagram": "review",
+          "line": 1
+        },
+        "label": "Derivation, history and review checks"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 58
+        },
+        "target": {
+          "diagram": "accept",
+          "line": 1
+        },
+        "label": "Publication guards and receipt recovery"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 70
+        },
+        "target": {
+          "diagram": "records",
+          "line": 1
+        },
+        "label": "Payload ownership and scoped restoration"
+      }
+    ]
+  },
+  "usage": {
+    "input_tokens": 274610,
+    "cached_input_tokens": 226944,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 9092,
+    "reasoning_output_tokens": 807
+  }
+}

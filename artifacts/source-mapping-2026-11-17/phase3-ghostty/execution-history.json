@@ -1,0 +1,54 @@
+{
+  "initial": {
+    "mainConcurrency": 6,
+    "childConcurrency": 4,
+    "pilot": [
+      "ghostty-v3-canvas-1-sol-high_sol-medium-1",
+      "ghostty-v3-canvas-1-astra-high_sol-medium-1"
+    ],
+    "startedJobs": [
+      "ghostty-v3-core-1-sol-high_sol-medium-1",
+      "ghostty-v3-core-1-astra-high_sol-medium-1",
+      "ghostty-v3-core-2-sol-high_sol-medium-1",
+      "ghostty-v3-core-2-astra-high_sol-medium-1",
+      "ghostty-v3-canvas-1-sol-high_sol-medium-1",
+      "ghostty-v3-canvas-1-astra-high_sol-medium-1",
+      "ghostty-v3-canvas-1-astra-high_sol-medium-2",
+      "ghostty-v3-canvas-2-sol-high_sol-medium-1",
+      "ghostty-v3-canvas-2-astra-high_sol-medium-1"
+    ]
+  },
+  "resumption": {
+    "at": "2026-11-19T03:55:28.621080+00:00",
+    "mainConcurrency": 2,
+    "childConcurrency": 4,
+    "reason": "Provider request-rate errors; return to pilot-sized concurrent execution",
+    "jobs": [
+      "ghostty-v3-core-1-sol-high_sol-medium-2",
+      "ghostty-v3-core-1-sol-high_sol-medium-3",
+      "ghostty-v3-core-1-astra-high_sol-medium-2",
+      "ghostty-v3-core-1-astra-high_sol-medium-3",
+      "ghostty-v3-core-2-sol-high_sol-medium-2",
+      "ghostty-v3-core-2-sol-high_sol-medium-3",
+      "ghostty-v3-core-2-astra-high_sol-medium-2",
+      "ghostty-v3-core-2-astra-high_sol-medium-3",
+      "ghostty-v3-canvas-1-sol-high_sol-medium-2",
+      "ghostty-v3-canvas-1-sol-high_sol-medium-3",
+      "ghostty-v3-canvas-1-astra-high_sol-medium-3",
+      "ghostty-v3-canvas-2-sol-high_sol-medium-2",
+      "ghostty-v3-canvas-2-sol-high_sol-medium-3",
+      "ghostty-v3-canvas-2-astra-high_sol-medium-2",
+      "ghostty-v3-canvas-2-astra-high_sol-medium-3"
+    ],
+    "startedAt": "2026-11-19T04:01:38.904554+00:00",
+    "command": "python3 artifacts/source-mapping-2026-11-17/phase3-ghostty/launch.py --remaining"
+  },
+  "completion": {
+    "at": "2026-11-19T04:51:16.979646+00:00",
+    "successful": 21,
+    "failed": 3,
+    "replacements": 0,
+    "resumedJobsFinished": 15,
+    "verifiedOutputs": 21
+  }
+}

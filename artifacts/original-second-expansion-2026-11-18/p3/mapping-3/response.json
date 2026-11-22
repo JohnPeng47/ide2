@@ -1,0 +1,460 @@
+{
+  "output": {
+    "explanation": "Expanded snapshot because its Diagram values and display panes hide substantial nested composition. The central tree retains document/canvas ownership; diagram-value expands immutable content, parsed nodes and source evidence, while display-state expands pane ownership and variant payloads. Cross-links preserve selection capture, source-mapping consumption and external view-state ownership. Checked the pinned checkout's model types, selection synchronization, controller, session/workspace, history service, persistence adapter and editor runtime. Source-backed refinements identify domainProfileId, grid:<boxId> view keys, optional legacy parser versions, and the distinction between stored revision IDs and captured content revision IDs. Core, archive, agents and commands remain exactly unchanged: they already focus on their respective lifetimes and boundaries. All existing edges are retained. Archive and agents move right only to make room for the new peripheral diagrams.",
+    "diagrams": [
+      {
+        "id": "core",
+        "ascii": "Mapping application - lifetimes and semantic ownership\n|\n|-- App services (createMappingServices; shared through context)\n|   |-- canvasHistory: DefaultCanvasHistoryService -> [archive]\n|   |-- workspaceStorage: WorkspaceStorage -> [archive]\n|   `-- diagramGenerator / codeRepo (HTTP service adapters)\n|\n`-- MappingPocPage / MappingServicesContext.Provider\n    `-- MappingWorkspacePage (page lifetime; /evals is a separate consumer)\n        |-- CanvasWorkspace\n        |   |-- controllers: Map<documentId, controller> (session references)\n        |   |-- drafts[documentId]: CanvasDraft\n        |   |   |-- DraftMetadata: name, repository, saved baseline, viewport\n        |   |   `-- CanvasSession (one per document)\n        |   |       |-- CanvasCursorCopy\n        |   |       |-- Read-only observable stores\n        |   |       |   |-- document / presentation / selection / controls\n        |   |       |   `-- geometry (bounds, cell, version) / status (dirty, undo)\n        |   |       |-- Saved baseline + cached scene/edge keys\n        |   |       |   `-- updateBaseline(acknowledged save); sceneDirty = scene only\n        |   |       |-- Commit listeners -> workspace.onPersist(ids)\n        |   |       `-- MappingDocumentController\n        |   |           |-- CanvasEditingContext handle -> shared history service\n        |   |           |-- ControllerSnapshot -> [snapshot]\n        |   |           |   `-- document: MappingGridDocument / canvas: MappingCanvasState\n        |   |           |-- Command facade + publication -> [commands]\n        |   |           |   `-- applyUpdate / transact / updateCanvas / undo\n        |   |           `-- Optional editor driver (attached reference, not editor ownership)\n        |   `-- setDrafts(): create sessions; replacement/removal unsubscribes + disposes\n        |\n        |-- MappingEditorCanvas (mounted per rendered draft; not session-owned)\n        |   |-- tldraw Editor: live geometry, camera, native undo navigation\n        |   `-- MappingEditorRuntime (holds editor/controller references)\n        |       |-- publish(): snapshot -> mapping-box shapes + checkpoint metadata\n        |       |-- settle(): completed gesture -> controller.commitEditorGesture()\n        |       |-- Native checkpoint change -> controller.restoreEditorCheckpoint()\n        |       `-- dispose(): settle, remove listeners and detach editor driver\n        |           (pointer/camera frames do not commit semantic document state)\n        |\n        |-- SourcePaneViewState: personal camera/pane state -> persistence\n        |-- WorkspacePersistence adapter -> [archive]\n        |-- PromptComposerCoordinator -> [agents]\n        |-- useAgentCanvasBridge + DiagramRevisionReceiver -> [agents]\n        |-- Storage reference: injected App service; page-owned fallback if absent\n        `-- Startup: representations + storage.load() -> reconcile -> setDrafts()",
+        "position": {
+          "column": 0,
+          "row": 0
+        }
+      },
+      {
+        "id": "archive",
+        "ascii": "Archive and durable records - collaborating owners\n|\n|-- DefaultCanvasHistoryService (App-shared; not owned by a controller)\n|   `-- contexts: WeakMap<CanvasEditingContext, CanvasHistory>\n|       `-- CanvasHistory (isolated per handle)\n|           |-- CanvasHistoryRecord\n|           |   |-- headId / baselineId / past / future\n|           |   |-- snapshots[id]: StoredCanvasSnapshot\n|           |   |   |-- CanvasDocument: composition without embedded contents\n|           |   |   |-- diagramBindings: local content key -> revision ID\n|           |   |   `-- view / nodeOrigins / optional linked transactionId\n|           |   |-- diagramRevisions: retained exact revision records\n|           |   `-- canvasViews: named recordings outside undo-restored state\n|           |-- document(): composition + bindings + revisions -> resolved document\n|           |-- append / navigate / fork / adopt; persistenceChanges(cursor)\n|           `-- Transfer preparation: linked source/destination checkpoints\n|               `-- Ordinary undo rejects linked boundaries; use workspace undo\n|\n|-- diagramRevisionStore (module API; shared, not a session-owned table)\n|   |-- createStoredDiagram / reviseStoredDiagram / resolve by revision ID\n|   `-- internal revisionRegistry retains revisions\n|\n|-- WorkspacePersistence (page-owned translation adapter)\n|   |-- Per-session cursors / known drafts / subscriptions\n|   |-- workspace.onPersist(ids) + SourcePaneViewState changes\n|   |   `-- Read: controller.persistenceChanges(cursor) + metadata/baseline/view\n|   `-- Record batches -> WorkspaceStorage.records.batch()\n|       (share content-addressed items; do not resend unchanged history)\n|\n|-- WorkspaceStorage (App service; owns transport resources)\n|   |-- records: RecordStorage\n|   |   |-- Cache + coalesced pending keys + one in-flight batch\n|   |   `-- requestId + expectedRevision; retries keep batch identity\n|   |-- workspaceStorage.worker: encode records and POST workspace/records\n|   |   `-- HTTP: /api/mapping/workspace/records -> WorkspaceRecordStore.apply()\n|   `-- flush(): await acknowledgement; dispose() alone is not a flush\n|\n`-- WorkspaceRecordStore (server-side durable owner)\n    |-- Serialized apply(): receipt check before expected workspace revision\n    |-- Validate records; reject mutation of immutable revisions/items\n    |-- Content-addressed JSON record files\n    `-- Atomic manifest replacement publishes references, revision and receipt",
+        "position": {
+          "column": 350,
+          "row": 0
+        }
+      },
+      {
+        "id": "agents",
+        "ascii": "Agent-assisted editing - producers outside session ownership\n|\n|-- Page-owned PromptComposerCoordinator\n|   |-- Entries, drafts, exact captured requests, polling timers\n|   |-- submit() -> client.capture(): pin version and baseRevisionId\n|   |   `-- Call: client.start() -> DiagramEditService.start()\n|   `-- status / cancel / retry exact request; independent of selection and undo\n|\n|-- DiagramEditService (backend application service)\n|   |-- runs + request-ID deduplication; abort/pending state\n|   |-- Generate from canvas snapshot, pinned references and AgentContext\n|   |   `-- Call: DiagramGenerator + stored revision APIs -> exact revisions\n|   `-- DiagramEditCanvasPort.snapshot / apply / create\n|       `-- Live canvas command transport; no ownership of the controller\n|\n`-- Page-owned live command ingress\n    |-- useAgentCanvasBridge\n    |   |-- Register ephemeral canvas; poll commands -> page handler -> replies\n    |   `-- Cleanup aborts polling and unregisters this instance\n    `-- DiagramRevisionReceiver.apply() / batch()\n        |-- Expected canvas version + expected base revision\n        |   `-- Call: controller.applyUpdate() (same semantic boundary as UI)\n        |-- Retain request receipt before persistence; retries do not edit twice\n        `-- Page persistence callback: sync affected document + storage.flush()\n            `-- Acknowledge only after flush; failure = PERSISTENCE_PENDING",
+        "position": {
+          "column": 350,
+          "row": 49
+        }
+      },
+      {
+        "id": "snapshot",
+        "ascii": "ControllerSnapshot - resolved state held by each controller\n|\n|-- Checkpoint identity: contextId / canvasRevisionId\n|-- Runtime metadata: version / canUndo / canRedo / endpointBounds / cell\n|-- document: MappingGridDocument\n|   |-- scene: LineGridScene\n|   |   |-- root: GridBox (recursive composition)\n|   |   |   |-- Common: id / position / minimumSize / collapsed / collapsedContentId\n|   |   |   |-- Container: children[]: GridBox + push-right layout / gap\n|   |   |   `-- Diagram instance: contentId -> sibling contents table\n|   |   `-- contents[contentId]: immutable Diagram -> [diagram-value]\n|   |-- edges: DiagramConnection[] / jumps: CanvasJump[] / sections\n|   |-- alternatives: items / selected / panels\n|   |-- diagramPresentations / diagramContexts\n|   `-- revisionSelections / revisionReviews\n|\n`-- canvas: MappingCanvasState\n    |-- selection: SelectionState\n    |   `-- items[]: ordered membership, not panel ownership\n    |       |-- id / displayNodeId (whole instance when region is absent)\n    |       `-- Optional captured region\n    |           |-- Source identity + ASCII / rect / contentNodeIds / selectedIds <- Diagram\n    |           `-- -> syncSelectionPresentation(): copy captured context into display panes\n    |-- controls: MappingControls\n    |   |-- activeBoxId / selectionFocusId / activeThreadId\n    |   `-- surfaces[key]: selection actions / prompt / ask / phase / status\n    |-- viewport / projectionLayout (optional checkpoint settings)\n    |-- display: DisplayState (separate pane ownership tree) -> [display-state]\n    `-- diagramViews[grid:<boxId>]: DiagramViewState (optional table)\n        |-- contentRevisionId / collapsedContentNodeIds / collapsedNodeRefs\n        |-- display: regular or diff / baseRevisionId\n        `-- Derivation: presentationScene(document) -> resolveDiagramView(scene, views)\n            |-- -> reads Diagram.content; folding belongs to the instance, not the content\n            `-- Visible rows map to raw lines; source ASCII is not rewritten",
+        "position": {
+          "column": 110,
+          "row": 0
+        }
+      },
+      {
+        "id": "commands",
+        "ascii": "MappingDocumentController - command and publication internals\n|\n|-- Held coordination state (beside ControllerSnapshot)\n|   |-- context: CanvasEditingContext + reference to historyService -> [archive]\n|   |-- pendingNodeIds: correspondence across staged edits\n|   |-- listeners / nodeCache / layout measurements / captured viewCamera\n|   `-- editorDriver?: settle / undo callbacks -> mounted MappingEditorRuntime\n|\n|-- Semantic command entry points\n|   |-- applyUpdate(expectedVersion, operations); transact delegates here\n|   |   |-- -> editorDriver.settle(); clear pending node correspondence\n|   |   `-- applyOperations(): reject stale version; clone document + canvas\n|   |       |-- Stage edits / layout / connections / variants / contexts\n|   |       |-- -> stored revision APIs for exact immutable Diagram values\n|   |       `-- Validate scene and selections; -> updateSnapshot(record=true)\n|   |-- commitEditorGesture(operations, canvas)\n|   |   `-- Same staging path, or record canvas-only gesture as one checkpoint\n|   |-- commitDocument / commitProjectionLayout / select\n|   |   `-- -> settle attached editor; publish recorded semantic state\n|   `-- updateCanvas(value, record=false)\n|       `-- Default: transient, no append or version increment; record=true is supported\n|\n|-- updateSnapshot(next, record, increment=true)\n|   |-- Sync selection presentation; prune deleted instance membership\n|   |-- Recorded document changes: reconcile edges/jumps; validate connections\n|   |-- Normalize diagramViews; resolve floating/conversation geometry\n|   |-- If record: -> historyService.append(context, document, canvas, node IDs)\n|   |-- Resolve stored revision values; replace snapshot / invalidate changed bounds\n|   `-- -> listeners synchronously (session stores and mounted editor runtime)\n|       `-- Session detects changed canvasRevisionId -> workspace.onPersist(ids)\n|\n|-- Navigation (restores archived state, does not append an edit)\n|   |-- undo(redo): -> attached editor driver; otherwise historyService.navigate()\n|   `-- restoreEditorCheckpoint(id): navigate history to native checkpoint\n|       `-- -> updateSnapshot(record=false); linked transfers require workspace undo\n|\n`-- History access through the context handle (archive is NOT controller-owned)\n    |-- persistenceChanges(cursor) -> historyService.persistenceChanges()\n    |-- forkHistory / prepareTransfer / prepareTransferNavigation\n    `-- Named views / generation / exportHistory -> shared history service",
+        "position": {
+          "column": 0,
+          "row": 55
+        }
+      },
+      {
+        "id": "diagram-value",
+        "ascii": "Diagram - immutable value held in scene.contents[contentId]\n|\n|-- Identity\n|   |-- id: local canvas content key\n|   |-- diagramId: stable service identity / revision: sequence\n|   `-- revisionId: exact stored revision ID -> resolved through shared revision store\n|-- content: DiagramContent\n|   |-- revisionId: content identity, distinct from Diagram.revisionId\n|   |-- ascii / asciiSha256\n|   `-- structure (tagged union)\n|       |-- kind=diagram: optional ascii-graph-1 parserVersion\n|       |   `-- Content nodes are derived; missing parserVersion preserves legacy parsing\n|       `-- kind=tree\n|           |-- parserVersion: ascii-tree-1 or ascii-tree-2\n|           |-- rootIds: ordered root node IDs\n|           `-- nodes[id]: DiagramContentNode\n|               |-- id / label / line / branchColumn\n|               |-- startColumn / endColumn: first-line anchor, not full multiline geometry\n|               |-- lines[] (optional): line / startColumn / endColumn text spans\n|               |-- parentId / childIds: tree relationships\n|               `-- foldRanges[]: startLine / endLine -> instance view hides these rows\n|-- sourceContext: DiagramSourceContext\n|   |-- binding (optional): DiagramSourceBinding\n|   |   |-- sourceId / repositoryIdentity / corpus\n|   |   `-- domainProfileId: source-code or document\n|   |-- contentHash: must match content.asciiSha256\n|   |-- mappings[]: DiagramElementMapping\n|   |   |-- id / entityId / sourceRangeIndex / optional sourceRangeId\n|   |   `-- line / startColumn / endColumn: diagram-local region\n|   |-- evidence[id]: ProjectRepresentationEvidenceRecord\n|   |   |-- id / handle / label / category / summary / optional sourceId\n|   |   `-- sourceRanges[]\n|   |       |-- id / path / optional symbol and compactionId\n|   |       `-- startLine / endLine / originalLines: captured source text\n|   `-- -> diagramSource(): join mappings to evidence and source ranges\n|       `-- -> code-panel handleNodeSelect() consumes these joined ranges\n`-- Optional diagram-local decorations\n    |-- highlights[]\n    `-- jumps[]",
+        "position": {
+          "column": 225,
+          "row": 0
+        }
+      },
+      {
+        "id": "display-state",
+        "ascii": "DisplayState - pane ownership inside MappingCanvasState.display\n|\n|-- rootIds: top-level pane IDs (no parent pane)\n|-- nodes[id]: FloatingPane\n|   |-- Common fields (DisplayNodeBase)\n|   |   |-- id / childIds: nested pane ownership, NOT selection membership\n|   |   |-- position: x / y; bounds: width / height\n|   |   |-- coordinateSpace: canvas or viewport (unscaled CSS pixels)\n|   |   |-- expansion: expanded or collapsed\n|   |   |-- geometryPolicy: placement automatic/manual; sizing content/fixed\n|   |   `-- expandedGeometry (optional): restore allocation after collapsed header\n|   `-- Variant payload (one of)\n|       |-- SelectionRegion (kind=selection)\n|       |   |-- sourceBoxId / sourceContentId / sourceRevisionId / sourceAscii\n|       |   |-- rect / contentNodeIds / selectedIds: captured context only\n|       |   |-- displayMode: stacked/chained / activeChildId\n|       |   `-- <- syncSelectionPresentation() copies SelectionItem.region\n|       |       `-- sourceRevisionId captures Diagram.content.revisionId, not stored revision ID\n|       |-- ProjectedPane (kind=projection)\n|       |   |-- title / projectionId / sourceRevisionId / targetRevisionId / activeChildId\n|       |   `-- content (one of)\n|       |       |-- call-tree: result: ProjectionSelectionResult / coverage\n|       |       |-- compaction: files[]: ProjectedFile\n|       |       |-- source-code: SourceCodePaneContent\n|       |       |   |-- projectId / sourceId / sourceFile / showCompactions / rangeIndex\n|       |       |   |-- files[]: ProjectedFile (projection metadata, not navigation limits)\n|       |       |   |   |-- sourceFile / sourceId / sourceSha256 / ascii / selectedLineCount\n|       |       |   |   `-- rows[] + sourceRanges; optional ranges / compactedSource\n|       |       |   `-- scroll checkpoint; live scrolling -> page SourcePaneViewState\n|       |       `-- code-panel: selectionId / scroll / panel: PanelContent\n|       |           |-- diagramId / revisionId (content identity) / contentHash\n|       |           |-- mappedResourceType / selectedNodeIds / unmappedNodeIds\n|       |           `-- items[]: ResolvedMapping <- handleNodeSelect(Diagram, nodes)\n|       |               |-- resource: source-range (repo / path / lines / rangeSha256)\n|       |               `-- origins[]: selected and mapped node IDs/labels + mappingId\n|       |-- ConversationPane (kind=conversation)\n|       |   |-- presentation: compact/floating/docked / canvasAnchor / draft\n|       |   `-- thread: LocalChatThread\n|       |       |-- id / title / verbosity / pending / error / progress\n|       |       |-- selection: boxId / nodeIds / rect / summary\n|       |       |-- messages[]: id / role / text\n|       |       `-- context (optional): captured diagram, mappings and source excerpts\n|       `-- DetailPane (kind=detail): title / ascii / optional sectionId\n`-- Ownership operations (immutable state helpers)\n    |-- addDisplayNode(ownerId): attach as child, otherwise append root\n    |-- removeDisplayNode(id): recursively remove descendants and ownership links\n    `-- Not owned here: arrows <- document.edges; scene boxes stay in LineGridScene",
+        "position": {
+          "column": 225,
+          "row": 50
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": {
+          "diagram": "core",
+          "line": 4
+        },
+        "target": {
+          "diagram": "archive",
+          "line": 3
+        },
+        "label": "Shared history service expanded"
+      },
+      {
+        "source": {
+          "diagram": "core",
+          "line": 5
+        },
+        "target": {
+          "diagram": "archive",
+          "line": 30
+        },
+        "label": "Storage ownership expanded"
+      },
+      {
+        "source": {
+          "diagram": "core",
+          "line": 41
+        },
+        "target": {
+          "diagram": "archive",
+          "line": 23
+        },
+        "label": "Page-owned persistence adapter expanded"
+      },
+      {
+        "source": {
+          "diagram": "commands",
+          "line": 27
+        },
+        "target": {
+          "diagram": "archive",
+          "line": 15
+        },
+        "label": "Append semantic checkpoint through service"
+      },
+      {
+        "source": {
+          "diagram": "archive",
+          "line": 14
+        },
+        "target": {
+          "diagram": "snapshot",
+          "line": 11
+        },
+        "label": "Materialize exact bound revisions"
+      },
+      {
+        "source": {
+          "diagram": "archive",
+          "line": 26
+        },
+        "target": {
+          "diagram": "commands",
+          "line": 38
+        },
+        "label": "Read incremental history through controller"
+      },
+      {
+        "source": {
+          "diagram": "core",
+          "line": 42
+        },
+        "target": {
+          "diagram": "agents",
+          "line": 3
+        },
+        "label": "Composer lifetime expanded"
+      },
+      {
+        "source": {
+          "diagram": "core",
+          "line": 43
+        },
+        "target": {
+          "diagram": "agents",
+          "line": 16
+        },
+        "label": "Live command ingress expanded"
+      },
+      {
+        "source": {
+          "diagram": "agents",
+          "line": 22
+        },
+        "target": {
+          "diagram": "commands",
+          "line": 10
+        },
+        "label": "Install generated edits through shared mutation boundary"
+      },
+      {
+        "source": {
+          "diagram": "agents",
+          "line": 24
+        },
+        "target": {
+          "diagram": "archive",
+          "line": 36
+        },
+        "label": "Await durable acknowledgement before replying"
+      },
+      {
+        "source": {
+          "diagram": "agents",
+          "line": 12
+        },
+        "target": {
+          "diagram": "archive",
+          "line": 19
+        },
+        "label": "Generation uses stored revision APIs"
+      },
+      {
+        "source": {
+          "diagram": "core",
+          "line": 24
+        },
+        "target": {
+          "diagram": "snapshot",
+          "line": 1
+        },
+        "label": "Expand held document and canvas composition"
+      },
+      {
+        "source": {
+          "diagram": "core",
+          "line": 26
+        },
+        "target": {
+          "diagram": "commands",
+          "line": 1
+        },
+        "label": "Expand controller coordination and semantic operations"
+      },
+      {
+        "source": {
+          "diagram": "commands",
+          "line": 28
+        },
+        "target": {
+          "diagram": "snapshot",
+          "line": 1
+        },
+        "label": "Publish the next resolved state"
+      },
+      {
+        "source": {
+          "diagram": "commands",
+          "line": 14
+        },
+        "target": {
+          "diagram": "archive",
+          "line": 19
+        },
+        "label": "Create and retain exact revisions outside the controller"
+      },
+      {
+        "source": {
+          "diagram": "commands",
+          "line": 11
+        },
+        "target": {
+          "diagram": "core",
+          "line": 35
+        },
+        "label": "Settle native gesture before checking command version"
+      },
+      {
+        "source": {
+          "diagram": "core",
+          "line": 35
+        },
+        "target": {
+          "diagram": "commands",
+          "line": 16
+        },
+        "label": "Commit completed native geometry through the controller"
+      },
+      {
+        "source": {
+          "diagram": "core",
+          "line": 36
+        },
+        "target": {
+          "diagram": "commands",
+          "line": 34
+        },
+        "label": "Native undo restores an archived semantic checkpoint"
+      },
+      {
+        "source": {
+          "diagram": "commands",
+          "line": 29
+        },
+        "target": {
+          "diagram": "core",
+          "line": 16
+        },
+        "label": "Session subscription synchronously updates observable stores"
+      },
+      {
+        "source": {
+          "diagram": "commands",
+          "line": 29
+        },
+        "target": {
+          "diagram": "core",
+          "line": 34
+        },
+        "label": "Mounted runtime projects relevant snapshot changes"
+      },
+      {
+        "source": {
+          "diagram": "snapshot",
+          "line": 11
+        },
+        "target": {
+          "diagram": "diagram-value",
+          "line": 1
+        },
+        "label": "Expand each immutable content-table value"
+      },
+      {
+        "source": {
+          "diagram": "snapshot",
+          "line": 28
+        },
+        "target": {
+          "diagram": "display-state",
+          "line": 1
+        },
+        "label": "Expand canvas-owned pane tree and payloads"
+      },
+      {
+        "source": {
+          "diagram": "snapshot",
+          "line": 23
+        },
+        "target": {
+          "diagram": "display-state",
+          "line": 17
+        },
+        "label": "Synchronize captured context without transferring selection ownership"
+      },
+      {
+        "source": {
+          "diagram": "snapshot",
+          "line": 33
+        },
+        "target": {
+          "diagram": "diagram-value",
+          "line": 21
+        },
+        "label": "Instance folding consumes content fold ranges without rewriting ASCII"
+      },
+      {
+        "source": {
+          "diagram": "diagram-value",
+          "line": 8
+        },
+        "target": {
+          "diagram": "display-state",
+          "line": 18
+        },
+        "label": "Region capture retains content identity, not the stored revision ID"
+      },
+      {
+        "source": {
+          "diagram": "diagram-value",
+          "line": 36
+        },
+        "target": {
+          "diagram": "display-state",
+          "line": 33
+        },
+        "label": "Joined source evidence produces code-panel resource mappings"
+      },
+      {
+        "source": {
+          "diagram": "diagram-value",
+          "line": 6
+        },
+        "target": {
+          "diagram": "archive",
+          "line": 20
+        },
+        "label": "Exact revision lookup remains a shared service relationship"
+      },
+      {
+        "source": {
+          "diagram": "display-state",
+          "line": 29
+        },
+        "target": {
+          "diagram": "core",
+          "line": 40
+        },
+        "label": "Live scrolling belongs to page view state, not the pane checkpoint"
+      },
+      {
+        "source": {
+          "diagram": "display-state",
+          "line": 47
+        },
+        "target": {
+          "diagram": "snapshot",
+          "line": 12
+        },
+        "label": "Arrows derive from document connections rather than pane nodes"
+      }
+    ]
+  },
+  "usage": {
+    "input": 53191,
+    "output": 11139,
+    "cacheRead": 212352,
+    "cacheWrite": 0,
+    "reasoning": 1828,
+    "totalTokens": 276682
+  },
+  "execution": {
+    "runtime": "pi-agent-context",
+    "sessionId": "01a1f027-71ef-794c-b151-0f470be4f6fc",
+    "contextHash": "277f1a8383df9de5ac6b401d118711d520fc948ef56386b2aaae2b225e32a9bf",
+    "cacheKey": "eval-f908cd83cb397c368ee4ae12c32f1456f86a9bc5d2ec684a10317a40a9068f10",
+    "modelContextHash": "b36e857332b07c9a06a2c78662d370552f49042cec102b2955fc9de0e7e5d430",
+    "repositories": [
+      {
+        "repository": "repo-1",
+        "repositoryPath": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax",
+        "commit": "8ca143700ca4d2c870f1101b8cd4601ab68abd41",
+        "exclusions": [
+          "**/*.spec.*",
+          "**/*.test.*",
+          "**/__fixtures__/**",
+          "**/__tests__/**",
+          "**/fixtures/**",
+          ".diagrams-code/**",
+          ".diagrams-local/**",
+          ".diagrams-parent-architecture/**",
+          ".diagrams/**",
+          ".gitignore",
+          ".materialized-parent-manifests/**",
+          ".skills/**",
+          "A · Gutter glyphs (apply directly, cycle variants inline)@1x.png",
+          "AGENTS.md",
+          "COMPARE_PLAN.md",
+          "FORMAL.md",
+          "LLM_API.MD",
+          "OLD_AGENTS.md",
+          "PLAN.md",
+          "README.md",
+          "artifacts/**",
+          "benchmarks/**",
+          "corpus/**",
+          "deploy/**",
+          "diagram-plan-small-spine.md",
+          "diagram-plan-small.md",
+          "diagram-plan.md",
+          "docs/**",
+          "domain/core/diagrams/interpreter/README.md",
+          "examples/**",
+          "exports/**",
+          "infrastructure/mapping/agents/compaction/prompts/compaction/single-file-compact.md",
+          "infrastructure/mapping/agents/compaction/prompts/compaction/single-file-compact2.md",
+          "infrastructure/mapping/agents/compaction/prompts/compaction/single-file-prompt.md",
+          "infrastructure/mapping/agents/compaction/prompts/compaction/single-file-refinement-prompt.md",
+          "infrastructure/mapping/agents/compaction/prompts/system/CODEX-LICENSE",
+          "infrastructure/mapping/agents/compaction/prompts/system/codex.md",
+          "infrastructure/mapping/agents/diagram-edit/prompts/edit-diagram.md",
+          "investigations/**",
+          "mapping-initial-diagram.txt",
+          "package-lock.json",
+          "packages/ui-test-framework/README.md",
+          "projection-3d/**",
+          "projection-3d/.gitignore",
+          "scripts/**",
+          "src/server/features/mapping/compaction/prompts/compaction/single-file-compact2-herdr-w3A-pB.md",
+          "tests/**",
+          "tools/**",
+          "tools/diagram-parser/diagram_parser/.gitignore",
+          "vitest.config.ts"
+        ],
+        "checkout": "/tmp/agent-repository-l0PL13/checkout",
+        "inspectionSource": "session-transcript"
+      }
+    ]
+  }
+}

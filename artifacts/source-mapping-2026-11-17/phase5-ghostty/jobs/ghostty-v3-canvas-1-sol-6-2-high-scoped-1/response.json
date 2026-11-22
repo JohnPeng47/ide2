@@ -1,0 +1,296 @@
+{
+  "output": {
+    "validatedCandidate": "93c2002aeac0f7d6ae034d94d6e9152c6ea69dadfb43c966dd1d7921c701c012"
+  },
+  "usage": {
+    "input": 1223310,
+    "output": 114125,
+    "cacheRead": 11193600,
+    "cacheWrite": 0,
+    "reasoning": 11168,
+    "totalTokens": 12531035
+  },
+  "execution": {
+    "runtime": "pi-agent-context",
+    "sessionId": "01a203de-c6cd-70b3-98e3-ecd8c63f89b7",
+    "contextHash": "f80fdfee53c9c2eecb607117514795b67267e5117b0960c2a77e390d08a58685",
+    "cacheKey": "eval-c11bfaaf0cd8027bd6c051aaa7db405a10665d29883ac4a53658c3a66154bb73",
+    "modelContextHash": "a1374a15d081c45238d43e01b7ce208b8b1ff1dbf5da7f14ddbd680ad6ffc953",
+    "repositories": [
+      {
+        "repository": "repo-1",
+        "repositoryPath": "/home/john/softwarez/ghostty",
+        "commit": "ea8b12a8a9894b5259c441eadd8f6f0c65e215af",
+        "exclusions": [
+          "**/*-LICENSE",
+          "**/*.md",
+          "**/*.mdx",
+          "**/*.spec.*",
+          "**/*.test.*",
+          "**/AGENTS.md",
+          "**/CODEX-LICENSE",
+          "**/LICENSE*",
+          "**/Tests/**",
+          "**/__fixtures__/**",
+          "**/__tests__/**",
+          "**/benchmark/**",
+          "**/benchmarks/**",
+          "**/build/**",
+          "**/dist/**",
+          "**/docs/**",
+          "**/examples/**",
+          "**/fixtures/**",
+          "**/node_modules/**",
+          "**/scripts/**",
+          "**/test/**",
+          "**/tests/**",
+          ".agents/**",
+          ".github/**",
+          ".husky/**",
+          ".pi/**",
+          "deps/**",
+          "example/**",
+          "flake.lock",
+          "flatpak/**",
+          "images/**",
+          "nix/**",
+          "package-lock.json",
+          "po/**",
+          "scripts/**",
+          "snap/**",
+          "vendor/**"
+        ],
+        "checkout": "/home/john/.cache/mapping-phase5-kerh8ebv/agent-repository-tUNAhF/checkout",
+        "inspectionSource": "session-transcript"
+      }
+    ],
+    "subagents": {
+      "model": "gpt-6.2-sol",
+      "effort": "high",
+      "concurrency": 2,
+      "sessions": [
+        {
+          "id": "child-1",
+          "name": "d1app",
+          "assignment": "Map d1 n1-n15, especially app/runtime cross-file. Return compact verified lines + scopes/roles, n1/n11 parent anchored with extra coordination, I'll union children as in scope.",
+          "model": "gpt-6.2-sol",
+          "effort": "high",
+          "status": "finished",
+          "queuedAt": "2026-11-22T15:27:50.287Z",
+          "usage": {
+            "input": 126325,
+            "output": 10172,
+            "cacheRead": 1303552,
+            "cacheWrite": 0,
+            "reasoning": 1121,
+            "totalTokens": 1440049
+          },
+          "cost": {
+            "input": 0.25265,
+            "output": 0.10172000000000002,
+            "cacheRead": 0.2607104,
+            "cacheWrite": 0,
+            "total": 0.6150804000000001
+          },
+          "startedAt": "2026-11-22T15:27:50.291Z",
+          "sessionId": "01a203de-ea2d-7eec-a45b-469b8cd6f064",
+          "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase5-kerh8ebv-agent-repository-tUNAhF-checkout--/2026-11-22T15-27-50-317Z_01a203de-ea2d-7eec-a45b-469b8cd6f064.jsonl",
+          "completedAt": "2026-11-22T15:31:58.782Z"
+        },
+        {
+          "id": "child-2",
+          "name": "d1input",
+          "assignment": "Map d1 n16-n28. Return compact verified lines + scopes/roles; follow input and I/O paths needed.",
+          "model": "gpt-6.2-sol",
+          "effort": "high",
+          "status": "finished",
+          "queuedAt": "2026-11-22T15:27:50.288Z",
+          "usage": {
+            "input": 225958,
+            "output": 25068,
+            "cacheRead": 2727168,
+            "cacheWrite": 0,
+            "reasoning": 2602,
+            "totalTokens": 2978194
+          },
+          "cost": {
+            "input": 0.45191599999999993,
+            "output": 0.25068000000000007,
+            "cacheRead": 0.5454336,
+            "cacheWrite": 0,
+            "total": 1.2480296
+          },
+          "startedAt": "2026-11-22T15:27:50.291Z",
+          "sessionId": "01a203de-ea32-72c2-af6b-65ed4473efa0",
+          "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase5-kerh8ebv-agent-repository-tUNAhF-checkout--/2026-11-22T15-27-50-322Z_01a203de-ea32-72c2-af6b-65ed4473efa0.jsonl",
+          "completedAt": "2026-11-22T15:36:59.761Z"
+        },
+        {
+          "id": "child-3",
+          "name": "d1teardown",
+          "assignment": "Map d1 n29-n48. Return compact verified lines + scopes/roles; especially runtime close path.",
+          "model": "gpt-6.2-sol",
+          "effort": "high",
+          "status": "finished",
+          "queuedAt": "2026-11-22T15:27:50.288Z",
+          "usage": {
+            "input": 141868,
+            "output": 9564,
+            "cacheRead": 831488,
+            "cacheWrite": 0,
+            "reasoning": 532,
+            "totalTokens": 982920
+          },
+          "cost": {
+            "input": 0.283736,
+            "output": 0.09564,
+            "cacheRead": 0.16629760000000002,
+            "cacheWrite": 0,
+            "total": 0.5456736
+          },
+          "startedAt": "2026-11-22T15:31:58.782Z",
+          "sessionId": "01a203e2-b4c8-7612-a545-3855545571d7",
+          "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase5-kerh8ebv-agent-repository-tUNAhF-checkout--/2026-11-22T15-31-58-792Z_01a203e2-b4c8-7612-a545-3855545571d7.jsonl",
+          "completedAt": "2026-11-22T15:35:39.117Z"
+        },
+        {
+          "id": "child-4",
+          "name": "d2",
+          "assignment": "Map all d2 nodes. Return compact verified lines + scopes/roles. I can union children for parent nodes.",
+          "model": "gpt-6.2-sol",
+          "effort": "high",
+          "status": "finished",
+          "queuedAt": "2026-11-22T15:27:50.288Z",
+          "usage": {
+            "input": 186572,
+            "output": 15687,
+            "cacheRead": 2033920,
+            "cacheWrite": 0,
+            "reasoning": 1668,
+            "totalTokens": 2236179
+          },
+          "cost": {
+            "input": 0.37314400000000003,
+            "output": 0.15687,
+            "cacheRead": 0.4067840000000001,
+            "cacheWrite": 0,
+            "total": 0.9367980000000002
+          },
+          "startedAt": "2026-11-22T15:35:39.126Z",
+          "sessionId": "01a203e6-1182-72f1-990b-e2be99782ce8",
+          "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase5-kerh8ebv-agent-repository-tUNAhF-checkout--/2026-11-22T15-35-39-138Z_01a203e6-1182-72f1-990b-e2be99782ce8.jsonl",
+          "completedAt": "2026-11-22T15:41:47.731Z"
+        },
+        {
+          "id": "child-5",
+          "name": "d3",
+          "assignment": "Map all d3 nodes. Return compact verified lines + scopes/roles. I can union children for parent nodes.",
+          "model": "gpt-6.2-sol",
+          "effort": "high",
+          "status": "finished",
+          "queuedAt": "2026-11-22T15:27:50.288Z",
+          "usage": {
+            "input": 186796,
+            "output": 11622,
+            "cacheRead": 1081344,
+            "cacheWrite": 0,
+            "reasoning": 706,
+            "totalTokens": 1279762
+          },
+          "cost": {
+            "input": 0.373592,
+            "output": 0.11622000000000002,
+            "cacheRead": 0.21626880000000004,
+            "cacheWrite": 0,
+            "total": 0.7060808000000001
+          },
+          "startedAt": "2026-11-22T15:36:59.762Z",
+          "sessionId": "01a203e7-4c7b-7b6b-8c1e-21140dc6985e",
+          "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase5-kerh8ebv-agent-repository-tUNAhF-checkout--/2026-11-22T15-36-59-771Z_01a203e7-4c7b-7b6b-8c1e-21140dc6985e.jsonl",
+          "completedAt": "2026-11-22T15:41:21.251Z"
+        },
+        {
+          "id": "child-6",
+          "name": "d4",
+          "assignment": "Map all d4 nodes. Return compact verified lines + scopes/roles. I can union children for parent nodes.",
+          "model": "gpt-6.2-sol",
+          "effort": "high",
+          "status": "finished",
+          "queuedAt": "2026-11-22T15:27:50.288Z",
+          "usage": {
+            "input": 107270,
+            "output": 10057,
+            "cacheRead": 534784,
+            "cacheWrite": 0,
+            "reasoning": 2452,
+            "totalTokens": 652111
+          },
+          "cost": {
+            "input": 0.21454,
+            "output": 0.10057,
+            "cacheRead": 0.1069568,
+            "cacheWrite": 0,
+            "total": 0.42206679999999996
+          },
+          "startedAt": "2026-11-22T15:41:21.252Z",
+          "sessionId": "01a203eb-49ed-7e5a-9bcf-2d421ce881c7",
+          "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase5-kerh8ebv-agent-repository-tUNAhF-checkout--/2026-11-22T15-41-21-261Z_01a203eb-49ed-7e5a-9bcf-2d421ce881c7.jsonl",
+          "completedAt": "2026-11-22T15:45:17.788Z"
+        },
+        {
+          "id": "child-7",
+          "name": "d5",
+          "assignment": "Map all d5 nodes. Return compact verified lines + scopes/roles. I can union children for parent nodes.",
+          "model": "gpt-6.2-sol",
+          "effort": "high",
+          "status": "finished",
+          "queuedAt": "2026-11-22T15:27:50.288Z",
+          "usage": {
+            "input": 138148,
+            "output": 11213,
+            "cacheRead": 1139712,
+            "cacheWrite": 0,
+            "reasoning": 1236,
+            "totalTokens": 1289073
+          },
+          "cost": {
+            "input": 0.27629600000000004,
+            "output": 0.11213000000000001,
+            "cacheRead": 0.22794240000000004,
+            "cacheWrite": 0,
+            "total": 0.6163683999999999
+          },
+          "startedAt": "2026-11-22T15:41:47.731Z",
+          "sessionId": "01a203eb-b15b-7772-81fc-397359f6cf13",
+          "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase5-kerh8ebv-agent-repository-tUNAhF-checkout--/2026-11-22T15-41-47-739Z_01a203eb-b15b-7772-81fc-397359f6cf13.jsonl",
+          "completedAt": "2026-11-22T15:46:06.398Z"
+        }
+      ]
+    }
+  },
+  "accounting": {
+    "mainUsage": {
+      "input": 110373,
+      "output": 20742,
+      "cacheRead": 1541632,
+      "cacheWrite": 0,
+      "reasoning": 851,
+      "totalTokens": 1672747
+    },
+    "mainCost": {
+      "input": 0.220746,
+      "output": 0.20742,
+      "cacheRead": 0.3083264,
+      "cacheWrite": 0,
+      "total": 0.7364924000000002
+    },
+    "totalCost": {
+      "input": 2.44662,
+      "output": 1.1412500000000003,
+      "cacheRead": 2.23872,
+      "cacheWrite": 0,
+      "total": 5.82659
+    },
+    "children": 7
+  }
+}

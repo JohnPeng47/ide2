@@ -1,0 +1,25 @@
+.experiment-home { width: min(100%, 960px); box-sizing: border-box; margin-inline: auto; padding: 24px; min-width: 0; flex-shrink: 0; }
+.experiment-home h2 { margin: 0 0 6px; font-size: 17px; font-weight: 700; }
+.experiment-home header p { margin: 6px 0; }
+.experiment-home-tree {
+  margin: 24px 0 16px;
+  padding: 0 0 12px;
+  overflow-x: auto;
+  white-space: pre;
+  font: 13px/1.45 ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-variant-ligatures: none;
+  color: var(--text-primary);
+  background: none;
+  border: 0;
+}
+.experiment-home-tree a { color: var(--accent-info); font-weight: inherit; text-decoration: none; }
+.experiment-home-tree a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.experiment-home-label { white-space: pre; color: var(--text-muted); }
+.experiment-home-controls { margin-top: 12px; gap: 16px; }
+.experiment-home-views { display: flex; flex-wrap: wrap; gap: 4px; }
+.experiment-home-views button[aria-pressed="true"] { color: var(--accent-info); border-color: currentColor; }
+.experiment-home-heading { color: var(--text-primary); font-weight: 700; }
+.experiment-home-comment { min-width: 0; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--diagram-syntax-string); }
+.experiment-home-comment-tag { color: var(--text-muted); }
+.experiment-home-tree a.experiment-phase-link, .experiment-phase-legend { color: var(--diagram-syntax-keyword); }
+@media (max-width: 700px) { .experiment-home { padding: 16px; } }

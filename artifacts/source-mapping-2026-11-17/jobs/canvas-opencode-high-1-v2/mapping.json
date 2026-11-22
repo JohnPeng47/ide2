@@ -1,0 +1,998 @@
+{
+  "diagrams": [
+    {
+      "diagramId": "d1",
+      "mappings": [
+        {
+          "node": "n1",
+          "path": "packages/core/src/session.ts",
+          "startLine": 265,
+          "endLine": 284
+        },
+        {
+          "node": "n2",
+          "path": "packages/server/src/handlers/session.ts",
+          "startLine": 37,
+          "endLine": 40
+        },
+        {
+          "node": "n2",
+          "path": "packages/server/src/event-feed.ts",
+          "startLine": 87,
+          "endLine": 92
+        },
+        {
+          "node": "n3",
+          "path": "packages/server/src/handlers/session.ts",
+          "startLine": 37,
+          "endLine": 44
+        },
+        {
+          "node": "n4",
+          "path": "packages/server/src/event-feed.ts",
+          "startLine": 33,
+          "endLine": 39
+        },
+        {
+          "node": "n4",
+          "path": "packages/server/src/event-feed.ts",
+          "startLine": 65,
+          "endLine": 83
+        },
+        {
+          "node": "n5",
+          "path": "packages/server/src/event-feed.ts",
+          "startLine": 72,
+          "endLine": 83
+        },
+        {
+          "node": "n5",
+          "path": "packages/server/src/event-feed.ts",
+          "startLine": 87,
+          "endLine": 92
+        },
+        {
+          "node": "n6",
+          "path": "packages/core/src/session.ts",
+          "startLine": 267,
+          "endLine": 284
+        },
+        {
+          "node": "n7",
+          "path": "packages/core/src/session.ts",
+          "startLine": 126,
+          "endLine": 145
+        },
+        {
+          "node": "n8",
+          "path": "packages/core/src/session.ts",
+          "startLine": 290,
+          "endLine": 296
+        },
+        {
+          "node": "n8",
+          "path": "packages/core/src/session.ts",
+          "startLine": 341,
+          "endLine": 342
+        },
+        {
+          "node": "n8",
+          "path": "packages/core/src/session.ts",
+          "startLine": 402,
+          "endLine": 416
+        },
+        {
+          "node": "n9",
+          "path": "packages/core/src/session.ts",
+          "startLine": 294,
+          "endLine": 316
+        },
+        {
+          "node": "n10",
+          "path": "packages/core/src/session.ts",
+          "startLine": 402,
+          "endLine": 416
+        },
+        {
+          "node": "n11",
+          "path": "packages/core/src/session/session.ts",
+          "startLine": 39,
+          "endLine": 50
+        },
+        {
+          "node": "n12",
+          "path": "packages/core/src/session/session.ts",
+          "startLine": 385,
+          "endLine": 386
+        },
+        {
+          "node": "n12",
+          "path": "packages/core/src/session/session.ts",
+          "startLine": 52,
+          "endLine": 55
+        },
+        {
+          "node": "n13",
+          "path": "packages/core/src/session/session.ts",
+          "startLine": 52,
+          "endLine": 59
+        },
+        {
+          "node": "n13",
+          "path": "packages/core/src/session/session.ts",
+          "startLine": 136,
+          "endLine": 139
+        },
+        {
+          "node": "n13",
+          "path": "packages/core/src/session.ts",
+          "startLine": 443,
+          "endLine": 445
+        },
+        {
+          "node": "n14",
+          "path": "packages/core/src/session/session.ts",
+          "startLine": 155,
+          "endLine": 178
+        },
+        {
+          "node": "n15",
+          "path": "packages/core/src/session/session.ts",
+          "startLine": 168,
+          "endLine": 178
+        },
+        {
+          "node": "n16",
+          "path": "packages/core/src/session/session.ts",
+          "startLine": 187,
+          "endLine": 188
+        },
+        {
+          "node": "n17",
+          "path": "packages/core/src/session/session.ts",
+          "startLine": 92,
+          "endLine": 110
+        },
+        {
+          "node": "n17",
+          "path": "packages/core/src/session/session.ts",
+          "startLine": 332,
+          "endLine": 358
+        },
+        {
+          "node": "n17",
+          "path": "packages/core/src/session.ts",
+          "startLine": 520,
+          "endLine": 521
+        },
+        {
+          "node": "n18",
+          "path": "packages/core/src/session/session.ts",
+          "startLine": 278,
+          "endLine": 285
+        },
+        {
+          "node": "n18",
+          "path": "packages/core/src/session/session.ts",
+          "startLine": 328,
+          "endLine": 330
+        },
+        {
+          "node": "n19",
+          "path": "packages/core/src/session/execution.ts",
+          "startLine": 18,
+          "endLine": 44
+        },
+        {
+          "node": "n20",
+          "path": "packages/core/src/session/run-coordinator.ts",
+          "startLine": 59,
+          "endLine": 71
+        },
+        {
+          "node": "n21",
+          "path": "packages/core/src/session/run-coordinator.ts",
+          "startLine": 69,
+          "endLine": 71
+        },
+        {
+          "node": "n22",
+          "path": "packages/core/src/session/run-coordinator.ts",
+          "startLine": 39,
+          "endLine": 46
+        },
+        {
+          "node": "n22",
+          "path": "packages/core/src/session/run-coordinator.ts",
+          "startLine": 86,
+          "endLine": 105
+        },
+        {
+          "node": "n23",
+          "path": "packages/core/src/session/run-coordinator.ts",
+          "startLine": 123,
+          "endLine": 144
+        },
+        {
+          "node": "n24",
+          "path": "packages/core/src/session/run-coordinator.ts",
+          "startLine": 146,
+          "endLine": 175
+        },
+        {
+          "node": "n25",
+          "path": "packages/core/src/session/execution.ts",
+          "startLine": 132,
+          "endLine": 150
+        },
+        {
+          "node": "n26",
+          "path": "packages/core/src/session/execution.ts",
+          "startLine": 133,
+          "endLine": 145
+        },
+        {
+          "node": "n26",
+          "path": "packages/core/src/session/execution.ts",
+          "startLine": 75,
+          "endLine": 82
+        },
+        {
+          "node": "n27",
+          "path": "packages/core/src/session/execution.ts",
+          "startLine": 100,
+          "endLine": 125
+        },
+        {
+          "node": "n28",
+          "path": "packages/core/src/session/execution.ts",
+          "startLine": 126,
+          "endLine": 130
+        },
+        {
+          "node": "n29",
+          "path": "packages/core/src/session/execution.ts",
+          "startLine": 150,
+          "endLine": 169
+        },
+        {
+          "node": "n30",
+          "path": "packages/core/src/session/execution/subagent-report.ts",
+          "startLine": 130,
+          "endLine": 137
+        },
+        {
+          "node": "n31",
+          "path": "packages/core/src/session/execution/subagent-report.ts",
+          "startLine": 150,
+          "endLine": 186
+        },
+        {
+          "node": "n32",
+          "path": "packages/core/src/session/execution/subagent-report.ts",
+          "startLine": 74,
+          "endLine": 98
+        },
+        {
+          "node": "n32",
+          "path": "packages/core/src/session/execution/subagent-report.ts",
+          "startLine": 125,
+          "endLine": 127
+        },
+        {
+          "node": "n33",
+          "path": "packages/core/src/session/execution/restart.ts",
+          "startLine": 46,
+          "endLine": 74
+        },
+        {
+          "node": "n34",
+          "path": "packages/core/src/session/execution/restart.ts",
+          "startLine": 95,
+          "endLine": 115
+        },
+        {
+          "node": "n34",
+          "path": "packages/core/src/session/execution/restart.ts",
+          "startLine": 441,
+          "endLine": 477
+        },
+        {
+          "node": "n35",
+          "path": "packages/core/src/session/execution/restart.ts",
+          "startLine": 57,
+          "endLine": 64
+        },
+        {
+          "node": "n36",
+          "path": "packages/core/src/session/sql.ts",
+          "startLine": 28,
+          "endLine": 74
+        },
+        {
+          "node": "n36",
+          "path": "packages/core/src/session/store.ts",
+          "startLine": 54,
+          "endLine": 58
+        },
+        {
+          "node": "n37",
+          "path": "packages/core/src/location-services.ts",
+          "startLine": 14,
+          "endLine": 28
+        },
+        {
+          "node": "n38",
+          "path": "packages/core/src/location-services.ts",
+          "startLine": 22,
+          "endLine": 28
+        },
+        {
+          "node": "n38",
+          "path": "packages/core/src/location-services.ts",
+          "startLine": 72,
+          "endLine": 79
+        },
+        {
+          "node": "n38",
+          "path": "packages/core/src/location-service-map.ts",
+          "startLine": 38,
+          "endLine": 47
+        },
+        {
+          "node": "n39",
+          "path": "packages/core/src/location-services.ts",
+          "startLine": 112,
+          "endLine": 117
+        },
+        {
+          "node": "n40",
+          "path": "packages/core/src/location-services.ts",
+          "startLine": 79,
+          "endLine": 90
+        },
+        {
+          "node": "n41",
+          "path": "packages/core/src/location-services.ts",
+          "startLine": 90,
+          "endLine": 107
+        }
+      ]
+    },
+    {
+      "diagramId": "d2",
+      "mappings": [
+        {
+          "node": "n1",
+          "path": "packages/core/src/session/sql.ts",
+          "startLine": 28,
+          "endLine": 74
+        },
+        {
+          "node": "n2",
+          "path": "packages/core/src/session/sql.ts",
+          "startLine": 28,
+          "endLine": 39
+        },
+        {
+          "node": "n2",
+          "path": "packages/core/src/session/sql.ts",
+          "startLine": 86,
+          "endLine": 97
+        },
+        {
+          "node": "n3",
+          "path": "packages/core/src/session/sql.ts",
+          "startLine": 28,
+          "endLine": 39
+        },
+        {
+          "node": "n4",
+          "path": "packages/core/src/session/sql.ts",
+          "startLine": 28,
+          "endLine": 44
+        },
+        {
+          "node": "n5",
+          "path": "packages/core/src/session/sql.ts",
+          "startLine": 46,
+          "endLine": 74
+        },
+        {
+          "node": "n6",
+          "path": "packages/core/src/session/sql.ts",
+          "startLine": 72,
+          "endLine": 74
+        },
+        {
+          "node": "n6",
+          "path": "packages/core/src/session/store.ts",
+          "startLine": 251,
+          "endLine": 266
+        },
+        {
+          "node": "n7",
+          "path": "packages/core/src/session/sql.ts",
+          "startLine": 86,
+          "endLine": 104
+        },
+        {
+          "node": "n8",
+          "path": "packages/core/src/session/sql.ts",
+          "startLine": 107,
+          "endLine": 127
+        },
+        {
+          "node": "n9",
+          "path": "packages/core/src/session/sql.ts",
+          "startLine": 130,
+          "endLine": 150
+        },
+        {
+          "node": "n10",
+          "path": "packages/core/src/session/inbox.ts",
+          "startLine": 470,
+          "endLine": 479
+        },
+        {
+          "node": "n10",
+          "path": "packages/core/src/session/inbox.ts",
+          "startLine": 573,
+          "endLine": 586
+        },
+        {
+          "node": "n11",
+          "path": "packages/core/src/session/sql.ts",
+          "startLine": 138,
+          "endLine": 142
+        },
+        {
+          "node": "n11",
+          "path": "packages/core/src/session/runner/llm.ts",
+          "startLine": 102,
+          "endLine": 115
+        },
+        {
+          "node": "n12",
+          "path": "packages/core/src/session/sql.ts",
+          "startLine": 154,
+          "endLine": 166
+        },
+        {
+          "node": "n12",
+          "path": "packages/core/src/session/sql.ts",
+          "startLine": 174,
+          "endLine": 183
+        },
+        {
+          "node": "n13",
+          "path": "packages/core/src/event/sql.ts",
+          "startLine": 4,
+          "endLine": 25
+        },
+        {
+          "node": "n13",
+          "path": "packages/core/src/bus.ts",
+          "startLine": 381,
+          "endLine": 431
+        },
+        {
+          "node": "n14",
+          "path": "packages/core/src/bus.ts",
+          "startLine": 150,
+          "endLine": 159
+        },
+        {
+          "node": "n15",
+          "path": "packages/core/src/bus.ts",
+          "startLine": 313,
+          "endLine": 318
+        },
+        {
+          "node": "n16",
+          "path": "packages/core/src/bus.ts",
+          "startLine": 396,
+          "endLine": 404
+        },
+        {
+          "node": "n17",
+          "path": "packages/core/src/bus.ts",
+          "startLine": 405,
+          "endLine": 431
+        },
+        {
+          "node": "n18",
+          "path": "packages/core/src/bus.ts",
+          "startLine": 470,
+          "endLine": 476
+        },
+        {
+          "node": "n18",
+          "path": "packages/core/src/bus.ts",
+          "startLine": 495,
+          "endLine": 506
+        },
+        {
+          "node": "n19",
+          "path": "packages/core/src/session/projector.ts",
+          "startLine": 1005,
+          "endLine": 1047
+        },
+        {
+          "node": "n19",
+          "path": "packages/core/src/session/projector.ts",
+          "startLine": 1108,
+          "endLine": 1116
+        },
+        {
+          "node": "n20",
+          "path": "packages/core/src/session/message-updater.ts",
+          "startLine": 300,
+          "endLine": 417
+        },
+        {
+          "node": "n20",
+          "path": "packages/core/src/session/projector.ts",
+          "startLine": 1081,
+          "endLine": 1116
+        },
+        {
+          "node": "n21",
+          "path": "packages/core/src/session/projector.ts",
+          "startLine": 1005,
+          "endLine": 1075
+        },
+        {
+          "node": "n22",
+          "path": "packages/core/src/session/inbox.ts",
+          "startLine": 171,
+          "endLine": 203
+        },
+        {
+          "node": "n23",
+          "path": "packages/core/src/session/inbox.ts",
+          "startLine": 176,
+          "endLine": 203
+        },
+        {
+          "node": "n24",
+          "path": "packages/core/src/session/inbox.ts",
+          "startLine": 347,
+          "endLine": 363
+        },
+        {
+          "node": "n24",
+          "path": "packages/core/src/session/projector.ts",
+          "startLine": 1008,
+          "endLine": 1035
+        },
+        {
+          "node": "n25",
+          "path": "packages/core/src/session/store.ts",
+          "startLine": 54,
+          "endLine": 89
+        },
+        {
+          "node": "n26",
+          "path": "packages/core/src/session/store.ts",
+          "startLine": 147,
+          "endLine": 150
+        },
+        {
+          "node": "n26",
+          "path": "packages/core/src/session/store.ts",
+          "startLine": 195,
+          "endLine": 201
+        },
+        {
+          "node": "n27",
+          "path": "packages/core/src/session/store.ts",
+          "startLine": 251,
+          "endLine": 269
+        },
+        {
+          "node": "n27",
+          "path": "packages/core/src/session/projector.ts",
+          "startLine": 1062,
+          "endLine": 1070
+        },
+        {
+          "node": "n28",
+          "path": "packages/core/src/session.ts",
+          "startLine": 443,
+          "endLine": 462
+        },
+        {
+          "node": "n28",
+          "path": "packages/core/src/session/context.ts",
+          "startLine": 178,
+          "endLine": 193
+        },
+        {
+          "node": "n29",
+          "path": "packages/core/src/session.ts",
+          "startLine": 484,
+          "endLine": 494
+        },
+        {
+          "node": "n29",
+          "path": "packages/core/src/bus.ts",
+          "startLine": 381,
+          "endLine": 431
+        }
+      ]
+    },
+    {
+      "diagramId": "d3",
+      "mappings": [
+        {
+          "node": "n1",
+          "path": "packages/core/src/instance.ts",
+          "startLine": 64,
+          "endLine": 124
+        },
+        {
+          "node": "n2",
+          "path": "packages/core/src/instance.ts",
+          "startLine": 69,
+          "endLine": 85
+        },
+        {
+          "node": "n2",
+          "path": "packages/core/src/instance.ts",
+          "startLine": 99,
+          "endLine": 101
+        },
+        {
+          "node": "n3",
+          "path": "packages/core/src/instance.ts",
+          "startLine": 87,
+          "endLine": 91
+        },
+        {
+          "node": "n3",
+          "path": "packages/core/src/instance.ts",
+          "startLine": 116,
+          "endLine": 118
+        },
+        {
+          "node": "n4",
+          "path": "packages/core/src/instance.ts",
+          "startLine": 99,
+          "endLine": 118
+        },
+        {
+          "node": "n4",
+          "path": "packages/core/src/tool.ts",
+          "startLine": 254,
+          "endLine": 268
+        },
+        {
+          "node": "n5",
+          "path": "packages/core/src/tool.ts",
+          "startLine": 294,
+          "endLine": 324
+        },
+        {
+          "node": "n6",
+          "path": "packages/core/src/session/context.ts",
+          "startLine": 136,
+          "endLine": 196
+        },
+        {
+          "node": "n7",
+          "path": "packages/core/src/session/context.ts",
+          "startLine": 136,
+          "endLine": 160
+        },
+        {
+          "node": "n8",
+          "path": "packages/core/src/session/context.ts",
+          "startLine": 147,
+          "endLine": 175
+        },
+        {
+          "node": "n9",
+          "path": "packages/core/src/session/context.ts",
+          "startLine": 178,
+          "endLine": 193
+        },
+        {
+          "node": "n10",
+          "path": "packages/core/src/session/compaction.ts",
+          "startLine": 71,
+          "endLine": 83
+        },
+        {
+          "node": "n10",
+          "path": "packages/core/src/session/compaction.ts",
+          "startLine": 301,
+          "endLine": 335
+        },
+        {
+          "node": "n11",
+          "path": "packages/core/src/session/runner/llm.ts",
+          "startLine": 253,
+          "endLine": 260
+        },
+        {
+          "node": "n11",
+          "path": "packages/core/src/session/runner/llm.ts",
+          "startLine": 319,
+          "endLine": 324
+        },
+        {
+          "node": "n12",
+          "path": "packages/core/src/session/runner/index.ts",
+          "startLine": 30,
+          "endLine": 46
+        },
+        {
+          "node": "n12",
+          "path": "packages/core/src/session/runner/llm.ts",
+          "startLine": 444,
+          "endLine": 470
+        },
+        {
+          "node": "n13",
+          "path": "packages/core/src/session/runner/llm.ts",
+          "startLine": 62,
+          "endLine": 76
+        },
+        {
+          "node": "n13",
+          "path": "packages/core/src/session/runner/llm.ts",
+          "startLine": 216,
+          "endLine": 224
+        },
+        {
+          "node": "n14",
+          "path": "packages/core/src/session/runner/llm.ts",
+          "startLine": 77,
+          "endLine": 79
+        },
+        {
+          "node": "n15",
+          "path": "packages/core/src/session/runner/llm.ts",
+          "startLine": 81,
+          "endLine": 119
+        },
+        {
+          "node": "n15",
+          "path": "packages/core/src/session/runner/llm.ts",
+          "startLine": 191,
+          "endLine": 210
+        },
+        {
+          "node": "n16",
+          "path": "packages/core/src/session/runner/llm.ts",
+          "startLine": 191,
+          "endLine": 207
+        },
+        {
+          "node": "n16",
+          "path": "packages/core/src/session/runner/llm.ts",
+          "startLine": 227,
+          "endLine": 233
+        },
+        {
+          "node": "n17",
+          "path": "packages/core/src/session/runner/llm.ts",
+          "startLine": 177,
+          "endLine": 189
+        },
+        {
+          "node": "n18",
+          "path": "packages/core/src/session/runner/llm.ts",
+          "startLine": 236,
+          "endLine": 260
+        },
+        {
+          "node": "n19",
+          "path": "packages/core/src/session/runner/llm.ts",
+          "startLine": 253,
+          "endLine": 260
+        },
+        {
+          "node": "n19",
+          "path": "packages/core/src/session/runner/llm.ts",
+          "startLine": 319,
+          "endLine": 324
+        },
+        {
+          "node": "n20",
+          "path": "packages/core/src/session/runner/llm.ts",
+          "startLine": 261,
+          "endLine": 283
+        },
+        {
+          "node": "n21",
+          "path": "packages/core/src/session/model-request.ts",
+          "startLine": 106,
+          "endLine": 136
+        },
+        {
+          "node": "n21",
+          "path": "packages/core/src/session/runner/llm.ts",
+          "startLine": 261,
+          "endLine": 283
+        },
+        {
+          "node": "n22",
+          "path": "packages/core/src/session/model-request.ts",
+          "startLine": 360,
+          "endLine": 374
+        },
+        {
+          "node": "n22",
+          "path": "packages/core/src/session/model-request.ts",
+          "startLine": 407,
+          "endLine": 438
+        },
+        {
+          "node": "n23",
+          "path": "packages/core/src/session/runner/llm.ts",
+          "startLine": 275,
+          "endLine": 281
+        },
+        {
+          "node": "n24",
+          "path": "packages/core/src/session/runner/llm.ts",
+          "startLine": 295,
+          "endLine": 344
+        },
+        {
+          "node": "n24",
+          "path": "packages/core/src/session/runner/llm.ts",
+          "startLine": 377,
+          "endLine": 385
+        },
+        {
+          "node": "n25",
+          "path": "packages/core/src/session/runner/llm.ts",
+          "startLine": 249,
+          "endLine": 252
+        },
+        {
+          "node": "n26",
+          "path": "packages/core/src/session/runner/llm.ts",
+          "startLine": 55,
+          "endLine": 57
+        },
+        {
+          "node": "n26",
+          "path": "packages/core/src/session/runner/step.ts",
+          "startLine": 71,
+          "endLine": 77
+        },
+        {
+          "node": "n27",
+          "path": "packages/core/src/session/runner/step.ts",
+          "startLine": 131,
+          "endLine": 183
+        },
+        {
+          "node": "n27",
+          "path": "packages/core/src/session/runner/step.ts",
+          "startLine": 289,
+          "endLine": 333
+        },
+        {
+          "node": "n28",
+          "path": "packages/core/src/session/runner/step.ts",
+          "startLine": 92,
+          "endLine": 105
+        },
+        {
+          "node": "n29",
+          "path": "packages/core/src/session/runner/step.ts",
+          "startLine": 77,
+          "endLine": 80
+        },
+        {
+          "node": "n29",
+          "path": "packages/core/src/session/runner/step.ts",
+          "startLine": 289,
+          "endLine": 314
+        },
+        {
+          "node": "n30",
+          "path": "packages/core/src/session/runner/step.ts",
+          "startLine": 131,
+          "endLine": 163
+        },
+        {
+          "node": "n31",
+          "path": "packages/core/src/session/runner/publish-llm-event.ts",
+          "startLine": 432,
+          "endLine": 469
+        },
+        {
+          "node": "n31",
+          "path": "packages/core/src/session/runner/publish-llm-event.ts",
+          "startLine": 491,
+          "endLine": 560
+        },
+        {
+          "node": "n31",
+          "path": "packages/core/src/session/runner/step.ts",
+          "startLine": 301,
+          "endLine": 314
+        },
+        {
+          "node": "n32",
+          "path": "packages/core/src/session/runner/publish-llm-event.ts",
+          "startLine": 491,
+          "endLine": 508
+        },
+        {
+          "node": "n32",
+          "path": "packages/core/src/session/runner/step.ts",
+          "startLine": 131,
+          "endLine": 158
+        },
+        {
+          "node": "n33",
+          "path": "packages/core/src/session/runner/step.ts",
+          "startLine": 118,
+          "endLine": 128
+        },
+        {
+          "node": "n34",
+          "path": "packages/core/src/tool.ts",
+          "startLine": 123,
+          "endLine": 185
+        },
+        {
+          "node": "n34",
+          "path": "packages/core/src/tool.ts",
+          "startLine": 254,
+          "endLine": 324
+        },
+        {
+          "node": "n35",
+          "path": "packages/core/src/session/model-request.ts",
+          "startLine": 441,
+          "endLine": 455
+        },
+        {
+          "node": "n35",
+          "path": "packages/core/src/session/runner/step.ts",
+          "startLine": 260,
+          "endLine": 270
+        },
+        {
+          "node": "n36",
+          "path": "packages/core/src/session/runner/step.ts",
+          "startLine": 145,
+          "endLine": 158
+        },
+        {
+          "node": "n37",
+          "path": "packages/core/src/session/runner/step.ts",
+          "startLine": 165,
+          "endLine": 185
+        },
+        {
+          "node": "n37",
+          "path": "packages/core/src/session/runner/step.ts",
+          "startLine": 289,
+          "endLine": 315
+        },
+        {
+          "node": "n38",
+          "path": "packages/core/src/session/runner/step.ts",
+          "startLine": 106,
+          "endLine": 116
+        },
+        {
+          "node": "n38",
+          "path": "packages/core/src/session/runner/step.ts",
+          "startLine": 179,
+          "endLine": 185
+        }
+      ]
+    }
+  ],
+  "notes": "Event payload retention is conditional on Bus persist; replay cannot reconstruct unretained events."
+}

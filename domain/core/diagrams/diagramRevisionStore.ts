@@ -9,6 +9,7 @@ import type { GeneratedDiagramEdit } from './generatedDiagramEdit';
 
 /** Runtime storage API. Durable adapters flush retained revisions before publishing bindings. */
 export function getDiagramRevision(id: string): DiagramRevision { return diagramRevisions.get(id); }
+export function findDiagramRevision(id: string): DiagramRevision | undefined { return diagramRevisions.find(id); }
 export function listDiagramRevisions(diagramId: string): readonly DiagramRevisionSummary[] {
   return Object.freeze(diagramRevisions.list(diagramId).map(({ id, diagramId, parentId }) => Object.freeze({ id, diagramId, parentId })));
 }

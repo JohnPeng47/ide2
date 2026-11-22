@@ -1,0 +1,94 @@
+{
+  "modelCalls": 0,
+  "tests": {
+    "passed": 11,
+    "typecheck": "passed"
+  },
+  "checks": [
+    {
+      "mode": "history",
+      "preflight": {
+        "canvases": 16,
+        "checks": [
+          "restore",
+          "scaffold",
+          "fill",
+          "edit",
+          "save",
+          "reopen",
+          "output",
+          "edge anchors"
+        ],
+        "modelCalls": 0
+      }
+    },
+    {
+      "mode": "history",
+      "stage": "plan",
+      "attempt": 1,
+      "status": "passed"
+    },
+    {
+      "mode": "history",
+      "stage": "execute",
+      "attempt": 1,
+      "status": "failed",
+      "error": "Preserve the existing attachment text in grid:rollup-revision: retain / import"
+    },
+    {
+      "mode": "history",
+      "stage": "execute",
+      "attempt": 2,
+      "status": "failed",
+      "error": "Preserve the existing attachment text in grid:rollup-revision: retain / import"
+    },
+    {
+      "mode": "history",
+      "stage": "execute",
+      "attempt": 3,
+      "status": "failed",
+      "error": "Preserve the existing attachment text in grid:diagram-be3e4b80-8e7c-4543-a2b2-e47929b44380: ROW PROJECTION\nCompose source rows; retain source revision coordinates.\nApply folds, syntax, mappings and presentation highlights."
+    },
+    {
+      "mode": "structure-first",
+      "preflight": {
+        "canvases": 16,
+        "checks": [
+          "restore",
+          "scaffold",
+          "fill",
+          "edit",
+          "save",
+          "reopen",
+          "output",
+          "edge anchors"
+        ],
+        "modelCalls": 0
+      }
+    },
+    {
+      "mode": "structure-first",
+      "stage": "plan",
+      "attempt": 1,
+      "status": "passed"
+    },
+    {
+      "mode": "structure-first",
+      "stage": "plan",
+      "attempt": 2,
+      "status": "passed"
+    },
+    {
+      "mode": "structure-first",
+      "stage": "plan",
+      "attempt": 3,
+      "status": "passed"
+    },
+    {
+      "modelCalls": 0,
+      "replayed": 7,
+      "passed": 4
+    }
+  ],
+  "note": "Offline replay only. No experiment state or generated outputs were published."
+}

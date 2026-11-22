@@ -1,0 +1,19 @@
+{
+  "id": "child-1",
+  "name": "surface-input",
+  "assignment": "Map n1-n37 inclusive (Surface integration, init, input) following prompt. Return JSON partial. Read numbered source, include full declarations of named functions/types as practical.",
+  "model": "gpt-6-sol",
+  "effort": "medium",
+  "status": "generating",
+  "queuedAt": "2026-11-19T03:47:37.643Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-19T03:47:37.648Z",
+  "sessionId": "01a1f1ea-c660-7e92-b73a-0b119695fdeb",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-n9wevnax-agent-repository-qnhQ37-checkout--/2026-11-19T03-47-37-696Z_01a1f1ea-c660-7e92-b73a-0b119695fdeb.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase3-n9wevnax/agent-repository-qnhQ37/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "status": "finished",
+  "key": "astra-high-judge/ghostty-1-2/2",
+  "runId": "28bd4b20-707a-4d22-b03a-f65296d664a7",
+  "model": "gpt-6-astra",
+  "caseId": "ghostty-1-2",
+  "number": 2,
+  "reportedScore": 0.9018947483,
+  "score": 0.901894748263889,
+  "rescore": {
+    "score": 0.901894748263889,
+    "reportedScore": 0.9018947483,
+    "J": 0.901894748263889,
+    "reportedJ": 0.9018947483,
+    "pairs": 8,
+    "unmatchedA": 0,
+    "unmatchedB": 0,
+    "depth": 5,
+    "maxPairError": 3.333344711364816e-11,
+    "rangeIssues": []
+  },
+  "usage": {
+    "input": 16738,
+    "output": 16909,
+    "cacheRead": 38272,
+    "cacheWrite": 0,
+    "reasoning": 7351,
+    "totalTokens": 71919
+  },
+  "outputUrl": "http://localhost:5191/evals?run=28bd4b20-707a-4d22-b03a-f65296d664a7&output=450c8f11-3b30-485c-a282-7fc0e4dc74c0%3A1%3Aalternative"
+}

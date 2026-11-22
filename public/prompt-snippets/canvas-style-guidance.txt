@@ -1,0 +1,13 @@
+Edges. You should make use of edges to denote relationships between diagrams on a canvas but dont overdo it, because too many edges can clog up the viewport
+You should also consider edges in the placement of your diagrams
+Diagrams with many edges in-between them should be placed as close to together as possible to minimize the edge "travel-distance"
+
+Jumps. Use few, deliberate jumps: 2–3 out of each canvas on average, about 20–25 across the whole set. Spend them first on entrances, one from each anchor node to the child or same-level canvas it opens, then on the few cross-canvas relations that matter most for following the system's main paths. Every other cross-canvas link in the plan stays an annotated relation line naming its target canvas, diagram and node, without a jump. Compute each jump's startColumn and endColumn from the exact final text of its line, for example with a short script, so the span covers the whole target name and no partial words; do not count columns by hand.
+
+Positioning. Before placing a canvas's diagrams, decide how they relate spatially:
+- Center: the diagram the canvas is about, usually the one its entrance points to (for example the core overview, or the composition diagram of a child canvas).
+- Beside the center: diagrams that directly elaborate or compose parts of the center diagram. Place each one close to the part it elaborates.
+- Periphery: diagrams related more loosely, such as horizontal traces that cross several parts, or optional subsystems.
+Arrange the diagrams in two dimensions around the center, not in a single row or column. The center diagram sits in the middle of the arrangement, with the other diagrams placed on more than one of its sides, not all to its right or all below it.
+
+Spacing. Keep the gap between each diagram and its nearest neighbour roughly the same across the canvas, so that no diagram is isolated in a corner. Diagrams must not overlap: a diagram's width is its longest line and its height is its line count.

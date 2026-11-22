@@ -1,0 +1,72 @@
+{
+  "status": "finished",
+  "repository": "Data dependency · Existing few-shot examples · 1",
+  "runId": "6ff63464-5fa4-4cdf-916b-d287b395baf7",
+  "characters": 13573,
+  "lines": 200,
+  "nodes": 124,
+  "usage": {
+    "input": 42604,
+    "output": 5721,
+    "cacheRead": 152704,
+    "cacheWrite": 0,
+    "reasoning": 873,
+    "totalTokens": 201029
+  },
+  "execution": {
+    "runtime": "pi-agent-context",
+    "sessionId": "01a1f471-f523-75a3-a9a5-8f3e8ccd0632",
+    "contextHash": "c26f9e1d07185d26d78fd7cf31b447b58604b2cae4a040b1dc623aaaf9e7848a",
+    "cacheKey": "eval-628f3921967b59fabd89443d2e6959c2a3a4f336a7c8195b20bb553af0d17c5c",
+    "modelContextHash": "9352cc777e905639886423e88e6f6e9dce78ae581e141a7f71cae5fd351d54c9",
+    "repositories": [
+      {
+        "repository": "repo-1",
+        "repositoryPath": "/home/john/softwarez/ghostty",
+        "commit": "ea8b12a8a9894b5259c441eadd8f6f0c65e215af",
+        "exclusions": [
+          "**/*-LICENSE",
+          "**/*.md",
+          "**/*.mdx",
+          "**/*.spec.*",
+          "**/*.test.*",
+          "**/AGENTS.md",
+          "**/CODEX-LICENSE",
+          "**/LICENSE*",
+          "**/Tests/**",
+          "**/__fixtures__/**",
+          "**/__tests__/**",
+          "**/benchmark/**",
+          "**/benchmarks/**",
+          "**/build/**",
+          "**/dist/**",
+          "**/docs/**",
+          "**/examples/**",
+          "**/fixtures/**",
+          "**/node_modules/**",
+          "**/scripts/**",
+          "**/test/**",
+          "**/tests/**",
+          ".agents/**",
+          ".github/**",
+          ".husky/**",
+          ".pi/**",
+          "deps/**",
+          "example/**",
+          "flake.lock",
+          "flatpak/**",
+          "images/**",
+          "nix/**",
+          "package-lock.json",
+          "po/**",
+          "scripts/**",
+          "snap/**",
+          "vendor/**"
+        ],
+        "checkout": "/tmp/agent-repository-IntIKN/checkout",
+        "inspectionSource": "session-transcript"
+      }
+    ]
+  },
+  "outputUrl": "http://127.0.0.1:5191/evals?run=6ff63464-5fa4-4cdf-916b-d287b395baf7&output=a97d8e92-be48-433d-b98b-a868a36583e8%3A1%3Aalternative"
+}

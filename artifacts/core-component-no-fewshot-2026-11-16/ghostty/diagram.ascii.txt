@@ -1,0 +1,94 @@
+Ghostty core: Surface - one interactive terminal session (src/Surface.zig)
+|
+|-- Runtime boundary and application context
+|   |-- src/apprt.zig: runtime.App / runtime.Surface
+|   |   |-- Compile-time adapters: GTK executable, embedded library, browser
+|   |   `-- Runtime supplies UI events and window/tab/split placement;
+|   |       Surface exposes callbacks without owning that UI hierarchy
+|   |-- src/App.zig: surfaces, focused_surface, mailbox
+|   |   `-- Registers sessions and routes surface messages/config updates
+|   |-- App.font_grid_set / App.device
+|   |   `-- Shared font grids and graphics device; Surface retains a grid reference
+|   `-- Surface.rt_app.performAction() / rt_surface.close()
+|       `-- Delegates native UI actions and close confirmation to the runtime
+|
+|-- Session coordination and input (src/Surface.zig)
+|   |-- Public entry points: keyCallback(), textCallback(), mouseButtonCallback(),
+|   |   cursorPosCallback(), scrollCallback(), focusCallback(), preeditCallback()
+|   |   `-- Maintains keyboard, mouse, focus, visibility and IME/preedit state
+|   |-- performBindingAction() -> local terminal action or rt_app.performAction()
+|   |   `-- Shortcuts can consume input instead of sending it to the child
+|   |-- Private encodeKey() / encodeKeyOpts(); src/input/key_encode.zig,
+|   |   src/input/mouse_encode.zig
+|   |   `-- Encoding depends on current Terminal modes, not just the UI event
+|   |-- Private queueIo() -> Termio.queueMessage() -> termio.Thread
+|   |   `-- Transfers message ownership; readonly blocks PTY writes
+|   `-- selectionString(), completeClipboardRequest(), search, inspector
+|       `-- Selection/copy/paste, search and inspection use the same session state
+|
+|-- Child process and byte transport (Surface.io / io_thread)
+|   |-- src/termio/Termio.zig: Termio
+|   |   `-- Owns backend, terminal, terminal_stream, mailbox and DerivedConfig
+|   |-- src/termio/Exec.zig: Exec / Subprocess
+|   |   `-- Owns PTY and child command lifecycle, environment and shell integration
+|   |-- src/termio/Thread.zig: threadMain(), mailbox handling
+|   |   `-- Write messages -> Termio.queueWrite() -> Exec.queueWrite() -> PTY
+|   |-- Exec.ReadThread -> Termio.processOutput()
+|   |   `-- PTY output: gather buffers -> reader/parser; Windows uses a serial loop
+|   `-- src/apprt/surface.zig: Message / Mailbox
+|       `-- Child exit and terminal UI requests -> App.surfaceMessage()
+|           -> Surface.handleMessage() -> runtime actions or session state changes
+|
+|-- Terminal emulation and authoritative content (Termio.terminal)
+|   |-- Termio.processOutput() -> terminal_stream.nextSlice()
+|   |   |-- src/terminal/stream.zig: Stream; Parser.zig / UTF8Decoder.zig
+|   |   |   `-- Turns incoming bytes into decoded text and VT actions
+|   |   `-- src/termio/stream_handler.zig: StreamHandler.vt() / vtPrintAscii()
+|   |       `-- Updates Terminal, queues protocol replies and requests rendering/UI work
+|   |-- src/terminal/Terminal.zig: Terminal
+|   |   |-- Renderer-independent grid operations: print, cursor movement, erase, resize
+|   |   `-- Owns screens, modes, colors, tabstops, scrolling region, title and pwd
+|   `-- Terminal.screens -> src/terminal/ScreenSet.zig
+|       |-- Primary screen plus lazily created alternate screen; tracks active screen
+|       `-- src/terminal/Screen.zig: Screen
+|           |-- Cursor, saved cursor, tracked selection, keyboard/image protocol state
+|           `-- Screen.pages -> src/terminal/PageList.zig -> src/terminal/page.zig
+|               `-- Ordered pages hold scrollback and active rows/cells;
+|                   tracked pins keep viewport, cursor and selections attached to content
+|
+|-- Shared-state synchronization and presentation
+|   |-- Surface.renderer_state: src/renderer/State.zig
+|   |   |-- terminal = &Surface.io.terminal; also exposes preedit and mouse state
+|   |   `-- Mutex protects referenced data, not a second copy of terminal content
+|   |-- Termio.processOutput() locks shared state and schedules a render
+|   |   `-- State.lockDemand() / unlockDemand() / yieldToDemand()
+|   |       prevent continuous output parsing from starving frame snapshots
+|   |-- Surface.renderer_thread: src/renderer/Thread.zig
+|   |   `-- Wakeups/timers/mailbox -> Renderer.updateFrame() -> drawFrame()
+|   |-- src/renderer/generic.zig: Renderer
+|   |   |-- updateFrame() snapshots Terminal into terminal.RenderState under lock
+|   |   |-- font_grid + font_shaper + font_shaper_cache supply glyph layout
+|   |   `-- drawFrame() turns prepared cells, colors, cursor and images into output
+|   `-- src/renderer.zig: GenericRenderer(GraphicsAPI)
+|       `-- Metal.zig or OpenGL.zig; uses App.device and runtime presentation surface
+|
+|-- Configuration and geometry connect input, emulator and renderer
+|   |-- Surface.DerivedConfig / Termio.DerivedConfig / Renderer.DerivedConfig
+|   |   `-- Retain subsystem-specific configuration rather than borrowing Config lifetime
+|   |-- App.updateConfig() -> Surface.handleMessage(.change_config) -> updateConfig()
+|   |   `-- Propagates live changes across the session
+|   `-- Surface.sizeCallback() -> private resize(); contentScaleCallback(), setFontSize()
+|       |-- Font metrics + pixel size + padding -> renderer.Size.grid()
+|       `-- Resize messages -> Termio.resize() and renderer thread
+|           `-- PTY dimensions and Terminal.resize() change under the shared mutex,
+|               keeping child redraws consistent with the emulator's grid
+|
+`-- Resource lifetime is centered on Surface
+    |-- src/Surface.zig: init()
+    |   `-- References shared fonts; creates renderer, mutex, Termio/Exec and mailboxes;
+    |       starts renderer and IO threads with pointers to the same session state
+    |-- close() -> runtime close process -> deinit()
+    `-- deinit()
+        |-- Stops search, then stops/joins renderer and IO threads before freeing shared data
+        |-- Deinitializes renderer before renderer-thread handles, then IO resources
+        `-- Releases inspector, keyboard allocations, font reference, preedit, mutex and config

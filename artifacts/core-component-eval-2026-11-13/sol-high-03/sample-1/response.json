@@ -1,0 +1,70 @@
+{
+  "output": {
+    "ascii": "Mapping workspace -- editable diagram canvases, their history, and their saved state\n|\n|-- [M/O] MappingWorkspacePage coordinates the open project\n|   |-- CanvasWorkspace owns drafts[documentId] and stable CanvasSession handles\n|   |   |-- controllers: Map<documentId, MappingDocumentController>\n|   |   |-- setDrafts() creates sessions, subscribes to commits, and disposes removed ones\n|   |   `-- dirtyScenes exposes canvases whose scene differs from the saved baseline\n|   |-- activeId selects the visible canvas; MappingDiagramExplorer opens project diagrams\n|   |   `-- documentFromRevision() seeds a session when a saved diagram is first opened\n|   `-- MappingServices supplies DiagramService, CanvasHistoryService, codeRepo, and WorkspaceStorage\n|\n|-- [O] CanvasSession is one canvas's observable editing boundary\n|   |-- controller: MappingDocumentController owns the editable document and canvas state\n|   |-- document / presentation / selection / controls / geometry stores\n|   |   `-- publish controller changes to UI consumers, not a second editable document\n|   |-- status: isDirty / sceneDirty / canUndo / canRedo\n|   |   `-- savedScene + savedEdges + savedName define the acknowledged save baseline\n|   `-- onCommit() notifies CanvasWorkspace and WorkspacePersistence\n|\n|-- [D] MappingDocumentController snapshot combines composition and interaction\n|   |-- MappingGridDocument\n|   |   |-- LineGridScene: root GridBox tree + contents[contentId]: Diagram\n|   |   |   |-- GridBox is a positioned diagram or child-owning container\n|   |   |   `-- resolveScene() / layoutScene() measure content and settle collisions\n|   |   |-- edges: DiagramConnection[] anchor relationships between boxes or content nodes\n|   |   `-- sections / jumps retain overlays and navigation targets\n|   |-- MappingCanvasState\n|   |   |-- selection and controls track active items and action surfaces\n|   |   |-- diagramViews track collapsed content nodes per displayed box\n|   |   `-- display: DisplayState owns floating selection, projected, and conversation panes\n|   `-- contextId / canvasRevisionId / version bind the visible state to its history head\n|\n|-- [C] Edits converge on MappingDocumentController\n|   |-- applyUpdate(expectedVersion, operations) rejects a stale version\n|   |   |-- DiagramOperation includes create, insert, replace, patch, move, collapse,\n|   |   |   group, remove, source mappings, jumps, and edge changes\n|   |   |-- RevisionedDiagramService.create() / revise() issues immutable Diagram revisions\n|   |   |   `-- Diagram.content holds ASCII and parsed structure; sourceContext binds\n|   |   |       mappings and evidence to a matching content hash\n|   |   `-- layoutScene(), reconcileConnections(), and node correspondence keep\n|   |       placement and anchors aligned with changed content\n|   |-- commitDocument() and select() also record edits; updateCanvas() can publish\n|   |   transient interaction changes without advancing history\n|   `-- MappingPocSelectionCanvas reads CanvasSession stores and sends user edits\n|       back through the controller; DiagramText and DiagramConnections render results\n|\n|-- [O] DefaultCanvasHistoryService owns each controller's CanvasHistory context\n|   |-- append() records a checkpoint: composition, diagramBindings, view, node origins\n|   |-- headId / past / future support undo(), redo(), and reset()\n|   |-- diagramRevisions retain the immutable content needed to resolve a checkpoint\n|   `-- persistenceChanges() exports changed checkpoints and revisions for storage\n|\n|-- [C/O] Cross-canvas operations belong to MappingWorkspacePage\n|   |-- copyDocument() forks source history into a new CanvasSession\n|   |-- transfer() prepares source and destination histories plus a CanvasTransfer\n|   |   `-- storage.save(workspace) precedes installWorkspace(): both sides publish together\n|   `-- undo() / redo() navigate both participants at a transfer boundary;\n|       ordinary edits delegate to the individual controller\n|\n|-- [M/O] WorkspacePersistence carries live state into durable records\n|   |-- subscribes to CanvasWorkspace commits and SourcePaneViewState changes\n|   |-- sync() writes document metadata, baselines, history deltas, canvas view,\n|   |   viewport, and the workspace index through RecordStorage\n|   |-- WorkspaceStorage sends batches through a worker to mapping workspace routes\n|   `-- MappingWorkspaceService -> MappingWorkspaceStore -> WorkspaceRecordStore\n|       `-- validates batches and publishes content-addressed records by atomic manifest\n|           replacement; project representation saves are a separate action\n|\n`-- [M/C] Other clients consume the same canvas boundary\n    |-- useAgentCanvasBridge registers live canvases and delivers CanvasCommand\n    |   `-- MappingWorkspacePage routes commands to a controller; versioned edits and\n    |       DiagramRevisionReceiver reuse its mutation and persistence paths\n    `-- DiagramSearchService indexes draft documents and saved project diagrams;\n        search results reopen and focus the matching canvas"
+  },
+  "usage": {
+    "input": 54893,
+    "output": 2205,
+    "cacheRead": 103552,
+    "cacheWrite": 0,
+    "reasoning": 153,
+    "totalTokens": 160650
+  },
+  "execution": {
+    "runtime": "pi-agent-context",
+    "sessionId": "01a1db6d-4280-73da-9627-2eb4b04741b5",
+    "contextHash": "00b9ed11b05d12f61ea9897c890dca21baf63782b67254a23c6fb80d94ae0fc2",
+    "cacheKey": "eval-1de32a9ba1e2d65b5d6951b1027c705db12937da375525fd7965bf3a12551a94",
+    "modelContextHash": "3c8a2f3d963cd66ad28dcc571d293bc441623cde4a6fd9850f7ca65cf67d4abd",
+    "repositories": [
+      {
+        "repository": "repo-1",
+        "repositoryPath": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax",
+        "commit": "03f2168deba364103c2450ca9b8168cd1fc9ddc5",
+        "exclusions": [
+          "**/*.spec.*",
+          "**/*.test.*",
+          "**/__fixtures__/**",
+          "**/__tests__/**",
+          "**/fixtures/**",
+          ".diagrams-code/**",
+          ".diagrams-parent-architecture/**",
+          ".diagrams/**",
+          ".gitignore",
+          ".materialized-parent-manifests/**",
+          ".skills/**",
+          "AGENTS.md",
+          "README.md",
+          "artifacts/**",
+          "benchmarks/**",
+          "diagram-plan-small-spine.md",
+          "diagram-plan-small.md",
+          "diagram-plan.md",
+          "docs/**",
+          "examples/**",
+          "mapping-initial-diagram.txt",
+          "package-lock.json",
+          "projection-3d/**",
+          "scripts/**",
+          "tests/**",
+          "tools/**",
+          "vitest.config.ts",
+          "domain/core/diagrams/interpreter/README.md",
+          "infrastructure/mapping/agents/compaction/prompts/compaction/single-file-compact.md",
+          "infrastructure/mapping/agents/compaction/prompts/compaction/single-file-compact2.md",
+          "infrastructure/mapping/agents/compaction/prompts/compaction/single-file-prompt.md",
+          "infrastructure/mapping/agents/compaction/prompts/compaction/single-file-refinement-prompt.md",
+          "infrastructure/mapping/agents/compaction/prompts/system/CODEX-LICENSE",
+          "infrastructure/mapping/agents/compaction/prompts/system/codex.md",
+          "infrastructure/mapping/agents/diagram-edit/prompts/edit-diagram.md",
+          "packages/ui-test-framework/README.md",
+          "projection-3d/.gitignore",
+          "src/server/features/mapping/compaction/prompts/compaction/single-file-compact2-herdr-w3A-pB.md",
+          "tools/diagram-parser/diagram_parser/.gitignore"
+        ],
+        "checkout": "/tmp/agent-repository-k0W3me/checkout",
+        "inspectionSource": "session-transcript"
+      }
+    ]
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "id": "child-6",
+  "name": "app surface",
+  "assignment": "Map d1 nodes n1-n48 only. Read numbered files. Return mappings JSON.",
+  "model": "gpt-6-sol",
+  "effort": "medium",
+  "status": "generating",
+  "queuedAt": "2026-11-19T03:49:11.791Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-19T03:49:11.794Z",
+  "sessionId": "01a1f1ec-35f5-7586-82d1-08f08de36aef",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-dvs4w6s2-agent-repository-mP9uWe-checkout--/2026-11-19T03-49-11-797Z_01a1f1ec-35f5-7586-82d1-08f08de36aef.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase3-dvs4w6s2/agent-repository-mP9uWe/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

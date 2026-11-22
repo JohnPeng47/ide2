@@ -1,0 +1,130 @@
+{
+  "output": {
+    "explanation": "The central tree is reduced from 111 to 77 lines (31%) and from 7,941 to 5,328 characters (33%). Five peripheral trees expand meaningful concepts: gesture settlement, projection, selection, routing, and workspace lifetime/persistence. [M], [C], and [O] represent modular structure, calls, and ownership; [D] describes computational dependencies across those boundaries. Positions use measured text dimensions with gaps; edge references use 1-based raw lines.\n\nSource-grounded corrections and qualifications: MappingPage.tsx mounts drafts after activation and retains inactive mounted views, so the seed's 'each opened document' is narrowed. MappingEditorRuntime.ts:144-147 cancels the entire clone batch when any clone is unsupported, rather than removing only unsupported clones. shapeProjection.ts:36-43 excludes viewport-space non-conversation nodes and code-panel/source-code projections from its shape pass. MappingPage.tsx:788-808 gives created projection-copy undo/redo a child-only replacement path that preserves the source archive and unrelated sessions; the seed's description of coordinating both histories needs this qualification.\n\nAdditional details come directly from the pinned sources: copy-document resets and session subscriptions in canvasWorkspace.ts; save-time version validation in MappingPage.tsx; membership modification in selectionState.ts; geometry guards and hierarchy repair in displayModel.ts; structural sharing and focus invalidation in CanvasRuntimeContext.tsx; worker failure handling in NativeRoutingStore.ts; and retained mapped-source context in MappingCanvas.tsx. CanvasSession store visibility and dirty calculations are grounded in canvasSession.ts; editor/camera cleanup is grounded in MappingEditorCanvas.tsx. Imported controller, persistence, router, and source-service implementations are not supplied, so their internals are not inferred beyond visible calls and contracts. Only context.json and seed.json supply architectural evidence.",
+    "diagrams": [
+      {
+        "id": "central",
+        "ascii": "Interactive Canvas Editor\n|-- [M] Modular structure: workspace, semantic commands, native interaction\n|   |-- Workspace composition: MappingPocPage / MappingWorkspacePage\n|   |   |-- Supplies MappingServices; assembles CanvasWorkspace and command receivers\n|   |   |-- Agent commands -> CanvasViewReceiver / DiagramRevisionReceiver / controller\n|   |   |-- Persistence boundary -> WorkspacePersistence + WorkspaceStorage\n|   |   `-- Activated documents -> MappingEditorCanvas + MappingPocSelectionCanvas\n|   |-- Semantic command boundary: CanvasSession\n|   |   |-- Exposes controller commands and read-only focused stores\n|   |   |   `-- document, presentation, selection, controls, geometry, status\n|   |   |-- Private writable stores publish controller changes synchronously\n|   |   `-- Same controller facade serves mounted editors and headless sessions\n|   `-- Native rendering boundary\n|       |-- MappingEditorRuntime bridges semantic checkpoints and tldraw shapes\n|       |-- CanvasRuntime exposes per-entity models, gestures and application callbacks\n|       |-- projectMappingShapes converts semantic layout into native shape records\n|       `-- NativeRoutingStore keeps routing geometry and worker scheduling internal\n|-- [C] Interaction -> semantic checkpoint -> consumers\n|   |-- Drag or resize\n|   |   |-- tldraw changes live shapes; runtime marks geometry dirty\n|   |   |-- Idle tick waits until pointing, dragging and pinching have stopped\n|   |   `-- settle() compares projected shapes -> commitEditorGesture(moves, canvas)\n|   |-- Explicit selection gesture\n|   |   |-- Node hit / completed marquee / whole-diagram selection\n|   |   |   `-- MappingPocSelectionCanvas -> controller.updateCanvas(..., true)\n|   |   `-- Native drag selection stays separate from semantic content membership\n|   |-- Controller publishes a changed snapshot\n|   |   |-- CanvasSession updates affected focused stores\n|   |   |-- New canvasRevisionId -> session commit listeners\n|   |   |   `-- CanvasWorkspace -> change version + persistence notification(document ID)\n|   |   |-- MappingEditorRuntime.publish() -> shape diff + mappingCheckpoint metadata\n|   |   `-- CanvasRuntime.sync() -> grid, pane, side-panel and edge models\n|   |       `-- Equal branches retain identity; unrelated models remain stable\n|   |-- Undo / redo\n|   |   |-- Complete native interaction -> settle -> tldraw undo/redo\n|   |   |   `-- Changed mappingCheckpoint -> restoreEditorCheckpoint -> reproject\n|   |   `-- Transfer boundary -> workspace navigation coordinates transaction participants\n|   `-- Camera movement\n|       |-- Native camera -> overlay CSS transform + view-state capture\n|       `-- Pointer/camera samples do not publish through semantic session stores\n|-- [O] Responsibility and lifetime\n|   |-- CanvasWorkspace owns document sessions\n|   |   |-- Draft seed creates session; metadata updates retain existing session\n|   |   `-- Replace/remove session -> unsubscribe, unregister controller, dispose\n|   |-- Mounted editor owns live geometry and native undo navigation\n|   |   |-- Controller retains semantic checkpoints for persistence/headless use\n|   |   `-- Cleanup settles geometry, detaches listeners and disposes routing work\n|   |-- SelectionState owns ordered membership and selection identity\n|   |   |-- Captured regions store canonical node IDs and source content/ASCII\n|   |   `-- Focus, controls and retained selection panes have separate lifetimes\n|   |-- DisplayState owns floating-pane hierarchy and presentation\n|   |   |-- Selection roots retain context for projections, code panels and conversations\n|   |   `-- Removal prunes descendants; collapse preserves expanded geometry\n|   `-- Page cleanup disposes workspace, prompts, search and view-state resources\n|       |-- Internally created storage -> flush when available, then dispose\n|       `-- Canvas UI unmount -> abort in-flight local chat requests\n`-- [D] Data dependencies: what computed results require\n    |-- Shared semantic input [S]\n    |   `-- Controller snapshot: document + display + diagramViews + selection + cell metrics\n    |-- Native shape projection\n    |   |-- [S] presentation scene + diagramViews + cell metrics -> native grid geometry\n    |   |-- Display hierarchy + expansion + selection + pane kind -> eligible floating shapes\n    |   `-- document.edges -> arrows; alternatives -> side-panel shapes\n    |-- Render models and selected content\n    |   |-- Diagram content + view + cell metrics -> grid model and layout key\n    |   |-- Captured membership + matching content ID/ASCII -> selected canonical nodes\n    |   `-- Display ancestry + source presence/content + view state -> pane visibility/staleness\n    |-- Connection routing\n    |   |-- document.edges + resolved semantic anchors -> edge endpoint models\n    |   |-- Content/view/cell + measurements + native transforms -> world obstacles\n    |   `-- Endpoints + obstacles -> routed arrows; camera is not a dependency\n    |-- Mapped-source panel\n    |   `-- Selected canonical nodes + source mappings + project -> retained code-panel content\n    `-- Dirty status and saving\n        |-- Scene key vs saved scene key -> sceneDirty\n        |-- sceneDirty OR changed edges OR changed name -> isDirty\n        `-- Capture -> sync/flush -> version check -> publish -> update captured baseline",
+        "position": {
+          "column": 0,
+          "row": 0
+        }
+      },
+      {
+        "id": "gesture",
+        "ascii": "Gesture settlement and history [C/O]\n|-- Native changes mark runtime dirty\n|   |-- Shape add/remove/update or native selected-shape IDs changing\n|   `-- Idle tick: no pointing, dragging or pinching\n|-- settle(): compare live shapes with last projection\n|   |-- Grid move: page bounds / cell -> rounded, nonnegative column and row\n|   |-- Pane move: update position and mark placement manual\n|   |   |-- Size changed -> sizing fixed; otherwise retain sizing policy\n|   |   `-- Collapsed conversation move also updates canvasAnchor\n|   |-- Clone batch validation\n|   |   |-- Accept diagram clones only when source appears as a scene child\n|   |   |-- Any unsupported clone -> delete ALL clones; clear captured native selection\n|   |   `-- Accepted clone -> duplicate-instance with fresh ID and grid position\n|   |-- Native selection capture changes dragDiagramIds only\n|   |   `-- Application selection remains the content-membership authority\n|   `-- Moves or display changes -> controller.commitEditorGesture(moves, canvas)\n|-- Controller publication -> native projection\n|   |-- Same checkpoint while pointing -> defer projection\n|   |-- New command checkpoint -> history stopping point, unless settling/navigating\n|   `-- Write shape diff + mappingCheckpoint; keep arrows and side panels in front\n`-- Native history navigation\n    |-- Startup replays checkpoint IDs, then materializes current shapes\n    |-- undo/redo completes and settles interaction first\n    |-- Transfer transaction at boundary -> reject; require workspace undo/redo\n    `-- Document metadata observer sees changed mappingCheckpoint synchronously\n        `-- restoreEditorCheckpoint(id) -> projection with history recording disabled",
+        "position": {
+          "column": 120,
+          "row": 36
+        }
+      },
+      {
+        "id": "projection",
+        "ascii": "Projection and render-model boundaries [M/D]\n|-- projectMappingShapes(snapshot)\n|   |-- presentationScene + diagramViews -> resolved, flattened boxes\n|   |-- Cell metrics, or fallback 8.4 x 18 -> pixel geometry\n|   |   |-- Nested box positions are relative to non-root parent\n|   |   `-- Root container is locked; native dimensions are at least 1\n|   |-- Selection roots: collapsed source box skips projection\n|   |   |-- Root emitted if selected or retaining children\n|   |   `-- visibleProjectionIds traverses stacked/chained descendants\n|   |-- Floating-shape exclusions\n|   |   |-- Viewport-space nodes excluded except conversations\n|   |   `-- code-panel/source-code projections excluded from this shape pass\n|   |-- Collapsed or docked conversation -> 36 x 36 bubble at canvasAnchor\n|   `-- document.edges -> locked arrows; alternatives -> locked side panels\n|-- CanvasRuntime.sync(): separate models for content and rendering\n|   |-- Guard compares document, display, diagramViews, selection and cell references\n|   |-- Grid layoutKey includes revision, ASCII hash, view, cell, collapse, alternative\n|   |-- shareEqual recursively reuses equal branches in per-ID atoms\n|   |   `-- Removed model -> existing atom receives undefined\n|   |-- Pane models compute missing, stale and visible separately\n|   |   `-- Conversation with parent requires that parent to be expanded\n|   `-- Focused node cleared on revision change or changed selection reference\n`-- DisplayState geometry helpers\n    |-- Unchanged geometry returns original state\n    |-- Measurement ignores invalid/nonpositive size and fixed expanded panes\n    `-- Collapse saves position, bounds and coordinate space; expansion restores them",
+        "position": {
+          "column": 120,
+          "row": 0
+        }
+      },
+      {
+        "id": "selection",
+        "ascii": "Selection membership and retained context [O/C/D]\n|-- SelectionState.items: ordered membership, independent of focus and panels\n|   |-- No region -> entire diagram instance\n|   `-- Captured region -> source ID/revision/ASCII, envelope, canonical IDs\n|       `-- Canonical membership uses any text-span intersection\n|-- selectionCommand: replace / add / toggleDiagram / remove / clear\n|   |-- Equivalent region reuses prior identity; entries deduplicate by ID\n|   `-- Equivalence checks display ID, content ID, ASCII, ordered IDs and rectangle\n|-- selectionContentNodes(diagram, region)\n|   |-- No region -> all canonical nodes\n|   |-- Content ID or ASCII mismatch -> empty result\n|   |-- Explicit IDs -> stored order; missing IDs are skipped\n|   `-- Legacy region without IDs -> rectangle-intersection fallback\n|-- withSelectionNodes changes membership\n|   |-- Existing region keeps ID and envelope\n|   `-- Whole-diagram item becomes region with fresh ID and full ASCII envelope\n|-- MappingPocSelectionCanvas opens mapped source\n|   |-- Requires project context and selected canonical nodes\n|   |-- retainSelection creates DisplayState root with captured context\n|   |   `-- Copies draft surface controls; closes its actions\n|   `-- handleNodeSelect -> upsertCodePanel under retained root; set panel focus\n`-- DisplayState retains pane hierarchy independently\n    |-- Add child projection -> owner selects it as activeChildId\n    |-- Stacked traversal follows active child; chained traversal follows children\n    |-- Remove node -> recursive descendant removal and child-reference repair\n    |   `-- Removed active child -> last remaining projection child becomes active\n    `-- Live source scrolling belongs to SourcePaneViewState; pane scroll is saved state",
+        "position": {
+          "column": 120,
+          "row": 72
+        }
+      },
+      {
+        "id": "routing",
+        "ascii": "Transient connection routing [D/O/C]\n|-- CanvasRuntime resolves semantic edge anchors\n|   `-- Endpoint rect made owner-local; carries owner's layoutKey\n|-- NativeRoutingStore.sync(grids, edges)\n|   |-- Delete measurements for removed grids; retain router entries for edges\n|   |-- Same layoutKey -> reuse obstacle owner\n|   `-- Content + view + cell -> estimated local obstacles\n|       |-- Matching measurement layoutKey -> replace estimates\n|       `-- Native page transform maps four corners -> world bounding rectangle\n|-- drawAll(inputs)\n|   |-- Dragging -> previewEdge with previous settled route\n|   |-- No worker factory -> synchronous router.drawAll(inputs, obstacles)\n|   |-- Completed key matches inputs + obstacles -> reuse completed arrows\n|   `-- New key -> replace pending job; preview while waiting\n|-- Worker scheduling\n|   |-- At most one in-flight job and one newest pending job\n|   |-- Result must match current worker and in-flight job ID\n|   |-- Publish only when job key equals newest requested key\n|   `-- On completion, dispatch pending job\n|-- Worker construction/postMessage/error failure\n|   |-- Terminate worker; disable factory; clear in-flight/pending/requested\n|   `-- Microtask invalidates completed state -> later reads use synchronous routing\n`-- Runtime lifetime boundary\n    |-- Clearing CanvasRuntime.editor calls routing.dispose()\n    |-- Terminate worker; clear requests, completed result and settled routes\n    `-- No document writes or DOM reads here; camera is not an input",
+        "position": {
+          "column": 235,
+          "row": 0
+        }
+      },
+      {
+        "id": "workspace",
+        "ascii": "Workspace lifetime and acknowledged state [O/C/D]\n|-- CanvasWorkspace.setDrafts\n|   |-- Seed with document -> new CanvasSession; existing session handle -> reuse\n|   |-- Replace/remove -> unsubscribe, unregister controller, dispose old session\n|   |-- Session commit -> increment change version + notify persistence(document ID)\n|   |-- Document change -> refresh draft entry for search/explorer\n|   `-- Status subscription -> dirtyScenes contains sceneDirty IDs only\n|-- copyDocument: independent canvas state with forked history\n|   |-- Reject unavailable/hidden/busy source, invalid name or version conflict\n|   |-- Clone canvas/display and viewport; clear selection; reset controls\n|   |-- Retain conversation messages but reset thread.pending to false\n|   `-- New draft ID, blank savedName; document initially taken from source snapshot\n|-- Page mounts documents after activation\n|   `-- Previously activated views remain mounted but can be hidden/disabled\n|-- save(): capture document, name, session snapshot and version\n|   |-- Require persistence adapter and storage records\n|   |-- persistence.sync([id]) -> await storage.flush()\n|   |-- Version changed during flush -> VERSION_CONFLICT; stop publication\n|   |-- publishMappingCheckpoint(checkpointId, expectedVersion, expectedRevisionId)\n|   `-- Acknowledgement uses captured scene/edges/name as saved baseline\n|       `-- Preserve a name edited meanwhile; compare current state to saved baseline\n|-- CanvasSession dirty calculation\n|   |-- Scene/edge reference changes -> recompute their state keys\n|   |-- sceneDirty = scene key differs from saved scene key\n|   `-- isDirty = sceneDirty OR edge-key difference OR name difference\n|-- Workspace transfer navigation\n|   |-- Reject undo if newer applied transfers involve either participant\n|   |-- General path: prepare both histories + transaction; save before install\n|   `-- Created projection copy: save/replace child and transfer metadata only\n|       `-- Preserve source archive and unrelated sessions; hide child on undo\n`-- Disposal boundaries\n    |-- Session clears cursor copy, controller subscription and commit listeners\n    |-- Page disposes its persistence adapter and view-state resources\n    `-- Only internally created storage is flushed/disposed by page cleanup",
+        "position": {
+          "column": 235,
+          "row": 36
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": {
+          "diagram": "central",
+          "line": 19
+        },
+        "target": {
+          "diagram": "gesture",
+          "line": 1
+        },
+        "label": "settled gestures and native history"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 60
+        },
+        "target": {
+          "diagram": "projection",
+          "line": 1
+        },
+        "label": "semantic inputs become native shapes"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 48
+        },
+        "target": {
+          "diagram": "selection",
+          "line": 1
+        },
+        "label": "membership versus retained pane context"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 68
+        },
+        "target": {
+          "diagram": "routing",
+          "line": 1
+        },
+        "label": "endpoint and obstacle computation"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 42
+        },
+        "target": {
+          "diagram": "workspace",
+          "line": 2
+        },
+        "label": "session registry ownership"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 74
+        },
+        "target": {
+          "diagram": "workspace",
+          "line": 15
+        },
+        "label": "save acknowledgement and dirty baseline"
+      }
+    ]
+  },
+  "usage": {
+    "input_tokens": 473470,
+    "cached_input_tokens": 422656,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 9552,
+    "reasoning_output_tokens": 683
+  }
+}

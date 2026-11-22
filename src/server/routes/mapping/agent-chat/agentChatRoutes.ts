@@ -48,7 +48,7 @@ export async function handleAgentChat(request: Connect.IncomingMessage, response
     if (request.method === 'GET') return sendJson(response, 200, await chat.list());
     if (request.method === 'POST') return sendJson(response, 200, publicSession(await chat.create(await readBody(request))));
   }
-  const match = route.match(/^\/sessions\/([a-f0-9-]+)(?:\/(events|send|read-canvas|reload-tools|interrupt|answer|items|gen-alternatives|cancel-generation)(?:\/([^/]+))?)?$/);
+  const match = route.match(/^\/sessions\/([a-f0-9-]+)(?:\/(events|send|canvas-background|read-canvas|reload-tools|interrupt|answer|items|gen-alternatives|cancel-generation)(?:\/([^/]+))?)?$/);
   if (!match) return sendJson(response, 404, { error: 'Chat route not found' });
   const [, id, action, requestId] = match;
   if (request.method === 'GET' && !action) return sendJson(response, 200, publicSession(await chat.get(id)));
@@ -98,6 +98,7 @@ export async function handleAgentChat(request: Connect.IncomingMessage, response
       return sendJson(response, 200, await chat.genAlternatives(id, input, chatCanvasTargetSchema.parse(canvas)));
     }
     if (action === 'cancel-generation') await chat.cancelGeneration(id);
+    else if (action === 'canvas-background') await chat.loadCanvasBackground(id, await readBody(request));
     else if (action === 'send') await chat.send(id, await readBody(request));
     else if (action === 'read-canvas') await chat.readCanvas(id, await readBody(request));
     else if (action === 'reload-tools') await chat.reloadTools(id);

@@ -1,0 +1,19 @@
+{
+  "id": "child-3",
+  "name": "terminal",
+  "assignment": "Map n52–n65 terminal/screen/pages branch. Use mktemp -d /tmp/terminal-map.XXXXXX if needed. Return compact node scope and path/ranges/roles (short codes and parent union refs OK), plus notes.",
+  "model": "gpt-6.2-sol",
+  "effort": "high",
+  "status": "generating",
+  "queuedAt": "2026-11-22T03:29:48.732Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-22T03:32:52.294Z",
+  "sessionId": "01a20150-57cf-712a-87f3-ee977c7c4f16",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-1kmg0f14-agent-repository-DG1M8J-checkout--/2026-11-22T03-32-52-303Z_01a20150-57cf-712a-87f3-ee977c7c4f16.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase4-1kmg0f14/agent-repository-DG1M8J/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "id": "child-2",
+  "name": "input",
+  "assignment": "Map nodes n19-n31 plus n71-n80 (geometry/config). Read numbered files, return partial JSON.",
+  "model": "gpt-6-sol",
+  "effort": "medium",
+  "status": "generating",
+  "queuedAt": "2026-11-19T03:47:37.226Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-19T03:47:37.233Z",
+  "sessionId": "01a1f1ea-c4ab-72c3-b5ea-d687e860aaee",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-yjfyavfy-agent-repository-43a2Rb-checkout--/2026-11-19T03-47-37-259Z_01a1f1ea-c4ab-72c3-b5ea-d687e860aaee.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase3-yjfyavfy/agent-repository-43a2Rb/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

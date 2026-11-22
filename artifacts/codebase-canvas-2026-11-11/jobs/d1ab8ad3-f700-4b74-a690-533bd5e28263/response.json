@@ -1,0 +1,119 @@
+{
+  "output": {
+    "explanation": "The central tree is reduced from 90 to 60 lines (33.3%) and from 6,804 to 4,353 characters (36.0%). Five peripheral trees expand compiler lifetime, incremental invalidation, the 3+1 interpretation, analytical projections, and publication. Each connects to its corresponding concept line. Positions leave gaps between the measured text rectangles.\n\nModular structure combines containment and lexical visibility conceptually while preserving the implementation's five stored views. Data dependency remains a graph evaluated across partitions. The trees organize explanations; they do not imply that all underlying dependencies form trees.\n\nSource-grounded qualifications refine the seed: context.ts can retain a module-level previousProgram after a small analysis releases its context; dirty-file tracking covers pinned non-node_modules inputs rather than the whole checkout; identity collisions make correspondence ambiguous; and derive.ts limits each SCC universe to participating relation endpoints. Calls are static relationships here, with runtime identities reserved by the schema. Finding kinds are described as contract capabilities because deriveFindings is called but its implementation is absent. Likewise, supplied orchestration establishes extractor invocation, not complete support for every schema relation.\n\nAdditional details absent from the seed include the 100-file compiler-reuse threshold, unresolved-site precedence in coverage, incremental semantic-mode reconstruction, changedFiles differing from invalidation causes, SCC traversal mechanics, stale source-join restrictions, independent output hashes, and separate publication of each output file. Coverage marked complete is accounting over emitted evidence, not proof of complete behavioral analysis. The supplied CLI does not invoke the available canonical stream verifier. No browser integration is established. All evidence comes from context.json and seed.json; output-schema.json supplies only the response structure.",
+    "diagrams": [
+      {
+        "id": "central",
+        "ascii": "Static Architecture Analysis -- independent TypeScript subsystem\n|-- Entry and public contract [ports.ts; scripts/analysis/analyze.ts]\n|   |-- CLI selects .ts/.tsx from tsconfig; excludes .d.ts; accepts prefixes\n|   |-- StaticAnalyzer.analyze(request) exposes artifact + measurements\n|   |   `-- Optional execution.semanticResolution records compiler mode\n|   |-- Request: repository, config, selected paths, views and frameworks\n|   |   `-- Metrics: directory/layer/single-group + shuffle seed/samples\n|   |-- Selection limits emitted facts; imports can serve resolution\n|   `-- CLI requests all five stored views and four framework summaries\n|-- Modular structure -- boundaries and visibility [schema.ts; context.ts]\n|   |-- Combine containment + lexical conceptually; stored views stay separate\n|   |-- Imports/reexports describe dependencies across module boundaries\n|   |-- Declarations, references and captures describe name visibility\n|   |-- Export metadata records exposure; layer/feature group source entities\n|   `-- Shared sourceClassification supplies layer, feature and composition data\n|-- Extraction sequence [analyzer.ts]\n|   |-- Create AnalysisContext + Declarations; index -> imports -> composition\n|   |-- Any view beyond containment -> extract lexical references\n|   |-- Calls/ownership/dependencies -> resources -> calls -> frameworks\n|   |   `-- Ownership/dependencies -> prepare symbols -> release compiler\n|   |       `-- Extract dataflow -> connect callback candidates\n|   |-- Finish snapshot -> release context/maps -> deriveAnalysis -> return\n|   `-- Timings and peak RSS remain outside deterministic artifact facts\n|-- Evidence and compiler ownership [context.ts]\n|   |-- Syntax program first; semantic program created on checker access\n|   |-- Pin analyzed, resolution-only and configuration inputs before release\n|   |-- Snapshot pins scope, versions, config and available Git evidence\n|   |-- Named/structural identities; collisions mark ambiguous correspondence\n|   |-- Provenance: snapshot + file hash + UTF-16 range, exclusive end\n|   |-- Relation emission filters requested views; containment bypasses filter\n|   `-- finish() derives site coverage from persisted relations and issues\n|-- Incremental session [incremental.ts]\n|   |-- Owns reusable component fragments; defaults to full staticAnalyzer\n|   |-- Reject concurrent updates; validate restores; clone checkpoints\n|   |-- Inventory current hashes, resolutions and environment before reuse\n|   |-- Current imports + cached dependency edges determine component groups\n|   |   `-- Uncertain global effects combine all local files into one group\n|   |-- Group key: environment + selected paths + member hashes/resolutions\n|   |   `-- Hit -> reuse fragment; miss -> extract selected paths in group\n|   |-- Fresh header + merged facts -> finish -> recompute derived results\n|   `-- Publish checkpoint after success; report changed/reused/removed files\n|-- Artifact and analytical projections [schema.ts; derive.ts]\n|   |-- v1: snapshot, entities, relations, uncertainties, coverage and layers\n|   |-- Calls: static relations for invocation/construction and callbacks\n|   |-- Ownership: resource creation, retention, mutation and release vocabulary\n|   |-- Data dependency: value/state/reactive needs, independent of grouping\n|   |-- Universe: eligible source entities with evidence in analyzed files\n|   |   `-- Excludes containers, scopes, interface/type and external/unknown kinds\n|   |-- Partitions: directory, source layer or one group\n|   |-- Active layers: calls, data, state and reactive dependencies\n|   |   `-- Evaluate partition metrics; derive SCCs with relation provenance\n|   |-- deriveFindings invoked; finding contract requires \"investigate\"\n|   `-- contains relations form the canonical containment projection\n`-- Validation and publication [persistence.ts; scripts/analysis/analyze.ts]\n    |-- Validate identities, endpoints, pinned ranges and supporting references\n    |-- Check containment tree, SCC DAG, partitions, metrics and coverage\n    |-- Canonical JSON streams records; propertyPath preserves sequence\n    |-- CLI renames temporary gzip artifact, report and run manifest separately\n    |   `-- Manifest carries hashes, sizes, counts, timing, RSS and timestamp\n    `-- Supplied evidence establishes CLI use; browser integration is unproven",
+        "position": {
+          "column": 100,
+          "row": 0
+        }
+      },
+      {
+        "id": "lifetime",
+        "ascii": "Compiler and evidence lifetime [context.ts]\n|-- AnalysisContext owns active program, checker and AST maps\n|   |-- Initial program: noLib, noResolve, types=[]\n|   |-- First checker access builds original compiler configuration\n|   `-- Module-level previousProgram can retain semantic state\n|       |-- Reuses source AST only when file text is unchanged\n|       `-- More than 100 selected files clears prior-program reuse\n|-- releaseCompiler()\n|   |-- Pin inputs once; then clear active program and checker\n|   |-- Clear matching previousProgram for selections over 100 files\n|   `-- Smaller runs can retain previousProgram beyond context release\n|-- Input evidence\n|   |-- Read UTF-8 directly to preserve BOM and source offsets\n|   |-- External compiler files contribute hashes to configurationHash\n|   `-- Git dirty list covers pinned non-node_modules inputs\n|-- release() clears selected files and extraction maps\n`-- Coverage is accounting over emitted evidence\n    |-- Site key: path + start offset + end offset\n    |-- Any issue at a site takes precedence over a resolved relation\n    |-- candidateSites = resolvedSites + unresolvedSites\n    `-- \"complete\" alone does not prove every program behavior was resolved",
+        "position": {
+          "column": 0,
+          "row": 0
+        }
+      },
+      {
+        "id": "cache",
+        "ascii": "Fragment reuse and invalidation [incremental.ts]\n|-- Inventory precedes cache lookup\n|   |-- Re-resolve imports, including previously missing targets\n|   |-- Hash compiler/declaration environment and package/config inputs\n|   `-- Environment key includes analyzer/TS versions, views, frameworks\n|-- Broaden to one local-file group on uncertainty\n|   |-- Global scripts or module/global augmentations\n|   |-- Nonliteral import()/require() targets\n|   |-- Selected .d.ts or declarations depending on ordinary local source\n|   `-- Node16/NodeNext module resolution\n|-- Otherwise use current imports plus cached fact dependencies\n|   |-- Member hashes/resolutions include unselected local dependencies\n|   `-- Extract only selected paths in each affected group\n|-- Assembly always runs\n|   |-- Recreate semantic mode if any fragment used it\n|   |-- Preserve nested package configuration pins; merge selected facts\n|   `-- Fresh snapshot and derived results, even on all-cache-hit runs\n`-- Session state is published after successful assembly\n    |-- finally resets busy after either success or failure\n    |-- Export/restore use structuredClone; restore validates fragments\n    `-- changedFiles compares selected hashes, not all invalidation causes",
+        "position": {
+          "column": 0,
+          "row": 30
+        }
+      },
+      {
+        "id": "models",
+        "ascii": "3+1 interpretation of stored facts [schema.ts]\n|-- Modular structure combines two stored views\n|   |-- containment: contains, imports, reexports, jsx-child\n|   |-- lexical: scope-parent, declares, references, captures, captures-this\n|   |-- Visibility fields: exported, namespace, declaringScopeId\n|   `-- Capture channels: lexical/import/this; direct/transitive reach\n|-- Call model describes static call relationships here\n|   |-- Dispatch: direct, virtual, union, callback, computed, external, unknown\n|   `-- Runtime identities are reserved in this static-analysis contract\n|       `-- Validation requires observed runtime-probe evidence for runtime facts\n|-- Ownership models authority over resources\n|   |-- creates, retains, aliases, can-mutate, exposes-read-api, escapes\n|   |-- subscribes, unsubscribes, disposes\n|   `-- Capability: read/write/subscribe/dispose; depth: binding/shallow/deep\n`-- Data dependency remains a graph across these boundaries\n    |-- value-flow, argument, return, reads, writes, control, awaits\n    |-- reactive, selects, prop-flow, context-read, effect-dependency\n    `-- propertyPath, argumentIndex and mechanism refine edges\n        `-- These are schema capabilities; extractor bodies are not supplied",
+        "position": {
+          "column": 200,
+          "row": 0
+        }
+      },
+      {
+        "id": "derive",
+        "ascii": "Facts to projections [derive.ts; schema.ts]\n|-- Build eligible source-entity universe\n|   `-- Each generated partition gives every member one primary group\n|-- Activate layers only for views whose status is not \"not-run\"\n|   |-- calls: calls + constructs\n|   |-- data: value-flow + argument + return + reads + writes\n|   |-- state: reads + writes\n|   `-- reactive: reactive + selects + prop-flow\n|       `-- Also context-read + effect-dependency\n|-- Layer contract: resolved/inferred, unit weights, excludeSelfEdges=true\n|-- Metric evaluation delegates to evaluateAllPartitions\n|   |-- Compare to directory partition when requested\n|   `-- Contract: coverage, edge mass, cohesion, comparison, shuffle baseline\n|-- SCC construction uses eligible endpoints of matching relations\n|   |-- Only participating entities enter each SCC universe\n|   |-- Iterative Kosaraju avoids recursion on deep graphs\n|   `-- Condensed edges aggregate original relation IDs between components\n|-- deriveFindings delegates to an unsupplied implementation\n|   `-- Contract: cross-view boundary, cross-boundary write\n|       `-- Also mutable capture, shared state; assessment: investigate\n`-- contains projection has one occurrence per entity and no lifted edges",
+        "position": {
+          "column": 200,
+          "row": 30
+        }
+      },
+      {
+        "id": "persist",
+        "ascii": "Artifact validation and publication [persistence.ts; CLI]\n|-- validateAnalysisArtifact checks records and graph invariants\n|   |-- One repository root; contains gives every other entity one parent\n|   |-- Imports, JSX, captures and calls may still cycle\n|   |-- SCC edges must match their supporting relation endpoints\n|   |-- Metric mass: total = internal + between + boundary + uncovered\n|   |-- Stale source joins must have no current entity matches\n|   `-- Optional source text checks exact UTF-16 coordinates\n|-- analysisArtifactChunks validates before emitting canonical JSON\n|   |-- Keys and set arrays sort deterministically\n|   `-- propertyPath alone keeps array order\n|-- verifyCanonicalAnalysisStream is a separate available check\n|   `-- CLI does not invoke it in the supplied source\n`-- CLI output path [scripts/analysis/analyze.ts]\n    |-- Name: selected-scope if prefixes supplied, else whole-repository\n    |-- Batch canonical text around 256 KiB; gzip at level 6\n    |-- Hash canonical bytes and compressed bytes independently\n    |-- Rename gzip, Markdown report and run manifest individually\n    `-- Output set has no single all-files commit operation",
+        "position": {
+          "column": 100,
+          "row": 66
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": {
+          "diagram": "central",
+          "line": 24
+        },
+        "target": {
+          "diagram": "lifetime",
+          "line": 1
+        },
+        "label": "compiler ownership and evidence accounting"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 32
+        },
+        "target": {
+          "diagram": "cache",
+          "line": 1
+        },
+        "label": "fragment ownership and dependency invalidation"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 10
+        },
+        "target": {
+          "diagram": "models",
+          "line": 1
+        },
+        "label": "visibility, calls, ownership and data needs"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 50
+        },
+        "target": {
+          "diagram": "derive",
+          "line": 1
+        },
+        "label": "dependency layers become analytical projections"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 54
+        },
+        "target": {
+          "diagram": "persist",
+          "line": 1
+        },
+        "label": "validation and output lifecycle"
+      }
+    ]
+  },
+  "usage": {
+    "input_tokens": 224656,
+    "cached_input_tokens": 192640,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 7330,
+    "reasoning_output_tokens": 677
+  }
+}

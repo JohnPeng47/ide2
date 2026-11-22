@@ -1,0 +1,19 @@
+{
+  "id": "child-3",
+  "name": "input",
+  "assignment": "Map n24-35 input branch across implementations. Private /tmp/input. Return compact scope + path ranges with roles D,U,I per node; parent can reference child ranges.",
+  "model": "gpt-6.2-astra",
+  "effort": "high",
+  "status": "generating",
+  "queuedAt": "2026-11-22T03:05:57.870Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-22T03:07:26.183Z",
+  "sessionId": "01a20139-0e70-763e-82b9-7b6e4f41ab25",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-7vmfpdh9-agent-repository-RuKCrG-checkout--/2026-11-22T03-07-26-192Z_01a20139-0e70-763e-82b9-7b6e4f41ab25.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase4-7vmfpdh9/agent-repository-RuKCrG/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

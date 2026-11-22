@@ -1,0 +1,126 @@
+{
+  "experiment": "d6db3d5a-0042-4bc3-b633-c1ffc3027efd",
+  "prompt": "aa99c302-b7f5-46de-80d5-f7224b19cc2b",
+  "stages": {
+    "core": {
+      "update": "956b2a43-e689-4785-a23a-f40b2961268d",
+      "approval": "3538316f-87ff-4892-9767-8595de076a62",
+      "contexts": {
+        "mapping": "dd40152d-b805-43d7-bc99-22ee1c06da7a",
+        "pi": "c594d7d5-1ca6-4bf4-8bb0-015eb4c45502",
+        "opencode": "218cc06e-6d51-4c81-a72e-802f1b7e5849",
+        "ghostty": "e541470b-c724-4280-800a-09af4758a3e5"
+      },
+      "runs": {
+        "mapping": [
+          "f40c1135-19f1-4591-bca5-6f10e0658342"
+        ],
+        "pi": [
+          "ad210e23-ca65-4c43-8387-cc9cea8bb4c5"
+        ],
+        "opencode": [
+          "a17ff646-72cd-41bc-8f3d-96c736043cde"
+        ],
+        "ghostty": [
+          "3e584127-5e25-47b1-aef4-51f4738230cb"
+        ]
+      }
+    },
+    "p1": {
+      "update": "551d8f9d-6b04-47a4-8d52-f36f08a36b2e",
+      "approval": "c11cae61-db49-4b0e-a974-827018e3dcf2",
+      "contexts": {
+        "mapping": "10d58157-a525-4f71-b1f8-1887559f57cc",
+        "pi": "d4f1b0f0-7f76-4896-89b6-b6091b4e7a11",
+        "opencode": "279864c1-b763-4858-93ee-3de723983676",
+        "ghostty": "63f31964-5848-4ed2-b47f-eee31575b626"
+      },
+      "runs": {
+        "mapping": [
+          "8fa9aa17-98d5-4382-b457-6c89682bd07a",
+          "bd03224a-0c3b-42df-a29d-7e9e2db6d808",
+          "7d6dec87-10fb-4462-bb8d-071a7b63e59f"
+        ],
+        "pi": [
+          "0f92b468-ffad-419f-8a1e-0f51ba6c8975",
+          "d3d211df-86c9-4140-a1ca-99919421cfd5",
+          "5d1e9a92-7ac0-44d8-89ba-0eceee69adef"
+        ],
+        "opencode": [
+          "e3e2b915-4950-41f0-9c4b-51cef9ffcad9",
+          "7caff64f-96eb-4cec-a74a-cc6588409adb",
+          "7c60844e-b9e9-4def-8e84-5277801c7317"
+        ],
+        "ghostty": [
+          "4c52b46e-c90d-413d-8cad-64b1eacc49f1",
+          "c7026706-8151-4d53-b898-4abe862584ad",
+          "94164e6b-7e12-41f9-87a6-fa80328755d2"
+        ]
+      }
+    },
+    "p2": {
+      "update": "46af1ce4-184c-4349-9c6b-1a343012867c",
+      "approval": "f10eee8e-ae33-4389-b001-a75398de7c9a",
+      "contexts": {
+        "mapping": "c9b46ea0-e760-4ed6-be5a-f408ab547df2",
+        "pi": "e30eaadb-b24b-4657-a53c-6b6d346a77a6",
+        "opencode": "41ff6aec-7dc8-40dc-8838-ea4cc8903716",
+        "ghostty": "88f0d1ab-cce6-41a9-8efb-9cb7aee79056"
+      },
+      "runs": {
+        "mapping": [
+          "1984b079-6552-46bd-b4af-fbf5d6c9e489",
+          "7b6995d1-7ee3-4e92-9c27-2b43984f7100",
+          "f082889e-4714-4128-b0b3-a1dd947dbdfc"
+        ],
+        "pi": [
+          "852a3877-211f-4e04-a2ec-af4867f3ee20",
+          "d8edd57f-2040-43ba-8020-bbdf0b4c4ffd",
+          "c9db6aa3-4abd-4aa3-a309-428856687241"
+        ],
+        "opencode": [
+          "d72d65ce-861f-43a6-9048-dd5adcfacf6a",
+          "08a7251e-89b1-4070-92a3-5d0908fa7616",
+          "a119ab93-f28e-4db9-8449-4cc0784aff80"
+        ],
+        "ghostty": [
+          "4869cd25-2d55-4bd1-96f2-8b4c06b1beac",
+          "b6ff535e-6a4f-454d-aa77-91bb5ae80e3f",
+          "79c0cbd4-15f9-487e-aef5-992492257e6b"
+        ]
+      }
+    },
+    "p3": {
+      "update": "0a579a3e-4598-4091-8dfb-146611a7e0ef",
+      "approval": "7e2c0b52-3271-49cf-b715-ac92ccef0967",
+      "contexts": {
+        "mapping": "3bbe4652-9c8d-4510-be50-2aa9a4c93fcf",
+        "pi": "ce7919f2-36fa-4406-b804-f22246f4da4d",
+        "opencode": "3b0bd673-8cee-40ce-97ca-4e43cb603fda",
+        "ghostty": "63b40188-8c5a-40e6-9d44-b260d6de5a2a"
+      },
+      "runs": {
+        "mapping": [
+          "8a34bcda-240a-4781-a9e4-594f8c7ec2ab",
+          "fe7b8106-5fab-435b-b4d7-0eef7d4bd3aa",
+          "663c2bac-f684-4d26-a87d-62af81a0352b"
+        ],
+        "pi": [
+          "161445aa-b26a-4b90-990f-ca714a118593",
+          "c22d711f-9a98-4da2-a205-9a2cc856015d",
+          "76dae51e-abfd-412f-a3fb-1a49f18ed630"
+        ],
+        "opencode": [
+          "6124af03-383b-4fef-9856-1f0f64e08b37",
+          "19da65b3-ec05-43a3-9394-1a8f4be2ead0",
+          "914916bf-5490-4ed6-a81e-1bb0159b4e1a"
+        ],
+        "ghostty": [
+          "2a9824e5-fb5c-4c37-8c0c-52f22b128f43",
+          "5b19a42f-7077-401d-bbb2-d065f329c87e",
+          "c660613e-37da-446c-8ec8-641dcf4a5321"
+        ]
+      }
+    }
+  }
+}

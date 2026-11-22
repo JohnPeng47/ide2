@@ -1,0 +1,19 @@
+{
+  "id": "child-5",
+  "name": "terminal",
+  "assignment": "Map d5 all nodes. Read numbered source ranges. Return JSON partial mapping.",
+  "model": "gpt-6-sol",
+  "effort": "medium",
+  "status": "generating",
+  "queuedAt": "2026-11-19T04:24:26.955Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-19T04:25:05.698Z",
+  "sessionId": "01a1f20d-13a6-770b-b176-51a6305f3f08",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-eh_akrl2-agent-repository-fSha3a-checkout--/2026-11-19T04-25-05-702Z_01a1f20d-13a6-770b-b176-51a6305f3f08.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase3-eh_akrl2/agent-repository-fSha3a/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

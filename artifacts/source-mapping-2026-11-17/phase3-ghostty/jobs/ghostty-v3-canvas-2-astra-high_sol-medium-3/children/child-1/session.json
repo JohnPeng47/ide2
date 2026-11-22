@@ -1,0 +1,19 @@
+{
+  "id": "child-1",
+  "name": "surface",
+  "assignment": "Map d1 nodes n11-n28 and n38-n48 only. Follow Surface and termio lifecycle. Read numbered ranges, include full named declarations/functions. Return JSON partial mappings.",
+  "model": "gpt-6-sol",
+  "effort": "medium",
+  "status": "generating",
+  "queuedAt": "2026-11-19T04:31:43.013Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-19T04:31:43.016Z",
+  "sessionId": "01a1f213-23c2-7cec-9235-3ed465fba9f8",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-5t7gs81j-agent-repository-5t5idq-checkout--/2026-11-19T04-31-43-042Z_01a1f213-23c2-7cec-9235-3ed465fba9f8.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase3-5t7gs81j/agent-repository-5t5idq/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

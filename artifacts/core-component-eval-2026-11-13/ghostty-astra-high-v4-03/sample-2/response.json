@@ -1,0 +1,68 @@
+{
+  "output": {
+    "ascii": "Ghostty's Surface-centered terminal session -- input, process I/O, terminal state, and rendering\n|\n|-- [M] Surface is the integration boundary (src/Surface.zig)\n|   |-- Exposes init(), keyCallback(), mouseButtonCallback(), sizeCallback(), draw()\n|   |   `-- Native UI events enter here; platform-independent terminal behavior stays here\n|   |-- apprt.runtime.App / Surface supply the platform boundary (src/apprt.zig)\n|   |   |-- Compile-time runtime selection: GTK, embedded, browser, or none\n|   |   `-- rt_app.performAction() delegates titles, clipboard/UI actions, and window operations\n|   `-- App connects multiple sessions (src/App.zig)\n|       |-- surfaces: ArrayList(*apprt.Surface); focused_surface identifies the active session\n|       |-- font_grid_set: font.SharedGridSet; device: ?*renderer.Device\n|       |   `-- Surfaces reference shared fonts and borrow the app-scoped graphics device\n|       `-- tick() -> drainMailbox() -> surfaceMessage() -> Surface.handleMessage()\n|           `-- Worker-originated surface messages return to the application thread\n|\n|-- [O] Surface.init() assembles one session (src/Surface.zig)\n|   |-- io: termio.Termio; io_thread: termio.Thread; io_thr: std.Thread\n|   |-- renderer: Renderer; renderer_thread: renderer.Thread; renderer_thr: std.Thread\n|   |-- renderer_state: renderer.State\n|   |   |-- terminal = &self.io.terminal -- shared reference, not another terminal model\n|   |   `-- mutex protects referenced terminal state and shared presentation inputs\n|   |-- mouse / keyboard / pressed_key / focused / visible / readonly\n|   |   `-- Interaction state belongs to the session, independently of the child process\n|   `-- config: DerivedConfig; size: renderer.Size; font_grid_key\n|       `-- Derived configuration avoids retaining the caller's Config memory\n|\n|-- [C] User input -> bindings or terminal bytes (src/Surface.zig)\n|   |-- keyCallback() first resolves configured keybindings and sequences\n|   |   |-- Handled bindings perform actions rather than sending the key to the child\n|   |   `-- encodeKey() -> input.key_encode.encode() for unconsumed input\n|   |       `-- [D] KeyEvent + Options.fromTerminal() -> protocol-specific bytes\n|   |           `-- Terminal modes and active-screen keyboard settings affect encoding\n|   |-- Mouse / selection / paste paths\n|   |   |-- input.mouse_encode: event + terminal reporting mode -> mouse protocol bytes\n|   |   |-- Screen.select() retains a tracked selection for local interaction\n|   |   `-- input.paste.encode(): paste contents + options -> terminal input sequences\n|   `-- queueIo(.write_small / .write_stable / .write_alloc)\n|       |-- readonly rejects writes while retaining local terminal interactions\n|       `-- Termio.queueMessage() -> termio.Thread.drainMailbox() -> queueWrite()\n|           `-- Exec.queueWrite() schedules bytes to the PTY (src/termio/Exec.zig)\n|\n|-- [C] Child output -> parsed terminal operations (src/termio/Termio.zig)\n|   |-- backend: termio.Backend = .exec; Exec owns Subprocess\n|   |   |-- Surface supplies command, environment, working directory, shell integration\n|   |   `-- Exec.threadEnter() -> Subprocess.start(): create PTY and launch command\n|   |       |-- Process watcher detects child exit\n|   |       `-- ReadThread delivers output to Termio.processOutput()\n|   |           |-- POSIX: io-gather batches PTY reads; io-reader parses batches\n|   |           `-- Windows: one read loop reads and processes output\n|   |-- processOutput() locks renderer_state.mutex\n|   |   `-- processOutputLocked() -> terminal_stream.nextSlice(buf)\n|   |       |-- terminal.Stream(StreamHandler) retains incremental parsing state\n|   |       `-- StreamHandler.vt() / vtPrintAscii() dispatch terminal operations\n|   |           `-- print, cursor movement, scrolling, modes, and attributes mutate Terminal\n|   `-- StreamHandler bridges effects outside the grid (src/termio/stream_handler.zig)\n|       |-- Terminal queries -> termio_mailbox -> reply bytes to the child\n|       |-- Titles, bells, clipboard requests -> surface_mailbox -> runtime handling\n|       `-- queueRender() / renderer_mailbox -> renderer wakeup and presentation updates\n|\n|-- [O] Termio.terminal is the authoritative emulator model (src/terminal/Terminal.zig)\n|   |-- Exposes print(), cursor operations, resize(), scrollViewport(), and mode changes\n|   |   `-- Renderer-agnostic state: no native window or GPU ownership\n|   |-- screens: ScreenSet (src/terminal/ScreenSet.zig)\n|   |   |-- primary screen exists initially; alternate screen initializes on demand\n|   |   `-- active: *Screen chooses the current screen\n|   |       |-- cursor / saved_cursor / selection / charset / kitty_keyboard\n|   |       |-- kitty_images and semantic_prompt retain screen-specific protocol state\n|   |       `-- pages: PageList (src/terminal/Screen.zig, src/terminal/PageList.zig)\n|   |           |-- Ordered pages hold scrollback followed by the active screen\n|   |           |-- Page rows/cells carry character and styling data\n|   |           `-- Tracked pins keep cursor, viewport, and selection references meaningful\n|   `-- rows / cols / scrolling_region / tabstops / modes / colors / title / pwd\n|       `-- [D] Parsed output changes both visible contents and future input interpretation\n|\n|-- [C] Shared terminal state -> GPU presentation (src/renderer/Thread.zig)\n|   |-- Wakeup -> drainMailbox() -> renderCallback() -> Renderer.updateFrame()\n|   |-- Renderer = GenericRenderer(GraphicsAPI) (src/renderer.zig)\n|   |   `-- GraphicsAPI is selected at compile time: Metal or OpenGL\n|   |-- updateFrame() snapshots under State.lockDemand() / unlockDemand()\n|   |   |-- terminal_state: terminal.RenderState retains renderer-side extracted state\n|   |   |-- [D] Viewport cells + dirty state + selection + cursor + images\n|   |   |   `-- Combined with fonts, colors, sizing, mouse state, and IME preedit\n|   |   `-- synchronized_output mode defers frame updates\n|   |-- font_shaper / font_shaper_cache + font_grid -> glyph and cell rendering data\n|   |   `-- src/renderer/generic.zig keeps frame construction separate from terminal parsing\n|   `-- drawFrame() -> GraphicsAPI rendering and presentation\n|       |-- Renderer scheduling considers visibility and vsync\n|       `-- Surface.draw() can request synchronous drawing during native UI activity\n|\n|-- [D] Resize and configuration coordinate all session parts\n|   |-- Surface.sizeCallback() -> resize() (src/Surface.zig)\n|   |   |-- Pixel dimensions + cell metrics + padding -> renderer.Size.grid()\n|   |   `-- queueIo(.resize) and renderer mailbox carry the new size\n|   |       `-- Termio.resize() (src/termio/Termio.zig)\n|   |           |-- Under the terminal mutex: backend.resize() + Terminal.resize()\n|   |           |   `-- Child redraw cannot be parsed against obsolete dimensions\n|   |           `-- Notify renderer after emulator and PTY size changes\n|   `-- App.updateConfig() -> Surface.handleMessage(.change_config)\n|       `-- Surface, Termio, and Renderer maintain their own derived configuration\n|\n`-- [O] Session teardown follows resource dependencies (src/Surface.zig)\n    |-- close() -> rt_surface.close(needsConfirmQuit()) -> runtime-driven destruction\n    |-- deinit(): stop optional search, then stop/join renderer and I/O threads\n    |   `-- Exec.threadExit() ends subprocess/read-thread activity (src/termio/Exec.zig)\n    |-- Only after workers stop: deinit renderer, thread managers, and Termio\n    |   `-- Renderer is destroyed before its thread manager to retire display-link callbacks\n    |-- Release input allocations, font-grid reference, shared-state mutex, and config\n    `-- App.deinit() destroys surfaces before shared fonts and graphics device\n        `-- Shared resources outlive the session renderers that borrow them"
+  },
+  "usage": {
+    "input": 39070,
+    "output": 2736,
+    "cacheRead": 63104,
+    "cacheWrite": 0,
+    "reasoning": 68,
+    "totalTokens": 104910
+  },
+  "execution": {
+    "runtime": "pi-agent-context",
+    "sessionId": "01a1dc72-4fcc-704d-b033-bcc359e2ed21",
+    "contextHash": "c26f9e1d07185d26d78fd7cf31b447b58604b2cae4a040b1dc623aaaf9e7848a",
+    "cacheKey": "eval-da3d421ecbdba90cafd68269fffb2b7b990d717ad9088d8f631d6c21ba8509fe",
+    "modelContextHash": "951a3cdcdadd9b62a879cc35dfdf7faf4a16b82964953ac58a42f7324a81afb1",
+    "repositories": [
+      {
+        "repository": "repo-1",
+        "repositoryPath": "/home/john/softwarez/ghostty",
+        "commit": "ea8b12a8a9894b5259c441eadd8f6f0c65e215af",
+        "exclusions": [
+          "**/*-LICENSE",
+          "**/*.md",
+          "**/*.mdx",
+          "**/*.spec.*",
+          "**/*.test.*",
+          "**/AGENTS.md",
+          "**/CODEX-LICENSE",
+          "**/LICENSE*",
+          "**/Tests/**",
+          "**/__fixtures__/**",
+          "**/__tests__/**",
+          "**/benchmark/**",
+          "**/benchmarks/**",
+          "**/build/**",
+          "**/dist/**",
+          "**/docs/**",
+          "**/examples/**",
+          "**/fixtures/**",
+          "**/node_modules/**",
+          "**/scripts/**",
+          "**/test/**",
+          "**/tests/**",
+          ".agents/**",
+          ".github/**",
+          ".husky/**",
+          ".pi/**",
+          "deps/**",
+          "example/**",
+          "flake.lock",
+          "flatpak/**",
+          "images/**",
+          "nix/**",
+          "package-lock.json",
+          "po/**",
+          "scripts/**",
+          "snap/**",
+          "vendor/**"
+        ],
+        "checkout": "/tmp/agent-repository-LFrZzP/checkout",
+        "inspectionSource": "session-transcript"
+      }
+    ]
+  }
+}

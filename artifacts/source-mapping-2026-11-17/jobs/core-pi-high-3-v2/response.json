@@ -1,0 +1,869 @@
+{
+  "output": {
+    "diagrams": [
+      {
+        "diagramId": "d1",
+        "mappings": [
+          {
+            "node": "n1",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 518,
+            "endLine": 559
+          },
+          {
+            "node": "n2",
+            "path": "packages/coding-agent/src/main.ts",
+            "startLine": 1008,
+            "endLine": 1013
+          },
+          {
+            "node": "n3",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 409,
+            "endLine": 412
+          },
+          {
+            "node": "n4",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 2162,
+            "endLine": 2162
+          },
+          {
+            "node": "n4",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 2363,
+            "endLine": 2384
+          },
+          {
+            "node": "n4",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 2601,
+            "endLine": 2611
+          },
+          {
+            "node": "n4",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 2923,
+            "endLine": 2925
+          },
+          {
+            "node": "n4",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 4126,
+            "endLine": 4129
+          },
+          {
+            "node": "n5",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 1453,
+            "endLine": 1462
+          },
+          {
+            "node": "n5",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 1509,
+            "endLine": 1512
+          },
+          {
+            "node": "n5",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 1525,
+            "endLine": 1528
+          },
+          {
+            "node": "n5",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 1721,
+            "endLine": 1724
+          },
+          {
+            "node": "n6",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 416,
+            "endLine": 455
+          },
+          {
+            "node": "n6",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 469,
+            "endLine": 510
+          },
+          {
+            "node": "n7",
+            "path": "packages/coding-agent/src/main.ts",
+            "startLine": 1008,
+            "endLine": 1052
+          },
+          {
+            "node": "n8",
+            "path": "packages/coding-agent/src/main.ts",
+            "startLine": 1008,
+            "endLine": 1013
+          },
+          {
+            "node": "n9",
+            "path": "packages/coding-agent/src/core/sdk.ts",
+            "startLine": 191,
+            "endLine": 207
+          },
+          {
+            "node": "n10",
+            "path": "packages/coding-agent/src/core/sdk.ts",
+            "startLine": 191,
+            "endLine": 207
+          },
+          {
+            "node": "n11",
+            "path": "packages/coding-agent/src/core/sdk.ts",
+            "startLine": 209,
+            "endLine": 294
+          },
+          {
+            "node": "n12",
+            "path": "packages/coding-agent/src/core/sdk.ts",
+            "startLine": 403,
+            "endLine": 438
+          },
+          {
+            "node": "n13",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 2162,
+            "endLine": 2195
+          },
+          {
+            "node": "n14",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 2186,
+            "endLine": 2195
+          },
+          {
+            "node": "n15",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 2169,
+            "endLine": 2177
+          },
+          {
+            "node": "n16",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 2206,
+            "endLine": 2262
+          },
+          {
+            "node": "n17",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 2226,
+            "endLine": 2239
+          },
+          {
+            "node": "n18",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 1943,
+            "endLine": 1948
+          },
+          {
+            "node": "n19",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 1996,
+            "endLine": 2005
+          },
+          {
+            "node": "n20",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 2004,
+            "endLine": 2012
+          },
+          {
+            "node": "n21",
+            "path": "packages/agent/src/agent.ts",
+            "startLine": 190,
+            "endLine": 198
+          },
+          {
+            "node": "n22",
+            "path": "packages/agent/src/agent.ts",
+            "startLine": 194,
+            "endLine": 198
+          },
+          {
+            "node": "n22",
+            "path": "packages/agent/src/agent.ts",
+            "startLine": 470,
+            "endLine": 480
+          },
+          {
+            "node": "n23",
+            "path": "packages/agent/src/agent.ts",
+            "startLine": 529,
+            "endLine": 531
+          },
+          {
+            "node": "n23",
+            "path": "packages/agent/src/agent.ts",
+            "startLine": 561,
+            "endLine": 563
+          },
+          {
+            "node": "n23",
+            "path": "packages/agent/src/agent.ts",
+            "startLine": 578,
+            "endLine": 611
+          },
+          {
+            "node": "n24",
+            "path": "packages/agent/src/agent.ts",
+            "startLine": 195,
+            "endLine": 198
+          },
+          {
+            "node": "n24",
+            "path": "packages/agent/src/agent.ts",
+            "startLine": 224,
+            "endLine": 224
+          },
+          {
+            "node": "n24",
+            "path": "packages/agent/src/agent.ts",
+            "startLine": 255,
+            "endLine": 256
+          },
+          {
+            "node": "n25",
+            "path": "packages/agent/src/agent.ts",
+            "startLine": 380,
+            "endLine": 419
+          },
+          {
+            "node": "n26",
+            "path": "packages/agent/src/agent-loop.ts",
+            "startLine": 172,
+            "endLine": 192
+          },
+          {
+            "node": "n27",
+            "path": "packages/agent/src/agent-loop.ts",
+            "startLine": 228,
+            "endLine": 251
+          },
+          {
+            "node": "n28",
+            "path": "packages/agent/src/agent-loop.ts",
+            "startLine": 267,
+            "endLine": 286
+          },
+          {
+            "node": "n29",
+            "path": "packages/agent/src/agent-loop.ts",
+            "startLine": 289,
+            "endLine": 307
+          },
+          {
+            "node": "n30",
+            "path": "packages/agent/src/agent-loop.ts",
+            "startLine": 310,
+            "endLine": 326
+          },
+          {
+            "node": "n31",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 2049,
+            "endLine": 2085
+          },
+          {
+            "node": "n32",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 1969,
+            "endLine": 1974
+          },
+          {
+            "node": "n32",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 2058,
+            "endLine": 2079
+          },
+          {
+            "node": "n33",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 1970,
+            "endLine": 1987
+          },
+          {
+            "node": "n33",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 1139,
+            "endLine": 1160
+          },
+          {
+            "node": "n34",
+            "path": "packages/coding-agent/src/core/session-manager.ts",
+            "startLine": 990,
+            "endLine": 1006
+          },
+          {
+            "node": "n35",
+            "path": "packages/coding-agent/src/core/session-manager.ts",
+            "startLine": 990,
+            "endLine": 1006
+          },
+          {
+            "node": "n36",
+            "path": "packages/coding-agent/src/core/session-manager.ts",
+            "startLine": 1002,
+            "endLine": 1006
+          },
+          {
+            "node": "n37",
+            "path": "packages/coding-agent/src/core/session-manager.ts",
+            "startLine": 57,
+            "endLine": 77
+          },
+          {
+            "node": "n37",
+            "path": "packages/coding-agent/src/core/session-manager.ts",
+            "startLine": 91,
+            "endLine": 114
+          },
+          {
+            "node": "n37",
+            "path": "packages/coding-agent/src/core/session-manager.ts",
+            "startLine": 174,
+            "endLine": 194
+          },
+          {
+            "node": "n38",
+            "path": "packages/coding-agent/src/core/session-manager.ts",
+            "startLine": 1168,
+            "endLine": 1196
+          },
+          {
+            "node": "n39",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 1163,
+            "endLine": 1167
+          },
+          {
+            "node": "n40",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 1207,
+            "endLine": 1209
+          },
+          {
+            "node": "n41",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 1211,
+            "endLine": 1232
+          },
+          {
+            "node": "n42",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 1211,
+            "endLine": 1233
+          },
+          {
+            "node": "n43",
+            "path": "packages/coding-agent/src/core/session-manager.ts",
+            "startLine": 543,
+            "endLine": 574
+          },
+          {
+            "node": "n44",
+            "path": "packages/coding-agent/src/core/session-manager.ts",
+            "startLine": 390,
+            "endLine": 415
+          },
+          {
+            "node": "n44",
+            "path": "packages/coding-agent/src/core/session-manager.ts",
+            "startLine": 476,
+            "endLine": 511
+          },
+          {
+            "node": "n45",
+            "path": "packages/coding-agent/src/core/session-manager.ts",
+            "startLine": 519,
+            "endLine": 540
+          },
+          {
+            "node": "n46",
+            "path": "packages/coding-agent/src/core/session-manager.ts",
+            "startLine": 543,
+            "endLine": 574
+          },
+          {
+            "node": "n47",
+            "path": "packages/coding-agent/src/core/session-manager.ts",
+            "startLine": 576,
+            "endLine": 584
+          },
+          {
+            "node": "n48",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 848,
+            "endLine": 870
+          },
+          {
+            "node": "n49",
+            "path": "packages/coding-agent/src/core/session-manager.ts",
+            "startLine": 1591,
+            "endLine": 1602
+          },
+          {
+            "node": "n50",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 4251,
+            "endLine": 4301
+          },
+          {
+            "node": "n50",
+            "path": "packages/coding-agent/src/core/session-manager.ts",
+            "startLine": 1650,
+            "endLine": 1654
+          },
+          {
+            "node": "n51",
+            "path": "packages/agent/src/agent-loop.ts",
+            "startLine": 390,
+            "endLine": 417
+          },
+          {
+            "node": "n52",
+            "path": "packages/agent/src/agent-loop.ts",
+            "startLine": 390,
+            "endLine": 417
+          },
+          {
+            "node": "n53",
+            "path": "packages/agent/src/agent-loop.ts",
+            "startLine": 397,
+            "endLine": 406
+          },
+          {
+            "node": "n54",
+            "path": "packages/coding-agent/src/core/sdk.ts",
+            "startLine": 403,
+            "endLine": 423
+          },
+          {
+            "node": "n55",
+            "path": "packages/coding-agent/src/core/sdk.ts",
+            "startLine": 340,
+            "endLine": 357
+          },
+          {
+            "node": "n55",
+            "path": "packages/coding-agent/src/core/sdk.ts",
+            "startLine": 433,
+            "endLine": 437
+          },
+          {
+            "node": "n56",
+            "path": "packages/coding-agent/src/core/sdk.ts",
+            "startLine": 374,
+            "endLine": 401
+          },
+          {
+            "node": "n56",
+            "path": "packages/coding-agent/src/core/sdk.ts",
+            "startLine": 424,
+            "endLine": 426
+          },
+          {
+            "node": "n57",
+            "path": "packages/coding-agent/src/core/model-runtime.ts",
+            "startLine": 173,
+            "endLine": 176
+          },
+          {
+            "node": "n58",
+            "path": "packages/coding-agent/src/core/model-runtime.ts",
+            "startLine": 200,
+            "endLine": 227
+          },
+          {
+            "node": "n59",
+            "path": "packages/coding-agent/src/core/model-runtime.ts",
+            "startLine": 200,
+            "endLine": 219
+          },
+          {
+            "node": "n60",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 848,
+            "endLine": 904
+          },
+          {
+            "node": "n61",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 877,
+            "endLine": 903
+          },
+          {
+            "node": "n62",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 873,
+            "endLine": 889
+          },
+          {
+            "node": "n62",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 897,
+            "endLine": 904
+          },
+          {
+            "node": "n63",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 3650,
+            "endLine": 3719
+          },
+          {
+            "node": "n64",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 3650,
+            "endLine": 3669
+          },
+          {
+            "node": "n65",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 504,
+            "endLine": 510
+          },
+          {
+            "node": "n66",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 3766,
+            "endLine": 3783
+          },
+          {
+            "node": "n67",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 3659,
+            "endLine": 3684
+          },
+          {
+            "node": "n67",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 3701,
+            "endLine": 3719
+          },
+          {
+            "node": "n68",
+            "path": "packages/coding-agent/src/core/tools/index.ts",
+            "startLine": 93,
+            "endLine": 105
+          },
+          {
+            "node": "n69",
+            "path": "packages/coding-agent/src/core/tools/index.ts",
+            "startLine": 163,
+            "endLine": 170
+          },
+          {
+            "node": "n70",
+            "path": "packages/coding-agent/src/core/tools/index.ts",
+            "startLine": 182,
+            "endLine": 192
+          },
+          {
+            "node": "n71",
+            "path": "packages/agent/src/agent-loop.ts",
+            "startLine": 518,
+            "endLine": 532
+          },
+          {
+            "node": "n72",
+            "path": "packages/agent/src/agent-loop.ts",
+            "startLine": 720,
+            "endLine": 746
+          },
+          {
+            "node": "n73",
+            "path": "packages/agent/src/agent-loop.ts",
+            "startLine": 735,
+            "endLine": 747
+          },
+          {
+            "node": "n73",
+            "path": "packages/agent/src/agent-loop.ts",
+            "startLine": 841,
+            "endLine": 850
+          },
+          {
+            "node": "n73",
+            "path": "packages/agent/src/agent-loop.ts",
+            "startLine": 880,
+            "endLine": 892
+          },
+          {
+            "node": "n74",
+            "path": "packages/agent/src/agent-loop.ts",
+            "startLine": 267,
+            "endLine": 305
+          },
+          {
+            "node": "n75",
+            "path": "packages/coding-agent/src/core/extensions/runner.ts",
+            "startLine": 364,
+            "endLine": 371
+          },
+          {
+            "node": "n76",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 3785,
+            "endLine": 3803
+          },
+          {
+            "node": "n77",
+            "path": "packages/coding-agent/src/core/extensions/runner.ts",
+            "startLine": 1312,
+            "endLine": 1329
+          },
+          {
+            "node": "n78",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 853,
+            "endLine": 860
+          },
+          {
+            "node": "n79",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 2923,
+            "endLine": 2939
+          },
+          {
+            "node": "n80",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 2923,
+            "endLine": 2939
+          },
+          {
+            "node": "n80",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 3106,
+            "endLine": 3120
+          },
+          {
+            "node": "n80",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 3252,
+            "endLine": 3274
+          },
+          {
+            "node": "n81",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 3106,
+            "endLine": 3120
+          },
+          {
+            "node": "n81",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 3233,
+            "endLine": 3239
+          },
+          {
+            "node": "n81",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 3252,
+            "endLine": 3269
+          },
+          {
+            "node": "n82",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 2951,
+            "endLine": 2999
+          },
+          {
+            "node": "n83",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 3006,
+            "endLine": 3009
+          },
+          {
+            "node": "n84",
+            "path": "packages/coding-agent/src/core/session-manager.ts",
+            "startLine": 476,
+            "endLine": 511
+          },
+          {
+            "node": "n85",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 2049,
+            "endLine": 2079
+          },
+          {
+            "node": "n86",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 1969,
+            "endLine": 1974
+          },
+          {
+            "node": "n86",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 2058,
+            "endLine": 2079
+          },
+          {
+            "node": "n86",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 3196,
+            "endLine": 3201
+          },
+          {
+            "node": "n87",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 436,
+            "endLine": 454
+          },
+          {
+            "node": "n88",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 2601,
+            "endLine": 2617
+          },
+          {
+            "node": "n89",
+            "path": "packages/coding-agent/src/core/agent-session-runtime.ts",
+            "startLine": 67,
+            "endLine": 95
+          },
+          {
+            "node": "n90",
+            "path": "packages/coding-agent/src/core/agent-session-runtime.ts",
+            "startLine": 67,
+            "endLine": 95
+          },
+          {
+            "node": "n91",
+            "path": "packages/coding-agent/src/core/agent-session-runtime.ts",
+            "startLine": 74,
+            "endLine": 103
+          },
+          {
+            "node": "n92",
+            "path": "packages/coding-agent/src/core/agent-session-runtime.ts",
+            "startLine": 196,
+            "endLine": 223
+          },
+          {
+            "node": "n92",
+            "path": "packages/coding-agent/src/core/agent-session-runtime.ts",
+            "startLine": 226,
+            "endLine": 253
+          },
+          {
+            "node": "n92",
+            "path": "packages/coding-agent/src/core/agent-session-runtime.ts",
+            "startLine": 262,
+            "endLine": 265
+          },
+          {
+            "node": "n93",
+            "path": "packages/coding-agent/src/core/agent-session-runtime.ts",
+            "startLine": 167,
+            "endLine": 178
+          },
+          {
+            "node": "n94",
+            "path": "packages/coding-agent/src/core/agent-session-runtime.ts",
+            "startLine": 167,
+            "endLine": 170
+          },
+          {
+            "node": "n95",
+            "path": "packages/coding-agent/src/core/agent-session-runtime.ts",
+            "startLine": 171,
+            "endLine": 177
+          },
+          {
+            "node": "n96",
+            "path": "packages/coding-agent/src/core/agent-session-runtime.ts",
+            "startLine": 180,
+            "endLine": 193
+          },
+          {
+            "node": "n96",
+            "path": "packages/coding-agent/src/core/agent-session-runtime.ts",
+            "startLine": 212,
+            "endLine": 222
+          },
+          {
+            "node": "n97",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 1473,
+            "endLine": 1498
+          },
+          {
+            "node": "n98",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 1477,
+            "endLine": 1490
+          },
+          {
+            "node": "n99",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 1491,
+            "endLine": 1492
+          },
+          {
+            "node": "n100",
+            "path": "packages/coding-agent/src/core/agent-session.ts",
+            "startLine": 1493,
+            "endLine": 1497
+          }
+        ]
+      }
+    ],
+    "notes": ""
+  },
+  "usage": {
+    "input": 75359,
+    "output": 12540,
+    "cacheRead": 712704,
+    "cacheWrite": 0,
+    "reasoning": 654,
+    "totalTokens": 800603
+  },
+  "execution": {
+    "runtime": "pi-agent-context",
+    "sessionId": "01a1eb4a-76cc-71ba-b114-d5dcb25ec268",
+    "contextHash": "265f8949239c2534acbe4120d8bc5e7c2982825ccd2a92248ae0dac430c83540",
+    "cacheKey": "eval-245381fece986772b93b64d5f4aab45a2bedda690688432eebafdd11f40928d1",
+    "modelContextHash": "448c0fdc5856b3f627af8eaa2444d393833ae0b7651eb9a19cc2e3032afbf4ca",
+    "repositories": [
+      {
+        "repository": "repo-1",
+        "repositoryPath": "/home/john/softwarez/pi",
+        "commit": "682c7b93ce3e0a52b579c2b65b4c06bb392e7180",
+        "exclusions": [
+          "**/*-LICENSE",
+          "**/*.md",
+          "**/*.mdx",
+          "**/*.spec.*",
+          "**/*.test.*",
+          "**/AGENTS.md",
+          "**/CODEX-LICENSE",
+          "**/LICENSE*",
+          "**/__fixtures__/**",
+          "**/__tests__/**",
+          "**/benchmarks/**",
+          "**/build/**",
+          "**/dist/**",
+          "**/docs/**",
+          "**/examples/**",
+          "**/fixtures/**",
+          "**/node_modules/**",
+          "**/scripts/**",
+          "**/test/**",
+          "**/tests/**",
+          ".github/**",
+          ".husky/**",
+          ".pi/**",
+          "flake.lock",
+          "nix/**",
+          "package-lock.json",
+          "scripts/**"
+        ],
+        "checkout": "/tmp/agent-repository-wDgCHA/checkout",
+        "inspectionSource": "session-transcript"
+      }
+    ]
+  }
+}

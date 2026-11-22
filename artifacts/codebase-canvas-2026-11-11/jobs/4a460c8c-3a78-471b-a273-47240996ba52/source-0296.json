@@ -1,0 +1,1 @@
+{"path":"domain/mapping/changes/migrationDecoration.ts","text":"export interface MigrationMark { id: string; role: 'source' | 'destination'; title: string }\nexport const migrationMarkKey = (displayNodeId: string, contentNodeId: string) => JSON.stringify([displayNodeId, contentNodeId]);\n"}

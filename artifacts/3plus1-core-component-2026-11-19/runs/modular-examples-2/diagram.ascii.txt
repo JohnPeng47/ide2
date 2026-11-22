@@ -1,0 +1,137 @@
+Ghostty terminal-surface core -- interactive sessions centered on Surface and Termio.terminal
+|
+|-- [Host] Application and native-runtime boundary
+|   |-- Exposes: App.create/destroy, tick, addSurface/deleteSurface, updateConfig
+|   |   `-- apprt.App/Surface, Action, Target: native events in; UI requests out
+|   |-- Internal: surface registry, focused_surface, app mailbox, shared resource lifetimes
+|   |   |-- Runtime adapters: GTK, embedded, browser, none; selected at compile time
+|   |   `-- App retains font_grid_set and renderer.Device; releases them after surfaces
+|   |-- Boundary: native runtime decides windows/tabs/splits; core Surface is only a terminal widget
+|   |-- -> [Session]: registers surfaces and dispatches their messages
+|   |-- -> [Config], [Font], [Render]: configuration and application-wide resources
+|   `-- Sources: src/App.zig:22-198; src/apprt.zig:1-58; src/Surface.zig:1-11
+|
+|-- [Session] Surface lifecycle and shared-state coordination
+|   |-- Exposes: Surface.init/deinit/close, handleMessage, updateConfig, draw
+|   |   `-- sizeCallback, focusCallback, occlusionCallback: geometry and visibility updates
+|   |-- Shared contract: renderer.State contains a Terminal pointer, mutex, preedit and mouse data
+|   |   `-- lockDemand/unlockDemand/yieldToDemand prevent hot IO from starving frame snapshots
+|   |-- Internal: per-surface worker assembly, DerivedConfig, size, focus, child-exit policy
+|   |   |-- Subparts: renderer worker, IO worker, optional search worker and inspector attachment
+|   |   `-- deinit stops/joins workers before destroying shared state and dereferencing fonts
+|   |-- -> [Host]: rt_app.performAction and rt_surface.close delegate native UI work
+|   |-- -> [IO], [Render], [Font]: constructs session resources and connects their handles
+|   |-- -> [Config], [Search], [Inspect]: applies settings and manages optional facilities
+|   `-- Sources: src/Surface.zig:69-188,477-895,1017,1804,2600,3437-3466;
+|       src/renderer/State.zig:13-111
+|
+|-- [Input] User interaction, local actions and terminal input encoding
+|   |-- Exposes: Surface.keyCallback/textCallback/preeditCallback, mouseButtonCallback,
+|   |   |-- scrollCallback, performBindingAction, completeClipboardRequest
+|   |   `-- input.KeyEvent, Binding.Action, InputEffect; key_encode.encode, mouse_encode.encode
+|   |-- Internal: binding precedence, key-table stack, queued key sequences, mouse capture
+|   |   |-- Subparts: key remapping/bindings, keyboard protocols, mouse reporting,
+|   |   |   selection gestures, links, clipboard/paste and IME handling
+|   |   `-- Binding handling precedes byte encoding; terminal modes determine encoding options
+|   |-- -> [Config]: keybindings, remaps and interaction policy
+|   |-- -> [VT]: mode-sensitive encoders, selection and viewport state
+|   |-- -> [Session], [IO]: shared-state locking and queued terminal input
+|   |-- -> [Host], [Render], [Inspect]: UI actions, visual feedback and optional event recording
+|   `-- Sources: src/Surface.zig:2669-2987,3326-3426,3584,3918,4941,6017;
+|       src/input.zig:10-37; src/input/key_encode.zig:14-82; src/input/mouse_encode.zig:13-81
+|
+|-- [Config] Configuration resolution and reloadable policy
+|   |-- Exposes: Config.default/load/loadFile/loadIter/finalize, clone, changeConditionalState
+|   |-- Internal: arena-backed values, diagnostics and replay steps
+|   |   |-- Subparts: default files, CLI arguments, recursive files, themes and conditionals
+|   |   `-- load resolves defaults, default files, CLI and recursive files before finalize
+|   |-- Boundary: consumers derive their own configuration instead of retaining caller Config pointers
+|   |-- -> [Input]: Keybinds and default bindings; -> [Render]: padding/geometry configuration types
+|   `-- Sources: src/config/Config.zig:42,4035-4110,4428,4552,4751,5205,6647;
+|       src/App.zig:168-198; src/Surface.zig:144-147; src/termio/Termio.zig:182-245
+|
+|-- [IO] Process transport and application-facing terminal protocol effects
+|   |-- Exposes: Termio.init/deinit, processOutput, queueMessage, resize, focusGained
+|   |   `-- termio.Message/Mailbox and Backend.queueWrite provide asynchronous work boundaries
+|   |-- Internal: Termio owns Terminal, terminal_stream, backend and derived settings
+|   |   |-- Exec/Subprocess: PTY, command/environment, shell integration and process-exit handling
+|   |   |-- Exec.ReadThread: output ingestion; termio.Thread: writer loop and control messages
+|   |   |-- StreamHandler.vt/vtPrintAscii: applies terminal actions and handles external effects
+|   |   `-- Timers: resize coalescing, selection scrolling and synchronized-output reset
+|   |-- Boundary: processOutput locks shared state; ordinary parsing uses terminal_stream.nextSlice
+|   |-- -> [VT]: parses escape sequences and mutates the renderer-independent terminal model
+|   |-- -> [Session]: shared lock and surface mailbox for title, clipboard and child-exit requests
+|   |-- -> [Render]: wakeups/messages request repaint; -> [Config]: process and terminal policy
+|   |-- -> [Inspect]: optional PTY recording switches parsing to byte-at-a-time inspection
+|   `-- Sources: src/termio/Termio.zig:1-76,254,437,524,705-763;
+|       src/termio/Thread.zig:1-98; src/termio/Exec.zig:86,274,403,624,1305;
+|       src/termio/backend.zig:13-86; src/termio/stream_handler.zig:188-254
+|
+|-- [VT] Terminal protocol interpretation and authoritative screen state
+|   |-- Exposes: Terminal operations, Stream(Handler), Stream.Action and RenderState
+|   |   |-- Terminal: print, cursor movement, mode changes, resize and scrollViewport
+|   |   `-- Stream: next/nextSlice dispatch typed actions; RenderState: beginUpdate/endUpdate
+|   |-- Internal: protocol decoding and terminal storage, independent of the GPU/native UI
+|   |   |-- Parsing: Parser, UTF8Decoder, CSI/OSC/DCS/APC handling and continuation tracking
+|   |   |-- ScreenSet: primary/alternate Screen, cursor, tracked selection and keyboard flags
+|   |   |-- PageList/Page: cells, rows, styles, graphemes, scrollback, reflow and compression
+|   |   |-- Protocol state: modes, colors, tabstops, hyperlinks, semantic prompts and Kitty images
+|   |   `-- Render extraction: dirty rows/cells, highlights and image placements
+|   |-- Boundary: generic Stream invokes its supplied handler; PTY writes and native UI effects
+|   |   remain the handler's responsibility, not requirements of the terminal model
+|   `-- Sources: src/terminal/Terminal.zig:1-175; src/terminal/stream.zig:588-673;
+|       src/terminal/ScreenSet.zig:18-106; src/terminal/Screen.zig:40-98;
+|       src/terminal/PageList.zig:1278,3347,5431,6313; src/terminal/render.zig:289,941,1423
+|
+|-- [Render] Frame construction, scheduling and GPU presentation
+|   |-- Exposes: Renderer(GraphicsAPI), Device, Thread.Mailbox, renderer.Message and Health
+|   |   `-- updateFrame, drawFrame, setFontGrid, setScreenSize, changeConfig
+|   |-- Internal: renderer.Thread event loop, wakeups, cursor blink and animation scheduling
+|   |   |-- Frame preparation: terminal snapshot, text shaping, cells, images and overlays
+|   |   |-- Frame resources: SwapChain, FrameState, textures/buffers and custom shaders
+|   |   `-- GraphicsAPI: compile-time Metal or OpenGL implementation
+|   |-- Boundary: updateFrame captures Terminal under lock; RenderState finishes processing
+|   |   outside the critical section; synchronized_output can suspend frame updates
+|   |-- -> [Session]: shared renderer.State and presentation notifications
+|   |-- -> [VT]: dirty-state extraction, image placements and viewport information
+|   |-- -> [Font]: shaping, glyph lookup and atlas textures
+|   |-- -> [Host], [Config]: native presentation surface and rendering settings
+|   `-- Sources: src/renderer.zig:15-44; src/renderer/Thread.zig:25-82;
+|       src/renderer/generic.zig:321-556,1317,1371-1515,1716,2171,2249
+|
+|-- [Font] Font resolution, shaping and reusable glyph resources
+|   |-- Exposes: SharedGridSet.ref/deref, SharedGrid.getIndex/renderGlyph/cellSize,
+|   |   `-- Metrics, Shaper, ShaperCache and Atlas
+|   |-- Internal: configuration-keyed grids and their reference counts
+|   |   |-- Discovery/fallback: Discover, Collection, DeferredFace and CodepointResolver
+|   |   |-- Shaping backends: HarfBuzz, CoreText, noop or web_canvas, selected by font backend
+|   |   `-- Raster resources: grayscale/color atlases, codepoint/glyph caches and SharedGrid.lock
+|   |-- Boundary: compatible surfaces share a grid; font changes acquire a replacement grid
+|   |   rather than mutating every surface's font configuration through the shared instance
+|   |-- -> [Config]: font descriptors/features; -> [VT]: terminal-row shaping inputs
+|   |-- -> [Render]: CellSize geometry contract
+|   `-- Sources: src/font/main.zig:7-31; src/font/SharedGrid.zig:1-64,143,156,379;
+|       src/font/SharedGridSet.zig:96,413,476,560; src/font/shape.zig:1-65
+|
+|-- [Search] Incremental search over terminal content
+|   |-- Exposes: search.Thread.init/threadMain/deinit, Mailbox and EventCallback
+|   |   |-- Message.change_needle/select requests
+|   |   `-- Event.complete/total_matches/selected_match/viewport_matches results
+|   |-- Internal: TerminalSearch, ScreenSearch, refresh timer and notification-difference state
+|   |   `-- Subparts: active-area, viewport, page-list and sliding-window search
+|   |-- Boundary: copies terminal data to reduce lock time; viewport_matches memory is valid
+|   |   only during its callback; Surface owns the optional worker's lifetime
+|   |-- -> [VT]: screens, tracked highlights and terminal data
+|   |-- -> [Session]: supplied terminal/mutex and result callback; Session forwards UI/render updates
+|   `-- Sources: src/terminal/search/Thread.zig:1-24,47-139,506-588;
+|       src/Surface.zig:210-227,1485-1608
+|
+`-- [Inspect] Optional terminal diagnostics
+    |-- Exposes: Inspector.setup/init/deinit, recordKeyEvent, recordPtyRead, render, rendererInfo
+    |-- Internal: ImGui widget state and bounded keyboard-event history
+    |   `-- Subparts: surface/mouse inspection, key stream, VT stream and renderer information
+    |-- Boundary: activation is per Surface; ordinary sessions need not record diagnostic streams
+    |-- -> [Session], [VT]: inspected surface and terminal state
+    |-- -> [Font]: embedded inspector font
+    `-- Sources: src/inspector/Inspector.zig:1-120; src/Surface.zig:934-993;
+        src/termio/Termio.zig:737-758

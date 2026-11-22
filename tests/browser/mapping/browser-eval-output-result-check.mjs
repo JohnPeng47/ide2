@@ -88,6 +88,8 @@ try {
   await expect(preview.getByLabel('Output canvas')).toHaveValue('new-canvas');
   await expect(preview.getByRole('button', { name: 'Result', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await page.reload();
+  await expect(preview.getByLabel('Output canvas')).toHaveValue('new-canvas');
+  await page.keyboard.press('Alt+ArrowLeft');
   await expect(preview.locator('[data-diff-diagram="overview"]')).toContainText('New execution implementation');
   assert.equal(await readFile(savedFile, 'utf8'), savedBefore, 'Browsing must not modify saved evidence');
   assert.equal(requests.filter(request => request.url.includes('/change-sessions/')).length, 0, 'No live session requests or polling');

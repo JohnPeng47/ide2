@@ -23,7 +23,7 @@ Common read and edit method schemas are supplied upfront. Agent Chat selects rea
 
 ## Workflow
 
-Each `exec` call needs a unique `requestId`. On an already bound connection, start with `return canvas.read({level:"small"});` and omit `sessionId`. On an unbound connection, first discover a live page:
+Each `exec` call needs a unique `requestId`. On an already bound connection, start with `return canvas.read({projectionType:"graph"});` and omit `sessionId`. On an unbound connection, first discover a live page:
 
 ```js
 return canvas.list();

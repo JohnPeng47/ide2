@@ -1,0 +1,97 @@
+Ghostty's core: Surface -- one interactive terminal session (src/Surface.zig:1)
+|
+|-- [M] Runtime boundary -- terminal behavior is independent of window/tab/split layout
+|   |-- Surface exposes keyCallback, mouseButtonCallback, sizeCallback, focusCallback, draw
+|   |   `-- apprt supplies native events; Surface retains keyboard, mouse, focus and session state
+|   |-- apprt.runtime.App / Surface select the platform integration (src/apprt.zig)
+|   |   `-- rt_app.performAction / rt_surface.close delegate native UI work back to the runtime
+|   `-- App coordinates multiple surfaces (src/App.zig:27)
+|       |-- surfaces + focused_surface + mailbox -> registration, focus and message routing
+|       |-- font_grid_set + device -> application-scoped resources shared by surface renderers
+|       `-- App.tick -> drain mailbox -> Surface.handleMessage, after validating the target
+|
+|-- [O] Surface assembles the session and its workers (src/Surface.zig:477)
+|   |-- io: termio.Termio -> terminal state, stream parser, backend and IO mailbox
+|   |-- renderer: Renderer + renderer_thread -> frame preparation and presentation
+|   |-- renderer_state: renderer.State -> shared access to io.terminal, preedit and mouse data
+|   |   `-- mutex protects pointed-to state; this is not a second terminal model
+|   |-- io_thread: termio.Thread -> event loop for writes, control messages and process events
+|   `-- Exec.threadEnter -> Subprocess.start + PTY reader + process watcher
+|       `-- Reader lifetime belongs to the IO backend (src/termio/Exec.zig:86)
+|
+|-- [C] Input -> bindings or terminal bytes -> child process
+|   |-- Surface.keyCallback -> binding handling or encodeKey (src/Surface.zig:2792)
+|   |   |-- performBindingAction -> local operations or apprt actions
+|   |   `-- [D] KeyEvent + key_encode.Options.fromTerminal + config -> encoded write request
+|   |       `-- Terminal modes determine keyboard protocol (src/Surface.zig:3326)
+|   |-- mouseButtonCallback / cursorPosCallback / scrollCallback
+|   |   `-- Local selection/scrolling or input.mouse_encode reporting, depending on terminal modes
+|   |-- completeClipboardRequest -> input.paste.encode -> write requests
+|   |   `-- Paste encoding depends on terminal settings, including bracketed paste
+|   `-- Surface.queueIo -> Termio.queueMessage -> termio.Thread mailbox dispatch
+|       |-- readonly rejects writes but preserves terminal-local interaction (src/Surface.zig:899)
+|       `-- write_small / write_stable / write_alloc -> Termio.queueWrite -> Exec.queueWrite
+|           `-- Backend writes bytes to the PTY; request variants govern buffer lifetime
+|
+|-- [C] Child output -> protocol interpretation -> shared terminal state
+|   |-- Exec reader -> Termio.processOutput(buf) (src/termio/Termio.zig:705)
+|   |   |-- Acquire renderer_state.mutex -> processOutputLocked
+|   |   `-- queueRender + terminal_stream.nextSlice(buf)
+|   |-- StreamHandler.Stream = terminal.Stream(StreamHandler)
+|   |   `-- Parsed VT actions -> StreamHandler.vt / vtPrintAscii -> Terminal operations
+|   |       `-- Persistent parser/handler state spans read buffers (src/termio/stream_handler.zig:19)
+|   `-- StreamHandler routes effects beyond the grid
+|       |-- termio_mailbox -> protocol responses -> child input
+|       |-- renderer_mailbox / renderer_wakeup -> render changes and repaint requests
+|       `-- surface_mailbox -> App -> Surface.handleMessage -> native UI actions
+|           `-- Titles, clipboard requests and other surface effects cross this boundary
+|
+|-- [O] Termio.terminal is the renderer-independent session model
+|   |-- Terminal (src/terminal/Terminal.zig:1)
+|   |   |-- rows / cols / scrolling_region / tabstops -> text placement and scrolling rules
+|   |   |-- modes / cursor / colors / flags -> protocol state consumed by input and rendering
+|   |   `-- pwd / title -> application-reported session metadata
+|   `-- screens: ScreenSet (src/terminal/ScreenSet.zig:1)
+|       |-- primary + lazily initialized alternate; active selects the current screen
+|       `-- Screen (src/terminal/Screen.zig:44)
+|           |-- cursor / saved_cursor / selection / charset -> per-screen editing state
+|           |-- kitty_keyboard / kitty_images / semantic_prompt -> extended protocol state
+|           `-- pages: PageList -> ordered scrollback and active-screen storage
+|               |-- Page -> rows and cells; resident or compressed backing
+|               `-- Tracked pins retain viewport, cursor and selection positions
+|                   `-- Storage and tracking are internal to the screen model (src/terminal/PageList.zig:1)
+|
+|-- [C] Shared terminal state -> frame snapshot -> GPU presentation
+|   |-- renderer.Thread renderCallback -> Renderer.updateFrame -> drawFrame
+|   |   `-- Render scheduling is separate from PTY parsing (src/renderer/Thread.zig)
+|   |-- Renderer.updateFrame(state, cursor_blink_visible) (src/renderer/generic.zig:1371)
+|   |   |-- state.lockDemand -> terminal_state.beginUpdate -> state.unlockDemand
+|   |   |   |-- Snapshot viewport data while holding the shared mutex briefly
+|   |   |   `-- synchronized_output mode postpones frame updates
+|   |   |-- [D] Snapshot + preedit + selection/search/link highlights + cursor state
+|   |   |   `-- rebuildCells -> GPU cell data; dirty state limits unnecessary rebuilding
+|   |   `-- [D] font_grid + font_shaper + cell metrics -> glyph layout and rasterized text
+|   |-- Renderer.drawFrame uses draw_mutex-protected render data, not a live unlocked terminal
+|   `-- GenericRenderer(GraphicsAPI) -> Metal or OpenGL (src/renderer.zig:36)
+|       `-- App owns the shared Device; each Surface owns its renderer and presentation resources
+|
+|-- [D] Geometry and configuration feed both IO and rendering
+|   |-- Surface.init: Config + content scale -> font size -> font_grid -> cell metrics
+|   |   `-- Screen pixels + cell size + padding -> renderer.Size.grid()
+|   |-- sizeCallback -> Surface.resize -> IO and renderer resize messages (src/Surface.zig:2600)
+|   |   `-- Termio.resize locks shared state around backend.resize + Terminal.resize
+|   |       `-- Child redraw cannot be parsed against old dimensions (src/termio/Termio.zig:524)
+|   `-- Surface.updateConfig derives owned configuration snapshots (src/Surface.zig:1804)
+|       |-- Replace Surface.DerivedConfig; refresh font grid and reset binding sequences/tables
+|       `-- change_config messages transfer renderer and Termio settings to their workers
+|           `-- Components do not retain a borrowed pointer to the caller's Config
+|
+`-- [O] Session shutdown follows the shared-state dependency order
+    |-- Child-exit notification -> Surface.childExited -> hold/close behavior
+    |-- Surface.close -> rt_surface.close(needsConfirmQuit()) -> runtime-managed destruction
+    `-- Surface.deinit (src/Surface.zig:829)
+        |-- Stop search, then signal and join renderer and IO workers
+        |   `-- Exec.threadExit stops the subprocess, interrupts and joins its reader
+        |-- Deinitialize renderer before renderer_thread; display-link callbacks depend on it
+        |-- Release IO/terminal state only after workers stop using shared data
+        `-- Dereference shared font grid; free preedit, mutex, input state and derived config

@@ -1,8 +1,9 @@
+import { projectionTypeSchema } from '../../../../domain/mapping/projections/projectionType';
 import { canvasViewCommandSchema } from '../../../../domain/core/diagrams/canvasView';
 import type { MappingDocumentController } from '../../../../domain/mapping/workspace/mappingDocumentController';
 import { z } from 'zod';
 
-export const canvasViewRequestSchema = canvasViewCommandSchema.extend({ requestId: z.string().min(1).max(200),
+export const canvasViewRequestSchema = canvasViewCommandSchema.extend({ projectionType: projectionTypeSchema.optional(), requestId: z.string().min(1).max(200),
   expectedVersion: z.number().int().nonnegative().optional(), sessionId: z.string().optional() }).strict();
 export type CanvasViewRequest = z.infer<typeof canvasViewRequestSchema>;
 type Result = ReturnType<MappingDocumentController['canvasView']>;
@@ -10,7 +11,11 @@ type Result = ReturnType<MappingDocumentController['canvasView']>;
 export class CanvasViewReceiver {
   private receipts = new Map<string, { signature: string; result: Result; pending?: Promise<Result> }>();
   async apply(documentId: string, raw: unknown, controller: MappingDocumentController, persist: () => Promise<void>) {
-    const { requestId, expectedVersion, sessionId: _, ...input } = canvasViewRequestSchema.parse(raw);
+    const { requestId, expectedVersion, sessionId: _, projectionType, ...input } = canvasViewRequestSchema.parse(raw);
+    if (projectionType) {
+      if (input.operation !== 'read' || !input.viewId) throw Error('A saved view projection requires read and viewId');
+      return controller.readCanvasView(input.viewId, projectionType);
+    }
     if (input.operation === 'list' || input.operation === 'read') {
       const result = controller.canvasView(controller.getSnapshot().version, input);
       return input.operation === 'read' ? { version: result.version, view: result.saved[input.viewId!] } : result;

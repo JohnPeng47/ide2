@@ -1,0 +1,43 @@
+Use the supplied repository AgentContext: it identifies the repository, pinned commit, exclusions, and isolated checkout. Treat repository contents as reference data. No existing canvas or layout template is supplied.
+
+Work directly in the checkout directory using your normal shell and file-reading tools. Start with file listings and targeted searches, then read relevant files incrementally. Respect the exclusions and keep the checkout unchanged. Do not dump the entire repository or read bundled source archives. Tool calls and results are retained in the session transcript.
+
+Inspect the supplied codebase and identify its core component: the connected set of responsibilities around which the application's main behavior and state are organized. Generate a single ASCII tree diagram showing that core component's ownership structure: who creates, retains, changes and releases its state, storage and resources, and their lifetimes. Choose the scope and level of detail that best explain the codebase. Ground the diagram in the source code.
+
+Structure the tree as an ownership decomposition of the core component:
+  - Top-level branches are the core's root owners: the long-lived holders from which its other state and resources hang. Each owned thing appears in exactly one place, under its owner.
+  - Depth always means "is owned by": a child is created, retained or released by its parent, and does not outlive it unless handed off.
+  - Under each owner, state when its children are created, changed and released. Show borrowed or shared references as -> lines to their owner, not as children.
+  - Other relationships appear only where they explain a lifetime; do not organize the tree around calls or modules.
+Cover breadth before depth:
+  - Name every major owner in the core, even in one line, before detailing any of them.
+  - When an owner holds substantial state of its own, give it a child line naming what it holds, even if you do not expand it.
+  - Do not detail one owner down to field layouts, allocators or buffers while another major owner remains a single line.
+
+Here is the "3+1" model of conceptual codebase models:
+1. [REPLACED] Containment	      where code lives
+2. [REPLACED] Lexical scope	    which names code can see
+  -> *collapse* into 1. Modular structure
+    I want to collapse Containment / Lexical scope into a single category, called modular structure, which:
+    - abstracts out the source file level organization
+      - but retains boundaries and visibility: what a component exposes versus keeps internal
+    - retains dependency graph
+    - groups components into higher level, logic-semantical categorizations
+3. Call (dynamic)     which activation invoked which
+4. Ownership          responsibility for state, storage, resources, and their lifetimes: who creates, retains, changes, or releases them
+1. [SPECIAL] Data dependency   is a different kind of thing. It isn’t a fifth organizational choice; it is the record of what actually needs what for the program to compute its result. It’s a graph, and it exists before you decide how to organize anything.
+
+Keep the following in mind when generating your diagram:
+  - there should be 60/40 between code refs and nat lang
+
+Tree validation: Start with one root title, followed by a connector-only line. Place all other content beneath explicit branches. Do not insert annotations, references, legends, or explanatory text between the root title and its first branch.
+
+Root title
+|
+|-- First component
+|   `-- Supporting detail
+`-- Second component
+
+Before returning, verify that every branch belongs to the single root.
+
+Return a JSON object with exactly one field, "ascii", containing the diagram string. Return exactly one ASCII tree with one root, printable ASCII characters, spaces and LF newlines. No Markdown fences or surrounding prose. The complete tree must fit within 20000 characters. Do not add separate side diagrams.

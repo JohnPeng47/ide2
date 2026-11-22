@@ -1,0 +1,18 @@
+{
+  "text": "**d5 is mapped at `/tmp/d5work/d5.json`.** It contains one `diagramId: \"d5\"` object, all 29 node scopes, and 910 repository-relative mapping records after parent unions and overlap removal. Append the object directly to the lead candidate’s `diagrams` array; do not apply the unions a second time.\n\nThe compact mapping is in `/tmp/d5work/spec.txt`, with path aliases and scopes in `/tmp/d5work/mk.py`. Its notation is `d` = declaration, `u` = use, `i` = implementation, and `+` = union with the listed nodes.\n\n**Parent unions**, in addition to each parent’s direct ranges:\n```text\nn23 ← n24–n29\nn21 ← n22, n23\nn20 ← n21\nn19 ← n20\nn17 ← n18\nn15 ← n16, n17, n19\nn10 ← n11\nn9  ← n10, n12, n13, n14, n15\nn5  ← n6, n7, n8, n9\nn1  ← n2, n3, n4, n5\n```\n\nAll paths and inclusive bounds were checked locally against the pinned commit. `validate_source_mappings` was not available in this worker; the combined candidate still needs the lead’s validator call.\n\nTwo qualifications are covered by the ranges: tracked pins follow surviving content, but pruning can relocate a pin and mark it as garbage (`PageList.zig:4146–4156`); compressed pages retain the **virtual address range**, not necessarily the original OS mapping object—FreeBSD replaces the mapping at the same address (`mem.zig:310–330`).",
+  "usage": {
+    "input": 79688,
+    "output": 5632,
+    "cacheRead": 633344,
+    "cacheWrite": 0,
+    "reasoning": 547,
+    "totalTokens": 718664
+  },
+  "cost": {
+    "input": 0.7968800000000001,
+    "output": 0.2816,
+    "cacheRead": 0.633344,
+    "cacheWrite": 0,
+    "total": 1.7118240000000002
+  }
+}

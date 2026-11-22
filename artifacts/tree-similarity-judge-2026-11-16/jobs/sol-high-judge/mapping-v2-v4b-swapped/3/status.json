@@ -1,0 +1,31 @@
+{
+  "status": "finished",
+  "key": "sol-high-judge/mapping-v2-v4b-swapped/3",
+  "runId": "a9279b69-5dc5-48ab-a5e2-72a68e7edfdf",
+  "model": "gpt-6-sol",
+  "caseId": "mapping-v2-v4b-swapped",
+  "number": 3,
+  "reportedScore": 0.856597,
+  "score": 0.8565972222222222,
+  "rescore": {
+    "score": 0.8565972222222222,
+    "reportedScore": 0.856597,
+    "J": 0.8565972222222222,
+    "reportedJ": 0.856597,
+    "pairs": 6,
+    "unmatchedA": 0,
+    "unmatchedB": 0,
+    "depth": 4,
+    "maxPairError": 5.00000000069889e-7,
+    "rangeIssues": []
+  },
+  "usage": {
+    "input": 16583,
+    "output": 20556,
+    "cacheRead": 108032,
+    "cacheWrite": 0,
+    "reasoning": 12673,
+    "totalTokens": 145171
+  },
+  "outputUrl": "http://localhost:5191/evals?run=a9279b69-5dc5-48ab-a5e2-72a68e7edfdf&output=450c8f11-3b30-485c-a282-7fc0e4dc74c0%3A1%3Aalternative"
+}

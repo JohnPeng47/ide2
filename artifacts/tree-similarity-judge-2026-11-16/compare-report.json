@@ -1,0 +1,2654 @@
+{
+ "requestId": "5da176ce-8628-5584-a156-116134f50e0b",
+ "title": "Similarity judge · top-level anchors: where prompt v1 scores well and where it does not",
+ "experimentId": "ec6457e2-7b98-4f0a-847e-c0adba745c83",
+ "evaluator": {
+  "model": "claude-opus-5-5",
+  "effort": "high"
+ },
+ "sources": [
+  {
+   "id": "S1",
+   "label": "Ghostty S1",
+   "runId": "3d97670a-8d2d-41fe-86c6-7b3914204965",
+   "cellKey": "0b3af2dd-ba89-4032-936a-40070a3e167e:1:alternative",
+   "revisionId": "diagram-revision-13e75f09-eb90-4ab7-a063-51736a75eee0"
+  },
+  {
+   "id": "S2",
+   "label": "Ghostty S2",
+   "runId": "87b0635d-e644-43cd-856a-81c73fbc2af6",
+   "cellKey": "0b3af2dd-ba89-4032-936a-40070a3e167e:1:alternative",
+   "revisionId": "diagram-revision-b5756995-ff07-42eb-9084-1f88aa8f0949"
+  },
+  {
+   "id": "S3",
+   "label": "Mapping v2",
+   "runId": "df362edd-3c37-49aa-932d-84181ef9d0c2",
+   "cellKey": "0b3af2dd-ba89-4032-936a-40070a3e167e:1:alternative",
+   "revisionId": "diagram-revision-c450619c-abb4-49c6-aa76-8c9ac6eb24ee"
+  },
+  {
+   "id": "S4",
+   "label": "Mapping v4·2",
+   "runId": "c3aa93d2-4c2a-4e70-846c-61b571c3607d",
+   "cellKey": "0b3af2dd-ba89-4032-936a-40070a3e167e:1:alternative",
+   "revisionId": "diagram-revision-c15e40fb-08b9-4e0b-b8c1-9a06f387ad2c"
+  }
+ ],
+ "pages": [
+  {
+   "id": "overview",
+   "title": "Overview",
+   "blocks": [
+    {
+     "kind": "text",
+     "text": "These views show the judge's top-level anchors, one colour per anchor, with my assessment on each match and a verdict at the top of each block. Click a top-level match (▸) to see the judge's own anchors one level inside it; lines the judge never accounted for are listed above that view.\n\n**Where the prompt works**\n- Finding top-level components by responsibility and named code. On Ghostty all eight anchors are correct and 1:1. On Mapping the three runs agree on five of six components.\n- Merges scored as grouped (Sol run 2): one anchor against the union of nodes, with the cost kept inside.\n\n**Where it does not**\n1. *Grouped vs relocated overlap.* The same merge is scored as grouped (0.862) or as two relocations that double-count v4 lines (0.757).\n2. *Partial anchors.* Anchoring a top-level node to part of a branch pushes the leftovers to the top level as unmatched (0.739).\n3. *Small sibling sets.* One extra leaf per side halves a two-pair level (Ghostty teardown, 0.48 inside an almost identical subtree).\n4. *Ownership changes are free.* History moving under the controller costs ~0.02 when grouped. The verdict text is the only place it shows up."
+    }
+   ]
+  },
+  {
+   "id": "ghostty",
+   "title": "Ghostty S1 ↔ S2 · works",
+   "blocks": [
+    {
+     "kind": "compare-tree",
+     "spec": {
+      "id": "ghostty-s1-s2",
+      "title": "Ghostty S1 ↔ S2 · Astra run 1 · 0.928",
+      "A": "S1",
+      "B": "S2",
+      "explanation": "Verdict: judge is right. All eight top-level anchors are correct and no node is left out. 0.93 is a fair score for two runs of the same prompt. The low teardown score is a formula artefact, but it moves the total by only ~0.02.\n\nTwo samples of the same prompt. The judge finds all eight top-level components on both sides, one to one, in the same order, with nothing unmatched. This is the case the rubric is built for and the top-level result is right. The cost sits in two inner levels, and one of those is the formula over-reacting to a small sibling set.",
+      "steps": [
+       {
+        "title": "Top-level anchors · J = 7.43 / 8 = 0.928",
+        "root": {
+         "A": 1,
+         "B": 1
+        },
+        "comment": "Click a match to see the anchors inside it. Eight 1:1 anchors chosen by responsibility and named code (Surface, Termio, StreamHandler, Terminal/ScreenSet, Renderer, resize/config, deinit), not by wording or position. The colours line up in order.",
+        "matches": [
+         {
+          "id": "runtime",
+          "kind": "same",
+          "label": "Surface / runtime boundary",
+          "A": [
+           {
+            "startLine": 3,
+            "endLine": 11
+           }
+          ],
+          "B": [
+           {
+            "startLine": 3,
+            "endLine": 14
+           }
+          ],
+          "comment": "Right anchor. s = 0.87. Inner J 0.74 comes from marking the native-callback lines relocated ×0.5, because B repeats session interaction state under Surface.init (B 22–23). Halving a whole child for a 2-line repeat is harsh, but defensible under the rules.",
+          "children": {
+           "comment": "Judge's level J = 0.739 = Σs / (pairs + unmatched) = 2.22 / 3.",
+           "matches": [
+            {
+             "id": "c1",
+             "kind": "relocated",
+             "label": "Native callbacks and session interaction state",
+             "A": [
+              {
+               "startLine": 4,
+               "endLine": 5
+              }
+             ],
+             "B": [
+              {
+               "startLine": 4,
+               "endLine": 5
+              },
+              {
+               "startLine": 22,
+               "endLine": 23
+              }
+             ],
+             "align": false,
+             "comment": "s = 0.50 · inner J 1.00 (1 pairs, 0 only in A, 0 only in B)"
+            },
+            {
+             "id": "c2",
+             "kind": "same",
+             "label": "Platform runtime",
+             "A": [
+              {
+               "startLine": 6,
+               "endLine": 7
+              }
+             ],
+             "B": [
+              {
+               "startLine": 6,
+               "endLine": 8
+              }
+             ],
+             "comment": "s = 0.75 · inner J 0.50 (1 pairs, 0 only in A, 1 only in B)"
+            },
+            {
+             "id": "c3",
+             "kind": "same",
+             "label": "Application coordination",
+             "A": [
+              {
+               "startLine": 8,
+               "endLine": 11
+              }
+             ],
+             "B": [
+              {
+               "startLine": 9,
+               "endLine": 14
+              }
+             ],
+             "comment": "s = 0.97 · inner J 0.93 (3 pairs, 0 only in A, 0 only in B)"
+            }
+           ]
+          }
+         },
+         {
+          "id": "assembly",
+          "kind": "same",
+          "label": "Session assembly and workers",
+          "A": [
+           {
+            "startLine": 13,
+            "endLine": 20
+           }
+          ],
+          "B": [
+           {
+            "startLine": 16,
+            "endLine": 25
+           }
+          ],
+          "comment": "Right. s = 0.92. B adds interaction state and DerivedConfig; A moves Exec.threadEnter here. Different detail, so a small cost.",
+          "children": {
+           "comment": "Judge's level J = 0.841 = Σs / (pairs + unmatched) = 3.36 / 4.",
+           "matches": [
+            {
+             "id": "c1",
+             "kind": "implied-parent",
+             "label": "Termio and its IO thread",
+             "A": [
+              {
+               "startLine": 14,
+               "endLine": 14
+              },
+              {
+               "startLine": 18,
+               "endLine": 18
+              }
+             ],
+             "B": [
+              {
+               "startLine": 17,
+               "endLine": 17
+              }
+             ],
+             "implied": {
+              "side": "A",
+              "label": "Several A nodes, one B node"
+             },
+             "comment": "s = 1.00 · both leaves"
+            },
+            {
+             "id": "c2",
+             "kind": "same",
+             "label": "Renderer and render thread",
+             "A": [
+              {
+               "startLine": 15,
+               "endLine": 15
+              }
+             ],
+             "B": [
+              {
+               "startLine": 18,
+               "endLine": 18
+              }
+             ],
+             "comment": "s = 1.00 · both leaves"
+            },
+            {
+             "id": "c3",
+             "kind": "same",
+             "label": "Shared renderer state",
+             "A": [
+              {
+               "startLine": 16,
+               "endLine": 17
+              }
+             ],
+             "B": [
+              {
+               "startLine": 19,
+               "endLine": 21
+              }
+             ],
+             "comment": "s = 1.00 · inner J 1.00 (1 pairs, 0 only in A, 0 only in B)"
+            },
+            {
+             "id": "c4",
+             "kind": "relocated",
+             "label": "Exec backend and subprocess/read workers",
+             "A": [
+              {
+               "startLine": 19,
+               "endLine": 20
+              }
+             ],
+             "B": [
+              {
+               "startLine": 43,
+               "endLine": 49
+              }
+             ],
+             "align": false,
+             "comment": "s = 0.36 · inner J 0.45 (1 pairs, 0 only in A, 1 only in B)"
+            }
+           ]
+          }
+         },
+         {
+          "id": "input",
+          "kind": "same",
+          "label": "Input → child writes",
+          "A": [
+           {
+            "startLine": 22,
+            "endLine": 34
+           }
+          ],
+          "B": [
+           {
+            "startLine": 27,
+            "endLine": 40
+           }
+          ],
+          "comment": "Right. s = 1.00. Keys, mouse, paste and queueIo in both trees.",
+          "children": {
+           "comment": "Judge's level J = 0.996 = Σs / (pairs + unmatched) = 2.99 / 3.",
+           "matches": [
+            {
+             "id": "c1",
+             "kind": "same",
+             "label": "Keybinding and key encoding",
+             "A": [
+              {
+               "startLine": 23,
+               "endLine": 26
+              }
+             ],
+             "B": [
+              {
+               "startLine": 28,
+               "endLine": 32
+              }
+             ],
+             "comment": "s = 0.99 · inner J 0.97 (2 pairs, 0 only in A, 0 only in B)"
+            },
+            {
+             "id": "c2",
+             "kind": "implied-parent",
+             "label": "Mouse, local selection, and paste",
+             "A": [
+              {
+               "startLine": 27,
+               "endLine": 28
+              },
+              {
+               "startLine": 29,
+               "endLine": 30
+              }
+             ],
+             "B": [
+              {
+               "startLine": 33,
+               "endLine": 36
+              }
+             ],
+             "implied": {
+              "side": "A",
+              "label": "Several A nodes, one B node"
+             },
+             "comment": "s = 1.00 · inner J 1.00 (2 pairs, 0 only in A, 0 only in B)"
+            },
+            {
+             "id": "c3",
+             "kind": "same",
+             "label": "IO mailbox and write requests",
+             "A": [
+              {
+               "startLine": 31,
+               "endLine": 34
+              }
+             ],
+             "B": [
+              {
+               "startLine": 37,
+               "endLine": 40
+              }
+             ],
+             "comment": "s = 1.00 · inner J 1.00 (2 pairs, 0 only in A, 0 only in B)"
+            }
+           ]
+          }
+         },
+         {
+          "id": "output",
+          "kind": "same",
+          "label": "Child output → terminal state",
+          "A": [
+           {
+            "startLine": 36,
+            "endLine": 47
+           }
+          ],
+          "B": [
+           {
+            "startLine": 42,
+            "endLine": 58
+           }
+          ],
+          "comment": "Right. s = 1.00, although B nests the Exec/Subprocess launch here and A puts it under assembly. The judge credited it without flagging the ownership difference.",
+          "children": {
+           "comment": "Judge's level J = 0.992 = Σs / (pairs + unmatched) = 1.98 / 2.",
+           "matches": [
+            {
+             "id": "c1",
+             "kind": "implied-parent",
+             "label": "Locked output, incremental stream, and VT dispatch",
+             "A": [
+              {
+               "startLine": 37,
+               "endLine": 39
+              },
+              {
+               "startLine": 40,
+               "endLine": 42
+              }
+             ],
+             "B": [
+              {
+               "startLine": 50,
+               "endLine": 54
+              }
+             ],
+             "implied": {
+              "side": "A",
+              "label": "Several A nodes, one B node"
+             },
+             "comment": "s = 1.00 · inner J 1.00 (1 pairs, 0 only in A, 0 only in B)"
+            },
+            {
+             "id": "c2",
+             "kind": "same",
+             "label": "Non-grid protocol effects",
+             "A": [
+              {
+               "startLine": 43,
+               "endLine": 47
+              }
+             ],
+             "B": [
+              {
+               "startLine": 55,
+               "endLine": 58
+              }
+             ],
+             "comment": "s = 0.98 · inner J 0.97 (3 pairs, 0 only in A, 0 only in B)"
+            }
+           ]
+          }
+         },
+         {
+          "id": "terminal",
+          "kind": "same",
+          "label": "Terminal and screen model",
+          "A": [
+           {
+            "startLine": 49,
+            "endLine": 62
+           }
+          ],
+          "B": [
+           {
+            "startLine": 60,
+            "endLine": 73
+           }
+          ],
+          "comment": "Right. s = 1.00. Same Terminal → ScreenSet → Screen → PageList chain.",
+          "children": {
+           "comment": "Judge's level J = 0.999 = Σs / (pairs + unmatched) = 2.00 / 2.",
+           "matches": [
+            {
+             "id": "c1",
+             "kind": "implied-parent",
+             "label": "Terminal operations, dimensions, modes, and metadata",
+             "A": [
+              {
+               "startLine": 50,
+               "endLine": 53
+              }
+             ],
+             "B": [
+              {
+               "startLine": 61,
+               "endLine": 62
+              },
+              {
+               "startLine": 72,
+               "endLine": 73
+              }
+             ],
+             "implied": {
+              "side": "B",
+              "label": "Several B nodes, one A node"
+             },
+             "comment": "s = 1.00 · inner J 1.00 (1 pairs, 0 only in A, 0 only in B)"
+            },
+            {
+             "id": "c2",
+             "kind": "same",
+             "label": "ScreenSet",
+             "A": [
+              {
+               "startLine": 54,
+               "endLine": 62
+              }
+             ],
+             "B": [
+              {
+               "startLine": 63,
+               "endLine": 71
+              }
+             ],
+             "comment": "s = 1.00 · inner J 1.00 (2 pairs, 0 only in A, 0 only in B)"
+            }
+           ]
+          }
+         },
+         {
+          "id": "render",
+          "kind": "same",
+          "label": "Frame snapshot → GPU",
+          "A": [
+           {
+            "startLine": 64,
+            "endLine": 76
+           }
+          ],
+          "B": [
+           {
+            "startLine": 75,
+            "endLine": 88
+           }
+          ],
+          "comment": "Right. s = 0.97.",
+          "children": {
+           "comment": "Judge's level J = 0.938 = Σs / (pairs + unmatched) = 3.75 / 4.",
+           "matches": [
+            {
+             "id": "c1",
+             "kind": "same",
+             "label": "Renderer thread scheduling",
+             "A": [
+              {
+               "startLine": 65,
+               "endLine": 66
+              }
+             ],
+             "B": [
+              {
+               "startLine": 76,
+               "endLine": 76
+              }
+             ],
+             "comment": "s = 0.90 · summarized: only one side has children"
+            },
+            {
+             "id": "c2",
+             "kind": "same",
+             "label": "Frame update and rendering inputs",
+             "A": [
+              {
+               "startLine": 67,
+               "endLine": 73
+              }
+             ],
+             "B": [
+              {
+               "startLine": 79,
+               "endLine": 83
+              }
+             ],
+             "comment": "s = 0.95 · inner J 0.90 (3 pairs, 0 only in A, 0 only in B)"
+            },
+            {
+             "id": "c3",
+             "kind": "same",
+             "label": "Drawing and presentation",
+             "A": [
+              {
+               "startLine": 74,
+               "endLine": 74
+              }
+             ],
+             "B": [
+              {
+               "startLine": 86,
+               "endLine": 88
+              }
+             ],
+             "comment": "s = 0.90 · summarized: only one side has children"
+            },
+            {
+             "id": "c4",
+             "kind": "same",
+             "label": "GenericRenderer and graphics backend",
+             "A": [
+              {
+               "startLine": 75,
+               "endLine": 76
+              }
+             ],
+             "B": [
+              {
+               "startLine": 77,
+               "endLine": 78
+              }
+             ],
+             "comment": "s = 1.00 · inner J 1.00 (1 pairs, 0 only in A, 0 only in B)"
+            }
+           ]
+          }
+         },
+         {
+          "id": "geometry",
+          "kind": "same",
+          "label": "Geometry and configuration",
+          "A": [
+           {
+            "startLine": 78,
+            "endLine": 87
+           }
+          ],
+          "B": [
+           {
+            "startLine": 90,
+            "endLine": 99
+           }
+          ],
+          "comment": "Right. s = 0.93.",
+          "children": {
+           "comment": "Judge's level J = 0.863 = Σs / (pairs + unmatched) = 2.59 / 3.",
+           "matches": [
+            {
+             "id": "c1",
+             "kind": "depth-shift",
+             "label": "Font/cell metrics and grid geometry",
+             "A": [
+              {
+               "startLine": 79,
+               "endLine": 80
+              }
+             ],
+             "B": [
+              {
+               "startLine": 92,
+               "endLine": 92
+              }
+             ],
+             "comment": "s = 0.81 · summarized: only one side has children · depth offset 1"
+            },
+            {
+             "id": "c2",
+             "kind": "same",
+             "label": "Surface and terminal resize",
+             "A": [
+              {
+               "startLine": 81,
+               "endLine": 83
+              }
+             ],
+             "B": [
+              {
+               "startLine": 91,
+               "endLine": 97
+              }
+             ],
+             "comment": "s = 0.95 · inner J 0.91 (1 pairs, 0 only in A, 0 only in B)"
+            },
+            {
+             "id": "c3",
+             "kind": "same",
+             "label": "Configuration propagation",
+             "A": [
+              {
+               "startLine": 84,
+               "endLine": 87
+              }
+             ],
+             "B": [
+              {
+               "startLine": 98,
+               "endLine": 99
+              }
+             ],
+             "comment": "s = 0.83 · inner J 0.65 (2 pairs, 0 only in A, 0 only in B)"
+            }
+           ]
+          }
+         },
+         {
+          "id": "teardown",
+          "kind": "same",
+          "label": "Session teardown",
+          "A": [
+           {
+            "startLine": 89,
+            "endLine": 97
+           }
+          ],
+          "B": [
+           {
+            "startLine": 101,
+            "endLine": 109
+           }
+          ],
+          "comment": "Not right. s = 0.74, the lowest of the eight, yet the two subtrees describe the same shutdown order. Click to see why: one extra leaf per side halves the level inside.",
+          "children": {
+           "comment": "The weakness here is in the formula, not the anchoring. This level has two pairs, so one unmatched leaf on each side doubles the denominator from 2 to 4. Two one-line differences cost as much here as a missing component costs at the top. Small sibling sets make Jaccard jumpy, and nothing in the rubric weights by subtree size. Judge's level J = 0.484 = Σs / (pairs + unmatched) = 1.94 / 4.",
+           "matches": [
+            {
+             "id": "c1",
+             "kind": "same",
+             "label": "Runtime-managed close",
+             "A": [
+              {
+               "startLine": 91,
+               "endLine": 91
+              }
+             ],
+             "B": [
+              {
+               "startLine": 102,
+               "endLine": 102
+              }
+             ],
+             "comment": "s = 1.00 · both leaves"
+            },
+            {
+             "id": "c2",
+             "kind": "implied-parent",
+             "label": "Surface resource destruction",
+             "A": [
+              {
+               "startLine": 92,
+               "endLine": 97
+              }
+             ],
+             "B": [
+              {
+               "startLine": 103,
+               "endLine": 104
+              },
+              {
+               "startLine": 105,
+               "endLine": 106
+              },
+              {
+               "startLine": 107,
+               "endLine": 107
+              }
+             ],
+             "implied": {
+              "side": "B",
+              "label": "Several B nodes, one A node"
+             },
+             "comment": "s = 0.94 · inner J 0.87 (3 pairs, 0 only in A, 0 only in B)"
+            }
+           ],
+           "absent": [
+            {
+             "side": "B",
+             "afterLine": 109,
+             "text": "Only in A 90: Child-exit hold/close handling"
+            },
+            {
+             "side": "A",
+             "afterLine": 97,
+             "text": "Only in B 108–109: App.deinit shared-resource shutdown"
+            }
+           ]
+          }
+         }
+        ]
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "mapping",
+   "title": "Mapping v2 ↔ v4·2 · three readings",
+   "blocks": [
+    {
+     "kind": "text",
+     "text": "One pair of trees, three judgements. Compare the right-hand side across the three blocks: the first colours every v4 branch once; the second colours two stretches twice; the third leaves most of the presentation branch uncoloured."
+    },
+    {
+     "kind": "compare-tree",
+     "spec": {
+      "id": "mapping-sol-grouped",
+      "title": "Mapping v2 ↔ v4·2 · Sol run 2 · 0.862 (grouped)",
+      "A": "S3",
+      "B": "S4",
+      "explanation": "Verdict: judge is right. Grouping is the right reading of a merge, and it is the only one of the three runs that accounts for every line of both trees at the top level. One caveat: the ownership change for history (top level in v2, under the controller in v4) costs nothing here (inner 0.96), so the score does not reflect it.\n\nv2 gives CanvasSession and CanvasHistoryService their own top-level nodes. v4 folds CanvasSession into CanvasWorkspace and nests CanvasHistoryService under MappingDocumentController. This run reads both as grouped: one v4 node against two v2 nodes, counted once, with the cost only inside. This is the reading the rubric intends, and the scores of the other runs should be measured against it.",
+      "steps": [
+       {
+        "title": "Top-level anchors · J = 5.17 / 6 = 0.862",
+        "root": {
+         "A": 1,
+         "B": 1
+        },
+        "comment": "Click a match to see the anchors inside it. Six anchors, nothing unmatched. The two coloured groups on the left (two v2 nodes each) map onto one v4 node each.",
+        "matches": [
+         {
+          "id": "ws",
+          "kind": "implied-parent",
+          "label": "Workspace, ownership and sessions",
+          "A": [
+           {
+            "startLine": 3,
+            "endLine": 14
+           },
+           {
+            "startLine": 16,
+            "endLine": 28
+           }
+          ],
+          "B": [
+           {
+            "startLine": 3,
+            "endLine": 14
+           }
+          ],
+          "comment": "Right. v4 CanvasWorkspace contains the CanvasSession that v2 draws separately. s = 0.85.",
+          "implied": {
+           "side": "A",
+           "label": "Workspace + session lifetime"
+          },
+          "children": {
+           "comment": "Judge's level J = 0.703 = Σs / (pairs + unmatched) = 2.81 / 4.",
+           "matches": [
+            {
+             "id": "c1",
+             "kind": "same",
+             "label": "application entry",
+             "A": [
+              {
+               "startLine": 5,
+               "endLine": 6
+              }
+             ],
+             "B": [
+              {
+               "startLine": 4,
+               "endLine": 5
+              }
+             ],
+             "comment": "s = 1.00 · inner J 1.00 (1 pairs, 0 only in A, 0 only in B)"
+            },
+            {
+             "id": "c2",
+             "kind": "implied-parent",
+             "label": "CanvasWorkspace",
+             "A": [
+              {
+               "startLine": 9,
+               "endLine": 14
+              }
+             ],
+             "B": [
+              {
+               "startLine": 6,
+               "endLine": 8
+              },
+              {
+               "startLine": 13,
+               "endLine": 14
+              }
+             ],
+             "implied": {
+              "side": "B",
+              "label": "Several B nodes, one A node"
+             },
+             "comment": "s = 0.97 · inner J 0.95 (2 pairs, 0 only in A, 0 only in B)"
+            },
+            {
+             "id": "c3",
+             "kind": "same",
+             "label": "CanvasSession",
+             "A": [
+              {
+               "startLine": 16,
+               "endLine": 28
+              }
+             ],
+             "B": [
+              {
+               "startLine": 9,
+               "endLine": 12
+              }
+             ],
+             "comment": "s = 0.84 · inner J 0.68 (3 pairs, 1 only in A, 0 only in B)"
+            }
+           ],
+           "absent": [
+            {
+             "side": "B",
+             "afterLine": 14,
+             "text": "Only in A 7–8: mapping services context"
+            }
+           ]
+          }
+         },
+         {
+          "id": "model",
+          "kind": "same",
+          "label": "Revision-backed canvas model",
+          "A": [
+           {
+            "startLine": 30,
+            "endLine": 55
+           }
+          ],
+          "B": [
+           {
+            "startLine": 16,
+            "endLine": 30
+           }
+          ],
+          "comment": "Right. s = 0.80. v2 keeps MappingCanvasState/view projection here; v4 moves source context and canvas state to presentation.",
+          "children": {
+           "comment": "Judge's level J = 0.607 = Σs / (pairs + unmatched) = 1.82 / 3.",
+           "matches": [
+            {
+             "id": "c1",
+             "kind": "same",
+             "label": "canvas document and scene",
+             "A": [
+              {
+               "startLine": 31,
+               "endLine": 37
+              }
+             ],
+             "B": [
+              {
+               "startLine": 23,
+               "endLine": 29
+              }
+             ],
+             "comment": "s = 0.72 · inner J 0.45 (2 pairs, 0 only in A, 2 only in B)"
+            },
+            {
+             "id": "c2",
+             "kind": "same",
+             "label": "Diagram content and source context",
+             "A": [
+              {
+               "startLine": 39,
+               "endLine": 46
+              }
+             ],
+             "B": [
+              {
+               "startLine": 17,
+               "endLine": 22
+              }
+             ],
+             "comment": "s = 0.73 · inner J 0.47 (2 pairs, 0 only in A, 1 only in B)"
+            },
+            {
+             "id": "c3",
+             "kind": "relocated",
+             "label": "canvas presentation state",
+             "A": [
+              {
+               "startLine": 48,
+               "endLine": 55
+              }
+             ],
+             "B": [
+              {
+               "startLine": 60,
+               "endLine": 61
+              }
+             ],
+             "align": false,
+             "comment": "s = 0.36 · inner J 0.45 (1 pairs, 1 only in A, 0 only in B)"
+            }
+           ]
+          }
+         },
+         {
+          "id": "ctrl",
+          "kind": "implied-parent",
+          "label": "Controller and history",
+          "A": [
+           {
+            "startLine": 57,
+            "endLine": 75
+           },
+           {
+            "startLine": 77,
+            "endLine": 95
+           }
+          ],
+          "B": [
+           {
+            "startLine": 32,
+            "endLine": 51
+           }
+          ],
+          "comment": "Grouped, s = 0.98. Defensible, but this is a change of owner (history moved under the controller), and the verdict should name it. The score gives it almost no weight.",
+          "implied": {
+           "side": "A",
+           "label": "Semantic commands + checkpoint history"
+          },
+          "children": {
+           "comment": "Judge's level J = 0.960 = Σs / (pairs + unmatched) = 1.92 / 2.",
+           "matches": [
+            {
+             "id": "c1",
+             "kind": "same",
+             "label": "MappingDocumentController",
+             "A": [
+              {
+               "startLine": 57,
+               "endLine": 75
+              }
+             ],
+             "B": [
+              {
+               "startLine": 32,
+               "endLine": 39
+              }
+             ],
+             "comment": "s = 0.95 · inner J 0.91 (3 pairs, 0 only in A, 0 only in B)"
+            },
+            {
+             "id": "c2",
+             "kind": "implied-parent",
+             "label": "CanvasHistoryService and checkpoints",
+             "A": [
+              {
+               "startLine": 77,
+               "endLine": 95
+              }
+             ],
+             "B": [
+              {
+               "startLine": 40,
+               "endLine": 44
+              },
+              {
+               "startLine": 45,
+               "endLine": 47
+              },
+              {
+               "startLine": 48,
+               "endLine": 49
+              }
+             ],
+             "implied": {
+              "side": "B",
+              "label": "Several B nodes, one A node"
+             },
+             "comment": "s = 0.97 · inner J 0.93 (5 pairs, 0 only in A, 0 only in B)"
+            }
+           ]
+          }
+         },
+         {
+          "id": "editor",
+          "kind": "same",
+          "label": "Editor and inspection surface",
+          "A": [
+           {
+            "startLine": 97,
+            "endLine": 109
+           }
+          ],
+          "B": [
+           {
+            "startLine": 53,
+            "endLine": 69
+           }
+          ],
+          "comment": "Right. Whole branch to whole branch. Source panels exist only in v4, so the cost stays inside: inner 0.48, s = 0.74.",
+          "children": {
+           "comment": "Judge's level J = 0.481 = Σs / (pairs + unmatched) = 0.96 / 2.",
+           "matches": [
+            {
+             "id": "c1",
+             "kind": "same",
+             "label": "MappingEditorRuntime",
+             "A": [
+              {
+               "startLine": 97,
+               "endLine": 109
+              }
+             ],
+             "B": [
+              {
+               "startLine": 54,
+               "endLine": 59
+              }
+             ],
+             "comment": "s = 0.96 · inner J 0.93 (3 pairs, 0 only in A, 0 only in B)"
+            }
+           ],
+           "absent": [
+            {
+             "side": "A",
+             "afterLine": 109,
+             "text": "Only in B 66–67: source-pane components and code service"
+            }
+           ]
+          }
+         },
+         {
+          "id": "agent",
+          "kind": "same",
+          "label": "Agent-assisted editing",
+          "A": [
+           {
+            "startLine": 111,
+            "endLine": 128
+           }
+          ],
+          "B": [
+           {
+            "startLine": 71,
+            "endLine": 87
+           }
+          ],
+          "comment": "Right. Composer, DiagramEditService, canvas bridge and receiver on both sides.",
+          "children": {
+           "comment": "Judge's level J = 0.801 = Σs / (pairs + unmatched) = 2.40 / 3.",
+           "matches": [
+            {
+             "id": "c1",
+             "kind": "implied-parent",
+             "label": "Prompt coordination and edit generation",
+             "A": [
+              {
+               "startLine": 112,
+               "endLine": 116
+              },
+              {
+               "startLine": 117,
+               "endLine": 120
+              }
+             ],
+             "B": [
+              {
+               "startLine": 72,
+               "endLine": 75
+              },
+              {
+               "startLine": 76,
+               "endLine": 79
+              }
+             ],
+             "implied": {
+              "side": "A",
+              "label": "Several A nodes, one B node"
+             },
+             "comment": "s = 0.74 · inner J 0.47 (2 pairs, 2 only in A, 0 only in B)"
+            },
+            {
+             "id": "c2",
+             "kind": "same",
+             "label": "Browser canvas bridge",
+             "A": [
+              {
+               "startLine": 121,
+               "endLine": 123
+              }
+             ],
+             "B": [
+              {
+               "startLine": 80,
+               "endLine": 82
+              }
+             ],
+             "comment": "s = 0.67 · inner J 0.33 (1 pairs, 1 only in A, 1 only in B)"
+            },
+            {
+             "id": "c3",
+             "kind": "same",
+             "label": "DiagramRevisionReceiver",
+             "A": [
+              {
+               "startLine": 124,
+               "endLine": 128
+              }
+             ],
+             "B": [
+              {
+               "startLine": 83,
+               "endLine": 85
+              }
+             ],
+             "comment": "s = 1.00 · inner J 1.00 (2 pairs, 0 only in A, 0 only in B)"
+            }
+           ]
+          }
+         },
+         {
+          "id": "persist",
+          "kind": "same",
+          "label": "Workspace persistence",
+          "A": [
+           {
+            "startLine": 130,
+            "endLine": 149
+           }
+          ],
+          "B": [
+           {
+            "startLine": 89,
+            "endLine": 104
+           }
+          ],
+          "comment": "Right. v4 adds project publication; v2 has more storage detail.",
+          "children": {
+           "comment": "Judge's level J = 0.750 = Σs / (pairs + unmatched) = 3.75 / 5.",
+           "matches": [
+            {
+             "id": "c1",
+             "kind": "same",
+             "label": "Workspace reload",
+             "A": [
+              {
+               "startLine": 131,
+               "endLine": 133
+              }
+             ],
+             "B": [
+              {
+               "startLine": 101,
+               "endLine": 101
+              }
+             ],
+             "comment": "s = 0.90 · summarized: only one side has children"
+            },
+            {
+             "id": "c2",
+             "kind": "same",
+             "label": "WorkspacePersistence",
+             "A": [
+              {
+               "startLine": 134,
+               "endLine": 138
+              }
+             ],
+             "B": [
+              {
+               "startLine": 90,
+               "endLine": 93
+              }
+             ],
+             "comment": "s = 0.97 · inner J 0.95 (2 pairs, 0 only in A, 0 only in B)"
+            },
+            {
+             "id": "c3",
+             "kind": "same",
+             "label": "Record storage and worker transport",
+             "A": [
+              {
+               "startLine": 139,
+               "endLine": 144
+              }
+             ],
+             "B": [
+              {
+               "startLine": 93,
+               "endLine": 93
+              }
+             ],
+             "comment": "s = 0.90 · summarized: only one side has children"
+            },
+            {
+             "id": "c4",
+             "kind": "same",
+             "label": "WorkspaceRecordStore",
+             "A": [
+              {
+               "startLine": 145,
+               "endLine": 149
+              }
+             ],
+             "B": [
+              {
+               "startLine": 94,
+               "endLine": 97
+              }
+             ],
+             "comment": "s = 0.97 · inner J 0.95 (2 pairs, 0 only in A, 0 only in B)"
+            }
+           ],
+           "absent": [
+            {
+             "side": "A",
+             "afterLine": 149,
+             "text": "Only in B 98–100: Explicit project checkpoint publication"
+            }
+           ]
+          }
+         }
+        ]
+       }
+      ]
+     }
+    },
+    {
+     "kind": "compare-tree",
+     "spec": {
+      "id": "mapping-sol-relocated",
+      "title": "Mapping v2 ↔ v4·2 · Sol run 1 · 0.757 (relocated)",
+      "A": "S3",
+      "B": "S4",
+      "explanation": "Verdict: judge is wrong. The anchors are individually plausible, but together they count v4 lines 9–12 and 40–49 twice and penalize a merge as two relocations. Score drops from 0.862 to 0.757, which is about 0.1 for the same structure. The cause is the overlapping grouped/relocated definitions in the prompt.\n\nSame judge, same trees. This time CanvasSession and CanvasHistoryService are anchored separately, to the v4 lines that sit inside other anchors, and marked relocated. The literal rule permits this (\"the counterpart exists, but under a different top-level anchor\"). The effect is that the v4 lines are counted twice, k goes from 6 to 8, and each extra pair is halved.",
+      "steps": [
+       {
+        "title": "Top-level anchors · J = 6.05 / 8 = 0.757",
+        "root": {
+         "A": 1,
+         "B": 1
+        },
+        "comment": "Click a match to see the anchors inside it. Look at the right-hand side: B 9–12 is coloured by two anchors (workspace and CanvasSession), and B 40–49 by two (controller and history). Those overlaps are what grouped would have avoided.",
+        "matches": [
+         {
+          "id": "app",
+          "kind": "same",
+          "label": "Application and canvas workspace",
+          "A": [
+           {
+            "startLine": 3,
+            "endLine": 14
+           }
+          ],
+          "B": [
+           {
+            "startLine": 3,
+            "endLine": 14
+           }
+          ],
+          "comment": "Right on its own. s = 0.80.",
+          "children": {
+           "comment": "Judge's level J = 0.606 = Σs / (pairs + unmatched) = 1.82 / 3.",
+           "matches": [
+            {
+             "id": "c1",
+             "kind": "same",
+             "label": "Application entry",
+             "A": [
+              {
+               "startLine": 5,
+               "endLine": 6
+              }
+             ],
+             "B": [
+              {
+               "startLine": 4,
+               "endLine": 5
+              }
+             ],
+             "comment": "s = 1.00 · inner J 1.00 (1 pairs, 0 only in A, 0 only in B)"
+            },
+            {
+             "id": "c2",
+             "kind": "implied-parent",
+             "label": "CanvasWorkspace drafts and lifetime",
+             "A": [
+              {
+               "startLine": 9,
+               "endLine": 14
+              }
+             ],
+             "B": [
+              {
+               "startLine": 6,
+               "endLine": 8
+              },
+              {
+               "startLine": 13,
+               "endLine": 14
+              }
+             ],
+             "implied": {
+              "side": "B",
+              "label": "Several B nodes, one A node"
+             },
+             "comment": "s = 0.82 · inner J 0.63 (2 pairs, 1 only in A, 0 only in B)"
+            }
+           ],
+           "absent": [
+            {
+             "side": "B",
+             "afterLine": 14,
+             "text": "Only in A 7–8: Service creation and context"
+            }
+           ]
+          }
+         },
+         {
+          "id": "session",
+          "kind": "relocated",
+          "label": "CanvasSession",
+          "A": [
+           {
+            "startLine": 16,
+            "endLine": 28
+           }
+          ],
+          "B": [
+           {
+            "startLine": 9,
+            "endLine": 12
+           }
+          ],
+          "comment": "Not right. B 9–12 is already inside the workspace anchor above. Relocated ×0.5 and offset ×0.9 give s = 0.43, and the pair also adds 1 to the denominator.",
+          "align": false,
+          "children": {
+           "comment": "Judge's level J = 0.900 = Σs / (pairs + unmatched) = 2.70 / 3. Not accounted for by the judge in A (neither paired nor unmatched, so they never reach the denominator): A 18 Owns MappingDocumentController and CanvasCursorCopy; A 19 readable() exposes getState / getInitialState / subscribe, not store m.",
+           "matches": [
+            {
+             "id": "c1",
+             "kind": "same",
+             "label": "Read-only state subscriptions",
+             "A": [
+              {
+               "startLine": 20,
+               "endLine": 24
+              }
+             ],
+             "B": [
+              {
+               "startLine": 10,
+               "endLine": 10
+              }
+             ],
+             "comment": "s = 0.90 · summarized: only one side has children"
+            },
+            {
+             "id": "c2",
+             "kind": "same",
+             "label": "Semantic-change publication",
+             "A": [
+              {
+               "startLine": 25,
+               "endLine": 26
+              }
+             ],
+             "B": [
+              {
+               "startLine": 11,
+               "endLine": 11
+              }
+             ],
+             "comment": "s = 0.90 · summarized: only one side has children"
+            },
+            {
+             "id": "c3",
+             "kind": "same",
+             "label": "Dirty state and saved baseline",
+             "A": [
+              {
+               "startLine": 27,
+               "endLine": 28
+              }
+             ],
+             "B": [
+              {
+               "startLine": 12,
+               "endLine": 12
+              }
+             ],
+             "comment": "s = 0.90 · summarized: only one side has children"
+            }
+           ]
+          }
+         },
+         {
+          "id": "model",
+          "kind": "same",
+          "label": "Revision-backed canvas model",
+          "A": [
+           {
+            "startLine": 30,
+            "endLine": 55
+           }
+          ],
+          "B": [
+           {
+            "startLine": 16,
+            "endLine": 30
+           }
+          ],
+          "comment": "Right. s = 0.87.",
+          "children": {
+           "comment": "Judge's level J = 0.732 = Σs / (pairs + unmatched) = 2.20 / 3.",
+           "matches": [
+            {
+             "id": "c1",
+             "kind": "same",
+             "label": "Canvas composition and resolved scene",
+             "A": [
+              {
+               "startLine": 31,
+               "endLine": 37
+              }
+             ],
+             "B": [
+              {
+               "startLine": 23,
+               "endLine": 29
+              }
+             ],
+             "comment": "s = 0.95 · inner J 0.90 (2 pairs, 0 only in A, 0 only in B)"
+            },
+            {
+             "id": "c2",
+             "kind": "same",
+             "label": "Diagram content and source context",
+             "A": [
+              {
+               "startLine": 39,
+               "endLine": 46
+              }
+             ],
+             "B": [
+              {
+               "startLine": 17,
+               "endLine": 22
+              }
+             ],
+             "comment": "s = 0.87 · inner J 0.74 (2 pairs, 0 only in A, 0 only in B)"
+            },
+            {
+             "id": "c3",
+             "kind": "relocated",
+             "label": "Canvas presentation state",
+             "A": [
+              {
+               "startLine": 48,
+               "endLine": 55
+              }
+             ],
+             "B": [
+              {
+               "startLine": 60,
+               "endLine": 61
+              }
+             ],
+             "align": false,
+             "comment": "s = 0.38 · inner J 0.50 (1 pairs, 1 only in A, 0 only in B)"
+            }
+           ]
+          }
+         },
+         {
+          "id": "ctrl",
+          "kind": "same",
+          "label": "MappingDocumentController",
+          "A": [
+           {
+            "startLine": 57,
+            "endLine": 75
+           }
+          ],
+          "B": [
+           {
+            "startLine": 32,
+            "endLine": 51
+           }
+          ],
+          "comment": "Right on its own. s = 0.95, but its B range also contains history (B 40–49).",
+          "children": {
+           "comment": "Judge's level J = 0.892 = Σs / (pairs + unmatched) = 2.68 / 3. Not accounted for by the judge in A (neither paired nor unmatched, so they never reach the denominator): A 59–60 Public commands: applyUpdate / transact / select / updateCanvas / undo.",
+           "matches": [
+            {
+             "id": "c1",
+             "kind": "same",
+             "label": "Versioned semantic operations",
+             "A": [
+              {
+               "startLine": 61,
+               "endLine": 68
+              }
+             ],
+             "B": [
+              {
+               "startLine": 33,
+               "endLine": 37
+              }
+             ],
+             "comment": "s = 0.97 · inner J 0.93 (3 pairs, 0 only in A, 0 only in B)"
+            },
+            {
+             "id": "c2",
+             "kind": "same",
+             "label": "Recorded versus transient updates",
+             "A": [
+              {
+               "startLine": 73,
+               "endLine": 73
+              }
+             ],
+             "B": [
+              {
+               "startLine": 38,
+               "endLine": 39
+              }
+             ],
+             "comment": "s = 0.90 · summarized: only one side has children"
+            },
+            {
+             "id": "c3",
+             "kind": "depth-shift",
+             "label": "Incremental persistence read boundary",
+             "A": [
+              {
+               "startLine": 74,
+               "endLine": 75
+              }
+             ],
+             "B": [
+              {
+               "startLine": 44,
+               "endLine": 44
+              }
+             ],
+             "comment": "s = 0.81 · summarized: only one side has children · depth offset 1"
+            }
+           ]
+          }
+         },
+         {
+          "id": "history",
+          "kind": "relocated",
+          "label": "CanvasHistoryService",
+          "A": [
+           {
+            "startLine": 77,
+            "endLine": 95
+           }
+          ],
+          "B": [
+           {
+            "startLine": 40,
+            "endLine": 49
+           }
+          ],
+          "comment": "Not right. Double-counts B 40–49. s = 0.42. The only real difference here is the owner, and grouped plus a note in the verdict would have recorded that.",
+          "align": false,
+          "children": {
+           "comment": "Judge's level J = 0.846 = Σs / (pairs + unmatched) = 4.23 / 5.",
+           "matches": [
+            {
+             "id": "c1",
+             "kind": "same",
+             "label": "Editing-context isolation",
+             "A": [
+              {
+               "startLine": 79,
+               "endLine": 80
+              }
+             ],
+             "B": [
+              {
+               "startLine": 41,
+               "endLine": 41
+              }
+             ],
+             "comment": "s = 0.90 · summarized: only one side has children"
+            },
+            {
+             "id": "c2",
+             "kind": "implied-parent",
+             "label": "Checkpoint records and named canvas views",
+             "A": [
+              {
+               "startLine": 81,
+               "endLine": 88
+              }
+             ],
+             "B": [
+              {
+               "startLine": 42,
+               "endLine": 42
+              },
+              {
+               "startLine": 45,
+               "endLine": 47
+              }
+             ],
+             "implied": {
+              "side": "B",
+              "label": "Several B nodes, one A node"
+             },
+             "comment": "s = 0.95 · inner J 0.90 (2 pairs, 0 only in A, 0 only in B)"
+            },
+            {
+             "id": "c3",
+             "kind": "relocated",
+             "label": "Diagram revisions",
+             "A": [
+              {
+               "startLine": 89,
+               "endLine": 91
+              }
+             ],
+             "B": [
+              {
+               "startLine": 20,
+               "endLine": 21
+              }
+             ],
+             "align": false,
+             "comment": "s = 0.43 · inner J 0.90 (1 pairs, 0 only in A, 0 only in B) · depth offset 1"
+            },
+            {
+             "id": "c4",
+             "kind": "same",
+             "label": "History append and navigation",
+             "A": [
+              {
+               "startLine": 92,
+               "endLine": 92
+              }
+             ],
+             "B": [
+              {
+               "startLine": 43,
+               "endLine": 43
+              }
+             ],
+             "comment": "s = 1.00 · both leaves"
+            },
+            {
+             "id": "c5",
+             "kind": "same",
+             "label": "Linked cross-canvas transfers",
+             "A": [
+              {
+               "startLine": 93,
+               "endLine": 95
+              }
+             ],
+             "B": [
+              {
+               "startLine": 48,
+               "endLine": 49
+              }
+             ],
+             "comment": "s = 0.95 · inner J 0.90 (1 pairs, 0 only in A, 0 only in B)"
+            }
+           ]
+          }
+         },
+         {
+          "id": "editor",
+          "kind": "same",
+          "label": "Native editor and presentation",
+          "A": [
+           {
+            "startLine": 97,
+            "endLine": 109
+           }
+          ],
+          "B": [
+           {
+            "startLine": 53,
+            "endLine": 69
+           }
+          ],
+          "comment": "Right. s = 0.82.",
+          "children": {
+           "comment": "Judge's level J = 0.633 = Σs / (pairs + unmatched) = 3.80 / 6.",
+           "matches": [
+            {
+             "id": "c1",
+             "kind": "same",
+             "label": "Editor mounting and shape projection",
+             "A": [
+              {
+               "startLine": 99,
+               "endLine": 101
+              }
+             ],
+             "B": [
+              {
+               "startLine": 54,
+               "endLine": 55
+              }
+             ],
+             "comment": "s = 1.00 · inner J 1.00 (1 pairs, 0 only in A, 0 only in B)"
+            },
+            {
+             "id": "c2",
+             "kind": "same",
+             "label": "Editor-owned live geometry",
+             "A": [
+              {
+               "startLine": 102,
+               "endLine": 103
+              }
+             ],
+             "B": [
+              {
+               "startLine": 56,
+               "endLine": 57
+              }
+             ],
+             "comment": "s = 1.00 · inner J 1.00 (1 pairs, 0 only in A, 0 only in B)"
+            },
+            {
+             "id": "c3",
+             "kind": "same",
+             "label": "Gesture settlement",
+             "A": [
+              {
+               "startLine": 104,
+               "endLine": 105
+              }
+             ],
+             "B": [
+              {
+               "startLine": 58,
+               "endLine": 58
+              }
+             ],
+             "comment": "s = 0.90 · summarized: only one side has children"
+            },
+            {
+             "id": "c4",
+             "kind": "same",
+             "label": "Editor checkpoint restoration",
+             "A": [
+              {
+               "startLine": 106,
+               "endLine": 108
+              }
+             ],
+             "B": [
+              {
+               "startLine": 59,
+               "endLine": 59
+              }
+             ],
+             "comment": "s = 0.90 · summarized: only one side has children"
+            }
+           ],
+           "absent": [
+            {
+             "side": "B",
+             "afterLine": 69,
+             "text": "Only in A 109: Runtime disposal and final settlement"
+            },
+            {
+             "side": "A",
+             "afterLine": 109,
+             "text": "Only in B 66–67: Source inspection panels and code-repository reads"
+            }
+           ]
+          }
+         },
+         {
+          "id": "agent",
+          "kind": "same",
+          "label": "Agent-assisted editing",
+          "A": [
+           {
+            "startLine": 111,
+            "endLine": 128
+           }
+          ],
+          "B": [
+           {
+            "startLine": 71,
+            "endLine": 87
+           }
+          ],
+          "comment": "Right. Composer, DiagramEditService, canvas bridge and receiver on both sides.",
+          "children": {
+           "comment": "Judge's level J = 0.801 = Σs / (pairs + unmatched) = 2.40 / 3.",
+           "matches": [
+            {
+             "id": "c1",
+             "kind": "implied-parent",
+             "label": "Prompt coordination and edit generation",
+             "A": [
+              {
+               "startLine": 112,
+               "endLine": 116
+              },
+              {
+               "startLine": 117,
+               "endLine": 120
+              }
+             ],
+             "B": [
+              {
+               "startLine": 72,
+               "endLine": 75
+              },
+              {
+               "startLine": 76,
+               "endLine": 79
+              }
+             ],
+             "implied": {
+              "side": "A",
+              "label": "Several A nodes, one B node"
+             },
+             "comment": "s = 0.74 · inner J 0.47 (2 pairs, 2 only in A, 0 only in B)"
+            },
+            {
+             "id": "c2",
+             "kind": "same",
+             "label": "Browser canvas bridge",
+             "A": [
+              {
+               "startLine": 121,
+               "endLine": 123
+              }
+             ],
+             "B": [
+              {
+               "startLine": 80,
+               "endLine": 82
+              }
+             ],
+             "comment": "s = 0.67 · inner J 0.33 (1 pairs, 1 only in A, 1 only in B)"
+            },
+            {
+             "id": "c3",
+             "kind": "same",
+             "label": "DiagramRevisionReceiver",
+             "A": [
+              {
+               "startLine": 124,
+               "endLine": 128
+              }
+             ],
+             "B": [
+              {
+               "startLine": 83,
+               "endLine": 85
+              }
+             ],
+             "comment": "s = 1.00 · inner J 1.00 (2 pairs, 0 only in A, 0 only in B)"
+            }
+           ]
+          }
+         },
+         {
+          "id": "persist",
+          "kind": "same",
+          "label": "Workspace persistence",
+          "A": [
+           {
+            "startLine": 130,
+            "endLine": 149
+           }
+          ],
+          "B": [
+           {
+            "startLine": 89,
+            "endLine": 104
+           }
+          ],
+          "comment": "Right. v4 adds project publication; v2 has more storage detail.",
+          "children": {
+           "comment": "Judge's level J = 0.750 = Σs / (pairs + unmatched) = 3.75 / 5.",
+           "matches": [
+            {
+             "id": "c1",
+             "kind": "same",
+             "label": "Workspace reload",
+             "A": [
+              {
+               "startLine": 131,
+               "endLine": 133
+              }
+             ],
+             "B": [
+              {
+               "startLine": 101,
+               "endLine": 101
+              }
+             ],
+             "comment": "s = 0.90 · summarized: only one side has children"
+            },
+            {
+             "id": "c2",
+             "kind": "same",
+             "label": "WorkspacePersistence",
+             "A": [
+              {
+               "startLine": 134,
+               "endLine": 138
+              }
+             ],
+             "B": [
+              {
+               "startLine": 90,
+               "endLine": 93
+              }
+             ],
+             "comment": "s = 0.97 · inner J 0.95 (2 pairs, 0 only in A, 0 only in B)"
+            },
+            {
+             "id": "c3",
+             "kind": "same",
+             "label": "Record storage and worker transport",
+             "A": [
+              {
+               "startLine": 139,
+               "endLine": 144
+              }
+             ],
+             "B": [
+              {
+               "startLine": 93,
+               "endLine": 93
+              }
+             ],
+             "comment": "s = 0.90 · summarized: only one side has children"
+            },
+            {
+             "id": "c4",
+             "kind": "same",
+             "label": "WorkspaceRecordStore",
+             "A": [
+              {
+               "startLine": 145,
+               "endLine": 149
+              }
+             ],
+             "B": [
+              {
+               "startLine": 94,
+               "endLine": 97
+              }
+             ],
+             "comment": "s = 0.97 · inner J 0.95 (2 pairs, 0 only in A, 0 only in B)"
+            }
+           ],
+           "absent": [
+            {
+             "side": "A",
+             "afterLine": 149,
+             "text": "Only in B 98–100: Explicit project checkpoint publication"
+            }
+           ]
+          }
+         }
+        ]
+       }
+      ]
+     }
+    },
+    {
+     "kind": "compare-tree",
+     "spec": {
+      "id": "mapping-astra-partial",
+      "title": "Mapping v2 ↔ v4·2 · Astra run 2 · 0.739 (partial anchor)",
+      "A": "S3",
+      "B": "S4",
+      "explanation": "Verdict: judge is wrong. Same structure as Sol run 2, but 0.12 lower. A top-level node was anchored to part of a branch, and one leftover child became a top-level unmatched item (+1 in the denominator, s = 0). The prompt says ranges cover the whole subtree, but it also allows anchoring one level deeper, and never says what happens to the rest of the branch.\n\nGroups the workspace and controller the same way as Sol run 2, so the first three anchors agree. The difference is the editor: the judge anchors v2’s top-level MappingEditorRuntime to one child of v4’s presentation branch (B 54–59), then lists one other child (B 66–67) as unmatched at the top level. The rest of that branch (B 53, 60–65, 68–69) is not accounted for anywhere.",
+      "steps": [
+       {
+        "title": "Top-level anchors · J = 5.17 / 7 = 0.739",
+        "root": {
+         "A": 1,
+         "B": 1
+        },
+        "comment": "Click a match to see the anchors inside it. On the right, only B 54–59 of the presentation branch (B 53–69) is coloured. The marker on the left is the extra unmatched entry that costs ~0.12.",
+        "matches": [
+         {
+          "id": "ws",
+          "kind": "implied-parent",
+          "label": "Application, workspace and session lifetime",
+          "A": [
+           {
+            "startLine": 3,
+            "endLine": 14
+           },
+           {
+            "startLine": 16,
+            "endLine": 28
+           }
+          ],
+          "B": [
+           {
+            "startLine": 3,
+            "endLine": 14
+           }
+          ],
+          "comment": "Right. Same grouping as Sol run 2. s = 0.83.",
+          "implied": {
+           "side": "A",
+           "label": "Workspace + session lifetime"
+          },
+          "children": {
+           "comment": "Judge's level J = 0.657 = Σs / (pairs + unmatched) = 2.63 / 4.",
+           "matches": [
+            {
+             "id": "c1",
+             "kind": "same",
+             "label": "Application entry",
+             "A": [
+              {
+               "startLine": 5,
+               "endLine": 6
+              }
+             ],
+             "B": [
+              {
+               "startLine": 4,
+               "endLine": 5
+              }
+             ],
+             "comment": "s = 0.90 · summarized: only one side has children"
+            },
+            {
+             "id": "c2",
+             "kind": "implied-parent",
+             "label": "Draft registry and session lifetime",
+             "A": [
+              {
+               "startLine": 9,
+               "endLine": 14
+              }
+             ],
+             "B": [
+              {
+               "startLine": 6,
+               "endLine": 8
+              },
+              {
+               "startLine": 13,
+               "endLine": 14
+              }
+             ],
+             "implied": {
+              "side": "B",
+              "label": "Several B nodes, one A node"
+             },
+             "comment": "s = 0.97 · inner J 0.95 (2 pairs, 0 only in A, 0 only in B)"
+            },
+            {
+             "id": "c3",
+             "kind": "depth-shift",
+             "label": "CanvasSession",
+             "A": [
+              {
+               "startLine": 16,
+               "endLine": 28
+              }
+             ],
+             "B": [
+              {
+               "startLine": 9,
+               "endLine": 12
+              }
+             ],
+             "comment": "s = 0.75 · inner J 0.68 (3 pairs, 1 only in A, 0 only in B) · depth offset 1"
+            }
+           ],
+           "absent": [
+            {
+             "side": "B",
+             "afterLine": 14,
+             "text": "Only in A 7–8: Service construction and context"
+            }
+           ]
+          }
+         },
+         {
+          "id": "model",
+          "kind": "same",
+          "label": "Semantic document model",
+          "A": [
+           {
+            "startLine": 30,
+            "endLine": 55
+           }
+          ],
+          "B": [
+           {
+            "startLine": 16,
+            "endLine": 30
+           }
+          ],
+          "comment": "Right. s = 0.84.",
+          "children": {
+           "comment": "Judge's level J = 0.688 = Σs / (pairs + unmatched) = 2.06 / 3.",
+           "matches": [
+            {
+             "id": "c1",
+             "kind": "implied-parent",
+             "label": "Canvas composition and resolved contents",
+             "A": [
+              {
+               "startLine": 31,
+               "endLine": 37
+              }
+             ],
+             "B": [
+              {
+               "startLine": 23,
+               "endLine": 26
+              },
+              {
+               "startLine": 27,
+               "endLine": 29
+              }
+             ],
+             "implied": {
+              "side": "B",
+              "label": "Several B nodes, one A node"
+             },
+             "comment": "s = 0.95 · inner J 0.90 (2 pairs, 0 only in A, 0 only in B)"
+            },
+            {
+             "id": "c2",
+             "kind": "same",
+             "label": "Diagram identity, content and source context",
+             "A": [
+              {
+               "startLine": 39,
+               "endLine": 46
+              }
+             ],
+             "B": [
+              {
+               "startLine": 17,
+               "endLine": 22
+              }
+             ],
+             "comment": "s = 0.74 · inner J 0.48 (2 pairs, 0 only in A, 1 only in B)"
+            },
+            {
+             "id": "c3",
+             "kind": "relocated",
+             "label": "Canvas presentation and interaction state",
+             "A": [
+              {
+               "startLine": 48,
+               "endLine": 55
+              }
+             ],
+             "B": [
+              {
+               "startLine": 60,
+               "endLine": 61
+              }
+             ],
+             "align": false,
+             "comment": "s = 0.38 · inner J 0.50 (1 pairs, 1 only in A, 0 only in B)"
+            }
+           ]
+          }
+         },
+         {
+          "id": "ctrl",
+          "kind": "implied-parent",
+          "label": "Semantic commands and checkpoint history",
+          "A": [
+           {
+            "startLine": 57,
+            "endLine": 75
+           },
+           {
+            "startLine": 77,
+            "endLine": 95
+           }
+          ],
+          "B": [
+           {
+            "startLine": 32,
+            "endLine": 51
+           }
+          ],
+          "comment": "Right. s = 0.94.",
+          "implied": {
+           "side": "A",
+           "label": "Semantic commands + checkpoint history"
+          },
+          "children": {
+           "comment": "Judge's level J = 0.885 = Σs / (pairs + unmatched) = 4.43 / 5.",
+           "matches": [
+            {
+             "id": "c1",
+             "kind": "implied-parent",
+             "label": "Versioned command application",
+             "A": [
+              {
+               "startLine": 59,
+               "endLine": 60
+              },
+              {
+               "startLine": 61,
+               "endLine": 72
+              }
+             ],
+             "B": [
+              {
+               "startLine": 33,
+               "endLine": 37
+              }
+             ],
+             "implied": {
+              "side": "A",
+              "label": "Several A nodes, one B node"
+             },
+             "comment": "s = 0.97 · inner J 0.93 (3 pairs, 0 only in A, 0 only in B)"
+            },
+            {
+             "id": "c2",
+             "kind": "same",
+             "label": "Recorded versus transient canvas updates",
+             "A": [
+              {
+               "startLine": 73,
+               "endLine": 73
+              }
+             ],
+             "B": [
+              {
+               "startLine": 38,
+               "endLine": 39
+              }
+             ],
+             "comment": "s = 0.90 · summarized: only one side has children"
+            },
+            {
+             "id": "c3",
+             "kind": "depth-shift",
+             "label": "Incremental persistence read boundary",
+             "A": [
+              {
+               "startLine": 74,
+               "endLine": 75
+              }
+             ],
+             "B": [
+              {
+               "startLine": 44,
+               "endLine": 44
+              }
+             ],
+             "comment": "s = 0.81 · summarized: only one side has children · depth offset 1"
+            },
+            {
+             "id": "c4",
+             "kind": "depth-shift",
+             "label": "CanvasHistoryService",
+             "A": [
+              {
+               "startLine": 77,
+               "endLine": 95
+              }
+             ],
+             "B": [
+              {
+               "startLine": 40,
+               "endLine": 44
+              }
+             ],
+             "comment": "s = 0.75 · inner J 0.66 (5 pairs, 1 only in A, 0 only in B) · depth offset 1"
+            },
+            {
+             "id": "c5",
+             "kind": "same",
+             "label": "Cross-canvas transfer history",
+             "A": [
+              {
+               "startLine": 93,
+               "endLine": 95
+              }
+             ],
+             "B": [
+              {
+               "startLine": 48,
+               "endLine": 49
+              }
+             ],
+             "comment": "s = 1.00 · inner J 1.00 (1 pairs, 0 only in A, 0 only in B)"
+            }
+           ]
+          }
+         },
+         {
+          "id": "editor",
+          "kind": "depth-shift",
+          "label": "Native editor runtime",
+          "A": [
+           {
+            "startLine": 97,
+            "endLine": 109
+           }
+          ],
+          "B": [
+           {
+            "startLine": 54,
+            "endLine": 59
+           }
+          ],
+          "comment": "Not right. Anchors to a child of B 53–69 with offset 1. Should be B 53–69 as a whole, with the source panels unmatched inside the pair, where they would cost about 0.13 of one anchor instead of a full top-level slot.",
+          "children": {
+           "comment": "Judge's level J = 0.740 = Σs / (pairs + unmatched) = 3.70 / 5. Not accounted for by the judge in A (neither paired nor unmatched, so they never reach the denominator): A 99 MappingEditorCanvas mounts tldraw Editor and attaches one editor drive.",
+           "matches": [
+            {
+             "id": "c1",
+             "kind": "same",
+             "label": "Controller-to-native shape projection",
+             "A": [
+              {
+               "startLine": 100,
+               "endLine": 101
+              }
+             ],
+             "B": [
+              {
+               "startLine": 55,
+               "endLine": 55
+              }
+             ],
+             "comment": "s = 0.90 · summarized: only one side has children"
+            },
+            {
+             "id": "c2",
+             "kind": "same",
+             "label": "Native geometry and undo ownership",
+             "A": [
+              {
+               "startLine": 102,
+               "endLine": 103
+              }
+             ],
+             "B": [
+              {
+               "startLine": 56,
+               "endLine": 57
+              }
+             ],
+             "comment": "s = 1.00 · inner J 1.00 (1 pairs, 0 only in A, 0 only in B)"
+            },
+            {
+             "id": "c3",
+             "kind": "same",
+             "label": "Gesture settlement",
+             "A": [
+              {
+               "startLine": 104,
+               "endLine": 105
+              }
+             ],
+             "B": [
+              {
+               "startLine": 58,
+               "endLine": 58
+              }
+             ],
+             "comment": "s = 0.90 · summarized: only one side has children"
+            },
+            {
+             "id": "c4",
+             "kind": "same",
+             "label": "Native checkpoint restoration",
+             "A": [
+              {
+               "startLine": 106,
+               "endLine": 108
+              }
+             ],
+             "B": [
+              {
+               "startLine": 59,
+               "endLine": 59
+              }
+             ],
+             "comment": "s = 0.90 · summarized: only one side has children"
+            }
+           ],
+           "absent": [
+            {
+             "side": "B",
+             "afterLine": 59,
+             "text": "Only in A 109: Runtime disposal and driver cleanup"
+            }
+           ]
+          }
+         },
+         {
+          "id": "agent",
+          "kind": "same",
+          "label": "Agent-assisted editing",
+          "A": [
+           {
+            "startLine": 111,
+            "endLine": 128
+           }
+          ],
+          "B": [
+           {
+            "startLine": 71,
+            "endLine": 87
+           }
+          ],
+          "comment": "Right. Composer, DiagramEditService, canvas bridge and receiver on both sides.",
+          "children": {
+           "comment": "Judge's level J = 0.801 = Σs / (pairs + unmatched) = 2.40 / 3.",
+           "matches": [
+            {
+             "id": "c1",
+             "kind": "implied-parent",
+             "label": "Prompt coordination and edit generation",
+             "A": [
+              {
+               "startLine": 112,
+               "endLine": 116
+              },
+              {
+               "startLine": 117,
+               "endLine": 120
+              }
+             ],
+             "B": [
+              {
+               "startLine": 72,
+               "endLine": 75
+              },
+              {
+               "startLine": 76,
+               "endLine": 79
+              }
+             ],
+             "implied": {
+              "side": "A",
+              "label": "Several A nodes, one B node"
+             },
+             "comment": "s = 0.74 · inner J 0.47 (2 pairs, 2 only in A, 0 only in B)"
+            },
+            {
+             "id": "c2",
+             "kind": "same",
+             "label": "Browser canvas bridge",
+             "A": [
+              {
+               "startLine": 121,
+               "endLine": 123
+              }
+             ],
+             "B": [
+              {
+               "startLine": 80,
+               "endLine": 82
+              }
+             ],
+             "comment": "s = 0.67 · inner J 0.33 (1 pairs, 1 only in A, 1 only in B)"
+            },
+            {
+             "id": "c3",
+             "kind": "same",
+             "label": "DiagramRevisionReceiver",
+             "A": [
+              {
+               "startLine": 124,
+               "endLine": 128
+              }
+             ],
+             "B": [
+              {
+               "startLine": 83,
+               "endLine": 85
+              }
+             ],
+             "comment": "s = 1.00 · inner J 1.00 (2 pairs, 0 only in A, 0 only in B)"
+            }
+           ]
+          }
+         },
+         {
+          "id": "persist",
+          "kind": "same",
+          "label": "Workspace persistence",
+          "A": [
+           {
+            "startLine": 130,
+            "endLine": 149
+           }
+          ],
+          "B": [
+           {
+            "startLine": 89,
+            "endLine": 104
+           }
+          ],
+          "comment": "Right. v4 adds project publication; v2 has more storage detail.",
+          "children": {
+           "comment": "Judge's level J = 0.750 = Σs / (pairs + unmatched) = 3.75 / 5.",
+           "matches": [
+            {
+             "id": "c1",
+             "kind": "same",
+             "label": "Workspace reload",
+             "A": [
+              {
+               "startLine": 131,
+               "endLine": 133
+              }
+             ],
+             "B": [
+              {
+               "startLine": 101,
+               "endLine": 101
+              }
+             ],
+             "comment": "s = 0.90 · summarized: only one side has children"
+            },
+            {
+             "id": "c2",
+             "kind": "same",
+             "label": "WorkspacePersistence",
+             "A": [
+              {
+               "startLine": 134,
+               "endLine": 138
+              }
+             ],
+             "B": [
+              {
+               "startLine": 90,
+               "endLine": 93
+              }
+             ],
+             "comment": "s = 0.97 · inner J 0.95 (2 pairs, 0 only in A, 0 only in B)"
+            },
+            {
+             "id": "c3",
+             "kind": "same",
+             "label": "Record storage and worker transport",
+             "A": [
+              {
+               "startLine": 139,
+               "endLine": 144
+              }
+             ],
+             "B": [
+              {
+               "startLine": 93,
+               "endLine": 93
+              }
+             ],
+             "comment": "s = 0.90 · summarized: only one side has children"
+            },
+            {
+             "id": "c4",
+             "kind": "same",
+             "label": "WorkspaceRecordStore",
+             "A": [
+              {
+               "startLine": 145,
+               "endLine": 149
+              }
+             ],
+             "B": [
+              {
+               "startLine": 94,
+               "endLine": 97
+              }
+             ],
+             "comment": "s = 0.97 · inner J 0.95 (2 pairs, 0 only in A, 0 only in B)"
+            }
+           ],
+           "absent": [
+            {
+             "side": "A",
+             "afterLine": 149,
+             "text": "Only in B 98–100: Explicit project checkpoint publication"
+            }
+           ]
+          }
+         }
+        ],
+        "absent": [
+         {
+          "side": "A",
+          "afterLine": 109,
+          "text": "Judge lists B 66–67 (Source inspection panels, CodeRepoService) as unmatched at the top level: +1 in the denominator. B 53, 60–65 and 68–69 are not counted anywhere."
+         }
+        ]
+       }
+      ]
+     }
+    }
+   ]
+  }
+ ]
+}

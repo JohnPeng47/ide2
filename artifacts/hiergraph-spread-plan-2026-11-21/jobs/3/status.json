@@ -1,0 +1,15 @@
+{
+  "status": "finished",
+  "key": "astra-high/3",
+  "runId": "f50e5b1a-ceb4-4e1f-bb76-a20eaad26c8d",
+  "number": 3,
+  "usage": {
+    "input": 42155,
+    "output": 7462,
+    "cacheRead": 148096,
+    "cacheWrite": 0,
+    "reasoning": 483,
+    "totalTokens": 197713
+  },
+  "outputUrl": "http://localhost:5191/evals?run=f50e5b1a-ceb4-4e1f-bb76-a20eaad26c8d&output=939c1f43-c7f6-4c1a-8864-349c095f3a63%3A1%3Aalternative"
+}

@@ -5,8 +5,7 @@ import { stripNodeContinuity } from './diagramNodeContinuity';
 import { diagramContentNodes } from './diagramContentNodes';
 
 export const generatedDiagramEditSchema = z.object({
-  // Identity annotations are removed before enforcing the 20,000-character content limit.
-  ascii: z.string().min(1).max(200000),
+  ascii: z.string().min(1),
   structureKind: z.enum(['diagram', 'tree']),
   replacementRanges: z.array(z.object({ startLine: z.number().int().positive(), endLine: z.number().int().nonnegative() }).strict()).min(1).max(100).optional(),
   mappings: z.array(z.object({ id: z.string().min(1), entityId: z.string().min(1),

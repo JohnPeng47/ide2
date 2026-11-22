@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "createdAt": "2026-11-11T04:25:46.373347+00:00",
+  "purpose": "Three source-backed few-shot diagram excerpts selected for structural and semantic diversity.",
+  "source": {
+    "apiOrigin": "http://127.0.0.1:5191",
+    "workspaceInstanceId": "e5547fcd-c3a9-4f39-8a26-08f737d765ca",
+    "documentId": "draft-f25ec0f2-9caa-42ab-9a0a-abf89e38482e",
+    "savedRepresentationId": "representation-efd01c8f-dc44-4b93-9517-4c7b47042d16",
+    "name": "Mapping application - architecture (baseline 03f2168)",
+    "documentVersion": 0,
+    "baselineLabel": "03f2168",
+    "asciiSha256": "6441be7bbb273fb89e92bcb2a99ac6fd6db6ff64251936ad5a6f56a817728c6c",
+    "snapshotFile": "source-diagram.txt",
+    "coordinates": "1-based inclusive raw ASCII lines",
+    "identityNote": "API revision/node handles are read-scoped; source identity is pinned by full ASCII snapshot and SHA-256."
+  },
+  "legend": {
+    "M": "modular boundary",
+    "O": "ownership",
+    "C": "call flow",
+    "D": "data dependency"
+  },
+  "usageGuidance": "Use these three excerpts as examples of representational choices. Their project-specific names and facts are not evidence for the new task. Choose the hierarchy, depth, branching, density, and relationship types that fit the supplied source; do not reproduce the examples' exact shape, category names, counts, or sequence. Not every diagram needs every relationship type. The [M]/[O]/[C]/[D] notation belongs to these examples and is not mandatory unless the task explicitly requests it. These are output-style excerpts, not paired source-to-diagram demonstrations. All come from one architecture diagram, so they provide structural and semantic variety within that diagram, not domain or notation diversity.",
+  "examples": [
+    {
+      "id": "01-ownership",
+      "title": "Workspace ownership",
+      "startLine": 18,
+      "endLine": 36,
+      "lineCount": 19,
+      "normalization": "Remove the first 8 ancestor/branch columns from each line; retain all labels and relative descendant indentation.",
+      "rawAscii": "|   `-- [O] CanvasWorkspace manages open documents\n|       |-- [M] Exposes document lifecycle and persistence notifications\n|       |-- [O] Creates, subscribes to and disposes CanvasSessions\n|       |   `-- drafts[documentId]: CanvasDraft\n|       |       |-- Document identity and save baseline\n|       |       |   |-- representationId / name / revisionId\n|       |       |   `-- savedName / savedScene / savedEdges\n|       |       |-- Workspace presentation\n|       |       |   `-- busy / hidden / viewport / focusBox\n|       |       `-- session: CanvasSession\n|       |           |-- [O] Retains MappingDocumentController\n|       |           |-- [M] Exposes coordinated session stores\n|       |           |   |-- document\n|       |           |   |-- presentation / selection\n|       |           |   `-- controls / geometry / status\n|       |           `-- [C] onCommit()\n|       |               `-- notify workspace persistence\n|       `-- controllers[documentId]\n|           `-- [D] indexes the controllers retained by sessions",
+      "ascii": "[O] CanvasWorkspace manages open documents\n|-- [M] Exposes document lifecycle and persistence notifications\n|-- [O] Creates, subscribes to and disposes CanvasSessions\n|   `-- drafts[documentId]: CanvasDraft\n|       |-- Document identity and save baseline\n|       |   |-- representationId / name / revisionId\n|       |   `-- savedName / savedScene / savedEdges\n|       |-- Workspace presentation\n|       |   `-- busy / hidden / viewport / focusBox\n|       `-- session: CanvasSession\n|           |-- [O] Retains MappingDocumentController\n|           |-- [M] Exposes coordinated session stores\n|           |   |-- document\n|           |   |-- presentation / selection\n|           |   `-- controls / geometry / status\n|           `-- [C] onCommit()\n|               `-- notify workspace persistence\n`-- controllers[documentId]\n    `-- [D] indexes the controllers retained by sessions",
+      "sha256": "175ebe8f201bddea5377e3e1cf30f9914bd1d2a6dbbd370fde92198b1f7c0419",
+      "selectionRationale": "An asymmetric ownership hierarchy: lifecycle operations, nested retained state, a callback, and an index referring back to owned objects.",
+      "overfittingGuidance": "Learn selective expansion and explicit responsibility. Do not infer that every owner needs drafts, sessions, controllers, or a callback."
+    },
+    {
+      "id": "02-derived-model",
+      "title": "Derived node registry",
+      "startLine": 123,
+      "endLine": 140,
+      "lineCount": 18,
+      "normalization": "Remove the first 12 ancestor/branch columns from each line; retain all labels and relative descendant indentation.",
+      "rawAscii": "|       `-- nodes(): DisplayNode[]\n|           |-- [D] document + presentation + geometry -> public registry\n|           |   `-- derived nodes; not a second authoritative document\n|           |-- Common identity and hierarchy\n|           |   `-- id / read-time version / childIds / expansion\n|           |-- Grid nodes\n|           |   |-- diagram or group; authoritative boxId\n|           |   |-- [D] GridBox layout -> cell bounds\n|           |   |   `-- column / row / columns / rows\n|           |   `-- diagram instance -> DiagramContent\n|           `-- Floating nodes\n|               |-- [D] placement + geometry policy -> pixel bounds\n|               |   `-- position / size / canvas or viewport coordinates\n|               `-- FloatingBox\n|                   |-- SelectionRegion -> selected grid rectangle\n|                   |-- ProjectedPane -> parent projection owner\n|                   |-- ConversationPane -> anchor and presentation\n|                   `-- DetailPane -> retained placement",
+      "ascii": "nodes(): DisplayNode[]\n|-- [D] document + presentation + geometry -> public registry\n|   `-- derived nodes; not a second authoritative document\n|-- Common identity and hierarchy\n|   `-- id / read-time version / childIds / expansion\n|-- Grid nodes\n|   |-- diagram or group; authoritative boxId\n|   |-- [D] GridBox layout -> cell bounds\n|   |   `-- column / row / columns / rows\n|   `-- diagram instance -> DiagramContent\n`-- Floating nodes\n    |-- [D] placement + geometry policy -> pixel bounds\n    |   `-- position / size / canvas or viewport coordinates\n    `-- FloatingBox\n        |-- SelectionRegion -> selected grid rectangle\n        |-- ProjectedPane -> parent projection owner\n        |-- ConversationPane -> anchor and presentation\n        `-- DetailPane -> retained placement",
+      "sha256": "2de56fe7df15208fff12c0103fabe80b425dd23bf89eb087b6c07e0f68548f9f",
+      "selectionRationale": "A result-oriented read model: inputs produce a public registry, common properties precede contrasting node families, and only one family expands into concrete variants.",
+      "overfittingGuidance": "Learn common-versus-specific grouping and inputs-to-result relationships. Do not reproduce the grid/floating split, variant count, coordinate system, or this depth unless supported."
+    },
+    {
+      "id": "03-request-flow",
+      "title": "Agent request flow",
+      "startLine": 142,
+      "endLine": 149,
+      "lineCount": 8,
+      "normalization": "Remove the first 4 ancestor/branch columns from each line; retain all labels and relative descendant indentation.",
+      "rawAscii": "|-- [M] Agent access adapts external requests to document operations\n|   `-- [C] MCP -> HTTP backend -> AgentDiagrammingSessionService.exec\n|       |-- synchronous canvas / nodes / edges API\n|       `-- Live document request\n|           `-- [C] CanvasSessionBridge -> useAgentCanvasBridge\n|               `-- attached session's MappingDocumentController\n|                   |-- reads -> exposed read models\n|                   `-- edits -> applyUpdate(expectedVersion, operations)",
+      "ascii": "[M] Agent access adapts external requests to document operations\n`-- [C] MCP -> HTTP backend -> AgentDiagrammingSessionService.exec\n    |-- synchronous canvas / nodes / edges API\n    `-- Live document request\n        `-- [C] CanvasSessionBridge -> useAgentCanvasBridge\n            `-- attached session's MappingDocumentController\n                |-- reads -> exposed read models\n                `-- edits -> applyUpdate(expectedVersion, operations)",
+      "sha256": "776ea4bed228718cc7b1ddd3ef2ee73bdd8d8cdf76571dbd995f962be416f31e",
+      "selectionRationale": "A short dynamic path across boundaries, ending in a read/edit fork; intermediate hops are compressed inline.",
+      "overfittingGuidance": "Learn concise call flow and selective branching. Do not infer that every process has MCP, HTTP, a bridge, or a binary read/edit fork."
+    }
+  ]
+}

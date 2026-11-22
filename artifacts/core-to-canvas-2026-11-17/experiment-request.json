@@ -1,0 +1,201 @@
+{
+  "requestId": "7821c7da-cfcd-446d-8d7f-43b26df049fe",
+  "experiment": {
+    "name": "Core component → canvas",
+    "description": "Restructure one Astra/high core component diagram per repository (from Core component discovery 08ccc7fa) into a vertical central diagram with connected peripheral diagrams. Repository checkout available to double-check the diagram. One gpt-6-astra/high canvas per repository.",
+    "tags": [
+      "core-discovery",
+      "canvas"
+    ],
+    "workflow": {
+      "id": "core-to-canvas",
+      "name": "Core component to canvas",
+      "version": 1,
+      "stages": [
+        {
+          "id": "split",
+          "name": "Generate canvas",
+          "dependsOn": []
+        }
+      ]
+    },
+    "cases": [
+      {
+        "id": "mapping",
+        "name": "Mapping · core → canvas seed",
+        "agentContextId": "saved-agent-context-cb132185-b1cc-4e45-94b8-4fa9a457c75a",
+        "contentHash": "c8c45f05d3c6c1ee2c04bd67e562652eb5c876357481caf324cf0f83fc880ea6"
+      },
+      {
+        "id": "pi",
+        "name": "Pi · core → canvas seed",
+        "agentContextId": "saved-agent-context-9727bbfb-9336-4405-a60b-977291ebd2bd",
+        "contentHash": "b59617f2e3f378e525b3683c1e9d6416577eae14c53d3f16aaf152b740506b0e"
+      },
+      {
+        "id": "opencode",
+        "name": "OpenCode · core → canvas seed",
+        "agentContextId": "saved-agent-context-73c58ea6-1d34-49b5-b2a2-d0ef709ba559",
+        "contentHash": "d8b7018ae8804532ef08d895844514d91456f99eca159faa0c5805e5efbe43d6"
+      },
+      {
+        "id": "ghostty",
+        "name": "Ghostty · core → canvas seed",
+        "agentContextId": "saved-agent-context-13a17154-1868-4cfb-9f01-ed80ffc6437c",
+        "contentHash": "01e7e4d0029ade1d3e381029ea7b4337068e41ddc06e0fdd14dd1af5a858760d"
+      }
+    ],
+    "conditions": [
+      {
+        "id": "vertical-framing",
+        "name": "Vertical restructure",
+        "description": "Horizontal/vertical framing with a podcast-player before/after example; seed diagram plus pinned checkout."
+      }
+    ],
+    "samples": [
+      {
+        "id": "mapping",
+        "caseId": "mapping",
+        "conditionId": "vertical-framing",
+        "number": 1,
+        "attempt": 1,
+        "outputs": []
+      },
+      {
+        "id": "pi",
+        "caseId": "pi",
+        "conditionId": "vertical-framing",
+        "number": 1,
+        "attempt": 1,
+        "outputs": []
+      },
+      {
+        "id": "opencode",
+        "caseId": "opencode",
+        "conditionId": "vertical-framing",
+        "number": 1,
+        "attempt": 1,
+        "outputs": []
+      },
+      {
+        "id": "ghostty",
+        "caseId": "ghostty",
+        "conditionId": "vertical-framing",
+        "number": 1,
+        "attempt": 1,
+        "outputs": []
+      }
+    ],
+    "comparisons": [],
+    "plannedRuns": [
+      {
+        "request": {
+          "requestId": "06d4f008-e3c4-4f8d-ac2d-e076490838af",
+          "workflow": "alternatives",
+          "prompts": [
+            {
+              "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+              "version": 1
+            }
+          ],
+          "inputs": {
+            "context": {
+              "agentContextId": "saved-agent-context-cb132185-b1cc-4e45-94b8-4fa9a457c75a"
+            }
+          },
+          "passes": 1,
+          "model": "gpt-6-astra",
+          "effort": "high"
+        },
+        "outputs": [
+          {
+            "sampleId": "mapping",
+            "stageId": "split",
+            "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative"
+          }
+        ]
+      },
+      {
+        "request": {
+          "requestId": "bcd72f13-5770-4244-9cd7-68810e37dd2b",
+          "workflow": "alternatives",
+          "prompts": [
+            {
+              "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+              "version": 1
+            }
+          ],
+          "inputs": {
+            "context": {
+              "agentContextId": "saved-agent-context-9727bbfb-9336-4405-a60b-977291ebd2bd"
+            }
+          },
+          "passes": 1,
+          "model": "gpt-6-astra",
+          "effort": "high"
+        },
+        "outputs": [
+          {
+            "sampleId": "pi",
+            "stageId": "split",
+            "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative"
+          }
+        ]
+      },
+      {
+        "request": {
+          "requestId": "4d1d388a-78a5-4198-9c56-9fa04b4fbddf",
+          "workflow": "alternatives",
+          "prompts": [
+            {
+              "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+              "version": 1
+            }
+          ],
+          "inputs": {
+            "context": {
+              "agentContextId": "saved-agent-context-73c58ea6-1d34-49b5-b2a2-d0ef709ba559"
+            }
+          },
+          "passes": 1,
+          "model": "gpt-6-astra",
+          "effort": "high"
+        },
+        "outputs": [
+          {
+            "sampleId": "opencode",
+            "stageId": "split",
+            "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative"
+          }
+        ]
+      },
+      {
+        "request": {
+          "requestId": "9f582f37-2a7a-4159-9b8e-5b6b30a20365",
+          "workflow": "alternatives",
+          "prompts": [
+            {
+              "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+              "version": 1
+            }
+          ],
+          "inputs": {
+            "context": {
+              "agentContextId": "saved-agent-context-13a17154-1868-4cfb-9f01-ed80ffc6437c"
+            }
+          },
+          "passes": 1,
+          "model": "gpt-6-astra",
+          "effort": "high"
+        },
+        "outputs": [
+          {
+            "sampleId": "ghostty",
+            "stageId": "split",
+            "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative"
+          }
+        ]
+      }
+    ]
+  }
+}

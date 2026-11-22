@@ -16,7 +16,7 @@ export const trackPromptLineageSchema = z.object({
   derivation: promptDerivationSchema
 }).strict();
 /** Versions are immutable so a run can always show the exact text it used. */
-export interface EvalPromptVersion { templateBase?: PromptTemplateBase; parents?: PromptParent[]; version: number; createdAt: string; format?: 'explicit-v1'; note?: string; stages: Record<string, string>; contentHash?: string; derivation?: PromptDerivation; lineageRecordedAt?: string }
+export interface EvalPromptVersion { templateSources?: Record<string, string>; templateBase?: PromptTemplateBase; parents?: PromptParent[]; version: number; createdAt: string; format?: 'explicit-v1'; note?: string; stages: Record<string, string>; contentHash?: string; derivation?: PromptDerivation; lineageRecordedAt?: string }
 export interface EvalPrompt {
   schemaVersion: 1; id: string; projectId: string; workflow: EvalWorkflowId; name: string; description?: string;
   createdAt: string; updatedAt: string; archivedAt?: string; builtin?: boolean;

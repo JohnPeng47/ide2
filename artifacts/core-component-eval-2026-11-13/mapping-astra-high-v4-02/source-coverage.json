@@ -1,0 +1,36 @@
+{
+  "commit": "8ca143700ca4d2c870f1101b8cd4601ab68abd41",
+  "repositoryPath": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax",
+  "eligibleSourceFiles": 594,
+  "eligibleSourceLines": 54363,
+  "allTrackedSourceFiles": 1051,
+  "allTrackedSourceLines": 103157,
+  "meanSourceLinesSeen": 3097.5,
+  "meanPercent": 5.697809171679267,
+  "summedPerRunLines": 6195,
+  "unionSourceLinesSeen": 4059,
+  "unionPercent": 7.466475360079467,
+  "runs": [
+    {
+      "sample": 1,
+      "runId": "641693cf-fc8b-43c8-ab5d-bc9b08dd22c7",
+      "eligibleSourceLines": 54363,
+      "sourceLinesSeen": 3137,
+      "percent": 5.770468885087284,
+      "sourceFilesSeen": 33,
+      "allSourceLinesSeen": 3137,
+      "outsideEligiblePaths": []
+    },
+    {
+      "sample": 2,
+      "runId": "c3aa93d2-4c2a-4e70-846c-61b571c3607d",
+      "eligibleSourceLines": 54363,
+      "sourceLinesSeen": 3058,
+      "percent": 5.625149458271251,
+      "sourceFilesSeen": 34,
+      "allSourceLinesSeen": 3058,
+      "outsideEligiblePaths": []
+    }
+  ],
+  "method": "Physical source lines including comments/blanks, read and shell outputs; repeated file/line pairs deduplicated per run. Average coverage = sum of run coverages / (sample count \u00d7 eligible source lines). Union deduplicates across all runs. Only complete returned lines count; listings, wc counts, prompts, JSON configs and generated diagrams excluded."
+}

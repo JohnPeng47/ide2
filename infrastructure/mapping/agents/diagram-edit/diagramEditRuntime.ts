@@ -47,7 +47,7 @@ export class PiDiagramEditRuntime extends PiAgentRuntime implements DiagramGener
       description: 'Submit the complete revised ASCII and mappings into the supplied evidence.',
       promptSnippet: 'Submit a complete revised diagram', promptGuidelines: [submission.promptGuideline],
       parameters: Type.Object({
-        ascii: Type.String({ minLength: 1, maxLength: 200000 }),
+        ascii: Type.String({ minLength: 1 }),
         replacementRanges: Type.Optional(Type.Array(Type.Object({ startLine: Type.Integer({ minimum: 1 }), endLine: Type.Integer({ minimum: 0 }) }), { minItems: 1, maxItems: 100 })),
         structureKind: Type.Union([Type.Literal('diagram'), Type.Literal('tree')]),
         mappings: Type.Optional(Type.Array(Type.Object({

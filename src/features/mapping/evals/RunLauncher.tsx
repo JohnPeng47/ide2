@@ -39,7 +39,7 @@ export function RunLauncher({ prompts, runs, initial, onClose, onStarted }: {
   const workflow = evalWorkflows[workflowId];
   const fewShot = workflowId === 'few-shot-refinement';
   const proposal = workflowId === 'diagram-change-proposal';
-  const linked = workflowId === 'linked-canvases';
+  const linked = workflowId === 'linked-canvases' || workflowId === 'canvas-layout';
   const [canvasKeys, setCanvasKeys] = useState<string[]>(rerun?.canvasInputs?.map(copy => candidateKey(copy.source)) ?? []);
   const [targetKey, setTargetKey] = useState(rerun?.inputs.target ? candidateKey(rerun.inputs.target.source) : '');
   // A rerun keeps the exact prompt versions it used, even if a prompt was archived since.
@@ -87,7 +87,7 @@ export function RunLauncher({ prompts, runs, initial, onClose, onStarted }: {
     return () => { closed = true; };
   }, []);
   const switchWorkflow = (id: EvalWorkflowId) => {
-    setWorkflowId(id); setCanvasKeys([]); if (id === 'diagram-change-proposal' || id === 'linked-canvases') setLayoutTemplateId(''); if (id === 'few-shot-refinement') { setModel('gpt-6-astra'); setEffort('high'); } setSelected({}); setPicked([]); setContextId(undefined); setPrevious([]); setPasses(evalWorkflows[id].defaultPasses);
+    setWorkflowId(id); setCanvasKeys([]); if (id === 'diagram-change-proposal' || id === 'linked-canvases' || id === 'canvas-layout') setLayoutTemplateId(''); if (id === 'few-shot-refinement') { setModel('gpt-6-astra'); setEffort('high'); } setSelected({}); setPicked([]); setContextId(undefined); setPrevious([]); setPasses(evalWorkflows[id].defaultPasses);
   };
 
   const numbers = useMemo(() => runNumbers(runs), [runs]);
@@ -280,7 +280,7 @@ export function RunLauncher({ prompts, runs, initial, onClose, onStarted }: {
             </section>
           </fieldset>
           <footer className="evals-drawer-footer">
-            <p aria-live="polite">{fewShot ? <>3 rounds × 3 alternatives = <strong>9 canvases</strong> · one progress Judgement</> : <>{chosen.length} prompt{chosen.length === 1 ? '' : 's'} × {passes} sample{passes === 1 ? '' : 's'}{workflow.stages.length > 1 ? ` × ${workflow.stages.length} stages` : ''} = <strong>{outputs} {linked ? `linked set${outputs === 1 ? '' : 's'}` : `canvas${outputs === 1 ? '' : 'es'}`}</strong></>}</p>
+            <p aria-live="polite">{fewShot ? <>3 rounds × 3 alternatives = <strong>9 canvases</strong> · one progress Judgement</> : <>{chosen.length} prompt{chosen.length === 1 ? '' : 's'} × {passes} sample{passes === 1 ? '' : 's'}{workflow.stages.length > 1 ? ` × ${workflow.stages.length} stages` : ''} = <strong>{outputs} {workflowId === 'canvas-layout' ? `layout${outputs === 1 ? '' : 's'}` : linked ? `linked set${outputs === 1 ? '' : 's'}` : `canvas${outputs === 1 ? '' : 'es'}`}</strong></>}</p>
             {problems.length > 0 && <ul className="evals-problems">{problems.map(problem => <li key={problem}>{problem}</li>)}</ul>}
             {error && <p role="alert" className="evals-error">{error}</p>}
             <div className="evals-actions"><button type="button" onClick={onClose}>Cancel</button>

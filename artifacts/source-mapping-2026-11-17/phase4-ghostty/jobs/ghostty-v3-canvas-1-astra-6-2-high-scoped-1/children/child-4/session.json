@@ -1,0 +1,19 @@
+{
+  "id": "child-4",
+  "name": "Terminal",
+  "assignment": "Map d5 all nodes. private scratch /tmp/d5work. Return compact text: nID scope letters (s structure,e entity,b behavior,r relationship,g guarantee,y subsystem) then path:start-end:roles (d declaration,u use,i implementation); allow path aliases, parent inheritance directives. Verify.",
+  "model": "gpt-6.2-astra",
+  "effort": "high",
+  "status": "generating",
+  "queuedAt": "2026-11-22T02:48:10.226Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-22T02:51:37.552Z",
+  "sessionId": "01a2012a-94d8-7805-889e-4c5d27ba3ff2",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-0k2pl7su-agent-repository-ny3xVh-checkout--/2026-11-22T02-51-37-560Z_01a2012a-94d8-7805-889e-4c5d27ba3ff2.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase4-0k2pl7su/agent-repository-ny3xVh/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

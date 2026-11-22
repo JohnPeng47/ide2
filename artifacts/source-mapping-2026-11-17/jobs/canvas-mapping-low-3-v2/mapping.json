@@ -1,0 +1,260 @@
+{
+  "diagrams": [
+    {
+      "diagramId": "d1",
+      "mappings": [
+        {
+          "node": "n2",
+          "path": "src/app/services.ts",
+          "startLine": 8,
+          "endLine": 10
+        },
+        {
+          "node": "n8",
+          "path": "src/features/mapping/workspace/canvasWorkspace.ts",
+          "startLine": 22,
+          "endLine": 32
+        },
+        {
+          "node": "n12",
+          "path": "src/features/mapping/workspace/canvasSession.ts",
+          "startLine": 19,
+          "endLine": 24
+        },
+        {
+          "node": "n19",
+          "path": "domain/mapping/workspace/mappingDocumentController.ts",
+          "startLine": 71,
+          "endLine": 74
+        },
+        {
+          "node": "n22",
+          "path": "domain/mapping/workspace/mappingGrid.ts",
+          "startLine": 14,
+          "endLine": 24
+        },
+        {
+          "node": "n26",
+          "path": "domain/mapping/workspace/mappingGrid.ts",
+          "startLine": 35,
+          "endLine": 40
+        },
+        {
+          "node": "n27",
+          "path": "domain/core/diagrams/diagram.ts",
+          "startLine": 25,
+          "endLine": 30
+        },
+        {
+          "node": "n30",
+          "path": "domain/core/diagrams/diagram.ts",
+          "startLine": 18,
+          "endLine": 23
+        },
+        {
+          "node": "n31",
+          "path": "domain/core/diagrams/diagram.ts",
+          "startLine": 79,
+          "endLine": 93
+        },
+        {
+          "node": "n34",
+          "path": "domain/mapping/workspace/mappingWorkspace.ts",
+          "startLine": 34,
+          "endLine": 36
+        },
+        {
+          "node": "n40",
+          "path": "domain/mapping/workspace/mappingDocumentController.ts",
+          "startLine": 271,
+          "endLine": 278
+        },
+        {
+          "node": "n43",
+          "path": "domain/mapping/workspace/mappingDocumentController.ts",
+          "startLine": 197,
+          "endLine": 200
+        },
+        {
+          "node": "n45",
+          "path": "domain/mapping/workspace/mappingDocumentController.ts",
+          "startLine": 233,
+          "endLine": 235
+        },
+        {
+          "node": "n46",
+          "path": "src/features/mapping/workspace/canvasSession.ts",
+          "startLine": 69,
+          "endLine": 85
+        },
+        {
+          "node": "n51",
+          "path": "src/features/mapping/workspace/canvasWorkspace.ts",
+          "startLine": 61,
+          "endLine": 95
+        },
+        {
+          "node": "n54",
+          "path": "src/features/mapping/tldraw/MappingEditorRuntime.ts",
+          "startLine": 13,
+          "endLine": 25
+        }
+      ]
+    },
+    {
+      "diagramId": "d2",
+      "mappings": [
+        {
+          "node": "n2",
+          "path": "domain/core/diagrams/canvasHistoryService.ts",
+          "startLine": 43,
+          "endLine": 51
+        },
+        {
+          "node": "n3",
+          "path": "domain/core/diagrams/canvasHistoryService.ts",
+          "startLine": 50,
+          "endLine": 57
+        },
+        {
+          "node": "n5",
+          "path": "domain/core/diagrams/canvasHistory.ts",
+          "startLine": 59,
+          "endLine": 72
+        },
+        {
+          "node": "n7",
+          "path": "domain/core/diagrams/canvasHistory.ts",
+          "startLine": 40,
+          "endLine": 50
+        },
+        {
+          "node": "n13",
+          "path": "domain/core/diagrams/canvasHistory.ts",
+          "startLine": 599,
+          "endLine": 616
+        },
+        {
+          "node": "n14",
+          "path": "domain/core/diagrams/canvasHistoryService.ts",
+          "startLine": 90,
+          "endLine": 96
+        },
+        {
+          "node": "n20",
+          "path": "src/features/mapping/workspace/workspacePersistence.ts",
+          "startLine": 11,
+          "endLine": 24
+        },
+        {
+          "node": "n24",
+          "path": "src/features/mapping/workspace/workspacePersistence.ts",
+          "startLine": 87,
+          "endLine": 92
+        },
+        {
+          "node": "n26",
+          "path": "src/features/mapping/workspace/recordStorage.ts",
+          "startLine": 14,
+          "endLine": 30
+        },
+        {
+          "node": "n28",
+          "path": "src/features/mapping/workspace/recordStorage.ts",
+          "startLine": 59,
+          "endLine": 70
+        },
+        {
+          "node": "n32",
+          "path": "infrastructure/mapping/persistence/workspace/workspaceRecordStore.ts",
+          "startLine": 17,
+          "endLine": 25
+        },
+        {
+          "node": "n33",
+          "path": "infrastructure/mapping/persistence/workspace/workspaceRecordStore.ts",
+          "startLine": 112,
+          "endLine": 123
+        },
+        {
+          "node": "n34",
+          "path": "infrastructure/mapping/persistence/workspace/workspaceRecordStore.ts",
+          "startLine": 124,
+          "endLine": 153
+        }
+      ]
+    },
+    {
+      "diagramId": "d3",
+      "mappings": [
+        {
+          "node": "n2",
+          "path": "src/features/mapping/prompt-composer/promptComposerCoordinator.ts",
+          "startLine": 33,
+          "endLine": 40
+        },
+        {
+          "node": "n4",
+          "path": "src/features/mapping/prompt-composer/promptComposerCoordinator.ts",
+          "startLine": 154,
+          "endLine": 159
+        },
+        {
+          "node": "n7",
+          "path": "application/mapping/agent/diagramEditService.ts",
+          "startLine": 47,
+          "endLine": 52
+        },
+        {
+          "node": "n8",
+          "path": "application/mapping/agent/diagramEditService.ts",
+          "startLine": 75,
+          "endLine": 90
+        },
+        {
+          "node": "n11",
+          "path": "application/mapping/agent/diagramEditService.ts",
+          "startLine": 24,
+          "endLine": 29
+        },
+        {
+          "node": "n14",
+          "path": "src/features/mapping/agent/useAgentCanvasBridge.ts",
+          "startLine": 9,
+          "endLine": 13
+        },
+        {
+          "node": "n15",
+          "path": "src/features/mapping/agent/useAgentCanvasBridge.ts",
+          "startLine": 37,
+          "endLine": 56
+        },
+        {
+          "node": "n17",
+          "path": "src/features/mapping/agent/diagramRevisionReceiver.ts",
+          "startLine": 10,
+          "endLine": 16
+        },
+        {
+          "node": "n19",
+          "path": "src/features/mapping/agent/diagramRevisionReceiver.ts",
+          "startLine": 22,
+          "endLine": 25
+        },
+        {
+          "node": "n20",
+          "path": "src/features/mapping/agent/diagramRevisionReceiver.ts",
+          "startLine": 17,
+          "endLine": 33
+        },
+        {
+          "node": "n22",
+          "path": "src/features/mapping/agent/diagramRevisionReceiver.ts",
+          "startLine": 34,
+          "endLine": 40
+        }
+      ]
+    }
+  ],
+  "notes": "Remaining nodes are unmapped."
+}

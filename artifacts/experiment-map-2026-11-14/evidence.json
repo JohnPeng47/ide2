@@ -1,0 +1,1991 @@
+{
+  "E01": {
+    "description": "Two independent generation batches comparing the template baseline with measured 3+1 emphasis. Assessment revisions retain their original input samples.",
+    "conditions": [
+      {
+        "id": "baseline",
+        "name": "Baseline",
+        "description": "Original template baseline."
+      },
+      {
+        "id": "weighted",
+        "name": "Weighted 3+1",
+        "description": "Measured 3+1 presentation balance."
+      }
+    ],
+    "comments": [],
+    "judgements": [
+      {
+        "ref": "judgement/7d0ef019-891a-44fd-a2b7-8608eb2e1899-report",
+        "title": "Canvas-domain · baseline vs weighted 3+1 · n=m=1",
+        "status": "finished",
+        "kind": "comparison-report",
+        "summary": [
+          "The prompted canvas makes some responsibilities, call paths, and required inputs more explicit, especially in the FloatingBox, controller, and history diagrams. Both canvases fill all seven slots and contain 17 cross-diagram edges. The baseline already explains many of the same relationships, so the observed change is mainly in emphasis and labeling.",
+          "Limitations\n\nThere is only one baseline output and one prompted output. Recurrence and within-group variability cannot be assessed for either group; the comparisons are tentative illustrations, not established prompt effects. The supplied canvases support a content comparison, but not source-code verification or a reliable measurement of whether the requested percentages were achieved."
+        ]
+      },
+      {
+        "ref": "judgement/141b3e2b-fa14-4ccc-8fb5-93b9b1ce9e6c-report",
+        "title": "Canvas-domain · baseline vs weighted 3+1 · n=m=1 · framing v2",
+        "status": "finished",
+        "kind": "comparison-report",
+        "summary": [
+          "The prompted canvas keeps the same seven diagram topics but more often states who owns state, which operation invokes another, and which inputs a computation needs. The baseline already contains examples of all three, so the visible difference is chiefly emphasis and specificity.",
+          "Limitations\n\nThere is only one baseline output and one prompted output. Recurrence and within-group generation variability cannot be assessed; these are tentative illustrations, not established prompt effects. The supplied canvases were compared as artifacts, without source-code verification or a measured recount of the requested proportions. The prompt changed several instructions at once, so their individual effects cannot be isolated."
+        ]
+      },
+      {
+        "ref": "judgement/0ae24a68-e9bd-4716-86db-b95d6dfce4f2-report",
+        "title": "Fresh baseline vs weighted 3+1 · mixed findings · n=m=1",
+        "status": "failed",
+        "kind": "comparison-report",
+        "summary": [],
+        "error": "{\"type\":\"error\",\"error\":{\"message\":\"Invalid schema for response_format 'codex_output_schema': 'schema.properties.scale.oneOf' is not permitted when strict is true.\",\"type\":\"invalid_request_error\",\"param\":\"text.format.schema\",\"code\":\"invalid_json_schema\"},\"status\":400}"
+      },
+      {
+        "ref": "judgement/5266f575-085a-44d1-8148-5eaa3c9a406c-report",
+        "title": "Fresh baseline vs weighted 3+1 · mixed findings · n=m=1",
+        "status": "finished",
+        "kind": "comparison-report",
+        "summary": [
+          "The prompted canvas more explicitly names resource owners, computation inputs, and caller-to-operation paths. Both canvases cover the same seven components, and the baseline already includes several of these relationships, so the four comparisons are tentative illustrations of emphasis rather than established prompt effects.",
+          "Limitations\n\nThere is one baseline canvas and one prompted canvas. Recurrence and within-group variability cannot be assessed for either group, so attribution confidence is low throughout. This report compares the supplied outputs only; it does not verify their claims against source code."
+        ]
+      }
+    ],
+    "pinnedPrompts": [
+      {
+        "ref": "prompt/1ffd06777dcf87f59337f752c37c1197a2969758e479104805b7b61f36922d00",
+        "promptId": "d574746f-91fc-4351-ab7f-f3bb4c292ff5-template",
+        "version": 2
+      },
+      {
+        "ref": "prompt/7cf9a370a9ac8f7bcb269cf614077f43327a91088c1b2fdadafa0892cdb6dd9d",
+        "promptId": "078d0e20-9509-42be-b76a-f931841cd264",
+        "version": 2
+      }
+    ]
+  },
+  "E02": {
+    "description": "Three shared baselines and one sample at each extreme of expression, modular/runtime focus, and tree topology. Each extreme changes one control paragraph.",
+    "conditions": [
+      {
+        "id": "baseline",
+        "name": "Shared baseline",
+        "description": "50% code / 50% natural language; balanced modular/runtime focus; moderate hierarchy. Shared by all three comparisons."
+      },
+      {
+        "id": "code",
+        "name": "Code",
+        "description": "One control differs from the shared baseline."
+      },
+      {
+        "id": "language",
+        "name": "Natural language",
+        "description": "One control differs from the shared baseline."
+      },
+      {
+        "id": "modular",
+        "name": "Modular",
+        "description": "One control differs from the shared baseline."
+      },
+      {
+        "id": "runtime",
+        "name": "Runtime state",
+        "description": "One control differs from the shared baseline."
+      },
+      {
+        "id": "shallow",
+        "name": "Shallow",
+        "description": "One control differs from the shared baseline."
+      },
+      {
+        "id": "varied",
+        "name": "Varied",
+        "description": "One control differs from the shared baseline."
+      }
+    ],
+    "comments": [],
+    "judgements": [
+      {
+        "ref": "judgement/a18e3716-132f-45d1-8c67-3c8b79c0a74a-report",
+        "title": "Expression: code vs natural language · baseline x3 / poles x1",
+        "status": "finished",
+        "kind": "comparison-report",
+        "summary": [
+          "The code condition moves strongly toward code-like labels across all seven slots; the language condition moves strongly toward prose. The three baselines already vary in wording, grouping and detail, though each mixes expressions with explanatory sentences. Both extremes retain the main seven-slot subject coverage. Code preserves more exact identifiers and adds detail, but repeated @-style notation makes some groupings harder to read and can resemble a real API. Language reads more smoothly, but often drops signatures, field shapes and limits. The code canvas also has 30 cross-diagram edges, versus 19–23 in the baselines and 21 in language; that extra detail cannot be confidently attributed to the expression instruction.",
+          "Limitations\n\nAll 35 ASCII trees and the five supplied canvas records were assessed as generated artifacts. The code and language conditions have one output each, so within-condition variability and recurrence cannot be established; every selected difference is a tentative illustration with low attribution confidence. The three shared baselines show that alternative wording and detail can arise without a prompt change. Factual support means agreement among the supplied artifacts, not verification against source code. Some code-only specifics, including exact numeric limits, are not independently corroborated by the other outputs."
+        ]
+      },
+      {
+        "ref": "judgement/873b3630-5a85-4c14-a9c0-d8c13ae34c57-report",
+        "title": "Focus: modular vs runtime state · baseline x3 / poles x1",
+        "status": "finished",
+        "kind": "comparison-report",
+        "summary": [
+          "The single modular output (C4) moves toward contracts, type variants, public boundaries and dependencies. The single runtime output (C5) moves toward retained instances, related state, mutation and cleanup. The movement is clearest in MappingPage, FloatingBox, Controller edits and CanvasHistoryService. GridBox shifts modestly; DiagramService and Diagram remain largely organized around the same service and immutable value in all conditions. Across all seven slots, coverage of the main concepts remains comparable, and the pinned canvas layout and cross-diagram relationships remain similar. The three baselines already vary in wording, detail and organization, including examples of both requested emphases. C4 sometimes gives clearer boundaries but denser contract lists; C5 makes state lifetimes easier to follow but gives less space to some page capabilities. Neither extreme consistently eliminates repetition or fully separates meaningful groupings from broad headings.",
+          "Limitations\n\nC4 and C5 each have one output, so within-condition variability and recurrence cannot be assessed. The six findings are tentative illustrations, with low attribution confidence; none shows that a baseline could never produce the same feature. Factual support was assessed only for consistency among the supplied trees, canvas manifest and pinned descriptions. No source code was supplied or verified. The fixed layout limits what placement differences can reveal."
+        ]
+      },
+      {
+        "ref": "judgement/87fbe72f-343e-4e45-9417-0b3cde7cca06-report",
+        "title": "Topology: shallow vs varied trees · baseline x3 / poles x1",
+        "status": "finished",
+        "kind": "comparison-report",
+        "summary": [
+          "Both changes moved the trees in the requested direction. Across all seven slots, the three baselines reach two to four branch levels; shallow has one level in every slot, while varied reaches four to six. Baseline canvases contain 274–281 tree lines, shallow 234, and varied 279. Shallow retains many named components and relationships but compresses detail and makes long lists harder to scan. Varied preserves comparable coverage and offers clearer paths through some responsibilities, though a few deep chains may imply stronger parent-child relationships than the text establishes. Both extremes repeat concepts across related slots, as the baselines do.",
+          "Limitations\n\nEach extreme has one output. Its within-condition variability and recurrence cannot be assessed, so the findings are tentative illustrations with low attribution confidence. The three baselines show ordinary variation in wording, detail and grouping; they do not establish that either observed shape could never occur under the baseline prompt. Factual support was assessed only for consistency within the supplied trees and canvas manifests. No source code was supplied for independent verification."
+        ]
+      }
+    ],
+    "pinnedPrompts": [
+      {
+        "ref": "prompt/c43304853171909a235cb2105679ffd92c93831d2e7ce729bc34ce7398629371",
+        "promptId": "f7613f77-00b5-428f-a8cd-63c418638ead",
+        "version": 1
+      },
+      {
+        "ref": "prompt/0eb0db5aae9ed09de97d6838b0098f6888d62860ba96fba508cd68e9ddddc750",
+        "promptId": "a9a16fb8-0344-43c8-a615-cea29a96429c",
+        "version": 1
+      },
+      {
+        "ref": "prompt/d270ad66f4e3760cd89fd5f544bef2441116663fdcba74f65bbe6e70fb1ac5ea",
+        "promptId": "c44c86b8-83f0-4c16-953f-55a40d6b266a",
+        "version": 1
+      },
+      {
+        "ref": "prompt/23d73c60e0ad99eee1948ddb97b01adb72b76dac8fc78df5fa13424631d90791",
+        "promptId": "71f442d1-dea1-420d-b3ea-47af088c9564",
+        "version": 1
+      },
+      {
+        "ref": "prompt/fd84acfc4221c583053ed02136fd78772862425c90513f30bc8da706d7799146",
+        "promptId": "6646a1a7-da5f-474c-81c4-ce0fdcbda136",
+        "version": 1
+      },
+      {
+        "ref": "prompt/42b4e7c3b5efcac7b3ba350e0cbd53494a97af8501e9cb1601e2a7c7d0b6ad21",
+        "promptId": "bdbe987f-326d-4213-9f63-3a82e3978637",
+        "version": 1
+      },
+      {
+        "ref": "prompt/d891f703c6caf2c04d18e7250dd51556e10ba040c2978e4f83d6531ed1270ee3",
+        "promptId": "5248ec15-4ddb-46e9-ba13-2aa1b3a76bcf",
+        "version": 1
+      }
+    ]
+  },
+  "E03": {
+    "description": "One full sequential sample from saved v2 context 05. C1 is the N2 central representation; C2 expands it into a central/peripheral cluster. Isolated proposed parent replacements; no source-canvas acceptance. Same pinned context at every stage. gpt-6-astra/high.",
+    "conditions": [
+      {
+        "id": "baseline",
+        "name": "Baseline",
+        "description": "Explicit stage prompts; ASCII trees; no layout template or few-shot examples. gpt-6-astra/high."
+      }
+    ],
+    "comments": [],
+    "judgements": [],
+    "pinnedPrompts": [
+      {
+        "ref": "prompt/81fa23ab27ff6765f0b0e00b4b333ecd4d98a761054ff95b4f9c63310119e933",
+        "promptId": "97329428-5436-4dd5-a5f8-410beba01fc9",
+        "version": 2
+      },
+      {
+        "ref": "prompt/403ef42a05fe7161ea3fbf1f7835cc4dc277c0b3178d747252a43ff9a6f947b8",
+        "promptId": "26e340b0-da3a-4897-8d1f-ecd329f47698",
+        "version": 2
+      },
+      {
+        "ref": "prompt/79eaceef5d7b5957cea5eb8d95a454a04aa8591a594b3bf092fcefe0062f2dbf",
+        "promptId": "0ca16834-bf5e-4b6e-bdca-4ac7c62818c7",
+        "version": 2
+      }
+    ]
+  },
+  "E04": {
+    "description": "Baseline of the original four decision rules, using the seven ChangeSession v2 AgentContexts saved November 3, 2026. Three independent samples per case (21 total), gpt-6-sol/high. Output: the Proposed diagram changes ASCII tree only. Decision thresholds are unchanged; input access is adapted to pinned snapshots and the output contract is explicit. Deterministic syntax and strategy-count assessment is separate from generation; no architectural quality score or target strategy frequency.\n\nPhase 2 adds seven derived contexts and 21 planned outputs using revised visible strategy rules. It separates patch versus redraw decisions from existing versus new canvas decisions, judges cumulative changes per diagram, and removes the rule to exhaust [1a]/[1b]/[2]/[3] before redraw along with historical N-detail diagram plans. Both prompt and input changed, so phase comparisons describe observed outcomes rather than an isolated prompt effect.",
+    "conditions": [
+      {
+        "id": "original",
+        "name": "Original decision rules",
+        "description": "No prompt-strengthening or strategy-frequency target. Same gpt-6-sol/high settings for every sample."
+      },
+      {
+        "id": "revised-strategy",
+        "name": "Revised strategy and derived contexts",
+        "description": "Prompt variation from baseline v3 and freshly derived AgentContexts. Historical diagram assignments and preselected detail-diagram plans are superseded by visible instructions. Model and sampling match baseline."
+      },
+      {
+        "id": "revised-strategy-astra-high",
+        "name": "Revised strategy · astra high",
+        "description": "Reuses the Phase 2 prompt and contexts unchanged; gpt-6-astra at high effort with two samples per context."
+      },
+      {
+        "id": "explicit-fit-astra-high",
+        "name": "Explicit architectural fit · astra high",
+        "description": "Four approved prompt refinements; same inputs, model, effort, sample count and session delivery as Phase 3."
+      }
+    ],
+    "comments": [],
+    "judgements": [
+      {
+        "ref": "judgement/1535f471-fc13-48a1-a42e-e13b570e4e8b",
+        "title": "Baseline · Partial assessment (19/21 outputs; 2 generation failures excluded)",
+        "status": "finished",
+        "kind": "diagram-change-tree",
+        "assessment": {
+          "parser": "diagram-change-tree",
+          "version": 1,
+          "totals": {
+            "2": 25,
+            "3": 0,
+            "4": 0,
+            "1a": 79,
+            "1b": 59
+          },
+          "validOutputs": 16,
+          "outputsUsing3": 0,
+          "outputsUsing4": 0
+        }
+      },
+      {
+        "ref": "judgement/15111526-31b0-4d4f-87fe-1625fd3ab4ba",
+        "title": "Phase 2 · Partial assessment (17/21 outputs; 4 failed outputs excluded)",
+        "status": "finished",
+        "kind": "diagram-change-tree",
+        "assessment": {
+          "parser": "diagram-change-tree",
+          "version": 1,
+          "totals": {
+            "2": 37,
+            "3": 28,
+            "4": 56,
+            "1a": 73,
+            "1b": 115
+          },
+          "validOutputs": 16,
+          "outputsUsing3": 13,
+          "outputsUsing4": 15
+        }
+      },
+      {
+        "ref": "judgement/e23bab0c-c3f9-4330-88b1-5cf6a56f4a74",
+        "title": "Astra high · unchanged Phase 2 prompt · Phase 3 strategy selection and tree syntax",
+        "status": "finished",
+        "kind": "diagram-change-tree",
+        "assessment": {
+          "parser": "diagram-change-tree",
+          "version": 1,
+          "totals": {
+            "2": 52,
+            "3": 11,
+            "4": 64,
+            "1a": 151,
+            "1b": 169
+          },
+          "validOutputs": 14,
+          "outputsUsing3": 7,
+          "outputsUsing4": 14
+        }
+      },
+      {
+        "ref": "judgement/74eebaaa-37d8-4a5d-a9ed-cab84b8b8129",
+        "title": "Explicit architectural fit · astra high · Phase 4 strategy selection and tree syntax",
+        "status": "finished",
+        "kind": "diagram-change-tree",
+        "assessment": {
+          "parser": "diagram-change-tree",
+          "version": 1,
+          "totals": {
+            "2": 61,
+            "3": 2,
+            "4": 33,
+            "1a": 200,
+            "1b": 192
+          },
+          "validOutputs": 14,
+          "outputsUsing3": 2,
+          "outputsUsing4": 14
+        }
+      }
+    ],
+    "pinnedPrompts": [
+      {
+        "ref": "prompt/d014bea5cd94b2bc74e2b7a61c32ab74831342c5679bc1d817acb10271c40e0e",
+        "promptId": "8bff8fea-3f1e-4c54-bebe-e82a0adf2de8",
+        "version": 3,
+        "contentHash": "62189c9d300b8860d3e6dd691e7b310dbcf1604a666840af0b8150893f6613fd"
+      },
+      {
+        "ref": "prompt/2c6f365571a5c695177130cb20d4383bba62e77eaf69028609baa00030ae3f7f",
+        "promptId": "1619ce41-4040-4ac1-bd8d-2d474fd7a595",
+        "version": 1,
+        "contentHash": "78d4161c0aabbeee867b1308b7952b9a8a92b9b0a82ad19d12cfe6634b08c389"
+      },
+      {
+        "ref": "prompt/ea5cf07b7c8b3795182a6c72236ec00c3c8d774eba99de5ba5f7245323973e46",
+        "promptId": "6a9c0f27-0b23-422f-965d-cc8ca56212e3",
+        "version": 1,
+        "contentHash": "ecc877b8031ef726984b7567a07bb86dc396056e94a3fd918a9fe93c33017943"
+      }
+    ]
+  },
+  "E05": {
+    "description": "Split the standalone Mapping application architecture diagram (baseline 03f2168) into a connected canvas. Three independent alternatives from one pinned diagram, gpt-6-astra/high. Prepared for manual prompt review and approval before generation.",
+    "conditions": [
+      {
+        "id": "baseline",
+        "name": "Single-diagram decomposition",
+        "description": "Same prompt and seed for all three independent alternatives; no fixed layout template."
+      }
+    ],
+    "comments": [],
+    "judgements": [],
+    "pinnedPrompts": [
+      {
+        "ref": "prompt/b86c06cd90176eb16886fd09eafc832720dcadde103f9dc4125eb0159ebcea5f",
+        "promptId": "6842c979-55e4-459f-acd8-27e03df51df9",
+        "version": 5,
+        "contentHash": "fe1980b195b97ac2031fbb5a9212e04011de65bdb8a71deee76f1433891d1700"
+      }
+    ]
+  },
+  "E06": {
+    "description": "Ten independent Shopify canvas expansions from the saved group \"Shopify canvases - central diagram + corpus ranges - 2026-11-07\". One pinned AgentContext and one sample per subject (10 full canvases total), gpt-6-astra/high. Uses a visible Shopify-domain variation of 6842c979-55e4-459f-acd8-27e03df51df9 v5 from the existing Single diagram → canvas experiment: preserve its original 20-40% central reduction and peripheral expansion task; adapt section/evidence access and business-dimension interpretation. Each output is a complete connected central/peripheral canvas (2-20 diagrams within the inherited output contract). No fixed layout template or examples. Prepared for user review; generation must be explicitly approved before launch.",
+    "conditions": [
+      {
+        "id": "shopify-expansion",
+        "name": "Central reduction + supported peripheral expansion",
+        "description": "One shared pinned Shopify-domain prompt, one independent full canvas per input; no repeated alternatives."
+      },
+      {
+        "id": "shopify-navigation",
+        "name": "Company Map rooted navigation",
+        "description": "Linked canvas set; prompt 400a1ef8-d1ee-4cd9-812e-e8ebe6aa6123 v1. Nine existing canvases, one saved output; Buyer Network excluded."
+      }
+    ],
+    "comments": [],
+    "judgements": [],
+    "pinnedPrompts": [
+      {
+        "ref": "prompt/b4ab0889ec389d98cdbda6c0a726ad2bf53902c4deda419e8195db690887dab0",
+        "promptId": "68561489-721c-4ac0-b269-3b3f6f662a53",
+        "version": 2,
+        "contentHash": "efe386d4d455624177d876f4d05633e1e23588b1e745351c06bd5517e63f8e87"
+      },
+      {
+        "ref": "prompt/888643967d2e8e1a06f70528fb8de794158de4eef65e789c7bb6533ac54f556d",
+        "promptId": "400a1ef8-d1ee-4cd9-812e-e8ebe6aa6123",
+        "version": 1,
+        "contentHash": "bf1e3ce94bcae74a41cdd87c24a8886d664f0f083823a9ca749edba3a3570f9a"
+      },
+      {
+        "ref": "prompt/888643967d2e8e1a06f70528fb8de794158de4eef65e789c7bb6533ac54f556d",
+        "promptId": "attempt-be7b2cb0-59d7-40cb-bcea-b37753c8fb7a",
+        "version": 1,
+        "contentHash": "bf1e3ce94bcae74a41cdd87c24a8886d664f0f083823a9ca749edba3a3570f9a"
+      },
+      {
+        "ref": "prompt/888643967d2e8e1a06f70528fb8de794158de4eef65e789c7bb6533ac54f556d",
+        "promptId": "attempt-c7e8a14f-8e45-4335-9bff-0bcf7260b697",
+        "version": 1,
+        "contentHash": "bf1e3ce94bcae74a41cdd87c24a8886d664f0f083823a9ca749edba3a3570f9a"
+      },
+      {
+        "ref": "prompt/888643967d2e8e1a06f70528fb8de794158de4eef65e789c7bb6533ac54f556d",
+        "promptId": "attempt-02ed947e-7f9a-484c-8c05-c1425abe43c7",
+        "version": 1,
+        "contentHash": "bf1e3ce94bcae74a41cdd87c24a8886d664f0f083823a9ca749edba3a3570f9a"
+      }
+    ]
+  },
+  "E07": {
+    "description": "Same pinned range 03f2168deba364103c2450ca9b8168cd1fc9ddc5..81f05a2bf9efa2334985d2298dcbd7b044dc4c1e; full-sequence multi-commit batching, n=1, gpt-6-astra/high. Phase 1 plans upfront; Phase 2 executes 11 multi-commit batch(es) serially, reusing completed steps. Saved baseline geometry and connections preserved; all diagram hashes verified against the original experiment. Runner: finished.",
+    "conditions": [
+      {
+        "id": "condition",
+        "name": "Standard planning",
+        "description": "One sample per step; astra/high."
+      }
+    ],
+    "comments": [],
+    "judgements": [],
+    "pinnedPrompts": [
+      {
+        "ref": "prompt/49a872e3b62eb46533eb1c8f1a2f990754e5af5d7a576a4deb10fabfaeec2314",
+        "promptId": "6b12006b-3de1-4e03-8dda-3410cacad2e0",
+        "version": 1,
+        "contentHash": "c8c903f0534a1848d01cec5db55add98eb23b948b349d73fe31fc2a273054277"
+      },
+      {
+        "ref": "prompt/93d6e62919f290e3f479553e26a3ad5798be0d336f88bf802be4934e54fa852d",
+        "promptId": "6b12006b-3de1-4e03-8dda-3410cacad2e0",
+        "version": 2,
+        "contentHash": "6ec170b67ffe2dd644fefa8291c6d76c3da87869b81dd36f96e563bdf1a3b057"
+      }
+    ]
+  },
+  "E08": {
+    "description": "Same pinned range 03f2168deba364103c2450ca9b8168cd1fc9ddc5..81f05a2bf9efa2334985d2298dcbd7b044dc4c1e; full-sequence multi-commit batching, n=1, gpt-6-astra/high. Phase 1 plans upfront and emits fixed viewable scaffolds; Phase 2 executes 11 multi-commit batch(es) serially, reusing completed steps. Saved baseline geometry and connections preserved; all diagram hashes verified against the original experiment. Runner: failed.",
+    "conditions": [
+      {
+        "id": "condition",
+        "name": "Structure first",
+        "description": "One sample per step; astra/high."
+      }
+    ],
+    "comments": [],
+    "judgements": [],
+    "pinnedPrompts": [
+      {
+        "ref": "prompt/7a3fb0513f5fb99181cc35c6870d95b29f4162a990ffc7399cf89d027b1f4b5a",
+        "promptId": "d74122d6-8c6c-457a-9ea8-b956d989cd68",
+        "version": 1,
+        "contentHash": "58724a383175f37736e7a6863f2bff89dcc7c296ddda842e4e906a07553dcfd5"
+      },
+      {
+        "ref": "prompt/bd68b8c0ab7ba31686153fe63d5dec02397aa9a9d5ea788c17c5a981c70a2fb5",
+        "promptId": "d74122d6-8c6c-457a-9ea8-b956d989cd68",
+        "version": 2,
+        "contentHash": "aaebe75b44f3346b96f895f4c3a037509ab1658bab94d3ed08e61656f3df4338"
+      }
+    ]
+  },
+  "E09": {
+    "description": "Pinned working-tree source at HEAD 8ca143700ca4d2c870f1101b8cd4601ab68abd41; 1044 files. All generation, prompt authoring and judges: gpt-6-astra/high, n=1. Six initial variants; judge selects two for three rounds at each phase. Status: cancelled. Generation cancelled.",
+    "conditions": [
+      {
+        "id": "Prompt-authoring",
+        "name": "Author discovery variations",
+        "description": "Writes the two discovery prompt variations used by B and C."
+      },
+      {
+        "id": "A",
+        "name": "A · Original discovery",
+        "description": "Original user discovery prompt; selects architectural epicenters from the pinned codebase."
+      },
+      {
+        "id": "B",
+        "name": "B · Rewritten discovery",
+        "description": "Astra-authored discovery rewrite without an explicit 3+1 description."
+      },
+      {
+        "id": "C",
+        "name": "C · 3+1 discovery",
+        "description": "Astra-authored discovery rewrite including the verbatim 3+1 description."
+      },
+      {
+        "id": "A1",
+        "name": "A1 · Minimal tree prompt",
+        "description": "Discovery A: original. Tree prompt: minimal instruction."
+      },
+      {
+        "id": "A2",
+        "name": "A2 · 3+1 tree prompt",
+        "description": "Discovery A: original. Tree prompt: instruction + verbatim 3+1 model."
+      },
+      {
+        "id": "B1",
+        "name": "B1 · Minimal tree prompt",
+        "description": "Discovery B: rewritten. Tree prompt: minimal instruction."
+      },
+      {
+        "id": "B2",
+        "name": "B2 · 3+1 tree prompt",
+        "description": "Discovery B: rewritten. Tree prompt: instruction + verbatim 3+1 model."
+      },
+      {
+        "id": "C1",
+        "name": "C1 · Minimal tree prompt",
+        "description": "Discovery C: verbatim 3+1. Tree prompt: minimal instruction."
+      },
+      {
+        "id": "C2",
+        "name": "C2 · 3+1 tree prompt",
+        "description": "Discovery C: verbatim 3+1. Tree prompt: instruction + verbatim 3+1 model."
+      },
+      {
+        "id": "Selection-judge",
+        "name": "Select two variants",
+        "description": "Compares all six initial variants and chooses two for improvement rounds."
+      },
+      {
+        "id": "B2-improve-P1",
+        "name": "B2 · Improve Phase 1",
+        "description": "Independent feedback branch for B2; critiques Phase 1 and regenerates from that phase onward."
+      },
+      {
+        "id": "B2-improve-P2",
+        "name": "B2 · Improve Phase 2",
+        "description": "Independent feedback branch for B2; critiques Phase 2 and regenerates from that phase onward."
+      },
+      {
+        "id": "B2-improve-P3",
+        "name": "B2 · Improve Phase 3",
+        "description": "Independent feedback branch for B2; critiques Phase 3 and regenerates from that phase onward."
+      },
+      {
+        "id": "C1-improve-P1",
+        "name": "C1 · Improve Phase 1",
+        "description": "Independent feedback branch for C1; critiques Phase 1 and regenerates from that phase onward."
+      },
+      {
+        "id": "C1-improve-P2",
+        "name": "C1 · Improve Phase 2",
+        "description": "Independent feedback branch for C1; critiques Phase 2 and regenerates from that phase onward."
+      },
+      {
+        "id": "C1-improve-P3",
+        "name": "C1 · Improve Phase 3",
+        "description": "Independent feedback branch for C1; critiques Phase 3 and regenerates from that phase onward."
+      }
+    ],
+    "comments": [],
+    "judgements": [],
+    "pinnedPrompts": [
+      {
+        "ref": "prompt/d1ee8cea9aa9d750c2164a33ba67d0aec081c1915d2c560b823e37c7de6891fb",
+        "promptId": "541758c6-709a-423b-ad51-c99ba69c34bc",
+        "version": 1,
+        "contentHash": "24d6e5d62f0a94ea058a89649f24c911626deb144601d6c8cd6e14e40a9f3228"
+      },
+      {
+        "ref": "prompt/99a189ef6d7e070089cd289bfdc8a9de266df1772824804cedc983c2f6ab9dd2",
+        "promptId": "3c9c128b-ea9c-4a0c-afbd-6939c7b10e14",
+        "version": 1,
+        "contentHash": "ee15b6effe5cee01af5af2c3cf06bf0819b531fd9fe63f7e8e1e8fb179fd4896"
+      },
+      {
+        "ref": "prompt/b30d82f08ff93beddc7546949c1f3273fe2deacf0900a053ccfcc8bdc31354f8",
+        "promptId": "c8843494-9039-4eaf-ae06-a27d8e8b617d",
+        "version": 1,
+        "contentHash": "d86d47a31719379b3f3abab3b4c3e58d5e51bd06ce8861955a9834c7b2bfb3f7"
+      },
+      {
+        "ref": "prompt/2bd8b281aec3812647f58c0531ee4a183ede77d03cebadf22a908555e0efae26",
+        "promptId": "292d8763-2371-44c9-afd6-c4a58a0daf2b",
+        "version": 1,
+        "contentHash": "18d654832c5564986e20f2e2f1179f958232bfe165dbc1a0ff5d06c3a5b0204a"
+      },
+      {
+        "ref": "prompt/4ed4dd7546090f4b7bb84592fdb27de7a9fbfc0cfad4ca7f82ab1634f28fea28",
+        "promptId": "d4362791-e3dd-404b-a36a-c96ed08d177b",
+        "version": 1,
+        "contentHash": "8fcede4c354ffcae9897c46565bf194f8d906a7ca63028b1629677ad4b96c346"
+      },
+      {
+        "ref": "prompt/4ed4dd7546090f4b7bb84592fdb27de7a9fbfc0cfad4ca7f82ab1634f28fea28",
+        "promptId": "717ff3ac-0f3e-4c4c-a04b-f7a6f124b6f9",
+        "version": 1,
+        "contentHash": "8fcede4c354ffcae9897c46565bf194f8d906a7ca63028b1629677ad4b96c346"
+      },
+      {
+        "ref": "prompt/4ed4dd7546090f4b7bb84592fdb27de7a9fbfc0cfad4ca7f82ab1634f28fea28",
+        "promptId": "95284e2f-2145-4622-a01e-3d7d51f0c190",
+        "version": 1,
+        "contentHash": "8fcede4c354ffcae9897c46565bf194f8d906a7ca63028b1629677ad4b96c346"
+      },
+      {
+        "ref": "prompt/4ed4dd7546090f4b7bb84592fdb27de7a9fbfc0cfad4ca7f82ab1634f28fea28",
+        "promptId": "6c425cd7-e183-48eb-a041-9cbc918c38cb",
+        "version": 1,
+        "contentHash": "8fcede4c354ffcae9897c46565bf194f8d906a7ca63028b1629677ad4b96c346"
+      },
+      {
+        "ref": "prompt/4ed4dd7546090f4b7bb84592fdb27de7a9fbfc0cfad4ca7f82ab1634f28fea28",
+        "promptId": "16ee7225-55d2-414d-a0de-a12c0638baa9",
+        "version": 1,
+        "contentHash": "8fcede4c354ffcae9897c46565bf194f8d906a7ca63028b1629677ad4b96c346"
+      },
+      {
+        "ref": "prompt/4ed4dd7546090f4b7bb84592fdb27de7a9fbfc0cfad4ca7f82ab1634f28fea28",
+        "promptId": "089efbd4-18cf-44e4-add9-7063cac4caa3",
+        "version": 1,
+        "contentHash": "8fcede4c354ffcae9897c46565bf194f8d906a7ca63028b1629677ad4b96c346"
+      },
+      {
+        "ref": "prompt/4ed4dd7546090f4b7bb84592fdb27de7a9fbfc0cfad4ca7f82ab1634f28fea28",
+        "promptId": "1c37b716-0cc1-421f-a78f-ad9ea6a1f47f",
+        "version": 1,
+        "contentHash": "8fcede4c354ffcae9897c46565bf194f8d906a7ca63028b1629677ad4b96c346"
+      },
+      {
+        "ref": "prompt/4ed4dd7546090f4b7bb84592fdb27de7a9fbfc0cfad4ca7f82ab1634f28fea28",
+        "promptId": "8ce9d566-7684-4dd3-a2e2-aa955c646ad5",
+        "version": 1,
+        "contentHash": "8fcede4c354ffcae9897c46565bf194f8d906a7ca63028b1629677ad4b96c346"
+      },
+      {
+        "ref": "prompt/4ed4dd7546090f4b7bb84592fdb27de7a9fbfc0cfad4ca7f82ab1634f28fea28",
+        "promptId": "2a8e51f3-4bc0-4eb1-ad98-f5fcb2b83028",
+        "version": 1,
+        "contentHash": "8fcede4c354ffcae9897c46565bf194f8d906a7ca63028b1629677ad4b96c346"
+      },
+      {
+        "ref": "prompt/4ed4dd7546090f4b7bb84592fdb27de7a9fbfc0cfad4ca7f82ab1634f28fea28",
+        "promptId": "a72530d5-a5eb-4f15-a8f2-5353a4b1847d",
+        "version": 1,
+        "contentHash": "8fcede4c354ffcae9897c46565bf194f8d906a7ca63028b1629677ad4b96c346"
+      },
+      {
+        "ref": "prompt/4ed4dd7546090f4b7bb84592fdb27de7a9fbfc0cfad4ca7f82ab1634f28fea28",
+        "promptId": "7857935f-f78b-422b-a2c0-b6f1aa48f7ed",
+        "version": 1,
+        "contentHash": "8fcede4c354ffcae9897c46565bf194f8d906a7ca63028b1629677ad4b96c346"
+      },
+      {
+        "ref": "prompt/4ed4dd7546090f4b7bb84592fdb27de7a9fbfc0cfad4ca7f82ab1634f28fea28",
+        "promptId": "963f06cf-d694-4d9a-a717-7823a18d3f13",
+        "version": 1,
+        "contentHash": "8fcede4c354ffcae9897c46565bf194f8d906a7ca63028b1629677ad4b96c346"
+      },
+      {
+        "ref": "prompt/4ed4dd7546090f4b7bb84592fdb27de7a9fbfc0cfad4ca7f82ab1634f28fea28",
+        "promptId": "3ee49b55-d64b-4c3b-a9ca-06e3bef8b2ff",
+        "version": 1,
+        "contentHash": "8fcede4c354ffcae9897c46565bf194f8d906a7ca63028b1629677ad4b96c346"
+      },
+      {
+        "ref": "prompt/4ed4dd7546090f4b7bb84592fdb27de7a9fbfc0cfad4ca7f82ab1634f28fea28",
+        "promptId": "9ecd2238-c0bd-44ba-af05-da8740f502a4",
+        "version": 1,
+        "contentHash": "8fcede4c354ffcae9897c46565bf194f8d906a7ca63028b1629677ad4b96c346"
+      },
+      {
+        "ref": "prompt/4ed4dd7546090f4b7bb84592fdb27de7a9fbfc0cfad4ca7f82ab1634f28fea28",
+        "promptId": "04ef7281-df65-4ffc-a278-58b71f6d3f6c",
+        "version": 1,
+        "contentHash": "8fcede4c354ffcae9897c46565bf194f8d906a7ca63028b1629677ad4b96c346"
+      },
+      {
+        "ref": "prompt/4ed4dd7546090f4b7bb84592fdb27de7a9fbfc0cfad4ca7f82ab1634f28fea28",
+        "promptId": "e4ecd912-9e93-403e-a6b5-98c1b2bff5cd",
+        "version": 1,
+        "contentHash": "8fcede4c354ffcae9897c46565bf194f8d906a7ca63028b1629677ad4b96c346"
+      },
+      {
+        "ref": "prompt/4ed4dd7546090f4b7bb84592fdb27de7a9fbfc0cfad4ca7f82ab1634f28fea28",
+        "promptId": "8be38a6b-f2a9-4ab2-a077-b1060767162d",
+        "version": 1,
+        "contentHash": "8fcede4c354ffcae9897c46565bf194f8d906a7ca63028b1629677ad4b96c346"
+      },
+      {
+        "ref": "prompt/4ed4dd7546090f4b7bb84592fdb27de7a9fbfc0cfad4ca7f82ab1634f28fea28",
+        "promptId": "749c6ce4-d96c-42b5-ac0d-5c5e4d181ad3",
+        "version": 1,
+        "contentHash": "8fcede4c354ffcae9897c46565bf194f8d906a7ca63028b1629677ad4b96c346"
+      },
+      {
+        "ref": "prompt/4ed4dd7546090f4b7bb84592fdb27de7a9fbfc0cfad4ca7f82ab1634f28fea28",
+        "promptId": "8b60c7d3-d2ea-41e1-a7e9-bfda65c7c43c",
+        "version": 1,
+        "contentHash": "8fcede4c354ffcae9897c46565bf194f8d906a7ca63028b1629677ad4b96c346"
+      },
+      {
+        "ref": "prompt/4ed4dd7546090f4b7bb84592fdb27de7a9fbfc0cfad4ca7f82ab1634f28fea28",
+        "promptId": "3871d35d-afa1-4398-a064-b990b2b9099f",
+        "version": 1,
+        "contentHash": "8fcede4c354ffcae9897c46565bf194f8d906a7ca63028b1629677ad4b96c346"
+      },
+      {
+        "ref": "prompt/4ed4dd7546090f4b7bb84592fdb27de7a9fbfc0cfad4ca7f82ab1634f28fea28",
+        "promptId": "f46ce0da-89f0-45c8-aa74-88bf820576b4",
+        "version": 1,
+        "contentHash": "8fcede4c354ffcae9897c46565bf194f8d906a7ca63028b1629677ad4b96c346"
+      },
+      {
+        "ref": "prompt/4ed4dd7546090f4b7bb84592fdb27de7a9fbfc0cfad4ca7f82ab1634f28fea28",
+        "promptId": "d82d3407-7947-4316-a879-53be660288b0",
+        "version": 1,
+        "contentHash": "8fcede4c354ffcae9897c46565bf194f8d906a7ca63028b1629677ad4b96c346"
+      },
+      {
+        "ref": "prompt/4ed4dd7546090f4b7bb84592fdb27de7a9fbfc0cfad4ca7f82ab1634f28fea28",
+        "promptId": "f209d3ea-e02e-4ed3-a01d-e49bd56f47a8",
+        "version": 1,
+        "contentHash": "8fcede4c354ffcae9897c46565bf194f8d906a7ca63028b1629677ad4b96c346"
+      },
+      {
+        "ref": "prompt/4ed4dd7546090f4b7bb84592fdb27de7a9fbfc0cfad4ca7f82ab1634f28fea28",
+        "promptId": "ba4e9fd0-1686-4110-a389-ee6a085c2b04",
+        "version": 1,
+        "contentHash": "8fcede4c354ffcae9897c46565bf194f8d906a7ca63028b1629677ad4b96c346"
+      },
+      {
+        "ref": "prompt/4ed4dd7546090f4b7bb84592fdb27de7a9fbfc0cfad4ca7f82ab1634f28fea28",
+        "promptId": "747ca579-8f1a-4b40-a814-03bdaef998e5",
+        "version": 1,
+        "contentHash": "8fcede4c354ffcae9897c46565bf194f8d906a7ca63028b1629677ad4b96c346"
+      },
+      {
+        "ref": "prompt/4ed4dd7546090f4b7bb84592fdb27de7a9fbfc0cfad4ca7f82ab1634f28fea28",
+        "promptId": "5073254b-a3b1-4eb9-adf7-3d0cd092da6a",
+        "version": 1,
+        "contentHash": "8fcede4c354ffcae9897c46565bf194f8d906a7ca63028b1629677ad4b96c346"
+      },
+      {
+        "ref": "prompt/4ed4dd7546090f4b7bb84592fdb27de7a9fbfc0cfad4ca7f82ab1634f28fea28",
+        "promptId": "714fcf07-c26b-4d34-a39f-319d7fae57e2",
+        "version": 1,
+        "contentHash": "8fcede4c354ffcae9897c46565bf194f8d906a7ca63028b1629677ad4b96c346"
+      },
+      {
+        "ref": "prompt/4ed4dd7546090f4b7bb84592fdb27de7a9fbfc0cfad4ca7f82ab1634f28fea28",
+        "promptId": "fe8814c1-1a15-41c7-ad62-46e688346d71",
+        "version": 1,
+        "contentHash": "8fcede4c354ffcae9897c46565bf194f8d906a7ca63028b1629677ad4b96c346"
+      },
+      {
+        "ref": "prompt/4ed4dd7546090f4b7bb84592fdb27de7a9fbfc0cfad4ca7f82ab1634f28fea28",
+        "promptId": "a55a7264-84e2-4285-a4c3-9cd252ebd0d5",
+        "version": 1,
+        "contentHash": "8fcede4c354ffcae9897c46565bf194f8d906a7ca63028b1629677ad4b96c346"
+      },
+      {
+        "ref": "prompt/4ed4dd7546090f4b7bb84592fdb27de7a9fbfc0cfad4ca7f82ab1634f28fea28",
+        "promptId": "8ef679d7-e5d8-4372-a2fe-1b0950dd0297",
+        "version": 1,
+        "contentHash": "8fcede4c354ffcae9897c46565bf194f8d906a7ca63028b1629677ad4b96c346"
+      },
+      {
+        "ref": "prompt/4ed4dd7546090f4b7bb84592fdb27de7a9fbfc0cfad4ca7f82ab1634f28fea28",
+        "promptId": "808b3b1c-84b2-4b93-af74-01a8732ce202",
+        "version": 1,
+        "contentHash": "8fcede4c354ffcae9897c46565bf194f8d906a7ca63028b1629677ad4b96c346"
+      },
+      {
+        "ref": "prompt/4ed4dd7546090f4b7bb84592fdb27de7a9fbfc0cfad4ca7f82ab1634f28fea28",
+        "promptId": "154a6f08-db76-4e7e-a1ae-f90828399b21",
+        "version": 1,
+        "contentHash": "8fcede4c354ffcae9897c46565bf194f8d906a7ca63028b1629677ad4b96c346"
+      },
+      {
+        "ref": "prompt/4ed4dd7546090f4b7bb84592fdb27de7a9fbfc0cfad4ca7f82ab1634f28fea28",
+        "promptId": "9ba9fe0b-d7e4-4a4e-a900-1a0418360206",
+        "version": 1,
+        "contentHash": "8fcede4c354ffcae9897c46565bf194f8d906a7ca63028b1629677ad4b96c346"
+      },
+      {
+        "ref": "prompt/4ed4dd7546090f4b7bb84592fdb27de7a9fbfc0cfad4ca7f82ab1634f28fea28",
+        "promptId": "cedaa735-b1ee-4203-ac5c-4a8a8ceedb1e",
+        "version": 1,
+        "contentHash": "8fcede4c354ffcae9897c46565bf194f8d906a7ca63028b1629677ad4b96c346"
+      },
+      {
+        "ref": "prompt/4ed4dd7546090f4b7bb84592fdb27de7a9fbfc0cfad4ca7f82ab1634f28fea28",
+        "promptId": "b9873d7c-fd65-4b74-a98f-39021f417aeb",
+        "version": 1,
+        "contentHash": "8fcede4c354ffcae9897c46565bf194f8d906a7ca63028b1629677ad4b96c346"
+      },
+      {
+        "ref": "prompt/4ed4dd7546090f4b7bb84592fdb27de7a9fbfc0cfad4ca7f82ab1634f28fea28",
+        "promptId": "c25ea8d4-9734-4ee7-a069-e7804a57c977",
+        "version": 1,
+        "contentHash": "8fcede4c354ffcae9897c46565bf194f8d906a7ca63028b1629677ad4b96c346"
+      },
+      {
+        "ref": "prompt/4ed4dd7546090f4b7bb84592fdb27de7a9fbfc0cfad4ca7f82ab1634f28fea28",
+        "promptId": "b1ad9606-b08a-451d-ab79-8860ad269766",
+        "version": 1,
+        "contentHash": "8fcede4c354ffcae9897c46565bf194f8d906a7ca63028b1629677ad4b96c346"
+      },
+      {
+        "ref": "prompt/4ed4dd7546090f4b7bb84592fdb27de7a9fbfc0cfad4ca7f82ab1634f28fea28",
+        "promptId": "a8a117a0-7cf8-4ff4-a3c1-5347c5709970",
+        "version": 1,
+        "contentHash": "8fcede4c354ffcae9897c46565bf194f8d906a7ca63028b1629677ad4b96c346"
+      },
+      {
+        "ref": "prompt/4ed4dd7546090f4b7bb84592fdb27de7a9fbfc0cfad4ca7f82ab1634f28fea28",
+        "promptId": "22970b04-666d-4e54-a814-8c8b04ead937",
+        "version": 1,
+        "contentHash": "8fcede4c354ffcae9897c46565bf194f8d906a7ca63028b1629677ad4b96c346"
+      },
+      {
+        "ref": "prompt/6a50ed4df161c3facf9e69168f78976801f77a680ecc45508604ee254a282aee",
+        "promptId": "d51403f8-db75-4a59-a4d6-e74230a879c7",
+        "version": 1,
+        "contentHash": "45acf7c03fb4f868b67c32b9a0332b8b12f80d0db80b44458cd0fbb14fe88fdf"
+      },
+      {
+        "ref": "prompt/6a50ed4df161c3facf9e69168f78976801f77a680ecc45508604ee254a282aee",
+        "promptId": "9057b876-e722-44ac-afba-876cc55f2fc0",
+        "version": 1,
+        "contentHash": "45acf7c03fb4f868b67c32b9a0332b8b12f80d0db80b44458cd0fbb14fe88fdf"
+      },
+      {
+        "ref": "prompt/6a50ed4df161c3facf9e69168f78976801f77a680ecc45508604ee254a282aee",
+        "promptId": "6359dd39-b1fc-4488-adfb-6ed56d8bfb08",
+        "version": 1,
+        "contentHash": "45acf7c03fb4f868b67c32b9a0332b8b12f80d0db80b44458cd0fbb14fe88fdf"
+      },
+      {
+        "ref": "prompt/6a50ed4df161c3facf9e69168f78976801f77a680ecc45508604ee254a282aee",
+        "promptId": "3f7c1125-f659-49df-a006-e538d9445661",
+        "version": 1,
+        "contentHash": "45acf7c03fb4f868b67c32b9a0332b8b12f80d0db80b44458cd0fbb14fe88fdf"
+      },
+      {
+        "ref": "prompt/6a50ed4df161c3facf9e69168f78976801f77a680ecc45508604ee254a282aee",
+        "promptId": "73c9489d-e42a-46a2-aba6-413efb2a4207",
+        "version": 1,
+        "contentHash": "45acf7c03fb4f868b67c32b9a0332b8b12f80d0db80b44458cd0fbb14fe88fdf"
+      },
+      {
+        "ref": "prompt/6a50ed4df161c3facf9e69168f78976801f77a680ecc45508604ee254a282aee",
+        "promptId": "b8481e41-d4fa-4d99-af23-faa76d304071",
+        "version": 1,
+        "contentHash": "45acf7c03fb4f868b67c32b9a0332b8b12f80d0db80b44458cd0fbb14fe88fdf"
+      },
+      {
+        "ref": "prompt/6a50ed4df161c3facf9e69168f78976801f77a680ecc45508604ee254a282aee",
+        "promptId": "a91cbb84-84bb-4193-a245-bc1e36cdc983",
+        "version": 1,
+        "contentHash": "45acf7c03fb4f868b67c32b9a0332b8b12f80d0db80b44458cd0fbb14fe88fdf"
+      },
+      {
+        "ref": "prompt/6a50ed4df161c3facf9e69168f78976801f77a680ecc45508604ee254a282aee",
+        "promptId": "8254c0af-151d-43b7-a96f-c43385cbd78b",
+        "version": 1,
+        "contentHash": "45acf7c03fb4f868b67c32b9a0332b8b12f80d0db80b44458cd0fbb14fe88fdf"
+      },
+      {
+        "ref": "prompt/6a50ed4df161c3facf9e69168f78976801f77a680ecc45508604ee254a282aee",
+        "promptId": "fa139a33-96b1-493e-a945-4c54bd5a22be",
+        "version": 1,
+        "contentHash": "45acf7c03fb4f868b67c32b9a0332b8b12f80d0db80b44458cd0fbb14fe88fdf"
+      },
+      {
+        "ref": "prompt/6a50ed4df161c3facf9e69168f78976801f77a680ecc45508604ee254a282aee",
+        "promptId": "fc7462c1-38eb-418c-aaad-fa1bc638835d",
+        "version": 1,
+        "contentHash": "45acf7c03fb4f868b67c32b9a0332b8b12f80d0db80b44458cd0fbb14fe88fdf"
+      },
+      {
+        "ref": "prompt/6a50ed4df161c3facf9e69168f78976801f77a680ecc45508604ee254a282aee",
+        "promptId": "796a0e21-e8f1-4081-a4e8-cb4e4451bb07",
+        "version": 1,
+        "contentHash": "45acf7c03fb4f868b67c32b9a0332b8b12f80d0db80b44458cd0fbb14fe88fdf"
+      },
+      {
+        "ref": "prompt/6a50ed4df161c3facf9e69168f78976801f77a680ecc45508604ee254a282aee",
+        "promptId": "1250e6eb-17bf-4492-a69c-48da89139146",
+        "version": 1,
+        "contentHash": "45acf7c03fb4f868b67c32b9a0332b8b12f80d0db80b44458cd0fbb14fe88fdf"
+      },
+      {
+        "ref": "prompt/6a50ed4df161c3facf9e69168f78976801f77a680ecc45508604ee254a282aee",
+        "promptId": "4b08e75f-a65f-42f6-a087-0619a78b4d58",
+        "version": 1,
+        "contentHash": "45acf7c03fb4f868b67c32b9a0332b8b12f80d0db80b44458cd0fbb14fe88fdf"
+      },
+      {
+        "ref": "prompt/6a50ed4df161c3facf9e69168f78976801f77a680ecc45508604ee254a282aee",
+        "promptId": "c2b828b2-3f4a-486e-a430-65b80aaff005",
+        "version": 1,
+        "contentHash": "45acf7c03fb4f868b67c32b9a0332b8b12f80d0db80b44458cd0fbb14fe88fdf"
+      },
+      {
+        "ref": "prompt/6a50ed4df161c3facf9e69168f78976801f77a680ecc45508604ee254a282aee",
+        "promptId": "044d289e-1ea3-4f93-a7a1-9d11b55a4326",
+        "version": 1,
+        "contentHash": "45acf7c03fb4f868b67c32b9a0332b8b12f80d0db80b44458cd0fbb14fe88fdf"
+      },
+      {
+        "ref": "prompt/6a50ed4df161c3facf9e69168f78976801f77a680ecc45508604ee254a282aee",
+        "promptId": "e69d4da8-1d50-44c7-a03c-c2fd98df64ec",
+        "version": 1,
+        "contentHash": "45acf7c03fb4f868b67c32b9a0332b8b12f80d0db80b44458cd0fbb14fe88fdf"
+      },
+      {
+        "ref": "prompt/6a50ed4df161c3facf9e69168f78976801f77a680ecc45508604ee254a282aee",
+        "promptId": "bb270238-2854-4c6a-aeec-5d14a8e95efe",
+        "version": 1,
+        "contentHash": "45acf7c03fb4f868b67c32b9a0332b8b12f80d0db80b44458cd0fbb14fe88fdf"
+      },
+      {
+        "ref": "prompt/6a50ed4df161c3facf9e69168f78976801f77a680ecc45508604ee254a282aee",
+        "promptId": "e831bf93-4025-4d82-a68c-65feb3b9d19b",
+        "version": 1,
+        "contentHash": "45acf7c03fb4f868b67c32b9a0332b8b12f80d0db80b44458cd0fbb14fe88fdf"
+      },
+      {
+        "ref": "prompt/6a50ed4df161c3facf9e69168f78976801f77a680ecc45508604ee254a282aee",
+        "promptId": "fe8558c6-6bcf-485a-a86f-a4dc5bc1410d",
+        "version": 1,
+        "contentHash": "45acf7c03fb4f868b67c32b9a0332b8b12f80d0db80b44458cd0fbb14fe88fdf"
+      },
+      {
+        "ref": "prompt/6a50ed4df161c3facf9e69168f78976801f77a680ecc45508604ee254a282aee",
+        "promptId": "a8e95db0-643f-4189-a05e-b27ce62d053d",
+        "version": 1,
+        "contentHash": "45acf7c03fb4f868b67c32b9a0332b8b12f80d0db80b44458cd0fbb14fe88fdf"
+      },
+      {
+        "ref": "prompt/6a50ed4df161c3facf9e69168f78976801f77a680ecc45508604ee254a282aee",
+        "promptId": "152d621b-cf34-4ab3-a476-cc693e50211f",
+        "version": 1,
+        "contentHash": "45acf7c03fb4f868b67c32b9a0332b8b12f80d0db80b44458cd0fbb14fe88fdf"
+      },
+      {
+        "ref": "prompt/6a50ed4df161c3facf9e69168f78976801f77a680ecc45508604ee254a282aee",
+        "promptId": "287ba388-c27f-4153-a98c-fc43bf18599c",
+        "version": 1,
+        "contentHash": "45acf7c03fb4f868b67c32b9a0332b8b12f80d0db80b44458cd0fbb14fe88fdf"
+      },
+      {
+        "ref": "prompt/6a50ed4df161c3facf9e69168f78976801f77a680ecc45508604ee254a282aee",
+        "promptId": "ed52daae-835f-44ff-ada5-095fbff43379",
+        "version": 1,
+        "contentHash": "45acf7c03fb4f868b67c32b9a0332b8b12f80d0db80b44458cd0fbb14fe88fdf"
+      },
+      {
+        "ref": "prompt/6a50ed4df161c3facf9e69168f78976801f77a680ecc45508604ee254a282aee",
+        "promptId": "2f6e583d-fad1-4329-a34c-29f38b09790c",
+        "version": 1,
+        "contentHash": "45acf7c03fb4f868b67c32b9a0332b8b12f80d0db80b44458cd0fbb14fe88fdf"
+      },
+      {
+        "ref": "prompt/6a50ed4df161c3facf9e69168f78976801f77a680ecc45508604ee254a282aee",
+        "promptId": "4b521f32-bcd2-4d5c-ac4a-7985476dfb01",
+        "version": 1,
+        "contentHash": "45acf7c03fb4f868b67c32b9a0332b8b12f80d0db80b44458cd0fbb14fe88fdf"
+      },
+      {
+        "ref": "prompt/6a50ed4df161c3facf9e69168f78976801f77a680ecc45508604ee254a282aee",
+        "promptId": "1d70c687-b041-4cd5-aeef-d96c73ff4a7f",
+        "version": 1,
+        "contentHash": "45acf7c03fb4f868b67c32b9a0332b8b12f80d0db80b44458cd0fbb14fe88fdf"
+      },
+      {
+        "ref": "prompt/6a50ed4df161c3facf9e69168f78976801f77a680ecc45508604ee254a282aee",
+        "promptId": "3bf742f7-ab10-4fa7-a072-d7cbcd28c451",
+        "version": 1,
+        "contentHash": "45acf7c03fb4f868b67c32b9a0332b8b12f80d0db80b44458cd0fbb14fe88fdf"
+      },
+      {
+        "ref": "prompt/6a50ed4df161c3facf9e69168f78976801f77a680ecc45508604ee254a282aee",
+        "promptId": "53c79998-f2f2-4d84-aa0a-4b939acbc3de",
+        "version": 1,
+        "contentHash": "45acf7c03fb4f868b67c32b9a0332b8b12f80d0db80b44458cd0fbb14fe88fdf"
+      },
+      {
+        "ref": "prompt/6a50ed4df161c3facf9e69168f78976801f77a680ecc45508604ee254a282aee",
+        "promptId": "1025c15b-08e0-47d3-ad7e-e97057f173a3",
+        "version": 1,
+        "contentHash": "45acf7c03fb4f868b67c32b9a0332b8b12f80d0db80b44458cd0fbb14fe88fdf"
+      },
+      {
+        "ref": "prompt/6a50ed4df161c3facf9e69168f78976801f77a680ecc45508604ee254a282aee",
+        "promptId": "00a685e1-a196-4ca8-a4ef-4367a6599b6c",
+        "version": 1,
+        "contentHash": "45acf7c03fb4f868b67c32b9a0332b8b12f80d0db80b44458cd0fbb14fe88fdf"
+      },
+      {
+        "ref": "prompt/6a50ed4df161c3facf9e69168f78976801f77a680ecc45508604ee254a282aee",
+        "promptId": "4e0b1615-7995-4fd0-a589-fa39bae3fa29",
+        "version": 1,
+        "contentHash": "45acf7c03fb4f868b67c32b9a0332b8b12f80d0db80b44458cd0fbb14fe88fdf"
+      },
+      {
+        "ref": "prompt/6a50ed4df161c3facf9e69168f78976801f77a680ecc45508604ee254a282aee",
+        "promptId": "75c6111e-874a-4ec2-ac2f-a5c544ffa8f1",
+        "version": 1,
+        "contentHash": "45acf7c03fb4f868b67c32b9a0332b8b12f80d0db80b44458cd0fbb14fe88fdf"
+      },
+      {
+        "ref": "prompt/6a50ed4df161c3facf9e69168f78976801f77a680ecc45508604ee254a282aee",
+        "promptId": "b1912131-70f3-4b2b-aab6-1f10ee20ecf7",
+        "version": 1,
+        "contentHash": "45acf7c03fb4f868b67c32b9a0332b8b12f80d0db80b44458cd0fbb14fe88fdf"
+      },
+      {
+        "ref": "prompt/6a50ed4df161c3facf9e69168f78976801f77a680ecc45508604ee254a282aee",
+        "promptId": "fab8487f-b22d-4145-a17a-9941667a1e62",
+        "version": 1,
+        "contentHash": "45acf7c03fb4f868b67c32b9a0332b8b12f80d0db80b44458cd0fbb14fe88fdf"
+      },
+      {
+        "ref": "prompt/6a50ed4df161c3facf9e69168f78976801f77a680ecc45508604ee254a282aee",
+        "promptId": "68b29021-d6b9-402c-a903-a4c2f8bc6165",
+        "version": 1,
+        "contentHash": "45acf7c03fb4f868b67c32b9a0332b8b12f80d0db80b44458cd0fbb14fe88fdf"
+      },
+      {
+        "ref": "prompt/6a50ed4df161c3facf9e69168f78976801f77a680ecc45508604ee254a282aee",
+        "promptId": "b5a12413-2761-4096-a5a1-b5359ab60cf2",
+        "version": 1,
+        "contentHash": "45acf7c03fb4f868b67c32b9a0332b8b12f80d0db80b44458cd0fbb14fe88fdf"
+      },
+      {
+        "ref": "prompt/6a50ed4df161c3facf9e69168f78976801f77a680ecc45508604ee254a282aee",
+        "promptId": "79fb5b23-e9b9-4fbb-a60a-665a24672515",
+        "version": 1,
+        "contentHash": "45acf7c03fb4f868b67c32b9a0332b8b12f80d0db80b44458cd0fbb14fe88fdf"
+      },
+      {
+        "ref": "prompt/6a50ed4df161c3facf9e69168f78976801f77a680ecc45508604ee254a282aee",
+        "promptId": "728725bd-cc79-41ab-ab1b-56dac645e88f",
+        "version": 1,
+        "contentHash": "45acf7c03fb4f868b67c32b9a0332b8b12f80d0db80b44458cd0fbb14fe88fdf"
+      },
+      {
+        "ref": "prompt/6a50ed4df161c3facf9e69168f78976801f77a680ecc45508604ee254a282aee",
+        "promptId": "cd3a5404-2ff4-4dad-a831-bfffed358a27",
+        "version": 1,
+        "contentHash": "45acf7c03fb4f868b67c32b9a0332b8b12f80d0db80b44458cd0fbb14fe88fdf"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "3b4087be-7511-4db3-a236-9018a6f8f3f4",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "2a2def51-5393-4dac-a46c-de4ef2ac5e33",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "be23d068-3713-4a62-a5bc-2cdb9b7c05df",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "79960d27-72dc-4e1d-a669-fd7ed2bd2e58",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "c3c9b710-101d-4606-a14c-d2e31ea49dd8",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "b32715cd-f33a-49a9-a8c5-772e44ca418c",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "c531d4dd-343c-4263-a087-f55ace3d7337",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "9cb926ef-ab15-4b74-ab1d-fae15687de19",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "d347d584-07f9-4778-ad74-04f34b96b974",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "308b12ae-8113-48a0-a245-a59b7c0c9c40",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "f6fe8cdc-37b7-4093-a39a-7ec2891885f2",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "a2b0437e-ecfb-4de5-a6ee-25926195e2a0",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "411d0b6d-24cd-4243-aecf-41c7eb03be97",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "e78ba8e6-c8e4-41ea-a7a4-cf10334e6f5b",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "ad9d2c14-bf20-4508-ae59-2e148aa92e43",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "e23fecec-c582-4f5f-a64a-2c7b55558b4b",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "1790aedf-acbb-4ef3-aad8-bea9b0227bff",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "5c1392c5-f1cf-4e1c-a522-86dc7b465ba2",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "3518356a-7bba-499b-a0fc-5905a6e9a510",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "e05cb447-1ba8-44d5-aea3-c7691d9e29c1",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "8e48edb4-a760-4c12-acbb-aac173a32e43",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "f93423fa-6906-4fc1-a187-63c77586b757",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "e516b7ef-ae1e-4679-aab4-ed08e7ba2106",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "09fb14ba-bf50-4bec-ab6f-adbb8524715c",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "bb430f93-6de0-4757-a40b-be79fcf6abec",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "42fa77ac-da79-4c2c-adf3-278c9358ca18",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "c8da9103-c9f1-4e0c-a636-f0989aa4c2b0",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "0cb1531b-532b-4877-afdc-0eec52510cc4",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "07caa0b9-dcee-4785-aaa5-f3f749088f99",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "b54a37e0-6720-4a9f-a529-95051d93388c",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "f444d5c0-b06b-49e4-a658-0a3ab9c6873d",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "8838216c-a2c1-4466-a6b5-852fd3c7e0af",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "edc286eb-8022-4c9a-a088-5f1a32f0098f",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "398e0acf-a22d-4216-ac94-c946be8d3915",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "109eb9e3-e667-44b4-aeb0-9da0826251de",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "28d21fef-c143-4eb5-ae1b-8c14f06d8018",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "6762d74c-e0f1-4854-a748-246fa5382cf9",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "b7c20211-e7ad-4db1-ac09-8096602d6815",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "ac9ba2ef-68f8-4786-aa45-20ca4ef4c240",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "d97ed3ea-9983-4375-a54b-67775a876148",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "e9aafa48-7cee-4afb-afa5-61bf1d6bf362",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "1090b6d0-9e62-417d-a6a0-d4b97fd6fec5",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "67818178-a75b-49be-a4ab-8be924813658",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "da0a2f03-a601-46e8-aedb-5c09b48d4681",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "59cc0913-711b-489a-a72f-ad0a92e45245",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "81231b00-56cf-45f9-afe9-9c3bd27291f3",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "a4b9ae08-5a01-4de7-a452-85c881bfb42c",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "ef2eb058-5d37-4d57-a0c0-70c2ebdcfb1d",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "b4338a95-d035-40ab-aab0-290828605e24",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "f6d98521-3562-4c9f-ab79-09eecf6ff2e3",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "ccb526d9-85b0-459f-af85-fee1d47da0c2",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "67bc9f7b-28dc-442e-a5cf-5ce72ca67cbe",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "bc7479b9-b1c2-4457-a853-f248a0283fb3",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "807be170-8842-4025-a6fd-ab86062e88b4",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "543f83b9-03f7-4755-a8a3-ae3945936589",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "60ea553d-e1a8-4508-a24d-871429b5c0cc",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "d9a96b17-2555-4881-a165-0084c6e6109d",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "4d1d6a64-4feb-4a9d-a984-8f3524dbbba8",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "9949fb01-9414-40f8-ae9c-f57c9ee712ec",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "770c7380-79b8-42da-af93-f3839dc8c358",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "1a7bb37a-bb25-4218-abd2-4d4b2c74ef0c",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "8394662a-cfd8-48f4-aae8-cb5015b54e70",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "7078a8ca-fffc-4cab-ab46-6ab65a6513eb",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "eac12e96-862f-47d3-a040-eaf14bd60646",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "3c638e83-7cb6-408a-a29a-a4a637cd3b19",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "10d2dcc5-0d2f-4e05-a98b-382bacb1c21e",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "34dbc4f1-559b-4a9c-a993-a5565765d747",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "44d97040-aec4-48a7-a622-311495ce1e30",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "b920d83b-9188-4efa-a8fb-2af3bead05dd",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "79ed34b8-4d59-4793-a172-3af9a8da3ca8",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "25a7b0e9-5d76-4bc2-a67b-e77779f7eab1",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "f44815af-e19e-4d1f-a466-beacc5269673",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "508f5de1-c5e7-49be-ac06-eddcb3051caa",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "533512ef-b1c4-4e7c-a8d1-6f6c17facc73",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "22a1a859-4ef1-4441-a5dd-a94b7f757f16",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "62b8cae4-51bb-4539-aa2e-d81d16f7a175",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "c117945f-62a5-44d5-abad-0b4aa55a3fdf",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/d0ba3dd0cff10ca39749fb97e8ed3c23253853554118a575e639bba74128fa3a",
+        "promptId": "b740a73b-4d99-4db0-abd9-983797021b86",
+        "version": 1,
+        "contentHash": "c2c5fa9a6d57d6bdba7a33bc7db941c2c382aa2bcb750332d156c76b6db19669"
+      },
+      {
+        "ref": "prompt/9f0329be5827e66c2c6adaea180ca93e3eb5f3cd3300044b1598373227022f0b",
+        "promptId": "0bd90f1e-6a8b-4cda-ac7d-02473eb3f3bf",
+        "version": 1,
+        "contentHash": "e9c5fab12bae5aa28d0e07a566d48ae95802f79f04f1544808d60f66abdf16ed"
+      },
+      {
+        "ref": "prompt/abc8f6a9daf3e32748e9d1eb5b037eed83eef805310dce5147c15be9d740dcbd",
+        "promptId": "608ec2c4-c0ca-448e-afe1-54230b749172",
+        "version": 1,
+        "contentHash": "d8c6e765d3aa2b317b513993aeb347550b6eb291a0402ac9829a57ce0f86b9bd"
+      },
+      {
+        "ref": "prompt/abc8f6a9daf3e32748e9d1eb5b037eed83eef805310dce5147c15be9d740dcbd",
+        "promptId": "386131f0-3c7a-463e-a035-1fa086943b1a",
+        "version": 1,
+        "contentHash": "d8c6e765d3aa2b317b513993aeb347550b6eb291a0402ac9829a57ce0f86b9bd"
+      },
+      {
+        "ref": "prompt/efc27212781c72ebe181a19da059afb28281c2df1df023bb263164b5432896f3",
+        "promptId": "10f7f4e2-6ac2-4059-a7fe-92ceba5101cb",
+        "version": 1,
+        "contentHash": "622f3275feb328b5650b64ceb0bb0f208fec62aba2d50c4a90410f22b9b7d9ac"
+      },
+      {
+        "ref": "prompt/efc27212781c72ebe181a19da059afb28281c2df1df023bb263164b5432896f3",
+        "promptId": "b0e46ecd-621e-408c-ab98-c97ac33c77a0",
+        "version": 1,
+        "contentHash": "622f3275feb328b5650b64ceb0bb0f208fec62aba2d50c4a90410f22b9b7d9ac"
+      },
+      {
+        "ref": "prompt/8934a74f143662cfcdab37c02eeec9ab97b2f463aa9f4b2dbbf939c1515ab9f1",
+        "promptId": "3f91f714-23b3-49d5-ae5b-a73cfaac0e76",
+        "version": 1,
+        "contentHash": "a10a1f46887c3b73910eefcf7ac278a373857c34aadb8f037090cfeb5f71a3fa"
+      },
+      {
+        "ref": "prompt/8934a74f143662cfcdab37c02eeec9ab97b2f463aa9f4b2dbbf939c1515ab9f1",
+        "promptId": "5ceffa20-d9d1-4ff3-adf4-0f5a3f0b67d6",
+        "version": 1,
+        "contentHash": "a10a1f46887c3b73910eefcf7ac278a373857c34aadb8f037090cfeb5f71a3fa"
+      },
+      {
+        "ref": "prompt/3b34d4c3e82ee43d5748bcec48db36e66a0c441f405f97bad562ed90a93b5791",
+        "promptId": "45d8c006-5ae7-4888-a871-a1185cd7ea12",
+        "version": 1,
+        "contentHash": "f72749e1d52f8a119a07451ca356e47097f86ade49b2a566dac910ebadf099bf"
+      },
+      {
+        "ref": "prompt/ee01e232507baf891bf111ca7d22c05351c416993dfd61a7beca9b4ba49c27bb",
+        "promptId": "48436382-6f38-43d6-a0aa-8c5e542b139e",
+        "version": 1,
+        "contentHash": "1da553dd1219ae96174f666198b6ed29a5e734518570c100c11744dc84554d86"
+      },
+      {
+        "ref": "prompt/62a0c308523c5ba8d6e40321fc2cbe5b4888e1a82f9512f8ef71490c60a523d5",
+        "promptId": "9371c983-01c5-4f11-a1ab-35910cf52047",
+        "version": 1,
+        "contentHash": "7230d707333056402a4518ed9b689921a228bf59473b29aed51f4b7e76386580"
+      },
+      {
+        "ref": "prompt/62a0c308523c5ba8d6e40321fc2cbe5b4888e1a82f9512f8ef71490c60a523d5",
+        "promptId": "fd91588a-de28-44f0-a981-b9f163f4b5e7",
+        "version": 1,
+        "contentHash": "7230d707333056402a4518ed9b689921a228bf59473b29aed51f4b7e76386580"
+      },
+      {
+        "ref": "prompt/62a0c308523c5ba8d6e40321fc2cbe5b4888e1a82f9512f8ef71490c60a523d5",
+        "promptId": "ccc7f1e4-1a12-4dab-a82d-8a47757205d1",
+        "version": 1,
+        "contentHash": "7230d707333056402a4518ed9b689921a228bf59473b29aed51f4b7e76386580"
+      },
+      {
+        "ref": "prompt/62a0c308523c5ba8d6e40321fc2cbe5b4888e1a82f9512f8ef71490c60a523d5",
+        "promptId": "a4d97f14-62ab-4aa5-a8e5-66625ec8f443",
+        "version": 1,
+        "contentHash": "7230d707333056402a4518ed9b689921a228bf59473b29aed51f4b7e76386580"
+      },
+      {
+        "ref": "prompt/62a0c308523c5ba8d6e40321fc2cbe5b4888e1a82f9512f8ef71490c60a523d5",
+        "promptId": "4497500c-177c-41bd-afc3-3613b942008c",
+        "version": 1,
+        "contentHash": "7230d707333056402a4518ed9b689921a228bf59473b29aed51f4b7e76386580"
+      },
+      {
+        "ref": "prompt/62a0c308523c5ba8d6e40321fc2cbe5b4888e1a82f9512f8ef71490c60a523d5",
+        "promptId": "f6c6ce7e-39c3-4fb1-a505-9720937773be",
+        "version": 1,
+        "contentHash": "7230d707333056402a4518ed9b689921a228bf59473b29aed51f4b7e76386580"
+      },
+      {
+        "ref": "prompt/62a0c308523c5ba8d6e40321fc2cbe5b4888e1a82f9512f8ef71490c60a523d5",
+        "promptId": "70ec6808-ae53-4ab8-aedc-765dc9a44eea",
+        "version": 1,
+        "contentHash": "7230d707333056402a4518ed9b689921a228bf59473b29aed51f4b7e76386580"
+      },
+      {
+        "ref": "prompt/62a0c308523c5ba8d6e40321fc2cbe5b4888e1a82f9512f8ef71490c60a523d5",
+        "promptId": "71b9771d-b014-400c-a5c1-5d09c880e424",
+        "version": 1,
+        "contentHash": "7230d707333056402a4518ed9b689921a228bf59473b29aed51f4b7e76386580"
+      },
+      {
+        "ref": "prompt/62a0c308523c5ba8d6e40321fc2cbe5b4888e1a82f9512f8ef71490c60a523d5",
+        "promptId": "32d0d971-63e7-4740-a8f2-97a322ebd76d",
+        "version": 1,
+        "contentHash": "7230d707333056402a4518ed9b689921a228bf59473b29aed51f4b7e76386580"
+      },
+      {
+        "ref": "prompt/62a0c308523c5ba8d6e40321fc2cbe5b4888e1a82f9512f8ef71490c60a523d5",
+        "promptId": "ef56fc69-aaf8-44b8-afa4-f12f4a3cd86a",
+        "version": 1,
+        "contentHash": "7230d707333056402a4518ed9b689921a228bf59473b29aed51f4b7e76386580"
+      },
+      {
+        "ref": "prompt/62a0c308523c5ba8d6e40321fc2cbe5b4888e1a82f9512f8ef71490c60a523d5",
+        "promptId": "df693319-864e-4aed-a2c6-cd52b75fdd1e",
+        "version": 1,
+        "contentHash": "7230d707333056402a4518ed9b689921a228bf59473b29aed51f4b7e76386580"
+      },
+      {
+        "ref": "prompt/62a0c308523c5ba8d6e40321fc2cbe5b4888e1a82f9512f8ef71490c60a523d5",
+        "promptId": "08baf2a1-e84a-47f9-aa3b-3dd453a95007",
+        "version": 1,
+        "contentHash": "7230d707333056402a4518ed9b689921a228bf59473b29aed51f4b7e76386580"
+      },
+      {
+        "ref": "prompt/62a0c308523c5ba8d6e40321fc2cbe5b4888e1a82f9512f8ef71490c60a523d5",
+        "promptId": "67ae969a-93fd-4108-ab31-e62d7a321a18",
+        "version": 1,
+        "contentHash": "7230d707333056402a4518ed9b689921a228bf59473b29aed51f4b7e76386580"
+      },
+      {
+        "ref": "prompt/af4258f5e01092ca432dd383256f690a6e5decc46dc4087297c379b0fbfc14b4",
+        "promptId": "cdc5cb12-b088-44da-ae90-d9f5c82f1dad",
+        "version": 1,
+        "contentHash": "a4d5f6639eb57d5a70410335222e2449e94f54fbc5d7fc09f4b64725fb382233"
+      },
+      {
+        "ref": "prompt/af4258f5e01092ca432dd383256f690a6e5decc46dc4087297c379b0fbfc14b4",
+        "promptId": "da948d1c-2937-42b1-aa14-fa240833bc28",
+        "version": 1,
+        "contentHash": "a4d5f6639eb57d5a70410335222e2449e94f54fbc5d7fc09f4b64725fb382233"
+      },
+      {
+        "ref": "prompt/af4258f5e01092ca432dd383256f690a6e5decc46dc4087297c379b0fbfc14b4",
+        "promptId": "bd8d8b5d-0630-4e86-a63b-dd5323cff23c",
+        "version": 1,
+        "contentHash": "a4d5f6639eb57d5a70410335222e2449e94f54fbc5d7fc09f4b64725fb382233"
+      },
+      {
+        "ref": "prompt/af4258f5e01092ca432dd383256f690a6e5decc46dc4087297c379b0fbfc14b4",
+        "promptId": "893fe54c-9d9e-4b5b-a4bc-ee1b5a5f952c",
+        "version": 1,
+        "contentHash": "a4d5f6639eb57d5a70410335222e2449e94f54fbc5d7fc09f4b64725fb382233"
+      },
+      {
+        "ref": "prompt/af4258f5e01092ca432dd383256f690a6e5decc46dc4087297c379b0fbfc14b4",
+        "promptId": "def84468-19cd-4c76-a1e6-76bfbc048536",
+        "version": 1,
+        "contentHash": "a4d5f6639eb57d5a70410335222e2449e94f54fbc5d7fc09f4b64725fb382233"
+      },
+      {
+        "ref": "prompt/af4258f5e01092ca432dd383256f690a6e5decc46dc4087297c379b0fbfc14b4",
+        "promptId": "d9e835a0-92bf-4b1a-a3ed-27524cdbb0f7",
+        "version": 1,
+        "contentHash": "a4d5f6639eb57d5a70410335222e2449e94f54fbc5d7fc09f4b64725fb382233"
+      },
+      {
+        "ref": "prompt/af4258f5e01092ca432dd383256f690a6e5decc46dc4087297c379b0fbfc14b4",
+        "promptId": "296246b1-7ee4-4ba3-aeeb-6c9f86c97e37",
+        "version": 1,
+        "contentHash": "a4d5f6639eb57d5a70410335222e2449e94f54fbc5d7fc09f4b64725fb382233"
+      },
+      {
+        "ref": "prompt/af4258f5e01092ca432dd383256f690a6e5decc46dc4087297c379b0fbfc14b4",
+        "promptId": "0371af7e-e88b-42e5-a941-2b26e3bab12e",
+        "version": 1,
+        "contentHash": "a4d5f6639eb57d5a70410335222e2449e94f54fbc5d7fc09f4b64725fb382233"
+      },
+      {
+        "ref": "prompt/af4258f5e01092ca432dd383256f690a6e5decc46dc4087297c379b0fbfc14b4",
+        "promptId": "211f9275-66d7-47e8-ab9a-647e5c4aab33",
+        "version": 1,
+        "contentHash": "a4d5f6639eb57d5a70410335222e2449e94f54fbc5d7fc09f4b64725fb382233"
+      },
+      {
+        "ref": "prompt/af4258f5e01092ca432dd383256f690a6e5decc46dc4087297c379b0fbfc14b4",
+        "promptId": "5729250f-be7c-40f8-ab2a-ac60bf3f3172",
+        "version": 1,
+        "contentHash": "a4d5f6639eb57d5a70410335222e2449e94f54fbc5d7fc09f4b64725fb382233"
+      },
+      {
+        "ref": "prompt/af4258f5e01092ca432dd383256f690a6e5decc46dc4087297c379b0fbfc14b4",
+        "promptId": "568f95cb-0288-4b22-a1d3-ac0b70467fec",
+        "version": 1,
+        "contentHash": "a4d5f6639eb57d5a70410335222e2449e94f54fbc5d7fc09f4b64725fb382233"
+      },
+      {
+        "ref": "prompt/af4258f5e01092ca432dd383256f690a6e5decc46dc4087297c379b0fbfc14b4",
+        "promptId": "ab9419b4-4e0a-4bd6-a22d-0925122d52e2",
+        "version": 1,
+        "contentHash": "a4d5f6639eb57d5a70410335222e2449e94f54fbc5d7fc09f4b64725fb382233"
+      },
+      {
+        "ref": "prompt/af4258f5e01092ca432dd383256f690a6e5decc46dc4087297c379b0fbfc14b4",
+        "promptId": "9452d32c-b2fa-459d-adf8-29ddb8e93db8",
+        "version": 1,
+        "contentHash": "a4d5f6639eb57d5a70410335222e2449e94f54fbc5d7fc09f4b64725fb382233"
+      },
+      {
+        "ref": "prompt/efbbc3b3f9b07f9cf3cfa8d64c785a906853ea13d4cfb9e277a2641464f1bcbc",
+        "promptId": "cdbba3d1-00cc-4741-a19c-e4e893c351c6",
+        "version": 1,
+        "contentHash": "6769a67b5ecc9dfacf4d7db083994aab1d518e46fc2bfa2de1ce5838a912ad38"
+      },
+      {
+        "ref": "prompt/efbbc3b3f9b07f9cf3cfa8d64c785a906853ea13d4cfb9e277a2641464f1bcbc",
+        "promptId": "26306975-cba2-434a-ae3c-03df384bea0d",
+        "version": 1,
+        "contentHash": "6769a67b5ecc9dfacf4d7db083994aab1d518e46fc2bfa2de1ce5838a912ad38"
+      },
+      {
+        "ref": "prompt/efbbc3b3f9b07f9cf3cfa8d64c785a906853ea13d4cfb9e277a2641464f1bcbc",
+        "promptId": "b5a155da-89f7-4739-ab72-4a01994ef425",
+        "version": 1,
+        "contentHash": "6769a67b5ecc9dfacf4d7db083994aab1d518e46fc2bfa2de1ce5838a912ad38"
+      },
+      {
+        "ref": "prompt/efbbc3b3f9b07f9cf3cfa8d64c785a906853ea13d4cfb9e277a2641464f1bcbc",
+        "promptId": "bf4929e2-2dfc-427d-a0d9-cf0eea88d8fa",
+        "version": 1,
+        "contentHash": "6769a67b5ecc9dfacf4d7db083994aab1d518e46fc2bfa2de1ce5838a912ad38"
+      },
+      {
+        "ref": "prompt/efbbc3b3f9b07f9cf3cfa8d64c785a906853ea13d4cfb9e277a2641464f1bcbc",
+        "promptId": "ec77b439-5ae7-44f8-a9fe-d91564337532",
+        "version": 1,
+        "contentHash": "6769a67b5ecc9dfacf4d7db083994aab1d518e46fc2bfa2de1ce5838a912ad38"
+      },
+      {
+        "ref": "prompt/efbbc3b3f9b07f9cf3cfa8d64c785a906853ea13d4cfb9e277a2641464f1bcbc",
+        "promptId": "53a0aeb3-4b6e-4b84-a89f-7ad0f4636aa4",
+        "version": 1,
+        "contentHash": "6769a67b5ecc9dfacf4d7db083994aab1d518e46fc2bfa2de1ce5838a912ad38"
+      },
+      {
+        "ref": "prompt/efbbc3b3f9b07f9cf3cfa8d64c785a906853ea13d4cfb9e277a2641464f1bcbc",
+        "promptId": "9a9f76bc-53d8-4f76-a778-14a15a96b916",
+        "version": 1,
+        "contentHash": "6769a67b5ecc9dfacf4d7db083994aab1d518e46fc2bfa2de1ce5838a912ad38"
+      },
+      {
+        "ref": "prompt/efbbc3b3f9b07f9cf3cfa8d64c785a906853ea13d4cfb9e277a2641464f1bcbc",
+        "promptId": "da366762-1040-4413-ac48-bd91f9d93e34",
+        "version": 1,
+        "contentHash": "6769a67b5ecc9dfacf4d7db083994aab1d518e46fc2bfa2de1ce5838a912ad38"
+      },
+      {
+        "ref": "prompt/efbbc3b3f9b07f9cf3cfa8d64c785a906853ea13d4cfb9e277a2641464f1bcbc",
+        "promptId": "8eda439c-00e4-4ef7-aa89-de58ce195c8b",
+        "version": 1,
+        "contentHash": "6769a67b5ecc9dfacf4d7db083994aab1d518e46fc2bfa2de1ce5838a912ad38"
+      },
+      {
+        "ref": "prompt/5ed6e17362986484a39172157a736e83e473081b0bd420df623a4d05d8e14796",
+        "promptId": "90bcdbf8-6c59-436b-af05-0890ae580d13",
+        "version": 1,
+        "contentHash": "b688ad55e44c1281e36205387d46f3122e91ff7d59d12976fc0c60b86d1343df"
+      },
+      {
+        "ref": "prompt/5ed6e17362986484a39172157a736e83e473081b0bd420df623a4d05d8e14796",
+        "promptId": "db271dc3-9efb-41f1-afd4-90e82ed8e97b",
+        "version": 1,
+        "contentHash": "b688ad55e44c1281e36205387d46f3122e91ff7d59d12976fc0c60b86d1343df"
+      },
+      {
+        "ref": "prompt/5ed6e17362986484a39172157a736e83e473081b0bd420df623a4d05d8e14796",
+        "promptId": "f50c594b-9083-4d3a-a058-b37794a90247",
+        "version": 1,
+        "contentHash": "b688ad55e44c1281e36205387d46f3122e91ff7d59d12976fc0c60b86d1343df"
+      },
+      {
+        "ref": "prompt/5ed6e17362986484a39172157a736e83e473081b0bd420df623a4d05d8e14796",
+        "promptId": "2fed5b24-ab3e-41ec-aaf4-c05baf1dc71c",
+        "version": 1,
+        "contentHash": "b688ad55e44c1281e36205387d46f3122e91ff7d59d12976fc0c60b86d1343df"
+      },
+      {
+        "ref": "prompt/5ed6e17362986484a39172157a736e83e473081b0bd420df623a4d05d8e14796",
+        "promptId": "9d424f57-dcec-4dee-af58-16fbd133930f",
+        "version": 1,
+        "contentHash": "b688ad55e44c1281e36205387d46f3122e91ff7d59d12976fc0c60b86d1343df"
+      },
+      {
+        "ref": "prompt/5ed6e17362986484a39172157a736e83e473081b0bd420df623a4d05d8e14796",
+        "promptId": "61c97954-579d-4842-a45c-59665068b81d",
+        "version": 1,
+        "contentHash": "b688ad55e44c1281e36205387d46f3122e91ff7d59d12976fc0c60b86d1343df"
+      },
+      {
+        "ref": "prompt/5ed6e17362986484a39172157a736e83e473081b0bd420df623a4d05d8e14796",
+        "promptId": "b7fa4887-6b59-4426-a560-9d9dfbf127d6",
+        "version": 1,
+        "contentHash": "b688ad55e44c1281e36205387d46f3122e91ff7d59d12976fc0c60b86d1343df"
+      },
+      {
+        "ref": "prompt/5ed6e17362986484a39172157a736e83e473081b0bd420df623a4d05d8e14796",
+        "promptId": "c3a1b59d-36dc-4f75-ae22-4aa91fe82e48",
+        "version": 1,
+        "contentHash": "b688ad55e44c1281e36205387d46f3122e91ff7d59d12976fc0c60b86d1343df"
+      },
+      {
+        "ref": "prompt/c6f2b27cfccdfe38c570741fbe06b24623e12083eebe7c3fba000aba34065b41",
+        "promptId": "a9649d8e-36e7-4704-a358-0309516d8684",
+        "version": 1,
+        "contentHash": "134104dee9294c5bd6ff04bc2d4db1b5d1a5bb44db69d2eaf48b187c0c3ca07b"
+      },
+      {
+        "ref": "prompt/c6f2b27cfccdfe38c570741fbe06b24623e12083eebe7c3fba000aba34065b41",
+        "promptId": "8e172722-4267-4a22-ae8d-91c2168db874",
+        "version": 1,
+        "contentHash": "134104dee9294c5bd6ff04bc2d4db1b5d1a5bb44db69d2eaf48b187c0c3ca07b"
+      },
+      {
+        "ref": "prompt/c6f2b27cfccdfe38c570741fbe06b24623e12083eebe7c3fba000aba34065b41",
+        "promptId": "19e9af77-8b2e-4c70-aefe-c98faeb0a6ca",
+        "version": 1,
+        "contentHash": "134104dee9294c5bd6ff04bc2d4db1b5d1a5bb44db69d2eaf48b187c0c3ca07b"
+      },
+      {
+        "ref": "prompt/c6f2b27cfccdfe38c570741fbe06b24623e12083eebe7c3fba000aba34065b41",
+        "promptId": "7a14b523-24b2-4edf-af90-336b9b84b6ed",
+        "version": 1,
+        "contentHash": "134104dee9294c5bd6ff04bc2d4db1b5d1a5bb44db69d2eaf48b187c0c3ca07b"
+      },
+      {
+        "ref": "prompt/c6f2b27cfccdfe38c570741fbe06b24623e12083eebe7c3fba000aba34065b41",
+        "promptId": "831b2f6f-8044-4dbd-a0a3-e24ff7950292",
+        "version": 1,
+        "contentHash": "134104dee9294c5bd6ff04bc2d4db1b5d1a5bb44db69d2eaf48b187c0c3ca07b"
+      },
+      {
+        "ref": "prompt/c6f2b27cfccdfe38c570741fbe06b24623e12083eebe7c3fba000aba34065b41",
+        "promptId": "173707b4-90e2-43b0-af93-5c51ac3d4eb6",
+        "version": 1,
+        "contentHash": "134104dee9294c5bd6ff04bc2d4db1b5d1a5bb44db69d2eaf48b187c0c3ca07b"
+      },
+      {
+        "ref": "prompt/c6f2b27cfccdfe38c570741fbe06b24623e12083eebe7c3fba000aba34065b41",
+        "promptId": "0352c08d-aa8a-46a1-a1ef-d0bd2a3644a4",
+        "version": 1,
+        "contentHash": "134104dee9294c5bd6ff04bc2d4db1b5d1a5bb44db69d2eaf48b187c0c3ca07b"
+      }
+    ]
+  },
+  "E10": {
+    "description": "Two phases compare diagram prompting on four unchanged pinned C1 AgentContexts. Phase 1 retains the original baselines, the six-example 3+1/60-40 generations, and their collection critique. Phase 2 replaces only the few-shot block with two larger examples: a 51-line compiler and unchanged 106-line telemetry diagram. Astra/high, one new generation per case, four concurrent calls.",
+    "conditions": [
+      {
+        "id": "original-c1",
+        "name": "Original C1 · Minimal prompt",
+        "description": "Saved Phase 2/C1 outputs using the minimal instruction and six synthetic examples."
+      },
+      {
+        "id": "model-ratio",
+        "name": "Six short examples · 3+1 and 60/40",
+        "description": "Adds the verbatim 3+1 model and 60/40 code-reference / natural-language guidance; keeps the original six examples."
+      },
+      {
+        "id": "prompt-judge",
+        "name": "Previous collection critique",
+        "description": "One critique of all four outputs, grounded in quoted output and prompt evidence."
+      },
+      {
+        "id": "two-examples",
+        "name": "Two larger examples",
+        "description": "Replaces six short examples with a 51-line compiler and 106-line telemetry diagram. Same 3+1 model, 60/40 wording, usage guidance, output contract, contexts and model settings. Both examples are inspectable in the pinned prompt."
+      }
+    ],
+    "comments": [
+      {
+        "id": "98757e8e-740b-4a07-9f1d-e2de3fc05135",
+        "text": "Found that the main prompt steering input for diagram styles is just long, few-shot vectors",
+        "createdAt": "2026-11-14T16:20:37.129Z",
+        "tags": [
+          "insight"
+        ]
+      }
+    ],
+    "judgements": [],
+    "pinnedPrompts": [
+      {
+        "ref": "prompt/4ed4dd7546090f4b7bb84592fdb27de7a9fbfc0cfad4ca7f82ab1634f28fea28",
+        "promptId": "a55a7264-84e2-4285-a4c3-9cd252ebd0d5",
+        "version": 1,
+        "contentHash": "8fcede4c354ffcae9897c46565bf194f8d906a7ca63028b1629677ad4b96c346"
+      },
+      {
+        "ref": "prompt/4ed4dd7546090f4b7bb84592fdb27de7a9fbfc0cfad4ca7f82ab1634f28fea28",
+        "promptId": "5073254b-a3b1-4eb9-adf7-3d0cd092da6a",
+        "version": 1,
+        "contentHash": "8fcede4c354ffcae9897c46565bf194f8d906a7ca63028b1629677ad4b96c346"
+      },
+      {
+        "ref": "prompt/4ed4dd7546090f4b7bb84592fdb27de7a9fbfc0cfad4ca7f82ab1634f28fea28",
+        "promptId": "9ba9fe0b-d7e4-4a4e-a900-1a0418360206",
+        "version": 1,
+        "contentHash": "8fcede4c354ffcae9897c46565bf194f8d906a7ca63028b1629677ad4b96c346"
+      },
+      {
+        "ref": "prompt/4ed4dd7546090f4b7bb84592fdb27de7a9fbfc0cfad4ca7f82ab1634f28fea28",
+        "promptId": "b1ad9606-b08a-451d-ab79-8860ad269766",
+        "version": 1,
+        "contentHash": "8fcede4c354ffcae9897c46565bf194f8d906a7ca63028b1629677ad4b96c346"
+      },
+      {
+        "ref": "prompt/42ddfe2ad295bac7c2b67747756537aa505665ecf5214e99513711fbac399aeb",
+        "promptId": "cabd33be-5ed4-4e41-a61a-54a45f770825",
+        "version": 1,
+        "contentHash": "8f87191a5567c02373262016f22c65a3dc3bdc6379eb5437836e039fd33c9282"
+      },
+      {
+        "ref": "prompt/957dfc7e377492c72e458e30cb581b5465854099074f1e7d14f246bc3ef3dae3",
+        "promptId": "d415b206-dd74-49e0-a68f-0904033bcf40",
+        "version": 1,
+        "contentHash": "dfa7e661f8af392866cce37e0e2e8892facb3cd8de5371b6fec4afdcec952ff4"
+      },
+      {
+        "ref": "prompt/0a48b6d207e878b6d106f7564db6e10fc1f1e2726f80dd32e93702144f9add17",
+        "promptId": "b99ee687-fb7e-404d-ab97-bc8ee8bfcc72",
+        "version": 1,
+        "contentHash": "defebaa978a852ddf513f1008aa26fc026c97f10b65451401c7ece731c8411fb"
+      }
+    ]
+  },
+  "E11": {
+    "description": "Baseline: one gpt-6-astra/high generation from 259 pinned source files at 03f2168deba364103c2450ca9b8168cd1fc9ddc5. User's two synthetic examples and 60/40 guidance. No supplied static-analysis rankings or reference diagram.",
+    "conditions": [
+      {
+        "id": "baseline",
+        "name": "3+1 baseline",
+        "description": "Open-ended scope, two synthetic examples, 60/40 code references and natural language."
+      }
+    ],
+    "comments": [],
+    "judgements": [],
+    "pinnedPrompts": [
+      {
+        "ref": "prompt/1531d2a0f839ac955c03a694b55e0496a2316818d5d07fca6f2ea998cf9053ac",
+        "promptId": "783b2232-709d-4c13-8e3e-311739be5983",
+        "version": 1,
+        "contentHash": "2764eb70a13f5c86630364fedd26f8a943f6d378944aaca4fc38ffcb4e2d8d5b"
+      }
+    ]
+  },
+  "E12": {
+    "description": "Core discovery with one Astra/high and three Sol/high samples. All use the same prompt v2 and pinned repository context at 03f2168deba364103c2450ca9b8168cd1fc9ddc5, with ordinary shell/read tools and the same exclusions.",
+    "conditions": [
+      {
+        "id": "repository-browsing",
+        "name": "3+1 · checkout directory",
+        "description": "Combined prompt v2 (0b3af2dd-ba89-4032-936a-40070a3e167e); normal shell/read tools in a pinned checkout. No reference diagram or analysis rankings. Output: one ASCII tree in JSON {ascii}, at most 20000 characters."
+      },
+      {
+        "id": "sol-high",
+        "name": "Sol/high · checkout directory",
+        "description": "Three independent gpt-6-sol/high samples; exact same prompt v2, source commit, exclusions, and AgentContext as the Astra/high sample."
+      }
+    ],
+    "comments": [],
+    "judgements": [],
+    "pinnedPrompts": [
+      {
+        "ref": "prompt/f76fa27c9622b58d813a704c054ecec2c985f4f11a318218c0d1bb895bcc928b",
+        "promptId": "0b3af2dd-ba89-4032-936a-40070a3e167e",
+        "version": 2,
+        "contentHash": "a4d289a45eb89ff0d53248e3d0e8ceea2e9565611cbd75d07d137fcb1337d10b"
+      }
+    ]
+  }
+}

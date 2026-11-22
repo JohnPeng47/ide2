@@ -1,0 +1,19 @@
+{
+  "id": "child-1",
+  "name": "host",
+  "assignment": "Map n2-11, host App and widget branch. Use private /tmp/host; return compact text one line per node: scopes then paths with inclusive ranges and roles (D,U,I). Include parent coverage via references to other node ranges as appropriate. No JSON needed.",
+  "model": "gpt-6.2-astra",
+  "effort": "high",
+  "status": "generating",
+  "queuedAt": "2026-11-22T03:05:57.869Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-22T03:05:57.878Z",
+  "sessionId": "01a20137-b5a8-7dbc-9489-1caa7bce3607",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-7vmfpdh9-agent-repository-RuKCrG-checkout--/2026-11-22T03-05-57-928Z_01a20137-b5a8-7dbc-9489-1caa7bce3607.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase4-7vmfpdh9/agent-repository-RuKCrG/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

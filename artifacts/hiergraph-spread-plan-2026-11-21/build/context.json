@@ -1,0 +1,47 @@
+{
+  "agentContextId": "saved-agent-context-8f09f950-cb51-458b-bf26-e1d9a2916f7e",
+  "name": "Ghostty · merged spread plan · build",
+  "description": "Build input for E21 phase 2. Same core tree and checkout as E16 P1 Ghostty (saved-agent-context-63f31964-5848-4ed2-b47f-eee31575b626), plus the merged spread plan: an in-session synthesis by Claude Opus 5.5 of the five E21 phase 1 plans (runs fb437757-6120-483f-a483-e89857e6dc4a, 1ea0ccd2-f8b0-4aa6-8bf9-0a0d6835e43b, f50e5b1a-ceb4-4e1f-bb76-a20eaad26c8d, 33c77cba-d0a2-47eb-b9c4-12f4adac42e4, 8d1c94db-af97-4404-abe4-86921fcde358). The merge is not a model generation of this experiment. Plan sha256 532ee35959ad89d4172dea4fdc500292a9e4e4bc79a6db4462ad22c1b082d5ba.",
+  "createdAt": "2026-11-22T02:50:37.942Z",
+  "group": "HierGraph spread plan",
+  "contentHash": "b1573e6ce374c26535e2c27c1f4a00dabdd6ef0e0c0dff5449d7ebc94c9fc52a",
+  "messageCount": 1,
+  "source": {
+    "agentType": "saved-context",
+    "sourceSessionId": "8f09f950-cb51-458b-bf26-e1d9a2916f7e",
+    "format": "messages-v1"
+  },
+  "planSha256": "532ee35959ad89d4172dea4fdc500292a9e4e4bc79a6db4462ad22c1b082d5ba",
+  "sources": [
+    {
+      "label": "Spread plan · sample 1",
+      "experimentId": "fa78995f-d25a-40bf-8972-9b6855349e5f",
+      "runId": "fb437757-6120-483f-a483-e89857e6dc4a",
+      "cellKey": "939c1f43-c7f6-4c1a-8864-349c095f3a63:1:alternative"
+    },
+    {
+      "label": "Spread plan · sample 2",
+      "experimentId": "fa78995f-d25a-40bf-8972-9b6855349e5f",
+      "runId": "1ea0ccd2-f8b0-4aa6-8bf9-0a0d6835e43b",
+      "cellKey": "939c1f43-c7f6-4c1a-8864-349c095f3a63:1:alternative"
+    },
+    {
+      "label": "Spread plan · sample 3",
+      "experimentId": "fa78995f-d25a-40bf-8972-9b6855349e5f",
+      "runId": "f50e5b1a-ceb4-4e1f-bb76-a20eaad26c8d",
+      "cellKey": "939c1f43-c7f6-4c1a-8864-349c095f3a63:1:alternative"
+    },
+    {
+      "label": "Spread plan · sample 4",
+      "experimentId": "fa78995f-d25a-40bf-8972-9b6855349e5f",
+      "runId": "33c77cba-d0a2-47eb-b9c4-12f4adac42e4",
+      "cellKey": "939c1f43-c7f6-4c1a-8864-349c095f3a63:1:alternative"
+    },
+    {
+      "label": "Spread plan · sample 5",
+      "experimentId": "fa78995f-d25a-40bf-8972-9b6855349e5f",
+      "runId": "8d1c94db-af97-4404-abe4-86921fcde358",
+      "cellKey": "939c1f43-c7f6-4c1a-8864-349c095f3a63:1:alternative"
+    }
+  ]
+}

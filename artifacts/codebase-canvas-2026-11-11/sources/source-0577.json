@@ -1,0 +1,1 @@
+{"path": "scripts/dev/reload-server.ts", "text": "import { randomUUID } from 'node:crypto';\nimport { writeFileSync } from 'node:fs';\nimport { reloadTrigger } from './manual-reload';\n\nwriteFileSync(reloadTrigger(), randomUUID(), { mode: 0o600 });\nconsole.log(`Requested reload of all Vite dev servers started from ${process.cwd()}.`);\n"}

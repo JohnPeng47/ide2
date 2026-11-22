@@ -58,7 +58,11 @@
     "check:change-treemaps": "npm run build && node --import tsx tests/browser/mapping/browser-change-treemaps-check.mjs",
     "check:ipad-gestures": "npm run build && node --import tsx tests/browser/mapping/browser-ipad-gestures-check.mjs",
     "analysis:run": "node --max-old-space-size=1728 --import tsx scripts/analysis/analyze.ts",
-    "analysis:history": "node --max-old-space-size=1728 --import tsx scripts/analysis/history.ts"
+    "analysis:history": "node --max-old-space-size=1728 --import tsx scripts/analysis/history.ts",
+    "usage:install": "node scripts/usage/install.mjs",
+    "usage:status": "node --import tsx scripts/usage/collector.ts status",
+    "usage:poll": "node --import tsx scripts/usage/collector.ts poll",
+    "usage:watch": "node --import tsx scripts/usage/collector.ts watch"
   },
   "dependencies": {
     "@earendil-works/pi-ai": "^0.84.2",

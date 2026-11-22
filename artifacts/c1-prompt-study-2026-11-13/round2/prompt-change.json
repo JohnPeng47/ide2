@@ -1,0 +1,29 @@
+{
+  "parent": {
+    "promptId": "cabd33be-5ed4-4e41-a61a-54a45f770825",
+    "version": 1,
+    "sha256": "ad57d7752ad28dcc313ac495f0f3bca92f7cf3788b29eb854a86fd1584ef2d2b"
+  },
+  "promptSha256": "9441053ba7919c4f1dd9f3aa8b5243106ed3df534a5f1b99efea4b74d74e1b8e",
+  "change": "Replace only six synthetic few-shot examples with the shortened compiler and unchanged telemetry examples.",
+  "unchanged": [
+    "pinned AgentContexts",
+    "verbatim 3+1 model",
+    "60/40 wording",
+    "example usage guidance",
+    "output contract",
+    "model/effort/n"
+  ],
+  "examples": [
+    {
+      "file": "compiler.txt",
+      "lines": 51,
+      "sha256": "e255aa824df9c44fa40fd8744880f05d77a15cfcdc098935e55bb66985f00509"
+    },
+    {
+      "file": "telemetry.txt",
+      "lines": 106,
+      "sha256": "9494c0269b78bd5f4447ad4c4f103d66a0d02396af71a97c339e2ff391eaf7cf"
+    }
+  ]
+}

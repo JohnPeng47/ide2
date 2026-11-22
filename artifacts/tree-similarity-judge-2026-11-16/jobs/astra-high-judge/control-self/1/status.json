@@ -1,0 +1,31 @@
+{
+  "status": "finished",
+  "key": "astra-high-judge/control-self/1",
+  "runId": "2b56b838-2350-42fc-a553-2a0a9cbf8e2c",
+  "model": "gpt-6-astra",
+  "caseId": "control-self",
+  "number": 1,
+  "reportedScore": 1,
+  "score": 1,
+  "rescore": {
+    "score": 1,
+    "reportedScore": 1,
+    "J": 1,
+    "reportedJ": 1,
+    "pairs": 8,
+    "unmatchedA": 0,
+    "unmatchedB": 0,
+    "depth": 6,
+    "maxPairError": 0,
+    "rangeIssues": []
+  },
+  "usage": {
+    "input": 5982,
+    "output": 10671,
+    "cacheRead": 0,
+    "cacheWrite": 0,
+    "reasoning": 553,
+    "totalTokens": 16653
+  },
+  "outputUrl": "http://localhost:5191/evals?run=2b56b838-2350-42fc-a553-2a0a9cbf8e2c&output=450c8f11-3b30-485c-a282-7fc0e4dc74c0%3A1%3Aalternative"
+}

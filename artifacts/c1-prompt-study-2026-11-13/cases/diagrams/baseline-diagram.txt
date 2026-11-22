@@ -1,0 +1,128 @@
+Immutable Diagram Revisions
+|-- Shared content boundary: Diagram + DiagramRevision
+|   |-- Identity
+|   |   |-- diagramId: stable service identity across revisions
+|   |   |-- revisionId: immutable payload identity; equals DiagramRevision.id
+|   |   |-- Diagram.id: local canvas content key
+|   |   `-- DiagramRevision.parentId: base revision when revising or deriving
+|   |-- Content travels together
+|   |   |-- content: ASCII, hash, parsed structure ('diagram' or 'tree')
+|   |   |-- sourceContext: contentHash, mappings, evidence, optional source binding
+|   |   |-- optional highlights and jumps
+|   |   `-- nodeRefs: parsed node ID -> persistent logical node identity
+|   `-- Canvas placement stays outside this model
+|       `-- Canvas history supplies context -> local diagram ID -> revision ID bindings
+|-- Construction and validation
+|   |-- constructDiagram(input)
+|   |   |-- buildDiagramContent(ascii, 'id:revision', structureKind)
+|   |   |-- allocate diagram-* and diagram-revision-* UUID identities
+|   |   |-- clone source data, highlights and jumps into the payload
+|   |   `-- validateDiagram(diagram)
+|   `-- validateDiagram: shared gate for issued and stored content
+|       |-- Require service identities, nonempty local ID and nonnegative integer revision
+|       |   `-- Saved content without service identities -> offline migration required
+|       |-- Reject legacy top-level ascii, mappings, diagramContent and structureKind
+|       |-- Rebuild canonical content using its parser version
+|       |   `-- Exact serialized content mismatch -> reject
+|       |-- Require sourceContext.contentHash == SHA-256(content.ascii)
+|       |-- Validate jumps, highlights and local mapping coordinates
+|       |-- Validate optional source binding
+|       |   |-- source-code <-> git-worktree
+|       |   `-- document <-> filesystem-documents; corpus root must be absolute
+|       `-- Validate evidence and mapping joins
+|           |-- Evidence key matches entry.id; sourceId agrees with binding when present
+|           |-- Source ranges: relative path without '..', valid line interval,
+|           |   `-- originalLines contains exactly one string per source line
+|           `-- Each mapping resolves entityId + sourceRangeIndex
+|               `-- Optional sourceRangeId must match the referenced range
+|-- Domain operations: prepare -> issue immutable revision
+|   |-- createDiagram(input)
+|   |   `-- prepareCreate -> constructDiagram -> issueDiagramRevision
+|   |       `-- No parent; allocate logical identities for parsed nodes
+|   |-- reviseDiagram(base, edit)
+|   |   |-- prepareEdit returns the same diagram object -> return base revision
+|   |   `-- Otherwise preserve diagramId, allocate revisionId, set parentId = base.id
+|   |-- deriveDiagram(base, input, refs, sources)
+|   |   |-- Every identity source must belong to base.diagramId
+|   |   |-- Each requested ref must exist in the supplied source revisions
+|   |   |-- Each requested output line must identify exactly one node
+|   |   `-- Reject two requested identities assigned to the same output node
+|   `-- issueDiagramRevision
+|       |-- Logical identity for each output node, in priority order
+|       |   |-- Explicit derived identity
+|       |   |-- Base identity carried through old-node -> new-node correspondence
+|       |   `-- Otherwise allocate node-* UUID
+|       `-- Deep-freeze revision record and validate its diagram
+|           `-- Domain result does not itself persist or publish anything
+|-- DiagramRevisionEditor: edits and explicit continuity
+|   |-- source-mappings
+|   |   |-- expectedContentHash must match current ASCII hash
+|   |   |   `-- Mismatch -> CONTENT_HASH_CONFLICT; caller must read again
+|   |   `-- Clone mappings/evidence, optionally replace binding, then validate
+|   |-- patch / patches
+|   |   |-- Delegate range changes to patchDiagramRanges
+|   |   |-- Optional continuity claims extend returned node correspondence
+|   |   |   `-- Rebase existing highlights using the resulting correspondence
+|   |   `-- Mapping choice
+|   |       |-- patches + retainMappings -> retainSourceMappings
+|   |       `-- Otherwise supplied mappings -> construct validated sourceContext
+|   |-- replace
+|   |   |-- Rebuild content at numeric revision + 1, keeping the local diagram ID
+|   |   |-- Rebase existing jumps and highlights
+|   |   `-- Optionally retain source mappings through node correspondence
+|   |-- jumps / highlights -> validate replacement annotation data
+|   |-- correspondingNodes(before, after): exact continuity only
+|   |   |-- ASCII or structure kind differs -> no inferred correspondence here
+|   |   `-- Otherwise match unique line, columns and label
+|   |-- nodeCorrespondence: logical ref -> output line
+|   |   |-- Ref must identify an old node; integer line must identify one output node
+|   |   |-- Claim must agree with inferred unchanged-content correspondence
+|   |   `-- Multiple old identities claiming one output node -> CONTINUITY error
+|   `-- merge(baseline, current, proposed)
+|       |-- Any baseline/current binding differs -> MERGE_REQUIRED
+|       `-- Otherwise return a copy of proposed; automatic three-way merge is absent
+|-- submitDiagramEdit: generated candidate -> domain operation
+|   |-- Check requested base revision and local diagram ownership
+|   |   `-- New diagram with replacementRanges -> REPLACEMENT_SCOPE error
+|   |-- Choose validation context
+|   |   `-- Base diagram, else request context, else '[New diagram]' placeholder
+|   |-- validateGeneratedDiagramEdit(context, raw, base nodeRefs, sourceMappings)
+|   |   `-- Combine continuity claims; cleaned candidate claims take precedence
+|   |       `-- Carry context source binding and evidence into generated input
+|   |-- Base + requested edit ranges -> scoped replacements
+|   |   |-- Preserve structure kind
+|   |   |-- scopedReplacements -> patches + outputRanges
+|   |   |-- Remove mappings inside replaced ranges; shift surviving mapping lines
+|   |   |-- Add generated mappings within output ranges, excluding retained IDs
+|   |   `-- reviseDiagram(kind='patches') -> return revision + replacementRanges
+|   `-- Otherwise
+|       |-- request.baseRevisionId present -> reviseDiagram(kind='replace')
+|       `-- No requested base revision -> createDiagram at numeric revision 0
+|-- Explicit retention and runtime identity registry
+|   |-- retainDiagramRevision(result)
+|   |   |-- importDiagramRevision: each parsed node needs a nonempty, unique ref
+|   |   |-- Register revision, then retrieve the registry's canonical record
+|   |   `-- Return result using the stored diagram and revision objects
+|   |-- Registry install(record)
+|   |   |-- Record identities must match embedded diagram identities
+|   |   |-- Existing revision ID
+|   |   |   |-- Same JSON signature -> reuse prior record
+|   |   |   `-- Different JSON signature -> 'Diagram revision is immutable'
+|   |   `-- New revision ID -> store a deep-frozen structured clone
+|   |       |-- register: validate diagram immediately
+|   |       `-- restore: defer diagram and logical-node validation until get()
+|   |-- get(id): unknown ID -> error; deferred validation must pass before return
+|   |-- assert(diagram): require issued revision's object or equal serialized payload
+|   |-- listDiagramRevisions(diagramId): frozen identity/parent summaries
+|   `-- Stored convenience commands compose domain operation + retention
+|       `-- Durable adapters must flush retained revisions before publishing bindings
+`-- Read projections preserve the content boundary
+    |-- resolve(contextId, local diagramId)
+    |   |-- Follow supplied binding to a revision; unknown or mismatched diagram -> error
+    |   |-- Return a structured-cloned DiagramView, not the immutable payload
+    |   |-- Rewrite node IDs, parent IDs and child IDs to logical nodeRefs
+    |   `-- Include active jumps with logical source node IDs
+    |       `-- Omit jump source revisionId/contentHash from the view
+    `-- diagramSource / queryDiagramSourceContext
+        |-- Join mapping -> evidence entity -> indexed source range + binding
+        `-- Expose mappings, joined entries, selection results and case-insensitive search

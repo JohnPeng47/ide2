@@ -1,0 +1,145 @@
+{
+  "diagrams": [
+    {
+      "diagramId": "d1",
+      "mappings": [
+        {
+          "node": "n7",
+          "path": "packages/coding-agent/src/core/agent-session-runtime.ts",
+          "startLine": 74,
+          "endLine": 95
+        },
+        {
+          "node": "n8",
+          "path": "packages/coding-agent/src/core/agent-session.ts",
+          "startLine": 409,
+          "endLine": 412
+        },
+        {
+          "node": "n17",
+          "path": "packages/coding-agent/src/core/agent-session.ts",
+          "startLine": 3785,
+          "endLine": 3803
+        },
+        {
+          "node": "n31",
+          "path": "packages/coding-agent/src/core/agent-session-services.ts",
+          "startLine": 73,
+          "endLine": 80
+        },
+        {
+          "node": "n36",
+          "path": "packages/coding-agent/src/core/agent-session-runtime.ts",
+          "startLine": 196,
+          "endLine": 222
+        }
+      ]
+    },
+    {
+      "diagramId": "d2",
+      "mappings": [
+        {
+          "node": "n2",
+          "path": "packages/coding-agent/src/core/agent-session.ts",
+          "startLine": 2162,
+          "endLine": 2195
+        },
+        {
+          "node": "n7",
+          "path": "packages/coding-agent/src/core/agent-session.ts",
+          "startLine": 1996,
+          "endLine": 2046
+        },
+        {
+          "node": "n11",
+          "path": "packages/agent/src/agent.ts",
+          "startLine": 441,
+          "endLine": 465
+        },
+        {
+          "node": "n20",
+          "path": "packages/coding-agent/src/core/agent-session.ts",
+          "startLine": 2049,
+          "endLine": 2085
+        },
+        {
+          "node": "n25",
+          "path": "packages/coding-agent/src/core/agent-session.ts",
+          "startLine": 2601,
+          "endLine": 2611
+        }
+      ]
+    },
+    {
+      "diagramId": "d3",
+      "mappings": [
+        {
+          "node": "n3",
+          "path": "packages/coding-agent/src/core/session-manager.ts",
+          "startLine": 995,
+          "endLine": 1006
+        },
+        {
+          "node": "n5",
+          "path": "packages/coding-agent/src/core/session-manager.ts",
+          "startLine": 1222,
+          "endLine": 1231
+        },
+        {
+          "node": "n9",
+          "path": "packages/coding-agent/src/core/session-manager.ts",
+          "startLine": 544,
+          "endLine": 574
+        },
+        {
+          "node": "n14",
+          "path": "packages/coding-agent/src/core/session-manager.ts",
+          "startLine": 1597,
+          "endLine": 1602
+        },
+        {
+          "node": "n16",
+          "path": "packages/coding-agent/src/core/session-manager.ts",
+          "startLine": 1278,
+          "endLine": 1305
+        }
+      ]
+    },
+    {
+      "diagramId": "d4",
+      "mappings": [
+        {
+          "node": "n3",
+          "path": "packages/coding-agent/src/core/agent-session.ts",
+          "startLine": 848,
+          "endLine": 860
+        },
+        {
+          "node": "n7",
+          "path": "packages/coding-agent/src/core/agent-session.ts",
+          "startLine": 3785,
+          "endLine": 3803
+        },
+        {
+          "node": "n11",
+          "path": "packages/coding-agent/src/core/tools/index.ts",
+          "startLine": 182,
+          "endLine": 193
+        },
+        {
+          "node": "n16",
+          "path": "packages/coding-agent/src/core/sdk.ts",
+          "startLine": 403,
+          "endLine": 438
+        },
+        {
+          "node": "n25",
+          "path": "packages/coding-agent/src/core/model-runtime.ts",
+          "startLine": 667,
+          "endLine": 710
+        }
+      ]
+    }
+  ],
+  "notes": "Other nodes omitted."
+}

@@ -1,3 +1,4 @@
+import { EVAL_GENERATION_TIMEOUT_MS } from '../../../../domain/mapping/evals/evalLimits';
 import { afterEach, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import { AgentContext } from '../../../../domain/core/agents/agentContext';
@@ -97,6 +98,6 @@ it('times out without accepting a late answer', async () => {
   vi.useFakeTimers(); harness.block = true;
   const pending = new AgentContextEvalRuntime('/stable/project', true).generate(input());
   const rejected = expect(pending).rejects.toThrow('timed out');
-  await vi.advanceTimersByTimeAsync(15 * 60_000); await rejected;
+  await vi.advanceTimersByTimeAsync(EVAL_GENERATION_TIMEOUT_MS); await rejected;
   expect(harness.chats[0].dispose).toHaveBeenCalledOnce();
 });

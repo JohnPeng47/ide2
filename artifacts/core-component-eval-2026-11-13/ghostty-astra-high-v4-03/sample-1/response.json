@@ -1,0 +1,68 @@
+{
+  "output": {
+    "ascii": "Ghostty's core: Surface -- one interactive terminal session (src/Surface.zig:1)\n|\n|-- [M] Runtime boundary -- terminal behavior is independent of window/tab/split layout\n|   |-- Surface exposes keyCallback, mouseButtonCallback, sizeCallback, focusCallback, draw\n|   |   `-- apprt supplies native events; Surface retains keyboard, mouse, focus and session state\n|   |-- apprt.runtime.App / Surface select the platform integration (src/apprt.zig)\n|   |   `-- rt_app.performAction / rt_surface.close delegate native UI work back to the runtime\n|   `-- App coordinates multiple surfaces (src/App.zig:27)\n|       |-- surfaces + focused_surface + mailbox -> registration, focus and message routing\n|       |-- font_grid_set + device -> application-scoped resources shared by surface renderers\n|       `-- App.tick -> drain mailbox -> Surface.handleMessage, after validating the target\n|\n|-- [O] Surface assembles the session and its workers (src/Surface.zig:477)\n|   |-- io: termio.Termio -> terminal state, stream parser, backend and IO mailbox\n|   |-- renderer: Renderer + renderer_thread -> frame preparation and presentation\n|   |-- renderer_state: renderer.State -> shared access to io.terminal, preedit and mouse data\n|   |   `-- mutex protects pointed-to state; this is not a second terminal model\n|   |-- io_thread: termio.Thread -> event loop for writes, control messages and process events\n|   `-- Exec.threadEnter -> Subprocess.start + PTY reader + process watcher\n|       `-- Reader lifetime belongs to the IO backend (src/termio/Exec.zig:86)\n|\n|-- [C] Input -> bindings or terminal bytes -> child process\n|   |-- Surface.keyCallback -> binding handling or encodeKey (src/Surface.zig:2792)\n|   |   |-- performBindingAction -> local operations or apprt actions\n|   |   `-- [D] KeyEvent + key_encode.Options.fromTerminal + config -> encoded write request\n|   |       `-- Terminal modes determine keyboard protocol (src/Surface.zig:3326)\n|   |-- mouseButtonCallback / cursorPosCallback / scrollCallback\n|   |   `-- Local selection/scrolling or input.mouse_encode reporting, depending on terminal modes\n|   |-- completeClipboardRequest -> input.paste.encode -> write requests\n|   |   `-- Paste encoding depends on terminal settings, including bracketed paste\n|   `-- Surface.queueIo -> Termio.queueMessage -> termio.Thread mailbox dispatch\n|       |-- readonly rejects writes but preserves terminal-local interaction (src/Surface.zig:899)\n|       `-- write_small / write_stable / write_alloc -> Termio.queueWrite -> Exec.queueWrite\n|           `-- Backend writes bytes to the PTY; request variants govern buffer lifetime\n|\n|-- [C] Child output -> protocol interpretation -> shared terminal state\n|   |-- Exec reader -> Termio.processOutput(buf) (src/termio/Termio.zig:705)\n|   |   |-- Acquire renderer_state.mutex -> processOutputLocked\n|   |   `-- queueRender + terminal_stream.nextSlice(buf)\n|   |-- StreamHandler.Stream = terminal.Stream(StreamHandler)\n|   |   `-- Parsed VT actions -> StreamHandler.vt / vtPrintAscii -> Terminal operations\n|   |       `-- Persistent parser/handler state spans read buffers (src/termio/stream_handler.zig:19)\n|   `-- StreamHandler routes effects beyond the grid\n|       |-- termio_mailbox -> protocol responses -> child input\n|       |-- renderer_mailbox / renderer_wakeup -> render changes and repaint requests\n|       `-- surface_mailbox -> App -> Surface.handleMessage -> native UI actions\n|           `-- Titles, clipboard requests and other surface effects cross this boundary\n|\n|-- [O] Termio.terminal is the renderer-independent session model\n|   |-- Terminal (src/terminal/Terminal.zig:1)\n|   |   |-- rows / cols / scrolling_region / tabstops -> text placement and scrolling rules\n|   |   |-- modes / cursor / colors / flags -> protocol state consumed by input and rendering\n|   |   `-- pwd / title -> application-reported session metadata\n|   `-- screens: ScreenSet (src/terminal/ScreenSet.zig:1)\n|       |-- primary + lazily initialized alternate; active selects the current screen\n|       `-- Screen (src/terminal/Screen.zig:44)\n|           |-- cursor / saved_cursor / selection / charset -> per-screen editing state\n|           |-- kitty_keyboard / kitty_images / semantic_prompt -> extended protocol state\n|           `-- pages: PageList -> ordered scrollback and active-screen storage\n|               |-- Page -> rows and cells; resident or compressed backing\n|               `-- Tracked pins retain viewport, cursor and selection positions\n|                   `-- Storage and tracking are internal to the screen model (src/terminal/PageList.zig:1)\n|\n|-- [C] Shared terminal state -> frame snapshot -> GPU presentation\n|   |-- renderer.Thread renderCallback -> Renderer.updateFrame -> drawFrame\n|   |   `-- Render scheduling is separate from PTY parsing (src/renderer/Thread.zig)\n|   |-- Renderer.updateFrame(state, cursor_blink_visible) (src/renderer/generic.zig:1371)\n|   |   |-- state.lockDemand -> terminal_state.beginUpdate -> state.unlockDemand\n|   |   |   |-- Snapshot viewport data while holding the shared mutex briefly\n|   |   |   `-- synchronized_output mode postpones frame updates\n|   |   |-- [D] Snapshot + preedit + selection/search/link highlights + cursor state\n|   |   |   `-- rebuildCells -> GPU cell data; dirty state limits unnecessary rebuilding\n|   |   `-- [D] font_grid + font_shaper + cell metrics -> glyph layout and rasterized text\n|   |-- Renderer.drawFrame uses draw_mutex-protected render data, not a live unlocked terminal\n|   `-- GenericRenderer(GraphicsAPI) -> Metal or OpenGL (src/renderer.zig:36)\n|       `-- App owns the shared Device; each Surface owns its renderer and presentation resources\n|\n|-- [D] Geometry and configuration feed both IO and rendering\n|   |-- Surface.init: Config + content scale -> font size -> font_grid -> cell metrics\n|   |   `-- Screen pixels + cell size + padding -> renderer.Size.grid()\n|   |-- sizeCallback -> Surface.resize -> IO and renderer resize messages (src/Surface.zig:2600)\n|   |   `-- Termio.resize locks shared state around backend.resize + Terminal.resize\n|   |       `-- Child redraw cannot be parsed against old dimensions (src/termio/Termio.zig:524)\n|   `-- Surface.updateConfig derives owned configuration snapshots (src/Surface.zig:1804)\n|       |-- Replace Surface.DerivedConfig; refresh font grid and reset binding sequences/tables\n|       `-- change_config messages transfer renderer and Termio settings to their workers\n|           `-- Components do not retain a borrowed pointer to the caller's Config\n|\n`-- [O] Session shutdown follows the shared-state dependency order\n    |-- Child-exit notification -> Surface.childExited -> hold/close behavior\n    |-- Surface.close -> rt_surface.close(needsConfirmQuit()) -> runtime-managed destruction\n    `-- Surface.deinit (src/Surface.zig:829)\n        |-- Stop search, then signal and join renderer and IO workers\n        |   `-- Exec.threadExit stops the subprocess, interrupts and joins its reader\n        |-- Deinitialize renderer before renderer_thread; display-link callbacks depend on it\n        |-- Release IO/terminal state only after workers stop using shared data\n        `-- Dereference shared font grid; free preedit, mutex, input state and derived config"
+  },
+  "usage": {
+    "input": 38512,
+    "output": 2701,
+    "cacheRead": 90752,
+    "cacheWrite": 0,
+    "reasoning": 126,
+    "totalTokens": 131965
+  },
+  "execution": {
+    "runtime": "pi-agent-context",
+    "sessionId": "01a1dc72-4f9c-7607-afe1-2249924a7e6f",
+    "contextHash": "c26f9e1d07185d26d78fd7cf31b447b58604b2cae4a040b1dc623aaaf9e7848a",
+    "cacheKey": "eval-de697394e46b7c2876cafa318840ad01b790c8364357106dc1c6fe36c74ef9ce",
+    "modelContextHash": "ed8f24de6f535566ee5873fde521ddf130b7362a02e5d35ae9ae0262b78a2913",
+    "repositories": [
+      {
+        "repository": "repo-1",
+        "repositoryPath": "/home/john/softwarez/ghostty",
+        "commit": "ea8b12a8a9894b5259c441eadd8f6f0c65e215af",
+        "exclusions": [
+          "**/*-LICENSE",
+          "**/*.md",
+          "**/*.mdx",
+          "**/*.spec.*",
+          "**/*.test.*",
+          "**/AGENTS.md",
+          "**/CODEX-LICENSE",
+          "**/LICENSE*",
+          "**/Tests/**",
+          "**/__fixtures__/**",
+          "**/__tests__/**",
+          "**/benchmark/**",
+          "**/benchmarks/**",
+          "**/build/**",
+          "**/dist/**",
+          "**/docs/**",
+          "**/examples/**",
+          "**/fixtures/**",
+          "**/node_modules/**",
+          "**/scripts/**",
+          "**/test/**",
+          "**/tests/**",
+          ".agents/**",
+          ".github/**",
+          ".husky/**",
+          ".pi/**",
+          "deps/**",
+          "example/**",
+          "flake.lock",
+          "flatpak/**",
+          "images/**",
+          "nix/**",
+          "package-lock.json",
+          "po/**",
+          "scripts/**",
+          "snap/**",
+          "vendor/**"
+        ],
+        "checkout": "/tmp/agent-repository-LxxqbK/checkout",
+        "inspectionSource": "session-transcript"
+      }
+    ]
+  }
+}

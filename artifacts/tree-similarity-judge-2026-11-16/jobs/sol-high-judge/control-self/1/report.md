@@ -1,0 +1,96 @@
+### Anchor tree
+All pairs below are the same component at offset 0, with s = 1; A and B line ranges are identical.
+- A 3–11 ↔ B 3–11 · Runtime boundary and App
+  - A 4–5 ↔ B 4–5 · Surface event callbacks
+    - A 5 ↔ B 5 · Native events and Surface state
+  - A 6–7 ↔ B 6–7 · Platform runtime integration
+    - A 7 ↔ B 7 · Native UI delegation
+  - A 8–11 ↔ B 8–11 · App coordination
+    - A 9 ↔ B 9 · Surface registration, focus and messages
+    - A 10 ↔ B 10 · Shared application resources
+    - A 11 ↔ B 11 · App.tick message dispatch
+- A 13–20 ↔ B 13–20 · Surface session and workers
+  - A 14 ↔ B 14 · Termio session state
+  - A 15 ↔ B 15 · Renderer and renderer thread
+  - A 16–17 ↔ B 16–17 · Shared renderer state
+    - A 17 ↔ B 17 · Mutex-protected shared state
+  - A 18 ↔ B 18 · Termio thread
+  - A 19–20 ↔ B 19–20 · Exec startup
+    - A 20 ↔ B 20 · IO backend reader lifetime
+- A 22–34 ↔ B 22–34 · Input and child-process writes
+  - A 23–26 ↔ B 23–26 · Keyboard input
+    - A 24 ↔ B 24 · Binding actions
+    - A 25–26 ↔ B 25–26 · Key encoding
+      - A 26 ↔ B 26 · Terminal keyboard modes
+  - A 27–28 ↔ B 27–28 · Mouse input
+    - A 28 ↔ B 28 · Local interaction or mouse reporting
+  - A 29–30 ↔ B 29–30 · Clipboard paste
+    - A 30 ↔ B 30 · Terminal-dependent paste encoding
+  - A 31–34 ↔ B 31–34 · IO message and write dispatch
+    - A 32 ↔ B 32 · Readonly write handling
+    - A 33–34 ↔ B 33–34 · Write requests to Exec
+      - A 34 ↔ B 34 · PTY bytes and buffer lifetimes
+- A 36–47 ↔ B 36–47 · Child output and protocol handling
+  - A 37–39 ↔ B 37–39 · Termio.processOutput
+    - A 38 ↔ B 38 · Locked output processing
+    - A 39 ↔ B 39 · Render request and stream parsing
+  - A 40–42 ↔ B 40–42 · StreamHandler parser
+    - A 41–42 ↔ B 41–42 · VT actions and terminal operations
+      - A 42 ↔ B 42 · Persistent parser state
+  - A 43–47 ↔ B 43–47 · StreamHandler side effects
+    - A 44 ↔ B 44 · Protocol responses
+    - A 45 ↔ B 45 · Renderer messages
+    - A 46–47 ↔ B 46–47 · Surface messages
+      - A 47 ↔ B 47 · Titles, clipboard and native effects
+- A 49–62 ↔ B 49–62 · Terminal session model
+  - A 50–53 ↔ B 50–53 · Terminal
+    - A 51 ↔ B 51 · Text geometry and placement
+    - A 52 ↔ B 52 · Modes, cursor, colors and flags
+    - A 53 ↔ B 53 · Session metadata
+  - A 54–62 ↔ B 54–62 · ScreenSet
+    - A 55 ↔ B 55 · Primary and alternate screens
+    - A 56–62 ↔ B 56–62 · Screen
+      - A 57 ↔ B 57 · Per-screen editing state
+      - A 58 ↔ B 58 · Extended protocol state
+      - A 59–62 ↔ B 59–62 · PageList
+        - A 60 ↔ B 60 · Page storage
+        - A 61–62 ↔ B 61–62 · Tracked pins
+          - A 62 ↔ B 62 · Internal screen storage and tracking
+- A 64–76 ↔ B 64–76 · Rendering and GPU presentation
+  - A 65–66 ↔ B 65–66 · Renderer thread scheduling
+    - A 66 ↔ B 66 · Scheduling separate from PTY parsing
+  - A 67–73 ↔ B 67–73 · Renderer.updateFrame
+    - A 68–70 ↔ B 68–70 · Locked terminal snapshot
+      - A 69 ↔ B 69 · Viewport snapshot
+      - A 70 ↔ B 70 · Synchronized-output postponement
+    - A 71–72 ↔ B 71–72 · Frame data and highlights
+      - A 72 ↔ B 72 · Cell rebuilding
+    - A 73 ↔ B 73 · Font shaping and glyph data
+  - A 74 ↔ B 74 · Renderer.drawFrame
+  - A 75–76 ↔ B 75–76 · Graphics API and device
+    - A 76 ↔ B 76 · App device and per-Surface renderer resources
+- A 78–87 ↔ B 78–87 · Geometry and configuration
+  - A 79–80 ↔ B 79–80 · Surface.init sizing
+    - A 80 ↔ B 80 · Pixel-to-grid geometry
+  - A 81–83 ↔ B 81–83 · Resize
+    - A 82–83 ↔ B 82–83 · Termio resize locking
+      - A 83 ↔ B 83 · Dimensions and child redraw
+  - A 84–87 ↔ B 84–87 · Surface.updateConfig
+    - A 85 ↔ B 85 · Derived configuration and bindings
+    - A 86–87 ↔ B 86–87 · Worker configuration messages
+      - A 87 ↔ B 87 · Owned configuration snapshots
+- A 89–97 ↔ B 89–97 · Session shutdown
+  - A 90 ↔ B 90 · Child exit handling
+  - A 91 ↔ B 91 · Surface.close
+  - A 92–97 ↔ B 92–97 · Surface.deinit
+    - A 93–94 ↔ B 93–94 · Worker shutdown
+      - A 94 ↔ B 94 · Exec subprocess and reader shutdown
+    - A 95 ↔ B 95 · Renderer destruction order
+    - A 96 ↔ B 96 · IO and terminal state release
+    - A 97 ↔ B 97 · Remaining resource release
+
+### Score
+Top-level J = (1 + 1 + 1 + 1 + 1 + 1 + 1 + 1) / (8 + 0 + 0) = **1**. Every nested level also has J = 1.
+
+### Verdict
+The trees identify the same eight top-level components and give them the same breakdown, from runtime integration and session assembly through input, output, terminal state, rendering, configuration and shutdown. There is no difference in detail, grouping or ownership, and no unmatched or relocated component.

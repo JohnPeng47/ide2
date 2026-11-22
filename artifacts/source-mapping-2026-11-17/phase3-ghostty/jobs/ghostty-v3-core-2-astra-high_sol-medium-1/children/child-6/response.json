@@ -1,0 +1,18 @@
+{
+  "text": "{\"diagrams\":[{\"diagramId\":\"d1\",\"mappings\":[{\"node\":\"n69\",\"path\":\"src/renderer/Thread.zig\",\"startLine\":1,\"endLine\":3},{\"node\":\"n69\",\"path\":\"src/renderer/Thread.zig\",\"startLine\":69,\"endLine\":80},{\"node\":\"n70\",\"path\":\"src/renderer/Thread.zig\",\"startLine\":474,\"endLine\":517},{\"node\":\"n70\",\"path\":\"src/renderer/Thread.zig\",\"startLine\":537,\"endLine\":586},{\"node\":\"n71\",\"path\":\"src/renderer.zig\",\"startLine\":15,\"endLine\":42},{\"node\":\"n71\",\"path\":\"src/renderer/generic.zig\",\"startLine\":51,\"endLine\":108},{\"node\":\"n72\",\"path\":\"src/renderer.zig\",\"startLine\":35,\"endLine\":42},{\"node\":\"n73\",\"path\":\"src/renderer/generic.zig\",\"startLine\":1370,\"endLine\":1427},{\"node\":\"n73\",\"path\":\"src/renderer/generic.zig\",\"startLine\":1479,\"endLine\":1567},{\"node\":\"n73\",\"path\":\"src/renderer/State.zig\",\"startLine\":54,\"endLine\":80},{\"node\":\"n74\",\"path\":\"src/renderer/generic.zig\",\"startLine\":274,\"endLine\":281},{\"node\":\"n74\",\"path\":\"src/terminal/render.zig\",\"startLine\":289,\"endLine\":399},{\"node\":\"n75\",\"path\":\"src/terminal/render.zig\",\"startLine\":289,\"endLine\":375},{\"node\":\"n75\",\"path\":\"src/renderer/generic.zig\",\"startLine\":1479,\"endLine\":1526},{\"node\":\"n75\",\"path\":\"src/renderer/generic.zig\",\"startLine\":2630,\"endLine\":2685},{\"node\":\"n76\",\"path\":\"src/renderer/State.zig\",\"startLine\":19,\"endLine\":34},{\"node\":\"n76\",\"path\":\"src/renderer/generic.zig\",\"startLine\":1399,\"endLine\":1406},{\"node\":\"n76\",\"path\":\"src/renderer/generic.zig\",\"startLine\":1502,\"endLine\":1561},{\"node\":\"n76\",\"path\":\"src/renderer/generic.zig\",\"startLine\":1645,\"endLine\":1681},{\"node\":\"n76\",\"path\":\"src/renderer/generic.zig\",\"startLine\":2973,\"endLine\":2989},{\"node\":\"n77\",\"path\":\"src/renderer/generic.zig\",\"startLine\":1420,\"endLine\":1427},{\"node\":\"n78\",\"path\":\"src/renderer/generic.zig\",\"startLine\":204,\"endLine\":207},{\"node\":\"n78\",\"path\":\"src/renderer/generic.zig\",\"startLine\":2973,\"endLine\":2989},{\"node\":\"n78\",\"path\":\"src/renderer/generic.zig\",\"startLine\":3022,\"endLine\":3050},{\"node\":\"n79\",\"path\":\"src/renderer/generic.zig\",\"startLine\":51,\"endLine\":108},{\"node\":\"n79\",\"path\":\"src/renderer/generic.zig\",\"startLine\":1370,\"endLine\":1379},{\"node\":\"n79\",\"path\":\"src/renderer/generic.zig\",\"startLine\":2623,\"endLine\":2636},{\"node\":\"n80\",\"path\":\"src/renderer/generic.zig\",\"startLine\":1712,\"endLine\":1757},{\"node\":\"n80\",\"path\":\"src/renderer/generic.zig\",\"startLine\":1907,\"endLine\":2000},{\"node\":\"n81\",\"path\":\"src/renderer/Thread.zig\",\"startLine\":460,\"endLine\":472},{\"node\":\"n81\",\"path\":\"src/renderer/Thread.zig\",\"startLine\":556,\"endLine\":585},{\"node\":\"n81\",\"path\":\"src/renderer/generic.zig\",\"startLine\":1258,\"endLine\":1312},{\"node\":\"n82\",\"path\":\"src/Surface.zig\",\"startLine\":922,\"endLine\":929},{\"node\":\"n82\",\"path\":\"src/renderer/generic.zig\",\"startLine\":1712,\"endLine\":1731}]}],\"notes\":\"\"}",
+  "usage": {
+    "input": 36518,
+    "output": 1463,
+    "cacheRead": 91136,
+    "cacheWrite": 0,
+    "reasoning": 60,
+    "totalTokens": 129117
+  },
+  "cost": {
+    "input": 0.073036,
+    "output": 0.01463,
+    "cacheRead": 0.018227200000000002,
+    "cacheWrite": 0,
+    "total": 0.10589319999999999
+  }
+}

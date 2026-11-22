@@ -1,0 +1,20 @@
+{
+  "knownCompletedMessageUsage": {
+    "input": 356595,
+    "output": 25161,
+    "cacheRead": 1466880,
+    "cacheWrite": 0,
+    "reasoning": 1668,
+    "totalTokens": 1848636
+  },
+  "reportedModelCost": {
+    "input": 0.7131900000000001,
+    "output": 0.25161000000000006,
+    "cacheRead": 0.293376,
+    "cacheWrite": 0,
+    "total": 1.2581760000000006
+  },
+  "assistantMessages": 74,
+  "complete": false,
+  "note": "Only completed messages with returned usage are included. In-flight generation at termination may not have returned its usage."
+}

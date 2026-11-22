@@ -1,0 +1,19 @@
+{
+  "id": "child-1",
+  "name": "surface",
+  "assignment": "Map d1 nodes n11 through n48 (Core Surface subtree) only. Read numbered ranges, full named function declarations, cover flows. Return partial JSON.",
+  "model": "gpt-6-sol",
+  "effort": "medium",
+  "status": "generating",
+  "queuedAt": "2026-11-19T04:01:48.048Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-19T04:01:48.052Z",
+  "sessionId": "01a1f1f7-c033-738b-9585-9b7ffc2ba731",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-xfq61g3l-agent-repository-eXuuFp-checkout--/2026-11-19T04-01-48-083Z_01a1f1f7-c033-738b-9585-9b7ffc2ba731.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase3-xfq61g3l/agent-repository-eXuuFp/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

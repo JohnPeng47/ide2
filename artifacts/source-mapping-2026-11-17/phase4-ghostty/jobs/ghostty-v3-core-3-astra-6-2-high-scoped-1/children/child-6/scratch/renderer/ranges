@@ -1,0 +1,89 @@
+n66 subsystem behavior relationship
++67 +69 +75
+renderer 1-8:D
+Surface 574-590:UI 597-605:UI 631-636:UI
+G 712-721:UI 2045-2067:DI
+n67 subsystem behavior relationship
++68
+Surface 597-605:UI 717-720:UI 753-759:UI 2577-2579:UI
+termio/Termio 314-322:UI 714-716:UI
+termio/stream_handler 117-119:UI
+G 946-956:UI 1074-1086:UI 1136-1175:DI 1273-1312:UI 1371-1375:D 1716-1731:UI
+n68 entity subsystem behavior
+T 1-3:D 32-59:D 69-80:D 116-173:DI 192-200:DI 220-257:UI 290-290:D 301-324:UI 462-494:UI 516-517:I 519-586:UI 596-652:UI 654-654:D 676-688:UI
+n69 entity behavior relationship subsystem
++70 +71 +73 +74
+renderer 17-17:D 35-42:UI
+T 572-580:U
+G 90-96:D 1370-1710:DI
+n70 structure behavior relationship
+G 274-275:D 1371-1375:D 1420-1427:UI 1479-1493:UI 1562-1567:UI 1631-1632:I
+terminal/main 51-51:D
+R 289-329:D 941-1414:DI 2666-2780:DI 2790-2900:DI
+n71 behavior relationship guarantee
++72
+G 1371-1375:D 1420-1427:UI 1479-1487:UI 1555-1567:UI
+S 67-80:DI
+R 941-947:DI
+n72 behavior guarantee relationship
+G 1371-1375:D 1399-1409:D 1420-1427:UI 1479-1506:UI 1512-1526:UI 1555-1579:UI 1645-1665:UI
+R 920-947:DI 1241-1279:UI 1416-1484:DI 2666-2671:D 2694-2702:I 2721-2732:I
+n73 subsystem behavior relationship
+G 204-207:D 274-275:D 725-741:UI 819-821:I 1371-1379:U 1650-1659:UI 2630-2656:UI 2679-2685:I 2721-2758:UI 2925-2942:DI 2973-2991:UI 3284-3356:UI 3477-3537:DI
+renderer/cell 178-203:DI
+font/shape 19-58:D
+font/shaper/run 47-75:DI 211-304:UI
+font/shaper/harfbuzz 131-158:UI 233-260:I
+font/shaper/coretext 316-348:DI 374-426:UI 504-544:I
+font/shaper/noop 79-118:DI
+font/SharedGrid 379-464:DI
+font/CodepointResolver 327-349:UI
+font/face 10-24:D
+font/face/freetype 426-437:DI 563-579:UI 759-778:UI
+font/face/coretext 289-302:D 536-567:UI
+font/sprite/Face 174-180:D 222-229:UI 251-260:I
+font/Atlas 136-210:DI 256-275:DI
+n74 behavior relationship subsystem
+G 1371-1375:D 1449-1487:UI 1502-1526:UI 1645-1659:UI 1868-1869:UI 1950-1973:UI 1994-2000:UI 2630-2636:D 2679-2750:UI 2760-2787:I 2828-2852:UI 2895-2917:UI 2925-2935:D 3066-3083:I 3116-3127:I 3166-3172:I 3195-3208:I 3228-3231:I 3539-3672:DI
+renderer/cursor 28-68:DI
+S 119-128:D 135-140:I 152-196:I
+R 941-947:D 1033-1044:I 1173-1198:I 1290-1299:UI 1312-1342:I 1356-1397:I 749-809:DI 823-826:DI 2114-2216:UI
+renderer/image 76-103:UI 116-191:UI 253-377:UI 456-486:UI
+renderer/cell 136-154:DI
+n75 entity behavior relationship subsystem
++76 +77
+G 1017-1043:DI 1055-1072:UI 1712-1731:DI 1740-2043:UI 3677-3691:UI
+T 462-472:UI
+renderer/Metal 56-63:D 78-129:UI 200-234:UI 236-243:UI 378-387:UI
+renderer/metal/Target 33-44:D 54-60:I 85-103:UI
+renderer/metal/Frame 29-56:UI 67-131:UI
+renderer/metal/RenderPass 58-121:UI 124-229:UI
+renderer/metal/IOSurfaceLayer 50-123:UI
+renderer/OpenGL 217-225:I 273-298:UI 439-449:UI
+renderer/opengl/Frame 25-90:UI
+renderer/opengl/RenderPass 51-144:UI
+renderer/opengl/Target 148-215:I 224-242:I
+apprt/surface 186-207:UI
+App 164-167:UI 273-274:U 293-293:U 532-542:UI 605-612:UI
+Surface 1017-1017:D 1154-1154:U 1778-1787:UI
+apprt/gtk/App 61-68:UI
+apprt/gtk/class/application 692-697:D 772-772:U 2877-2882:UI
+apprt/gtk/class/surface 835-838:UI
+apprt/gtk/class/render_surface 149-205:UI 307-365:UI 390-429:UI
+renderer/metal/shaders 25-30:UI
+renderer/opengl/shaders 22-27:UI
+renderer/shaders/shaders.metal 556-564:D 621-626:I 678-692:DI 708-709:I 745-748:I
+renderer/shaders/glsl/cell_text.v.glsl 4-5:D 113-113:I
+renderer/shaders/glsl/cell_text.f.glsl 3-4:D 43-43:I 82-82:I
+n76 structure behavior relationship guarantee
+renderer 16-19:D 35-42:DI
+build_config 43-43:D
+renderer/backend 4-17:DI
+G 90-104:D 712-721:UI
+n77 entity behavior relationship
+Surface 922-929:DI
+apprt/embedded 1001-1006:UI 1988-1992:UI
+G 1712-1743:DI 1759-1764:UI 1785-1807:I 1843-1866:UI 1907-1910:UI
+renderer/metal/Frame 80-91:UI 105-131:UI
+renderer/Metal 236-243:UI
+renderer/metal/IOSurfaceLayer 84-89:I

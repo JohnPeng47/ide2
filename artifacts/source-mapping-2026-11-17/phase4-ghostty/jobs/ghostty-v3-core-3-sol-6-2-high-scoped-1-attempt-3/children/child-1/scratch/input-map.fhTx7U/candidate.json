@@ -1,0 +1,6066 @@
+{
+  "diagrams": [
+    {
+      "diagramId": "d1",
+      "nodes": [
+        {
+          "node": "n24",
+          "scope": [
+            "behavior",
+            "relationship",
+            "subsystem"
+          ]
+        },
+        {
+          "node": "n25",
+          "scope": [
+            "entity",
+            "behavior",
+            "relationship"
+          ]
+        },
+        {
+          "node": "n26",
+          "scope": [
+            "entity",
+            "behavior",
+            "relationship",
+            "subsystem"
+          ]
+        },
+        {
+          "node": "n27",
+          "scope": [
+            "structure",
+            "entity",
+            "behavior",
+            "relationship"
+          ]
+        },
+        {
+          "node": "n28",
+          "scope": [
+            "behavior",
+            "relationship"
+          ]
+        },
+        {
+          "node": "n29",
+          "scope": [
+            "behavior",
+            "relationship",
+            "subsystem"
+          ]
+        },
+        {
+          "node": "n30",
+          "scope": [
+            "entity",
+            "behavior",
+            "relationship"
+          ]
+        },
+        {
+          "node": "n31",
+          "scope": [
+            "entity",
+            "behavior",
+            "relationship"
+          ]
+        },
+        {
+          "node": "n32",
+          "scope": [
+            "entity",
+            "behavior",
+            "relationship",
+            "subsystem"
+          ]
+        },
+        {
+          "node": "n33",
+          "scope": [
+            "behavior",
+            "relationship",
+            "guarantee"
+          ]
+        },
+        {
+          "node": "n34",
+          "scope": [
+            "entity",
+            "behavior",
+            "relationship"
+          ]
+        },
+        {
+          "node": "n35",
+          "scope": [
+            "entity",
+            "behavior",
+            "relationship"
+          ]
+        }
+      ],
+      "mappings": [
+        {
+          "node": "n24",
+          "path": "macos/Sources/App/AppDelegate.swift",
+          "startLine": 306,
+          "endLine": 310,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "macos/Sources/App/AppDelegate.swift",
+          "startLine": 804,
+          "endLine": 816,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "macos/Sources/Features/Terminal/BaseTerminalController.swift",
+          "startLine": 189,
+          "endLine": 193,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "macos/Sources/Features/Terminal/BaseTerminalController.swift",
+          "startLine": 282,
+          "endLine": 316,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "macos/Sources/Features/Terminal/BaseTerminalController.swift",
+          "startLine": 666,
+          "endLine": 688,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "macos/Sources/Ghostty/Ghostty.App.swift",
+          "startLine": 56,
+          "endLine": 62,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "macos/Sources/Ghostty/Ghostty.App.swift",
+          "startLine": 63,
+          "endLine": 70,
+          "role": [
+            "use"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "macos/Sources/Ghostty/Ghostty.App.swift",
+          "startLine": 298,
+          "endLine": 345,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "macos/Sources/Ghostty/Ghostty.App.swift",
+          "startLine": 415,
+          "endLine": 469,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "macos/Sources/Ghostty/Ghostty.App.swift",
+          "startLine": 572,
+          "endLine": 595,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "macos/Sources/Ghostty/Ghostty.App.swift",
+          "startLine": 949,
+          "endLine": 1011,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/App.zig",
+          "startLine": 319,
+          "endLine": 331,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/App.zig",
+          "startLine": 444,
+          "endLine": 529,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/Surface.zig",
+          "startLine": 703,
+          "endLine": 705,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/Surface.zig",
+          "startLine": 711,
+          "endLine": 721,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/Surface.zig",
+          "startLine": 895,
+          "endLine": 920,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/Surface.zig",
+          "startLine": 2325,
+          "endLine": 2443,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/Surface.zig",
+          "startLine": 2451,
+          "endLine": 2473,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/Surface.zig",
+          "startLine": 2479,
+          "endLine": 2506,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/Surface.zig",
+          "startLine": 2790,
+          "endLine": 3219,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/Surface.zig",
+          "startLine": 3245,
+          "endLine": 3419,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/Surface.zig",
+          "startLine": 3421,
+          "endLine": 3432,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/Surface.zig",
+          "startLine": 3584,
+          "endLine": 3589,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/Surface.zig",
+          "startLine": 3680,
+          "endLine": 3682,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/Surface.zig",
+          "startLine": 3684,
+          "endLine": 3727,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/Surface.zig",
+          "startLine": 3729,
+          "endLine": 3750,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/Surface.zig",
+          "startLine": 3752,
+          "endLine": 3761,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/Surface.zig",
+          "startLine": 3800,
+          "endLine": 3805,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/Surface.zig",
+          "startLine": 3813,
+          "endLine": 3905,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/Surface.zig",
+          "startLine": 3918,
+          "endLine": 3923,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/Surface.zig",
+          "startLine": 3935,
+          "endLine": 3948,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/Surface.zig",
+          "startLine": 4057,
+          "endLine": 4094,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/Surface.zig",
+          "startLine": 4180,
+          "endLine": 4191,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/Surface.zig",
+          "startLine": 4678,
+          "endLine": 4682,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/Surface.zig",
+          "startLine": 4735,
+          "endLine": 4737,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/Surface.zig",
+          "startLine": 4778,
+          "endLine": 4801,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/Surface.zig",
+          "startLine": 4941,
+          "endLine": 5819,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/Surface.zig",
+          "startLine": 5821,
+          "endLine": 5833,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/Surface.zig",
+          "startLine": 6017,
+          "endLine": 6026,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/Surface.zig",
+          "startLine": 6028,
+          "endLine": 6033,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/Surface.zig",
+          "startLine": 6156,
+          "endLine": 6162,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/Surface.zig",
+          "startLine": 6219,
+          "endLine": 6262,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/Surface.zig",
+          "startLine": 6264,
+          "endLine": 6341,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/Surface.zig",
+          "startLine": 6343,
+          "endLine": 6398,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/apprt.zig",
+          "startLine": 43,
+          "endLine": 53,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/apprt/embedded.zig",
+          "startLine": 104,
+          "endLine": 137,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/apprt/embedded.zig",
+          "startLine": 201,
+          "endLine": 228,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/apprt/embedded.zig",
+          "startLine": 301,
+          "endLine": 323,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/apprt/embedded.zig",
+          "startLine": 715,
+          "endLine": 719,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/apprt/embedded.zig",
+          "startLine": 742,
+          "endLine": 801,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/apprt/embedded.zig",
+          "startLine": 866,
+          "endLine": 870,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/apprt/embedded.zig",
+          "startLine": 910,
+          "endLine": 920,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/apprt/embedded.zig",
+          "startLine": 1131,
+          "endLine": 1136,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/apprt/embedded.zig",
+          "startLine": 2070,
+          "endLine": 2084,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/apprt/embedded.zig",
+          "startLine": 2330,
+          "endLine": 2336,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/apprt/gtk/App.zig",
+          "startLine": 61,
+          "endLine": 68,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/apprt/gtk/Surface.zig",
+          "startLine": 74,
+          "endLine": 83,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/apprt/gtk/class/application.zig",
+          "startLine": 692,
+          "endLine": 698,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/apprt/gtk/class/application.zig",
+          "startLine": 739,
+          "endLine": 750,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/apprt/gtk/class/application.zig",
+          "startLine": 2535,
+          "endLine": 2585,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/apprt/gtk/class/split_tree.zig",
+          "startLine": 191,
+          "endLine": 194,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/apprt/gtk/class/split_tree.zig",
+          "startLine": 212,
+          "endLine": 277,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/apprt/gtk/class/split_tree.zig",
+          "startLine": 713,
+          "endLine": 742,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/apprt/gtk/class/surface.zig",
+          "startLine": 1275,
+          "endLine": 1282,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/apprt/gtk/class/surface.zig",
+          "startLine": 1378,
+          "endLine": 1417,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/apprt/gtk/class/surface.zig",
+          "startLine": 1445,
+          "endLine": 1482,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/apprt/gtk/class/surface.zig",
+          "startLine": 1727,
+          "endLine": 1737,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/apprt/gtk/class/surface.zig",
+          "startLine": 4218,
+          "endLine": 4230,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/apprt/gtk/class/surface.zig",
+          "startLine": 4242,
+          "endLine": 4245,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/apprt/gtk/class/surface.zig",
+          "startLine": 4257,
+          "endLine": 4291,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/apprt/gtk/class/surface.zig",
+          "startLine": 4293,
+          "endLine": 4309,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/apprt/gtk/class/surface.zig",
+          "startLine": 4799,
+          "endLine": 4819,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/apprt/gtk/class/surface.zig",
+          "startLine": 4851,
+          "endLine": 4912,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/apprt/gtk/class/window.zig",
+          "startLine": 429,
+          "endLine": 436,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/apprt/gtk/class/window.zig",
+          "startLine": 451,
+          "endLine": 498,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/datastruct/blocking_queue.zig",
+          "startLine": 99,
+          "endLine": 168,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/datastruct/message_data.zig",
+          "startLine": 38,
+          "endLine": 74,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/input.zig",
+          "startLine": 13,
+          "endLine": 13,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/input.zig",
+          "startLine": 15,
+          "endLine": 16,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/input.zig",
+          "startLine": 25,
+          "endLine": 25,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/input/Binding.zig",
+          "startLine": 303,
+          "endLine": 303,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/input/Binding.zig",
+          "startLine": 1380,
+          "endLine": 1557,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/input/Binding.zig",
+          "startLine": 2705,
+          "endLine": 2708,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/input/Binding.zig",
+          "startLine": 2716,
+          "endLine": 2760,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/input/function_keys.zig",
+          "startLine": 12,
+          "endLine": 49,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/input/function_keys.zig",
+          "startLine": 53,
+          "endLine": 69,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/input/function_keys.zig",
+          "startLine": 78,
+          "endLine": 86,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/input/function_keys.zig",
+          "startLine": 87,
+          "endLine": 262,
+          "role": [
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/input/function_keys.zig",
+          "startLine": 264,
+          "endLine": 314,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/input/key.zig",
+          "startLine": 16,
+          "endLine": 55,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/input/key.zig",
+          "startLine": 57,
+          "endLine": 78,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/input/key.zig",
+          "startLine": 84,
+          "endLine": 88,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/input/key_encode.zig",
+          "startLine": 14,
+          "endLine": 38,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/input/key_encode.zig",
+          "startLine": 55,
+          "endLine": 97,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/input/key_encode.zig",
+          "startLine": 99,
+          "endLine": 319,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/input/key_encode.zig",
+          "startLine": 327,
+          "endLine": 351,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/input/key_encode.zig",
+          "startLine": 352,
+          "endLine": 378,
+          "role": [
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/input/key_encode.zig",
+          "startLine": 379,
+          "endLine": 550,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/input/key_encode.zig",
+          "startLine": 552,
+          "endLine": 560,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/input/key_encode.zig",
+          "startLine": 561,
+          "endLine": 618,
+          "role": [
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/input/key_encode.zig",
+          "startLine": 631,
+          "endLine": 699,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/input/key_encode.zig",
+          "startLine": 708,
+          "endLine": 892,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/input/key_encode.zig",
+          "startLine": 924,
+          "endLine": 975,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/input/key_encode.zig",
+          "startLine": 1010,
+          "endLine": 1117,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/input/kitty.zig",
+          "startLine": 6,
+          "endLine": 129,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/input/mouse_encode.zig",
+          "startLine": 12,
+          "endLine": 76,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/input/mouse_encode.zig",
+          "startLine": 78,
+          "endLine": 280,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/input/paste.zig",
+          "startLine": 4,
+          "endLine": 22,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/input/paste.zig",
+          "startLine": 24,
+          "endLine": 125,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/input/paste.zig",
+          "startLine": 140,
+          "endLine": 161,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/input/paste.zig",
+          "startLine": 180,
+          "endLine": 183,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/input/paste.zig",
+          "startLine": 196,
+          "endLine": 199,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/renderer/size.zig",
+          "startLine": 114,
+          "endLine": 151,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/renderer/size.zig",
+          "startLine": 154,
+          "endLine": 174,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/terminal/PageList.zig",
+          "startLine": 3347,
+          "endLine": 3379,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/terminal/Screen.zig",
+          "startLine": 74,
+          "endLine": 75,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/terminal/Screen.zig",
+          "startLine": 1719,
+          "endLine": 1737,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/terminal/Screen.zig",
+          "startLine": 3063,
+          "endLine": 3097,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/terminal/Screen.zig",
+          "startLine": 3363,
+          "endLine": 3415,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/terminal/Terminal.zig",
+          "startLine": 84,
+          "endLine": 84,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/terminal/Terminal.zig",
+          "startLine": 112,
+          "endLine": 114,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/terminal/Terminal.zig",
+          "startLine": 116,
+          "endLine": 126,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/terminal/Terminal.zig",
+          "startLine": 3522,
+          "endLine": 3530,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/terminal/Terminal.zig",
+          "startLine": 5868,
+          "endLine": 5911,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/terminal/kitty/clipboard_response.zig",
+          "startLine": 29,
+          "endLine": 75,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/terminal/kitty/clipboard_response.zig",
+          "startLine": 77,
+          "endLine": 186,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/terminal/kitty/clipboard_response.zig",
+          "startLine": 191,
+          "endLine": 216,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/terminal/kitty/key.zig",
+          "startLine": 5,
+          "endLine": 62,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/terminal/kitty/key.zig",
+          "startLine": 78,
+          "endLine": 106,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/terminal/kitty/key.zig",
+          "startLine": 123,
+          "endLine": 124,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/terminal/modes.zig",
+          "startLine": 15,
+          "endLine": 18,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/terminal/modes.zig",
+          "startLine": 37,
+          "endLine": 51,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/terminal/modes.zig",
+          "startLine": 139,
+          "endLine": 155,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/terminal/modes.zig",
+          "startLine": 216,
+          "endLine": 231,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/terminal/modes.zig",
+          "startLine": 375,
+          "endLine": 375,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/terminal/modes.zig",
+          "startLine": 382,
+          "endLine": 382,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/terminal/modes.zig",
+          "startLine": 388,
+          "endLine": 393,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/terminal/modes.zig",
+          "startLine": 395,
+          "endLine": 405,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/terminal/modes.zig",
+          "startLine": 411,
+          "endLine": 411,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/terminal/modes.zig",
+          "startLine": 417,
+          "endLine": 421,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/terminal/mouse.zig",
+          "startLine": 6,
+          "endLine": 29,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/terminal/paste.zig",
+          "startLine": 167,
+          "endLine": 184,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/terminal/paste.zig",
+          "startLine": 202,
+          "endLine": 242,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/terminal/stream.zig",
+          "startLine": 1673,
+          "endLine": 1673,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/terminal/stream.zig",
+          "startLine": 2262,
+          "endLine": 2302,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/terminal/stream.zig",
+          "startLine": 2319,
+          "endLine": 2363,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/terminal/stream.zig",
+          "startLine": 2631,
+          "endLine": 2650,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/terminal/stream.zig",
+          "startLine": 2752,
+          "endLine": 2811,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/terminal/stream.zig",
+          "startLine": 3146,
+          "endLine": 3149,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/terminal/stream.zig",
+          "startLine": 3414,
+          "endLine": 3430,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/termio.zig",
+          "startLine": 23,
+          "endLine": 32,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/termio/Exec.zig",
+          "startLine": 86,
+          "endLine": 104,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/termio/Exec.zig",
+          "startLine": 129,
+          "endLine": 131,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/termio/Exec.zig",
+          "startLine": 147,
+          "endLine": 156,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/termio/Exec.zig",
+          "startLine": 274,
+          "endLine": 277,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/termio/Exec.zig",
+          "startLine": 403,
+          "endLine": 490,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/termio/Exec.zig",
+          "startLine": 493,
+          "endLine": 516,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/termio/Exec.zig",
+          "startLine": 520,
+          "endLine": 525,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/termio/Exec.zig",
+          "startLine": 897,
+          "endLine": 900,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/termio/Exec.zig",
+          "startLine": 909,
+          "endLine": 916,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/termio/Exec.zig",
+          "startLine": 1015,
+          "endLine": 1019,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/termio/Exec.zig",
+          "startLine": 1083,
+          "endLine": 1095,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/termio/Termio.zig",
+          "startLine": 29,
+          "endLine": 29,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/termio/Termio.zig",
+          "startLine": 34,
+          "endLine": 35,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/termio/Termio.zig",
+          "startLine": 61,
+          "endLine": 62,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/termio/Termio.zig",
+          "startLine": 344,
+          "endLine": 345,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/termio/Termio.zig",
+          "startLine": 354,
+          "endLine": 358,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/termio/Termio.zig",
+          "startLine": 431,
+          "endLine": 447,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/termio/Termio.zig",
+          "startLine": 449,
+          "endLine": 463,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/termio/Termio.zig",
+          "startLine": 604,
+          "endLine": 679,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/termio/Thread.zig",
+          "startLine": 236,
+          "endLine": 236,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/termio/Thread.zig",
+          "startLine": 253,
+          "endLine": 278,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/termio/Thread.zig",
+          "startLine": 289,
+          "endLine": 375,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/termio/Thread.zig",
+          "startLine": 453,
+          "endLine": 471,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/termio/backend.zig",
+          "startLine": 13,
+          "endLine": 14,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/termio/backend.zig",
+          "startLine": 22,
+          "endLine": 25,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/termio/backend.zig",
+          "startLine": 76,
+          "endLine": 86,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/termio/mailbox.zig",
+          "startLine": 11,
+          "endLine": 109,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/termio/message.zig",
+          "startLine": 13,
+          "endLine": 17,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/termio/message.zig",
+          "startLine": 91,
+          "endLine": 98,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/termio/message.zig",
+          "startLine": 107,
+          "endLine": 116,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/termio/message.zig",
+          "startLine": 118,
+          "endLine": 132,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/termio/stream_handler.zig",
+          "startLine": 295,
+          "endLine": 296,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/termio/stream_handler.zig",
+          "startLine": 318,
+          "endLine": 318,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/termio/stream_handler.zig",
+          "startLine": 322,
+          "endLine": 322,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/termio/stream_handler.zig",
+          "startLine": 332,
+          "endLine": 352,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/termio/stream_handler.zig",
+          "startLine": 594,
+          "endLine": 600,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/termio/stream_handler.zig",
+          "startLine": 641,
+          "endLine": 641,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/termio/stream_handler.zig",
+          "startLine": 675,
+          "endLine": 685,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n24",
+          "path": "src/termio/stream_handler.zig",
+          "startLine": 775,
+          "endLine": 819,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n25",
+          "path": "src/App.zig",
+          "startLine": 486,
+          "endLine": 529,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n25",
+          "path": "src/Surface.zig",
+          "startLine": 2790,
+          "endLine": 3219,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n25",
+          "path": "src/Surface.zig",
+          "startLine": 3245,
+          "endLine": 3419,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n25",
+          "path": "src/Surface.zig",
+          "startLine": 4941,
+          "endLine": 4975,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n25",
+          "path": "src/Surface.zig",
+          "startLine": 5821,
+          "endLine": 5833,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n25",
+          "path": "src/apprt/embedded.zig",
+          "startLine": 104,
+          "endLine": 137,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n25",
+          "path": "src/apprt/embedded.zig",
+          "startLine": 201,
+          "endLine": 228,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n25",
+          "path": "src/apprt/embedded.zig",
+          "startLine": 2070,
+          "endLine": 2084,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n25",
+          "path": "src/apprt/gtk/class/surface.zig",
+          "startLine": 1275,
+          "endLine": 1282,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n25",
+          "path": "src/apprt/gtk/class/surface.zig",
+          "startLine": 1378,
+          "endLine": 1417,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n25",
+          "path": "src/apprt/gtk/class/surface.zig",
+          "startLine": 1445,
+          "endLine": 1482,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n25",
+          "path": "src/input.zig",
+          "startLine": 13,
+          "endLine": 13,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n25",
+          "path": "src/input.zig",
+          "startLine": 25,
+          "endLine": 25,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n25",
+          "path": "src/input/Binding.zig",
+          "startLine": 2705,
+          "endLine": 2708,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n25",
+          "path": "src/input/Binding.zig",
+          "startLine": 2716,
+          "endLine": 2760,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n25",
+          "path": "src/input/function_keys.zig",
+          "startLine": 12,
+          "endLine": 49,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n25",
+          "path": "src/input/function_keys.zig",
+          "startLine": 53,
+          "endLine": 69,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n25",
+          "path": "src/input/function_keys.zig",
+          "startLine": 78,
+          "endLine": 86,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n25",
+          "path": "src/input/function_keys.zig",
+          "startLine": 87,
+          "endLine": 262,
+          "role": [
+            "implementation"
+          ]
+        },
+        {
+          "node": "n25",
+          "path": "src/input/function_keys.zig",
+          "startLine": 264,
+          "endLine": 314,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n25",
+          "path": "src/input/key.zig",
+          "startLine": 16,
+          "endLine": 55,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n25",
+          "path": "src/input/key.zig",
+          "startLine": 57,
+          "endLine": 78,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n25",
+          "path": "src/input/key.zig",
+          "startLine": 84,
+          "endLine": 88,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n25",
+          "path": "src/input/key_encode.zig",
+          "startLine": 14,
+          "endLine": 38,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n25",
+          "path": "src/input/key_encode.zig",
+          "startLine": 55,
+          "endLine": 97,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n25",
+          "path": "src/input/key_encode.zig",
+          "startLine": 99,
+          "endLine": 319,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n25",
+          "path": "src/input/key_encode.zig",
+          "startLine": 327,
+          "endLine": 351,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n25",
+          "path": "src/input/key_encode.zig",
+          "startLine": 352,
+          "endLine": 378,
+          "role": [
+            "implementation"
+          ]
+        },
+        {
+          "node": "n25",
+          "path": "src/input/key_encode.zig",
+          "startLine": 379,
+          "endLine": 550,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n25",
+          "path": "src/input/key_encode.zig",
+          "startLine": 552,
+          "endLine": 560,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n25",
+          "path": "src/input/key_encode.zig",
+          "startLine": 561,
+          "endLine": 618,
+          "role": [
+            "implementation"
+          ]
+        },
+        {
+          "node": "n25",
+          "path": "src/input/key_encode.zig",
+          "startLine": 631,
+          "endLine": 699,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n25",
+          "path": "src/input/key_encode.zig",
+          "startLine": 708,
+          "endLine": 892,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n25",
+          "path": "src/input/key_encode.zig",
+          "startLine": 924,
+          "endLine": 975,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n25",
+          "path": "src/input/key_encode.zig",
+          "startLine": 1010,
+          "endLine": 1117,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n25",
+          "path": "src/input/kitty.zig",
+          "startLine": 6,
+          "endLine": 129,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n25",
+          "path": "src/terminal/Screen.zig",
+          "startLine": 74,
+          "endLine": 75,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n25",
+          "path": "src/terminal/Terminal.zig",
+          "startLine": 84,
+          "endLine": 84,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n25",
+          "path": "src/terminal/Terminal.zig",
+          "startLine": 112,
+          "endLine": 114,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n25",
+          "path": "src/terminal/kitty/key.zig",
+          "startLine": 5,
+          "endLine": 62,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n25",
+          "path": "src/terminal/kitty/key.zig",
+          "startLine": 78,
+          "endLine": 106,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n25",
+          "path": "src/terminal/kitty/key.zig",
+          "startLine": 123,
+          "endLine": 124,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n25",
+          "path": "src/terminal/modes.zig",
+          "startLine": 15,
+          "endLine": 18,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n25",
+          "path": "src/terminal/modes.zig",
+          "startLine": 37,
+          "endLine": 51,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n25",
+          "path": "src/terminal/modes.zig",
+          "startLine": 139,
+          "endLine": 155,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n25",
+          "path": "src/terminal/modes.zig",
+          "startLine": 216,
+          "endLine": 231,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n25",
+          "path": "src/terminal/modes.zig",
+          "startLine": 375,
+          "endLine": 375,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n25",
+          "path": "src/terminal/modes.zig",
+          "startLine": 388,
+          "endLine": 393,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n25",
+          "path": "src/terminal/modes.zig",
+          "startLine": 404,
+          "endLine": 405,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n25",
+          "path": "src/terminal/stream.zig",
+          "startLine": 1673,
+          "endLine": 1673,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n25",
+          "path": "src/terminal/stream.zig",
+          "startLine": 2262,
+          "endLine": 2302,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n25",
+          "path": "src/terminal/stream.zig",
+          "startLine": 2319,
+          "endLine": 2363,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n25",
+          "path": "src/terminal/stream.zig",
+          "startLine": 2752,
+          "endLine": 2811,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n25",
+          "path": "src/terminal/stream.zig",
+          "startLine": 3146,
+          "endLine": 3149,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n25",
+          "path": "src/terminal/stream.zig",
+          "startLine": 3414,
+          "endLine": 3430,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n25",
+          "path": "src/termio/stream_handler.zig",
+          "startLine": 295,
+          "endLine": 296,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n25",
+          "path": "src/termio/stream_handler.zig",
+          "startLine": 318,
+          "endLine": 318,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n25",
+          "path": "src/termio/stream_handler.zig",
+          "startLine": 332,
+          "endLine": 352,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n25",
+          "path": "src/termio/stream_handler.zig",
+          "startLine": 594,
+          "endLine": 600,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n25",
+          "path": "src/termio/stream_handler.zig",
+          "startLine": 641,
+          "endLine": 641,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n25",
+          "path": "src/termio/stream_handler.zig",
+          "startLine": 675,
+          "endLine": 685,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n26",
+          "path": "macos/Sources/App/AppDelegate.swift",
+          "startLine": 306,
+          "endLine": 310,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n26",
+          "path": "macos/Sources/App/AppDelegate.swift",
+          "startLine": 804,
+          "endLine": 816,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n26",
+          "path": "macos/Sources/Features/Terminal/BaseTerminalController.swift",
+          "startLine": 189,
+          "endLine": 193,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n26",
+          "path": "macos/Sources/Features/Terminal/BaseTerminalController.swift",
+          "startLine": 282,
+          "endLine": 316,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n26",
+          "path": "macos/Sources/Features/Terminal/BaseTerminalController.swift",
+          "startLine": 666,
+          "endLine": 688,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n26",
+          "path": "macos/Sources/Ghostty/Ghostty.App.swift",
+          "startLine": 56,
+          "endLine": 62,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n26",
+          "path": "macos/Sources/Ghostty/Ghostty.App.swift",
+          "startLine": 572,
+          "endLine": 595,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n26",
+          "path": "macos/Sources/Ghostty/Ghostty.App.swift",
+          "startLine": 949,
+          "endLine": 1011,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n26",
+          "path": "src/App.zig",
+          "startLine": 319,
+          "endLine": 331,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n26",
+          "path": "src/App.zig",
+          "startLine": 444,
+          "endLine": 529,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n26",
+          "path": "src/Surface.zig",
+          "startLine": 2325,
+          "endLine": 2443,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n26",
+          "path": "src/Surface.zig",
+          "startLine": 2451,
+          "endLine": 2473,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n26",
+          "path": "src/Surface.zig",
+          "startLine": 2479,
+          "endLine": 2506,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n26",
+          "path": "src/Surface.zig",
+          "startLine": 3129,
+          "endLine": 3157,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n26",
+          "path": "src/Surface.zig",
+          "startLine": 4941,
+          "endLine": 5819,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n26",
+          "path": "src/apprt.zig",
+          "startLine": 43,
+          "endLine": 53,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n26",
+          "path": "src/apprt/embedded.zig",
+          "startLine": 301,
+          "endLine": 323,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n26",
+          "path": "src/apprt/gtk/App.zig",
+          "startLine": 61,
+          "endLine": 68,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n26",
+          "path": "src/apprt/gtk/class/application.zig",
+          "startLine": 692,
+          "endLine": 698,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n26",
+          "path": "src/apprt/gtk/class/application.zig",
+          "startLine": 739,
+          "endLine": 750,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n26",
+          "path": "src/apprt/gtk/class/application.zig",
+          "startLine": 2535,
+          "endLine": 2585,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n26",
+          "path": "src/apprt/gtk/class/split_tree.zig",
+          "startLine": 191,
+          "endLine": 194,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n26",
+          "path": "src/apprt/gtk/class/split_tree.zig",
+          "startLine": 212,
+          "endLine": 277,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n26",
+          "path": "src/apprt/gtk/class/split_tree.zig",
+          "startLine": 713,
+          "endLine": 742,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n26",
+          "path": "src/apprt/gtk/class/window.zig",
+          "startLine": 429,
+          "endLine": 436,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n26",
+          "path": "src/apprt/gtk/class/window.zig",
+          "startLine": 451,
+          "endLine": 498,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n26",
+          "path": "src/input/Binding.zig",
+          "startLine": 303,
+          "endLine": 303,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n26",
+          "path": "src/input/Binding.zig",
+          "startLine": 1380,
+          "endLine": 1557,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n26",
+          "path": "src/terminal/PageList.zig",
+          "startLine": 3347,
+          "endLine": 3379,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n26",
+          "path": "src/terminal/Screen.zig",
+          "startLine": 1719,
+          "endLine": 1737,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n26",
+          "path": "src/terminal/Screen.zig",
+          "startLine": 3063,
+          "endLine": 3097,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n26",
+          "path": "src/terminal/Screen.zig",
+          "startLine": 3363,
+          "endLine": 3415,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n26",
+          "path": "src/terminal/Terminal.zig",
+          "startLine": 3522,
+          "endLine": 3530,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n26",
+          "path": "src/terminal/Terminal.zig",
+          "startLine": 5868,
+          "endLine": 5911,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n26",
+          "path": "src/termio/Termio.zig",
+          "startLine": 604,
+          "endLine": 679,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n26",
+          "path": "src/termio/Thread.zig",
+          "startLine": 289,
+          "endLine": 289,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n26",
+          "path": "src/termio/Thread.zig",
+          "startLine": 313,
+          "endLine": 313,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n26",
+          "path": "src/termio/Thread.zig",
+          "startLine": 328,
+          "endLine": 329,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n26",
+          "path": "src/termio/Thread.zig",
+          "startLine": 337,
+          "endLine": 337,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n27",
+          "path": "src/Surface.zig",
+          "startLine": 2938,
+          "endLine": 2961,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n27",
+          "path": "src/Surface.zig",
+          "startLine": 3324,
+          "endLine": 3419,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n27",
+          "path": "src/input.zig",
+          "startLine": 13,
+          "endLine": 13,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n27",
+          "path": "src/input.zig",
+          "startLine": 25,
+          "endLine": 25,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n27",
+          "path": "src/input/function_keys.zig",
+          "startLine": 12,
+          "endLine": 49,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n27",
+          "path": "src/input/function_keys.zig",
+          "startLine": 53,
+          "endLine": 69,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n27",
+          "path": "src/input/function_keys.zig",
+          "startLine": 78,
+          "endLine": 86,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n27",
+          "path": "src/input/function_keys.zig",
+          "startLine": 87,
+          "endLine": 262,
+          "role": [
+            "implementation"
+          ]
+        },
+        {
+          "node": "n27",
+          "path": "src/input/function_keys.zig",
+          "startLine": 264,
+          "endLine": 314,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n27",
+          "path": "src/input/key.zig",
+          "startLine": 16,
+          "endLine": 55,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n27",
+          "path": "src/input/key.zig",
+          "startLine": 84,
+          "endLine": 88,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n27",
+          "path": "src/input/key_encode.zig",
+          "startLine": 14,
+          "endLine": 38,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n27",
+          "path": "src/input/key_encode.zig",
+          "startLine": 55,
+          "endLine": 97,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n27",
+          "path": "src/input/key_encode.zig",
+          "startLine": 99,
+          "endLine": 319,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n27",
+          "path": "src/input/key_encode.zig",
+          "startLine": 327,
+          "endLine": 351,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n27",
+          "path": "src/input/key_encode.zig",
+          "startLine": 352,
+          "endLine": 378,
+          "role": [
+            "implementation"
+          ]
+        },
+        {
+          "node": "n27",
+          "path": "src/input/key_encode.zig",
+          "startLine": 379,
+          "endLine": 550,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n27",
+          "path": "src/input/key_encode.zig",
+          "startLine": 552,
+          "endLine": 560,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n27",
+          "path": "src/input/key_encode.zig",
+          "startLine": 561,
+          "endLine": 618,
+          "role": [
+            "implementation"
+          ]
+        },
+        {
+          "node": "n27",
+          "path": "src/input/key_encode.zig",
+          "startLine": 631,
+          "endLine": 699,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n27",
+          "path": "src/input/key_encode.zig",
+          "startLine": 708,
+          "endLine": 892,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n27",
+          "path": "src/input/key_encode.zig",
+          "startLine": 924,
+          "endLine": 975,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n27",
+          "path": "src/input/key_encode.zig",
+          "startLine": 1010,
+          "endLine": 1117,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n27",
+          "path": "src/input/kitty.zig",
+          "startLine": 6,
+          "endLine": 129,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n27",
+          "path": "src/terminal/Screen.zig",
+          "startLine": 74,
+          "endLine": 75,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n27",
+          "path": "src/terminal/Terminal.zig",
+          "startLine": 84,
+          "endLine": 84,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n27",
+          "path": "src/terminal/Terminal.zig",
+          "startLine": 112,
+          "endLine": 114,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n27",
+          "path": "src/terminal/kitty/key.zig",
+          "startLine": 5,
+          "endLine": 62,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n27",
+          "path": "src/terminal/kitty/key.zig",
+          "startLine": 78,
+          "endLine": 106,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n27",
+          "path": "src/terminal/kitty/key.zig",
+          "startLine": 123,
+          "endLine": 124,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n27",
+          "path": "src/terminal/modes.zig",
+          "startLine": 15,
+          "endLine": 18,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n27",
+          "path": "src/terminal/modes.zig",
+          "startLine": 37,
+          "endLine": 51,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n27",
+          "path": "src/terminal/modes.zig",
+          "startLine": 139,
+          "endLine": 155,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n27",
+          "path": "src/terminal/modes.zig",
+          "startLine": 216,
+          "endLine": 231,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n27",
+          "path": "src/terminal/modes.zig",
+          "startLine": 375,
+          "endLine": 375,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n27",
+          "path": "src/terminal/modes.zig",
+          "startLine": 388,
+          "endLine": 393,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n27",
+          "path": "src/terminal/modes.zig",
+          "startLine": 404,
+          "endLine": 405,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n27",
+          "path": "src/terminal/stream.zig",
+          "startLine": 1673,
+          "endLine": 1673,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n27",
+          "path": "src/terminal/stream.zig",
+          "startLine": 2262,
+          "endLine": 2302,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n27",
+          "path": "src/terminal/stream.zig",
+          "startLine": 2319,
+          "endLine": 2363,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n27",
+          "path": "src/terminal/stream.zig",
+          "startLine": 2752,
+          "endLine": 2811,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n27",
+          "path": "src/terminal/stream.zig",
+          "startLine": 3146,
+          "endLine": 3149,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n27",
+          "path": "src/terminal/stream.zig",
+          "startLine": 3414,
+          "endLine": 3430,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n27",
+          "path": "src/termio/stream_handler.zig",
+          "startLine": 295,
+          "endLine": 296,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n27",
+          "path": "src/termio/stream_handler.zig",
+          "startLine": 318,
+          "endLine": 318,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n27",
+          "path": "src/termio/stream_handler.zig",
+          "startLine": 332,
+          "endLine": 352,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n27",
+          "path": "src/termio/stream_handler.zig",
+          "startLine": 594,
+          "endLine": 600,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n27",
+          "path": "src/termio/stream_handler.zig",
+          "startLine": 641,
+          "endLine": 641,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n27",
+          "path": "src/termio/stream_handler.zig",
+          "startLine": 675,
+          "endLine": 685,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n28",
+          "path": "src/Surface.zig",
+          "startLine": 3399,
+          "endLine": 3405,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n28",
+          "path": "src/input/function_keys.zig",
+          "startLine": 12,
+          "endLine": 49,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n28",
+          "path": "src/input/function_keys.zig",
+          "startLine": 53,
+          "endLine": 69,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n28",
+          "path": "src/input/function_keys.zig",
+          "startLine": 78,
+          "endLine": 86,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n28",
+          "path": "src/input/function_keys.zig",
+          "startLine": 121,
+          "endLine": 185,
+          "role": [
+            "implementation"
+          ]
+        },
+        {
+          "node": "n28",
+          "path": "src/input/function_keys.zig",
+          "startLine": 264,
+          "endLine": 314,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n28",
+          "path": "src/input/key_encode.zig",
+          "startLine": 14,
+          "endLine": 38,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n28",
+          "path": "src/input/key_encode.zig",
+          "startLine": 55,
+          "endLine": 97,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n28",
+          "path": "src/input/key_encode.zig",
+          "startLine": 99,
+          "endLine": 319,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n28",
+          "path": "src/input/key_encode.zig",
+          "startLine": 327,
+          "endLine": 351,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n28",
+          "path": "src/input/key_encode.zig",
+          "startLine": 379,
+          "endLine": 445,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n28",
+          "path": "src/input/key_encode.zig",
+          "startLine": 552,
+          "endLine": 560,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n28",
+          "path": "src/input/key_encode.zig",
+          "startLine": 631,
+          "endLine": 699,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n28",
+          "path": "src/input/key_encode.zig",
+          "startLine": 924,
+          "endLine": 975,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n28",
+          "path": "src/input/key_encode.zig",
+          "startLine": 1010,
+          "endLine": 1117,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n28",
+          "path": "src/input/kitty.zig",
+          "startLine": 6,
+          "endLine": 129,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n28",
+          "path": "src/terminal/Screen.zig",
+          "startLine": 74,
+          "endLine": 75,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n28",
+          "path": "src/terminal/Terminal.zig",
+          "startLine": 84,
+          "endLine": 84,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n28",
+          "path": "src/terminal/Terminal.zig",
+          "startLine": 112,
+          "endLine": 114,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n28",
+          "path": "src/terminal/kitty/key.zig",
+          "startLine": 5,
+          "endLine": 62,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n28",
+          "path": "src/terminal/kitty/key.zig",
+          "startLine": 78,
+          "endLine": 106,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n28",
+          "path": "src/terminal/kitty/key.zig",
+          "startLine": 123,
+          "endLine": 124,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n28",
+          "path": "src/terminal/modes.zig",
+          "startLine": 15,
+          "endLine": 18,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n28",
+          "path": "src/terminal/modes.zig",
+          "startLine": 37,
+          "endLine": 51,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n28",
+          "path": "src/terminal/modes.zig",
+          "startLine": 139,
+          "endLine": 155,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n28",
+          "path": "src/terminal/modes.zig",
+          "startLine": 216,
+          "endLine": 231,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n28",
+          "path": "src/terminal/modes.zig",
+          "startLine": 375,
+          "endLine": 375,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n28",
+          "path": "src/terminal/modes.zig",
+          "startLine": 388,
+          "endLine": 393,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n28",
+          "path": "src/terminal/modes.zig",
+          "startLine": 404,
+          "endLine": 405,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n28",
+          "path": "src/terminal/stream.zig",
+          "startLine": 1673,
+          "endLine": 1673,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n28",
+          "path": "src/terminal/stream.zig",
+          "startLine": 2262,
+          "endLine": 2302,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n28",
+          "path": "src/terminal/stream.zig",
+          "startLine": 2319,
+          "endLine": 2363,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n28",
+          "path": "src/terminal/stream.zig",
+          "startLine": 2752,
+          "endLine": 2811,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n28",
+          "path": "src/terminal/stream.zig",
+          "startLine": 3146,
+          "endLine": 3149,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n28",
+          "path": "src/terminal/stream.zig",
+          "startLine": 3414,
+          "endLine": 3430,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n28",
+          "path": "src/termio/stream_handler.zig",
+          "startLine": 295,
+          "endLine": 296,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n28",
+          "path": "src/termio/stream_handler.zig",
+          "startLine": 318,
+          "endLine": 318,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n28",
+          "path": "src/termio/stream_handler.zig",
+          "startLine": 332,
+          "endLine": 352,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n28",
+          "path": "src/termio/stream_handler.zig",
+          "startLine": 594,
+          "endLine": 600,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n28",
+          "path": "src/termio/stream_handler.zig",
+          "startLine": 641,
+          "endLine": 641,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n28",
+          "path": "src/termio/stream_handler.zig",
+          "startLine": 675,
+          "endLine": 685,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "macos/Sources/Ghostty/Ghostty.App.swift",
+          "startLine": 63,
+          "endLine": 70,
+          "role": [
+            "use"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "macos/Sources/Ghostty/Ghostty.App.swift",
+          "startLine": 298,
+          "endLine": 345,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "macos/Sources/Ghostty/Ghostty.App.swift",
+          "startLine": 415,
+          "endLine": 469,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/Surface.zig",
+          "startLine": 3421,
+          "endLine": 3432,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/Surface.zig",
+          "startLine": 3584,
+          "endLine": 3589,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/Surface.zig",
+          "startLine": 3680,
+          "endLine": 3682,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/Surface.zig",
+          "startLine": 3684,
+          "endLine": 3727,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/Surface.zig",
+          "startLine": 3729,
+          "endLine": 3750,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/Surface.zig",
+          "startLine": 3752,
+          "endLine": 3761,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/Surface.zig",
+          "startLine": 3800,
+          "endLine": 3805,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/Surface.zig",
+          "startLine": 3813,
+          "endLine": 3905,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/Surface.zig",
+          "startLine": 3918,
+          "endLine": 3923,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/Surface.zig",
+          "startLine": 3935,
+          "endLine": 3948,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/Surface.zig",
+          "startLine": 4057,
+          "endLine": 4094,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/Surface.zig",
+          "startLine": 4180,
+          "endLine": 4191,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/Surface.zig",
+          "startLine": 4678,
+          "endLine": 4682,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/Surface.zig",
+          "startLine": 4735,
+          "endLine": 4737,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/Surface.zig",
+          "startLine": 4778,
+          "endLine": 4801,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/Surface.zig",
+          "startLine": 4941,
+          "endLine": 4941,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/Surface.zig",
+          "startLine": 5240,
+          "endLine": 5248,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/Surface.zig",
+          "startLine": 6017,
+          "endLine": 6026,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/Surface.zig",
+          "startLine": 6028,
+          "endLine": 6033,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/Surface.zig",
+          "startLine": 6156,
+          "endLine": 6162,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/Surface.zig",
+          "startLine": 6219,
+          "endLine": 6262,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/Surface.zig",
+          "startLine": 6264,
+          "endLine": 6341,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/Surface.zig",
+          "startLine": 6343,
+          "endLine": 6398,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/apprt/embedded.zig",
+          "startLine": 715,
+          "endLine": 719,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/apprt/embedded.zig",
+          "startLine": 742,
+          "endLine": 801,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/apprt/embedded.zig",
+          "startLine": 866,
+          "endLine": 870,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/apprt/embedded.zig",
+          "startLine": 910,
+          "endLine": 920,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/apprt/embedded.zig",
+          "startLine": 1131,
+          "endLine": 1136,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/apprt/embedded.zig",
+          "startLine": 2330,
+          "endLine": 2336,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/apprt/gtk/Surface.zig",
+          "startLine": 74,
+          "endLine": 83,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/apprt/gtk/class/surface.zig",
+          "startLine": 1727,
+          "endLine": 1737,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/apprt/gtk/class/surface.zig",
+          "startLine": 4218,
+          "endLine": 4230,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/apprt/gtk/class/surface.zig",
+          "startLine": 4242,
+          "endLine": 4245,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/apprt/gtk/class/surface.zig",
+          "startLine": 4257,
+          "endLine": 4291,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/apprt/gtk/class/surface.zig",
+          "startLine": 4293,
+          "endLine": 4309,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/apprt/gtk/class/surface.zig",
+          "startLine": 4799,
+          "endLine": 4819,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/apprt/gtk/class/surface.zig",
+          "startLine": 4851,
+          "endLine": 4912,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/datastruct/message_data.zig",
+          "startLine": 38,
+          "endLine": 74,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/input.zig",
+          "startLine": 15,
+          "endLine": 16,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/input/mouse_encode.zig",
+          "startLine": 12,
+          "endLine": 76,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/input/mouse_encode.zig",
+          "startLine": 78,
+          "endLine": 280,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/input/paste.zig",
+          "startLine": 4,
+          "endLine": 22,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/input/paste.zig",
+          "startLine": 24,
+          "endLine": 125,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/input/paste.zig",
+          "startLine": 140,
+          "endLine": 161,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/input/paste.zig",
+          "startLine": 180,
+          "endLine": 183,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/input/paste.zig",
+          "startLine": 196,
+          "endLine": 199,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/renderer/size.zig",
+          "startLine": 114,
+          "endLine": 151,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/renderer/size.zig",
+          "startLine": 154,
+          "endLine": 174,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/terminal/Terminal.zig",
+          "startLine": 116,
+          "endLine": 126,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/terminal/kitty/clipboard_response.zig",
+          "startLine": 29,
+          "endLine": 75,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/terminal/kitty/clipboard_response.zig",
+          "startLine": 77,
+          "endLine": 186,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/terminal/kitty/clipboard_response.zig",
+          "startLine": 191,
+          "endLine": 216,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/terminal/modes.zig",
+          "startLine": 382,
+          "endLine": 382,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/terminal/modes.zig",
+          "startLine": 395,
+          "endLine": 403,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/terminal/modes.zig",
+          "startLine": 411,
+          "endLine": 411,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/terminal/modes.zig",
+          "startLine": 417,
+          "endLine": 421,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/terminal/mouse.zig",
+          "startLine": 6,
+          "endLine": 29,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/terminal/paste.zig",
+          "startLine": 167,
+          "endLine": 184,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/terminal/paste.zig",
+          "startLine": 202,
+          "endLine": 242,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/terminal/stream.zig",
+          "startLine": 1673,
+          "endLine": 1673,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/terminal/stream.zig",
+          "startLine": 2262,
+          "endLine": 2302,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/terminal/stream.zig",
+          "startLine": 2631,
+          "endLine": 2650,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/termio/message.zig",
+          "startLine": 13,
+          "endLine": 17,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/termio/message.zig",
+          "startLine": 107,
+          "endLine": 116,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/termio/stream_handler.zig",
+          "startLine": 295,
+          "endLine": 296,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/termio/stream_handler.zig",
+          "startLine": 322,
+          "endLine": 322,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/termio/stream_handler.zig",
+          "startLine": 641,
+          "endLine": 641,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/termio/stream_handler.zig",
+          "startLine": 675,
+          "endLine": 685,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n29",
+          "path": "src/termio/stream_handler.zig",
+          "startLine": 775,
+          "endLine": 819,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n30",
+          "path": "src/Surface.zig",
+          "startLine": 3584,
+          "endLine": 3589,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n30",
+          "path": "src/Surface.zig",
+          "startLine": 3680,
+          "endLine": 3682,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n30",
+          "path": "src/Surface.zig",
+          "startLine": 3729,
+          "endLine": 3750,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n30",
+          "path": "src/Surface.zig",
+          "startLine": 3800,
+          "endLine": 3805,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n30",
+          "path": "src/Surface.zig",
+          "startLine": 3813,
+          "endLine": 3905,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n30",
+          "path": "src/Surface.zig",
+          "startLine": 3918,
+          "endLine": 3923,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n30",
+          "path": "src/Surface.zig",
+          "startLine": 3935,
+          "endLine": 3948,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n30",
+          "path": "src/Surface.zig",
+          "startLine": 4057,
+          "endLine": 4094,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n30",
+          "path": "src/Surface.zig",
+          "startLine": 4678,
+          "endLine": 4682,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n30",
+          "path": "src/Surface.zig",
+          "startLine": 4735,
+          "endLine": 4737,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n30",
+          "path": "src/Surface.zig",
+          "startLine": 4778,
+          "endLine": 4801,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n30",
+          "path": "src/input.zig",
+          "startLine": 15,
+          "endLine": 15,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n30",
+          "path": "src/input/mouse_encode.zig",
+          "startLine": 12,
+          "endLine": 76,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n30",
+          "path": "src/input/mouse_encode.zig",
+          "startLine": 78,
+          "endLine": 280,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n30",
+          "path": "src/renderer/size.zig",
+          "startLine": 114,
+          "endLine": 151,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n30",
+          "path": "src/renderer/size.zig",
+          "startLine": 154,
+          "endLine": 174,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n30",
+          "path": "src/terminal/Terminal.zig",
+          "startLine": 116,
+          "endLine": 126,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n30",
+          "path": "src/terminal/mouse.zig",
+          "startLine": 6,
+          "endLine": 29,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n31",
+          "path": "macos/Sources/Ghostty/Ghostty.App.swift",
+          "startLine": 63,
+          "endLine": 70,
+          "role": [
+            "use"
+          ]
+        },
+        {
+          "node": "n31",
+          "path": "macos/Sources/Ghostty/Ghostty.App.swift",
+          "startLine": 298,
+          "endLine": 345,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n31",
+          "path": "macos/Sources/Ghostty/Ghostty.App.swift",
+          "startLine": 415,
+          "endLine": 469,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n31",
+          "path": "src/Surface.zig",
+          "startLine": 3421,
+          "endLine": 3432,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n31",
+          "path": "src/Surface.zig",
+          "startLine": 4180,
+          "endLine": 4191,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n31",
+          "path": "src/Surface.zig",
+          "startLine": 4941,
+          "endLine": 4941,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n31",
+          "path": "src/Surface.zig",
+          "startLine": 5240,
+          "endLine": 5248,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n31",
+          "path": "src/Surface.zig",
+          "startLine": 6017,
+          "endLine": 6026,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n31",
+          "path": "src/Surface.zig",
+          "startLine": 6156,
+          "endLine": 6162,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n31",
+          "path": "src/Surface.zig",
+          "startLine": 6219,
+          "endLine": 6262,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n31",
+          "path": "src/Surface.zig",
+          "startLine": 6264,
+          "endLine": 6341,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n31",
+          "path": "src/apprt/embedded.zig",
+          "startLine": 715,
+          "endLine": 719,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n31",
+          "path": "src/apprt/embedded.zig",
+          "startLine": 742,
+          "endLine": 801,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n31",
+          "path": "src/apprt/embedded.zig",
+          "startLine": 866,
+          "endLine": 870,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n31",
+          "path": "src/apprt/embedded.zig",
+          "startLine": 910,
+          "endLine": 920,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n31",
+          "path": "src/apprt/embedded.zig",
+          "startLine": 1131,
+          "endLine": 1136,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n31",
+          "path": "src/apprt/embedded.zig",
+          "startLine": 2330,
+          "endLine": 2336,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n31",
+          "path": "src/apprt/gtk/Surface.zig",
+          "startLine": 74,
+          "endLine": 83,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n31",
+          "path": "src/apprt/gtk/class/surface.zig",
+          "startLine": 1727,
+          "endLine": 1737,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n31",
+          "path": "src/apprt/gtk/class/surface.zig",
+          "startLine": 4218,
+          "endLine": 4230,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n31",
+          "path": "src/apprt/gtk/class/surface.zig",
+          "startLine": 4257,
+          "endLine": 4291,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n31",
+          "path": "src/apprt/gtk/class/surface.zig",
+          "startLine": 4799,
+          "endLine": 4819,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n31",
+          "path": "src/apprt/gtk/class/surface.zig",
+          "startLine": 4851,
+          "endLine": 4912,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n31",
+          "path": "src/datastruct/message_data.zig",
+          "startLine": 38,
+          "endLine": 74,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n31",
+          "path": "src/input.zig",
+          "startLine": 16,
+          "endLine": 16,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n31",
+          "path": "src/input/paste.zig",
+          "startLine": 4,
+          "endLine": 22,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n31",
+          "path": "src/input/paste.zig",
+          "startLine": 24,
+          "endLine": 125,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n31",
+          "path": "src/input/paste.zig",
+          "startLine": 180,
+          "endLine": 183,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n31",
+          "path": "src/terminal/modes.zig",
+          "startLine": 411,
+          "endLine": 411,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n31",
+          "path": "src/termio/message.zig",
+          "startLine": 13,
+          "endLine": 17,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n31",
+          "path": "src/termio/message.zig",
+          "startLine": 107,
+          "endLine": 116,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n32",
+          "path": "src/Surface.zig",
+          "startLine": 703,
+          "endLine": 705,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n32",
+          "path": "src/Surface.zig",
+          "startLine": 711,
+          "endLine": 721,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n32",
+          "path": "src/Surface.zig",
+          "startLine": 895,
+          "endLine": 920,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n32",
+          "path": "src/Surface.zig",
+          "startLine": 2938,
+          "endLine": 2957,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n32",
+          "path": "src/Surface.zig",
+          "startLine": 3304,
+          "endLine": 3315,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n32",
+          "path": "src/Surface.zig",
+          "startLine": 3868,
+          "endLine": 3875,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n32",
+          "path": "src/Surface.zig",
+          "startLine": 6335,
+          "endLine": 6341,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n32",
+          "path": "src/datastruct/blocking_queue.zig",
+          "startLine": 99,
+          "endLine": 168,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n32",
+          "path": "src/termio.zig",
+          "startLine": 23,
+          "endLine": 32,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n32",
+          "path": "src/termio/Exec.zig",
+          "startLine": 86,
+          "endLine": 104,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n32",
+          "path": "src/termio/Exec.zig",
+          "startLine": 129,
+          "endLine": 131,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n32",
+          "path": "src/termio/Exec.zig",
+          "startLine": 147,
+          "endLine": 156,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n32",
+          "path": "src/termio/Exec.zig",
+          "startLine": 274,
+          "endLine": 277,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n32",
+          "path": "src/termio/Exec.zig",
+          "startLine": 403,
+          "endLine": 490,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n32",
+          "path": "src/termio/Exec.zig",
+          "startLine": 493,
+          "endLine": 516,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n32",
+          "path": "src/termio/Exec.zig",
+          "startLine": 520,
+          "endLine": 525,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n32",
+          "path": "src/termio/Exec.zig",
+          "startLine": 897,
+          "endLine": 900,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n32",
+          "path": "src/termio/Exec.zig",
+          "startLine": 909,
+          "endLine": 916,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n32",
+          "path": "src/termio/Exec.zig",
+          "startLine": 1015,
+          "endLine": 1019,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n32",
+          "path": "src/termio/Exec.zig",
+          "startLine": 1083,
+          "endLine": 1095,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n32",
+          "path": "src/termio/Termio.zig",
+          "startLine": 29,
+          "endLine": 29,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n32",
+          "path": "src/termio/Termio.zig",
+          "startLine": 34,
+          "endLine": 35,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n32",
+          "path": "src/termio/Termio.zig",
+          "startLine": 61,
+          "endLine": 62,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n32",
+          "path": "src/termio/Termio.zig",
+          "startLine": 344,
+          "endLine": 345,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n32",
+          "path": "src/termio/Termio.zig",
+          "startLine": 354,
+          "endLine": 358,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n32",
+          "path": "src/termio/Termio.zig",
+          "startLine": 431,
+          "endLine": 447,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n32",
+          "path": "src/termio/Termio.zig",
+          "startLine": 449,
+          "endLine": 463,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n32",
+          "path": "src/termio/Thread.zig",
+          "startLine": 236,
+          "endLine": 236,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n32",
+          "path": "src/termio/Thread.zig",
+          "startLine": 253,
+          "endLine": 278,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n32",
+          "path": "src/termio/Thread.zig",
+          "startLine": 289,
+          "endLine": 375,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n32",
+          "path": "src/termio/Thread.zig",
+          "startLine": 453,
+          "endLine": 471,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n32",
+          "path": "src/termio/backend.zig",
+          "startLine": 13,
+          "endLine": 14,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n32",
+          "path": "src/termio/backend.zig",
+          "startLine": 22,
+          "endLine": 25,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n32",
+          "path": "src/termio/backend.zig",
+          "startLine": 76,
+          "endLine": 86,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n32",
+          "path": "src/termio/mailbox.zig",
+          "startLine": 11,
+          "endLine": 109,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n32",
+          "path": "src/termio/message.zig",
+          "startLine": 13,
+          "endLine": 17,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n32",
+          "path": "src/termio/message.zig",
+          "startLine": 91,
+          "endLine": 98,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n32",
+          "path": "src/termio/message.zig",
+          "startLine": 118,
+          "endLine": 132,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n33",
+          "path": "src/Surface.zig",
+          "startLine": 171,
+          "endLine": 175,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n33",
+          "path": "src/Surface.zig",
+          "startLine": 895,
+          "endLine": 920,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n33",
+          "path": "src/Surface.zig",
+          "startLine": 2451,
+          "endLine": 2473,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n33",
+          "path": "src/Surface.zig",
+          "startLine": 2479,
+          "endLine": 2506,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n33",
+          "path": "src/Surface.zig",
+          "startLine": 5555,
+          "endLine": 5563,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n33",
+          "path": "src/Surface.zig",
+          "startLine": 5635,
+          "endLine": 5644,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n33",
+          "path": "src/datastruct/message_data.zig",
+          "startLine": 8,
+          "endLine": 36,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n33",
+          "path": "src/terminal/Screen.zig",
+          "startLine": 3063,
+          "endLine": 3097,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n33",
+          "path": "src/terminal/Screen.zig",
+          "startLine": 3363,
+          "endLine": 3415,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n33",
+          "path": "src/termio/Thread.zig",
+          "startLine": 289,
+          "endLine": 289,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n33",
+          "path": "src/termio/Thread.zig",
+          "startLine": 298,
+          "endLine": 302,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n33",
+          "path": "src/termio/Thread.zig",
+          "startLine": 359,
+          "endLine": 366,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n33",
+          "path": "src/termio/mailbox.zig",
+          "startLine": 47,
+          "endLine": 55,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n33",
+          "path": "src/termio/mailbox.zig",
+          "startLine": 63,
+          "endLine": 67,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n33",
+          "path": "src/termio/mailbox.zig",
+          "startLine": 72,
+          "endLine": 95,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n33",
+          "path": "src/termio/message.zig",
+          "startLine": 13,
+          "endLine": 17,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n33",
+          "path": "src/termio/message.zig",
+          "startLine": 91,
+          "endLine": 98,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n33",
+          "path": "src/termio/message.zig",
+          "startLine": 118,
+          "endLine": 132,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n34",
+          "path": "src/Surface.zig",
+          "startLine": 711,
+          "endLine": 721,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n34",
+          "path": "src/termio/Exec.zig",
+          "startLine": 86,
+          "endLine": 104,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n34",
+          "path": "src/termio/Exec.zig",
+          "startLine": 129,
+          "endLine": 131,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n34",
+          "path": "src/termio/Exec.zig",
+          "startLine": 147,
+          "endLine": 156,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n34",
+          "path": "src/termio/Exec.zig",
+          "startLine": 274,
+          "endLine": 277,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n34",
+          "path": "src/termio/Exec.zig",
+          "startLine": 403,
+          "endLine": 490,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n34",
+          "path": "src/termio/Exec.zig",
+          "startLine": 493,
+          "endLine": 516,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n34",
+          "path": "src/termio/Exec.zig",
+          "startLine": 520,
+          "endLine": 525,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n34",
+          "path": "src/termio/Exec.zig",
+          "startLine": 897,
+          "endLine": 900,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n34",
+          "path": "src/termio/Exec.zig",
+          "startLine": 909,
+          "endLine": 916,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n34",
+          "path": "src/termio/Exec.zig",
+          "startLine": 1015,
+          "endLine": 1019,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n34",
+          "path": "src/termio/Exec.zig",
+          "startLine": 1083,
+          "endLine": 1095,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n34",
+          "path": "src/termio/Termio.zig",
+          "startLine": 34,
+          "endLine": 35,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n34",
+          "path": "src/termio/Termio.zig",
+          "startLine": 344,
+          "endLine": 345,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n34",
+          "path": "src/termio/Termio.zig",
+          "startLine": 449,
+          "endLine": 463,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n34",
+          "path": "src/termio/Thread.zig",
+          "startLine": 236,
+          "endLine": 236,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n34",
+          "path": "src/termio/Thread.zig",
+          "startLine": 253,
+          "endLine": 278,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n34",
+          "path": "src/termio/Thread.zig",
+          "startLine": 289,
+          "endLine": 375,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n34",
+          "path": "src/termio/Thread.zig",
+          "startLine": 453,
+          "endLine": 471,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n34",
+          "path": "src/termio/backend.zig",
+          "startLine": 13,
+          "endLine": 14,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n34",
+          "path": "src/termio/backend.zig",
+          "startLine": 22,
+          "endLine": 25,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n34",
+          "path": "src/termio/backend.zig",
+          "startLine": 76,
+          "endLine": 86,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n34",
+          "path": "src/termio/message.zig",
+          "startLine": 91,
+          "endLine": 98,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n35",
+          "path": "src/termio/Exec.zig",
+          "startLine": 86,
+          "endLine": 104,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n35",
+          "path": "src/termio/Exec.zig",
+          "startLine": 129,
+          "endLine": 131,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n35",
+          "path": "src/termio/Exec.zig",
+          "startLine": 147,
+          "endLine": 156,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n35",
+          "path": "src/termio/Exec.zig",
+          "startLine": 274,
+          "endLine": 277,
+          "role": [
+            "declaration",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n35",
+          "path": "src/termio/Exec.zig",
+          "startLine": 403,
+          "endLine": 490,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n35",
+          "path": "src/termio/Exec.zig",
+          "startLine": 493,
+          "endLine": 516,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n35",
+          "path": "src/termio/Exec.zig",
+          "startLine": 520,
+          "endLine": 525,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n35",
+          "path": "src/termio/Exec.zig",
+          "startLine": 897,
+          "endLine": 900,
+          "role": [
+            "declaration"
+          ]
+        },
+        {
+          "node": "n35",
+          "path": "src/termio/Exec.zig",
+          "startLine": 909,
+          "endLine": 916,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n35",
+          "path": "src/termio/Exec.zig",
+          "startLine": 1015,
+          "endLine": 1019,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n35",
+          "path": "src/termio/Exec.zig",
+          "startLine": 1083,
+          "endLine": 1095,
+          "role": [
+            "use",
+            "implementation"
+          ]
+        },
+        {
+          "node": "n35",
+          "path": "src/termio/backend.zig",
+          "startLine": 76,
+          "endLine": 86,
+          "role": [
+            "declaration",
+            "use",
+            "implementation"
+          ]
+        }
+      ]
+    }
+  ],
+  "notes": "d1 n24–n35 only, as assigned. n25: a non-consuming binding can perform an action and still fall through to encode the key. n29–n31: text pastes use mode 2004 framing or newline conversion; clipboard pastes can instead emit a mode 5522 MIME-list event, while direct text input uses the text path. n33: the readonly guard intercepts the three write-message variants at Surface.queueIo, not direct writes in Termio (e.g. the prompt-redraw form-feed in clearScreen). n35: Ghostty submits the write to libxev on the POSIX PTY master or Windows PTY input pipe; libxev internals are outside the permitted source scope."
+}

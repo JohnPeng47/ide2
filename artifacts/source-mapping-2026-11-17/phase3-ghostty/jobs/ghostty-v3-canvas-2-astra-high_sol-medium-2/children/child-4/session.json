@@ -1,0 +1,19 @@
+{
+  "id": "child-4",
+  "name": "exec",
+  "assignment": "Map all nodes of d4 only. Read numbered ranges and full named declarations, cover flows. Return JSON.",
+  "model": "gpt-6-sol",
+  "effort": "medium",
+  "status": "generating",
+  "queuedAt": "2026-11-19T04:01:48.048Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-19T04:01:48.052Z",
+  "sessionId": "01a1f1f7-c034-7b37-b312-db797541732a",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-xfq61g3l-agent-repository-eXuuFp-checkout--/2026-11-19T04-01-48-084Z_01a1f1f7-c034-7b37-b312-db797541732a.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase3-xfq61g3l/agent-repository-eXuuFp/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

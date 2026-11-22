@@ -1,0 +1,18 @@
+{
+  "text": "The complete **d4** subset is in `/tmp/d4work/candidate.json`. Its `diagrams[0]` is ready to merge: **26 scope records and 525 mapping ranges**, with descendant ranges included in their parents and overlaps removed within each node.\n\n- `/tmp/d4work/scopes` — scopes by node number.\n- `/tmp/d4work/compact` — direct ranges and roles (`d` = declaration, `u` = use, `i` = implementation).\n- `/tmp/d4work/build.py` — path aliases, parent unions, overlap removal, and candidate generation.\n\nAll paths and inclusive line bounds were checked against the pinned checkout. No d4 claim was left unmapped. `validate_source_mappings` was not available to this worker; the combined candidate still needs that validation.",
+  "usage": {
+    "input": 65214,
+    "output": 3628,
+    "cacheRead": 348032,
+    "cacheWrite": 0,
+    "reasoning": 156,
+    "totalTokens": 416874
+  },
+  "cost": {
+    "input": 0.65214,
+    "output": 0.1814,
+    "cacheRead": 0.348032,
+    "cacheWrite": 0,
+    "total": 1.1815720000000003
+  }
+}

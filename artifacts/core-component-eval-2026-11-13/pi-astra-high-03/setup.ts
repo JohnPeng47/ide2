@@ -1,0 +1,27 @@
+import { readFile, writeFile } from 'node:fs/promises';
+import { execFileSync } from 'node:child_process';
+import { createHash, randomUUID } from 'node:crypto';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { AgentContextLibrary } from '../../../application/mapping/agent/agentContextLibrary';
+import { FileAgentContextRepository } from '../../../infrastructure/core/persistence/fileAgentContextRepository';
+const directory=path.dirname(fileURLToPath(import.meta.url)),root=path.resolve(directory,'../../..');
+const read=async(p:string)=>JSON.parse(await readFile(p,'utf8'));
+const write=async(p:string,v:unknown)=>writeFile(p,JSON.stringify(v,null,2)+'\n');
+let ids;try{ids=await read(path.join(directory,'ids.json'));}catch(e){if((e as NodeJS.ErrnoException).code!=='ENOENT')throw e;ids={contextRequestId:randomUUID(),attachRequestId:randomUUID(),coverageAttachRequestId:randomUUID(),cases:Array.from({length:3},(_,i)=>({number:i+1,runId:randomUUID(),sampleId:randomUUID()}))};await write(path.join(directory,'ids.json'),ids);}
+const baseline=await read(path.join(directory,'../repository-discovery-01/setup.json'));
+const repositoryPath='/home/john/softwarez/pi';
+const commit=execFileSync('git',['rev-parse','HEAD'],{cwd:repositoryPath,encoding:'utf8'}).trim();
+if(commit!=='682c7b93ce3e0a52b579c2b65b4c06bb392e7180')throw Error('Pi HEAD changed since inspection');
+const paths=execFileSync('git',['ls-tree','-rz','--name-only',commit],{cwd:repositoryPath,encoding:'utf8',maxBuffer:16*1024*1024}).split('\0').filter(Boolean);
+const exclusions=['**/*.md','**/*.mdx','**/AGENTS.md','**/LICENSE*','**/CODEX-LICENSE','**/*-LICENSE','**/*.test.*','**/*.spec.*','**/test/**','**/tests/**','**/__tests__/**','**/fixtures/**','**/__fixtures__/**','**/docs/**','**/examples/**','**/benchmarks/**','**/scripts/**','**/node_modules/**','**/dist/**','**/build/**','.pi/**','.github/**','.husky/**','scripts/**','nix/**','package-lock.json','flake.lock'].sort();
+const eligible=paths.filter(p=>!exclusions.some(pattern=>path.posix.matchesGlob(p,pattern))).sort();
+const config=await read(path.join(root,'artifacts/codebase-canvas-2026-11-11/config.json'));
+const contexts=new AgentContextLibrary(new FileAgentContextRepository(config.storeRoot));
+const context=await contexts.create({requestId:ids.contextRequestId,name:'Pi · core discovery',group:'Core component discovery',description:`Incremental repository discovery at ${commit}; source-only scope, excluding tests, documentation, examples and scripts.`,context:[{type:'repository',repositoryPath,commit,exclusions,task:'Identify the core component: the connected set of responsibilities around which the application’s main behavior and state are organized. Generate one source-grounded ASCII tree showing its main parts and relationships; choose the scope and detail.'}]});
+await write(path.join(directory,'context.json'),(await contexts.read(context.agentContextId,false)).snapshot);
+await write(path.join(directory,'eligible-paths.json'),eligible);
+const prompt=await readFile(path.join(directory,'prompt.txt'),'utf8');
+if(createHash('sha256').update(prompt).digest('hex')!==baseline.promptSha256)throw Error('Prompt differs from v2');
+await write(path.join(directory,'inputs.json'),{model:'gpt-6-astra',effort:'high',samples:3,conditionId:'pi-astra-high',phaseId:'pi',caseId:'pi-source',experimentId:baseline.experimentId,promptId:baseline.promptId,promptVersion:2,promptSha256:baseline.promptSha256,savedPromptContentHash:baseline.savedPromptContentHash,agentContextId:context.agentContextId,contextHash:context.contentHash,sourceCommit:commit,repositoryPath,eligibleFiles:eligible.length,...ids});
+console.log(JSON.stringify({sourceCommit:commit,eligibleFiles:eligible.length,agentContextId:context.agentContextId,model:'gpt-6-astra',effort:'high',samples:3}));

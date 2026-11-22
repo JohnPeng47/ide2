@@ -1,0 +1,399 @@
+{
+  "output": {
+    "diagrams": [
+      {
+        "diagramId": "d1",
+        "mappings": [
+          {
+            "node": "n1",
+            "path": "packages/core/src/session/sql.ts",
+            "startLine": 28,
+            "endLine": 74
+          },
+          {
+            "node": "n9",
+            "path": "packages/core/src/session/sql.ts",
+            "startLine": 28,
+            "endLine": 74
+          },
+          {
+            "node": "n2",
+            "path": "packages/core/src/session.ts",
+            "startLine": 126,
+            "endLine": 135
+          },
+          {
+            "node": "n3",
+            "path": "packages/core/src/session.ts",
+            "startLine": 238,
+            "endLine": 245
+          },
+          {
+            "node": "n5",
+            "path": "packages/core/src/session.ts",
+            "startLine": 198,
+            "endLine": 212
+          },
+          {
+            "node": "n7",
+            "path": "packages/core/src/session/session.ts",
+            "startLine": 39,
+            "endLine": 55
+          },
+          {
+            "node": "n8",
+            "path": "packages/core/src/session/session.ts",
+            "startLine": 39,
+            "endLine": 55
+          },
+          {
+            "node": "n10",
+            "path": "packages/core/src/session/sql.ts",
+            "startLine": 28,
+            "endLine": 74
+          },
+          {
+            "node": "n11",
+            "path": "packages/core/src/session/sql.ts",
+            "startLine": 28,
+            "endLine": 74
+          },
+          {
+            "node": "n12",
+            "path": "packages/core/src/session/sql.ts",
+            "startLine": 28,
+            "endLine": 74
+          },
+          {
+            "node": "n13",
+            "path": "packages/core/src/session/sql.ts",
+            "startLine": 86,
+            "endLine": 127
+          },
+          {
+            "node": "n14",
+            "path": "packages/core/src/session/sql.ts",
+            "startLine": 86,
+            "endLine": 127
+          },
+          {
+            "node": "n15",
+            "path": "packages/core/src/session/sql.ts",
+            "startLine": 130,
+            "endLine": 183
+          },
+          {
+            "node": "n16",
+            "path": "packages/core/src/session/sql.ts",
+            "startLine": 130,
+            "endLine": 183
+          },
+          {
+            "node": "n21",
+            "path": "packages/core/src/session/store.ts",
+            "startLine": 54,
+            "endLine": 58
+          },
+          {
+            "node": "n23",
+            "path": "packages/core/src/session/store.ts",
+            "startLine": 54,
+            "endLine": 58
+          },
+          {
+            "node": "n91",
+            "path": "packages/core/src/session/store.ts",
+            "startLine": 54,
+            "endLine": 58
+          },
+          {
+            "node": "n24",
+            "path": "packages/core/src/session/session.ts",
+            "startLine": 160,
+            "endLine": 188
+          },
+          {
+            "node": "n25",
+            "path": "packages/core/src/session/session.ts",
+            "startLine": 160,
+            "endLine": 188
+          },
+          {
+            "node": "n26",
+            "path": "packages/core/src/session/session.ts",
+            "startLine": 160,
+            "endLine": 188
+          },
+          {
+            "node": "n27",
+            "path": "packages/core/src/session/session.ts",
+            "startLine": 160,
+            "endLine": 188
+          },
+          {
+            "node": "n31",
+            "path": "packages/core/src/session/session.ts",
+            "startLine": 184,
+            "endLine": 190
+          },
+          {
+            "node": "n32",
+            "path": "packages/core/src/session/session.ts",
+            "startLine": 184,
+            "endLine": 190
+          },
+          {
+            "node": "n33",
+            "path": "packages/core/src/session/run-coordinator.ts",
+            "startLine": 31,
+            "endLine": 46
+          },
+          {
+            "node": "n36",
+            "path": "packages/core/src/session/run-coordinator.ts",
+            "startLine": 31,
+            "endLine": 46
+          },
+          {
+            "node": "n34",
+            "path": "packages/core/src/session/run-coordinator.ts",
+            "startLine": 39,
+            "endLine": 46
+          },
+          {
+            "node": "n35",
+            "path": "packages/core/src/session/run-coordinator.ts",
+            "startLine": 39,
+            "endLine": 46
+          },
+          {
+            "node": "n37",
+            "path": "packages/core/src/session/run-coordinator.ts",
+            "startLine": 7,
+            "endLine": 28
+          },
+          {
+            "node": "n38",
+            "path": "packages/core/src/session/execution.ts",
+            "startLine": 132,
+            "endLine": 145
+          },
+          {
+            "node": "n39",
+            "path": "packages/core/src/session/execution.ts",
+            "startLine": 100,
+            "endLine": 130
+          },
+          {
+            "node": "n40",
+            "path": "packages/core/src/session/execution.ts",
+            "startLine": 100,
+            "endLine": 130
+          },
+          {
+            "node": "n42",
+            "path": "packages/core/src/session/run-coordinator.ts",
+            "startLine": 18,
+            "endLine": 28
+          },
+          {
+            "node": "n43",
+            "path": "packages/core/src/session/execution.ts",
+            "startLine": 75,
+            "endLine": 79
+          },
+          {
+            "node": "n44",
+            "path": "packages/core/src/session/execution.ts",
+            "startLine": 75,
+            "endLine": 79
+          },
+          {
+            "node": "n54",
+            "path": "packages/core/src/session/runner/llm.ts",
+            "startLine": 63,
+            "endLine": 81
+          },
+          {
+            "node": "n55",
+            "path": "packages/core/src/session/runner/llm.ts",
+            "startLine": 63,
+            "endLine": 81
+          },
+          {
+            "node": "n58",
+            "path": "packages/core/src/session/context.ts",
+            "startLine": 29,
+            "endLine": 55
+          },
+          {
+            "node": "n59",
+            "path": "packages/core/src/session/context.ts",
+            "startLine": 29,
+            "endLine": 55
+          },
+          {
+            "node": "n61",
+            "path": "packages/core/src/session/context.ts",
+            "startLine": 29,
+            "endLine": 55
+          },
+          {
+            "node": "n60",
+            "path": "packages/core/src/session/context.ts",
+            "startLine": 78,
+            "endLine": 92
+          },
+          {
+            "node": "n69",
+            "path": "packages/core/src/session/runner/step.ts",
+            "startLine": 30,
+            "endLine": 41
+          },
+          {
+            "node": "n71",
+            "path": "packages/core/src/session/runner/step.ts",
+            "startLine": 30,
+            "endLine": 41
+          },
+          {
+            "node": "n72",
+            "path": "packages/core/src/session/runner/step.ts",
+            "startLine": 131,
+            "endLine": 163
+          },
+          {
+            "node": "n74",
+            "path": "packages/core/src/session/runner/step.ts",
+            "startLine": 131,
+            "endLine": 163
+          },
+          {
+            "node": "n75",
+            "path": "packages/core/src/session/runner/step.ts",
+            "startLine": 131,
+            "endLine": 163
+          },
+          {
+            "node": "n79",
+            "path": "packages/core/src/session/runner/step.ts",
+            "startLine": 131,
+            "endLine": 163
+          },
+          {
+            "node": "n76",
+            "path": "packages/core/src/session/model-request.ts",
+            "startLine": 67,
+            "endLine": 79
+          },
+          {
+            "node": "n78",
+            "path": "packages/core/src/session/model-request.ts",
+            "startLine": 67,
+            "endLine": 79
+          },
+          {
+            "node": "n80",
+            "path": "packages/core/src/session/runner/step.ts",
+            "startLine": 165,
+            "endLine": 185
+          },
+          {
+            "node": "n81",
+            "path": "packages/core/src/session/runner/step.ts",
+            "startLine": 165,
+            "endLine": 185
+          },
+          {
+            "node": "n90",
+            "path": "packages/core/src/session/store.ts",
+            "startLine": 54,
+            "endLine": 58
+          },
+          {
+            "node": "n94",
+            "path": "packages/server/src/event-feed.ts",
+            "startLine": 65,
+            "endLine": 83
+          },
+          {
+            "node": "n95",
+            "path": "packages/server/src/event-feed.ts",
+            "startLine": 65,
+            "endLine": 83
+          },
+          {
+            "node": "n96",
+            "path": "packages/server/src/event-feed.ts",
+            "startLine": 65,
+            "endLine": 83
+          }
+        ]
+      }
+    ],
+    "notes": "Unmapped nodes lack individually verified source ranges."
+  },
+  "usage": {
+    "input": 34539,
+    "output": 4080,
+    "cacheRead": 152320,
+    "cacheWrite": 0,
+    "reasoning": 37,
+    "totalTokens": 190939
+  },
+  "execution": {
+    "runtime": "pi-agent-context",
+    "sessionId": "01a1eb4a-79ad-7b87-af34-7deba0cee1a5",
+    "contextHash": "21ac654695456f6baf9a680edcefc89fbb9019d67158cb303b912433a1d11ddd",
+    "cacheKey": "eval-fac5f820e192e46978fb92b16fe22aba7a773e152735d367a6c49e9b52fde6f3",
+    "modelContextHash": "b79b6ef2a3679f83c34b5ee4b80c3c154a5267fd433a3d2ab1f860350b949095",
+    "repositories": [
+      {
+        "repository": "repo-1",
+        "repositoryPath": "/home/john/softwarez/opencode",
+        "commit": "fe3552441192ccbea91d117668e7f3a9eb097baf",
+        "exclusions": [
+          "**/*-LICENSE",
+          "**/*.md",
+          "**/*.mdx",
+          "**/*.spec.*",
+          "**/*.test.*",
+          "**/AGENTS.md",
+          "**/CODEX-LICENSE",
+          "**/LICENSE*",
+          "**/__fixtures__/**",
+          "**/__snapshots__/**",
+          "**/__tests__/**",
+          "**/benchmarks/**",
+          "**/build/**",
+          "**/dist/**",
+          "**/docs/**",
+          "**/e2e/**",
+          "**/examples/**",
+          "**/fixtures/**",
+          "**/node_modules/**",
+          "**/scripts/**",
+          "**/test/**",
+          "**/tests/**",
+          ".github/**",
+          ".husky/**",
+          ".opencode/**",
+          ".pi/**",
+          ".vscode/**",
+          ".zed/**",
+          "bun.lock",
+          "flake.lock",
+          "nix/**",
+          "package-lock.json",
+          "patches/**",
+          "salesforce/**",
+          "script/**",
+          "scripts/**",
+          "specs/**"
+        ],
+        "checkout": "/tmp/agent-repository-PYBiR0/checkout",
+        "inspectionSource": "session-transcript"
+      }
+    ]
+  }
+}

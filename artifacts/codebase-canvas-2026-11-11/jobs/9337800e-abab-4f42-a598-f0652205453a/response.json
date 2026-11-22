@@ -1,0 +1,138 @@
+{
+  "output": {
+    "explanation": "The central tree is reduced from 76 to 50 lines (34.2%) and from 5316 to 3525 characters (33.7%). Six peripherals expand meaningful concept lines into capture/history ownership, generated changes, evidence dependencies, workflow boundaries, acceptance recovery and storage generations. Component boundaries and exposed operations express modular structure; execution paths, state ownership and required inputs supply the other model perspectives. Positions use measured text dimensions with gaps; all connections use 1-based node lines.\n\nSource-grounded refinements: diffTree.ts shows that default commit grouping falls back to one node when ASCII exceeds 20000 characters. diffSessionTools.ts checks complete hunk coverage in complete_diff_session; diffSessionWorkflowService.ts independently checks only that the returned proposal belongs to the run and is ready. ChangeSessionService.validateReady does not require full hunk coverage. Version checks are operation-specific: apply uses a document version, update uses a session version, and createDocument has no expectedVersion parameter. Additional details absent from the seed include legacy history conversion, generated-change comparisons, comparison-base hunk validation, execution-resource cleanup and preview batching.\n\nThe seed's published-baseline check is narrowed to the observable handoff: ChangeSessionService passes savedRevisionId as expectedRevisionId to acceptCanvasChanges. The catalog implementation is not supplied, so its internal checks and publication atomicity cannot be verified. Likewise, pinned source reading is described by the tool contract but delegated to an injected reader whose implementation is absent. Only context.json and seed.json supplied code evidence.",
+    "diagrams": [
+      {
+        "id": "central",
+        "ascii": "Isolated Change Proposals\n|-- Capture -> freeze evidence and canvas baselines (ChangeSessionService)\n|   |-- Resolve repositoryId, commits, head and optional comparisonBase\n|   |   `-- Capture Git hunks into the proposal's DiffTree\n|   |-- Load settled canvases; overlay selected live workspace drafts\n|   |   `-- Multiple live workspaces require an explicit canvasId\n|   |-- Retain baseline, savedRevisionId and optional capturedVersion\n|   |   `-- Clone proposed state and fork independent controller history\n|   `-- Baseline-session recapture reuses original baselines and pinned hunks\n|-- Create and edit -> isolated state (ChangeSessionService)\n|   |-- create(requestId) -> draft, version 0; stable identity and replay receipt\n|   |-- apply(documentVersion, operations) -> MappingDocumentController\n|   |   `-- Record proposed state/history; regenerate changes; return to draft\n|   |-- Undo / redo / reset use proposal history; new canvases have no baseline\n|   |-- Annotate every generated change once; preserve its target\n|   `-- Serialize mutations; replay matching receipts; reject accepted/archived edits\n|-- DiffTree -> navigable captured evidence\n|   |-- Stored tree revision, stable node identities, hunks and mappings\n|   |-- Map nodes to hunk IDs and/or diagram destinations\n|   |-- Default groups by commit, with a size-limit fallback\n|   |-- Replace mappings with expectedRevisionId; validate tree and context\n|   `-- Read selected hunks with pagination and optional patches\n|-- Automated entry -> proposal ready for review\n|   |-- DiffSessionWorkflowService: capture -> analyze -> materialize -> validate\n|   |   |-- Require pinned context and nonempty captured hunks\n|   |   |-- Analyze frozen inputs; materialize one proposal from the same capture\n|   |   |-- Completion tool checks ready status, changes and full hunk coverage\n|   |   `-- Final service check: returned proposal is this run's and is ready\n|   |-- Persist workflow artifacts; dispose agent session when execution ends\n|   `-- PushIntegrationService starts workflow for resolved branch changes\n|       |-- Deduplicate connection/event identity; require connection + --pi enabled\n|       `-- Skip non-branch, deleted, unchanged and no-net-change pushes\n|-- Review gate -> ready -> accept (ChangeSessionService)\n|   |-- validateReady: changes, repository ownership, DiffTree and migrations\n|   |   |-- Require existing acyclic dependencies and valid connection anchors\n|   |   `-- Added diagram needs an edge from a diagram present in the baseline\n|   |-- accept(requestId, expectedVersion): require ready; validate again\n|   |   |-- Select documents referenced by generated changes\n|   |   |-- Compare matching live documents and names with captured baselines\n|   |   `-- Call projectCatalogs.acceptCanvasChanges with expected revision IDs\n|   |       `-- Supply affected proposed documents and exported histories\n|   `-- Catalog acceptance receipt -> accepted status and sessionVersion + 1\n|       `-- Matching request/version replays; receipt recovers failed session write\n`-- Persist and inspect (ChangeSessionRecords)\n    |-- Manifest -> summary and immutable document, receipt and DiffTree refs\n    |-- Split baseline, proposed state and history checkpoints\n    |-- Serialize writes; optional manifest token detects conflicting updates\n    |-- Summary / preview / full reads load progressively more proposal state\n    `-- Treemaps use stored evidence and version-checked previews\n        `-- Mixed generations -> VERSION_CONFLICT; retry",
+        "position": {
+          "column": 100,
+          "row": 0
+        }
+      },
+      {
+        "id": "capture",
+        "ascii": "Captured state and history ownership\n|-- capture() reads catalog + CanvasSessionPort\n|   |-- Settled representations filtered to pinned repository\n|   |-- Live snapshot replaces matching catalog baseline\n|   `-- Repository mismatch after snapshot aborts capture\n|-- Proposal owns cloned baseline and proposed state\n|   |-- savedRevisionId records the publication baseline\n|   |-- capturedVersion records the live snapshot version\n|   `-- forkHistory creates an independent history context\n|-- controller() imports legacy past/proposed/future once\n|   |-- Preserve node origins and undo/redo checkpoint order\n|   `-- record() stores canonical history; clears legacy arrays\n`-- Recapture from baselineChangeSessionId\n    |-- Reject explicit repository/commit/head/canvas/base overrides\n    |-- Copy original context, hunks and non-null baselines\n    `-- Drop proposal-only canvases; restart document versions at 0",
+        "position": {
+          "column": 0,
+          "row": 0
+        }
+      },
+      {
+        "id": "edits",
+        "ascii": "Generated changes and mutation boundaries\n|-- refreshChanges compares baseline with proposed state\n|   |-- No baseline -> canvas change, type 3\n|   |-- Review/selection differences -> variants change, type 1\n|   |-- Compare grid diagram display nodes and incident edges\n|   |   `-- Existing baseline node -> type 1; new node -> type 2\n|   `-- Retain prior title, reasons, dependencies and type 4 override\n|-- Annotation replaces every generated change exactly once\n|   |-- IDs, document targets and node targets must match\n|   `-- Only types 1 and 4 may switch between each other\n|-- Version checks depend on operation\n|   |-- apply -> controller checks document version\n|   |-- update -> checks session expectedVersion\n|   `-- createDocument has no expectedVersion parameter\n`-- mutate() owns serialization and request receipts\n    |-- Existing matching receipt replays before editability checks\n    |-- New mutation rejects accepted/archived or >= 2000 receipts\n    `-- Increment session version; write changed document versions",
+        "position": {
+          "column": 0,
+          "row": 24
+        }
+      },
+      {
+        "id": "evidence",
+        "ascii": "DiffTree identity and evidence dependencies\n|-- writeDiffTree consumes captured hunks + complete mappings\n|   |-- Existing tree requires matching expectedRevisionId\n|   |-- Omit ASCII -> retain revision, replace mappings\n|   `-- Source line resolves to stored node reference; no label matching\n|-- validateDiffTree checks identities and mapping membership\n|   |-- Unique node refs, hunk IDs and mapping IDs\n|   `-- Mapping must have hunks or diagram destinations\n|-- validateChangeSession checks hunk context\n|   |-- Repository must match session\n|   |-- comparisonBase supplied -> commit = head; parent = base\n|   `-- Otherwise hunk commit must belong to selected commits\n|-- defaultDiffTree normally maps one node per commit\n|   |-- No hunks -> 'No captured hunks' node without mappings\n|   `-- ASCII > 20000 chars -> one 'Selected commits' node\n|       `-- That single mapping targets every captured hunk\n`-- readDiffTree selection\n    |-- Resolve node selections to deduplicated hunk IDs\n    `-- Explicit hunkIds override node-derived IDs; unknown IDs fail",
+        "position": {
+          "column": 200,
+          "row": 0
+        }
+      },
+      {
+        "id": "workflow",
+        "ascii": "Workflow tools and execution lifetime\n|-- DiffSessionTools exposes stage-specific tools\n|   |-- Analyze -> frozen diagram search, captured hunks, source reader\n|   |-- Materialize -> create proposal and add scoped mutation tools\n|   |   `-- bound() injects own session ID; rejects another session ID\n|   `-- No acceptance tool is directly exposed here\n|-- complete_diff_session() validates ready + changes + hunk coverage\n|   `-- Service final check separately validates own proposal + ready\n|-- DiffSessionWorkflowService owns execution resources\n|   |-- starts deduplicates starts; active owns AbortControllers\n|   |-- live supplies snapshots while execution is active\n|   |-- cancel/dispose abort; finally disposes agent session\n|   `-- Completion removes active/live entries\n|       `-- get() reports orphaned running records as interrupted\n`-- PushIntegrationService owns delivery deduplication\n    |-- Hash connectionId + eventId; same ID with changed payload fails\n    |-- pending shares execution; store.createGeneration arbitrates\n    |-- Changed branch -> head = after; comparisonBase = before\n    `-- get() refreshes status from workflow only while running",
+        "position": {
+          "column": 200,
+          "row": 27
+        }
+      },
+      {
+        "id": "accept",
+        "ascii": "Acceptance handoff and crash recovery\n|-- accept() serializes by proposal ID\n|   |-- Existing receipt: same request/version replays\n|   `-- Otherwise require expectedVersion + ready; validateReady again\n|-- Affected documents come from generated change document IDs\n|   |-- Inspect matching documents in every live project workspace\n|   |-- Match document ID or representation ID\n|   `-- For non-null baselines, compare document stateKey and name\n|       `-- Drift -> VERSION_CONFLICT; canvas UI state is not compared\n|-- projectCatalogs.acceptCanvasChanges receives publication inputs\n|   |-- savedRevisionId -> expectedRevisionId\n|   `-- Proposed document + exported controller history\n|       `-- Catalog implementation is outside supplied sources\n`-- Catalog receipt is authoritative after interrupted session write\n    |-- finishAcceptance requires receipt.sessionVersion = saved version\n    |-- Set accepted + receipt + version 1 higher; write session metadata\n    |-- list/effectiveSummary project accepted status without repair\n    `-- get() repairs full record; accept() calls get()",
+        "position": {
+          "column": 100,
+          "row": 57
+        }
+      },
+      {
+        "id": "storage",
+        "ascii": "Storage generations and scoped reads\n|-- ChangeSessionRecords owns manifest + immutable record references\n|   |-- Document metadata -> baseline/proposed refs\n|   |-- History header + separately stored checkpoint snapshots\n|   `-- Receipt index and optional DiffTree have their own refs\n|-- write() serializes by manifest path\n|   |-- Optional expected token equals JSON.stringify(previous manifest)\n|   |-- Reuse unchanged refs; validate complete document/DiffTree data\n|   `-- Store records before publishing replacement manifest\n|-- readSummary -> metadata; readPreview -> baseline/proposed pair\n|   |-- Preview omits history and receipts\n|   `-- Preview/full-document caches hold up to 16 entries each\n|-- read() restores histories, receipts and validated DiffTree\n|   `-- Returns session plus manifest token\n`-- ChangeSessionService.readTreemaps()\n    |-- Matching effective version -> null\n    |-- Load previews in batches of 4; compare each version\n    `-- Recheck summary version before building treemaps",
+        "position": {
+          "column": 200,
+          "row": 57
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": {
+          "diagram": "central",
+          "line": 8
+        },
+        "target": {
+          "diagram": "capture",
+          "line": 6
+        },
+        "label": "owns baseline, proposed state and forked history"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 13
+        },
+        "target": {
+          "diagram": "edits",
+          "line": 2
+        },
+        "label": "derives reviewable changes from state differences"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 19
+        },
+        "target": {
+          "diagram": "evidence",
+          "line": 2
+        },
+        "label": "binds tree identities to captured evidence"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 24
+        },
+        "target": {
+          "diagram": "workflow",
+          "line": 2
+        },
+        "label": "exposes tools by execution stage"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 37
+        },
+        "target": {
+          "diagram": "accept",
+          "line": 2
+        },
+        "label": "checks drift and hands off publication"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 45
+        },
+        "target": {
+          "diagram": "storage",
+          "line": 2
+        },
+        "label": "persists independently addressable proposal state"
+      }
+    ]
+  },
+  "usage": {
+    "input_tokens": 276830,
+    "cached_input_tokens": 225792,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 6889,
+    "reasoning_output_tokens": 489
+  }
+}

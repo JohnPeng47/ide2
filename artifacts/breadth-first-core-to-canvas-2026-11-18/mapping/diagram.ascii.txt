@@ -1,0 +1,141 @@
+Source-grounded diagram workspace -- edit, explore, generate and review versioned canvases
+|
+|-- Workspace orchestration and session ownership
+|   |-- MappingWorkspacePage (src/features/mapping/MappingPage.tsx)
+|   |   |-- Active document, explorer, tool windows, transfers and save/reload coordination
+|   |   |-- MappingDiagramExplorer, MappingSubmenu, FloatingPane and WindowPanel
+|   |   `-- Mounts canvas/source/review surfaces -> session stores; commands -> controllers
+|   |-- CanvasWorkspace (src/features/mapping/workspace/canvasWorkspace.ts)
+|   |   |-- Owns drafts, controller registry, subscriptions and dirty-scene index
+|   |   |-- setDrafts(): creates sessions; disposes replaced/removed sessions
+|   |   `-- CanvasSession (workspace/canvasSession.ts)
+|   |       |-- Read-only document, presentation, selection, controls, geometry and status stores
+|   |       |-- Saved baseline determines dirty state; cursorCopy owns pending pasted content
+|   |       |-- MappingDocumentController (domain/mapping/workspace/mappingDocumentController.ts)
+|   |       |   |-- Owns current snapshot, editing-context handle and optional live-editor driver
+|   |       |   |-- applyUpdate(), select(), commitDocument(), canvasView(): semantic command boundary
+|   |       |   |-- Operations: diagram edits, source mappings, edges, highlights, alternatives and layout
+|   |       |   |-- Validates versions; reconciles connections, jumps and selection after edits
+|   |       |   `-- Recorded changes -> DefaultCanvasHistoryService; notifications -> session stores
+|   |       `-- onCommit() -> CanvasWorkspace.onPersist(); dispose() detaches observers
+|   `-- Workspace transfer coordination (MappingPage.tsx; domain/core/diagrams/canvasTransfer.ts)
+|       |-- Copy/move selected diagrams; retain cross-document transaction records
+|       `-- Linked undo/redo -> source and destination controllers, not one editor alone
+|
+|-- Diagram semantics and version history (domain/core/diagrams/)
+|   |-- Diagram / DiagramContent (diagram.ts; diagramContent.ts)
+|   |   |-- Immutable identity/revision, ASCII content, source context, highlights and jumps
+|   |   |-- buildDiagramContent(), asciiTree, asciiGraph and diagramContentNodes
+|   |   |   `-- ASCII + pinned parser version -> stable parsed structure and selectable nodes
+|   |   `-- DiagramSourceContext: content hash, source binding, mappings and evidence
+|   |       `-- diagramSource().forSelection() joins diagram regions -> source ranges
+|   |-- Canvas document model (domain/mapping/workspace/mappingGrid.ts)
+|   |   |-- MappingGridDocument: LineGridScene, edges, jumps, presentations and agent contexts
+|   |   |-- LineGridScene: container/diagram instances reference versioned diagram content
+|   |   `-- Alternatives, revision selections and reviews retain competing diagram versions
+|   |-- Canvas presentation model (mappingWorkspace.ts; displayModel.ts)
+|   |   |-- MappingCanvasState: selection, diagram views, display ownership tree and controls
+|   |   |-- DisplayState: selection regions, projected panes, conversations and detail panes
+|   |   `-- SelectionState owns membership; captured regions and menu focus are separate
+|   `-- DefaultCanvasHistoryService (canvasHistoryService.ts)
+|       |-- WeakMap<CanvasEditingContext, CanvasHistory> isolates each editing context
+|       |-- CanvasHistory: checkpoints, past/future navigation, saved views and generation candidates
+|       |-- diagramRevisionStore: retained immutable revisions used by document projections
+|       |-- append(), navigate(), forkContext(), adopt(), prepareTransfer()
+|       `-- persistenceChanges() -> incremental revision/checkpoint records for storage
+|
+|-- Interactive canvas and spatial presentation (src/features/mapping/)
+|   |-- MappingEditorCanvas / MappingEditorRuntime (tldraw/)
+|   |   |-- tldraw Editor owns live geometry, camera and native undo navigation
+|   |   |-- shapeProjection + MappingShapeUtil: diagrams, panes, groups and connections
+|   |   |-- settle() -> controller.commitEditorGesture(); semantic checkpoints -> native history
+|   |   `-- Pointer/camera frames stay local; completed gestures publish application changes
+|   |-- CanvasRuntime, LocalAnchorStore and NativeRoutingStore (tldraw/)
+|   |   |-- Selection gestures, measured anchors, connection geometry and routing worker
+|   |   `-- DiagramShapeContent, FloatingShapeContent and DiagramSidePanelContent render projections
+|   |-- MappingPocSelectionCanvas (canvas/MappingCanvas.tsx)
+|   |   |-- CanvasSelectionLayer, CanvasSelectionActions, SelectionEffectsLayer and CursorCopyOverlay
+|   |   |-- Node/region selection, subtree controls, highlights, clipboard and projection actions
+|   |   `-- User actions -> MappingDocumentController; selected evidence -> code/source panes
+|   `-- ProjectionLayoutPanel and domain layout helpers
+|       |-- Grid placement, floating panes, side panels and connection routing
+|       `-- Calculated layout + expected version -> controller.commitProjectionLayout()
+|
+|-- Source exploration, navigation and compacted views
+|   |-- SourceWindowPanel / SourceCodePane / code-panel (src/features/mapping/)
+|   |   |-- File browsing, mapped code ranges, source navigation and projection panes
+|   |   `-- Selected content nodes + DiagramSourceContext -> displayed source evidence
+|   |-- SourcePaneViewState (src/features/mapping/source-pane/sourcePaneViewState.ts)
+|   |   |-- Owns per-document/per-pane scroll state and captured cameras
+|   |   `-- captureDisplay(), captureCamera() -> WorkspacePersistence, outside semantic edits
+|   |-- ProjectSourceService (application/core/source/projectSource.ts)
+|   |   |-- files(), source(), definitions(); resolves the diagram's repository/corpus binding
+|   |   `-- Reads -> CorpusAccess; optional definition lookup -> ProjectLanguageService
+|   |-- DiagramSearchService / useDiagramSymbolSearch (src/features/mapping/search/)
+|   |   |-- Diagram text search, symbol search and focused result highlighting
+|   |   `-- Results -> workspace focusBox and canvas navigation
+|   `-- FileCompactionService (application/mapping/compaction/)
+|       |-- fileCompactionWorkflow, agent runtime and FileCompactionStore
+|       `-- Source-validated compacted representations -> CoreApplication/project catalog
+|
+|-- Agent-assisted editing and generation
+|   |-- PromptComposerCoordinator (src/features/mapping/prompt-composer/)
+|   |   |-- Owns prompt drafts, captured references, exact retry requests and polling timers
+|   |   |-- Create/edit/extend operations; subtree edits and alternative generation
+|   |   `-- DiagramEditClient -> AgentDiagrammingSessionService; results -> revision receivers
+|   |-- AgentDiagrammingSessionService (application/mapping/agent/sessionService.ts)
+|   |   |-- Owns live attachments, request receipts, execution runs and chat bindings
+|   |   |-- DiagramEditService + DiagramBatchService: generate and apply revision proposals
+|   |   |-- AgentContextService + AgentContextLibrary: resolve reusable source/context snapshots
+|   |   |-- CanvasApiProjection + CanvasReadAliases expose tool-facing canvas identities
+|   |   `-- Validated tool calls -> CanvasSessionPort; execution -> QuickJsAgentRuntime
+|   |-- Live canvas connection
+|   |   |-- useAgentCanvasBridge (src/features/mapping/agent/): register, poll, execute and reply
+|   |   |-- CanvasSessionBridge (infrastructure/mapping/agent/): server/browser command bridge
+|   |   |-- LiveCanvasService + liveCanvasPublisher: availability and selection updates
+|   |   `-- Received mutations -> workspace controllers; cleanup unregisters the browser instance
+|   |-- AgentChatService (application/mapping/agent-chat/)
+|   |   |-- AgentChatPanel, ChatDiagramTools, MCP binding, Codex connection and FileChatStore
+|   |   |-- GenerationCanvasBridge owns isolated generation controllers and mutation receipts
+|   |   `-- Isolated candidates -> same domain commands/history, without changing browser selection
+|   `-- SelectionService / LocalChatService (application/mapping/selection/; chat/)
+|       |-- Selection-scoped generation and conversations; Pi/Codex runtime adapters
+|       `-- Captured ASCII + selection + source evidence -> validated agent requests
+|
+|-- Change review, comparisons and generation evaluation
+|   |-- ChangeSessionService (application/mapping/changes/changeSessionService.ts)
+|   |   |-- Baseline/proposed documents, pinned Git context, DiffTree and request receipts
+|   |   |-- Proposal edits -> headless MappingDocumentController, separate from live drafts
+|   |   `-- accept(): check proposal/live versions -> projectCatalogs.acceptCanvasChanges()
+|   |-- DiffSessionWorkflowService + PushIntegrationService
+|   |   |-- Repository-diff generation workflow, persisted runs and Git push integration
+|   |   `-- Captured repository hunks + canvases -> ChangeSessionService proposals
+|   |-- Review surfaces (src/features/mapping/changes/; canvas-views/; treemap/)
+|   |   |-- ChangeSessionPreview, DiffTreePanel, CanvasViewDiffPreview and treemap views
+|   |   `-- CanvasViewControls / GeneratedCanvases -> saved views and generated candidates
+|   `-- Evaluation subsystem (application/mapping/evals/; compare/)
+|       |-- CompareSessionService + ComparisonGenerationService: pinned comparison canvases
+|       |-- EvalRunService: prepared inputs, generation cells, running tasks and result writes
+|       |-- EvalPromptService, EvalReferenceService, LayoutTemplateService and ReferenceGenerationService
+|       |-- JudgementService, ExperimentService and roll-up materialization
+|       `-- GeneratedCanvasCatalog -> reusable outputs; EvalsPage exposes the separate /evals surface
+|
+`-- Persistence, publication and application wiring
+    |-- WorkspacePersistence (src/features/mapping/workspace/workspacePersistence.ts)
+    |   |-- Owns per-session persistence cursors and subscriptions
+    |   |-- Controller deltas + metadata + captured view state -> deduplicated record batches
+    |   `-- Workspace index retains active document and cross-canvas transfers
+    |-- WorkspaceStorage / RecordStorage (src/features/mapping/workspace/)
+    |   |-- One storage worker per workspace; load, write, flush and restore
+    |   `-- Record batches -> /api/mapping/workspace/records
+    |-- MappingWorkspaceService (application/mapping/workspace/workspaceService.ts)
+    |   |-- Project-scoped loadRecords(), applyBatch(), portableExport() and prepareImport()
+    |   |-- MappingWorkspaceStore owns WorkspaceRecordStore (infrastructure/mapping/persistence/)
+    |   `-- Workspace UI records remain separate from published representation revisions
+    |-- MappingDiagramService / project catalog (application/mapping/diagrams/; core/representations/)
+    |   |-- Initialize, save, publishCheckpoint and delete published diagrams
+    |   `-- DiagramStore / DiagramPersistence -> durable catalogs and diagram revision storage
+    `-- App and createBackend (src/app/App.tsx; src/server/app/bootstrap.ts)
+        |-- App creates client services; MappingPocPage is the default application surface
+        |-- createBackend connects services, repository stores, runtimes and HTTP routes
+        `-- dispose() stops agent/evaluation tasks, bridges and optional language services

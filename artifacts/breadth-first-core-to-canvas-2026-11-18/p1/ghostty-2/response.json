@@ -1,0 +1,324 @@
+{
+  "output": {
+    "explanation": "Verified against checkout ea8b12a8a9894b5259c441eadd8f6f0c65e215af. The central tree follows Surface's actual fields and lifetimes; IO/emulation, renderer internals, and external shared services are expanded separately. Workers remain Surface-owned siblings rather than children of the objects they operate on. Ownership clarifications from source: renderer.State references rather than owns Terminal and Inspector; Exec's reader/writer runtime handles reside in the IO thread's stack ThreadData; the renderer worker releases the previous font-grid reference, while Surface releases the current reference during shutdown. Surface mailboxes wrap App.mailbox rather than owning separate queues. Cross-diagram edges preserve state access, message routing, rendering, and shared-resource dependencies.",
+    "diagrams": [
+      {
+        "id": "surface",
+        "ascii": "Surface: one terminal session (src/Surface.zig)\n|\n|-- Identity/state: id, focused, visible, readonly, child_exited, command_timer\n|-- Lifecycle methods\n|   |-- init() -> constructs IO/renderer and starts their workers\n|   |-- deinit() -> stop/join search, renderer, IO; then free shared state\n|   `-- close() -> rt_surface.close(needsConfirmQuit()); host destroys session\n|-- app, rt_app, rt_surface: borrowed references -> external context\n|-- config: DerivedConfig; config_conditional_state: ConditionalState\n|   |-- Copied settings, bindings and font configuration\n|   `-- updateConfig() -> replace settings; send IO/renderer config messages\n|-- Font reference: font_grid_key, font_size, font_metrics, font_size_adjusted\n|   `-- setFontSize() -> App.font_grid_set.ref(); send grid to renderer worker\n|       `-- Worker accepts grid and derefs old key; deinit() derefs current key\n|-- size: renderer.Size (screen pixels, cell metrics, padding)\n|   `-- contentScaleCallback()/sizeCallback()/setCellSize() -> resize()\n|       `-- -> IO resize + renderer resize; geometry determines terminal grid\n|-- keyboard: Keyboard\n|   |-- Sequence bindings, queued input, active key-table stack, last_trigger\n|   `-- keyCallback() -> maybeHandleBinding() -> performBindingAction()\n|       `-- Unconsumed keys -> encodeKey(); modes from io.terminal -> bytes\n|-- pressed_key, last_binding_trigger: separate Surface fields\n|-- mouse: Mouse\n|   |-- Button/modifier/link state; SelectionGesture; pending scroll\n|   `-- Mouse callbacks -> io.terminal selection/viewport or mouseReport()\n|       `-- -> input.mouse_encode; runtime URL opening\n|-- Text/IME/clipboard methods\n|   |-- preeditCallback() -> renderer_state.preedit\n|   |-- copySelectionToClipboards() -> runtime clipboard services\n|   `-- start/complete/denyClipboardRequest(); textCallback() -> encoded input\n|-- queueIo(msg): owns the outgoing message\n|   |-- readonly drops PTY-write messages, not scrolling/copying/selection\n|   `-- -> io.queueMessage(): transfer to IO mailbox\n|-- io: termio.Termio [session IO/emulation detail]\n|-- io_thread: termio.Thread; io_thr: worker handle (src/termio/Thread.zig)\n|   |-- Event loop, stop signal; resize-coalescing/selection-scroll/sync timers\n|   |-- threadMain(): stack CallbackData with Termio.ThreadData\n|   |   `-- backend.exec runtime state: PTY writer, exit watcher, reader handle\n|   `-- Drain io.mailbox -> backend writes/Termio operations; reset sync timeout\n|-- renderer_state: renderer.State (src/renderer/State.zig)\n|   |-- Mutex pointer (allocated/freed by Surface), demand/handoff counters\n|   |-- Preedit text and render-facing mouse state\n|   |-- terminal -> io.terminal; inspector -> optional owned Inspector\n|   `-- lockDemand()/unlockDemand() arbitrate snapshots with busy IO parsing\n|-- renderer: GenericRenderer(GraphicsAPI) [presentation detail]\n|-- renderer_thread: renderer.Thread; renderer_thr: worker handle\n|   |-- Mailbox, event loop, wakeup/draw signals, blink/animation timers\n|   |-- Wakeup -> renderer.updateFrame() -> drawFrame(); visibility gates work\n|   `-- Compression scheduler -> io.terminal.compress(.incremental) under lock\n|-- draw() -> renderer.drawFrame(true), for host-driven synchronous drawing\n|-- search: optional Surface.Search\n|   |-- state: terminal.search.Thread (src/terminal/search/Thread.zig)\n|   |   |-- Mailbox, refresh timer, match notification state\n|   |   `-- search: optional TerminalSearch\n|   |       `-- ScreenSearch/ViewportSearch; copy io.terminal data under lock\n|   |-- thread: worker handle; Search.deinit() stops and joins it\n|   `-- searchCallback_()\n|       |-- -> renderer mailbox: viewport/selected-match highlights\n|       `-- -> surface mailbox: match count and selected index\n|-- inspector: optional owned Inspector (src/inspector/Inspector.zig)\n|   |-- Mouse inspection + GUI state: key history and VT recording\n|   |-- activate/deactivateInspector() -> shared pointer; notify IO/renderer\n|   `-- recordKeyEvent() <- input events and encoded bytes\n`-- surfaceMailbox()/handleMessage(): main-thread message boundary\n    |-- Mailbox is a surface-addressed adapter over App.mailbox, not a new queue\n    `-- -> rt_app.performAction(): title, notifications, scrollbar and UI changes",
+        "position": {
+          "column": 0,
+          "row": 0
+        }
+      },
+      {
+        "id": "io",
+        "ascii": "io: termio.Termio (src/termio/Termio.zig)\n|\n|-- backend: termio.Backend.exec (src/termio/Exec.zig)\n|   |-- subprocess: Subprocess\n|   |   `-- Command/environment, shell integration, child process and PTY\n|   `-- threadEnter() starts child, exit watcher and PTY read worker\n|       |-- Runtime handles -> IO thread's stack ThreadData.backend.exec\n|       |-- PTY reader -> processOutput(bytes)\n|       `-- Child exit -> Surface mailbox\n|-- terminal_stream: StreamHandler.Stream (src/termio/stream_handler.zig)\n|   |-- terminal.Stream parser + StreamHandler\n|   |   |-- APC/DCS handlers; clipboard grants/in-flight transaction state\n|   |   `-- terminal reference -> sibling terminal, not another emulator\n|   `-- Handler actions -> terminal edits, IO replies, Surface messages, render wake\n|-- terminal: terminal.Terminal (src/terminal/Terminal.zig)\n|   |-- screens: ScreenSet (src/terminal/ScreenSet.zig)\n|   |   |-- Owned primary/alternate screen slots; active is a borrowed alias\n|   |   `-- Each allocated Screen (src/terminal/Screen.zig)\n|   |       |-- pages: PageList -> grid and scrollback\n|   |       |-- Cursor/saved cursor, selection and charset\n|   |       `-- Kitty keyboard flags and image storage (when enabled)\n|   |-- Modes, colors, tabstops, scrolling region, title and working directory\n|   `-- Text/grid editing, screen switching, scrolling, resize and compression\n|-- mailbox: termio.Mailbox; config: DerivedConfig; size\n|-- Borrowed renderer_state, renderer mailbox/wakeup; Surface mailbox adapter\n|-- processOutput(bytes)\n|   |-- Lock renderer_state.mutex -> nextSlice() -> StreamHandler -> terminal\n|   |-- Inspector active: recordPtyRead() + byte-wise next() instead\n|   `-- -> Renderer wakeup; IO mailbox notification for generated replies\n`-- resize()/changeConfig(): invoked by Surface's IO worker\n    |-- resize(): shared mutex covers PTY resize + Terminal.resize()\n    `-- -> Renderer resize message + wakeup after terminal geometry changes",
+        "position": {
+          "column": 94,
+          "row": 0
+        }
+      },
+      {
+        "id": "renderer",
+        "ascii": "renderer: GenericRenderer(GraphicsAPI)\n(src/renderer.zig; src/renderer/generic.zig)\n|\n|-- terminal_state: terminal.RenderState snapshot (not the live Terminal)\n|-- font_shaper: font.Shaper; font_shaper_cache\n|-- cells, image state, search matches and selected-match highlights\n|-- api: GraphicsAPI (Metal or OpenGL); borrows App.device\n|-- Per-surface GPU resources\n|   |-- SwapChain -> buffered FrameState resources\n|   `-- Shaders, uniforms, image buffers and atlas textures\n|-- font_grid: borrowed SharedGrid pointer -> App.font_grid_set\n|-- DerivedConfig; geometry; display link/animation state\n|-- updateFrame(shared State)\n|   |-- lockDemand() -> snapshot State.terminal; unlockDemand()\n|   `-- Snapshot + font grid + selection/search/preedit -> cells and images\n|-- drawFrame() -> Metal/OpenGL presentation\n|   `-- Reads shared font atlases; synchronizes per-frame GPU textures\n`-- Driven by Surface.renderer_thread, or Surface.draw() for synchronous drawing",
+        "position": {
+          "column": 94,
+          "row": 38
+        }
+      },
+      {
+        "id": "external",
+        "ascii": "External context: shared services and host (not Surface-owned)\n|\n|-- App (src/App.zig)\n|   |-- surfaces: registry of runtime surface references, not layout ownership\n|   |-- mailbox: main-thread queue\n|   |   `-- Dispatch surface_message -> addressed Surface.handleMessage()\n|   |-- font_grid_set: font.SharedGridSet (src/font/SharedGridSet.zig)\n|   |   |-- Reference-counted matching font grids; shared font library/discovery\n|   |   `-- SharedGrid (src/font/SharedGrid.zig)\n|   |       |-- Resolver/fallback font collection; codepoint/glyph caches\n|   |       `-- Metrics, color/grayscale CPU atlases and synchronization\n|   `-- device: shared render device -> borrowed by per-surface GraphicsAPI\n`-- apprt.runtime (src/apprt.zig; platform-selected implementation)\n    |-- Native app/surface services and host-managed window/tab/split layout\n    |-- Input/IME/geometry callbacks -> Surface\n    |-- Clipboard and URL-opening services <- Surface requests\n    |-- performAction() <- Surface UI updates\n    `-- rt_surface.close(confirm) -> host close/destruction lifecycle",
+        "position": {
+          "column": 0,
+          "row": 72
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": {
+          "diagram": "surface",
+          "line": 34
+        },
+        "target": {
+          "diagram": "io",
+          "line": 1
+        },
+        "label": "Owned Termio expanded"
+      },
+      {
+        "source": {
+          "diagram": "surface",
+          "line": 45
+        },
+        "target": {
+          "diagram": "renderer",
+          "line": 1
+        },
+        "label": "Owned renderer expanded"
+      },
+      {
+        "source": {
+          "diagram": "surface",
+          "line": 8
+        },
+        "target": {
+          "diagram": "external",
+          "line": 1
+        },
+        "label": "Borrowed application/runtime context"
+      },
+      {
+        "source": {
+          "diagram": "surface",
+          "line": 13
+        },
+        "target": {
+          "diagram": "external",
+          "line": 7
+        },
+        "label": "Acquire shared font-grid reference"
+      },
+      {
+        "source": {
+          "diagram": "io",
+          "line": 7
+        },
+        "target": {
+          "diagram": "surface",
+          "line": 38
+        },
+        "label": "Actual runtime-handle storage"
+      },
+      {
+        "source": {
+          "diagram": "surface",
+          "line": 33
+        },
+        "target": {
+          "diagram": "io",
+          "line": 24
+        },
+        "label": "Transfer outgoing message ownership"
+      },
+      {
+        "source": {
+          "diagram": "surface",
+          "line": 43
+        },
+        "target": {
+          "diagram": "io",
+          "line": 15
+        },
+        "label": "Alias to authoritative emulator"
+      },
+      {
+        "source": {
+          "diagram": "surface",
+          "line": 55
+        },
+        "target": {
+          "diagram": "io",
+          "line": 15
+        },
+        "label": "Search reads/copies under shared lock"
+      },
+      {
+        "source": {
+          "diagram": "surface",
+          "line": 58
+        },
+        "target": {
+          "diagram": "renderer",
+          "line": 6
+        },
+        "label": "Highlight copies delivered through renderer mailbox"
+      },
+      {
+        "source": {
+          "diagram": "surface",
+          "line": 48
+        },
+        "target": {
+          "diagram": "renderer",
+          "line": 13
+        },
+        "label": "Worker schedules frame update"
+      },
+      {
+        "source": {
+          "diagram": "renderer",
+          "line": 14
+        },
+        "target": {
+          "diagram": "surface",
+          "line": 40
+        },
+        "label": "Demand-aware shared-state locking"
+      },
+      {
+        "source": {
+          "diagram": "renderer",
+          "line": 14
+        },
+        "target": {
+          "diagram": "io",
+          "line": 15
+        },
+        "label": "Snapshot live Terminal; do not own it"
+      },
+      {
+        "source": {
+          "diagram": "io",
+          "line": 27
+        },
+        "target": {
+          "diagram": "surface",
+          "line": 40
+        },
+        "label": "Same mutex protects parsing mutations"
+      },
+      {
+        "source": {
+          "diagram": "io",
+          "line": 28
+        },
+        "target": {
+          "diagram": "surface",
+          "line": 60
+        },
+        "label": "Optional PTY inspection"
+      },
+      {
+        "source": {
+          "diagram": "io",
+          "line": 29
+        },
+        "target": {
+          "diagram": "surface",
+          "line": 46
+        },
+        "label": "Wake rendering after terminal output"
+      },
+      {
+        "source": {
+          "diagram": "io",
+          "line": 14
+        },
+        "target": {
+          "diagram": "external",
+          "line": 5
+        },
+        "label": "Surface-bound messages use App queue"
+      },
+      {
+        "source": {
+          "diagram": "external",
+          "line": 6
+        },
+        "target": {
+          "diagram": "surface",
+          "line": 64
+        },
+        "label": "Main-thread delivery"
+      },
+      {
+        "source": {
+          "diagram": "renderer",
+          "line": 7
+        },
+        "target": {
+          "diagram": "external",
+          "line": 12
+        },
+        "label": "Borrow shared graphics device"
+      },
+      {
+        "source": {
+          "diagram": "renderer",
+          "line": 11
+        },
+        "target": {
+          "diagram": "external",
+          "line": 9
+        },
+        "label": "Use shared resolver, glyph caches and atlases"
+      },
+      {
+        "source": {
+          "diagram": "surface",
+          "line": 66
+        },
+        "target": {
+          "diagram": "external",
+          "line": 17
+        },
+        "label": "Request native UI changes"
+      }
+    ]
+  },
+  "usage": {
+    "input": 39066,
+    "output": 8737,
+    "cacheRead": 227584,
+    "cacheWrite": 0,
+    "reasoning": 1671,
+    "totalTokens": 275387
+  },
+  "execution": {
+    "runtime": "pi-agent-context",
+    "sessionId": "01a1efab-bd3a-7860-bbaf-8ca0e7573cf4",
+    "contextHash": "d450829aa201dbc043b073b7258c26e491a157fb1fa2c8557f101de5840ad07d",
+    "cacheKey": "eval-41de0dfd01a408d1c35a5702175f61dd4d1b9a8f7108ea58416b61b0c0d4c93a",
+    "modelContextHash": "097adc3863b95e3081325eb9bb025ad563f156d4b84e0276a8d4f7a693c2d753",
+    "repositories": [
+      {
+        "repository": "repo-1",
+        "repositoryPath": "/home/john/softwarez/ghostty",
+        "commit": "ea8b12a8a9894b5259c441eadd8f6f0c65e215af",
+        "exclusions": [
+          "**/*-LICENSE",
+          "**/*.md",
+          "**/*.mdx",
+          "**/*.spec.*",
+          "**/*.test.*",
+          "**/AGENTS.md",
+          "**/CODEX-LICENSE",
+          "**/LICENSE*",
+          "**/Tests/**",
+          "**/__fixtures__/**",
+          "**/__tests__/**",
+          "**/benchmark/**",
+          "**/benchmarks/**",
+          "**/build/**",
+          "**/dist/**",
+          "**/docs/**",
+          "**/examples/**",
+          "**/fixtures/**",
+          "**/node_modules/**",
+          "**/scripts/**",
+          "**/test/**",
+          "**/tests/**",
+          ".agents/**",
+          ".github/**",
+          ".husky/**",
+          ".pi/**",
+          "deps/**",
+          "example/**",
+          "flake.lock",
+          "flatpak/**",
+          "images/**",
+          "nix/**",
+          "package-lock.json",
+          "po/**",
+          "scripts/**",
+          "snap/**",
+          "vendor/**"
+        ],
+        "checkout": "/tmp/agent-repository-ERTONE/checkout",
+        "inspectionSource": "session-transcript"
+      }
+    ]
+  }
+}

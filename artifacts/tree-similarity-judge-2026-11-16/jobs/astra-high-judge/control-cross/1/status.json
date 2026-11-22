@@ -1,0 +1,31 @@
+{
+  "status": "finished",
+  "key": "astra-high-judge/control-cross/1",
+  "runId": "a40beeec-d77a-4b6c-aff6-cc82501d2ac3",
+  "model": "gpt-6-astra",
+  "caseId": "control-cross",
+  "number": 1,
+  "reportedScore": 0,
+  "score": 0,
+  "rescore": {
+    "score": 0,
+    "reportedScore": 0,
+    "J": 0,
+    "reportedJ": 0,
+    "pairs": 0,
+    "unmatchedA": 8,
+    "unmatchedB": 6,
+    "depth": 1,
+    "maxPairError": 0,
+    "rangeIssues": []
+  },
+  "usage": {
+    "input": 7859,
+    "output": 989,
+    "cacheRead": 13696,
+    "cacheWrite": 0,
+    "reasoning": 94,
+    "totalTokens": 22544
+  },
+  "outputUrl": "http://localhost:5191/evals?run=a40beeec-d77a-4b6c-aff6-cc82501d2ac3&output=450c8f11-3b30-485c-a282-7fc0e4dc74c0%3A1%3Aalternative"
+}

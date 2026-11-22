@@ -51,6 +51,7 @@ export function DraggableDiagramCanvas(props: {
   getFocusBounds?: (viewport: HTMLElement) => { left: number; top: number; width: number; height: number };
   focusBox?: DiagramFocus;
   initialTransform?: CanvasTransform;
+  restoreFocusCamera?: boolean;
   onTransformChange?: (transform: CanvasTransform) => void;
 }) {
   const transformChange = useRef(props.onTransformChange); transformChange.current = props.onTransformChange;
@@ -236,6 +237,11 @@ export function DraggableDiagramCanvas(props: {
         .find((element) => element.dataset.gridBox === props.focusBox?.id);
       const initial = initialFocusPending.current;
       initialFocusPending.current = false;
+      if (initial && props.restoreFocusCamera && initialTransform.current) {
+        applyTransform(initialTransform.current);
+        if (surface) surface.style.visibility = "";
+        return;
+      }
       if (!viewport || !target) {
         if (initial) resetCanvas(false);
         if (surface) surface.style.visibility = "";

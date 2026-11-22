@@ -1,0 +1,199 @@
+Ghostty Surface core -- results: terminal state, geometry, frames, PTY input, text/search, host actions, session state
+|
+|-- [T] Terminal state: screens, scrollback, cursor, modes, colors, links and images
+|   |   Computed by Termio.processOutputLocked + StreamHandler.vtFallible
+|   |   (src/termio/Termio.zig:705-761; src/termio/stream_handler.zig:188-290).
+|   |-- Previous [T], or Terminal.init defaults on session creation
+|   |   `-- Defaults computed from [ref C] and [ref G] (src/termio/Termio.zig:254-309).
+|   |-- [D] Decoded terminal actions and protocol requests
+|   |   |   Computed by terminal.Stream(StreamHandler).nextSlice/next;
+|   |   |   printable text and VT control sequences update different parts of [T].
+|   |   |-- Child output bytes [external: PTY/backend stream]
+|   |   `-- Previous parser/UTF-8/OSC/DCS/APC continuation state
+|   |       `-- Accumulated from earlier stream chunks, not reset at read boundaries
+|   |           (src/terminal/stream.zig; src/termio/stream_handler.zig:19-99).
+|   |-- [G] reference: grid dimensions and cell pixel size
+|   |   `-- Terminal.resize reflows/resizes existing screen data using the new size
+|   |       (src/termio/Termio.zig:524-565; src/terminal/Terminal.zig:4912).
+|   |-- Local screen/viewport edits
+|   |   |   Computed by Surface.performBindingAction, scrollCallback and Termio.scrollViewport.
+|   |   |-- [ref U] Local actions, such as clearing or scrolling
+|   |   |-- Wheel/scrollbar gestures [external: application runtime]
+|   |   `-- [ref X] Search navigation and selection changes; [ref L] exit-message edits
+|   `-- [C] Effective per-surface configuration
+|       |   Computed by Surface.updateConfig/DerivedConfig.init and termio/renderer
+|       |   DerivedConfig.init; defaults and overrides become subsystem-specific values.
+|       |-- Parsed config and reloads [external: config supplied to Surface]
+|       `-- Conditional configuration state
+|           `-- Derived from runtime color-scheme changes and retained conditional state
+|               (src/Surface.zig:1804-1834, colorSchemeCallback).
+|
+|-- [G] Terminal geometry: renderer.Size, rows/columns and terminal pixel dimensions
+|   |   Computed by Surface.resize/balancePaddingIfNeeded and Size.grid/terminal;
+|   |   grid = screen minus padding, divided by cell dimensions
+|   |   (src/Surface.zig:2618-2665; src/renderer/size.zig:28-77).
+|   |-- Surface pixel size and content scale [external: runtime size/DPI callbacks]
+|   |-- [B] Font grid and cell metrics
+|   |   |   Computed by font.SharedGridSet.ref and Surface.setFontSize/setCellSize
+|   |   |   (src/Surface.zig:2510-2574).
+|   |   |-- [ref C] Font families, features, metric adjustments and initial size
+|   |   |-- Requested font size
+|   |   |   `-- Derived from configured size, prior manual adjustment, [ref U] zoom actions
+|   |   |       and runtime content scale (Surface.setFontSize/contentScaleCallback).
+|   |   `-- Available font faces [external: platform font discovery/font files]
+|   `-- Scaled and balanced padding
+|       |   Computed by DerivedConfig.scaledPadding and Size.balancePadding.
+|       |-- [ref C] Padding amounts and balancing mode
+|       |-- [ref B] Cell metrics
+|       `-- Surface dimensions and content scale [external: runtime]
+|
+|-- [F] Presented terminal frame: text, cursor, selection/search, images and background
+|   |   Computed by Renderer.updateFrame/rebuildCells/drawFrameLocked
+|   |   (src/renderer/generic.zig:1371, 1641-1708, 1740).
+|   |-- [R] Render-ready viewport snapshot
+|   |   |   Computed by terminal.RenderState.beginUpdate/endUpdate;
+|   |   |   dirty rows are refreshed and cell styles are resolved outside the terminal lock
+|   |   |   (src/terminal/render.zig:911-945; src/renderer/generic.zig:1482-1575).
+|   |   |-- [ref T] Active screen, viewport, cells, styles, cursor, palette and image placements
+|   |   |-- [ref X] Selection range
+|   |   `-- Previous [R] and terminal dirty flags; synchronized-output mode delays updates
+|   |-- Glyphs and GPU cell data
+|   |   |   Computed by rebuildCells, font_shaper.runIterator/shape and font_shaper_cache
+|   |   |   (src/renderer/generic.zig:2634, 2973-3026).
+|   |   |-- [ref R] Visible text and resolved styles
+|   |   |-- [ref B] Font grid, metrics and glyph resources
+|   |   `-- [ref C] Shaping and rendering options
+|   |-- Visual annotations
+|   |   |   Computed by updateHighlightsFlattened, linkCells, links.renderCellMap
+|   |   |   and renderer.cursorStyle (src/renderer/generic.zig:1530-1663).
+|   |   |-- [ref X] Viewport search matches and selected match
+|   |   |-- [ref R] Link identifiers and cursor state; [ref C] Configured link patterns
+|   |   |-- Mouse position/modifiers and focus [external: runtime input]
+|   |   `-- IME preedit and blink state
+|   |       `-- Derived by Surface.preeditCallback and renderer timing from runtime
+|   |           preedit text/focus events and clock ticks [external].
+|   |-- Image textures, background and optional shader effects
+|   |   |   Computed by images.kittyUpdate, background-image preparation and shader uniforms
+|   |   |   (src/renderer/generic.zig:1508-1527, updateBgImageBuffer,
+|   |   |   updateCustomShaderUniformsFromState/updateCustomShaderUniformsForFrame).
+|   |   |-- [ref T] Decoded Kitty image data, placements and animation state
+|   |   |-- [ref C] Background and shader options
+|   |   `-- Background/shader files and animation time [external]
+|   |-- [ref G] Screen/cell geometry and padding
+|   `-- Graphics target, current drawable size and display realization [external: graphics API]
+|
+|-- [W] Bytes delivered to the child: user input and terminal protocol replies
+|   |   Computed by Surface.queueIo, Termio write messages and Exec.queueWrite/ttyWrite
+|   |   (src/Surface.zig:899-921; src/termio/Exec.zig:403, 471).
+|   |-- Encoded keyboard input or explicit text/CSI/ESC binding payload
+|   |   |   Computed by Surface.encodeKey/input.key_encode.encode and performBindingAction
+|   |   |   (src/Surface.zig:3326-3423, 4941-5020).
+|   |   |-- [U] Binding resolution and input disposition
+|   |   |   |   Computed by keyCallback/maybeHandleBinding: remap modifiers, match active
+|   |   |   |   key tables/sequences, then consume, perform an action or allow encoding
+|   |   |   |   (src/Surface.zig:2792-2960, 2987-3060).
+|   |   |   |-- Key event or explicit binding action [external: runtime/user]
+|   |   |   |-- [ref C] Key remaps and bindings
+|   |   |   `-- Previous key-table/sequence and handled-press state
+|   |   |       `-- Derived from earlier binding matches and table/sequence actions.
+|   |   `-- Encoding options from input.key_encode.Options.fromTerminal([ref T])
+|   |       `-- Supplemented by [ref C] Option-as-Alt policy and keyboard layout [external].
+|   |-- Encoded paste/text input
+|   |   |   Computed by Surface.completeClipboardPaste and input.paste.encode;
+|   |   |   validate safety, apply bracketed-paste framing or newline conversion
+|   |   |   (src/Surface.zig:6264-6344).
+|   |   |-- Clipboard/text bytes and unsafe-paste confirmation [external]
+|   |   |-- [ref T] Paste protocol modes
+|   |   `-- [ref C] Paste protection and bracketed-paste trust policy
+|   |-- Encoded mouse, focus, visibility, size and color-scheme reports
+|   |   |   Computed by Surface.mouseReport and Termio reporting methods
+|   |   |   (src/Surface.zig:3813-3877; src/termio/Termio.zig:567, 682, 778, 802).
+|   |   |-- Mouse/focus/visibility/color-scheme events [external]
+|   |   |-- [ref T] Reporting modes; [ref G] Coordinates and dimensions; [ref C] Policy
+|   |   `-- Previous button/report state, derived from prior mouse events for deduplication
+|   |-- Protocol response payloads
+|   |   |   Computed by StreamHandler.deviceStatusReport/deviceAttributes/sendSizeReport,
+|   |   |   color reporting and Surface clipboard-response methods.
+|   |   |-- [ref D] Query kind and parameters
+|   |   |-- [ref T] Requested cursor/mode/color data; [ref G] Requested dimensions
+|   |   |-- [ref C] Response permissions and formats
+|   |   `-- Runtime title/clipboard contents and access decision [external, when requested]
+|   |-- Startup input: Termio.ThreadEnterState.prepareInput
+|   |   `-- Configured literal input or input-file bytes [external]
+|   `-- [ref L] Writable session endpoint and read-only/exited state
+|       `-- Surface.queueIo suppresses user-originated write messages in read-only mode.
+|
+|-- [X] Selection/text exports and search results: ranges, text, matches, count and current match
+|   |   Computed by Surface selection/export methods and terminal.search.Thread.
+|   |-- Selection range
+|   |   |   Computed by mouse/selection gestures and Screen.select via Surface.setSelection
+|   |   |   (src/Surface.zig:2451-2475, mouseButtonCallback, cursorPosCallback).
+|   |   |-- Pointer gestures [external] or [ref U] Selection actions
+|   |   |-- [ref G] Pixel-to-cell conversion
+|   |   `-- [ref T] Screen contents/viewport and previous selection endpoints
+|   |-- Exported text or clipboard representations
+|   |   |   Computed by selectionString, dumpTextLocked and formatter.ScreenFormatter
+|   |   |   (src/Surface.zig:2042, 2167-2177, 2325-2395).
+|   |   |-- [ref T] Cells, wrapping, styles and colors
+|   |   |-- Selection range above, or requested screen region [external]
+|   |   `-- [ref C] Trimming/codepoint mapping; requested plain/VT/HTML format [external]
+|   `-- Search matches, selected match and viewport highlights
+|       |   Computed by search.Thread.changeNeedle/feedLocked/select/notify;
+|       |   Surface.searchCallback_ extracts renderer highlights and UI counters
+|       |   (src/terminal/search/Thread.zig:243-335; src/Surface.zig:1496-1595).
+|       |-- Search needle and next/previous-match request [external: runtime/user]
+|       |-- [ref T] Active screen and scrollback, including changed viewport content
+|       `-- Previous search scan/selection state
+|           `-- Derived from earlier feeds of terminal data and match navigation.
+|
+|-- [H] Host-facing actions: title/PWD, colors, pointer/link state, scrollbar, clipboard and notifications
+|   |   Computed by Surface.handleMessage/performBindingAction and rt_app.performAction;
+|   |   these are action requests, not ownership of native windows or tabs
+|   |   (src/Surface.zig:1017-1158, 4941; src/Surface.zig:1-10).
+|   |-- Protocol-originated UI payloads
+|   |   |   Computed by StreamHandler.windowTitle/reportPwd/setMouseShape/
+|   |   |   showDesktopNotification/progressReport (src/termio/stream_handler.zig).
+|   |   |-- [ref D] OSC/control payloads
+|   |   |-- [ref T] Retained title/PWD/color/pointer state
+|   |   `-- [ref C] Static-title override and notification/report policies
+|   |-- Navigation, link-opening and window/tab/split action requests
+|   |   |   Computed by Surface.performBindingAction/processLinks/openUrl/mouseRefreshLinks.
+|   |   |-- [ref U] Resolved action, or pointer activation [external]
+|   |   `-- [ref T] Link/cell/PWD context; [ref G] Pointer mapping; [ref C] Link policy
+|   |-- Clipboard writes and access prompts
+|   |   |   Computed by copySelectionToClipboards, clipboardWrite and clipboard request handlers.
+|   |   |-- [ref X] Formatted selection or [ref D] Application clipboard payload
+|   |   |-- [ref C] Clipboard read/write permissions and limits
+|   |   `-- User authorization and native clipboard capabilities [external]
+|   |-- Scrollbar and search UI values
+|   |   |   Computed by PageList.scrollbar, Surface.updateScrollbar and search callbacks.
+|   |   |-- [ref T] History extent and viewport position
+|   |   `-- [ref X] Search total and selected-match index
+|   `-- Notification/bell eligibility
+|       |   Computed by Surface.showDesktopNotification and bell handling.
+|       |-- [ref C] Notification/bell policy; [ref D] Notification or BEL payload
+|       `-- Focus, current time and previous notification/bell timestamps [external or prior state]
+|
+`-- [L] Session state: live PTY/process, exit status, hold/close and confirmation decisions
+    |   Computed by Exec.Subprocess.start/processExitCommon and Surface.childExited/
+    |   needsConfirmQuit (src/termio/Exec.zig:274-294, 897; src/Surface.zig:995, 1297-1374).
+    |-- Spawned process and PTY endpoint
+    |   |   Computed by Subprocess.init/start, Pty.open and command startup.
+    |   |-- Command arguments, working directory and environment
+    |   |   `-- Derived from [ref C], inherited environment and shell/resource discovery
+    |   |       [external] plus shell-integration setup (src/termio/Exec.zig:624-887).
+    |   |-- [ref G] Initial rows/columns and pixel dimensions
+    |   `-- OS PTY allocation/process-spawn result [external]
+    |-- Exit code and elapsed runtime
+    |   |   Computed by Exec.processExitCommon.
+    |   |-- Child wait/exit result and current clock [external]
+    |   `-- Recorded process-start timestamp from session startup
+    |-- Hold-open, native exit notice or terminal fallback message
+    |   |   Computed by Surface.childExited/childExitedAbnormally.
+    |   |-- Exit code/runtime above; [ref C] Abnormal-exit threshold and wait-after-command
+    |   `-- Native runtime's ability to show an exit notice [external]
+    `-- Close/confirmation decision
+        |   Computed by Surface.needsConfirmQuit/keyCallback/close.
+        |-- Exited state above; [ref U] Close/key action; confirmation response [external]
+        |-- [ref T] cursorIsAtPrompt() from shell-integration state
+        `-- [ref C] confirm-close-surface; read-only state derived from user actions

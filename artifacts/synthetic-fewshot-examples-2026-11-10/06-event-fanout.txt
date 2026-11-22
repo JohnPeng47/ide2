@@ -1,0 +1,7 @@
+DocumentSaved(documentId, revision)
+|-- Search subscriber -> enqueue reindex
+|-- Preview subscriber -> invalidate cached thumbnail
+`-- Audit subscriber -> append revision record
+
+Subscribers run independently; branch order is not execution order.
+Each subscriber handles its own retry.

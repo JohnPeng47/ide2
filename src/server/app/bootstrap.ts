@@ -1,5 +1,8 @@
+import { UsageStore } from '../../../infrastructure/core/usage/usageStore';
+import { UsageStatisticsService } from '../../../application/core/usage/usageStatisticsService';
 import { ExperimentService, type StoredExperiment } from '../../../application/mapping/evals/experimentService';
 import { EvalRunService } from '../../../application/mapping/evals/evalRunService';
+import { FileCanvasTimeline } from '../../../infrastructure/mapping/history/fileCanvasTimeline';
 import { JudgementService } from '../../../application/mapping/evals/judgementService';
 import type { Judgement } from '../../../domain/mapping/evals/judgement';
 import { LayoutTemplateService, type LayoutTemplateStore } from '../../../application/mapping/evals/layoutTemplateService';
@@ -115,7 +118,8 @@ export function createBackend(projectRoot: string, diagramsDirectory: string, co
   const diagramContextStore = new FileDiagramAgentContextStore(store.storeRoot, contextSources);
   const apiProjection = new CanvasApiProjection();
   const liveCanvas = new LiveCanvasService(() => canvasBridge.list(), async (workspaceInstanceId, documentId) =>
-    await canvasBridge.dispatch(workspaceInstanceId, { method: 'context', documentId }) as import('../../../domain/mapping/agent/liveCanvasStatus').LiveCanvasContext, agentContexts, apiProjection);
+    await canvasBridge.dispatch(workspaceInstanceId, { method: 'context', documentId }) as import('../../../domain/mapping/agent/liveCanvasStatus').LiveCanvasContext, agentContexts, apiProjection,
+    async (workspace, documentId, projectionType) => await canvasBridge.dispatch(workspace, { method: 'read', documentId, payload: { projectionType } }) as import('../../../domain/mapping/agent/liveCanvasStatus').ProjectedLiveContext);
   const changes = new ChangeSessionService(new DiagramChangeSessionStore(store.storeRoot, undefined, true), store, canvasBridge);
   const agent = new AgentDiagrammingSessionService(canvasBridge, diagrams, store, new QuickJsAgentRuntime(),
     changes, diagramEditRuntime, agentContexts, apiProjection, diagramContextStore);
@@ -134,6 +138,7 @@ export function createBackend(projectRoot: string, diagramsDirectory: string, co
   const evalRuns = new EvalRunService(compareSessions, workspace, store, contextLibrary, evalPrompts, generatedCanvases,
     evalRunStore, fake ? new FakeEvalRuntime() : new AgentContextEvalRuntime(projectRoot, options.piEnabled === true), new FileRollUpRunStore(store.storeRoot));
   evalRuns.layoutTemplates = new LayoutTemplateService(new JsonDirectoryStore<Awaited<ReturnType<LayoutTemplateStore['list']>>[number]>(store.storeRoot, 'layout-templates'), compareSessions, store);
+  evalRuns.histories = new FileCanvasTimeline(store.storeRoot);
   evalRuns.referenceGenerations = new ReferenceGenerationService(new JsonDirectoryStore<ReferenceGenerationSession>(store.storeRoot, 'eval-reference-sessions'), agentChat, evalRuns);
   evalRuns.replayLegacy = (run, requestId) => agentChat.rerunAlternatives(run, requestId);
   evalRuns.cancelLegacy = id => agentChat.cancelGeneration(id);
@@ -145,6 +150,7 @@ export function createBackend(projectRoot: string, diagramsDirectory: string, co
   evalRuns.judgements = new JudgementService(new JsonDirectoryStore<Judgement>(store.storeRoot, 'judgements'), compareSessions, comparisonRunStore, comparisonRuns, evalRunStore);
   evalRuns.experiments = new ExperimentService(new JsonDirectoryStore<StoredExperiment>(store.storeRoot, 'eval-experiments'), evalRuns, store, contextLibrary);
   evalRuns.deleteContextComparisons = (id, workflow) => comparisonRuns.deleteContextOutputs(id, workflow);
+  const usageStore = new UsageStore();
   const routes = {
     core: createCoreRoutes({
       application: core,
@@ -154,13 +160,14 @@ export function createBackend(projectRoot: string, diagramsDirectory: string, co
     mapping: createMappingRoutes({
       selection: new SelectionService(store, mappingRuntime, mappingPocSourceRoot),
       diagrams, agent, agentChat, liveCanvas, diffSessionWorkflows, pushIntegrations, pushToken: process.env.NEW_DIAGRAM_PUSH_TOKEN,
-      workspace, compareSessions, comparisonRuns, evalRuns, evalPrompts, evalReferences,
+      workspace, compareSessions, comparisonRuns, evalRuns, evalPrompts, evalReferences, usageStatistics: new UsageStatisticsService(usageStore),
       chat: new LocalChatService(store, corpusAccess, chatRuntime, mappingPocSourceRoot),
       compactionService
     })
   };
   return {
     routes, liveCanvas, diffSessionWorkflows, pushIntegrations, dispose() {
+      usageStore.close();
       comparisonRuns.dispose();
       evalRuns.dispose();
       agentChat.dispose();

@@ -1,0 +1,19 @@
+Map the provided canvas’s diagram nodes to the source-code line ranges that explain or implement them.
+
+For each node, select the source ranges that together explain what the node represents. Read the label in the context of its branch. A single-line leaf can stand for an entire subsystem. Use the following rules to decide when you have enough evidence.
+
+- For a specific fact, stop when the source establishes it. A declaration listing all allowed states can fully support a node that simply names those states.
+- For a subsystem, identify its principal responsibilities in the pinned source and follow its entry point to where those responsibilities are implemented. For a compound label, check each named behavior, resource, or ownership claim. A field declaration can establish who holds a resource. If the label also describes its lifetime, find where the owner acquires, transfers, or releases it, as applicable.
+- For a flow, follow the handoffs in the label. Select the code that connects the steps and performs the named transformations. A caller that delegates the work may be a useful first jump. Follow the call to the implementation when the label describes what that work does.
+
+Keep each range tight. Use several disjoint ranges in one file or across files when the evidence is distributed. Choose ranges for the node itself, using its parent and children to clarify scope. A parent does not need the union of every descendant’s mappings, and a child may need direct evidence beyond its parent’s range.
+
+Before validating, review each node against its selected lines. Could a reader verify each material claim from those lines? Follow any missing claim into the source. If only part is supported, keep the verified ranges and identify the diagram, node, and unresolved claim in notes. If no part is supported, leave the node unmapped and explain why in notes. Carry every verified range into the complete candidate and final submission.
+
+Register the mappings, preserving every diagram’s content and the canvas layout.
+
+Inputs and submission: the saved AgentContext contains the pinned repository checkout and diagram-data.json (ASCII and node references). Use the available read/bash tools to inspect that checkout. Use the supplied diagrams as-is. No layout template or external reference examples are provided. Return only JSON: {"diagrams":[{"diagramId":"d1","mappings":[{"node":"n1","path":"relative/file.ts","startLine":10,"endLine":20}]}],"notes":"Any unsupported nodes or uncertainty"}. Include every supplied diagram, using an empty mappings array if needed. Each entry maps one supplied node reference to one repository-relative, 1-based inclusive source range; repeat the node for multiple ranges. Do not change diagram text or layout.
+
+The runner registers these exact node/range choices through the setSourceMappings operation underlying nodes.setSourceMappings. It resolves the supplied node references to their current diagram spans and fills evidence.originalLines from the pinned source. It does not choose, widen or repair source ranges. The checkout is read-only; no canvas tools are exposed inside this evaluation session.
+
+Before submission, read each selected range with line numbers that restart for that file (for example, nl -ba one-file.ts). Do not infer range endpoints from search hits or use cumulative numbering across files. Call validate_source_mappings with your complete candidate JSON, inspect any reported errors, and verify corrected ranges against the source before returning the final JSON. The final JSON must match a candidate that passed this check. This tool checks node references, file existence and line bounds; semantic support still requires your inspection. Validation calls and any within-session corrections are retained as part of the same sample; they are not separate generation attempts.

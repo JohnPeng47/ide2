@@ -1,0 +1,19 @@
+{
+  "id": "child-6",
+  "name": "renderer",
+  "assignment": "Map n66-77 renderer branch including backends. Private /tmp/renderer. Return compact scope + path ranges with roles D,U,I per node; parent can reference child ranges.",
+  "model": "gpt-6.2-astra",
+  "effort": "high",
+  "status": "generating",
+  "queuedAt": "2026-11-22T03:05:57.870Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-22T03:10:45.419Z",
+  "sessionId": "01a2013c-18b6-7ede-88ce-ec3b0b79805c",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-7vmfpdh9-agent-repository-RuKCrG-checkout--/2026-11-22T03-10-45-430Z_01a2013c-18b6-7ede-88ce-ec3b0b79805c.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase4-7vmfpdh9/agent-repository-RuKCrG/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

@@ -14,13 +14,13 @@ const endpoint = z.object({ diagram: z.string().min(1), line: z.number().int().p
 export const outputEdge = z.object({ source: endpoint, target: endpoint, label: z.string().max(120) }).strict();
 export const rollUpOutputSchema = z.object({
   explanation: z.string().min(1).max(6000),
-  diagrams: z.array(z.object({ id: gridOutputId, ascii: z.string().min(1).max(50000), position: gridPosition }).strict()).length(1, 'r2 must contain exactly one diagram'),
+  diagrams: z.array(z.object({ id: gridOutputId, ascii: z.string().min(1), position: gridPosition }).strict()).length(1, 'r2 must contain exactly one diagram'),
   edges: z.array(outputEdge).max(40)
 }).strict();
 export type RollUpOutput = z.infer<typeof rollUpOutputSchema>;
 export const attachOutputSchema = z.object({
   attachment: z.enum(['a', 'b', 'c']), explanation: z.string().min(1).max(6000),
-  edits: z.array(z.object({ diagram: z.string().min(1), ascii: z.string().min(1).max(100000), merged: z.array(gridOutputId).max(12) }).strict()).max(20),
+  edits: z.array(z.object({ diagram: z.string().min(1), ascii: z.string().min(1), merged: z.array(gridOutputId).max(12) }).strict()).max(20),
   placements: z.array(z.object({ diagram: gridOutputId, position: gridPosition }).strict()).max(12),
   edges: z.array(outputEdge).min(1).max(50)
 }).strict();

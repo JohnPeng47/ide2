@@ -1,0 +1,152 @@
+{
+  "output": {
+    "explanation": "The central tree retains the seed's six conceptual branches while reducing it from 107 to 74 lines (31%) and from 7,185 to 4,901 characters (32%). Five peripherals expand meaningful concept nodes: source selection and provider boundaries, evidence dependencies, cache ownership, viewer state, and language-session lifetime. Modular structure organizes responsibilities; nested operations show calls; ownership explains retained state and cleanup; hash comparisons expose data dependencies. Positions use measured text dimensions with gaps and no overlapping diagram bounds.\n\nCorrections and qualifications come from the pinned source: corpus.ts permits an empty directory path, and its filesystem providers ignore the optional Git revision. projectLanguageService.ts owns sessions per service instance, accepts a character position at line end, and does not dispose sessions for every lookup rejection or cancellation; service disposal itself is terminal. SourceFileCache prioritizes new on-demand jobs ahead of all queued jobs, not only background jobs. Additional source-grounded details include binding replacement without revision comparison, symlink listing versus traversal, distinct hash purposes, adjacent ranges remaining separate, protection against older cache failures deleting newer entries, and measured offscreen rendering chunks.\n\nEvidence is limited to context.json and seed.json. Peripheral details derive from diagramSource.ts, corpus.ts, codePanel.ts, sourceFileCache.ts, SourceCodePane.tsx, SourceCodeView.tsx, and projectLanguageService.ts. Imported implementations such as sourceFilesClient, resolveNodeResources, and HTTP routing are absent: their internal wiring, selection traversal, and transport cancellation are not inferred. Calls shown describe source-established behavior, not an observed runtime trace.",
+    "diagrams": [
+      {
+        "id": "central",
+        "ascii": "Repository Evidence and Navigation\n|-- Resolve an explicit source -> resolveDiagramSource()\n|   |-- Load project; reject a mismatched projectId\n|   |-- Choose diagram or registered binding\n|   |   |-- Live diagram -> validate; check requested contentId\n|   |   |-- Saved representation -> requested revision or current revision\n|   |   |   `-- Require revision membership; select exactly one diagram\n|   |   `-- Source query -> saved diagram bindings + project.sources\n|   |       `-- Filter/deduplicate by sourceId; require one consistent binding\n|   |-- Requested sourceId must match the selected diagram's binding\n|   `-- Return diagramSource query + diagram + binding() + readText/listFiles\n|       |-- binding() fails when the diagram has no source repository\n|       `-- Reads/listings require CorpusAccess -> provider(binding.corpus)\n|-- Corpus access: filesystem content behind a binding\n|   |-- git-worktree or filesystem-documents -> bound root\n|   |-- CorpusAccess exposes provider, readDocumentLines, discover\n|   |-- Both supplied providers read current filesystem content\n|   |   `-- Validate kind, root and relative path; reject symlink traversal\n|   |-- listDirectory -> omit .git; directories first, then names\n|   `-- Bytes -> UTF-8 text -> lines; readLines uses one-based inclusive bounds\n|-- Git identity and change context -> GitRepositoryRegistry\n|   |-- Persist repositories in project.json; serialize mutations per store file\n|   |-- initialize/register -> discover Git identity\n|   |   |-- Stable ID from identity hash; merge checkout roots\n|   |   `-- Backfill discoverable repositories; non-Git roots stay unassigned\n|   |-- Resolve usable checkout\n|   |   |-- Try saved roots and current checkout; require matching Git identity\n|   |   `-- No matching checkout -> repository unavailable\n|   `-- resolveContext / captureHunks\n|       |-- Require repositoryId unless exactly one repository is registered\n|       |-- Resolve head, commits, optional comparisonBase to commit SHAs\n|       `-- Validate repository context -> capture Git hunks from that checkout\n|-- Diagram selection -> source evidence\n|   |-- Require sourceContext.contentHash == content.asciiSha256\n|   |-- diagramSource.entries() -> source ranges with repo, bounds and evidence hash\n|   |-- Sort selected nodes by diagram position -> resolveNodeResources()\n|   |   `-- Preserve selected/mapped origins; report unmappedNodeIds\n|   |-- Deduplicate resources by type + repo + path + bounds + range hash\n|   |   `-- Merge origins -> PanelContent with diagram/revision/content identity\n|   `-- Build display sections in diagram order; merge overlapping ranges\n|-- Browser source boundary -> CodeRepoService\n|   |-- Every repository reference carries projectId + sourceId\n|   |   `-- A canvas can span repositories; project identity alone is insufficient\n|   |-- HTTP implementation\n|   |   |-- read/preload -> sourceFilesClient()\n|   |   |-- listDirectory -> fetchProjectDirectory()\n|   |   |-- definitions -> fetchSourceDefinitions()\n|   |   `-- Search and all Git methods -> unsupported-operation error\n|   |-- SourceFileCache -> shared promises keyed by projectId + sourceId + path\n|   |   `-- Prioritized bounded queue; version/reload controls reuse; failures retry\n|   |-- ProjectSourceService -> resolveDiagramSource()\n|   |   |-- files(directory) -> source.listFiles(directory)\n|   |   |-- source(path) -> require path -> source.readText(path)\n|   |   |   |-- Reject NUL-containing binary content\n|   |   |   `-- Return path, lines, startLine=1, SHA-256, and lspEnabled\n|   |   `-- definitions -> optional language service using bound corpus\n|   `-- SourceCodePane -> repository explorer + current file + mapped ranges\n|       |-- Read on project/source/path/retry changes; abort obsolete pane requests\n|       |-- Loading/error states -> retry or explicit reload\n|       |-- Compare loaded file SHA-256 with projection's sourceSha256\n|       |   `-- Mismatch -> current text; disable range highlights/navigation/folds\n|       |-- Open file / follow definition -> navigate within the existing pane\n|       |   `-- Back/forward history retains range and scroll position\n|       `-- SourceCodeView -> read-only text, tokens, folds and definition gestures\n`-- Optional definition lookup\n    |-- No language service -> lsp-disabled; enable server with --lsp\n    |-- ProjectLanguageService validates request\n    |   |-- Supported TS/JS path + nonnegative integer position\n    |   |-- Re-read corpus text; require matching sourceSha256\n    |   `-- Zero-based UTF-16 coordinates; allow character at line end\n    |-- Lazy session per canonical root within each service instance\n    |   `-- Serialize didOpen -> definition request -> didClose; support cancellation\n    `-- Deduplicate relative locations; count results outside repository\n        `-- Pane: one -> navigate; many -> choose; none -> explanatory message",
+        "position": {
+          "column": 100,
+          "row": 0
+        }
+      },
+      {
+        "id": "binding",
+        "ascii": "Source selection and filesystem boundary\n|-- resolveDiagramSource: identity before reads\n|   |-- representationId triggers catalog/revision validation, even with liveDiagram\n|   |-- Saved scene: contentId selects by ID\n|   |   `-- Without contentId, require exactly one source-bound diagram\n|   |-- Registered bindings: saved bindings first, then project.sources\n|   |   |-- Same sourceId conflicts on root, kind or repositoryIdentity -> reject\n|   |   `-- Otherwise later binding replaces earlier; revision is not compared\n|   `-- Exactly one binding -> temporary source-query diagram\n|-- Public query exposes binding(), readText() and listFiles()\n|   `-- Reads resolve binding, require CorpusAccess, then call its provider\n`-- FilesystemCorpusProvider: internal implementation for both corpus kinds\n    |-- git-worktree revision is declared but unused by these reads\n    |-- Canonicalize binding.root; verify kind and directory\n    |-- Relative path policy\n    |   |-- Empty string is valid: listDirectory(\"\") lists the bound root\n    |   |-- Reject absolute paths, NUL, backslash, \".\" and \"..\"\n    |   `-- Reject empty segments inside nonempty paths\n    |-- lstat each segment; reject symlinks and root escape\n    |-- Listing hides .git, but direct reads have no .git-specific exclusion\n    |   `-- Symlink entries appear as files; attempting to read them is rejected\n    `-- readLines validates bounds, then slices available lines\n        `-- End past EOF is clipped; start past EOF yields an empty array",
+        "position": {
+          "column": 0,
+          "row": 0
+        }
+      },
+      {
+        "id": "evidence",
+        "ascii": "Evidence identities and display ordering\n|-- codePanel: pure domain handlers; no React or file I/O\n|   |-- Reject stale diagram content hash before indexing mappings\n|   |-- Skip entries without a mapped node, entity or range\n|   `-- SourceRangeReference\n|       |-- repo.sourceId = entity.sourceId ?? binding.sourceId ?? \"\"\n|       |-- Inclusive one-based bounds plus path and projectId\n|       `-- rangeSha256 hashes originalLines joined with LF\n|-- Resource identity includes type, repo, path, bounds and range hash\n|   `-- Duplicate resources merge origins, preserving selection provenance\n|-- Display sections preserve input order\n|   |-- New section if file/repo changes or start line goes backwards\n|   |-- Otherwise merge when next.startLine <= previous.endLine\n|   `-- Adjacent nonoverlapping ranges remain separate\n`-- Distinct hashes answer distinct questions\n    |-- Diagram content hash: are mappings aligned to this ASCII content?\n    |-- Range hash: which saved evidence belongs to this resource identity?\n    |-- Loaded file hash vs projection hash: is pane evidence still aligned?\n    |   `-- Mismatch disables mapped highlights, range buttons and folds\n    `-- Disk hash vs lookup request hash: is the definition position current?\n        `-- Mismatch rejects lookup and asks for a reload",
+        "position": {
+          "column": 0,
+          "row": 32
+        }
+      },
+      {
+        "id": "cache",
+        "ascii": "SourceFileCache owns promises and scheduling\n|-- Internal state: entries map + queued jobs + active count\n|   `-- Key = [projectId, sourceId, path]; version is separate metadata\n|-- read(): reuse unless reload or both versions exist and differ\n|   |-- Missing cached version adopts supplied version without another load\n|   `-- On-demand reuse promotes a queued matching job to the front\n|-- New read: publish promise in entries before scheduling load\n|   |-- Background job -> queue tail; on-demand job -> queue head\n|   |-- drain() starts jobs while active < concurrency; default is 4\n|   `-- Each completion decrements active and drains again\n|-- Reload replaces the cache entry; older work is not cancelled here\n|   `-- A failing older job cannot delete a newer entry\n|-- Failed current entry is deleted; subsequent read can retry\n|   `-- preload() catches failures so a pane can report them later\n`-- Successful promises remain cached; no eviction or abort API is shown\n    `-- HTTP delegates read/preload to unpinned sourceFilesClient\n        `-- Cache wiring and transport cancellation cannot be verified here",
+        "position": {
+          "column": 200,
+          "row": 0
+        }
+      },
+      {
+        "id": "view",
+        "ascii": "Source pane and viewer state ownership\n|-- SourceCodePane owns preview, errors, history and definition request\n|   |-- Effect cleanup aborts file request; aborted results do not update preview\n|   |-- New lookup/navigation/reload aborts the previous definition request\n|   |-- New navigation keeps last 99 back visits, appends current, clears forward\n|   `-- Visit captures path, range, rangeIndex and both scroll offsets\n|-- SourceCodeView owns token results and expanded section/node sets\n|   |-- Tokenization depends on text, path, theme and presentation\n|   |   `-- Ignore late results after cleanup; failure keeps text fallback\n|   |-- Source/navigation changes reset folds and expanded graph nodes\n|   `-- Definition destination expands its enclosing collapsed section\n|-- Scroll and selection depend on visible layout\n|   |-- Restore retained scroll before choosing automatic target\n|   |-- Hidden viewer has no box: avoid replacing retained scroll with zeros\n|   `-- Tokenization replaces DOM text; reapply destination selection\n`-- Offscreen rendering: preserve DOM search and selection\n    |-- Enable only when requested, unwrapped, and more than 240 rendered rows\n    |-- Group rows into chunks of 80\n    |-- Measure real chunk sizes before content-visibility: auto\n    `-- Width changes trigger remeasurement; cleanup disconnects ResizeObserver",
+        "position": {
+          "column": 200,
+          "row": 25
+        }
+      },
+      {
+        "id": "lsp",
+        "ascii": "Language-service session lifetime\n|-- ProjectLanguageService owns a private sessions map keyed by realpath(root)\n|   |-- Validate file, position and disk hash before finding/creating session\n|   |-- Character equal to line.length is accepted\n|   `-- Missing/dead session -> lazy replacement, while service remains active\n|-- LanguageSession owns child process, RPC connection, queue and idle timer\n|   |-- Spawn TypeScript language server with stdio JSON-RPC\n|   |-- Require definition support; reject a declared non-UTF-16 encoding\n|   |-- workspace/applyEdit returns applied: false\n|   |-- Serialize lookups; a rejected job does not poison the queue\n|   |   |-- Wait for initialization; check abort; didOpen with full source text\n|   |   |-- AbortSignal cancels RPC token; definition request has 20-second bound\n|   |   `-- Finally remove abort listener, dispose token, didClose if alive\n|   `-- Initialization also has a 20-second bound\n|-- Session disposal\n|   |-- Initialization failure, timeout, RPC error, child error/exit, or idle expiry\n|   |-- Idle timer: 5 minutes, scheduled after initialization and each lookup\n|   |-- Ordinary lookup rejection/cancellation need not dispose the session\n|   `-- Clear timer, dispose RPC, terminate child/process group, unregister session\n`-- Service disposal is terminal\n    |-- Dispose all owned sessions; clear map; remove process-exit listener\n    `-- Global liveSessions also supports SIGINT/SIGTERM cleanup",
+        "position": {
+          "column": 200,
+          "row": 52
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": {
+          "diagram": "central",
+          "line": 2
+        },
+        "target": {
+          "diagram": "binding",
+          "line": 2
+        },
+        "label": "source selection rules"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 14
+        },
+        "target": {
+          "diagram": "binding",
+          "line": 12
+        },
+        "label": "provider boundary and path policy"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 33
+        },
+        "target": {
+          "diagram": "evidence",
+          "line": 2
+        },
+        "label": "mapping identity and display ordering"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 60
+        },
+        "target": {
+          "diagram": "evidence",
+          "line": 18
+        },
+        "label": "file freshness dependency"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 49
+        },
+        "target": {
+          "diagram": "cache",
+          "line": 1
+        },
+        "label": "promise ownership and queue lifecycle"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 57
+        },
+        "target": {
+          "diagram": "view",
+          "line": 2
+        },
+        "label": "pane request and navigation ownership"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 64
+        },
+        "target": {
+          "diagram": "view",
+          "line": 7
+        },
+        "label": "viewer state and rendering"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 71
+        },
+        "target": {
+          "diagram": "lsp",
+          "line": 2
+        },
+        "label": "session scope and resource lifetime"
+      }
+    ]
+  },
+  "usage": {
+    "input_tokens": 338422,
+    "cached_input_tokens": 292096,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 8331,
+    "reasoning_output_tokens": 738
+  }
+}

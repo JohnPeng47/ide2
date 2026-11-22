@@ -1,0 +1,169 @@
+{
+  "method": "Exclude failed Phase 3 slots and their matching baseline case/repeat slots. Pairing identifies input/repeat slots, not shared random seeds. Descriptive only; prompt and delegation changed together, and Astra also changes the lead model. Failed-attempt usage is excluded from per-success means and reported separately.",
+  "comparisons": [
+    {
+      "condition": "astra-high_sol-medium",
+      "slots": [
+        [
+          "ghostty-v3-canvas-1",
+          1
+        ],
+        [
+          "ghostty-v3-canvas-1",
+          2
+        ],
+        [
+          "ghostty-v3-canvas-1",
+          3
+        ],
+        [
+          "ghostty-v3-canvas-2",
+          1
+        ],
+        [
+          "ghostty-v3-canvas-2",
+          2
+        ],
+        [
+          "ghostty-v3-canvas-2",
+          3
+        ],
+        [
+          "ghostty-v3-core-1",
+          1
+        ],
+        [
+          "ghostty-v3-core-1",
+          2
+        ],
+        [
+          "ghostty-v3-core-1",
+          3
+        ],
+        [
+          "ghostty-v3-core-2",
+          2
+        ],
+        [
+          "ghostty-v3-core-2",
+          3
+        ]
+      ],
+      "current": {
+        "samples": 11,
+        "meanUniqueSourceLines": 10177.545454545454,
+        "meanElapsedSeconds": 451.5159090909091,
+        "meanTotalTokens": 1252943,
+        "mappedNodes": 1405,
+        "nodes": 1405,
+        "fullDefinitions": 106,
+        "functionObservations": 142,
+        "fullDefinitionRate": 0.7464788732394366
+      },
+      "baselines": {
+        "sol-medium_baseline": {
+          "samples": 11,
+          "meanUniqueSourceLines": 2588.181818181818,
+          "meanElapsedSeconds": 399.694,
+          "meanTotalTokens": 1417663.3636363635,
+          "mappedNodes": 1405,
+          "nodes": 1405,
+          "fullDefinitions": 24,
+          "functionObservations": 142,
+          "fullDefinitionRate": 0.16901408450704225
+        },
+        "sol-high_baseline": {
+          "samples": 11,
+          "meanUniqueSourceLines": 2768.909090909091,
+          "meanElapsedSeconds": 383.4820909090909,
+          "meanTotalTokens": 1146663.3636363635,
+          "mappedNodes": 1405,
+          "nodes": 1405,
+          "fullDefinitions": 24,
+          "functionObservations": 142,
+          "fullDefinitionRate": 0.16901408450704225
+        }
+      }
+    },
+    {
+      "condition": "sol-high_sol-medium",
+      "slots": [
+        [
+          "ghostty-v3-canvas-1",
+          1
+        ],
+        [
+          "ghostty-v3-canvas-1",
+          2
+        ],
+        [
+          "ghostty-v3-canvas-1",
+          3
+        ],
+        [
+          "ghostty-v3-canvas-2",
+          2
+        ],
+        [
+          "ghostty-v3-canvas-2",
+          3
+        ],
+        [
+          "ghostty-v3-core-1",
+          1
+        ],
+        [
+          "ghostty-v3-core-1",
+          2
+        ],
+        [
+          "ghostty-v3-core-1",
+          3
+        ],
+        [
+          "ghostty-v3-core-2",
+          2
+        ],
+        [
+          "ghostty-v3-core-2",
+          3
+        ]
+      ],
+      "current": {
+        "samples": 10,
+        "meanUniqueSourceLines": 7605.7,
+        "meanElapsedSeconds": 322.2475,
+        "meanTotalTokens": 938479.6,
+        "mappedNodes": 1245,
+        "nodes": 1245,
+        "fullDefinitions": 68,
+        "functionObservations": 129,
+        "fullDefinitionRate": 0.5271317829457365
+      },
+      "baselines": {
+        "sol-medium_baseline": {
+          "samples": 10,
+          "meanUniqueSourceLines": 2535,
+          "meanElapsedSeconds": 383.5457,
+          "meanTotalTokens": 1410376.4,
+          "mappedNodes": 1245,
+          "nodes": 1245,
+          "fullDefinitions": 21,
+          "functionObservations": 129,
+          "fullDefinitionRate": 0.16279069767441862
+        },
+        "sol-high_baseline": {
+          "samples": 10,
+          "meanUniqueSourceLines": 2733.1,
+          "meanElapsedSeconds": 385.1025,
+          "meanTotalTokens": 1184776.8,
+          "mappedNodes": 1245,
+          "nodes": 1245,
+          "fullDefinitions": 22,
+          "functionObservations": 129,
+          "fullDefinitionRate": 0.17054263565891473
+        }
+      }
+    }
+  ]
+}

@@ -1,3 +1,4 @@
+import type { RepositoryContext } from '../../../domain/core/agents/agentContextRepository';
 import type { AgentContextSources } from '../../core/ports/agentContextSources';
 import type { AgentContextRepository } from '../../core/ports/agentContextRepository';
 import { AgentContext, agentContextSourceRanges } from '../../../domain/core/agents/agentContext';
@@ -59,8 +60,8 @@ export class AgentContextLibrary {
     else if (Array.isArray(input.context)) {
       content = [];
       // Bound peak capture memory even for many file constituents.
-      const capture = async (block: CaptureSourceRange | { type: 'text'; text: string }) => {
-        if (block.type === 'text') return block;
+      const capture = async (block: CaptureSourceRange | RepositoryContext | { type: 'text'; text: string }) => {
+        if (block.type !== 'sourceFile') return block;
         else {
           if (!this.sources) throw Error('AGENT_CONTEXT_SOURCE_UNAVAILABLE');
           return this.sources.capture(block);

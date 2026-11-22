@@ -1,0 +1,176 @@
+[
+  {
+    "id": "child-1",
+    "name": "host",
+    "assignment": "Map n2-11, host App and widget branch. Use private /tmp/host; return compact text one line per node: scopes then paths with inclusive ranges and roles (D,U,I). Include parent coverage via references to other node ranges as appropriate. No JSON needed.",
+    "model": "gpt-6.2-astra",
+    "effort": "high",
+    "status": "finished",
+    "queuedAt": "2026-11-22T03:05:57.869Z",
+    "usage": {
+      "input": 61361,
+      "output": 4132,
+      "cacheRead": 408832,
+      "cacheWrite": 0,
+      "reasoning": 100,
+      "totalTokens": 474325
+    },
+    "cost": {
+      "input": 0.6136100000000001,
+      "output": 0.2066,
+      "cacheRead": 0.408832,
+      "cacheWrite": 0,
+      "total": 1.2290420000000002
+    },
+    "startedAt": "2026-11-22T03:05:57.878Z",
+    "sessionId": "01a20137-b5a8-7dbc-9489-1caa7bce3607",
+    "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-7vmfpdh9-agent-repository-RuKCrG-checkout--/2026-11-22T03-05-57-928Z_01a20137-b5a8-7dbc-9489-1caa7bce3607.jsonl",
+    "text": "n2 | entity, structure, relationship, subsystem | `src/Surface.zig` 1-16 D, 44-45 D, 74-84 D, 92-108 D, 133-136 D, 477-484 DI, 623-644 UI; include n3–n5; from n8 include the App registry, focus, dispatch, and shared-resource handoffs to Surface (not the GPU/font backend internals).\n\nn3 | structure, relationship | `src/Surface.zig` 925-929 DI, 2600-2616 DI, 2792-2795 D, 3426-3432 DI, 3918-3923 D; host uses: `src/apprt/embedded.zig` 218-221 U, 1001-1006 U, 1038-1043 U, 1058-1062 U, 1131-1136 U.\n\nn4 | behavior, relationship, guarantee, subsystem | include n3; `src/Surface.zig` 1-12 D, 92-102 D, 133-136 D, 580-588 UI, 597-605 UI, 631-642 I, 687-701 UI, 711-725 UI, 753-767 UI, 829-845 I, 854-858 UI, 2834-2840 UI, 2938-2961 UI, 3998-4008 UI; `src/termio/Thread.zig` 261-269 UI; `src/termio/Termio.zig` 367-371 D, 398-400 UI; `src/termio/backend.zig` 39-48 DI; `src/termio/Exec.zig` 44-61 DI, 86-104 UI, 897-901 D, 909-916 I, 1063-1084 I, 196-201 UI.\n\nn5 | structure, relationship, subsystem | `src/apprt.zig` 1-10 D, 15-25 D, 39-53 DI; `src/Surface.zig` 74-79 D, 477-484 D, 511-513 U, 538-545 U, 623-626 I; `src/apprt/gtk.zig` 1-3 D; `src/apprt/gtk/Surface.zig` 19-39 DI; `src/apprt/gtk/class/surface.zig` 3564-3570 UI, 3610-3624 UI; `src/apprt/embedded.zig` 30-36 D, 447-455 D, 615-624 UI; include n6 and n7 and the runtime-to-core callback calls from n3.\n\nn6 | behavior, relationship, guarantee | `src/Surface.zig` 6-12 D; `src/apprt/surface.zig` 209-214 D; `src/apprt/gtk/class/application.zig` 2535-2609 DI, 2628-2634 UI; `src/apprt/gtk/class/window.zig` 426-477 UI, 479-498 I; `src/apprt/gtk/class/tab.zig` 191-196 DI, 207-222 UI; `src/apprt/gtk/class/split_tree.zig` 212-242 DI, 251-277 I. A preview pane is an illustrative possible embedding in the core contract at Surface:6-11, not an additional `NewSurfaceContext` variant.\n\nn7 | behavior, relationship | `src/apprt/action.zig` 16-23 D, 54-63 D, 83-98 D; `src/Surface.zig` 4941-4950 UI, 5450-5454 UI, 5494-5507 UI; `src/App.zig` 319-331 UI; `src/apprt/gtk/App.zig` 61-68 DI; `src/apprt/gtk/class/application.zig` 692-700 DI, 739-750 UI; `src/apprt/embedded.zig` 52-53 D, 303-323 DI; `macos/Sources/Ghostty/Ghostty.App.swift` 56-62 U, 583-595 I, 924-947 I, 949-983 I, 985-1011 I.\n\nn8 | entity, behavior, relationship, subsystem | `src/App.zig` 1-4 D, 119-151 DI, 172-176 UI, 262-270 DI, 501-529 DI, 552-560 DI; include n9–n11. The configuration broadcast and all-surface binding dispatch are coordination responsibilities beyond its three children.\n\nn9 | structure, behavior, relationship | `src/App.zig` 22-28 D, 45-51 D, 126-129 I, 161-167 DI, 199-260 DI, 272-316 DI, 531-550 DI, 577-581 D, 596-613 DI; `src/Surface.zig` 887-893 UI, 1017-1021 DI, 3466-3473 UI; `src/apprt/surface.zig` 186-207 DI; `src/apprt/embedded.zig` 518-520 UI, 634-646 UI, 1730-1736 UI; `src/apprt/gtk/class/surface.zig` 3564-3570 UI, 1965-1978 UI.\n\nn10 | structure, relationship, guarantee | `src/App.zig` 53-55 D, 119-130 UI, 136-146 UI; `src/font/SharedGridSet.zig` 1-10 D, 38-48 D, 52-79 DI, 88-154 DI, 411-431 DI; `src/Surface.zig` 81-84 D, 528-534 UI, 580-588 UI, 627-631 I, 870-871 UI, 2536-2571 UI; `src/renderer/Options.zig` 14-15 D; `src/renderer/generic.zig` 818-821 I; `src/renderer/Thread.zig` 397-400 UI.\n\nn11 | structure, relationship, guarantee | `src/App.zig` 57-58 D, 126-133 I, 136-139 UI, 148-151 UI; `src/Surface.zig` 564-570 UI, 580-588 UI, 631-632 I; `src/renderer.zig` 35-45 DI; `src/renderer/Options.zig` 7-9 D; `src/renderer/generic.zig` 712-721 UI; `src/renderer/Metal.zig` 44-48 D, 56-71 UI, 131-146 I; `src/renderer/OpenGL.zig` 47-65 DI, 84-96 I; `src/renderer/metal/Device.zig` 1-6 D, 34-66 DI; `src/renderer/opengl/Device.zig` 26-37 D, 38-74 I, 102-105 DI. The owning App field is optional (`?*renderer.Device`); initialized renderer options take a nonoptional pointer.",
+    "completedAt": "2026-11-22T03:08:13.476Z"
+  },
+  {
+    "id": "child-2",
+    "name": "resources",
+    "assignment": "Map n12-23 resource and state branch. Use private /tmp/resources. Return compact text scope + path ranges with roles D,U,I per node; parent can reference child ranges.",
+    "model": "gpt-6.2-astra",
+    "effort": "high",
+    "status": "finished",
+    "queuedAt": "2026-11-22T03:05:57.870Z",
+    "usage": {
+      "input": 54417,
+      "output": 3257,
+      "cacheRead": 197376,
+      "cacheWrite": 0,
+      "reasoning": 52,
+      "totalTokens": 255050
+    },
+    "cost": {
+      "input": 0.54417,
+      "output": 0.16285,
+      "cacheRead": 0.19737599999999997,
+      "cacheWrite": 0,
+      "total": 0.904396
+    },
+    "startedAt": "2026-11-22T03:05:57.879Z",
+    "sessionId": "01a20137-b5a3-7374-a6d6-92d6e42fa4cf",
+    "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-7vmfpdh9-agent-repository-RuKCrG-checkout--/2026-11-22T03-05-57-923Z_01a20137-b5a3-7374-a6d6-92d6e42fa4cf.jsonl",
+    "text": "**d1, n12–n23.** Paths below are relative to `src/`; ranges are inclusive. `D` = declaration, `U` = use, `I` = implementation. `+nX` includes that node’s ranges, without counting overlapping lines twice.\n\n| Node | Scope | Ranges |\n|---|---|---|\n| n12 | structure, relationship, behavior, subsystem | `Surface.zig` 1–4 D, 75–108 D, 133–166 D, 209–227 I, 474–827 DI, 829–879 DI. +n13, n17, n18, n20. The stable Surface address, scoped error cleanup during initialization, joins before releasing shared state, font dereference and config destruction establish the lifetime relationship. |\n| n13 | entity, behavior, relationship | `Surface.zig` 477–827 DI (complete `init`, including allocation, error cleanup, field installation, backend construction and both spawns); `renderer/generic.zig` 712–750 I, 818–839 I; `renderer/Thread.zig` 116–173 DI; `termio/Thread.zig` 92–123 DI; `termio/Exec.zig` 49–57 DI; `termio/Termio.zig` 254–352 DI. +n14–n16 for the resources thus constructed. |\n| n14 | structure, relationship, subsystem | `Surface.zig` 133–136 D, 687–725 UI; `termio/Termio.zig` 1–5 D, 34–46 D, 64–66 D, 254–352 DI, 367–371 D, 398–400 U, 456–463 UI, 705–716 I, 736–754 UI; `termio/stream_handler.zig` 96 D, 226–235 I; `termio/backend.zig` 22–48 DI, 76–86 UI; `termio/Exec.zig` 49–57 I, 86–104 UI, 403–414 D, 416–433 I, 457–465 UI, 1495 U, 1806 U. |\n| n15 | structure, relationship, subsystem | `Surface.zig` 45 D, 92–93 D, 574–590 UI, 631–632 I; `renderer.zig` 17–19 D, 35–42 DI; `renderer/Thread.zig` 462–472 UI, 572–580 UI; `renderer/generic.zig` 1371–1379 D, 1420–1426 I, 1479–1487 UI, 1564–1567 UI, 1645–1665 UI, 1716–1731 DI, 1740–1743 D, 1754–1764 UI, 1907–1919 UI, 1960–1992 I; `renderer/Metal.zig` 378–387 UI, 237–243 I; `renderer/metal/Frame.zig` 108–131 I, 67–91 UI; `renderer/OpenGL.zig` 439–449 UI, 277–298 I; `renderer/opengl/Frame.zig` 57–90 UI. |\n| n16 | structure, relationship, behavior | `Surface.zig` 98–102 D, 133–136 D, 597–609 UI, 631–642 I, 753–767 UI, 833–845 UI; `renderer/Thread.zig` 192–200 D, 220–257 I; `termio/Thread.zig` 136–139 DU, 236–237 D, 253–279 I. Both managers run their own event loop. |\n| n17 | structure | `Surface.zig` 104–108 D, 110–131 D, 141–142 D, 155–166 D, 229–268 D, 270–299 D, 638–639 I, 643 I. |\n| n18 | structure, relationship, guarantee | `Surface.zig` 144–147 D, 301–359 D, 361–445 DI, 495–507 UI, 644 I, 876 U, 1822–1831 UI, 1838–1847 I. +n19 for runtime replacement and propagation. |\n| n19 | entity, behavior, relationship | `Surface.zig` 1017–1019 U, 1804–1906 DI, 2536–2572 UI, 2577–2579 UI, 899–903 D, 919–920 U; `renderer/message.zig` 87–104 DI; `renderer/Thread.zig` 474–490 UI, 290 D, 301–302 U, 397–400 UI, 406–415 UI, 446–458 I; `renderer/generic.zig` 2171–2246 I; `termio/Termio.zig` 200–243 I, 437–447 UI, 466–521 I; `termio/Thread.zig` 289–296 D, 307–313 U, 321–324 UI, 453–467 UI; `termio/stream_handler.zig` 122–136 I. |\n| n20 | structure, entity, relationship | `Surface.zig` 95–96 D, 592–605 UI, 633–636 I, 711–721 UI, 873–875 I; `renderer.zig` 23 D; `renderer/State.zig` 1–3 D, 13–105 DI, 107–139 DI, 142–197 DI; `renderer/Thread.zig` 116–122 D, 160–163 I, 572–577 U. +n21–n23. |\n| n21 | relationship, guarantee | `Surface.zig` 133–134 D, 474–484 D, 633–636 I, 711–721 UI; `renderer/State.zig` 19–20 D; `termio/Termio.zig` 40–46 D, 272–298 I, 312–323 I, 335–349 I; `renderer/generic.zig` 1484–1487 U; `termio/stream_handler.zig` 226–235 U. The parser handler and renderer state point to the same stored `Terminal`; the renderer’s `terminal_state` is a render snapshot, not another emulator. |\n| n22 | structure, behavior, guarantee | `renderer/State.zig` 13–34 D, 67–80 I; `Surface.zig` 592–595 I, 633–636 I, 1609–1614 D, 1619–1629 UI, 2669 D, 2676–2677 UI, 2690–2697 UI, 2734–2738 UI; `termio/Termio.zig` 705–716 UI, 740–754 UI; `renderer/generic.zig` 1371–1375 D, 1420–1426 UI, 1484–1493 UI, 1502–1506 UI, 1530–1536 UI, 1555–1562 UI, 1569–1577 U. |\n| n23 | entity, behavior, relationship, guarantee | `renderer/State.zig` 36–105 DI; `renderer/generic.zig` 1371–1375 D, 1420–1421 U, 1484–1487 U, 1555–1567 U; `termio/Termio.zig` 705–711 I; `termio/Exec.zig` 1412 D, 1495 U, 1516–1519 UI, 1778 D, 1806–1812 UI. |\n\n**Qualifications for the combined notes:** n18 owns a derived struct rather than a `Config` pointer; that does not mean every slice is deep-copied (`Surface.zig:424` assigns `config.title` directly). n22 describes a locking contract, not universal enforcement: `renderer/generic.zig:1569–1577` reads `state.mouse.point` and `.mods` after the critical section. n23 is a bounded handoff heuristic, not a starvation-freedom guarantee.",
+    "completedAt": "2026-11-22T03:07:26.183Z"
+  },
+  {
+    "id": "child-3",
+    "name": "input",
+    "assignment": "Map n24-35 input branch across implementations. Private /tmp/input. Return compact scope + path ranges with roles D,U,I per node; parent can reference child ranges.",
+    "model": "gpt-6.2-astra",
+    "effort": "high",
+    "status": "finished",
+    "queuedAt": "2026-11-22T03:05:57.870Z",
+    "usage": {
+      "input": 75104,
+      "output": 5630,
+      "cacheRead": 690176,
+      "cacheWrite": 0,
+      "reasoning": 442,
+      "totalTokens": 770910
+    },
+    "cost": {
+      "input": 0.7510400000000002,
+      "output": 0.2815,
+      "cacheRead": 0.690176,
+      "cacheWrite": 0,
+      "total": 1.722716
+    },
+    "startedAt": "2026-11-22T03:07:26.183Z",
+    "sessionId": "01a20139-0e70-763e-82b9-7b6e4f41ab25",
+    "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-7vmfpdh9-agent-repository-RuKCrG-checkout--/2026-11-22T03-07-26-192Z_01a20139-0e70-763e-82b9-7b6e4f41ab25.jsonl",
+    "text": "Assigned subset: **d1, n24–n35**. Expanded JSON: `/tmp/input/candidate.json`. Paths and inclusive bounds were checked against the pinned checkout. `validate_source_mappings` was not available to this worker.\n\nCompact mapping below. Paths are relative to `src/` with `.zig` omitted. `+n` includes that node’s ranges; union overlapping lines within each node. `D` = declaration, `U` = use, `I` = implementation.\n\n```text\nn35 [entity, behavior, relationship]\n  termio/Thread I:289-313,347-366\n  termio/Termio DUI:456-463\n  termio/backend DUI:76-86\n  termio/Exec D:86-91,897-900 U:92-104 UI:129-131,147-150 I:909-916,1015-1018,1084-1095 DI:403-469,471-490\n\nn34 [entity, behavior, relationship] +n35\n  termio/Thread D:236 I:253-261,271-279,453-471\n\nn33 [entity, behavior, relationship, guarantee]\n  Surface D:171-175 DI:895-920\n  termio/message D:91-98 DI:118-132\n  termio/Thread I:298-302,359-366\n  termio/mailbox I:47-55,78-82,93-96\n\nn32 [entity, behavior, relationship] +n33 +n34\n  Surface U:704-705,711-716,2953-2957,3871-3875,6335-6341\n  termio D:31-32\n  termio/Termio D:61-62 I:344-345 DUI:437-447\n  termio/mailbox D:11-18 DI:30-45,57-108\n\nn31 [entity, behavior, relationship]\n  Surface DU:3426-3432,6017-6026 DUI:6264-6341\n  input/paste D:4-6 DI:12-22,42-119,180-183\n  termio/message DI:107-116\n\nn30 [entity, behavior, relationship]\n  Surface D:3584-3589,3918-3923,4678-4682 UI:3729-3750,4057-4094,4778-4801 DI:3800-3805,3813-3875\n  input/mouse_encode DI:39-51,81-172,174-238,248-252,257-264,270-280\n\nn29 [behavior, relationship] +n30 +n31\n  Surface U:5240-5248,6028-6033 DUI:6219-6239,6261-6262,6347-6398\n  terminal/paste UI:167-177,214-242\n  terminal/kitty/clipboard_response DI:191-216\n  termio/stream_handler D:208-212,641 UI:295-304 I:681-685,775-815\n  terminal/modes D:411\n\nn28 [behavior, guarantee]\n  Surface UI:3399-3405\n  input/key_encode DI:59-72,82-97,100-319,327-445,631-699,1028-1116\n  input/function_keys I:78-86,121-137,264-294\n  termio/stream_handler D:641 U:295-296,318 I:333-352,594-600,681-682\n\nn27 [structure, behavior, relationship] +n28\n  Surface DUI:3326-3419 U:2940-2957\n  input/key D:16-48\n  input/key_encode I:447-550\n\nn26 [entity, behavior, relationship]\n  Surface U:3142-3157 DI:4941-5819\n  App DUI:319-331,444-482\n  input/Binding DI:1539-1557\n  apprt/embedded DUI:303-323\n  apprt/gtk/App DUI:61-68\n  apprt/gtk/class/application DUI:692-700,712-718,736-741\n\nn25 [entity, behavior, relationship] +n26 +n27\n  Surface DI:2792-2982,2987-3219,3280-3322\n  input/Binding DI:2722-2760\n  App DUI:486-499,504-529\n\nn24 [subsystem, behavior, relationship] +n25 +n29 +n32\n  Surface D:194-207\n  apprt/embedded DU:202-228\n  apprt/gtk/class/surface UI:1445-1458\n```\n\nNo unresolved claims in this subset. Two distinctions matter: n25’s paths are not mutually exclusive—a nonconsuming binding can run **and** allow encoding. For n29, ordinary text paste uses `input.paste.encode`, while negotiated Kitty paste events use a separate MIME-list path.",
+    "completedAt": "2026-11-22T03:10:45.418Z"
+  },
+  {
+    "id": "child-4",
+    "name": "output",
+    "assignment": "Map n36-51 child output branch and UI handoffs across files. Private /tmp/output. Return compact scope + path ranges with roles D,U,I per node; parent can reference child ranges.",
+    "model": "gpt-6.2-astra",
+    "effort": "high",
+    "status": "finished",
+    "queuedAt": "2026-11-22T03:05:57.870Z",
+    "usage": {
+      "input": 70191,
+      "output": 3865,
+      "cacheRead": 473728,
+      "cacheWrite": 0,
+      "reasoning": 174,
+      "totalTokens": 547784
+    },
+    "cost": {
+      "input": 0.7019100000000001,
+      "output": 0.19325,
+      "cacheRead": 0.473728,
+      "cacheWrite": 0,
+      "total": 1.368888
+    },
+    "startedAt": "2026-11-22T03:08:13.476Z",
+    "sessionId": "01a20139-c72b-7d87-beb3-41e66cce3b09",
+    "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-7vmfpdh9-agent-repository-RuKCrG-checkout--/2026-11-22T03-08-13-483Z_01a20139-c72b-7d87-beb3-41e66cce3b09.jsonl",
+    "text": "The merge-ready mapping for **d1, n36–n51** is in `/tmp/output/d1-36-51.json`. It contains all 16 scope records and expanded, nonoverlapping ranges per node. The compact D/U/I version, including child-range references, is in `/tmp/output/branch.py`.\n\nAll referenced paths and bounds were checked against the pinned checkout. `validate_source_mappings` was not available to this worker; the combined candidate still needs validation.\n\nTwo implementation details matter when merging:\n\n- **n41–n42, n47:** `processOutput` acquires the mutex, then schedules rendering **before** parsing while it holds the lock. Normal processing calls `nextSlice`; inspector mode calls `next` byte by byte (`src/termio/Termio.zig:705–762`).\n- **n48–n51:** The surface mailbox wraps the payload with its target `Surface`; the app mailbox enqueues it and wakes the runtime. `App.surfaceMessage` checks the registered surfaces before invoking `Surface.handleMessage` (`src/apprt/surface.zig:186–207`, `src/App.zig:596–613,531–550`).",
+    "completedAt": "2026-11-22T03:10:02.314Z"
+  },
+  {
+    "id": "child-5",
+    "name": "terminal",
+    "assignment": "Map n52-65 terminal state branch. Private /tmp/terminal. Return compact scope + path ranges with roles D,U,I per node; parent can reference child ranges.",
+    "model": "gpt-6.2-astra",
+    "effort": "high",
+    "status": "finished",
+    "queuedAt": "2026-11-22T03:05:57.870Z",
+    "usage": {
+      "input": 54448,
+      "output": 3878,
+      "cacheRead": 366720,
+      "cacheWrite": 0,
+      "reasoning": 92,
+      "totalTokens": 425046
+    },
+    "cost": {
+      "input": 0.54448,
+      "output": 0.1939,
+      "cacheRead": 0.36672,
+      "cacheWrite": 0,
+      "total": 1.1051
+    },
+    "startedAt": "2026-11-22T03:10:02.314Z",
+    "sessionId": "01a2013b-7050-7117-998b-7bc4a920f992",
+    "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-7vmfpdh9-agent-repository-RuKCrG-checkout--/2026-11-22T03-10-02-320Z_01a2013b-7050-7117-998b-7bc4a920f992.jsonl",
+    "text": "The machine-readable d1 subset for **n52–n65** is in `/tmp/terminal/subset.json`, with child ranges expanded into parents and overlaps merged. All selected paths and bounds were checked locally; `validate_source_mappings` was not available.\n\nCompact mapping below. File stems denote `src/terminal/<stem>.zig` unless another path is given. **D** = declaration, **U** = use, **I** = implementation. `+n` includes that child’s ranges.\n\n```text\nn52 [structure, entity, relationship, guarantee, subsystem] +n53 +n56 +n59\n  main D60-61; src/lib_vt.zig U96-98; src/termio/Termio.zig D40-46\n  src/renderer/State.zig D19-20; render U939-947\n  Terminal DI344-404 DI406-430\n\nn53 [behavior, relationship, subsystem] +n54 +n55\n  Terminal D1-4 DI1893-1904 UI2207-2213 DI2272-2277 UI2292-2298\n           DI2301-2314 I2401-2409 DI4275-4324\n  stream_terminal U635-682; Screen DI1929-1936 I2026-2035\n\nn54 [structure, relationship]\n  Terminal D56-68 D253-266 I366-376\n\nn55 [structure, relationship]\n  Terminal D70-87 D167-182 D268-279 I377-387\n\nn56 [structure, entity, relationship] +n57 +n58\n  Terminal D48-49 UI356-370; ScreenSet D17-36 DI55-67\n\nn57 [behavior, guarantee]\n  ScreenSet D1-8 DI38-53 DI74-88 DI90-102\n  Terminal U5680-5683 UI5689-5715 U5758-5762 UI5783-5785\n\nn58 [structure, behavior, relationship]\n  ScreenSet D23-31 I47-52 DI104-109\n  Terminal U5680-5683 UI5740-5747 DI2301-2314 I2401-2409\n\nn59 [structure, entity, relationship, subsystem] +n60 +n61 +n62\n  Screen D1 DI315-367 DI983-993 I1012-1018 UI1034-1044 DI1139-1150\n  Terminal U3400-3408 UI3439-3456 UI3466-3471\n\nn60 [structure]\n  Screen D52-65 D74-75\n\nn61 [structure, relationship]\n  Screen D77-98 D100-119 U348-356 DI3017-3051 UI3095-3097\n\nn62 [structure, entity, relationship] +n63 +n64 +n65\n  Screen D44-50 UI315-346 U361-367\n  PageList D1-4 DI648-708 DI977-988\n\nn63 [structure, relationship, guarantee]\n  PageList D51-63 D88-91 D404-405 D465-470 DI4061-4089 I4110-4128 I4225-4236\n\nn64 [structure, relationship]\n  page D147-162 D173-186 DI1101-1118 DI1120-1133 D2215-2231 D2394-2427\n  PageList D88-91 U7812-7818\n\nn65 [structure, behavior, relationship, guarantee]\n  PageList D472-487 I681-688 I701-708 DI710-719 DI1682-1692 I1813-1825\n           D4061-4062 I4130-4156 DI6309-6334 D7785-7810\n  Screen D58-62 D195-199 D315-319 UI329-345 DI3063-3071 I3095-3097\n  Selection DI129-149\n```\n\nQualifier for n65: tracked pins follow surviving content through reflow. If pruning destroys the referenced content, the code relocates affected pins to the new first page and marks them as garbage, except for the viewport pin.",
+    "completedAt": "2026-11-22T03:12:00.539Z"
+  },
+  {
+    "id": "child-6",
+    "name": "renderer",
+    "assignment": "Map n66-77 renderer branch including backends. Private /tmp/renderer. Return compact scope + path ranges with roles D,U,I per node; parent can reference child ranges.",
+    "model": "gpt-6.2-astra",
+    "effort": "high",
+    "status": "finished",
+    "queuedAt": "2026-11-22T03:05:57.870Z",
+    "usage": {
+      "input": 104805,
+      "output": 8778,
+      "cacheRead": 837888,
+      "cacheWrite": 0,
+      "reasoning": 645,
+      "totalTokens": 951471
+    },
+    "cost": {
+      "input": 1.0480499999999997,
+      "output": 0.43890000000000007,
+      "cacheRead": 0.8378879999999999,
+      "cacheWrite": 0,
+      "total": 2.3248379999999997
+    },
+    "startedAt": "2026-11-22T03:10:45.419Z",
+    "sessionId": "01a2013c-18b6-7ede-88ce-ec3b0b79805c",
+    "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-7vmfpdh9-agent-repository-RuKCrG-checkout--/2026-11-22T03-10-45-430Z_01a2013c-18b6-7ede-88ce-ec3b0b79805c.jsonl",
+    "text": "**d1, renderer branch (n66–n77).** The expanded JSON for the lead to merge is `/tmp/renderer/candidate.json`; `/tmp/renderer/ranges` contains the compact mapping below. Paths and bounds were checked against the pinned checkout. No `validate_source_mappings` tool was available to this worker.\n\nPaths below are relative to `src/`; append `.zig` unless an extension is shown. `G` = `renderer/generic.zig`, `T` = `renderer/Thread.zig`, `S` = `renderer/State.zig`, `R` = `terminal/render.zig`. `+n` includes that node’s ranges, deduplicated. Roles: `D` declaration, `U` use, `I` implementation.\n\n```text\nn66 [subsystem, behavior, relationship] +n67 +n69 +n75\n  renderer 1-8:D\n  Surface 574-590:UI 597-605:UI 631-636:UI\n  G 712-721:UI 2045-2067:DI\n\nn67 [subsystem, behavior, relationship] +n68\n  Surface 597-605:UI 717-720:UI 753-759:UI 2577-2579:UI\n  termio/Termio 314-322:UI 714-716:UI\n  termio/stream_handler 117-119:UI\n  G 946-956:UI 1074-1086:UI 1136-1175:DI 1273-1312:UI 1371-1375:D 1716-1731:UI\n\nn68 [entity, subsystem, behavior]\n  T 1-3:D 32-59:D 69-80:D 116-173:DI 192-200:DI 220-257:UI 290:D\n    301-324:UI 462-494:UI 516-517:I 519-586:UI 596-652:UI 654:D 676-688:UI\n\nn69 [entity, behavior, relationship, subsystem] +n70 +n71 +n73 +n74\n  renderer 17:D 35-42:UI\n  T 572-580:U\n  G 90-96:D 1370-1710:DI\n\nn70 [structure, behavior, relationship]\n  G 274-275:D 1371-1375:D 1420-1427:UI 1479-1493:UI 1562-1567:UI 1631-1632:I\n  terminal/main 51:D\n  R 289-329:D 941-1414:DI 2666-2780:DI 2790-2900:DI\n\nn71 [behavior, relationship, guarantee] +n72\n  G 1371-1375:D 1420-1427:UI 1479-1487:UI 1555-1567:UI\n  S 67-80:DI\n  R 941-947:DI\n\nn72 [behavior, guarantee, relationship]\n  G 1371-1375:D 1399-1409:D 1420-1427:UI 1479-1506:UI 1512-1526:UI\n    1555-1579:UI 1645-1665:UI\n  R 920-947:DI 1241-1279:UI 1416-1484:DI 2666-2671:D 2694-2702:I 2721-2732:I\n\nn73 [subsystem, behavior, relationship]\n  G 204-207:D 274-275:D 725-741:UI 819-821:I 1371-1379:U 1650-1659:UI\n    2630-2656:UI 2679-2685:I 2721-2758:UI 2925-2942:DI 2973-2991:UI\n    3284-3356:UI 3477-3537:DI\n  renderer/cell 178-203:DI\n  font/shape 19-58:D\n  font/shaper/run 47-75:DI 211-304:UI\n  font/shaper/harfbuzz 131-158:UI 233-260:I\n  font/shaper/coretext 316-348:DI 374-426:UI 504-544:I\n  font/shaper/noop 79-118:DI\n  font/SharedGrid 379-464:DI\n  font/CodepointResolver 327-349:UI\n  font/face 10-24:D\n  font/face/freetype 426-437:DI 563-579:UI 759-778:UI\n  font/face/coretext 289-302:D 536-567:UI\n  font/sprite/Face 174-180:D 222-229:UI 251-260:I\n  font/Atlas 136-210:DI 256-275:DI\n\nn74 [behavior, relationship, subsystem]\n  G 1371-1375:D 1449-1487:UI 1502-1526:UI 1645-1659:UI 1868-1869:UI\n    1950-1973:UI 1994-2000:UI 2630-2636:D 2679-2750:UI 2760-2787:I\n    2828-2852:UI 2895-2917:UI 2925-2935:D 3066-3083:I 3116-3127:I\n    3166-3172:I 3195-3208:I 3228-3231:I 3539-3672:DI\n  renderer/cursor 28-68:DI\n  S 119-128:D 135-140:I 152-196:I\n  R 749-809:DI 823-826:DI 941-947:D 1033-1044:I 1173-1198:I 1290-1299:UI\n    1312-1342:I 1356-1397:I 2114-2216:UI\n  renderer/image 76-103:UI 116-191:UI 253-377:UI 456-486:UI\n  renderer/cell 136-154:DI\n\nn75 [entity, behavior, relationship, subsystem] +n76 +n77\n  G 1017-1043:DI 1055-1072:UI 1712-1731:DI 1740-2043:UI 3677-3691:UI\n  T 462-472:UI\n  renderer/Metal 56-63:D 78-129:UI 200-234:UI 236-243:UI 378-387:UI\n  renderer/metal/Target 33-44:D 54-60:I 85-103:UI\n  renderer/metal/Frame 29-56:UI 67-131:UI\n  renderer/metal/RenderPass 58-121:UI 124-229:UI\n  renderer/metal/IOSurfaceLayer 50-123:UI\n  renderer/OpenGL 217-225:I 273-298:UI 439-449:UI\n  renderer/opengl/Frame 25-90:UI\n  renderer/opengl/RenderPass 51-144:UI\n  renderer/opengl/Target 148-215:I 224-242:I\n  apprt/surface 186-207:UI\n  App 164-167:UI 273-274:U 293:U 532-542:UI 605-612:UI\n  Surface 1017:D 1154:U 1778-1787:UI\n  apprt/gtk/App 61-68:UI\n  apprt/gtk/class/application 692-697:D 772:U 2877-2882:UI\n  apprt/gtk/class/surface 835-838:UI\n  apprt/gtk/class/render_surface 149-205:UI 307-365:UI 390-429:UI\n  renderer/metal/shaders 25-30:UI\n  renderer/opengl/shaders 22-27:UI\n  renderer/shaders/shaders.metal 556-564:D 621-626:I 678-692:DI 708-709:I 745-748:I\n  renderer/shaders/glsl/cell_text.v.glsl 4-5:D 113:I\n  renderer/shaders/glsl/cell_text.f.glsl 3-4:D 43:I 82:I\n\nn76 [structure, behavior, relationship, guarantee]\n  renderer 16-19:D 35-42:DI\n  build_config 43:D\n  renderer/backend 4-17:DI\n  G 90-104:D 712-721:UI\n\nn77 [entity, behavior, relationship]\n  Surface 922-929:DI\n  apprt/embedded 1001-1006:UI 1988-1992:UI\n  G 1712-1743:DI 1759-1764:UI 1785-1807:I 1843-1866:UI 1907-1910:UI\n  renderer/metal/Frame 80-91:UI 105-131:UI\n  renderer/Metal 236-243:UI\n  renderer/metal/IOSurfaceLayer 84-89:I\n```\n\n**Qualifier for n77:** `Surface.draw()` requests `drawFrame(true)`; it does not guarantee synchronous presentation on every backend. Metal waits for the command buffer and sets layer contents synchronously. OpenGL explicitly ignores `sync`, exports the completed frame, and requests a toolkit redraw (`src/renderer/opengl/Frame.zig:51-90`).",
+    "completedAt": "2026-11-22T03:14:42.221Z"
+  }
+]

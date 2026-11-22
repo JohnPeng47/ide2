@@ -1,0 +1,51 @@
+Incremental compiler -- reuse follows the module dependency graph
+|
+|-- [M] BuildGraph connects source modules to their compilation artifacts
+|   |-- modules[moduleId]: ModuleUnit
+|   |   |-- sourceHash -> immutable source bytes
+|   |   |-- imports[] -> resolved module identities
+|   |   `-- interfaceHash -> names and types visible to consumers
+|   `-- units[unitId]: AnalysisUnit
+|       |-- mutually dependent modules share one unit
+|       `-- dependencies[] -> units whose interfaces must be available first
+|
+|-- [C] compileUnit(unitId) resolves one reusable result
+|   |-- [D] member source hashes + dependency interfaces + compiler options
+|   |   `-- analysisKey, including the compiler implementation version
+|   |-- ArtifactCache.lookup(analysisKey)
+|   |   |-- Hit -> recover typed modules and diagnostics
+|   |   `-- Miss -> analyze the unit
+|   |       |-- [C] Parser.parse(source) -> syntax with source spans
+|   |       |-- [C] Binder.bind(syntax, dependencyInterfaces)
+|   |       |   `-- Scope
+|   |       |       |-- declarations[name] -> local Symbol
+|   |       |       |-- parent -> enclosing lexical scope
+|   |       |       `-- exports -> symbols visible across the module boundary
+|   |       `-- [C] TypeChecker.check(boundUnit) -> typed modules + diagnostics
+|   `-- Successful analysis -> Emitter.emit(typedModules, target)
+|       |-- [D] typed modules + target version + emission options -> objectKey
+|       `-- ObjectArtifact
+|           |-- object code / exported interface / source map
+|           `-- [O] ArtifactCache retains complete immutable entries
+|               `-- consumers borrow artifacts; eviction follows cache policy
+|
+|-- [C] rebuild(changedPaths) propagates only relevant changes
+|   |-- Capture new source hashes and resolve changed imports
+|   |   `-- [D] updated graph -> regroup cycles and order affected units
+|   |-- Reanalyze affected units
+|   |   |-- Exported interface changed -> invalidate dependent analysis keys
+|   |   `-- Interface unchanged -> consumers can reuse their typed modules
+|   `-- [D] reachable object hashes + runtime + linker options -> bundleKey
+|       `-- Linker.link(objects) produces the executable bundle
+|           `-- changed implementation can require linking without retyping consumers
+|
+`-- [O] BuildScheduler controls transient execution
+    |-- ready queue -> units whose dependency results are available
+    |   `-- independent units may run concurrently
+    |-- running[unitId] -> task + worker lease
+    |   |-- [C] invoke compileUnit(unitId)
+    |   `-- task settlement returns the worker lease
+    |-- cancel(buildId)
+    |   `-- stop scheduling -> signal tasks -> await settlement -> release snapshot
+    `-- BuildResult retains bundle references and source-located diagnostics
+        `-- [D] diagnostic spans + captured sources -> stable reported locations

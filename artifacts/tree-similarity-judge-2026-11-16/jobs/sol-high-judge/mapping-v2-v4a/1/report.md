@@ -1,0 +1,96 @@
+### Anchor tree
+- A 3–14, 16–28 ↔ B 3–17 · grouped · offset 0 · s = 0.964583 · application, workspace and session
+  - A 5–6 ↔ B 4 · summarized · offset 0 · s = 0.9 · entry
+  - A 7–8 ↔ B 5–6 · summarized · offset 0 · s = 0.9 · services
+  - A 9–14 ↔ B 7–11 · offset 0 · s = 0.966667 · CanvasWorkspace
+    - A 10, 13–14 ↔ B 9 · grouped, summarized · offset 0 · s = 0.9 · session lifecycle
+    - A 11 ↔ B 7–8 · summarized · offset 0 · s = 0.9 · metadata
+    - A 12 ↔ B 10 · offset 0 · s = 1 · persistence notification
+  - A 16–28 ↔ B 12–17 · offset 0 · s = 0.95 · CanvasSession
+    - A 18 ↔ B 16–17 · summarized · offset 0 · s = 0.9 · cursor-copy ownership
+    - A 19 ↔ B 12 · summarized · offset 0 · s = 0.9 · readable stores
+    - A 20–24 ↔ B 13 · summarized · offset 0 · s = 0.9 · store separation
+    - A 25–26 ↔ B 14 · summarized · offset 0 · s = 0.9 · subscriptions
+    - A 27–28 ↔ B 15 · summarized · offset 0 · s = 0.9 · baseline
+- A 30–55 ↔ B 65–83 · offset 0 · s = 0.800104 · document model and exploration
+  - A 31–37 ↔ B 34, 35–36 (under B 19) · grouped, relocated · offset 1 · s = 0.4275 · MappingGridDocument
+    - A 32–35 ↔ B 34 · summarized · offset 0 · s = 0.9 · scene
+    - A 36–37 ↔ B 35–36 · summarized · offset 0 · s = 0.9 · document choices
+  - A 39–46 ↔ B 37–42 (under B 19) · relocated · offset 0 · s = 0.453125 · Diagram
+    - A 40 ↔ B 38 · offset 0 · s = 1 · identity
+    - A 41–42 ↔ B 39 · summarized · offset 0 · s = 0.9 · content
+    - A 43–44 ↔ B 40 · summarized · offset 0 · s = 0.9 · evidence
+    - A 45–46 ↔ B 75–77 (under B 65) · relocated · offset 1 · s = 0.45 · source queries
+      - A 46 ↔ B 76 · offset 0 · s = 1 · source-range lookup
+  - A 48–55 ↔ B 66–70 · offset 0 · s = 0.92 · canvas presentation
+    - A 49 ↔ B 67, 68, 71–74 · grouped, summarized · offset 1 · s = 0.81 · selection and controls
+    - A 50 ↔ B 78–83 · summarized · offset 1 · s = 0.81 · display panes
+    - A 51–55 ↔ B 69–70 · summarized · offset 0 · s = 0.9 · diagram views
+- A 57–75, 97–109 ↔ B 44–63 · grouped · offset 0 · s = 0.957083 · controller and editor
+  - A 59–75 ↔ B 45–55 · offset 0 · s = 0.878333 · controller commands
+    - A 59–60 ↔ B 51–52, 53–54 · grouped, summarized · offset 0 · s = 0.9 · commands
+    - A 61–67 ↔ B 45–49 · offset 0 · s = 0.983333 · versioned operations
+      - A 62, 63 ↔ B 46 · grouped · offset 0 · s = 1 · settlement and conflict
+      - A 64 ↔ B 47 · offset 0 · s = 1 · staged state
+      - A 65–67 ↔ B 48–49 · summarized · offset 0 · s = 0.9 · operation kinds
+    - A 68–72 ↔ B 50 · summarized · offset 0 · s = 0.9 · checkpoint append
+    - A 73 ↔ B 52 · offset 0 · s = 1 · transient updates
+    - unmatched: A 74–75 (derived read boundaries)
+  - A 97–109 ↔ B 56–63 · offset 0 · s = 0.95 · MappingEditorRuntime
+    - A 100–101 ↔ B 58 · summarized · offset 0 · s = 0.9 · projection
+    - A 102–103 ↔ B 57, 61 · grouped, summarized · offset 0 · s = 0.9 · live editor state
+    - A 104–105 ↔ B 59 · summarized · offset 0 · s = 0.9 · gesture settlement
+    - A 106–108 ↔ B 60 · summarized · offset 0 · s = 0.9 · native undo
+    - A 109 ↔ B 62–63 · summarized · offset 0 · s = 0.9 · disposal
+- A 77–95 ↔ B 19–42 · offset 0 · s = 0.894792 · CanvasHistoryService
+  - A 79–80 ↔ B 20–23 · offset 0 · s = 0.95 · contexts
+    - A 80 ↔ B 22–23 · summarized · offset 0 · s = 0.9 · viewer isolation
+  - A 81–88 ↔ B 24–32 · offset 0 · s = 0.9875 · history record
+    - A 82 ↔ B 25 · offset 0 · s = 1 · navigation
+    - A 83–86 ↔ B 26–29 · offset 0 · s = 1 · stored snapshot
+      - A 84 ↔ B 27 · offset 0 · s = 1 · document
+      - A 85 ↔ B 28 · offset 0 · s = 1 · bindings
+      - A 86 ↔ B 29 · offset 0 · s = 1 · view and origins
+    - A 87 ↔ B 30 · offset 0 · s = 1 · revisions
+    - A 88 ↔ B 31–32 · summarized · offset 0 · s = 0.9 · canvas views
+  - A 89 ↔ B 33–36 · summarized · offset 0 · s = 0.9 · document resolution
+  - A 90–91 ↔ B 41–42 · summarized · offset 0 · s = 0.9 · revision store
+  - A 92 ↔ B 21 · offset 0 · s = 1 · history operations
+  - unmatched: A 93–95 (history-service transfer preparation)
+- A 111–128 ↔ B 85–106 · offset 0 · s = 0.984375 · agent-assisted editing
+  - A 112–116 ↔ B 86–89 · offset 0 · s = 0.966667 · composer
+    - A 113 ↔ B 86 · summarized · offset 0 · s = 0.9 · drafts
+    - A 114 ↔ B 87 · offset 0 · s = 1 · capture
+    - A 115–116 ↔ B 88–89 · summarized · offset 0 · s = 0.9 · submission
+  - A 117–120 ↔ B 90–96 · offset 0 · s = 0.966667 · edit service
+    - A 118 ↔ B 94–95 · summarized · offset 0 · s = 0.9 · run identity
+    - A 119 ↔ B 91–92 · summarized · offset 0 · s = 0.9 · generation inputs
+    - A 120 ↔ B 93 · offset 0 · s = 1 · application
+  - A 121–123 ↔ B 97–101 · offset 0 · s = 0.975 · canvas bridge
+    - A 122 ↔ B 98, 99 · grouped · offset 0 · s = 1 · dispatch and reply
+    - A 123 ↔ B 100–101 · summarized · offset 0 · s = 0.9 · cleanup
+  - A 124–128 ↔ B 102–106 · offset 0 · s = 0.966667 · revision receiver
+    - A 125 ↔ B 103 · offset 0 · s = 1 · controller update
+    - A 126–127 ↔ B 104 · summarized · offset 0 · s = 0.9 · receipt
+    - A 128 ↔ B 105–106 · summarized · offset 0 · s = 0.9 · pending flush
+- A 130–149 ↔ B 108–129 · offset 0 · s = 0.78 · workspace persistence
+  - A 134–138 ↔ B 109–113 · offset 0 · s = 0.966667 · persistence coordinator
+    - A 135 ↔ B 109 · summarized · offset 0 · s = 0.9 · subscriptions
+    - A 136 ↔ B 110 · offset 0 · s = 1 · cursor
+    - A 137–138 ↔ B 111–113 · summarized · offset 0 · s = 0.9 · deltas
+  - A 139–144 ↔ B 114–118 · offset 0 · s = 0.85 · storage worker
+    - A 140–142 ↔ B 115 · summarized · offset 0 · s = 0.9 · batches
+    - A 143 ↔ B 114 · summarized · offset 0 · s = 0.9 · endpoint
+    - A 144 ↔ B 116 · offset 0 · s = 1 · flush
+    - unmatched: B 117 (worker termination)
+  - A 145–149 ↔ B 119–123 · offset 0 · s = 0.983333 · record store
+    - A 146 ↔ B 120 · offset 0 · s = 1 · serialized writes
+    - A 147 ↔ B 121 · offset 0 · s = 1 · validation
+    - A 148–149 ↔ B 122–123 · summarized · offset 0 · s = 0.9 · manifest
+  - unmatched: A 131–133 (startup restoration), B 124–129 (explicit publication)
+
+### Score
+Top-level J = (0.964583 + 0.800104 + 0.957083 + 0.894792 + 0.984375 + 0.780000) / (6 + 0 + 0) = **0.897205**.
+
+### Verdict
+The trees identify the same workspace/session, document, controller/editor, history, agent and persistence components. B groups CanvasSession under workspace ownership and the editor runtime under the controller; A gives each its own top-level branch. B puts document and Diagram details under history while A places them in its document-model branch, accounting for the relocated matches. Most remaining differences are summarized detail. A separately identifies startup restoration; B separately identifies explicit publication.

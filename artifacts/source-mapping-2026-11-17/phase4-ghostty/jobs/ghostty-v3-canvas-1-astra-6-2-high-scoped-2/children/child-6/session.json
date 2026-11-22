@@ -1,0 +1,19 @@
+{
+  "id": "child-6",
+  "name": "e2",
+  "assignment": "Need d4 ranges/scopes/roles in RETURN TEXT (private scratch not shared), concise list per node with path aliases. Prior worker files not accessible. Inspect sources for d4.",
+  "model": "gpt-6.2-astra",
+  "effort": "high",
+  "status": "generating",
+  "queuedAt": "2026-11-22T03:38:16.960Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-22T03:38:16.962Z",
+  "sessionId": "01a20155-4c0e-78be-8db3-d8edf9e5f6b3",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-_nrrnqb7-agent-repository-7lspAh-checkout--/2026-11-22T03-38-16-974Z_01a20155-4c0e-78be-8db3-d8edf9e5f6b3.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase4-_nrrnqb7/agent-repository-7lspAh/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

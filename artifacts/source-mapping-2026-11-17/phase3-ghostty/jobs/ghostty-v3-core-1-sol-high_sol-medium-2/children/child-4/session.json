@@ -1,0 +1,19 @@
+{
+  "id": "child-4",
+  "name": "terminal-model",
+  "assignment": "Map nodes n44-n57 ONLY, terminal screen/screen set/page storage. Return partial JSON mappings checked with nl -ba.",
+  "model": "gpt-6-sol",
+  "effort": "medium",
+  "status": "generating",
+  "queuedAt": "2026-11-19T04:14:26.456Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-19T04:14:26.460Z",
+  "sessionId": "01a1f203-52b3-713d-9783-52673c2b25cc",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-l6ueouwg-agent-repository-KYeQyW-checkout--/2026-11-19T04-14-26-483Z_01a1f203-52b3-713d-9783-52673c2b25cc.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase3-l6ueouwg/agent-repository-KYeQyW/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

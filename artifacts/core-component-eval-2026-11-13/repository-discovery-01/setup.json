@@ -1,0 +1,43 @@
+{
+  "status": "draft",
+  "executionAuthorized": false,
+  "modelCalls": 0,
+  "promptId": "0b3af2dd-ba89-4032-936a-40070a3e167e",
+  "contextRequestId": "7344b95b-5c8c-4f6e-86e5-4323ee2478e4",
+  "experimentId": "08ccc7fa-8ea6-4cfa-b0b7-8819b7fcbf35",
+  "sampleId": "d4ae9c0d-3f81-4138-b25a-6266f8a7f1f8",
+  "commentId": "36b6e6b6-62c6-4c50-814f-1a7d369d148b",
+  "promptVersion": 2,
+  "promptSha256": "9efae5ac4de1a1934c3e9bd4c5a6640155db583c920edbd94a7cd0c9a40517ea",
+  "savedPromptContentHash": "a4d289a45eb89ff0d53248e3d0e8ceea2e9565611cbd75d07d137fcb1337d10b",
+  "parentPrompt": {
+    "promptId": "0b3af2dd-ba89-4032-936a-40070a3e167e",
+    "version": 1
+  },
+  "agentContextId": "saved-agent-context-7344b95b-5c8c-4f6e-86e5-4323ee2478e4",
+  "contextHash": "00b9ed11b05d12f61ea9897c890dca21baf63782b67254a23c6fb80d94ae0fc2",
+  "sourceCommit": "03f2168deba364103c2450ca9b8168cd1fc9ddc5",
+  "eligibleFiles": 259,
+  "model": "gpt-6-astra",
+  "effort": "high",
+  "samples": 1,
+  "execution": {
+    "runtime": "pi-agent-context",
+    "coordinator": "canvas-discovery",
+    "output": {
+      "ascii": "single ASCII tree, printable ASCII and LF, at most 20000 characters"
+    },
+    "materialization": "Validate raw {ascii}; deterministically wrap as one Diagram using scripts/evals/from-scratch/artifacts.ts single/materialize.",
+    "beforeGeneration": "Explicit user execution authorization and deterministic pinned-input/storage preflight. No automatic repair generations.",
+    "tools": [
+      "bash",
+      "read"
+    ],
+    "workingDirectory": "Isolated checkout at the pinned source commit; prepared when execution is authorized.",
+    "exclusions": "Instructions to the agent, not tool-enforced access restrictions.",
+    "inspectionRecord": "Persisted native tool-call/result transcript."
+  },
+  "promptUrl": "http://localhost:5191/evals?prompt=0b3af2dd-ba89-4032-936a-40070a3e167e&version=2",
+  "experimentUrl": "http://localhost:5191/evals?experiment=08ccc7fa-8ea6-4cfa-b0b7-8819b7fcbf35",
+  "previousAgentContextId": "saved-agent-context-769e05ed-12d9-4c29-977b-0cb340142e1a"
+}

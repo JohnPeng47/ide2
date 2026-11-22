@@ -1,0 +1,9 @@
+[C] Deliver webhook                         at most 3 attempts
+`-- POST event with stable delivery ID
+    |-- 2xx -> mark delivered
+    |-- permanent rejection -> mark failed
+    `-- timeout / temporary rejection
+        |-- attempts remain
+        |   `-- wait with backoff -> retry POST above
+        |       `-- receiver deduplicates by delivery ID
+        `-- exhausted -> dead-letter queue

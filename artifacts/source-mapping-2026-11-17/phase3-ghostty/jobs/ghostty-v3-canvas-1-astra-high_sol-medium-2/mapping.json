@@ -1,0 +1,1710 @@
+{
+  "diagrams": [
+    {
+      "diagramId": "d1",
+      "mappings": [
+        {
+          "node": "n1",
+          "path": "src/Surface.zig",
+          "startLine": 1,
+          "endLine": 185
+        },
+        {
+          "node": "n2",
+          "path": "src/App.zig",
+          "startLine": 1,
+          "endLine": 74
+        },
+        {
+          "node": "n3",
+          "path": "src/App.zig",
+          "startLine": 22,
+          "endLine": 47
+        },
+        {
+          "node": "n3",
+          "path": "src/App.zig",
+          "startLine": 202,
+          "endLine": 241
+        },
+        {
+          "node": "n3",
+          "path": "src/App.zig",
+          "startLine": 544,
+          "endLine": 550
+        },
+        {
+          "node": "n4",
+          "path": "src/App.zig",
+          "startLine": 49,
+          "endLine": 51
+        },
+        {
+          "node": "n4",
+          "path": "src/App.zig",
+          "startLine": 562,
+          "endLine": 613
+        },
+        {
+          "node": "n5",
+          "path": "src/App.zig",
+          "startLine": 161,
+          "endLine": 167
+        },
+        {
+          "node": "n5",
+          "path": "src/App.zig",
+          "startLine": 272,
+          "endLine": 306
+        },
+        {
+          "node": "n5",
+          "path": "src/App.zig",
+          "startLine": 531,
+          "endLine": 550
+        },
+        {
+          "node": "n5",
+          "path": "src/Surface.zig",
+          "startLine": 1015,
+          "endLine": 1242
+        },
+        {
+          "node": "n6",
+          "path": "src/App.zig",
+          "startLine": 53,
+          "endLine": 55
+        },
+        {
+          "node": "n6",
+          "path": "src/font/SharedGridSet.zig",
+          "startLine": 1,
+          "endLine": 48
+        },
+        {
+          "node": "n6",
+          "path": "src/font/SharedGridSet.zig",
+          "startLine": 88,
+          "endLine": 95
+        },
+        {
+          "node": "n6",
+          "path": "src/font/SharedGridSet.zig",
+          "startLine": 411,
+          "endLine": 431
+        },
+        {
+          "node": "n7",
+          "path": "src/App.zig",
+          "startLine": 57,
+          "endLine": 58
+        },
+        {
+          "node": "n7",
+          "path": "src/Surface.zig",
+          "startLine": 565,
+          "endLine": 588
+        },
+        {
+          "node": "n8",
+          "path": "src/App.zig",
+          "startLine": 136,
+          "endLine": 151
+        },
+        {
+          "node": "n9",
+          "path": "src/apprt.zig",
+          "startLine": 1,
+          "endLine": 53
+        },
+        {
+          "node": "n10",
+          "path": "src/Surface.zig",
+          "startLine": 1,
+          "endLine": 11
+        },
+        {
+          "node": "n11",
+          "path": "src/Surface.zig",
+          "startLine": 1,
+          "endLine": 185
+        },
+        {
+          "node": "n11",
+          "path": "src/Surface.zig",
+          "startLine": 611,
+          "endLine": 721
+        },
+        {
+          "node": "n12",
+          "path": "src/Surface.zig",
+          "startLine": 71,
+          "endLine": 79
+        },
+        {
+          "node": "n12",
+          "path": "src/Surface.zig",
+          "startLine": 623,
+          "endLine": 626
+        },
+        {
+          "node": "n13",
+          "path": "src/Surface.zig",
+          "startLine": 144,
+          "endLine": 147
+        },
+        {
+          "node": "n13",
+          "path": "src/Surface.zig",
+          "startLine": 303,
+          "endLine": 472
+        },
+        {
+          "node": "n14",
+          "path": "src/Surface.zig",
+          "startLine": 1801,
+          "endLine": 1906
+        },
+        {
+          "node": "n15",
+          "path": "src/Surface.zig",
+          "startLine": 104,
+          "endLine": 166
+        },
+        {
+          "node": "n16",
+          "path": "src/Surface.zig",
+          "startLine": 2790,
+          "endLine": 2982
+        },
+        {
+          "node": "n16",
+          "path": "src/Surface.zig",
+          "startLine": 3421,
+          "endLine": 3432
+        },
+        {
+          "node": "n16",
+          "path": "src/Surface.zig",
+          "startLine": 3915,
+          "endLine": 4297
+        },
+        {
+          "node": "n17",
+          "path": "src/Surface.zig",
+          "startLine": 3130,
+          "endLine": 3157
+        },
+        {
+          "node": "n17",
+          "path": "src/Surface.zig",
+          "startLine": 4931,
+          "endLine": 5819
+        },
+        {
+          "node": "n18",
+          "path": "src/Surface.zig",
+          "startLine": 3324,
+          "endLine": 3419
+        },
+        {
+          "node": "n18",
+          "path": "src/Surface.zig",
+          "startLine": 3813,
+          "endLine": 3875
+        },
+        {
+          "node": "n18",
+          "path": "src/Surface.zig",
+          "startLine": 6264,
+          "endLine": 6341
+        },
+        {
+          "node": "n19",
+          "path": "src/Surface.zig",
+          "startLine": 895,
+          "endLine": 920
+        },
+        {
+          "node": "n19",
+          "path": "src/termio/Termio.zig",
+          "startLine": 431,
+          "endLine": 447
+        },
+        {
+          "node": "n20",
+          "path": "src/Surface.zig",
+          "startLine": 2600,
+          "endLine": 2649
+        },
+        {
+          "node": "n20",
+          "path": "src/renderer/size.zig",
+          "startLine": 20,
+          "endLine": 79
+        },
+        {
+          "node": "n21",
+          "path": "src/Surface.zig",
+          "startLine": 2618,
+          "endLine": 2649
+        },
+        {
+          "node": "n22",
+          "path": "src/Surface.zig",
+          "startLine": 133,
+          "endLine": 136
+        },
+        {
+          "node": "n22",
+          "path": "src/termio/Termio.zig",
+          "startLine": 1,
+          "endLine": 74
+        },
+        {
+          "node": "n23",
+          "path": "src/Surface.zig",
+          "startLine": 687,
+          "endLine": 715
+        },
+        {
+          "node": "n23",
+          "path": "src/termio/backend.zig",
+          "startLine": 13,
+          "endLine": 113
+        },
+        {
+          "node": "n23",
+          "path": "src/termio/Exec.zig",
+          "startLine": 587,
+          "endLine": 609
+        },
+        {
+          "node": "n24",
+          "path": "src/termio/Termio.zig",
+          "startLine": 64,
+          "endLine": 66
+        },
+        {
+          "node": "n24",
+          "path": "src/termio/stream_handler.zig",
+          "startLine": 96,
+          "endLine": 96
+        },
+        {
+          "node": "n25",
+          "path": "src/termio/Termio.zig",
+          "startLine": 40,
+          "endLine": 43
+        },
+        {
+          "node": "n25",
+          "path": "src/Surface.zig",
+          "startLine": 711,
+          "endLine": 721
+        },
+        {
+          "node": "n26",
+          "path": "src/termio/Termio.zig",
+          "startLine": 37,
+          "endLine": 66
+        },
+        {
+          "node": "n27",
+          "path": "src/Surface.zig",
+          "startLine": 133,
+          "endLine": 136
+        },
+        {
+          "node": "n27",
+          "path": "src/Surface.zig",
+          "startLine": 607,
+          "endLine": 609
+        },
+        {
+          "node": "n27",
+          "path": "src/Surface.zig",
+          "startLine": 761,
+          "endLine": 767
+        },
+        {
+          "node": "n28",
+          "path": "src/termio/Thread.zig",
+          "startLine": 288,
+          "endLine": 406
+        },
+        {
+          "node": "n28",
+          "path": "src/termio/Thread.zig",
+          "startLine": 427,
+          "endLine": 451
+        },
+        {
+          "node": "n29",
+          "path": "src/Surface.zig",
+          "startLine": 631,
+          "endLine": 637
+        },
+        {
+          "node": "n29",
+          "path": "src/renderer/State.zig",
+          "startLine": 1,
+          "endLine": 197
+        },
+        {
+          "node": "n30",
+          "path": "src/Surface.zig",
+          "startLine": 631,
+          "endLine": 636
+        },
+        {
+          "node": "n30",
+          "path": "src/Surface.zig",
+          "startLine": 711,
+          "endLine": 721
+        },
+        {
+          "node": "n31",
+          "path": "src/renderer/State.zig",
+          "startLine": 13,
+          "endLine": 34
+        },
+        {
+          "node": "n31",
+          "path": "src/renderer/State.zig",
+          "startLine": 107,
+          "endLine": 197
+        },
+        {
+          "node": "n32",
+          "path": "src/renderer/State.zig",
+          "startLine": 36,
+          "endLine": 105
+        },
+        {
+          "node": "n33",
+          "path": "src/renderer.zig",
+          "startLine": 35,
+          "endLine": 42
+        },
+        {
+          "node": "n33",
+          "path": "src/renderer/generic.zig",
+          "startLine": 90,
+          "endLine": 116
+        },
+        {
+          "node": "n34",
+          "path": "src/Surface.zig",
+          "startLine": 528,
+          "endLine": 588
+        },
+        {
+          "node": "n34",
+          "path": "src/renderer/generic.zig",
+          "startLine": 172,
+          "endLine": 281
+        },
+        {
+          "node": "n35",
+          "path": "src/Surface.zig",
+          "startLine": 92,
+          "endLine": 102
+        },
+        {
+          "node": "n35",
+          "path": "src/Surface.zig",
+          "startLine": 597,
+          "endLine": 605
+        },
+        {
+          "node": "n35",
+          "path": "src/Surface.zig",
+          "startLine": 753,
+          "endLine": 759
+        },
+        {
+          "node": "n36",
+          "path": "src/renderer/Thread.zig",
+          "startLine": 460,
+          "endLine": 652
+        },
+        {
+          "node": "n37",
+          "path": "src/Surface.zig",
+          "startLine": 922,
+          "endLine": 929
+        },
+        {
+          "node": "n38",
+          "path": "src/Surface.zig",
+          "startLine": 138,
+          "endLine": 139
+        },
+        {
+          "node": "n38",
+          "path": "src/Surface.zig",
+          "startLine": 184,
+          "endLine": 185
+        },
+        {
+          "node": "n38",
+          "path": "src/Surface.zig",
+          "startLine": 209,
+          "endLine": 227
+        },
+        {
+          "node": "n39",
+          "path": "src/Surface.zig",
+          "startLine": 1297,
+          "endLine": 1375
+        },
+        {
+          "node": "n40",
+          "path": "src/Surface.zig",
+          "startLine": 1301,
+          "endLine": 1331
+        },
+        {
+          "node": "n41",
+          "path": "src/Surface.zig",
+          "startLine": 1333,
+          "endLine": 1375
+        },
+        {
+          "node": "n42",
+          "path": "src/Surface.zig",
+          "startLine": 881,
+          "endLine": 885
+        },
+        {
+          "node": "n42",
+          "path": "src/Surface.zig",
+          "startLine": 993,
+          "endLine": 1013
+        },
+        {
+          "node": "n43",
+          "path": "src/Surface.zig",
+          "startLine": 881,
+          "endLine": 885
+        },
+        {
+          "node": "n43",
+          "path": "src/apprt/embedded.zig",
+          "startLine": 634,
+          "endLine": 646
+        },
+        {
+          "node": "n44",
+          "path": "src/Surface.zig",
+          "startLine": 829,
+          "endLine": 879
+        },
+        {
+          "node": "n45",
+          "path": "src/Surface.zig",
+          "startLine": 829,
+          "endLine": 845
+        },
+        {
+          "node": "n45",
+          "path": "src/Surface.zig",
+          "startLine": 209,
+          "endLine": 227
+        },
+        {
+          "node": "n46",
+          "path": "src/termio/Thread.zig",
+          "startLine": 259,
+          "endLine": 279
+        },
+        {
+          "node": "n46",
+          "path": "src/termio/Termio.zig",
+          "startLine": 427,
+          "endLine": 429
+        },
+        {
+          "node": "n46",
+          "path": "src/termio/Exec.zig",
+          "startLine": 196,
+          "endLine": 230
+        },
+        {
+          "node": "n47",
+          "path": "src/Surface.zig",
+          "startLine": 847,
+          "endLine": 858
+        },
+        {
+          "node": "n48",
+          "path": "src/Surface.zig",
+          "startLine": 857,
+          "endLine": 876
+        }
+      ]
+    },
+    {
+      "diagramId": "d2",
+      "mappings": [
+        {
+          "node": "n1",
+          "path": "src/termio/Termio.zig",
+          "startLine": 1,
+          "endLine": 74
+        },
+        {
+          "node": "n2",
+          "path": "src/termio/backend.zig",
+          "startLine": 13,
+          "endLine": 113
+        },
+        {
+          "node": "n3",
+          "path": "src/termio/Exec.zig",
+          "startLine": 44,
+          "endLine": 61
+        },
+        {
+          "node": "n3",
+          "path": "src/termio/Exec.zig",
+          "startLine": 86,
+          "endLine": 230
+        },
+        {
+          "node": "n4",
+          "path": "src/termio/backend.zig",
+          "startLine": 39,
+          "endLine": 86
+        },
+        {
+          "node": "n4",
+          "path": "src/termio/Exec.zig",
+          "startLine": 403,
+          "endLine": 490
+        },
+        {
+          "node": "n4",
+          "path": "src/termio/Exec.zig",
+          "startLine": 492,
+          "endLine": 566
+        },
+        {
+          "node": "n5",
+          "path": "src/termio/Termio.zig",
+          "startLine": 64,
+          "endLine": 66
+        },
+        {
+          "node": "n5",
+          "path": "src/termio/stream_handler.zig",
+          "startLine": 96,
+          "endLine": 96
+        },
+        {
+          "node": "n6",
+          "path": "src/terminal/stream.zig",
+          "startLine": 588,
+          "endLine": 603
+        },
+        {
+          "node": "n6",
+          "path": "src/terminal/stream.zig",
+          "startLine": 732,
+          "endLine": 739
+        },
+        {
+          "node": "n6",
+          "path": "src/termio/stream_handler.zig",
+          "startLine": 188,
+          "endLine": 394
+        },
+        {
+          "node": "n7",
+          "path": "src/termio/stream_handler.zig",
+          "startLine": 19,
+          "endLine": 112
+        },
+        {
+          "node": "n8",
+          "path": "src/termio/stream_handler.zig",
+          "startLine": 62,
+          "endLine": 112
+        },
+        {
+          "node": "n9",
+          "path": "src/termio/Termio.zig",
+          "startLine": 312,
+          "endLine": 349
+        },
+        {
+          "node": "n9",
+          "path": "src/termio/stream_handler.zig",
+          "startLine": 188,
+          "endLine": 394
+        },
+        {
+          "node": "n10",
+          "path": "src/termio/stream_handler.zig",
+          "startLine": 151,
+          "endLine": 154
+        },
+        {
+          "node": "n10",
+          "path": "src/termio/stream_handler.zig",
+          "startLine": 496,
+          "endLine": 512
+        },
+        {
+          "node": "n10",
+          "path": "src/termio/Termio.zig",
+          "startLine": 756,
+          "endLine": 762
+        },
+        {
+          "node": "n10",
+          "path": "src/termio/Thread.zig",
+          "startLine": 288,
+          "endLine": 375
+        },
+        {
+          "node": "n10",
+          "path": "src/termio/Termio.zig",
+          "startLine": 449,
+          "endLine": 463
+        },
+        {
+          "node": "n11",
+          "path": "src/termio/stream_handler.zig",
+          "startLine": 138,
+          "endLine": 149
+        },
+        {
+          "node": "n11",
+          "path": "src/apprt/surface.zig",
+          "startLine": 186,
+          "endLine": 207
+        },
+        {
+          "node": "n11",
+          "path": "src/App.zig",
+          "startLine": 161,
+          "endLine": 167
+        },
+        {
+          "node": "n11",
+          "path": "src/App.zig",
+          "startLine": 272,
+          "endLine": 306
+        },
+        {
+          "node": "n11",
+          "path": "src/App.zig",
+          "startLine": 531,
+          "endLine": 550
+        },
+        {
+          "node": "n12",
+          "path": "src/termio/stream_handler.zig",
+          "startLine": 114,
+          "endLine": 119
+        },
+        {
+          "node": "n13",
+          "path": "src/termio/Termio.zig",
+          "startLine": 40,
+          "endLine": 43
+        },
+        {
+          "node": "n13",
+          "path": "src/termio/Termio.zig",
+          "startLine": 272,
+          "endLine": 298
+        },
+        {
+          "node": "n14",
+          "path": "src/terminal/Terminal.zig",
+          "startLine": 48,
+          "endLine": 165
+        },
+        {
+          "node": "n15",
+          "path": "src/terminal/Terminal.zig",
+          "startLine": 48,
+          "endLine": 49
+        },
+        {
+          "node": "n15",
+          "path": "src/terminal/ScreenSet.zig",
+          "startLine": 1,
+          "endLine": 109
+        },
+        {
+          "node": "n15",
+          "path": "src/terminal/Screen.zig",
+          "startLine": 44,
+          "endLine": 45
+        },
+        {
+          "node": "n16",
+          "path": "src/termio/Termio.zig",
+          "startLine": 37,
+          "endLine": 59
+        },
+        {
+          "node": "n16",
+          "path": "src/termio/Termio.zig",
+          "startLine": 182,
+          "endLine": 248
+        },
+        {
+          "node": "n17",
+          "path": "src/termio/Termio.zig",
+          "startLine": 61,
+          "endLine": 62
+        },
+        {
+          "node": "n17",
+          "path": "src/termio/message.zig",
+          "startLine": 8,
+          "endLine": 98
+        },
+        {
+          "node": "n18",
+          "path": "src/termio/Thread.zig",
+          "startLine": 288,
+          "endLine": 375
+        },
+        {
+          "node": "n18",
+          "path": "src/termio/Termio.zig",
+          "startLine": 449,
+          "endLine": 463
+        },
+        {
+          "node": "n18",
+          "path": "src/termio/backend.zig",
+          "startLine": 76,
+          "endLine": 86
+        },
+        {
+          "node": "n19",
+          "path": "src/termio/Termio.zig",
+          "startLine": 40,
+          "endLine": 66
+        },
+        {
+          "node": "n19",
+          "path": "src/termio/Termio.zig",
+          "startLine": 335,
+          "endLine": 351
+        },
+        {
+          "node": "n20",
+          "path": "src/renderer/State.zig",
+          "startLine": 13,
+          "endLine": 20
+        },
+        {
+          "node": "n20",
+          "path": "src/Surface.zig",
+          "startLine": 711,
+          "endLine": 721
+        },
+        {
+          "node": "n21",
+          "path": "src/termio/Termio.zig",
+          "startLine": 702,
+          "endLine": 762
+        },
+        {
+          "node": "n21",
+          "path": "src/termio/Exec.zig",
+          "startLine": 1490,
+          "endLine": 1518
+        },
+        {
+          "node": "n22",
+          "path": "src/termio/Termio.zig",
+          "startLine": 705,
+          "endLine": 711
+        },
+        {
+          "node": "n23",
+          "path": "src/termio/Termio.zig",
+          "startLine": 713,
+          "endLine": 762
+        },
+        {
+          "node": "n24",
+          "path": "src/termio/Termio.zig",
+          "startLine": 705,
+          "endLine": 711
+        },
+        {
+          "node": "n24",
+          "path": "src/termio/Exec.zig",
+          "startLine": 1490,
+          "endLine": 1518
+        },
+        {
+          "node": "n24",
+          "path": "src/renderer/State.zig",
+          "startLine": 82,
+          "endLine": 105
+        },
+        {
+          "node": "n25",
+          "path": "src/termio/Thread.zig",
+          "startLine": 389,
+          "endLine": 406
+        },
+        {
+          "node": "n25",
+          "path": "src/termio/Thread.zig",
+          "startLine": 427,
+          "endLine": 451
+        },
+        {
+          "node": "n25",
+          "path": "src/termio/Termio.zig",
+          "startLine": 523,
+          "endLine": 564
+        },
+        {
+          "node": "n26",
+          "path": "src/renderer/size.zig",
+          "startLine": 20,
+          "endLine": 44
+        },
+        {
+          "node": "n26",
+          "path": "src/termio/Termio.zig",
+          "startLine": 524,
+          "endLine": 530
+        },
+        {
+          "node": "n27",
+          "path": "src/termio/Termio.zig",
+          "startLine": 532,
+          "endLine": 553
+        },
+        {
+          "node": "n28",
+          "path": "src/termio/Termio.zig",
+          "startLine": 532,
+          "endLine": 553
+        },
+        {
+          "node": "n29",
+          "path": "src/termio/Termio.zig",
+          "startLine": 561,
+          "endLine": 564
+        }
+      ]
+    },
+    {
+      "diagramId": "d3",
+      "mappings": [
+        {
+          "node": "n1",
+          "path": "src/renderer.zig",
+          "startLine": 1,
+          "endLine": 8
+        },
+        {
+          "node": "n1",
+          "path": "src/Surface.zig",
+          "startLine": 92,
+          "endLine": 102
+        },
+        {
+          "node": "n2",
+          "path": "src/renderer/generic.zig",
+          "startLine": 90,
+          "endLine": 281
+        },
+        {
+          "node": "n2",
+          "path": "src/renderer.zig",
+          "startLine": 35,
+          "endLine": 42
+        },
+        {
+          "node": "n3",
+          "path": "src/renderer/generic.zig",
+          "startLine": 274,
+          "endLine": 281
+        },
+        {
+          "node": "n3",
+          "path": "src/renderer/generic.zig",
+          "startLine": 841,
+          "endLine": 847
+        },
+        {
+          "node": "n4",
+          "path": "src/renderer/generic.zig",
+          "startLine": 172,
+          "endLine": 281
+        },
+        {
+          "node": "n5",
+          "path": "src/renderer/generic.zig",
+          "startLine": 204,
+          "endLine": 207
+        },
+        {
+          "node": "n5",
+          "path": "src/renderer/generic.zig",
+          "startLine": 818,
+          "endLine": 824
+        },
+        {
+          "node": "n5",
+          "path": "src/renderer/generic.zig",
+          "startLine": 1889,
+          "endLine": 1905
+        },
+        {
+          "node": "n6",
+          "path": "src/renderer/Options.zig",
+          "startLine": 7,
+          "endLine": 15
+        },
+        {
+          "node": "n6",
+          "path": "src/renderer/generic.zig",
+          "startLine": 712,
+          "endLine": 721
+        },
+        {
+          "node": "n6",
+          "path": "src/Surface.zig",
+          "startLine": 564,
+          "endLine": 588
+        },
+        {
+          "node": "n7",
+          "path": "src/renderer.zig",
+          "startLine": 17,
+          "endLine": 45
+        },
+        {
+          "node": "n8",
+          "path": "src/renderer/generic.zig",
+          "startLine": 1370,
+          "endLine": 1710
+        },
+        {
+          "node": "n9",
+          "path": "src/renderer/generic.zig",
+          "startLine": 1408,
+          "endLine": 1427
+        },
+        {
+          "node": "n9",
+          "path": "src/renderer/State.zig",
+          "startLine": 54,
+          "endLine": 72
+        },
+        {
+          "node": "n10",
+          "path": "src/renderer/generic.zig",
+          "startLine": 1429,
+          "endLine": 1477
+        },
+        {
+          "node": "n11",
+          "path": "src/renderer/generic.zig",
+          "startLine": 1479,
+          "endLine": 1562
+        },
+        {
+          "node": "n12",
+          "path": "src/renderer/generic.zig",
+          "startLine": 1420,
+          "endLine": 1421
+        },
+        {
+          "node": "n12",
+          "path": "src/renderer/generic.zig",
+          "startLine": 1564,
+          "endLine": 1567
+        },
+        {
+          "node": "n12",
+          "path": "src/renderer/State.zig",
+          "startLine": 74,
+          "endLine": 80
+        },
+        {
+          "node": "n13",
+          "path": "src/renderer/generic.zig",
+          "startLine": 1564,
+          "endLine": 1665
+        },
+        {
+          "node": "n13",
+          "path": "src/renderer/generic.zig",
+          "startLine": 1877,
+          "endLine": 1909
+        },
+        {
+          "node": "n14",
+          "path": "src/renderer/generic.zig",
+          "startLine": 1712,
+          "endLine": 2043
+        },
+        {
+          "node": "n15",
+          "path": "src/Surface.zig",
+          "startLine": 92,
+          "endLine": 102
+        },
+        {
+          "node": "n15",
+          "path": "src/Surface.zig",
+          "startLine": 753,
+          "endLine": 759
+        },
+        {
+          "node": "n15",
+          "path": "src/renderer/Thread.zig",
+          "startLine": 1,
+          "endLine": 80
+        },
+        {
+          "node": "n16",
+          "path": "src/renderer/Thread.zig",
+          "startLine": 460,
+          "endLine": 652
+        },
+        {
+          "node": "n17",
+          "path": "src/renderer/Thread.zig",
+          "startLine": 289,
+          "endLine": 303
+        },
+        {
+          "node": "n17",
+          "path": "src/renderer/Thread.zig",
+          "startLine": 397,
+          "endLine": 404
+        },
+        {
+          "node": "n18",
+          "path": "src/termio/Termio.zig",
+          "startLine": 702,
+          "endLine": 762
+        },
+        {
+          "node": "n18",
+          "path": "src/termio/stream_handler.zig",
+          "startLine": 114,
+          "endLine": 119
+        },
+        {
+          "node": "n18",
+          "path": "src/renderer/Thread.zig",
+          "startLine": 474,
+          "endLine": 517
+        },
+        {
+          "node": "n18",
+          "path": "src/renderer/generic.zig",
+          "startLine": 1408,
+          "endLine": 1427
+        },
+        {
+          "node": "n19",
+          "path": "src/Surface.zig",
+          "startLine": 922,
+          "endLine": 929
+        },
+        {
+          "node": "n19",
+          "path": "src/renderer/generic.zig",
+          "startLine": 1712,
+          "endLine": 1731
+        },
+        {
+          "node": "n20",
+          "path": "src/Surface.zig",
+          "startLine": 829,
+          "endLine": 858
+        },
+        {
+          "node": "n20",
+          "path": "src/renderer/Thread.zig",
+          "startLine": 175,
+          "endLine": 189
+        }
+      ]
+    },
+    {
+      "diagramId": "d4",
+      "mappings": [
+        {
+          "node": "n1",
+          "path": "src/termio/Exec.zig",
+          "startLine": 4,
+          "endLine": 67
+        },
+        {
+          "node": "n2",
+          "path": "src/termio/Termio.zig",
+          "startLine": 34,
+          "endLine": 35
+        },
+        {
+          "node": "n2",
+          "path": "src/termio/backend.zig",
+          "startLine": 22,
+          "endLine": 113
+        },
+        {
+          "node": "n3",
+          "path": "src/termio/Exec.zig",
+          "startLine": 44,
+          "endLine": 56
+        },
+        {
+          "node": "n3",
+          "path": "src/termio/Exec.zig",
+          "startLine": 587,
+          "endLine": 609
+        },
+        {
+          "node": "n4",
+          "path": "src/termio/Exec.zig",
+          "startLine": 587,
+          "endLine": 597
+        },
+        {
+          "node": "n5",
+          "path": "src/termio/Exec.zig",
+          "startLine": 590,
+          "endLine": 597
+        },
+        {
+          "node": "n6",
+          "path": "src/termio/Exec.zig",
+          "startLine": 595,
+          "endLine": 609
+        },
+        {
+          "node": "n7",
+          "path": "src/termio/Exec.zig",
+          "startLine": 602,
+          "endLine": 609
+        },
+        {
+          "node": "n7",
+          "path": "src/termio/Exec.zig",
+          "startLine": 990,
+          "endLine": 1084
+        },
+        {
+          "node": "n8",
+          "path": "src/termio/Exec.zig",
+          "startLine": 895,
+          "endLine": 1095
+        },
+        {
+          "node": "n9",
+          "path": "src/termio/Exec.zig",
+          "startLine": 63,
+          "endLine": 84
+        },
+        {
+          "node": "n10",
+          "path": "src/termio/Exec.zig",
+          "startLine": 403,
+          "endLine": 490
+        },
+        {
+          "node": "n11",
+          "path": "src/termio/Exec.zig",
+          "startLine": 196,
+          "endLine": 230
+        },
+        {
+          "node": "n12",
+          "path": "src/termio/Thread.zig",
+          "startLine": 236,
+          "endLine": 286
+        },
+        {
+          "node": "n13",
+          "path": "src/termio/Termio.zig",
+          "startLine": 824,
+          "endLine": 852
+        },
+        {
+          "node": "n13",
+          "path": "src/termio/backend.zig",
+          "startLine": 115,
+          "endLine": 129
+        },
+        {
+          "node": "n13",
+          "path": "src/termio/Exec.zig",
+          "startLine": 492,
+          "endLine": 566
+        },
+        {
+          "node": "n14",
+          "path": "src/termio/Exec.zig",
+          "startLine": 106,
+          "endLine": 121
+        },
+        {
+          "node": "n14",
+          "path": "src/termio/Exec.zig",
+          "startLine": 510,
+          "endLine": 519
+        },
+        {
+          "node": "n15",
+          "path": "src/termio/Exec.zig",
+          "startLine": 274,
+          "endLine": 315
+        },
+        {
+          "node": "n16",
+          "path": "src/termio/Exec.zig",
+          "startLine": 514,
+          "endLine": 525
+        },
+        {
+          "node": "n17",
+          "path": "src/termio/Exec.zig",
+          "startLine": 403,
+          "endLine": 490
+        },
+        {
+          "node": "n17",
+          "path": "src/termio/Exec.zig",
+          "startLine": 493,
+          "endLine": 508
+        },
+        {
+          "node": "n18",
+          "path": "src/termio/Exec.zig",
+          "startLine": 317,
+          "endLine": 400
+        },
+        {
+          "node": "n18",
+          "path": "src/termio/Exec.zig",
+          "startLine": 540,
+          "endLine": 547
+        },
+        {
+          "node": "n19",
+          "path": "src/termio/Exec.zig",
+          "startLine": 123,
+          "endLine": 156
+        },
+        {
+          "node": "n19",
+          "path": "src/termio/Exec.zig",
+          "startLine": 535,
+          "endLine": 538
+        },
+        {
+          "node": "n20",
+          "path": "src/termio/Exec.zig",
+          "startLine": 1269,
+          "endLine": 1318
+        },
+        {
+          "node": "n20",
+          "path": "src/termio/Exec.zig",
+          "startLine": 1412,
+          "endLine": 1520
+        },
+        {
+          "node": "n21",
+          "path": "src/termio/Exec.zig",
+          "startLine": 1359,
+          "endLine": 1410
+        },
+        {
+          "node": "n22",
+          "path": "src/termio/Exec.zig",
+          "startLine": 1364,
+          "endLine": 1373
+        },
+        {
+          "node": "n22",
+          "path": "src/termio/Exec.zig",
+          "startLine": 1386,
+          "endLine": 1401
+        },
+        {
+          "node": "n23",
+          "path": "src/termio/Exec.zig",
+          "startLine": 1522,
+          "endLine": 1733
+        },
+        {
+          "node": "n24",
+          "path": "src/termio/Exec.zig",
+          "startLine": 1478,
+          "endLine": 1519
+        },
+        {
+          "node": "n25",
+          "path": "src/termio/Exec.zig",
+          "startLine": 1462,
+          "endLine": 1475
+        },
+        {
+          "node": "n26",
+          "path": "src/termio/Exec.zig",
+          "startLine": 1778,
+          "endLine": 1826
+        }
+      ]
+    },
+    {
+      "diagramId": "d5",
+      "mappings": [
+        {
+          "node": "n1",
+          "path": "src/terminal/Terminal.zig",
+          "startLine": 1,
+          "endLine": 279
+        },
+        {
+          "node": "n1",
+          "path": "src/terminal/Terminal.zig",
+          "startLine": 330,
+          "endLine": 376
+        },
+        {
+          "node": "n2",
+          "path": "src/terminal/Terminal.zig",
+          "startLine": 56,
+          "endLine": 68
+        },
+        {
+          "node": "n3",
+          "path": "src/terminal/Terminal.zig",
+          "startLine": 70,
+          "endLine": 165
+        },
+        {
+          "node": "n4",
+          "path": "src/terminal/Terminal.zig",
+          "startLine": 268,
+          "endLine": 279
+        },
+        {
+          "node": "n5",
+          "path": "src/terminal/Terminal.zig",
+          "startLine": 36,
+          "endLine": 49
+        },
+        {
+          "node": "n5",
+          "path": "src/terminal/ScreenSet.zig",
+          "startLine": 1,
+          "endLine": 109
+        },
+        {
+          "node": "n6",
+          "path": "src/terminal/ScreenSet.zig",
+          "startLine": 23,
+          "endLine": 31
+        },
+        {
+          "node": "n6",
+          "path": "src/terminal/ScreenSet.zig",
+          "startLine": 104,
+          "endLine": 109
+        },
+        {
+          "node": "n7",
+          "path": "src/terminal/ScreenSet.zig",
+          "startLine": 33,
+          "endLine": 36
+        },
+        {
+          "node": "n7",
+          "path": "src/terminal/ScreenSet.zig",
+          "startLine": 69,
+          "endLine": 72
+        },
+        {
+          "node": "n7",
+          "path": "src/terminal/ScreenSet.zig",
+          "startLine": 90,
+          "endLine": 102
+        },
+        {
+          "node": "n8",
+          "path": "src/terminal/ScreenSet.zig",
+          "startLine": 1,
+          "endLine": 7
+        },
+        {
+          "node": "n8",
+          "path": "src/terminal/ScreenSet.zig",
+          "startLine": 30,
+          "endLine": 62
+        },
+        {
+          "node": "n8",
+          "path": "src/terminal/ScreenSet.zig",
+          "startLine": 74,
+          "endLine": 88
+        },
+        {
+          "node": "n9",
+          "path": "src/terminal/Screen.zig",
+          "startLine": 1,
+          "endLine": 141
+        },
+        {
+          "node": "n9",
+          "path": "src/terminal/Screen.zig",
+          "startLine": 308,
+          "endLine": 359
+        },
+        {
+          "node": "n10",
+          "path": "src/terminal/Screen.zig",
+          "startLine": 52,
+          "endLine": 56
+        },
+        {
+          "node": "n10",
+          "path": "src/terminal/Screen.zig",
+          "startLine": 143,
+          "endLine": 218
+        },
+        {
+          "node": "n11",
+          "path": "src/terminal/Screen.zig",
+          "startLine": 195,
+          "endLine": 199
+        },
+        {
+          "node": "n11",
+          "path": "src/terminal/Screen.zig",
+          "startLine": 320,
+          "endLine": 345
+        },
+        {
+          "node": "n12",
+          "path": "src/terminal/Screen.zig",
+          "startLine": 58,
+          "endLine": 62
+        },
+        {
+          "node": "n12",
+          "path": "src/terminal/Screen.zig",
+          "startLine": 3060,
+          "endLine": 3097
+        },
+        {
+          "node": "n12",
+          "path": "src/terminal/PageList.zig",
+          "startLine": 354,
+          "endLine": 356
+        },
+        {
+          "node": "n13",
+          "path": "src/terminal/Screen.zig",
+          "startLine": 64,
+          "endLine": 75
+        },
+        {
+          "node": "n14",
+          "path": "src/terminal/Screen.zig",
+          "startLine": 77,
+          "endLine": 141
+        },
+        {
+          "node": "n15",
+          "path": "src/terminal/Screen.zig",
+          "startLine": 44,
+          "endLine": 45
+        },
+        {
+          "node": "n15",
+          "path": "src/terminal/PageList.zig",
+          "startLine": 1,
+          "endLine": 54
+        },
+        {
+          "node": "n16",
+          "path": "src/terminal/PageList.zig",
+          "startLine": 359,
+          "endLine": 405
+        },
+        {
+          "node": "n16",
+          "path": "src/terminal/PageList.zig",
+          "startLine": 465,
+          "endLine": 470
+        },
+        {
+          "node": "n16",
+          "path": "src/terminal/PageList.zig",
+          "startLine": 507,
+          "endLine": 511
+        },
+        {
+          "node": "n17",
+          "path": "src/terminal/PageList.zig",
+          "startLine": 354,
+          "endLine": 356
+        },
+        {
+          "node": "n17",
+          "path": "src/terminal/PageList.zig",
+          "startLine": 472,
+          "endLine": 505
+        },
+        {
+          "node": "n17",
+          "path": "src/terminal/PageList.zig",
+          "startLine": 518,
+          "endLine": 533
+        },
+        {
+          "node": "n18",
+          "path": "src/terminal/PageList.zig",
+          "startLine": 7785,
+          "endLine": 7818
+        },
+        {
+          "node": "n18",
+          "path": "src/terminal/Screen.zig",
+          "startLine": 329,
+          "endLine": 345
+        },
+        {
+          "node": "n18",
+          "path": "src/terminal/Screen.zig",
+          "startLine": 3060,
+          "endLine": 3097
+        },
+        {
+          "node": "n19",
+          "path": "src/terminal/PageList.zig",
+          "startLine": 51,
+          "endLine": 54
+        },
+        {
+          "node": "n19",
+          "path": "src/terminal/PageList.zig",
+          "startLine": 404,
+          "endLine": 405
+        },
+        {
+          "node": "n20",
+          "path": "src/terminal/PageList.zig",
+          "startLine": 56,
+          "endLine": 96
+        },
+        {
+          "node": "n21",
+          "path": "src/terminal/PageList.zig",
+          "startLine": 79,
+          "endLine": 91
+        },
+        {
+          "node": "n22",
+          "path": "src/terminal/PageList.zig",
+          "startLine": 79,
+          "endLine": 91
+        },
+        {
+          "node": "n22",
+          "path": "src/terminal/PageList.zig",
+          "startLine": 239,
+          "endLine": 245
+        },
+        {
+          "node": "n23",
+          "path": "src/terminal/page.zig",
+          "startLine": 147,
+          "endLine": 232
+        },
+        {
+          "node": "n24",
+          "path": "src/terminal/page.zig",
+          "startLine": 147,
+          "endLine": 176
+        },
+        {
+          "node": "n25",
+          "path": "src/terminal/page.zig",
+          "startLine": 178,
+          "endLine": 186
+        },
+        {
+          "node": "n25",
+          "path": "src/terminal/page.zig",
+          "startLine": 2215,
+          "endLine": 2217
+        },
+        {
+          "node": "n26",
+          "path": "src/terminal/page.zig",
+          "startLine": 182,
+          "endLine": 186
+        },
+        {
+          "node": "n26",
+          "path": "src/terminal/page.zig",
+          "startLine": 2392,
+          "endLine": 2442
+        },
+        {
+          "node": "n27",
+          "path": "src/terminal/page.zig",
+          "startLine": 202,
+          "endLine": 213
+        },
+        {
+          "node": "n28",
+          "path": "src/terminal/page.zig",
+          "startLine": 197,
+          "endLine": 200
+        },
+        {
+          "node": "n28",
+          "path": "src/terminal/page.zig",
+          "startLine": 215,
+          "endLine": 223
+        },
+        {
+          "node": "n29",
+          "path": "src/terminal/page.zig",
+          "startLine": 188,
+          "endLine": 195
+        },
+        {
+          "node": "n29",
+          "path": "src/terminal/page.zig",
+          "startLine": 225,
+          "endLine": 232
+        },
+        {
+          "node": "n29",
+          "path": "src/terminal/page.zig",
+          "startLine": 2045,
+          "endLine": 2084
+        }
+      ]
+    }
+  ],
+  "notes": ""
+}

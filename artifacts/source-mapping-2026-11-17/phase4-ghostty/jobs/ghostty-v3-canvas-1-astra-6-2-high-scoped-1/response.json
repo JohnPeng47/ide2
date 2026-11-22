@@ -1,0 +1,268 @@
+{
+  "output": {
+    "validatedCandidate": "db1d49c0da3287435ec2d91cd12fba1c5a1284e7a0802a3705516bdb8547c095"
+  },
+  "usage": {
+    "input": 617133,
+    "output": 60096,
+    "cacheRead": 5766528,
+    "cacheWrite": 0,
+    "reasoning": 4239,
+    "totalTokens": 6443757
+  },
+  "execution": {
+    "runtime": "pi-agent-context",
+    "sessionId": "01a20127-3a7b-70a7-98a3-e5c6df591d76",
+    "contextHash": "f80fdfee53c9c2eecb607117514795b67267e5117b0960c2a77e390d08a58685",
+    "cacheKey": "eval-9d270637849f53a09c1986d99d40b71e267115d77a714e3277b0117a243ace87",
+    "modelContextHash": "8cd4c239769f6b1e0bffb2f49912807895a1989311ac7a5d846726b5def05f36",
+    "repositories": [
+      {
+        "repository": "repo-1",
+        "repositoryPath": "/home/john/softwarez/ghostty",
+        "commit": "ea8b12a8a9894b5259c441eadd8f6f0c65e215af",
+        "exclusions": [
+          "**/*-LICENSE",
+          "**/*.md",
+          "**/*.mdx",
+          "**/*.spec.*",
+          "**/*.test.*",
+          "**/AGENTS.md",
+          "**/CODEX-LICENSE",
+          "**/LICENSE*",
+          "**/Tests/**",
+          "**/__fixtures__/**",
+          "**/__tests__/**",
+          "**/benchmark/**",
+          "**/benchmarks/**",
+          "**/build/**",
+          "**/dist/**",
+          "**/docs/**",
+          "**/examples/**",
+          "**/fixtures/**",
+          "**/node_modules/**",
+          "**/scripts/**",
+          "**/test/**",
+          "**/tests/**",
+          ".agents/**",
+          ".github/**",
+          ".husky/**",
+          ".pi/**",
+          "deps/**",
+          "example/**",
+          "flake.lock",
+          "flatpak/**",
+          "images/**",
+          "nix/**",
+          "package-lock.json",
+          "po/**",
+          "scripts/**",
+          "snap/**",
+          "vendor/**"
+        ],
+        "checkout": "/home/john/.cache/mapping-phase4-0k2pl7su/agent-repository-ny3xVh/checkout",
+        "inspectionSource": "session-transcript"
+      }
+    ],
+    "subagents": {
+      "model": "gpt-6.2-astra",
+      "effort": "high",
+      "concurrency": 2,
+      "sessions": [
+        {
+          "id": "child-1",
+          "name": "Termio",
+          "assignment": "Map all d2 nodes within diagram context. Private scratch /tmp/d2work. Return compact text in format nID scope letters (s structure,e entity,b behavior,r relationship,g guarantee,y subsystem) then path:start-end:roles (d declaration,u use,i implementation); use path aliases, parent inheritance references to avoid repetition. Verify line numbers.",
+          "model": "gpt-6.2-astra",
+          "effort": "high",
+          "status": "finished",
+          "queuedAt": "2026-11-22T02:48:10.226Z",
+          "usage": {
+            "input": 88769,
+            "output": 8537,
+            "cacheRead": 711424,
+            "cacheWrite": 0,
+            "reasoning": 301,
+            "totalTokens": 808730
+          },
+          "cost": {
+            "input": 0.88769,
+            "output": 0.42685,
+            "cacheRead": 0.711424,
+            "cacheWrite": 0,
+            "total": 2.025964
+          },
+          "startedAt": "2026-11-22T02:48:10.230Z",
+          "sessionId": "01a20127-6b11-714e-929c-6b3fb486db12",
+          "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-0k2pl7su-agent-repository-ny3xVh-checkout--/2026-11-22T02-48-10-257Z_01a20127-6b11-714e-929c-6b3fb486db12.jsonl",
+          "completedAt": "2026-11-22T02:51:37.552Z"
+        },
+        {
+          "id": "child-2",
+          "name": "Renderer",
+          "assignment": "Map d3 all nodes. private scratch /tmp/d3work. Return compact text: nID scope letters (s structure,e entity,b behavior,r relationship,g guarantee,y subsystem) then path:start-end:roles (d declaration,u use,i implementation); allow path aliases and parent inheritance directives. Verify.",
+          "model": "gpt-6.2-astra",
+          "effort": "high",
+          "status": "finished",
+          "queuedAt": "2026-11-22T02:48:10.226Z",
+          "usage": {
+            "input": 91620,
+            "output": 8028,
+            "cacheRead": 725888,
+            "cacheWrite": 0,
+            "reasoning": 257,
+            "totalTokens": 825536
+          },
+          "cost": {
+            "input": 0.9162000000000002,
+            "output": 0.40140000000000003,
+            "cacheRead": 0.7258879999999999,
+            "cacheWrite": 0,
+            "total": 2.0434880000000004
+          },
+          "startedAt": "2026-11-22T02:48:10.230Z",
+          "sessionId": "01a20127-6b16-721c-92d5-8ae62508d73c",
+          "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-0k2pl7su-agent-repository-ny3xVh-checkout--/2026-11-22T02-48-10-262Z_01a20127-6b16-721c-92d5-8ae62508d73c.jsonl",
+          "completedAt": "2026-11-22T02:51:18.614Z"
+        },
+        {
+          "id": "child-3",
+          "name": "Exec",
+          "assignment": "Map all d4 nodes. private scratch /tmp/d4work. Return compact text: nID scope letters (s structure,e entity,b behavior,r relationship,g guarantee,y subsystem) then path:start-end:roles (d declaration,u use,i implementation); allow path aliases and parent inheritance. Verify code.",
+          "model": "gpt-6.2-astra",
+          "effort": "high",
+          "status": "finished",
+          "queuedAt": "2026-11-22T02:48:10.226Z",
+          "usage": {
+            "input": 72000,
+            "output": 6091,
+            "cacheRead": 508544,
+            "cacheWrite": 0,
+            "reasoning": 439,
+            "totalTokens": 586635
+          },
+          "cost": {
+            "input": 0.72,
+            "output": 0.30455000000000004,
+            "cacheRead": 0.5085439999999999,
+            "cacheWrite": 0,
+            "total": 1.5330940000000002
+          },
+          "startedAt": "2026-11-22T02:51:18.614Z",
+          "sessionId": "01a2012a-4ae1-79b0-aab9-fa570c0b3023",
+          "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-0k2pl7su-agent-repository-ny3xVh-checkout--/2026-11-22T02-51-18-625Z_01a2012a-4ae1-79b0-aab9-fa570c0b3023.jsonl",
+          "completedAt": "2026-11-22T02:54:27.753Z"
+        },
+        {
+          "id": "child-4",
+          "name": "Terminal",
+          "assignment": "Map d5 all nodes. private scratch /tmp/d5work. Return compact text: nID scope letters (s structure,e entity,b behavior,r relationship,g guarantee,y subsystem) then path:start-end:roles (d declaration,u use,i implementation); allow path aliases, parent inheritance directives. Verify.",
+          "model": "gpt-6.2-astra",
+          "effort": "high",
+          "status": "finished",
+          "queuedAt": "2026-11-22T02:48:10.226Z",
+          "usage": {
+            "input": 77572,
+            "output": 7100,
+            "cacheRead": 568320,
+            "cacheWrite": 0,
+            "reasoning": 725,
+            "totalTokens": 652992
+          },
+          "cost": {
+            "input": 0.7757200000000001,
+            "output": 0.35500000000000004,
+            "cacheRead": 0.5683199999999999,
+            "cacheWrite": 0,
+            "total": 1.69904
+          },
+          "startedAt": "2026-11-22T02:51:37.552Z",
+          "sessionId": "01a2012a-94d8-7805-889e-4c5d27ba3ff2",
+          "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-0k2pl7su-agent-repository-ny3xVh-checkout--/2026-11-22T02-51-37-560Z_01a2012a-94d8-7805-889e-4c5d27ba3ff2.jsonl",
+          "completedAt": "2026-11-22T02:54:51.511Z"
+        },
+        {
+          "id": "child-5",
+          "name": "SurfaceInput",
+          "assignment": "Map d1 n12-21 (input/config/resize focus) including descendants and call chains. private scratch /tmp/d1input. Return compact text: nID scope letters (s structure,e entity,b behavior,r relationship,g guarantee,y subsystem) then path:start-end:roles (d declaration,u use,i implementation); path aliases ok. Verify.",
+          "model": "gpt-6.2-astra",
+          "effort": "high",
+          "status": "finished",
+          "queuedAt": "2026-11-22T02:48:10.226Z",
+          "usage": {
+            "input": 79888,
+            "output": 4893,
+            "cacheRead": 565120,
+            "cacheWrite": 0,
+            "reasoning": 258,
+            "totalTokens": 649901
+          },
+          "cost": {
+            "input": 0.79888,
+            "output": 0.24465000000000003,
+            "cacheRead": 0.56512,
+            "cacheWrite": 0,
+            "total": 1.6086500000000001
+          },
+          "startedAt": "2026-11-22T02:54:27.754Z",
+          "sessionId": "01a2012d-2db2-7624-a028-4a59bd83773e",
+          "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-0k2pl7su-agent-repository-ny3xVh-checkout--/2026-11-22T02-54-27-762Z_01a2012d-2db2-7624-a028-4a59bd83773e.jsonl",
+          "completedAt": "2026-11-22T02:56:43.744Z"
+        },
+        {
+          "id": "child-6",
+          "name": "SurfaceLifecycle",
+          "assignment": "Map d1 nodes n38-48 (search child exit close teardown), including runtime lifecycle. private scratch /tmp/d1exit. Return compact text: nID scope letters (s structure,e entity,b behavior,r relationship,g guarantee,y subsystem) then path:start-end:roles (d declaration,u use,i implementation); path aliases ok. Verify.",
+          "model": "gpt-6.2-astra",
+          "effort": "high",
+          "status": "finished",
+          "queuedAt": "2026-11-22T02:48:10.226Z",
+          "usage": {
+            "input": 51744,
+            "output": 5112,
+            "cacheRead": 301184,
+            "cacheWrite": 0,
+            "reasoning": 172,
+            "totalTokens": 358040
+          },
+          "cost": {
+            "input": 0.51744,
+            "output": 0.2556,
+            "cacheRead": 0.301184,
+            "cacheWrite": 0,
+            "total": 1.074224
+          },
+          "startedAt": "2026-11-22T02:54:51.512Z",
+          "sessionId": "01a2012d-8a7f-7318-9e3d-33b6e9c23ef3",
+          "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-0k2pl7su-agent-repository-ny3xVh-checkout--/2026-11-22T02-54-51-519Z_01a2012d-8a7f-7318-9e3d-33b6e9c23ef3.jsonl",
+          "completedAt": "2026-11-22T02:57:03.737Z"
+        }
+      ]
+    }
+  },
+  "accounting": {
+    "mainUsage": {
+      "input": 155540,
+      "output": 20335,
+      "cacheRead": 2386048,
+      "cacheWrite": 0,
+      "reasoning": 2087,
+      "totalTokens": 2561923
+    },
+    "mainCost": {
+      "input": 1.5554000000000001,
+      "output": 1.0167499999999998,
+      "cacheRead": 2.386048,
+      "cacheWrite": 0,
+      "total": 4.958198
+    },
+    "totalCost": {
+      "input": 6.17133,
+      "output": 3.0047999999999995,
+      "cacheRead": 5.766528,
+      "cacheWrite": 0,
+      "total": 14.942658000000002
+    },
+    "children": 6
+  }
+}

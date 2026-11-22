@@ -4,7 +4,7 @@ import path from 'node:path';
 import { tmpdir } from 'node:os';
 import { afterEach, expect, it, vi } from 'vitest';
 import { revisionFixture } from '../../../../tests/support/diagramRevisions';
-import { AgentContext } from '../../../../domain/core/agents/agentContext';
+import { AgentContext, AGENT_CONTEXT_MAX_BYTES } from '../../../../domain/core/agents/agentContext';
 import { sourceFileHash, type AgentContextSourceRange } from '../../../../domain/core/agents/agentContextSource';
 import { AgentContextLibrary } from '../../../../application/mapping/agent/agentContextLibrary';
 import { FileAgentContextSources } from '../fileAgentContextSources';
@@ -153,7 +153,7 @@ it('validates portable attachments, refuses unresolved model input and bounds ex
   const portable = AgentContext.fromSnapshot({ ...compact.toSnapshot(), sourceFiles: { [hash]: file } });
   expect(portable.contentHash).toBe(compact.contentHash);
   expect((await portable.resolveSources()).toPiMessages()[0].content[0]).toEqual({ type: 'text', text: 'code.ts:5-5\npinned source' });
-  await expect(compact.resolveSources(async () => 'x'.repeat(1_100_000))).rejects.toThrow('TOO_LARGE');
+  await expect(compact.resolveSources(async () => 'x'.repeat(AGENT_CONTEXT_MAX_BYTES / 2 + 1))).rejects.toThrow('TOO_LARGE');
   const single = AgentContext.fromMessages('large', [{ role: 'user', content: [reference], timestamp: 0 }]);
   const large = await single.resolveSources(async () => 'x'.repeat(1_100_000));
   expect(large.toPiMessages()[0].content).toHaveLength(2);

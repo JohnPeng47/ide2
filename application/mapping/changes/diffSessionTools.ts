@@ -1,3 +1,4 @@
+import { projectCanvas } from '../../../domain/mapping/projections/canvasProjection';
 import { compactDiffSessionToolResult } from './diffSessionToolResults';
 import { z } from 'zod';
 import { canvasDisplayNodes } from '../../../domain/mapping/workspace/canvasDisplayNode';
@@ -25,6 +26,12 @@ export class DiffSessionTools {
   }
   private frozenSearch(input: z.infer<typeof agentToolSchemas['diagram-search']>) {
     const documents = this.capture.documents.filter(doc => !input.representationId || input.representationId === doc.id);
+    if (input.projectionType) {
+      if (input.operation !== 'read' || documents.length !== 1) throw Error('Choose one pinned document to read a canvas projection');
+      const doc = documents[0];
+      return { version: 0, documentId: doc.id, projectionType: input.projectionType,
+        ...projectCanvas(doc.baseline!.document, input.projectionType, doc.history?.diagramRevisions, input.nodeId ? [input.nodeId] : undefined) };
+    }
     const nodes = documents.flatMap(doc => canvasDisplayNodes(doc.baseline!.document, doc.baseline!.canvas, 0)
       .filter(node => node.layout === 'grid' && node.kind === 'diagram')
       .map(node => ({ documentId: doc.id, name: doc.name, node: this.projection.node(node) })));

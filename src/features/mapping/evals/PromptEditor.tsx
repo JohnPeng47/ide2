@@ -1,7 +1,9 @@
+import { authoredStages, expandPromptStage, promptTemplateIds, promptTemplateToken } from '../../../../domain/mapping/evals/promptTemplateIncludes';
+import { useEvalHistory } from './evalHistory';
 import { PromptSectionsEditor } from './PromptSectionsEditor';
+import { promptSnippets } from './promptSnippets';
 import { defaultPromptTemplateBase, legacyPromptTemplateBase, parsePromptSections, renderPromptSections, structurePrompt } from '../../../../domain/mapping/evals/promptTemplateBase';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
-import { ConfirmDialog } from './ConfirmDialog';
 import { composePrompt, evalWorkflows, promptHasErrors, validatePromptStages, type EvalWorkflowId } from '../../../../domain/mapping/evals/evalWorkflows';
 import { latestVersion, type EvalPrompt } from '../../../../domain/mapping/evals/evalPrompt';
 import { referenceKey, templateReferences, templateVariables } from '../../../../domain/mapping/evals/promptTemplate';
@@ -10,6 +12,8 @@ import { archivePrompt, savePrompt, listPrompts, snapshotPrompts } from './evals
 import { errorMessage, relativeTime } from './evalsFormat';
 import { TemplateEditor, isMac, modKey, type TemplateChange, type TemplateEditorHandle } from './TemplateEditor';
 import { canRedo, canUndo, createHistory, record, redo, undo, type EditHistory, type HistoryStep, type TextSelection } from './editHistory';
+
+const templates = new Map(promptSnippets.map(item => [item.id, item.text]));
 
 export type PromptDraft = { workflow: EvalWorkflowId; from?: EvalPrompt; fromVersion?: number };
 
@@ -26,56 +30,71 @@ export function PromptEditor({ prompt, draft, version, references, onSaved, onDi
   const latest = prompt && latestVersion(prompt);
   const opened = prompt?.versions.find(item => item.version === version) ?? latest;
   const sourceVersion = draft?.from && (draft.from.versions.find(v => v.version === draft.fromVersion) ?? latestVersion(draft.from));
-  const initialStages = opened?.stages ?? sourceVersion?.stages ?? Object.fromEntries(Object.entries(workflow.defaultPrompt.stages).map(([key, text]) => [key, structurePrompt(text)]));
+  const parent = opened ?? sourceVersion;
+  const initialStages = parent ? authoredStages(parent) : Object.fromEntries(Object.entries(workflow.defaultPrompt.stages).map(([key, text]) => [key, structurePrompt(text)]));
 
-  const [viewing, setViewing] = useState(opened?.version);
+  const viewing = opened?.version;
   const viewedVersion = prompt?.versions.find(v => v.version === viewing);
   const templateBase = viewedVersion?.templateBase ?? sourceVersion?.templateBase ?? (viewedVersion || sourceVersion ? legacyPromptTemplateBase((viewedVersion ?? sourceVersion)!.stages) : defaultPromptTemplateBase);
-  const baseStages = prompt?.versions.find(item => item.version === viewing)?.stages ?? initialStages;
-  const [name, setName] = useState(prompt?.name ?? (draft?.from ? `${draft.from.name} copy`.slice(0, 120) : `New ${workflow.label.toLowerCase()} prompt`));
+  const startingName = prompt?.name ?? (draft?.from ? `${draft.from.name} copy`.slice(0, 120) : `New ${workflow.label.toLowerCase()} prompt`);
+  const [name, setName] = useState(startingName);
   const [description, setDescription] = useState(prompt?.description ?? '');
   const [dimension, setDimension] = useState(''), [dimensionValue, setDimensionValue] = useState('');
   const viewedDerivation = prompt?.versions.find(v => v.version === viewing)?.derivation;
   const [note, setNote] = useState('');
   const [parentsCatalog, setParentsCatalog] = useState<EvalPrompt[]>([]), [mergeParent, setMergeParent] = useState(''), [snapshotNotice, setSnapshotNotice] = useState('');
   useEffect(() => { void listPrompts().then(setParentsCatalog).catch(() => {}); }, []);
-  const [stageId, setStageId] = useState(workflow.stages[0].id);
+  const { navigation, visit } = useEvalHistory();
+  const stageId = visit.view.promptStage ?? workflow.stages[0].id;
+  const setStageId = (promptStage: string) => { if (stageId !== promptStage) navigation.update({ promptStage }); };
   const [history, setHistory] = useState(() => createHistory(initialStages, workflow.stages[0].id));
   const stages = history.entries[history.index].value;
   const restore = useRef<{ scope: string; selection: TextSelection }>(undefined);
-  const [preview, setPreview] = useState(false);
+  const preview = !!visit.view.promptPreview;
   const [busy, setBusy] = useState(false), [error, setError] = useState('');
   const editor = useRef<TemplateEditorHandle>(null);
   const pending = useRef<{ signature: string; requestId: string }>(undefined);
   const stage = workflow.stages.find(item => item.id === stageId)!;
   const referenceIds = useMemo(() => references && new Set(references.map(item => item.id)), [references]);
-  const [checkedStages, setCheckedStages] = useState(stages);
-  useEffect(() => { const timer = setTimeout(() => setCheckedStages(stages), 2000); return () => clearTimeout(timer); }, [stages]);
+  const expansion = useMemo(() => {
+    const bodies: Record<string, string> = {}, errors: Record<string, string> = {};
+    for (const [id, text] of Object.entries(stages)) {
+      try { bodies[id] = expandPromptStage(id, text, templates, parent); }
+      catch (error) { errors[id] = errorMessage(error); }
+    }
+    return { bodies, errors };
+  }, [stages, parent]);
+  const [checkedStages, setCheckedStages] = useState(expansion.bodies);
+  useEffect(() => { const timer = setTimeout(() => setCheckedStages(expansion.bodies), 2000); return () => clearTimeout(timer); }, [expansion]);
   const issues = useMemo(() => {
-    const result = validatePromptStages(workflow, stages, referenceIds);
+    const result = validatePromptStages(workflow, expansion.bodies, referenceIds);
+    for (const [stage, message] of Object.entries(expansion.errors)) result[stage] = [{ severity: 'error', message }];
     for (const [key, text] of Object.entries(checkedStages)) (result[key] ??= []).push(...parsePromptSections(text, templateBase).issues);
+    for (const key of Object.keys(result)) if (expansion.bodies[key] !== stages[key]) {
+      result[key] = result[key].map(issue => ({ ...issue, start: undefined, end: undefined }));
+    }
     return result;
-  }, [workflow, stages, checkedStages, referenceIds, templateBase]);
-  const known = useMemo(() => new Set([...workflow.variables.map(variable => variable.name), ...(references ?? []).map(item => referenceKey(item.id))]), [workflow, references]);
+  }, [workflow, stages, expansion, checkedStages, referenceIds, templateBase]);
+  const known = useMemo(() => new Set([...promptSnippets.map(item => `template:${item.id}`), ...workflow.variables.map(variable => variable.name), ...(references ?? []).map(item => referenceKey(item.id))]), [workflow, references]);
   const used = new Set(templateVariables(stages[stageId] ?? ''));
+  const usedTemplates = new Set(promptTemplateIds(stages[stageId] ?? ''));
   const cited = new Set(templateReferences(stages[stageId] ?? ''));
   const [referenceQuery, setReferenceQuery] = useState(''), [peek, setPeek] = useState<string>();
   // Archived references stay listed while this stage still cites them.
   const pickable = (references ?? []).filter(item => (!item.archivedAt || cited.has(item.id))
     && `${item.name}\n${item.id}`.toLowerCase().includes(referenceQuery.toLowerCase()));
   const peeked = references?.find(item => item.id === peek);
-  const textChanged = JSON.stringify(stages) !== JSON.stringify(prompt ? baseStages : initialStages);
+  const textChanged = JSON.stringify(stages) !== JSON.stringify(initialStages);
   const stagesChanged = textChanged || !!prompt && viewing !== latest!.version || !!mergeParent;
   const dirty = !!mergeParent || !prompt || textChanged || name !== prompt.name || description !== (prompt.description ?? '');
-  useEffect(() => { onDirty(!!prompt && dirty); }, [dirty, prompt, onDirty]);
+  const unsaved = prompt ? dirty : textChanged || name !== startingName || !!description || !!dimension || !!dimensionValue;
+  useEffect(() => { onDirty(unsaved); }, [unsaved, onDirty]);
   useEffect(() => () => onDirty(false), [onDirty]);
   const errors = promptHasErrors(issues), stageErrors = (id: string) => issues[id]?.filter(issue => issue.severity === 'error').length ?? 0;
-  const [pendingVersion, setPendingVersion] = useState<number>();
-  const applyVersion = (version: number) => { setViewing(version); setHistory(createHistory(prompt!.versions.find(item => item.version === version)!.stages, stageId)); };
-  const view = (version: number) => { if (textChanged) setPendingVersion(version); else applyVersion(version); };
+  const view = (version: number) => { if (prompt && viewing !== version) navigation.go({ kind: 'prompt', id: prompt.id, version }); };
   const save = async () => {
-    const tagErrors = Object.values(stages).flatMap(text => parsePromptSections(text, templateBase).issues);
-    if (tagErrors.length) { setCheckedStages(stages); setError(tagErrors.map(i => i.message).join(' ' )); return; }
+    const tagErrors = Object.values(expansion.bodies).flatMap(text => parsePromptSections(text, templateBase).issues);
+    if (tagErrors.length) { setCheckedStages(expansion.bodies); setError(tagErrors.map(i => i.message).join(' ' )); return; }
     const merge = mergeParent ? JSON.parse(mergeParent) as { promptId: string; version: number } : undefined;
     const body = { ...(merge && prompt ? { parents: [{ promptId: prompt.id, version: viewing!, relation: 'merge' as const }, { ...merge, relation: 'merge' as const }] } : {}), templateBase, workflow: workflow.id, name: name.trim(), stages, ...(description.trim() || prompt?.description ? { description: description.trim() } : {}),
       ...(note.trim() ? { note: note.trim() } : {}), ...(prompt ? { promptId: prompt.id, baseVersion: latest!.version, derivation: { parent: { promptId: prompt.id, version: viewing! }, kind: 'revision' as const } }
@@ -126,8 +145,6 @@ export function PromptEditor({ prompt, draft, version, references, onSaved, onDi
   const nextLabel = !prompt ? 'Create prompt' : stagesChanged ? `Save as v${latest!.version + 1}` : 'Save details';
 
   return <form className="prompt-editor" onKeyDown={formKeys} onSubmit={event => { event.preventDefault(); if (canSave) void save(); }}>
-    {pendingVersion !== undefined && <ConfirmDialog title="Discard edits" message="Discard unsaved prompt edits?" confirmLabel="Discard"
-      onConfirm={() => applyVersion(pendingVersion)} onClose={() => setPendingVersion(undefined)} />}
     <header className="evals-view-header">
       <div className="evals-breadcrumb"><span>{workflow.label}</span><span aria-hidden>›</span>
         <input aria-label="Prompt name" className="prompt-name" value={name} maxLength={120} onChange={event => setName(event.target.value)} />
@@ -181,9 +198,9 @@ export function PromptEditor({ prompt, draft, version, references, onSaved, onDi
         <p className="prompt-shortcuts" aria-label="Keyboard shortcuts"><kbd>{mod}Z</kbd> undo <kbd>{isMac ? '⇧⌘Z' : 'Ctrl+Y'}</kbd> redo <kbd>{mod}S</kbd> save
           <kbd>Tab</kbd>/<kbd>⇧Tab</kbd> indent <kbd>{isMac ? '⌥' : 'Alt+'}↑↓</kbd> move line <kbd>{isMac ? '⇧⌥' : 'Shift+Alt+'}↑↓</kbd> duplicate line <kbd>Esc</kbd> then <kbd>Tab</kbd> leaves the editor</p>
 
-        <button type="button" className="evals-link" aria-expanded={preview} onClick={() => setPreview(value => !value)}>{preview ? 'Hide' : 'Show'} full prompt preview</button>
+        <button type="button" className="evals-link" aria-expanded={preview} onClick={() => navigation.update({ promptPreview: !preview })}>{preview ? 'Hide' : 'Show'} full prompt preview</button>
         {preview && <pre className="prompt-preview" aria-label="Full prompt preview">{(() => {
-          try { return composePrompt(workflow, stageId, stages[stageId] ?? '', sample, templateBase); } catch (error) { return errorMessage(error); }
+          try { return expansion.errors[stageId] ?? composePrompt(workflow, stageId, expansion.bodies[stageId] ?? '', sample, templateBase); } catch (error) { return errorMessage(error); }
         })()}</pre>}
       </div>
       <aside className="prompt-sidebar" aria-label="Template variables">
@@ -197,6 +214,11 @@ export function PromptEditor({ prompt, draft, version, references, onSaved, onDi
             <small>{variable.description}</small>
           </button>)}
         </div>)}
+        <h3>Prompt snippets</h3>
+        {promptSnippets.map(snippet => <button type="button" key={snippet.id} className="prompt-variable"
+          aria-label={`Insert snippet ${snippet.name}`} onClick={() => editor.current?.insert(promptTemplateToken(snippet.id))}>
+          <code>{snippet.name}</code>{usedTemplates.has(snippet.id) && <span className="prompt-used">used</span>}<small>Insert template reference</small>
+        </button>)}
         <h3>References</h3>
         <p className="evals-muted">Saved diagram excerpts. Click to cite one at the cursor; its text is placed there when the prompt runs.</p>
         {references && references.length > 0 && <input type="search" className="prompt-reference-filter" aria-label="Filter references" placeholder="Filter references…"

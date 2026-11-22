@@ -1,4 +1,5 @@
 import { expect, it } from 'vitest';
+import { createDiagram } from '../../../../../domain/core/diagrams/diagramRevision';
 import { revisionFixture } from '../../../../../tests/support/diagramRevisions';
 import { diagramContentNodes } from '../../../../../domain/core/diagrams/diagramContentNodes';
 import { singleDiagramScene } from '../../../../../domain/core/diagrams/projectDiagramCanvas';
@@ -9,8 +10,8 @@ import { ChangePreviewState } from '../changePreviewState';
 import { initialCanvasState } from '../../../../../domain/mapping/workspace/mappingWorkspace';
 
 function fixture(before: string, after: string, kind: 'tree' | 'diagram' = 'tree') {
-  const old = revisionFixture().create({ id: 'overview', revision: 0, ascii: before, structureKind: kind }).diagram;
-  const next = revisionFixture().create({ id: 'overview', revision: 1, ascii: after, structureKind: kind }).diagram;
+  const old = createDiagram({ id: 'overview', revision: 0, ascii: before, structureKind: kind }).diagram;
+  const next = createDiagram({ id: 'overview', revision: 1, ascii: after, structureKind: kind }).diagram;
   const scene = singleDiagramScene(after);
   scene.contents = { ...scene.contents, overview: next };
   const diffs = new Map([['grid:overview', diffDiagramContent(old.content, next.content)]]);
@@ -20,7 +21,10 @@ function fixture(before: string, after: string, kind: 'tree' | 'diagram' = 'tree
 it('shows previous/current rows in order, with only current labels owning anchors', () => {
   const f = fixture('Root\n|-- Old label\n`-- Keep', 'Root\n|-- New label\n`-- Keep');
   const snapshot = structuredClone(f);
-  const result = projectDiagramComparisons(f.scene, undefined, f.diffs, f.enabled);
+  const oldLabel = diagramContentNodes(f.old.content).find(node => node.label === 'Old label')!;
+  const baseline = { scene: { ...f.scene, contents: { ...f.scene.contents, overview: f.old } }, edges: [], sections: {},
+    diagramPresentations: { overview: { highlights: [{ id: 'review', color: 'blue', nodeRefs: ['archived-ref'], contentNodeId: oldLabel.id }] } } };
+  const result = projectDiagramComparisons(f.scene, undefined, f.diffs, f.enabled, [], new Map(), false, undefined, baseline);
   const local = result.projections.get('grid:overview')!;
   expect(local.rows.map(row => row.text)).toEqual(['Root', '|-- [-] Old label', '|   [+] New label', '`-- Keep']);
   expect(local.rowForLine.get(2)).toBe(2);
@@ -30,7 +34,7 @@ it('shows previous/current rows in order, with only current labels owning anchor
   expect(run.owner?.contentNodeId).toBe(diagramContentNodes(f.next.content).find(node => node.label === 'New label')!.id);
   expect(run.start - run.owner!.columnOffset + 1).toBe(5);
   expect(run.end - run.owner!.columnOffset).toBe(13);
-  expect(local.rows[1].runs.every(run => !run.owner)).toBe(true);
+  expect(local.rows[1].runs.filter(run => run.owner)).toMatchObject([{ owner: { side: 'before' }, decoration: { backgroundColor: '#60a5fa55' } }]);
   expect(f).toEqual(snapshot);
 });
 

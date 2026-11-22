@@ -1,0 +1,126 @@
+Ghostty's surface-centered terminal core
+|
+|-- [A] Application hosting -- shared services and native UI boundary
+|   |-- Exposes: App.create/destroy, tick, addSurface/deleteSurface, updateConfig
+|   |   `-- apprt.App/Surface, Action/Target and Mailbox provide the host contract.
+|   |-- Internal submodules: surface registry, application actions, runtime adapters
+|   |   |-- App retains focus state, surface list, shared font_grid_set and GPU device.
+|   |   |-- App.Mailbox queues cross-thread requests; tick drains them on the app thread.
+|   |   `-- apprt selects GTK, embedded, browser or none at compile time;
+|   |       native windows, tabs and splits remain outside the terminal widget.
+|   |-- -> [S] Surface sessions: registration, configuration updates and action dispatch
+|   |-- -> [F] Font services and [R] Rendering: app-scoped resources shared by surfaces
+|   |-- -> [C] Configuration and [I] Input vocabulary: settings and application bindings
+|   `-- Source: src/App.zig:22-198,563-613; src/apprt.zig:1-61
+|
+|-- [S] Surface sessions -- one interactive terminal, independent of window layout
+|   |-- Exposes: Surface.init/deinit/close, draw, handleMessage, updateConfig
+|   |   |-- keyCallback, textCallback, mouseButtonCallback, scrollCallback, preeditCallback
+|   |   `-- sizeCallback, focusCallback, completeClipboardRequest, performBindingAction
+|   |-- Internal submodules: lifecycle, event policy, selection/clipboard, search, inspection
+|   |   |-- Lifecycle retains Termio, renderer, worker threads, shared State and font-grid key.
+|   |   |   `-- deinit stops search and joins renderer/IO workers before releasing shared state.
+|   |   |-- Keyboard/Mouse retain key sequences, key-table stack, gestures and pressed-key state.
+|   |   |   `-- maybeHandleBinding consumes shortcuts before encodeKey handles terminal input.
+|   |   |-- Selection, links and clipboard requests mediate terminal text and host permissions.
+|   |   `-- Optional Search and Inspector integrate matches, PTY traces and input diagnostics.
+|   |-- -> [A] Application hosting: runtime callbacks, clipboard access and UI actions
+|   |-- -> [I] Input vocabulary: binding interpretation and key/mouse/paste encoding
+|   |-- -> [P] Process/IO: queued writes, resize requests and child-exit messages
+|   |-- -> [T] Terminal model: selections, modes, search and text extraction
+|   |-- -> [R] Rendering, [F] Font services, [C] Configuration: display and session policy
+|   `-- Source: src/Surface.zig:1-10,477-535,600-719,750-881,2792-2842,3326-3423;
+|       src/Surface.zig:4941,6017; src/inspector/Inspector.zig:1-79
+|
+|-- [P] Process/IO -- shell session transport and application-aware VT handling
+|   |-- Exposes: Termio.init/deinit, processOutput, queueMessage, resize, getProcessInfo
+|   |   `-- termio.Message/Mailbox and Thread.threadMain define asynchronous control.
+|   |-- Internal submodules: Exec backend, writer event loop, reader, StreamHandler
+|   |   |-- Exec.Subprocess owns PTY/command lifecycle and shell-integration setup.
+|   |   |-- Exec starts a separate reader; termio.Thread runs writes and control messages.
+|   |   |   `-- Resize coalescing, selection scrolling and synchronized-output timeout use timers.
+|   |   |-- Termio owns Terminal and persistent terminal.Stream(StreamHandler).
+|   |   |   `-- processOutput parses bytes while holding renderer.State.mutex.
+|   |   `-- StreamHandler translates VT actions into terminal edits, replies and host requests;
+|   |       APC/DCS state, clipboard transactions and optional tmux viewer stay session-local.
+|   |-- -> [T] Terminal model: stream decoding, screen mutations and protocol types
+|   |-- -> [R] Rendering: shared-state lock, repaint wakeups and renderer mailbox
+|   |-- -> [S] Surface sessions: title, clipboard, resize and child-status messages
+|   |-- -> [C] Configuration: derived terminal settings and subprocess options
+|   `-- Source: src/termio/Termio.zig:1-74,254-275,705-763;
+|       src/termio/Exec.zig:1-165; src/termio/Thread.zig:1-96;
+|       src/termio/stream_handler.zig:19-99,188-245
+|
+|-- [T] Terminal model -- renderer-independent protocol semantics and screen state
+|   |-- Exposes: Terminal.init/deinit, print/printSlice, resize, vtStream/vtHandler
+|   |   |-- Stream(Handler), StreamAction, Parser: incremental VT interpretation
+|   |   `-- Screen, PageList, Selection, search, formatter and RenderState: state access
+|   |-- Internal submodules: decoding, emulation, screen storage, protocols, read models
+|   |   |-- Decoding: UTF8Decoder, Parser and Stream retain partial-sequence state.
+|   |   |-- Emulation: Terminal retains modes, colors, cursor policy, tabstops and dimensions.
+|   |   |-- Storage: ScreenSet contains primary/alternate Screens; each Screen retains PageList,
+|   |   |   cursor, selection and protocol state. Pages hold rows/cells and scrollback.
+|   |   |   `-- PageList manages page allocation/compression, viewport and tracked Pins.
+|   |   |-- Protocols: CSI/OSC/DCS/APC, Kitty keyboard/images/clipboard and semantic prompts.
+|   |   `-- Read models: search indexes/views, formatted text and incremental RenderState.
+|   |       `-- RenderState.beginUpdate captures terminal data; endUpdate uses its own memory.
+|   |-- Boundary: terminal semantics do not require Surface, a PTY or a graphics backend.
+|   `-- Source: src/terminal/main.zig:1-103; src/terminal/Terminal.zig:1-143,344-428;
+|       src/terminal/Screen.zig:37-88; src/terminal/PageList.zig:1-90;
+|       src/terminal/render.zig:24-66; src/terminal/search.zig:1-16
+|
+|-- [R] Rendering -- turn terminal snapshots into presented GPU frames
+|   |-- Exposes: Renderer = GenericRenderer(GraphicsAPI), Device, Thread, Message, Size
+|   |   |-- Renderer.updateFrame/drawFrame, setFontGrid, setScreenSize, changeConfig
+|   |   `-- State exposes the shared terminal pointer, mutex, preedit and mouse overlay data.
+|   |-- Internal submodules: scheduling, snapshot consumption, cell/image assembly, GPU backend
+|   |   |-- Thread owns wakeups, mailbox, cursor/animation timers and compression scheduling.
+|   |   |-- updateFrame uses State.lockDemand/unlockDemand around RenderState.beginUpdate;
+|   |   |   deferred endUpdate and subsequent rendering do not retain the terminal lock.
+|   |   |-- Renderer retains cell buffers, image state, shaping cache, uniforms and swap chain.
+|   |   `-- GraphicsAPI is Metal or OpenGL; custom shaders and exported frames sit behind it.
+|   |-- -> [T] Terminal model: RenderState snapshots, dirty regions, selections and images
+|   |-- -> [F] Font services: shaping, glyph rasterization, metrics and texture atlases
+|   |-- -> [A] Application hosting / [S] Surface sessions: presentation and status messages
+|   |-- -> [C] Configuration: derived rendering and animation policy
+|   `-- Source: src/renderer.zig:1-48; src/renderer/State.zig:13-104;
+|       src/renderer/Thread.zig:1-87; src/renderer/generic.zig:90-210,1371-1567
+|
+|-- [F] Font services -- reusable glyph resources and terminal text shaping
+|   |-- Exposes: SharedGridSet.ref/deref, SharedGrid.getIndex/renderGlyph/cellSize
+|   |   `-- Shaper, ShaperCache, Metrics, Face and Atlas support renderer consumers.
+|   |-- Internal submodules: discovery/fallback, face loading, shaping, rasterization, caching
+|   |   |-- SharedGridSet keys reference-counted grids by font configuration and desired size.
+|   |   |-- SharedGrid retains CodepointResolver, glyph/codepoint caches and color/grayscale atlases.
+|   |   |   `-- RwLock protects shared resources; font changes select another grid, not resize it.
+|   |   `-- Shaper selects HarfBuzz, CoreText, noop or web implementation at compile time;
+|   |       Collection/DeferredFace and sprite fonts supply fallback and terminal-specific glyphs.
+|   |-- -> [T] Terminal model: RenderState cells provide shaping runs
+|   |-- -> [C] Configuration: font selection/features; [R] Rendering: CellSize value type
+|   `-- Source: src/font/main.zig:7-31; src/font/SharedGridSet.zig:1-105;
+|       src/font/SharedGrid.zig:1-65,143-156,379; src/font/shape.zig:1-85
+|
+|-- [I] Input vocabulary and codecs -- describe gestures and encode terminal input
+|   |-- Exposes: KeyEvent, Mods, MouseButton, Binding.Trigger/Action, Keymap
+|   |   `-- key_encode.encode, mouse_encode.encode, paste.encode/encodeWriter/isSafe
+|   |-- Internal submodules: binding grammar, key mapping, keyboard/mouse protocols, paste framing
+|   |   |-- Binding.Parser handles flags, multi-key sequences and chained-action syntax.
+|   |   |-- Keyboard encoding chooses legacy or Kitty forms from explicit Options.
+|   |   `-- Paste encoding handles bracketed framing and filtering; safety checks are separate.
+|   |-- Boundary: codecs produce bytes; Surface decides event consumption and queues writes.
+|   |-- -> [T] Terminal model: Options.fromTerminal reads active input modes and Kitty flags
+|   `-- Source: src/input.zig:1-55; src/input/Binding.zig:1-100;
+|       src/input/key_encode.zig:12-96; src/input/mouse_encode.zig:13-81;
+|       src/input/paste.zig:1-42,140-196
+|
+`-- [C] Configuration -- typed policy, loading and conditional reconfiguration
+    |-- Exposes: Config.load/default, loadFile/loadCliArgs, finalize, clone, changeConditionalState
+    |   `-- ConditionalState, Keybinds and typed font/terminal/UI settings are consumer contracts.
+    |-- Internal submodules: file/CLI loading, recursive includes, themes, conditionals, diagnostics
+    |   |-- Config retains arena-backed values and replay steps for conditional/theme changes.
+    |   `-- Consumers derive their own settings instead of retaining borrowed Config pointers;
+    |       App.updateConfig distributes changes, and Surface applies its conditional state.
+    |-- -> [I] Input vocabulary: parsed bindings and remaps
+    |-- -> [F] Font services, [T] Terminal model, [R] Rendering: setting value types only
+    `-- Source: src/config/Config.zig:13-55,4043-4110,4247-4552,4751,5184-5305;
+        src/App.zig:169-198; src/Surface.zig:144-153,477-507

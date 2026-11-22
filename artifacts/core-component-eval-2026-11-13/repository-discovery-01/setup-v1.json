@@ -1,0 +1,35 @@
+{
+  "status": "draft",
+  "executionAuthorized": false,
+  "modelCalls": 0,
+  "promptId": "0b3af2dd-ba89-4032-936a-40070a3e167e",
+  "contextRequestId": "769e05ed-12d9-4c29-977b-0cb340142e1a",
+  "experimentId": "08ccc7fa-8ea6-4cfa-b0b7-8819b7fcbf35",
+  "sampleId": "d4ae9c0d-3f81-4138-b25a-6266f8a7f1f8",
+  "commentId": "36b6e6b6-62c6-4c50-814f-1a7d369d148b",
+  "promptVersion": 1,
+  "promptSha256": "4104b811f3155ec582a8ca3c85c5b3ded59fbe59baab9b594ff794962161e03a",
+  "savedPromptContentHash": "c7e36f4727ab6d370b3276b2798c874c00d9e1316df6a19b3032ad24393b691c",
+  "parentPrompt": {
+    "promptId": "783b2232-709d-4c13-8e3e-311739be5983",
+    "version": 1
+  },
+  "agentContextId": "saved-agent-context-769e05ed-12d9-4c29-977b-0cb340142e1a",
+  "contextHash": "b155c1145db97147fe083822c81882e24335e2dacb37ce083efd6a1728553d63",
+  "sourceCommit": "03f2168deba364103c2450ca9b8168cd1fc9ddc5",
+  "eligibleFiles": 259,
+  "model": "gpt-6-astra",
+  "effort": "high",
+  "samples": 1,
+  "execution": {
+    "runtime": "pi-agent-context",
+    "coordinator": "canvas-discovery",
+    "output": {
+      "ascii": "single ASCII tree, printable ASCII and LF, at most 20000 characters"
+    },
+    "materialization": "Validate raw {ascii}; deterministically wrap as one Diagram using scripts/evals/from-scratch/artifacts.ts single/materialize.",
+    "beforeGeneration": "Explicit user execution authorization and deterministic pinned-input/storage preflight. No automatic repair generations."
+  },
+  "promptUrl": "http://localhost:5191/evals?prompt=0b3af2dd-ba89-4032-936a-40070a3e167e&version=1",
+  "experimentUrl": "http://localhost:5191/evals?experiment=08ccc7fa-8ea6-4cfa-b0b7-8819b7fcbf35"
+}

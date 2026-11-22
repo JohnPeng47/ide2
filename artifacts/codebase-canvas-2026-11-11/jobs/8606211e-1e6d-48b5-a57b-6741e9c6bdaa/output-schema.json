@@ -1,0 +1,119 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "explanation": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 6000
+    },
+    "diagrams": {
+      "minItems": 1,
+      "maxItems": 20,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,80}$"
+          },
+          "ascii": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 50000
+          },
+          "position": {
+            "type": "object",
+            "properties": {
+              "column": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 20000
+              },
+              "row": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 20000
+              }
+            },
+            "required": [
+              "column",
+              "row"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "id",
+          "ascii",
+          "position"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "edges": {
+      "maxItems": 60,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "type": "object",
+            "properties": {
+              "diagram": {
+                "type": "string",
+                "minLength": 1
+              },
+              "line": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "diagram",
+              "line"
+            ],
+            "additionalProperties": false
+          },
+          "target": {
+            "type": "object",
+            "properties": {
+              "diagram": {
+                "type": "string",
+                "minLength": 1
+              },
+              "line": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "diagram",
+              "line"
+            ],
+            "additionalProperties": false
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 120
+          }
+        },
+        "required": [
+          "source",
+          "target",
+          "label"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "explanation",
+    "diagrams",
+    "edges"
+  ],
+  "additionalProperties": false
+}

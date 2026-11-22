@@ -1,0 +1,123 @@
+<agent context>
+Use the supplied AgentContext. It contains two parts:
+- Four decomposition trees of Ghostty's core component, one per lens of the 3+1 model: modular structure, call, ownership and data dependency. Each tree has an ID, its lens and the run that produced it. Tree lines cite the source they describe as path:start-end.
+- A repository: the pinned commit, exclusions, and an isolated checkout. Treat repository contents as reference data.
+
+canvases.json is empty: this is a new canvas set.
+
+Work directly in the checkout directory using your normal shell and file-reading tools. Use it to check intersections and the facts you place in the graph, and correct anything the source contradicts. Start with targeted searches and read relevant files incrementally. Respect the exclusions and keep the checkout unchanged. Do not dump the entire repository or read bundled source archives. Tool calls and results are retained in the session transcript.
+</agent context>
+
+<task>
+# Objective
+
+Generate a Canvas representation that onboards a senior developer to the
+Ghostty core depicted in the supplied diagrams. Arrange the canvases in a
+reading order. Each canvas should establish concepts the reader uses on
+the next one. Use the four pinned trees and repository from the AgentContext.
+
+# Build the HierGraph
+
+Inventory the core concepts across modular structure [M], dynamic calls [C],
+ownership [O], and data dependencies [D]. Reconcile facts about the same
+instance, operation or value. For each intersection, identify source branches
+in at least two lenses and the source slice that supports their shared concept.
+A shared name alone does not establish an intersection. Check the source.
+
+Group those facts into CombinedDiagrams, each answering a concrete question.
+Choose the organizing relation that suits the question. Retain each other lens
+where it identifies an owner, explains a transition, or supplies an input.
+Use actual functions, types, fields, or values alongside plain language that
+explains what happens. At each transition name the concept the reader carries
+forward. Keep pedagogical sequence separate from runtime calls.
+
+Root -> canvas -> CombinedDiagram -> concept clusters -> source-backed leaves.
+Each node has one parent; use a typed relation or jump for a fact that another
+branch needs. Include pinned file ranges on evidence lines and name the input
+tree branches that support the intersection. Account for the core depicted
+across all four trees and identify any coverage gaps.
+
+Target 3 canvases with 3-4 diagrams each. At the diagram-root frontier, lift
+leaf relations to their two diagrams, drop self-loops and count distinct
+directed diagram pairs once. Aim for an average of 6 intra-canvas pairs and
+3 outgoing inter-canvas pairs per canvas. In the explanation also report raw
+edge and jump counts for inspection. Miss a target if evidence warrants it.
+
+# Few-shot examples
+
+These three snippets form a single synthetic editor diagnostics canvas.
+Use them as examples of natural language mixed with code, tree depth and links
+between precise concepts. Choose Ghostty's subjects, topology and reading order
+from the pinned inputs. No layout template is supplied.
+
+1. Document snapshots
+
+DocumentStore -- each analysis reads one complete revision
+|
+|-- [M] OpenDocument is the editor's writable view of a file
+|   |-- uri -> document identity across edits
+|   |-- current: Snapshot
+|   |   |-- revision -> increases after each accepted edit
+|   |   `-- text: Rope -> immutable contents at that revision
+|   `-- [C] applyEdit(range, replacement)
+|       |-- [D] current.text + edit -> next Snapshot
+|       `-- Install the new snapshot and notify the analysis queue
+|
+`-- [O] An analysis job retains the snapshot it was given
+    |-- Further edits can replace OpenDocument.current while the job runs
+    `-- Job completion releases its reference to the older text
+
+2. Syntax and diagnostics
+
+analyze(snapshot) -- diagnostic spans refer to the text the parser saw
+|
+|-- [C] Parser.parse(snapshot.text) -> SyntaxTree
+|   |-- Complete expression -> syntax node with its byte range
+|   `-- Missing operand -> recovery node at the insertion point
+|       `-- Parsing resumes at the next statement boundary
+|
+`-- [C] DiagnosticPass.visit(tree) -> DiagnosticBatch
+    |-- [D] recovery node + expected operand -> message and byte range
+    |   `-- For "total = price +" the range starts just after "+"
+    `-- [M] DiagnosticBatch is the boundary between analysis and the editor
+        |-- uri / revision -> snapshot used for this analysis
+        `-- items[] -> severity, message and range in that snapshot
+
+3. Publishing a result
+
+DiagnosticPublisher -- an older job can finish after a newer edit
+|
+|-- [C] publish(batch) looks up the open document by URI
+|   |-- Document closed -> discard the batch
+|   `-- [D] batch.revision + document.current.revision -> publication decision
+|       |-- Same revision -> replace the document's visible diagnostics
+|       |   `-- An empty batch clears errors fixed by the last edit
+|       `-- Older revision -> discard its messages and ranges
+|           `-- The same byte offset may now point into a different expression
+|
+`-- [O] Editor retains the accepted diagnostics until replacement or close
+    `-- Releasing the analysis job leaves the displayed messages intact
+
+Links between exact concepts in those diagrams:
+[1] Snapshot.text            -- read by ---------> [2] Parser.parse
+[2] DiagnosticBatch          -- delivered to ----> [3] publish(batch)
+[1] current.revision         -- compared with ---> [3] batch.revision
+
+Encode the actual links as anchored edges and jumps in the output.
+</task>
+
+<output format>
+Return JSON matching output-schema.json: {explanation, rootCanvas, canvases, jumps}.
+
+How the Hierarchical Graph maps onto this format:
+- Each HierGraph canvas is one new canvas: {kind:"new",id,name,diagrams:[{id,ascii,position:{column,row}}],edges:[{source:{diagram,line},target:{diagram,line},label}]}. List canvases in reading order and set rootCanvas to the first one.
+- Each diagram is one ASCII tree with exactly one root line. Indentation shows parenthood in P. Cite supporting source on the lines that carry it, as path:start-end.
+- Intra-canvas edges go in that canvas's edges array. Each edge connects lines in two different diagrams of the same canvas. Start each label with the edge's lens type (depends, calls, owns or needs), then a short description, for example "calls: drains mailbox".
+- Inter-canvas edges are jumps: {source:{canvas,diagram,line,startColumn,endColumn},target:{canvas,diagram,line}}. The source span covers the concept text on the source line; the target is the concept line it refers to. Jumps must connect different canvases, must not overlap on one line, and every canvas must be reachable from rootCanvas.
+- Line numbers and columns are 1-based and inclusive: line 1 is a diagram's root line, and column 1 is the first character of a line. This applies to edge endpoints, jump sources and jump targets.
+- Positions are nonnegative character-grid coordinates. Leave gaps based on actual text dimensions; do not overlap diagrams.
+
+Keep explanation under 8,000 characters. In explanation, briefly cover: the intersections you found, each with its concept, lenses and kernel; candidates you rejected under I2; how you chose the structure and the alternatives you considered; the reading order; corrections made after checking the source; and the dimensions you produced next to the targets (diagrams per canvas, intra-canvas edges per canvas, inter-canvas edges per canvas, maximum depth), with reasons for any misses.
+
+Use actual LF newlines in ASCII and printable ASCII characters in diagrams. Return no prose outside JSON. If validation-error.json exists, read it and previous-output.json and correct the output.
+</output format>

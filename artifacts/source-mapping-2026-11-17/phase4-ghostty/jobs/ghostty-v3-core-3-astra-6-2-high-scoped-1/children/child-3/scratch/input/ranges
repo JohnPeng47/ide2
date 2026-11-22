@@ -1,0 +1,54 @@
+35
+termio/Thread I:289-313,347-366
+termio/Termio DUI:456-463
+termio/backend DUI:76-86
+termio/Exec D:86-91,897-900 U:92-104 UI:129-131,147-150 I:909-916,1015-1018,1084-1095 DI:403-469,471-490
+34 +35
+termio/Thread D:236-236 I:253-261,271-279,453-471
+33
+Surface D:171-175 DI:895-920
+termio/message D:91-98 DI:118-132
+termio/Thread I:298-302,359-366
+termio/mailbox I:47-55,78-82,93-96
+32 +33 +34
+Surface U:704-705,711-716,2953-2957,3871-3875,6335-6341
+termio D:31-32
+termio/Termio D:61-62 I:344-345 DUI:437-447
+termio/mailbox D:11-18 DI:30-45,57-108
+31
+Surface DU:3426-3432,6017-6026 DUI:6264-6341
+input/paste D:4-6 DI:12-22,42-119,180-183
+termio/message DI:107-116
+30
+Surface D:3584-3589,3918-3923,4678-4682 UI:3729-3750,4057-4094,4778-4801 DI:3800-3805,3813-3875
+input/mouse_encode DI:39-51,81-172,174-238,248-252,257-264,270-280
+29 +30 +31
+Surface U:5240-5248,6028-6033 DUI:6219-6239,6261-6262,6347-6398
+terminal/paste UI:167-177,214-242
+terminal/kitty/clipboard_response DI:191-216
+termio/stream_handler D:208-212,641-641 UI:295-304 I:681-685,775-815
+terminal/modes D:411-411
+28
+Surface UI:3399-3405
+input/key_encode DI:59-72,82-97,100-319,327-445,631-699,1028-1116
+input/function_keys I:78-86,121-137,264-294
+termio/stream_handler D:641-641 U:295-296,318-318 I:333-352,594-600,681-682
+27 +28
+Surface DUI:3326-3419 U:2940-2957
+input/key D:16-48
+input/key_encode I:447-550
+26
+Surface U:3142-3157 DI:4941-5819
+App DUI:319-331,444-482
+input/Binding DI:1539-1557
+apprt/embedded DUI:303-323
+apprt/gtk/App DUI:61-68
+apprt/gtk/class/application DUI:692-700,712-718,736-741
+25 +26 +27
+Surface DI:2792-2982,2987-3219,3280-3322
+input/Binding DI:2722-2760
+App DUI:486-499,504-529
+24 +25 +29 +32
+Surface D:194-207
+apprt/embedded DU:202-228
+apprt/gtk/class/surface UI:1445-1458

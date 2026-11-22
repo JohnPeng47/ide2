@@ -1,0 +1,1 @@
+{"path": "application/core/agents/hash.ts", "text": "import { createHash } from \"node:crypto\";\n\nexport const sha256 = (value: string | Uint8Array): string => createHash(\"sha256\").update(value).digest(\"hex\");\n"}

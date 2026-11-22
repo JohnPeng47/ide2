@@ -1,11 +1,12 @@
 import { z } from 'zod';
+import { repositoryContextSchema, type RepositoryContext } from './agentContextRepository';
 import { sha256 } from '../sha256';
 import { sourceRangeSchema, sourceFileSchema, sourceFileHash, sourceRangeText, type AgentContextSourceRange } from './agentContextSource';
 
-export const AGENT_CONTEXT_MAX_BYTES = 2 * 1024 * 1024;
+export const AGENT_CONTEXT_MAX_BYTES = 16 * 1024 * 1024;
 const id = z.string().min(1).max(200);
 const text = z.object({ type: z.literal('text'), text: z.string().max(1_000_000) }).strict();
-const constituent = z.union([text, sourceRangeSchema]);
+const constituent = z.union([text, sourceRangeSchema, repositoryContextSchema]);
 export const contextSectionSchema = z.object({
   type: z.literal('section'), name: z.string().trim().min(1).max(120),
   content: z.array(constituent).min(1).max(1000)
@@ -29,8 +30,12 @@ export function agentContextSourceRanges(messages: readonly AgentContextMessage[
   }
   return references;
 }
+export function agentContextRepositories(messages: readonly AgentContextMessage[]): RepositoryContext[] {
+  return messages.flatMap(message => message.content.flatMap(block => block.type === 'section' ? block.content : [block]))
+    .filter((block): block is RepositoryContext => block.type === 'repository');
+}
 function snapshotVersion(messages: readonly AgentContextMessage[]) {
-  return messages.some(m => m.content.some(b => b.type === 'section')) ? 3 : agentContextSourceRanges(messages).length ? 2 : 1;
+  return agentContextRepositories(messages).length ? 4 : messages.some(m => m.content.some(b => b.type === 'section')) ? 3 : agentContextSourceRanges(messages).length ? 2 : 1;
 }
 /** Preserve section boundaries in the model input without changing the stored structure. */
 export function agentContextModelContent(content: AgentContextMessage['content']) {
@@ -40,6 +45,7 @@ export function agentContextModelContent(content: AgentContextMessage['content']
         { type: 'text' as const, text: '[/ContextSection]' }] : [block];
     return blocks.map(child => {
       if (child.type === 'sourceRange') throw Error('AGENT_CONTEXT_UNRESOLVED: resolve source ranges before model conversion');
+      if (child.type === 'repository') throw Error('AGENT_CONTEXT_UNRESOLVED: repository context requires a browsing runtime');
       return child;
     });
   });
@@ -52,7 +58,7 @@ export const agentTrajectorySchema = z.object({
 }).strict();
 export type AgentTrajectoryInput = z.input<typeof agentTrajectorySchema>;
 const snapshotDataSchema = z.object({
-  version: z.union([z.literal(1), z.literal(2), z.literal(3)]),
+  version: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]),
   source: agentTrajectorySchema.pick({ agentType: true, sourceSessionId: true, format: true }),
   range: agentTrajectorySchema.pick({ fromEntryId: true, throughEntryId: true }),
   messages: z.array(agentContextMessageSchema).min(1).max(2000)
@@ -70,7 +76,7 @@ function canonical(value: unknown): string {
 }
 function bounded(input: unknown) {
   if (new TextEncoder().encode(JSON.stringify(input)).byteLength > AGENT_CONTEXT_MAX_BYTES)
-    throw Error('AGENT_CONTEXT_TOO_LARGE: context exceeds 2 MiB');
+    throw Error(`AGENT_CONTEXT_TOO_LARGE: context exceeds ${AGENT_CONTEXT_MAX_BYTES / 1024 / 1024} MiB`);
 }
 function validateMessages(messages: AgentContextMessage[]) {
   const pending = new Map<string, string>(), seen = new Set<string>();
@@ -134,8 +140,10 @@ export class AgentContext {
     const { contentHash, sourceFiles, ...data } = snapshot;
     const references = agentContextSourceRanges(snapshot.messages);
     if (references.length && snapshot.version < 2) throw Error('INVALID_AGENT_CONTEXT: source ranges require version 2 or later');
-    if (snapshot.messages.some(m => m.content.some(b => b.type === 'section')) && snapshot.version !== 3)
-      throw Error('INVALID_AGENT_CONTEXT: sections require version 3');
+    if (snapshot.messages.some(m => m.content.some(b => b.type === 'section')) && snapshot.version < 3)
+      throw Error('INVALID_AGENT_CONTEXT: sections require version 3 or later');
+    if (agentContextRepositories(snapshot.messages).length && snapshot.version < 4)
+      throw Error('INVALID_AGENT_CONTEXT: repositories require version 4');
     for (const [hash, file] of Object.entries(sourceFiles ?? {})) {
       if (sourceFileHash(file) !== hash) throw Error('INVALID_AGENT_CONTEXT: source file hash mismatch');
       if (!references.some(ref => ref.version.kind === 'snapshot' && ref.version.contentHash === hash))
@@ -177,7 +185,7 @@ export class AgentContext {
       }
       const text = await pending;
       bytes += new TextEncoder().encode(text).byteLength;
-      if (bytes > AGENT_CONTEXT_MAX_BYTES) throw Error('AGENT_CONTEXT_TOO_LARGE: expanded sources exceed 2 MiB');
+      if (bytes > AGENT_CONTEXT_MAX_BYTES) throw Error(`AGENT_CONTEXT_TOO_LARGE: expanded sources exceed ${AGENT_CONTEXT_MAX_BYTES / 1024 / 1024} MiB`);
       const resolved = [];
       for (let offset = 0; offset < text.length || offset === 0; offset += 1_000_000)
         resolved.push({ type: 'text' as const, text: text.slice(offset, offset + 1_000_000) });
@@ -195,7 +203,7 @@ export class AgentContext {
       }
       messages.push({ ...message, content });
     }
-    const data = snapshotDataSchema.parse({ version: snapshot.messages.some(m => m.content.some(b => b.type === 'section')) ? 3 : 1, source: snapshot.source, range: snapshot.range, messages });
+    const data = snapshotDataSchema.parse({ version: snapshotVersion(z.array(agentContextMessageSchema).parse(messages)), source: snapshot.source, range: snapshot.range, messages });
     return AgentContext.fromSnapshot({ ...data, contentHash: sha256(canonical(data)) });
   }
 

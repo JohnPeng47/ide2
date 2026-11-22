@@ -1,0 +1,13 @@
+{
+  "status": "failed",
+  "phase": "generation",
+  "error": "Provider rate limit in child session(s); stopped without retry. Complete and partial transcripts retained.",
+  "failures": [
+    {
+      "child": "child-5",
+      "error": "{\"detail\":\"Rate limit exceeded\"}"
+    }
+  ],
+  "completedAt": "2026-11-19T03:53:47.731369+00:00",
+  "infrastructureFailure": true
+}

@@ -96,7 +96,8 @@ it('closes slow readers instead of dropping removal deltas and reattaches with c
 it('optionally attaches context before deltas, refreshes on demand, and correlates context failures', async () => {
   let resolve!: (value: { version: number; name: string; nodes: []; edges: [] }) => void;
   const load = vi.fn(() => new Promise<{ version: number; name: string; nodes: []; edges: [] }>(done => { resolve = done; }));
-  const service = new LiveCanvasService(() => [{ canvasId: 'workspace', documents: [] }], load);
+  const projected = vi.fn(async () => ({ version: 5, projectionType: 'graph' as const, nodes: [{ id: 'grid:x', ascii: 'Example' }], edges: [] }));
+  const service = new LiveCanvasService(() => [{ canvasId: 'workspace', documents: [] }], load, undefined, undefined, projected);
   const owner = {};
   service.publish(owner, 'workspace');
   const selection = { documentId: 'doc', canvasEpoch: 'epoch', sequence: 0, documentVersion: 1, regions: [] };
@@ -124,13 +125,17 @@ it('optionally attaches context before deltas, refreshes on demand, and correlat
     await expect.poll(() => frames.length).toBe(3);
     expect(frames[2]).toMatchObject({ type: 'context.snapshot', requestId: 'refresh', connectionId: frames[0].connectionId,
       workspaceInstanceId: 'workspace', documentId: 'doc', canvasEpoch: 'epoch', context: { version: 5, name: 'Renamed' } });
+    reader.send(JSON.stringify({ type: 'context.get', requestId: 'compact', projectionType: 'graph' }));
+    await expect.poll(() => frames.length).toBe(4);
+    expect(frames[3]).toMatchObject({ type: 'context.snapshot', requestId: 'compact', context: { projectionType: 'graph', nodes: [{ id: 'grid:x', ascii: 'Example' }] } });
+    expect(projected).toHaveBeenCalledWith('workspace', 'doc', 'graph');
     reader.send(JSON.stringify({ type: 'context.get', requestId: 'closing' }));
     await expect.poll(() => load.mock.calls.length).toBe(3);
     service.remove(owner, 'workspace', 'doc', 'epoch');
     resolve({ version: 6, name: 'Obsolete', nodes: [], edges: [] });
-    await expect.poll(() => frames.length).toBe(5);
-    expect(frames[3]).toMatchObject({ type: 'canvas.closed' });
-    expect(frames[4]).toMatchObject({ type: 'error', requestId: 'closing', code: 'CANVAS_REPLACED' });
+    await expect.poll(() => frames.length).toBe(6);
+    expect(frames[4]).toMatchObject({ type: 'canvas.closed' });
+    expect(frames[5]).toMatchObject({ type: 'error', requestId: 'closing', code: 'CANVAS_REPLACED' });
   } finally {
     reader.terminate(); dispose();
     await new Promise<void>(done => server.close(() => done()));
@@ -140,7 +145,8 @@ it('optionally attaches context before deltas, refreshes on demand, and correlat
 it('does not leak a binding when the reader closes during initial context loading', async () => {
   let resolve!: (value: { version: number; nodes: []; edges: [] }) => void;
   const load = vi.fn(() => new Promise<{ version: number; nodes: []; edges: [] }>(done => { resolve = done; }));
-  const service = new LiveCanvasService(() => [{ canvasId: 'workspace', documents: [] }], load);
+  const projected = vi.fn(async () => ({ version: 5, projectionType: 'graph' as const, nodes: [{ id: 'grid:x', ascii: 'Example' }], edges: [] }));
+  const service = new LiveCanvasService(() => [{ canvasId: 'workspace', documents: [] }], load, undefined, undefined, projected);
   const attach = vi.spyOn(service, 'attach'), owner = {};
   service.publish(owner, 'workspace');
   service.update(owner, 'workspace', { documentId: 'doc', canvasEpoch: 'epoch', sequence: 0, documentVersion: 1, regions: [] });

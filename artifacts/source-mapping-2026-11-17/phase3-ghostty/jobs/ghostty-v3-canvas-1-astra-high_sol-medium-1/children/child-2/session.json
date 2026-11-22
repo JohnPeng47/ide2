@@ -1,0 +1,19 @@
+{
+  "id": "child-2",
+  "name": "termio",
+  "assignment": "Map d2 all nodes. Return JSON mappings and notes. Read numbered ranges, cover full named functions.",
+  "model": "gpt-6-sol",
+  "effort": "medium",
+  "status": "generating",
+  "queuedAt": "2026-11-19T03:37:54.785Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-19T03:37:54.796Z",
+  "sessionId": "01a1f1e1-e1a1-744c-836c-e44c028c83bb",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-stcd_055-agent-repository-6pEPqZ-checkout--/2026-11-19T03-37-54-849Z_01a1f1e1-e1a1-744c-836c-e44c028c83bb.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase3-stcd_055/agent-repository-6pEPqZ/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

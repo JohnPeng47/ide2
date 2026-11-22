@@ -142,7 +142,7 @@ These are initial workload definitions, not claims about current users' data siz
 | Proposal capture / changed documents | 8 / 2 | 40 / 8 |
 | DiffTree nodes / captured hunks | 150 / 200 | 600 / 1,500 |
 
-Keep generated diagram ASCII below its 20,000-character limit. Diff fixtures must
+Diff fixtures must
 stay within capture limits (2,000 hunks, 8 MiB total patch text, 2 million characters
 per patch). Record actual store bytes, history bytes, mapping counts, ASCII lines,
 source bytes, patch bytes, and mounted pane counts; counts alone do not explain cost.

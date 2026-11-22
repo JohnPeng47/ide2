@@ -1,0 +1,27 @@
+{
+  "fingerprint": "bd40ffc54c361e3f53a222384cd7835372463d8de233b86eb82d29efef255caa",
+  "files": {
+    "context.json": {
+      "sha256": "802a0bc40d25ac99da41a30360177930fc0f65bd5fb6935871dbd8b84633b7c9",
+      "bytes": 41228
+    },
+    "seed.json": {
+      "sha256": "93a59900b038e62013c4512a5c9b15d02b70a6338e3ebffd3b55e941c277f149",
+      "bytes": 10945
+    },
+    "critique.json": {
+      "sha256": "897cd960e7a4926ad60e68b02050c4f3ff3df83956babdf65398dab7e4b221af",
+      "bytes": 9201
+    },
+    "previous-output.json": {
+      "sha256": "ed12b983185411ec34791ec028b0a182412bd7da01471e5c601c3e47c358c399",
+      "bytes": 19333
+    }
+  },
+  "dependencies": [
+    "initial/B2/expand/runtime",
+    "initial/B2/tree/runtime",
+    "feedback/B2/phase3/round1/judge"
+  ],
+  "round": 1
+}

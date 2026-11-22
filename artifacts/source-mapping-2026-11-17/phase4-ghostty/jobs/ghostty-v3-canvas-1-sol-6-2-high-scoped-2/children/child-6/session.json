@@ -1,0 +1,19 @@
+{
+  "id": "child-6",
+  "name": "exec",
+  "assignment": "Map all of d4 (Exec) per requirements. Return compact node scope and path/line/roles, notes. Use private scratch.",
+  "model": "gpt-6.2-sol",
+  "effort": "high",
+  "status": "generating",
+  "queuedAt": "2026-11-22T03:50:17.990Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-22T04:03:42.544Z",
+  "sessionId": "01a2016c-935d-71e2-9709-0b4468cb2e19",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-77siz4xe-agent-repository-alMhNm-checkout--/2026-11-22T04-03-42-557Z_01a2016c-935d-71e2-9709-0b4468cb2e19.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase4-77siz4xe/agent-repository-alMhNm/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

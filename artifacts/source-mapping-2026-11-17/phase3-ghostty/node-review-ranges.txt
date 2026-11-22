@@ -1,0 +1,678 @@
+
+core-1 d1/n20 Surface.keyCallback -> binding handling or encodeKey (src/Surface.zig:2792)
+1 OLD src/Surface.zig:2834-2845; src/Surface.zig:2938-2957
+  NEW src/Surface.zig:2792-3180; src/Surface.zig:3324-3419
+2 OLD src/Surface.zig:2834-2845; src/Surface.zig:2938-2957
+  NEW src/Surface.zig:2792-3419
+3 OLD src/Surface.zig:2834-2840; src/Surface.zig:2938-2957
+  NEW src/Surface.zig:2792-2982; src/Surface.zig:3324-3419
+
+core-1 d1/n22 [D] KeyEvent + key_encode.Options.fromTerminal + config -> encoded write request
+1 OLD src/Surface.zig:3324-3353; src/Surface.zig:3399-3418; src/Surface.zig:2938-2957
+  NEW src/Surface.zig:3324-3419; src/input/key_encode.zig:12-97
+2 OLD src/Surface.zig:3324-3353; src/Surface.zig:3371-3379; src/Surface.zig:3399-3418; src/input/key_encode.zig:59-71
+  NEW src/input/key.zig:8-55; src/input/key_encode.zig:14-97; src/Surface.zig:3324-3419
+3 OLD src/Surface.zig:3326-3354; src/Surface.zig:3399-3418; src/Surface.zig:2938-2957; src/input/key_encode.zig:59-72; src/input/key_encode.zig:82-96
+  NEW src/Surface.zig:3324-3419; src/input/key_encode.zig:12-87
+
+core-1 d1/n24 mouseButtonCallback / cursorPosCallback / scrollCallback
+1 OLD src/Surface.zig:3584-3589; src/Surface.zig:3918-3923; src/Surface.zig:4678-4682
+  NEW src/Surface.zig:3584-3761; src/Surface.zig:3915-4297; src/Surface.zig:4678-4867
+2 OLD src/Surface.zig:3584-3589; src/Surface.zig:3918-3923; src/Surface.zig:4678-4682
+  NEW src/Surface.zig:3584-3761; src/Surface.zig:3918-4297; src/Surface.zig:4678-4867
+3 OLD src/Surface.zig:3584-3589; src/Surface.zig:3918-3923; src/Surface.zig:4678-4682
+  NEW src/Surface.zig:3584-3761; src/Surface.zig:3918-4297; src/Surface.zig:4678-4867
+
+core-1 d1/n28 Surface.queueIo -> Termio.queueMessage -> termio.Thread mailbox dispatch
+1 OLD src/Surface.zig:895-920; src/termio/Termio.zig:431-447; src/termio/Thread.zig:288-313
+  NEW src/Surface.zig:895-920; src/termio/Termio.zig:431-447; src/termio/Thread.zig:288-375
+2 OLD src/Surface.zig:899-920; src/termio/Termio.zig:437-447; src/termio/Thread.zig:289-313
+  NEW src/Surface.zig:895-920; src/termio/Termio.zig:435-463; src/termio/Thread.zig:289-373
+3 OLD src/Surface.zig:895-920; src/termio/Termio.zig:437-447; src/termio/Thread.zig:288-313; src/termio/Thread.zig:321-366
+  NEW src/Surface.zig:895-920; src/termio/Termio.zig:431-447; src/termio/Thread.zig:288-375
+
+core-1 d1/n29 readonly rejects writes but preserves terminal-local interaction (src/Surface.zig:899)
+1 OLD src/Surface.zig:171-175; src/Surface.zig:895-920
+  NEW src/Surface.zig:895-920; src/Surface.zig:2953-2979
+2 OLD src/Surface.zig:895-920; src/Surface.zig:3752-3756
+  NEW src/Surface.zig:895-920
+3 OLD src/Surface.zig:171-175; src/Surface.zig:899-919
+  NEW src/Surface.zig:895-920
+
+core-1 d1/n34 Acquire renderer_state.mutex -> processOutputLocked
+1 OLD src/termio/Termio.zig:705-716
+  NEW src/termio/Termio.zig:705-714
+2 OLD src/termio/Termio.zig:705-714
+  NEW src/termio/Termio.zig:705-714
+3 OLD src/termio/Termio.zig:705-714
+  NEW src/termio/Termio.zig:705-714
+
+core-1 d1/n35 queueRender + terminal_stream.nextSlice(buf)
+1 OLD src/termio/Termio.zig:714-716; src/termio/Termio.zig:750-754
+  NEW src/termio/Termio.zig:714-762
+2 OLD src/termio/Termio.zig:714-716; src/termio/Termio.zig:750-761
+  NEW src/termio/Termio.zig:713-761
+3 OLD src/termio/Termio.zig:714-716; src/termio/Termio.zig:750-760
+  NEW src/termio/Termio.zig:713-762
+
+core-1 d1/n38 Persistent parser/handler state spans read buffers (src/termio/stream_handler.zig:19)
+1 OLD src/termio/stream_handler.zig:19-23; src/termio/stream_handler.zig:62-96
+  NEW src/termio/stream_handler.zig:19-96; src/termio/Termio.zig:312-351
+2 OLD src/termio/stream_handler.zig:19-23; src/termio/Termio.zig:64-66; src/termio/Termio.zig:335-351
+  NEW src/termio/stream_handler.zig:19-99; src/termio/Termio.zig:312-350
+3 OLD src/termio/Termio.zig:312-349; src/termio/Termio.zig:705-716; src/termio/Termio.zig:750-754; src/termio/stream_handler.zig:23-94
+  NEW src/termio/stream_handler.zig:19-96; src/termio/Termio.zig:312-350
+
+core-1 d1/n59 renderer.Thread renderCallback -> Renderer.updateFrame -> drawFrame
+1 OLD src/renderer/Thread.zig:572-580; src/renderer/Thread.zig:460-472
+  NEW src/renderer/Thread.zig:460-472; src/renderer/Thread.zig:537-585
+2 OLD src/renderer/Thread.zig:572-580
+  NEW src/renderer/Thread.zig:537-585
+3 OLD src/renderer/Thread.zig:537-580; src/renderer/Thread.zig:462-472
+  NEW src/renderer/Thread.zig:460-472; src/renderer/Thread.zig:537-585
+
+core-1 d1/n62 state.lockDemand -> terminal_state.beginUpdate -> state.unlockDemand
+1 OLD src/renderer/generic.zig:1420-1427; src/renderer/generic.zig:1479-1487; src/renderer/generic.zig:1555-1567
+  NEW src/renderer/generic.zig:1408-1567; src/renderer/State.zig:54-80
+2 OLD src/renderer/generic.zig:1420-1426; src/renderer/generic.zig:1479-1487
+  NEW src/renderer/generic.zig:1408-1427; src/renderer/generic.zig:1479-1487; src/renderer/State.zig:54-80
+3 OLD src/renderer/generic.zig:1408-1426; src/renderer/generic.zig:1479-1487; src/renderer/State.zig:67-76
+  NEW src/renderer/generic.zig:1408-1487
+
+core-1 d1/n63 Snapshot viewport data while holding the shared mutex briefly
+1 OLD src/renderer/generic.zig:1408-1421; src/renderer/generic.zig:1479-1505; src/renderer/generic.zig:1555-1567
+  NEW src/renderer/generic.zig:1399-1567; src/terminal/render.zig:930-945
+2 OLD src/renderer/generic.zig:1408-1421; src/renderer/generic.zig:1479-1487; src/renderer/generic.zig:1555-1567
+  NEW src/renderer/generic.zig:1399-1567
+3 OLD src/renderer/generic.zig:1479-1505; src/renderer/generic.zig:1564-1567; src/terminal/render.zig:941-960
+  NEW src/renderer/generic.zig:1479-1567
+
+core-1 d1/n67 [D] font_grid + font_shaper + cell metrics -> glyph layout and rasterized text
+1 OLD src/renderer/generic.zig:203-207; src/renderer/generic.zig:3292-3300; src/renderer/generic.zig:3340-3349; src/renderer/generic.zig:3391-3406; src/Surface.zig:536-549
+  NEW src/renderer/generic.zig:1889-1905; src/renderer/generic.zig:2973-3035
+2 OLD src/renderer/generic.zig:205-207; src/renderer/generic.zig:2973-2989; src/renderer/generic.zig:3028-3049
+  NEW src/renderer/generic.zig:204-207; src/renderer/generic.zig:2973-3050; src/renderer/generic.zig:3391-3411
+3 OLD src/renderer/generic.zig:206-207; src/renderer/generic.zig:2980-2989; src/renderer/generic.zig:3024-3035; src/Surface.zig:528-548
+  NEW src/renderer/generic.zig:2925-3410
+
+core-1 d1/n70 App owns the shared Device; each Surface owns its renderer and presentation resources
+1 OLD src/App.zig:53-58; src/Surface.zig:92-102; src/Surface.zig:564-588
+  NEW src/App.zig:53-58; src/Surface.zig:564-635
+2 OLD src/App.zig:53-58; src/Surface.zig:564-588; src/Surface.zig:92-99
+  NEW src/App.zig:53-58; src/Surface.zig:92-102; src/Surface.zig:564-604
+3 OLD src/App.zig:53-58; src/App.zig:136-150; src/Surface.zig:92-102; src/Surface.zig:564-588
+  NEW src/App.zig:53-150; src/Surface.zig:81-99; src/Surface.zig:528-588
+
+core-1 d1/n75 Termio.resize locks shared state around backend.resize + Terminal.resize
+1 OLD src/termio/Termio.zig:524-563
+  NEW src/termio/Termio.zig:524-564
+2 OLD src/termio/Termio.zig:524-563
+  NEW src/termio/Termio.zig:524-564
+3 OLD src/termio/Termio.zig:524-564
+  NEW src/termio/Termio.zig:524-564
+
+core-1 d1/n76 Child redraw cannot be parsed against old dimensions (src/termio/Termio.zig:524)
+1 OLD src/termio/Termio.zig:532-553
+  NEW src/termio/Termio.zig:524-553
+2 OLD src/termio/Termio.zig:532-553
+  NEW src/termio/Termio.zig:532-553
+3 OLD src/termio/Termio.zig:532-553
+  NEW src/termio/Termio.zig:524-553
+
+core-1 d1/n85 Stop search, then signal and join renderer and IO workers
+1 OLD src/Surface.zig:829-845
+  NEW src/Surface.zig:829-845
+2 OLD src/Surface.zig:829-845
+  NEW src/Surface.zig:829-845
+3 OLD src/Surface.zig:829-845
+  NEW src/Surface.zig:829-845
+
+core-1 d1/n86 Exec.threadExit stops the subprocess, interrupts and joins its reader
+1 OLD src/termio/Exec.zig:196-229
+  NEW src/termio/Thread.zig:263-279; src/termio/Exec.zig:196-230
+2 OLD src/termio/Exec.zig:196-229
+  NEW src/termio/Exec.zig:196-230
+3 OLD src/termio/Exec.zig:196-230
+  NEW src/termio/Exec.zig:196-230
+
+core-1 d1/n87 Deinitialize renderer before renderer_thread; display-link callbacks depend on it
+1 OLD src/Surface.zig:847-856
+  NEW src/Surface.zig:847-855
+2 OLD src/Surface.zig:847-856
+  NEW src/Surface.zig:847-855
+3 OLD src/Surface.zig:847-856
+  NEW src/Surface.zig:847-855
+
+core-1 d1/n89 Dereference shared font grid; free preedit, mutex, input state and derived config
+1 OLD src/Surface.zig:865-876
+  NEW src/Surface.zig:857-876
+2 OLD src/Surface.zig:865-876
+  NEW src/Surface.zig:860-876
+3 OLD src/Surface.zig:865-876
+  NEW src/Surface.zig:860-876
+
+core-2 d1/n19 mutex protects referenced terminal state and shared presentation inputs
+1 OLD src/renderer/State.zig:13-34
+  NEW FAILED
+2 OLD src/renderer/State.zig:13-34
+  NEW src/renderer/State.zig:13-34
+3 OLD src/renderer/State.zig:13-34; src/termio/Termio.zig:705-710
+  NEW src/renderer/State.zig:13-80
+
+core-2 d1/n25 keyCallback() first resolves configured keybindings and sequences
+1 OLD src/Surface.zig:2834-2840; src/Surface.zig:3012-3065
+  NEW FAILED
+2 OLD src/Surface.zig:2987-3037
+  NEW src/Surface.zig:2834-2840; src/Surface.zig:2984-3099
+3 OLD src/Surface.zig:2834-2840; src/Surface.zig:3012-3016; src/Surface.zig:3040-3064
+  NEW src/Surface.zig:2792-3099
+
+core-2 d1/n27 encodeKey() -> input.key_encode.encode() for unconsumed input
+1 OLD src/Surface.zig:2938-2957; src/Surface.zig:3324-3353
+  NEW FAILED
+2 OLD src/Surface.zig:3326-3345
+  NEW src/Surface.zig:3324-3397
+3 OLD src/Surface.zig:2938-2957; src/Surface.zig:3326-3353
+  NEW src/Surface.zig:2938-2961; src/Surface.zig:3324-3397
+
+core-2 d1/n32 Screen.select() retains a tracked selection for local interaction
+1 OLD src/terminal/Screen.zig:58-62; src/terminal/Screen.zig:3063-3071; src/terminal/Screen.zig:3094-3096
+  NEW FAILED
+2 OLD src/terminal/Screen.zig:58-62; src/terminal/Screen.zig:3063-3095
+  NEW src/terminal/Screen.zig:3053-3106
+3 OLD src/terminal/Screen.zig:3055-3071
+  NEW src/terminal/Screen.zig:3053-3097
+
+core-2 d1/n35 readonly rejects writes while retaining local terminal interactions
+1 OLD src/Surface.zig:895-920; src/Surface.zig:171-175
+  NEW FAILED
+2 OLD src/Surface.zig:171-175; src/Surface.zig:899-920
+  NEW src/Surface.zig:895-920
+3 OLD src/Surface.zig:895-920; src/Surface.zig:171-175
+  NEW src/Surface.zig:895-920
+
+core-2 d1/n45 Windows: one read loop reads and processes output
+1 OLD src/termio/Exec.zig:1778-1806
+  NEW FAILED
+2 OLD src/termio/Exec.zig:1778-1806
+  NEW src/termio/Exec.zig:1778-1811
+3 OLD src/termio/Exec.zig:1789-1806
+  NEW src/termio/Exec.zig:1778-1811
+
+core-2 d1/n48 terminal.Stream(StreamHandler) retains incremental parsing state
+1 OLD src/termio/Termio.zig:64-66; src/termio/Termio.zig:344-350; src/terminal/stream.zig:588-603
+  NEW FAILED
+2 OLD src/termio/Termio.zig:64-66; src/termio/Termio.zig:335-350
+  NEW src/termio/stream_handler.zig:19-23; src/termio/stream_handler.zig:92-99
+3 OLD src/termio/Termio.zig:61-66; src/termio/Termio.zig:312-324; src/terminal/stream.zig:645-673
+  NEW src/termio/Termio.zig:312-350; src/terminal/stream.zig:578-665
+
+core-2 d1/n59 primary screen exists initially; alternate screen initializes on demand
+1 OLD src/terminal/ScreenSet.zig:38-52; src/terminal/ScreenSet.zig:74-87
+  NEW FAILED
+2 OLD src/terminal/ScreenSet.zig:38-52; src/terminal/ScreenSet.zig:74-87
+  NEW src/terminal/ScreenSet.zig:1-53; src/terminal/ScreenSet.zig:74-88
+3 OLD src/terminal/ScreenSet.zig:38-52; src/terminal/ScreenSet.zig:74-87
+  NEW src/terminal/ScreenSet.zig:1-88
+
+core-2 d1/n60 active: *Screen chooses the current screen
+1 OLD src/terminal/ScreenSet.zig:23-31; src/terminal/ScreenSet.zig:104-109
+  NEW FAILED
+2 OLD src/terminal/ScreenSet.zig:23-31
+  NEW src/terminal/ScreenSet.zig:23-31
+3 OLD src/terminal/ScreenSet.zig:23-31; src/terminal/ScreenSet.zig:104-109
+  NEW src/terminal/ScreenSet.zig:23-31
+
+core-2 d1/n73 updateFrame() snapshots under State.lockDemand() / unlockDemand()
+1 OLD src/renderer/generic.zig:1408-1426; src/renderer/generic.zig:1479-1487; src/renderer/generic.zig:1555-1567; src/renderer/State.zig:67-79
+  NEW FAILED
+2 OLD src/renderer/generic.zig:1408-1426; src/renderer/generic.zig:1479-1487
+  NEW src/renderer/generic.zig:1370-1427; src/renderer/State.zig:54-80
+3 OLD src/renderer/generic.zig:1408-1427; src/renderer/generic.zig:1479-1487
+  NEW src/renderer/generic.zig:1370-1427; src/renderer/State.zig:54-80
+
+core-2 d1/n78 font_shaper / font_shaper_cache + font_grid -> glyph and cell rendering data
+1 OLD src/renderer/generic.zig:204-207; src/renderer/generic.zig:2975-2989; src/renderer/generic.zig:3024-3038
+  NEW FAILED
+2 OLD src/renderer/generic.zig:204-207; src/renderer/generic.zig:1371-1379
+  NEW src/renderer/generic.zig:204-207; src/renderer/generic.zig:2973-2989
+3 OLD src/renderer/generic.zig:204-207; src/renderer/generic.zig:1371-1379
+  NEW src/renderer/generic.zig:204-207; src/renderer/generic.zig:2973-2989
+
+core-2 d1/n88 Under the terminal mutex: backend.resize() + Terminal.resize()
+1 OLD src/termio/Termio.zig:524-564
+  NEW FAILED
+2 OLD src/termio/Termio.zig:532-553
+  NEW src/termio/Termio.zig:529-559
+3 OLD src/termio/Termio.zig:532-553
+  NEW src/termio/Termio.zig:532-553
+
+core-2 d1/n92 Surface, Termio, and Renderer maintain their own derived configuration
+1 OLD src/Surface.zig:144-147; src/Surface.zig:1822-1831; src/Surface.zig:1870-1888; src/termio/Termio.zig:466-482; src/renderer/Thread.zig:404-415; src/renderer/generic.zig:588-595; src/renderer/generic.zig:2171-2176
+  NEW FAILED
+2 OLD src/Surface.zig:1822-1831; src/Surface.zig:1870-1885; src/termio/Termio.zig:465-482; src/renderer/Thread.zig:406-414
+  NEW src/Surface.zig:144-147; src/Surface.zig:1801-1906; src/termio/Termio.zig:466-482; src/renderer/Thread.zig:404-415
+3 OLD src/Surface.zig:1822-1831; src/Surface.zig:1870-1889; src/termio/Termio.zig:465-470; src/termio/stream_handler.zig:121-130
+  NEW src/Surface.zig:1822-1889; src/termio/Termio.zig:182-200; src/renderer/generic.zig:585-608
+
+core-2 d1/n95 deinit(): stop optional search, then stop/join renderer and I/O threads
+1 OLD src/Surface.zig:829-858
+  NEW FAILED
+2 OLD src/Surface.zig:829-845
+  NEW src/Surface.zig:829-879
+3 OLD src/Surface.zig:829-845
+  NEW src/Surface.zig:829-845
+
+core-2 d1/n98 Renderer is destroyed before its thread manager to retire display-link callbacks
+1 OLD src/Surface.zig:829-858
+  NEW FAILED
+2 OLD src/Surface.zig:847-855
+  NEW src/Surface.zig:847-856
+3 OLD src/Surface.zig:847-856
+  NEW src/Surface.zig:847-856
+
+core-2 d1/n100 App.deinit() destroys surfaces before shared fonts and graphics device
+1 OLD src/App.zig:136-150
+  NEW FAILED
+2 OLD src/App.zig:136-150
+  NEW src/App.zig:136-151
+3 OLD src/App.zig:136-150
+  NEW src/App.zig:136-151
+
+core-2 d1/n101 Shared resources outlive the session renderers that borrow them
+1 OLD src/App.zig:136-150; src/Surface.zig:528-534; src/Surface.zig:564-588
+  NEW FAILED
+2 OLD src/App.zig:141-150; src/Surface.zig:580-588
+  NEW src/App.zig:136-151; src/Surface.zig:528-534
+3 OLD src/App.zig:136-150; src/Surface.zig:564-588
+  NEW src/App.zig:136-150; src/Surface.zig:528-588
+
+canvas-1 d1/n5 tick -> drainMailbox -> hasSurface -> Surface.handleMessage
+1 OLD src/App.zig:161-167; src/App.zig:272-294; src/App.zig:532-549
+  NEW src/App.zig:161-167; src/App.zig:272-306; src/App.zig:532-613
+2 OLD src/App.zig:164-167; src/App.zig:273-294; src/App.zig:532-549
+  NEW src/App.zig:161-167; src/App.zig:272-306; src/App.zig:532-550; src/Surface.zig:1017-1065
+3 OLD src/App.zig:164-166; src/App.zig:273-294; src/App.zig:532-549
+  NEW src/App.zig:272-306; src/App.zig:531-550
+
+canvas-1 d1/n6 font_grid_set: shared, reference-counted font grids
+1 OLD src/App.zig:53-55; src/font/SharedGridSet.zig:88-115; src/font/SharedGridSet.zig:413-430
+  NEW src/App.zig:53-55; src/Surface.zig:528-534
+2 OLD src/App.zig:53-55; src/font/SharedGridSet.zig:96-127
+  NEW src/App.zig:53-55; src/Surface.zig:528-534
+3 OLD src/App.zig:53-55; src/Surface.zig:528-534; src/Surface.zig:870-871
+  NEW src/App.zig:53-55; src/Surface.zig:528-534
+
+canvas-1 d1/n7 device: optional app-owned GPU device, borrowed by renderers
+1 OLD src/App.zig:57-58; src/Surface.zig:564-587
+  NEW src/App.zig:57-58; src/Surface.zig:564-588
+2 OLD src/App.zig:57-58; src/Surface.zig:564-587
+  NEW src/App.zig:57-58; src/Surface.zig:564-588
+3 OLD src/App.zig:57-58; src/App.zig:148-150
+  NEW src/App.zig:57-58; src/Surface.zig:564-588
+
+canvas-1 d1/n10 Runtime chooses window/tab/split/pane; delivers events
+1 OLD src/Surface.zig:1-11
+  NEW src/apprt.zig:1-53; src/Surface.zig:5450-5553
+2 OLD src/apprt.zig:1-10; src/Surface.zig:2792-2795
+  NEW src/apprt.zig:1-9; src/apprt/gtk/Surface.zig:12-39
+3 OLD src/apprt.zig:1-10; src/apprt/surface.zig:209-221; src/Surface.zig:2792-2795
+  NEW src/apprt.zig:39-53; src/apprt/gtk/Surface.zig:19-38
+
+canvas-1 d1/n14 updateConfig -> derived settings to I/O and renderer mailboxes
+1 OLD src/Surface.zig:1822-1831; src/Surface.zig:1870-1889
+  NEW src/Surface.zig:1804-1906
+2 OLD src/Surface.zig:1822-1831; src/Surface.zig:1870-1889
+  NEW src/Surface.zig:1804-1906
+3 OLD src/Surface.zig:1822-1831; src/Surface.zig:1870-1889
+  NEW src/Surface.zig:1804-1906
+
+canvas-1 d1/n16 keyCallback / textCallback / mouseButtonCallback
+1 OLD src/Surface.zig:2792-2795; src/Surface.zig:3421-3431; src/Surface.zig:3918-3936
+  NEW src/Surface.zig:2792-2982; src/Surface.zig:3421-3432; src/Surface.zig:3918-4297
+2 OLD src/Surface.zig:2792-2795; src/Surface.zig:3421-3432; src/Surface.zig:3918-3936
+  NEW src/Surface.zig:2792-2982; src/Surface.zig:3421-3432; src/Surface.zig:3918-3965
+3 OLD src/Surface.zig:2792-2795; src/Surface.zig:3421-3432; src/Surface.zig:3918-3923
+  NEW src/Surface.zig:2792-2982; src/Surface.zig:3421-3432; src/Surface.zig:3918-4297
+
+canvas-1 d1/n28 drainMailbox -> io.queueWrite; coalesces resize requests
+1 OLD src/termio/Thread.zig:288-326; src/termio/Thread.zig:348-366; src/termio/Thread.zig:389-405; src/termio/Thread.zig:427-448
+  NEW src/termio/Thread.zig:288-451
+2 OLD src/termio/Thread.zig:308-367; src/termio/Thread.zig:389-405; src/termio/Thread.zig:441-448
+  NEW src/termio/Thread.zig:288-375; src/termio/Thread.zig:389-390; src/termio/Thread.zig:441-450
+3 OLD src/termio/Thread.zig:281-295; src/termio/Thread.zig:308-367; src/termio/Thread.zig:389-405
+  NEW src/termio/Thread.zig:289-405
+
+canvas-1 d1/n32 lockDemand / unlockDemand / yieldToDemand: fairness handoff
+1 OLD src/renderer/State.zig:36-45; src/renderer/State.zig:54-105
+  NEW src/renderer/State.zig:36-105
+2 OLD src/renderer/State.zig:36-105
+  NEW src/renderer/State.zig:36-105
+3 OLD src/renderer/State.zig:54-105
+  NEW src/renderer/State.zig:36-105
+
+canvas-1 d1/n45 Stop/join search, then renderer thread, then I/O thread
+1 OLD src/Surface.zig:829-845
+  NEW src/Surface.zig:829-845
+2 OLD src/Surface.zig:829-845
+  NEW src/Surface.zig:829-845
+3 OLD src/Surface.zig:829-845
+  NEW src/Surface.zig:829-845
+
+canvas-1 d1/n48 Release input/preedit/mutex/config; deref App font grid
+1 OLD src/Surface.zig:865-876
+  NEW src/Surface.zig:860-876
+2 OLD src/Surface.zig:860-876
+  NEW src/Surface.zig:865-876
+3 OLD src/Surface.zig:865-876; src/Surface.zig:870-876
+  NEW src/Surface.zig:860-876
+
+canvas-1 d2/n8 Owns multipart APC/DCS/clipboard protocol state
+1 OLD src/termio/stream_handler.zig:62-105
+  NEW src/termio/stream_handler.zig:62-112
+2 OLD src/termio/stream_handler.zig:62-85; src/termio/stream_handler.zig:101-105
+  NEW src/termio/stream_handler.zig:62-112
+3 OLD src/termio/stream_handler.zig:65-85
+  NEW src/termio/stream_handler.zig:65-85
+
+canvas-1 d2/n10 Protocol replies -> Termio mailbox -> PTY write path
+1 OLD src/termio/stream_handler.zig:151-154; src/termio/Termio.zig:756-760; src/termio/Thread.zig:348-366; src/termio/Termio.zig:449-463; src/termio/backend.zig:76-85
+  NEW src/termio/stream_handler.zig:151-154; src/termio/Thread.zig:288-368
+2 OLD src/termio/stream_handler.zig:925-927; src/termio/stream_handler.zig:151-154; src/termio/Thread.zig:349-365
+  NEW src/termio/Thread.zig:288-375; src/termio/stream_handler.zig:151-154
+3 OLD src/termio/stream_handler.zig:28-32; src/termio/Thread.zig:349-366
+  NEW src/termio/stream_handler.zig:866-904; src/termio/Thread.zig:308-367
+
+canvas-1 d2/n23 Schedule queueRender while locked, then terminal_stream.nextSlice
+1 OLD src/termio/Termio.zig:713-716; src/termio/Termio.zig:750-754
+  NEW src/termio/Termio.zig:713-760
+2 OLD src/termio/Termio.zig:714-716; src/termio/Termio.zig:750-754
+  NEW src/termio/Termio.zig:713-761
+3 OLD src/termio/Termio.zig:714-716
+  NEW src/termio/Termio.zig:713-761
+
+canvas-1 d2/n24 Unlock; reader yieldToDemand lets pending renderer snapshot proceed
+1 OLD src/termio/Termio.zig:705-711; src/termio/Exec.zig:1493-1518
+  NEW src/termio/Exec.zig:1490-1518; src/termio/Exec.zig:1806-1811
+2 OLD src/termio/Termio.zig:708-710; src/termio/Exec.zig:1493-1518
+  NEW src/termio/Exec.zig:1493-1518; src/termio/Exec.zig:1806-1811; src/termio/Termio.zig:705-711
+3 OLD src/termio/Exec.zig:1493-1518; src/renderer/State.zig:91-105
+  NEW src/termio/Termio.zig:705-711; src/termio/Exec.zig:1493-1518
+
+canvas-1 d2/n27 Under same terminal mutex: Backend.resize then Terminal.resize
+1 OLD src/termio/Termio.zig:532-553
+  NEW src/termio/Termio.zig:532-553
+2 OLD src/termio/Termio.zig:532-553
+  NEW src/termio/Termio.zig:532-553
+3 OLD src/termio/Termio.zig:532-553
+  NEW src/termio/Termio.zig:532-553
+
+canvas-1 d2/n28 Child redraw cannot be parsed with obsolete terminal dimensions
+1 OLD src/termio/Termio.zig:534-543; src/termio/Termio.zig:705-711
+  NEW src/termio/Termio.zig:532-553
+2 OLD src/termio/Termio.zig:534-543
+  NEW src/termio/Termio.zig:532-543
+3 OLD src/termio/Termio.zig:537-543
+  NEW src/termio/Termio.zig:532-553
+
+canvas-1 d3/n9 lockDemand() -> shared Terminal + viewport + dirty state
+1 OLD src/renderer/generic.zig:1420-1435; src/renderer/State.zig:54-79
+  NEW src/renderer/generic.zig:1408-1447; src/renderer/State.zig:54-80
+2 OLD src/renderer/generic.zig:1408-1427; src/renderer/generic.zig:1484-1487
+  NEW src/renderer/State.zig:54-80; src/renderer/generic.zig:1408-1426
+3 OLD src/renderer/generic.zig:1420-1427; src/renderer/State.zig:13-20
+  NEW src/renderer/generic.zig:1408-1427; src/renderer/State.zig:54-80
+
+canvas-1 d3/n11 terminal_state.beginUpdate + copy preedit/mouse/image data
+1 OLD src/renderer/generic.zig:1479-1487; src/renderer/generic.zig:1502-1525; src/renderer/generic.zig:1528-1561
+  NEW src/renderer/generic.zig:1479-1562
+2 OLD src/renderer/generic.zig:1479-1487; src/renderer/generic.zig:1502-1525; src/renderer/generic.zig:1555-1561
+  NEW src/renderer/generic.zig:1479-1561
+3 OLD src/renderer/generic.zig:1479-1559
+  NEW src/renderer/generic.zig:1479-1561
+
+canvas-1 d3/n12 unlockDemand() -> terminal_state.endUpdate() outside lock
+1 OLD src/renderer/generic.zig:1420-1421; src/renderer/generic.zig:1564-1567
+  NEW src/renderer/generic.zig:1420-1421; src/renderer/generic.zig:1564-1567
+2 OLD src/renderer/generic.zig:1420-1421; src/renderer/generic.zig:1564-1567
+  NEW src/renderer/generic.zig:1420-1422; src/renderer/generic.zig:1564-1567
+3 OLD src/renderer/generic.zig:1564-1567
+  NEW src/renderer/generic.zig:1562-1567
+
+canvas-1 d3/n13 Snapshot + shaping + atlas -> cells, selection, cursor, images
+1 OLD src/renderer/generic.zig:1479-1487; src/renderer/generic.zig:1564-1567; src/renderer/generic.zig:1645-1665; src/renderer/generic.zig:3292-3299; src/renderer/generic.zig:3491-3529
+  NEW src/renderer/generic.zig:1569-1706; src/renderer/generic.zig:2623-2695; src/renderer/generic.zig:3284-3345
+2 OLD src/renderer/generic.zig:1564-1567; src/renderer/generic.zig:1645-1659; src/renderer/generic.zig:2630-2653; src/renderer/generic.zig:1889-1904
+  NEW src/renderer/generic.zig:1645-1665; src/renderer/generic.zig:2973-2989; src/renderer/generic.zig:3022-3050; src/renderer/generic.zig:3391-3405
+3 OLD src/renderer/generic.zig:1564-1595; src/renderer/generic.zig:1595-1650
+  NEW src/renderer/generic.zig:1564-1665; src/renderer/generic.zig:1868-1905
+
+canvas-1 d3/n19 Surface.draw() -> drawFrame(true) can run on main thread
+1 OLD src/Surface.zig:922-929
+  NEW src/Surface.zig:922-929
+2 OLD src/Surface.zig:922-929
+  NEW src/Surface.zig:922-929
+3 OLD src/Surface.zig:925-929
+  NEW src/Surface.zig:922-929
+
+canvas-1 d4/n8 start() -> Pty.open + command launch
+1 OLD src/termio/Exec.zig:897-915; src/termio/Exec.zig:1021-1063
+  NEW src/termio/Exec.zig:895-1095
+2 OLD src/termio/Exec.zig:897-915; src/termio/Exec.zig:990-1007
+  NEW src/termio/Exec.zig:895-1095
+3 OLD src/termio/Exec.zig:897-915; src/termio/Exec.zig:943-1005
+  NEW src/termio/Exec.zig:895-941; src/termio/Exec.zig:990-1095
+
+canvas-1 d4/n10 queueWrite(td) -> pooled async writes; skip after child exit
+1 OLD src/termio/Exec.zig:403-420; src/termio/Exec.zig:457-467
+  NEW src/termio/Exec.zig:403-490
+2 OLD src/termio/Exec.zig:403-467
+  NEW src/termio/Exec.zig:403-490
+3 OLD src/termio/Exec.zig:403-420; src/termio/Exec.zig:459-480
+  NEW src/termio/Exec.zig:403-508
+
+canvas-1 d4/n11 threadExit(td) -> stop child, signal quit, join reader
+1 OLD src/termio/Exec.zig:196-229
+  NEW src/termio/Exec.zig:196-230; src/termio/Exec.zig:1105-1133
+2 OLD src/termio/Exec.zig:196-230
+  NEW src/termio/Exec.zig:196-230
+3 OLD src/termio/Exec.zig:196-229
+  NEW src/termio/Exec.zig:196-230
+
+canvas-1 d4/n17 Each Write owns stable request + buffer; completion recycles
+1 OLD src/termio/Exec.zig:494-508; src/termio/Exec.zig:459-467; src/termio/Exec.zig:471-489
+  NEW src/termio/Exec.zig:403-508
+2 OLD src/termio/Exec.zig:493-508; src/termio/Exec.zig:459-489
+  NEW src/termio/Exec.zig:403-508
+3 OLD src/termio/Exec.zig:459-480; src/termio/Exec.zig:493-508; src/termio/Exec.zig:471-480
+  NEW src/termio/Exec.zig:403-508
+
+canvas-1 d4/n23 io-gather -> read/poll PTY; fill pipeline; observe quit
+1 OLD src/termio/Exec.zig:1522-1562; src/termio/Exec.zig:1570-1578; src/termio/Exec.zig:1696-1705
+  NEW src/termio/Exec.zig:1522-1733
+2 OLD src/termio/Exec.zig:1522-1563; src/termio/Exec.zig:1570-1579; src/termio/Exec.zig:1696-1705; src/termio/Exec.zig:1713-1724
+  NEW src/termio/Exec.zig:1522-1733
+3 OLD src/termio/Exec.zig:1522-1526; src/termio/Exec.zig:1540-1610
+  NEW src/termio/Exec.zig:1522-1733
+
+canvas-1 d4/n24 consume batch -> Termio.processOutput; yieldToDemand
+1 OLD src/termio/Exec.zig:1478-1518
+  NEW src/termio/Exec.zig:1478-1519
+2 OLD src/termio/Exec.zig:1478-1519
+  NEW src/termio/Exec.zig:1478-1519
+3 OLD src/termio/Exec.zig:1493-1518; src/termio/Termio.zig:705-711
+  NEW src/termio/Exec.zig:1478-1519
+
+canvas-1 d4/n25 Reader joins gather thread before returning
+1 OLD src/termio/Exec.zig:1462-1473
+  NEW src/termio/Exec.zig:1462-1475
+2 OLD src/termio/Exec.zig:1462-1474
+  NEW src/termio/Exec.zig:1462-1475
+3 OLD src/termio/Exec.zig:1462-1473
+  NEW src/termio/Exec.zig:1462-1475
+
+canvas-1 d4/n26 Windows: blocking read -> processOutput; yieldToDemand
+1 OLD src/termio/Exec.zig:1789-1811
+  NEW src/termio/Exec.zig:1778-1827
+2 OLD src/termio/Exec.zig:1789-1811
+  NEW src/termio/Exec.zig:1778-1826
+3 OLD src/termio/Exec.zig:1789-1811
+  NEW src/termio/Exec.zig:1778-1826
+
+canvas-1 d5/n6 active_key + active: alias into all, not another Screen
+1 OLD src/terminal/ScreenSet.zig:23-31; src/terminal/ScreenSet.zig:104-109
+  NEW src/terminal/ScreenSet.zig:23-31; src/terminal/ScreenSet.zig:104-109
+2 OLD src/terminal/ScreenSet.zig:23-31; src/terminal/ScreenSet.zig:104-109
+  NEW src/terminal/ScreenSet.zig:23-31; src/terminal/ScreenSet.zig:104-109
+3 OLD src/terminal/ScreenSet.zig:23-31; src/terminal/ScreenSet.zig:104-109
+  NEW src/terminal/ScreenSet.zig:23-31; src/terminal/ScreenSet.zig:104-109
+
+canvas-1 d5/n8 all: owned primary Screen (eager) + alternate Screen (lazy)
+1 OLD src/terminal/ScreenSet.zig:18-21; src/terminal/ScreenSet.zig:38-52; src/terminal/ScreenSet.zig:74-87
+  NEW src/terminal/ScreenSet.zig:1-88
+2 OLD src/terminal/ScreenSet.zig:1-7; src/terminal/ScreenSet.zig:17-21; src/terminal/ScreenSet.zig:38-52; src/terminal/ScreenSet.zig:74-87
+  NEW src/terminal/ScreenSet.zig:1-7; src/terminal/ScreenSet.zig:38-53; src/terminal/ScreenSet.zig:74-88
+3 OLD src/terminal/ScreenSet.zig:38-52; src/terminal/ScreenSet.zig:74-87
+  NEW src/terminal/ScreenSet.zig:1-8; src/terminal/ScreenSet.zig:38-88
+
+canvas-1 d5/n12 selection: tracked endpoints -> pages.tracked_pins
+1 OLD src/terminal/Screen.zig:58-62; src/terminal/Screen.zig:3063-3071; src/terminal/PageList.zig:472-473
+  NEW src/terminal/Screen.zig:58-62; src/terminal/Screen.zig:3053-3097; src/terminal/PageList.zig:6309-6334
+2 OLD src/terminal/Screen.zig:58-62; src/terminal/Screen.zig:3063-3096; src/terminal/PageList.zig:472-473
+  NEW src/terminal/PageList.zig:468-473; src/terminal/Screen.zig:58-62; src/terminal/Screen.zig:3053-3097
+3 OLD src/terminal/Screen.zig:58-62; src/terminal/PageList.zig:472-487; src/terminal/Screen.zig:2450-2485
+  NEW src/terminal/Screen.zig:58-62; src/terminal/Screen.zig:3063-3097; src/terminal/PageList.zig:472-487
+
+canvas-1 d5/n18 Cursor / selection / viewport locations track edits
+1 OLD src/terminal/Screen.zig:58-62; src/terminal/Screen.zig:195-199; src/terminal/Screen.zig:3063-3071; src/terminal/PageList.zig:472-487
+  NEW src/terminal/PageList.zig:7790-7818; src/terminal/PageList.zig:6309-6334
+2 OLD src/terminal/Screen.zig:329-345; src/terminal/Screen.zig:3063-3070; src/terminal/PageList.zig:681-704
+  NEW src/terminal/PageList.zig:472-505; src/terminal/Screen.zig:195-199; src/terminal/Screen.zig:3053-3097
+3 OLD src/terminal/PageList.zig:354-356; src/terminal/PageList.zig:6310-6335
+  NEW src/terminal/PageList.zig:354-357; src/terminal/PageList.zig:472-487; src/terminal/Screen.zig:195-200
+
+canvas-1 d5/n19 pages: ordered doubly-linked nodes, history -> active
+1 OLD src/terminal/PageList.zig:51-54; src/terminal/PageList.zig:402-405
+  NEW src/terminal/PageList.zig:51-54; src/terminal/PageList.zig:401-405
+2 OLD src/terminal/PageList.zig:51-54; src/terminal/PageList.zig:401-405
+  NEW src/terminal/PageList.zig:51-54; src/terminal/PageList.zig:401-405
+3 OLD src/terminal/PageList.zig:51-54; src/terminal/PageList.zig:401-405
+  NEW src/terminal/PageList.zig:51-54; src/terminal/PageList.zig:401-405
+
+canvas-1 d5/n21 data: resident Page OR compressed page
+1 OLD src/terminal/PageList.zig:79-91
+  NEW src/terminal/PageList.zig:79-91
+2 OLD src/terminal/PageList.zig:79-91
+  NEW src/terminal/PageList.zig:79-96
+3 OLD src/terminal/PageList.zig:79-91
+  NEW src/terminal/PageList.zig:79-91
+
+canvas-1 d5/n22 Compressed: encoded copy; retains Page virtual mapping
+1 OLD src/terminal/PageList.zig:79-91
+  NEW src/terminal/PageList.zig:79-91; src/terminal/compress/Page.zig:1-57
+2 OLD src/terminal/PageList.zig:79-91
+  NEW src/terminal/PageList.zig:79-91; src/terminal/PageList.zig:256-298
+3 OLD src/terminal/PageList.zig:79-91
+  NEW src/terminal/PageList.zig:79-91; src/terminal/PageList.zig:256-299
+
+canvas-2 d1/n6 font_grid_set: shared, reference-counted font grids
+2 OLD src/App.zig:53-55; src/font/SharedGridSet.zig:96-115; src/font/SharedGridSet.zig:413-430
+2 NEW src/App.zig:53-55
+3 OLD src/App.zig:53-55; src/font/SharedGridSet.zig:96-116; src/font/SharedGridSet.zig:413-430
+3 NEW src/App.zig:53-55
+
+canvas-2 d1/n7 device: optional app-owned GPU device, borrowed by renderers
+2 OLD src/App.zig:57-58; src/Surface.zig:564-588
+2 NEW src/App.zig:57-58
+3 OLD src/App.zig:57-58; src/Surface.zig:564-570; src/Surface.zig:580-587; src/App.zig:148-150
+3 NEW src/App.zig:57-58; src/Surface.zig:564-588
+
+canvas-2 d1/n16 keyCallback / textCallback / mouseButtonCallback
+2 OLD src/Surface.zig:2792-2803; src/Surface.zig:3426-3432; src/Surface.zig:3918-3936
+2 NEW src/Surface.zig:2792-3948
+3 OLD src/Surface.zig:2792-2795; src/Surface.zig:3426-3432; src/Surface.zig:3918-3923
+3 NEW src/Surface.zig:2792-2982; src/Surface.zig:3421-3432; src/Surface.zig:3918-4297
+
+canvas-2 d1/n28 drainMailbox -> io.queueWrite; coalesces resize requests
+2 OLD src/termio/Thread.zig:289-326; src/termio/Thread.zig:348-366; src/termio/Thread.zig:389-405; src/termio/Thread.zig:441-448; src/termio/Termio.zig:456-463
+2 NEW src/termio/Thread.zig:288-451
+3 OLD src/termio/Thread.zig:308-367; src/termio/Thread.zig:389-405; src/termio/Thread.zig:441-448
+3 NEW src/termio/Thread.zig:288-375; src/termio/Thread.zig:389-451
+
+canvas-2 d1/n45 Stop/join search, then renderer thread, then I/O thread
+2 OLD src/Surface.zig:829-845
+2 NEW src/Surface.zig:829-845
+3 OLD src/Surface.zig:829-845; src/Surface.zig:210-226
+3 NEW src/Surface.zig:829-845
+
+canvas-2 d2/n23 Schedule queueRender while locked, then terminal_stream.nextSlice
+2 OLD src/termio/Termio.zig:713-716; src/termio/Termio.zig:740-754
+2 NEW src/termio/Termio.zig:713-762
+3 OLD src/termio/Termio.zig:714-716; src/termio/Termio.zig:750-754
+3 NEW src/termio/Termio.zig:713-762
+
+canvas-2 d2/n27 Under same terminal mutex: Backend.resize then Terminal.resize
+2 OLD src/termio/Termio.zig:532-553
+2 NEW src/termio/Termio.zig:523-559
+3 OLD src/termio/Termio.zig:532-553
+3 NEW src/termio/Termio.zig:532-553
+
+canvas-2 d3/n11 terminal_state.beginUpdate + copy preedit/mouse/image data
+2 OLD src/renderer/generic.zig:1479-1487; src/renderer/generic.zig:1502-1525; src/renderer/generic.zig:1555-1561
+2 NEW src/renderer/generic.zig:1479-1562
+3 OLD src/renderer/generic.zig:1484-1505; src/renderer/generic.zig:1508-1526; src/renderer/generic.zig:1555-1561
+3 NEW src/renderer/generic.zig:1479-1562
+
+canvas-2 d3/n13 Snapshot + shaping + atlas -> cells, selection, cursor, images
+2 OLD src/renderer/generic.zig:1483-1487; src/renderer/generic.zig:1645-1665; src/renderer/generic.zig:1868-1869
+2 NEW src/renderer/generic.zig:1564-1709
+3 OLD src/renderer/generic.zig:1564-1575; src/renderer/generic.zig:1645-1665; src/renderer/generic.zig:2970-2980; src/renderer/generic.zig:3385-3403
+3 NEW src/renderer/generic.zig:1564-1709; src/renderer/generic.zig:2630-2685
+
+canvas-2 d4/n8 resize() -> PTY geometry update
+2 OLD src/termio/Exec.zig:1135-1154
+2 NEW src/termio/Exec.zig:266-1156
+3 OLD src/termio/Exec.zig:1135-1155
+3 NEW src/termio/Exec.zig:1135-1156
+
+canvas-2 d4/n10 threadEnter() -> start subprocess; initialize td.backend.exec
+2 OLD src/termio/Exec.zig:86-104; src/termio/Exec.zig:139-156
+2 NEW src/termio/Exec.zig:86-194
+3 OLD src/termio/Exec.zig:86-104; src/termio/Exec.zig:139-156; src/termio/Termio.zig:389-400
+3 NEW src/termio/Exec.zig:86-194
+
+canvas-2 d4/n17 POSIX io-reader owns Pipeline and spawns/joins io-gather
+2 OLD src/termio/Exec.zig:1441-1475
+2 NEW src/termio/Exec.zig:1305-1520
+3 OLD src/termio/Exec.zig:1441-1475; src/termio/Exec.zig:1478-1519
+3 NEW src/termio/Exec.zig:1412-1520
+
+canvas-2 d4/n23 After parsing: renderer_state.yieldToDemand (terminal unlocked)
+2 OLD src/termio/Exec.zig:1516-1518; src/renderer/State.zig:82-104
+2 NEW src/termio/Exec.zig:1493-1811
+3 OLD src/termio/Exec.zig:1516-1519; src/termio/Exec.zig:1806-1811
+3 NEW src/termio/Exec.zig:1516-1518; src/termio/Exec.zig:1806-1811
+
+canvas-2 d5/n6 all: owned Screen pointers; primary eager, alternate lazy
+2 OLD src/terminal/ScreenSet.zig:30-60; src/terminal/ScreenSet.zig:74-87
+2 NEW src/terminal/ScreenSet.zig:1-88
+3 OLD src/terminal/ScreenSet.zig:30-31; src/terminal/ScreenSet.zig:38-53; src/terminal/ScreenSet.zig:74-87
+3 NEW src/terminal/ScreenSet.zig:23-52; src/terminal/ScreenSet.zig:74-88
+
+canvas-2 d5/n12 kitty_images / semantic_prompt / dirty
+2 OLD src/terminal/Screen.zig:78-87
+2 NEW src/terminal/Screen.zig:77-98
+3 OLD src/terminal/Screen.zig:77-87
+3 NEW src/terminal/Screen.zig:77-98
+
+canvas-2 d5/n18 rows: ordered row metadata
+2 OLD src/terminal/page.zig:178-180
+2 NEW src/terminal/page.zig:178-180
+3 OLD src/terminal/page.zig:178-180
+3 NEW src/terminal/page.zig:178-180
+
+canvas-2 d5/n22 OR compressed: encoded copy + retained Page mapping
+2 OLD src/terminal/PageList.zig:79-91
+2 NEW src/terminal/PageList.zig:79-299
+3 OLD src/terminal/PageList.zig:79-91
+3 NEW src/terminal/PageList.zig:79-91

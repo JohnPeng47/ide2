@@ -1,0 +1,46 @@
+{
+  "at": "2026-11-19T03:52:59.273574+00:00",
+  "reason": "Provider rate limit errors; launcher and affected workers suspended before additional model calls",
+  "launcherPid": 70273,
+  "affected": [
+    {
+      "job": "ghostty-v3-core-2-astra-high_sol-medium-1",
+      "failures": [
+        {
+          "child": "child-2",
+          "error": "{\"detail\":\"Rate limit exceeded\"}"
+        }
+      ],
+      "suspendedWorkerPid": 70290
+    },
+    {
+      "job": "ghostty-v3-canvas-2-sol-high_sol-medium-1",
+      "failures": [
+        {
+          "child": "child-5",
+          "error": "{\"detail\":\"Rate limit exceeded\"}"
+        }
+      ],
+      "suspendedWorkerPid": 70280
+    },
+    {
+      "job": "ghostty-v3-core-2-sol-high_sol-medium-1",
+      "failures": [
+        {
+          "child": "child-5",
+          "error": "{\"detail\":\"Rate limit exceeded\"}"
+        },
+        {
+          "child": "child-6",
+          "error": "{\"detail\":\"Rate limit exceeded\"}"
+        }
+      ],
+      "suspendedWorkerPid": 70291
+    }
+  ],
+  "status": "original-matrix-terminal-failures-preserved",
+  "resumedAt": "2026-11-19T04:01:38.904554+00:00",
+  "failedSamples": 3,
+  "automaticRetries": 0,
+  "completedAt": "2026-11-19T04:51:16.979646+00:00"
+}

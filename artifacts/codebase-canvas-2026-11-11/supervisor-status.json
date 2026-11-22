@@ -1,0 +1,23 @@
+{
+  "checkedAt": "2026-11-11T15:07:12.996074+00:00",
+  "status": "generating",
+  "activeJob": "feedback/C1/phase2/round1/tree/source_evidence",
+  "activeJobs": [
+    "feedback/C1/phase2/round1/tree/canvas_commands",
+    "feedback/C1/phase2/round1/tree/workspace",
+    "feedback/C1/phase2/round1/tree/persistence",
+    "feedback/C1/phase2/round1/tree/source_evidence"
+  ],
+  "completed": 210,
+  "jobs": 218,
+  "error": null,
+  "runnerAlive": true,
+  "apiRevision": 647,
+  "supervisorPid": 358424,
+  "confirmation": {
+    "confirmed": 210,
+    "newlyConfirmed": 1,
+    "runnerStatus": "generating",
+    "activeJob": "feedback/C1/phase2/round1/tree/source_evidence"
+  }
+}

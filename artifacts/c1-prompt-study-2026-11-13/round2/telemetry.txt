@@ -1,0 +1,106 @@
+Telemetry ingestion service
+|
+|-- [M] IngestGateway accepts batches from device connections
+|   |-- accept(connection, envelope): BatchReceipt
+|   |   |-- [D] credentials + device registry -> authorized tenant/device
+|   |   `-- [C] decode -> validate envelope -> PartitionRouter.route(batch)
+|   |       |-- Partition key = tenantId + deviceId
+|   |       `-- One device's batches reach the same ordered partition
+|   |-- [O] Retains connection state until disconnect
+|   |   |-- pending[batchId] -> receipt waiter
+|   |   `-- socket close detaches waiters; accepted work can still finish
+|   `-- Admission limit
+|       |-- available capacity -> enqueue batch
+|       `-- full partition queue -> return retryable rejection
+|
+|-- [O] PartitionWorker owns one partition's ingestion progress
+|   |-- Retained state
+|   |   |-- queue: BoundedQueue<AcceptedBatch>
+|   |   |   `-- accepted batches wait here before processing
+|   |   |-- checkpoint: PartitionCheckpoint
+|   |   |   |-- partitionId / committedOffset
+|   |   |   `-- lastSequence[deviceId] -> latest committed device sequence
+|   |   `-- lease: PartitionLease
+|   |       |-- ownerId / epoch / expiresAt
+|   |       `-- [D] current epoch -> authority to commit new progress
+|   |
+|   |-- [C] run() drains the queue one batch at a time
+|   |   `-- process(batch)
+|   |       |-- Establish batch identity
+|   |       |   |-- key = tenantId + deviceId + batchId
+|   |       |   `-- [C] EventStore.lookupReceipt(key)
+|   |       |       |-- Same payload hash -> return committed receipt
+|   |       |       |-- Different payload hash -> reject identity conflict
+|   |       |       `-- Missing receipt -> prepare a new commit
+|   |       |
+|   |       |-- Normalize measurements
+|   |       |   `-- [C] SchemaRegistry.resolve(batch.schemaVersion)
+|   |       |       |-- [M] Exposes versioned field and unit definitions
+|   |       |       `-- [D] raw samples + exact schema -> Measurement[]
+|   |       |           |-- identity: tenantId / deviceId / sequence
+|   |       |           |-- observation: timestamp / metric / value / unit
+|   |       |           `-- provenance: batchId / schemaVersion / payloadHash
+|   |       |
+|   |       |-- Check sequence continuity
+|   |       |   |-- [D] firstSequence + checkpoint.lastSequence[deviceId]
+|   |       |   |   `-- next expected sequence or a detected gap
+|   |       |   |-- Contiguous -> stage measurements
+|   |       |   `-- Gap or overlap -> reject without advancing checkpoint
+|   |       |
+|   |       `-- Commit and acknowledge
+|   |           |-- [C] EventStore.commit(batch, checkpoint, lease.epoch)
+|   |           |   |-- [D] measurements + batch identity + next checkpoint
+|   |           |   |   `-- one durable transaction
+|   |           |   `-- Stale lease epoch -> reject the former owner
+|   |           `-- After confirmed commit
+|   |               |-- Install returned checkpoint
+|   |               `-- Resolve gateway waiters with BatchReceipt
+|   |                   `-- receipt confirms storage, not downstream indexing
+|   |
+|   `-- Lease loss or shutdown
+|       |-- [C] Stop admission and stop dequeuing new work
+|       |-- In-flight commit may have an uncertain outcome
+|       |   `-- retry resolves through its durable batch receipt
+|       `-- [O] Release queue entries and detach remaining waiters
+|           `-- next owner restores progress from EventStore
+|
+|-- [M] EventStore binds stored events to durable progress
+|   |-- [M] Exposes commit / lookupReceipt / restoreCheckpoint / scan
+|   |-- Internal transaction
+|   |   |-- Verify current partition lease epoch
+|   |   |-- Append measurements with partition offsets
+|   |   |-- Insert receipt under the unique batch identity
+|   |   `-- Advance PartitionCheckpoint in the same commit
+|   |       `-- failure rolls back events, receipt and checkpoint together
+|   |-- [O] Retains the durable event log and retry receipts
+|   |   |-- worker restarts leave both intact
+|   |   `-- receipt retention defines the supported retry horizon
+|   `-- scan(partitionId, afterOffset): EventPage
+|       `-- [D] committed log + cursor -> ordered events and next cursor
+|
+`-- [M] ProjectionHost maintains independently rebuildable read models
+    |-- [O] consumers[name]: ProjectionConsumer
+    |   |-- cursor[partitionId] -> last applied event offset
+    |   |-- handler: ProjectionHandler
+    |   `-- cancellation + poll subscription
+    |
+    |-- Registered consumers
+    |   |-- LatestReading
+    |   |   |-- [D] device/metric + sequence -> newest accepted value
+    |   |   `-- older replayed events cannot replace a newer reading
+    |   `-- HourlySummary
+    |       |-- [D] metric + observation timestamp -> aggregation bucket
+    |       `-- count / sum / minimum / maximum
+    |           `-- late observations update their original time bucket
+    |
+    |-- [C] poll() -> EventStore.scan() -> handler.apply(page)
+    |   `-- Projection transaction
+    |       |-- Apply only offsets beyond the stored consumer cursor
+    |       `-- Save changed rows and cursor atomically
+    |           `-- crash before commit -> safely read the same page again
+    |
+    `-- rebuild(name, newVersion)
+        |-- [O] Create separate projection tables and fresh cursors
+        |-- [C] Replay retained events while the current version serves reads
+        `-- [D] rebuilt cursors + captured log positions -> readiness
+            `-- switch readers after catch-up; retire the previous tables

@@ -1,0 +1,31 @@
+{
+  "status": "finished",
+  "key": "sol-high-judge/ghostty-2-3/2",
+  "runId": "ec343ccc-f295-4525-840c-e9c2b17824df",
+  "model": "gpt-6-sol",
+  "caseId": "ghostty-2-3",
+  "number": 2,
+  "reportedScore": 0.960018,
+  "score": 0.9600173611111111,
+  "rescore": {
+    "score": 0.9600173611111111,
+    "reportedScore": 0.960018,
+    "J": 0.9600173611111111,
+    "reportedJ": 0.960018,
+    "pairs": 8,
+    "unmatchedA": 0,
+    "unmatchedB": 0,
+    "depth": 6,
+    "maxPairError": 6.66666666759852e-7,
+    "rangeIssues": []
+  },
+  "usage": {
+    "input": 21354,
+    "output": 17249,
+    "cacheRead": 112000,
+    "cacheWrite": 0,
+    "reasoning": 5032,
+    "totalTokens": 150603
+  },
+  "outputUrl": "http://localhost:5191/evals?run=ec343ccc-f295-4525-840c-e9c2b17824df&output=450c8f11-3b30-485c-a282-7fc0e4dc74c0%3A1%3Aalternative"
+}

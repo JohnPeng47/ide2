@@ -1,0 +1,11 @@
+[O] Connection lease
+|-- Acquire
+|   `-- pool lends one connection to one request
+|       `-- pool retains ownership; request gets exclusive use
+|-- While borrowed
+|   |-- [C] begin -> execute statements -> commit
+|   `-- statement or commit fails -> attempt rollback
+`-- Release on every exit
+    |-- healthy connection -> return to idle pool
+    `-- broken connection -> close and remove from pool
+        `-- later acquisition may create a replacement

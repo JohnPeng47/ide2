@@ -1,3 +1,5 @@
+import { savedAgentContextIdSchema } from '../../core/agents/savedAgentContext';
+import { projectionTypeSchema } from '../projections/projectionType';
 import { z } from 'zod';
 import { promptReferenceSchema } from '../agent/diagramEdit';
 
@@ -18,9 +20,10 @@ export const chatReferenceSchema = z.object({
 export type ChatReference = z.infer<typeof chatReferenceSchema>;
 export const chatReferencesSchema = z.array(chatReferenceSchema).max(20, 'Select at most 20 references.')
   .refine(refs => refs.reduce((size, ref) => size + ref.ascii.length, 0) <= 100_000, 'Selected references are too large. Select a smaller region.');
-export const chatSendSchema = chatSettingsSchema.extend({ text: z.string().trim().min(1).max(100_000), requestId: z.string().uuid(), references: chatReferencesSchema.optional(), canvas: chatCanvasTargetSchema.optional() });
+export const chatCanvasBackgroundSchema = z.object({ canvas: chatCanvasTargetSchema.optional(), agentContextId: savedAgentContextIdSchema.optional() });
+export const chatSendSchema = chatSettingsSchema.extend({ agentContextId: savedAgentContextIdSchema.optional(), text: z.string().trim().min(1).max(100_000), requestId: z.string().uuid(), references: chatReferencesSchema.optional(), canvas: chatCanvasTargetSchema.optional() });
 export type ChatSend = z.infer<typeof chatSendSchema>;
-export const chatReadCanvasSchema = chatSettingsSchema.extend({ requestId: z.string().uuid(), canvas: chatCanvasTargetSchema });
+export const chatReadCanvasSchema = chatSettingsSchema.extend({ agentContextId: savedAgentContextIdSchema.optional(), projectionType: projectionTypeSchema.optional(), requestId: z.string().uuid(), canvas: chatCanvasTargetSchema });
 export type ChatReadCanvas = z.infer<typeof chatReadCanvasSchema>;
 export const chatAnswerSchema = z.object({
   decision: z.enum(['accept', 'decline']).optional(),
@@ -68,6 +71,7 @@ export interface ChatSession {
   accessDefaultApplied?: true;
   canvasTools?: boolean;
   toolsReloadedAt?: string;
+  loadedCanvasBackground?: { documentId: string; agentContextId: string };
   canvasContext?: { canvas?: ChatCanvasTarget; references: ChatReference[] };
   id: string; threadId: string; title: string; cwd: string; createdAt: string; updatedAt: string;
   settings: ChatSettings; status: 'idle' | 'running' | 'interrupted' | 'failed'; turnId?: string | null;

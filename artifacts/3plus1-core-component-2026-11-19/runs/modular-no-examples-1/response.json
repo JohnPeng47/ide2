@@ -1,0 +1,68 @@
+{
+  "output": {
+    "ascii": "Ghostty's surface-centered terminal engine\n|\n|-- [S] Surface coordination - one interactive terminal, independent of window/tab/split layout\n|   |-- Exposes: Surface.init/deinit, close, draw, handleMessage, updateConfig\n|   |   `-- Host callbacks: keyCallback, textCallback, mouseButtonCallback, sizeCallback,\n|   |       focusCallback, preeditCallback; performBindingAction and completeClipboardRequest\n|   |-- Internal parts: lifecycle; interaction policy; selection/clipboard; geometry; worker coordination\n|   |   |-- Mouse/Keyboard state, key-table stack, queued key sequences, focus and readonly policy\n|   |   |-- maybeHandleBinding, encodeKey, setSelection, queueIo and resize translate user intent\n|   |   `-- Creates Termio and renderer workers; stops/joins workers before releasing shared state\n|   |-- State boundary: renderer_state.terminal points to io.terminal; these are not two terminal models\n|   |-- Sources: src/Surface.zig:1-10,69-188,477-827,829-923,2792,4941,6017\n|   |-- -> [H] host actions, clipboard requests and app-wide resources\n|   |-- -> [I], [C] input encoding/bindings and per-surface derived configuration\n|   `-- -> [T], [V], [R], [F], [Q] session I/O, terminal state, drawing, fonts and exploration\n|\n|-- [H] Host and application integration - connect terminal surfaces to native UI\n|   |-- Exposes: App.create/destroy, tick, addSurface/deleteSurface, updateConfig, keyEvent\n|   |   `-- apprt.App/Surface, Action, Target, surface.Message/Mailbox and clipboard contracts\n|   |-- Internal parts: application registry; event dispatch; platform adapters; embedding bridge\n|   |   |-- App tracks active/focused surfaces and drains its mailbox on the host event loop\n|   |   |-- App retains shared font_grid_set and Device; surfaces borrow these resources\n|   |   `-- apprt.runtime selects GTK/none for executables, embedded for libraries, browser for WASM\n|   |-- Boundary: host owns UI layout and event delivery; core Surface does not model tabs or windows\n|   |-- Sources: src/App.zig:23-74,119-195,273,532; src/apprt.zig:1-56;\n|   |   src/apprt/embedded.zig:269-303,447,670-691; src/main_ghostty.zig:100-115\n|   |-- -> [S] create/manage core surfaces and dispatch events/messages\n|   `-- -> [I], [C], [F], [R] global bindings, configuration, shared fonts and graphics device\n|\n|-- [I] Input vocabulary and protocol encoding - convert events into bindings or terminal bytes\n|   |-- Exposes: KeyEvent, Mods, Binding.Action, Binding.Set, Trigger and Keymap\n|   |   `-- key_encode.encode, mouse_encode.encode, paste.encode/encodeWriter and paste.isSafeWith\n|   |-- Internal parts: key mapping; binding parsing; legacy/Kitty keyboard; mouse formats; paste policy\n|   |   |-- key_encode.Options.fromTerminal reads DEC modes and the active Kitty keyboard flags\n|   |   `-- kitty/legacy encoders, function-key tables and coordinate conversion hide wire-format details\n|   |-- Boundary: encoders produce bytes; Surface decides consumption and Termio performs writes\n|   |-- Sources: src/input.zig:10-45; src/input/key_encode.zig:12-103;\n|   |   src/input/mouse_encode.zig:13,81,176-270; src/input/paste.zig:42,140,180,196\n|   |-- -> [V] terminal modes and protocol definitions determine encoding\n|   `-- -> [R] mouse encoding uses renderer size/coordinate types, not GPU operations\n|\n|-- [T] Session transport and terminal effects - connect a child process to terminal semantics\n|   |-- Exposes: Termio.init/deinit, queueMessage, processOutput, resize, changeConfig\n|   |   `-- Backend/Exec, Thread, Message, Mailbox and StreamHandler.Stream\n|   |-- Internal parts: subprocess/PTY; reader; writer event loop; stream effects; mailbox transport\n|   |   |-- Exec.Subprocess and ReadThread handle process setup, environment, reads and exit detection\n|   |   |-- Thread handles writes, coalesced resizing, synchronized-output timeout and selection scrolling\n|   |   |-- Termio retains Terminal plus terminal.Stream(StreamHandler); processOutput locks shared state\n|   |   `-- StreamHandler keeps APC/DCS state and clipboard transactions; routes replies and UI effects\n|   |-- Boundary: transport/backend concerns stay outside the renderer-independent terminal model\n|   |-- Sources: src/termio/Termio.zig:1-70,254,437,705-762;\n|   |   src/termio/Exec.zig:568,624,897,1305; src/termio/Thread.zig:1-89;\n|   |   src/termio/stream_handler.zig:19-108\n|   |-- -> [V] parse output and mutate terminal state\n|   |-- -> [R] shared-state mutex, renderer mailbox and repaint wakeup\n|   `-- -> [H], [S], [C], [Q] surface effects, configuration and optional PTY inspection\n|\n|-- [V] VT semantics and terminal storage - authoritative renderer-independent terminal state\n|   |-- Exposes: Terminal, Screen, ScreenSet, PageList, Selection, Pin and terminal modes\n|   |   |-- Parser, Stream(handler), StreamAction and TerminalStream for incremental interpretation\n|   |   `-- RenderState.update/beginUpdate/endUpdate provide renderer-neutral screen snapshots\n|   |-- Internal parts: decoding; escape protocols; screen editing; paged scrollback; render extraction\n|   |   |-- Parser/UTF8Decoder and CSI/OSC/DCS/APC handling turn byte streams into semantic actions\n|   |   |-- Terminal retains screens, colors, modes, title, working directory and scrolling region\n|   |   |-- Screen retains PageList, cursor, tracked selection, semantic prompts and Kitty protocol state\n|   |   `-- Pages/rows/cells, styles and dirty tracking support storage, reflow and incremental snapshots\n|   |-- Boundary: TerminalStream updates state; effects callbacks supply external behavior such as bells\n|   |   and clipboard operations. The GUI uses [T]'s StreamHandler adapter instead\n|   |-- Sources: src/terminal/main.zig:34-85; src/terminal/Terminal.zig:1-176;\n|   |   src/terminal/Screen.zig:38-87; src/terminal/stream.zig:1-35;\n|   |   src/terminal/stream_terminal.zig:31-65; src/terminal/render.zig:24-60\n|   `-- Dependency boundary: no host, PTY or GPU implementation is required for terminal semantics\n|\n|-- [R] Rendering and presentation - turn terminal snapshots into paced GPU frames\n|   |-- Exposes: Renderer(GraphicsAPI), Device, Thread, Message, State and Size\n|   |   `-- Renderer.init/deinit, updateFrame, drawFrame, setFontGrid and ExportedFrame\n|   |-- Internal parts: worker scheduling; snapshot/cell preparation; images/overlays; graphics backends\n|   |   |-- renderer.State shares a Terminal pointer, mutex, preedit and mouse state with other workers\n|   |   |-- updateFrame snapshots under lockDemand, then builds cells, glyph runs and image placements\n|   |   |-- Renderer keeps terminal.RenderState, shaping cache, GPU buffers, uniforms and frame state\n|   |   `-- Metal/OpenGL implement targets, frames, render passes, pipelines and textures;\n|   |       Thread handles wakeups, cursor blink, animation timing and visibility\n|   |-- Boundary: renderer.State is synchronized access to live state; terminal.RenderState is a snapshot\n|   |-- Sources: src/renderer.zig:15-45; src/renderer/State.zig:13-83;\n|   |   src/renderer/generic.zig:51-110,173-215,275,1371-1421,1716;\n|   |   src/renderer/Thread.zig:27-101\n|   |-- -> [V] screen snapshots, dirty state, selections and image metadata\n|   |-- -> [F] metrics, shaping and glyph atlases\n|   `-- -> [H], [S], [C] presentation surface, feedback messages and render configuration\n|\n|-- [F] Font resolution, shaping and glyph storage - shared text-rendering services\n|   |-- Exposes: SharedGridSet.ref/deref; SharedGrid.cellSize/getIndex/renderCodepoint/renderGlyph\n|   |   `-- Metrics, face.DesiredSize, Shaper, ShaperCache, TextRun and RunIterator\n|   |-- Internal parts: discovery; face collections/fallback; shaping backends; rasterization; atlas caches\n|   |   |-- SharedGridSet keys reusable grids by font configuration and size\n|   |   |-- SharedGrid owns CodepointResolver, codepoint/glyph caches and grayscale/color atlases\n|   |   `-- HarfBuzz/CoreText/noop/web shapers are selected by backend; an RwLock protects shared grids\n|   |-- Boundary: changing a surface's font selects another grid rather than mutating every user's grid\n|   |-- Sources: src/font/SharedGrid.zig:1-64,143,156,224,379;\n|   |   src/font/SharedGridSet.zig:96,413,476,560; src/font/shape.zig:1-37\n|   |-- -> [C] derived font settings and shaping options\n|   `-- -> [V], [R] terminal text-run data and CellSize value types, not the rendering worker\n|\n|-- [Q] Terminal exploration - optional search and diagnostic views\n|   |-- Exposes: terminal.search.Thread.init/deinit/threadMain, mailbox and result events\n|   |   `-- Inspector.recordKeyEvent, recordPtyRead, rendererInfo and render\n|   |-- Internal parts: asynchronous search; layered match scanning; inspector widgets/event history\n|   |   |-- Search uses TerminalSearch/ScreenSearch plus page-list, active-area and viewport search\n|   |   |-- Dedicated search loop keeps refresh timers and notification state; copies data to reduce locking\n|   |   `-- Inspector keeps ImGui/widget state and bounded key history; PTY recording enables a slower path\n|   |-- Boundary: Surface starts/stops exploration tools; search results become renderer highlights\n|   |-- Sources: src/terminal/search.zig:5-13; src/terminal/search/Thread.zig:1-7,46-143;\n|   |   src/inspector/Inspector.zig:17-22,70-137; src/Surface.zig:1485-1608;\n|   |   src/termio/Termio.zig:737-755\n|   |-- -> [V] searchable screens and inspected terminal state\n|   `-- -> [S], [R], [F] inspector surface access/redraw, renderer information and inspector font\n|\n`-- [C] Configuration and derived policy - typed settings without shared mutable config lifetimes\n    |-- Exposes: Config.load/default/finalize, clone, changeConditionalState and changeIterator\n    |   `-- ConditionalState and typed command, clipboard, font, binding and appearance settings\n    |-- Internal parts: defaults; file/CLI loading; recursive includes; themes; conditionals; diagnostics\n    |   |-- Config.load applies defaults, default files, CLI arguments and recursive files, then finalizes\n    |   `-- Arena-backed parsing, path expansion and theme loading keep configuration storage together\n    |-- Boundary: consumers build their own DerivedConfig; App.updateConfig broadcasts changes and\n    |   Surface.updateConfig reconfigures workers without retaining the caller's Config pointer\n    |-- Sources: src/config.zig:6-48; src/config/Config.zig:4043-4096,4552,4653,4751,5205,5296;\n    |   src/App.zig:168-195; src/Surface.zig:144-154,1804; src/termio/Termio.zig:182-245\n    `-- -> [I], [F], [V] binding definitions, font types and terminal policy/value types"
+  },
+  "usage": {
+    "input": 62922,
+    "output": 4737,
+    "cacheRead": 114816,
+    "cacheWrite": 0,
+    "reasoning": 876,
+    "totalTokens": 182475
+  },
+  "execution": {
+    "runtime": "pi-agent-context",
+    "sessionId": "01a1f471-f47b-7211-8be0-83ce2bb125d0",
+    "contextHash": "c26f9e1d07185d26d78fd7cf31b447b58604b2cae4a040b1dc623aaaf9e7848a",
+    "cacheKey": "eval-363c712356f8c27280ad95324c838d2b023c3cfc254c89975274806ea076c041",
+    "modelContextHash": "0518a37ac9e2b27651c36ef1d8bf26339f88f5a95010dcabd8ab04e55e5c958f",
+    "repositories": [
+      {
+        "repository": "repo-1",
+        "repositoryPath": "/home/john/softwarez/ghostty",
+        "commit": "ea8b12a8a9894b5259c441eadd8f6f0c65e215af",
+        "exclusions": [
+          "**/*-LICENSE",
+          "**/*.md",
+          "**/*.mdx",
+          "**/*.spec.*",
+          "**/*.test.*",
+          "**/AGENTS.md",
+          "**/CODEX-LICENSE",
+          "**/LICENSE*",
+          "**/Tests/**",
+          "**/__fixtures__/**",
+          "**/__tests__/**",
+          "**/benchmark/**",
+          "**/benchmarks/**",
+          "**/build/**",
+          "**/dist/**",
+          "**/docs/**",
+          "**/examples/**",
+          "**/fixtures/**",
+          "**/node_modules/**",
+          "**/scripts/**",
+          "**/test/**",
+          "**/tests/**",
+          ".agents/**",
+          ".github/**",
+          ".husky/**",
+          ".pi/**",
+          "deps/**",
+          "example/**",
+          "flake.lock",
+          "flatpak/**",
+          "images/**",
+          "nix/**",
+          "package-lock.json",
+          "po/**",
+          "scripts/**",
+          "snap/**",
+          "vendor/**"
+        ],
+        "checkout": "/tmp/agent-repository-v4ig8v/checkout",
+        "inspectionSource": "session-transcript"
+      }
+    ]
+  }
+}

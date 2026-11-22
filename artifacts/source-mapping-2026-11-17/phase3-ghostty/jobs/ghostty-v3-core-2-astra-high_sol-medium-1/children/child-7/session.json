@@ -1,0 +1,19 @@
+{
+  "id": "child-7",
+  "name": "complete-surface",
+  "assignment": "Prior mapping n1-n37 had truncated declarations. Map n1-n37, ensuring named init/keyCallback/mouseButtonCallback/handleMessage/DerivedConfig/key encode Options etc include FULL function/type declarations, not signatures/excerpts. Return partial JSON. Broad ranges fine; avoid whole-file ranges unless essential. Main agent will combine.",
+  "model": "gpt-6-sol",
+  "effort": "medium",
+  "status": "generating",
+  "queuedAt": "2026-11-19T03:50:38.463Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-19T03:50:38.466Z",
+  "sessionId": "01a1f1ed-8886-79df-b8a7-0dec7a4cfa2a",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-n9wevnax-agent-repository-qnhQ37-checkout--/2026-11-19T03-50-38-470Z_01a1f1ed-8886-79df-b8a7-0dec7a4cfa2a.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase3-n9wevnax/agent-repository-qnhQ37/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

@@ -1,0 +1,138 @@
+{
+  "experimentId": "b8ad87a7-698a-45e9-9cc0-b640ede5efa6",
+  "total": 72,
+  "statuses": {
+    "failed": 3,
+    "finished": 3
+  },
+  "groups": [
+    {
+      "kind": "core",
+      "effort": "medium",
+      "finished": 3,
+      "directCoverage": 1.0,
+      "resolvedCoverage": 1.0,
+      "ranges": 164.667,
+      "sourceLines": 1609.333,
+      "medianRangeLines": 7.833,
+      "maxRangeLines": 53,
+      "duplicateRanges": 0
+    }
+  ],
+  "rows": [
+    {
+      "caseId": "core-mapping",
+      "effort": "low",
+      "number": 1,
+      "key": "core-mapping-low-1",
+      "runId": "c5166030-e585-4303-9b7f-92813f137561",
+      "status": "failed",
+      "phase": "validation",
+      "error": "AssertionError [ERR_ASSERTION]: Range exceeds src/app/App.tsx"
+    },
+    {
+      "caseId": "core-mapping",
+      "effort": "low",
+      "number": 2,
+      "key": "core-mapping-low-2",
+      "runId": "41a8cbb3-ed34-418d-b0f6-32762f8272ba",
+      "status": "failed",
+      "phase": "validation",
+      "error": "AssertionError [ERR_ASSERTION]: Range exceeds src/app/App.tsx"
+    },
+    {
+      "caseId": "core-mapping",
+      "effort": "low",
+      "number": 3,
+      "key": "core-mapping-low-3",
+      "runId": "f38763e8-dfd4-40d9-a6ea-c36e28c607ca",
+      "status": "failed",
+      "phase": "validation",
+      "error": "AssertionError [ERR_ASSERTION]: Range exceeds src/app/App.tsx"
+    },
+    {
+      "caseId": "core-mapping",
+      "effort": "medium",
+      "number": 1,
+      "key": "core-mapping-medium-1",
+      "runId": "bd357a3b-317a-498b-a4ea-90d8060d216a",
+      "status": "finished",
+      "nodes": 129,
+      "mappedNodes": 129,
+      "ranges": 167,
+      "sourceLines": 1638,
+      "files": 27,
+      "diagrams": 1,
+      "directCoverage": 1.0,
+      "resolvedCoverage": 1.0,
+      "medianRangeLines": 8,
+      "maxRangeLines": 43,
+      "duplicateRanges": 0,
+      "usage": {
+        "input": 63406,
+        "output": 6166,
+        "cacheRead": 269696,
+        "cacheWrite": 0,
+        "reasoning": 76,
+        "totalTokens": 339268
+      },
+      "notes": ""
+    },
+    {
+      "caseId": "core-mapping",
+      "effort": "medium",
+      "number": 2,
+      "key": "core-mapping-medium-2",
+      "runId": "a14ed64f-7f83-46fc-a379-7ef6d95bfd63",
+      "status": "finished",
+      "nodes": 129,
+      "mappedNodes": 129,
+      "ranges": 161,
+      "sourceLines": 1564,
+      "files": 28,
+      "diagrams": 1,
+      "directCoverage": 1.0,
+      "resolvedCoverage": 1.0,
+      "medianRangeLines": 8,
+      "maxRangeLines": 58,
+      "duplicateRanges": 0,
+      "usage": {
+        "input": 71077,
+        "output": 5892,
+        "cacheRead": 238464,
+        "cacheWrite": 0,
+        "reasoning": 127,
+        "totalTokens": 315433
+      },
+      "notes": "All supplied nodes mapped. Some high-level nodes use representative implementation ranges."
+    },
+    {
+      "caseId": "core-mapping",
+      "effort": "medium",
+      "number": 3,
+      "key": "core-mapping-medium-3",
+      "runId": "a98afbca-321e-4610-8bd2-ae32695025cb",
+      "status": "finished",
+      "nodes": 129,
+      "mappedNodes": 129,
+      "ranges": 166,
+      "sourceLines": 1626,
+      "files": 28,
+      "diagrams": 1,
+      "directCoverage": 1.0,
+      "resolvedCoverage": 1.0,
+      "medianRangeLines": 7.5,
+      "maxRangeLines": 58,
+      "duplicateRanges": 0,
+      "usage": {
+        "input": 62882,
+        "output": 6016,
+        "cacheRead": 216960,
+        "cacheWrite": 0,
+        "reasoning": 131,
+        "totalTokens": 285858
+      },
+      "notes": "The bridge mappings for n105\u2013n106 should be read against src/features/mapping/agent/useAgentCanvasBridge.ts lines 9\u201385; the displayed combined file listing offset its lines by 42."
+    }
+  ]
+}

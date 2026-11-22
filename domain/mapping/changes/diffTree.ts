@@ -14,7 +14,7 @@ const mappingInput = z.object({ id, source: z.union([
 ]), targets: z.array(target).max(2000), diagramTargets: z.array(diagramJumpSchema.shape.target).max(100).optional() }).strict()
   .refine(mapping => mapping.targets.length > 0 || !!mapping.diagramTargets?.length, 'A mapping needs hunks or diagram destinations');
 export const diffTreeInputSchema = z.object({
-  ascii: z.string().min(1).max(20000).optional(), structureKind: z.literal('tree').optional(),
+  ascii: z.string().min(1).optional(), structureKind: z.literal('tree').optional(),
   expectedRevisionId: id.optional(), mappings: z.array(mappingInput).max(2000)
 }).strict();
 export type DiffTreeInput = z.infer<typeof diffTreeInputSchema>;
@@ -73,11 +73,10 @@ export function writeDiffTree(input: DiffTreeInput, hunks: GitDiffHunk[], previo
   const tree = { revision, mappings, hunks }; validateDiffTree(tree); return tree;
 }
 export function defaultDiffTree(hunks: GitDiffHunk[]) {
-  // One mapped node per commit keeps the initial tree within the Diagram size limit.
+  // Group the captured hunks by commit.
   const commits = [...new Set(hunks.map(hunk => hunk.commit))];
   if (!commits.length) return writeDiffTree({ ascii: 'Changes\n`-- No captured hunks', mappings: [] }, hunks);
   const ascii = ['Changes', ...commits.map((commit, index) => `${index === commits.length - 1 ? '`--' : '|--'} ${commit.slice(0, 12)}`)].join('\n');
-  if (ascii.length > 20000) return writeDiffTree({ ascii: 'Changes\n`-- Selected commits', mappings: [{ id: 'all-changes', source: { line: 2 }, targets: hunks.map(hunk => ({ kind: 'diff-hunk', hunkId: hunk.id })) }] }, hunks);
   return writeDiffTree({ ascii, mappings: commits.map((commit, index) => ({ id: `commit-${commit}`, source: { line: index + 2 },
     targets: hunks.filter(hunk => hunk.commit === commit).map(hunk => ({ kind: 'diff-hunk' as const, hunkId: hunk.id })) })) }, hunks);
 }

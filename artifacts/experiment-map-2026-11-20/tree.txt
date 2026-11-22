@@ -1,0 +1,201 @@
+Experiment map - 21 mapped experiments, updated 2026-11-21
+|
+|  [E##] = local alias; see links.json for stable experiment UUIDs.
+|  Nested experiments = verified derivation or reused outputs.
+|  Unnumbered branches = topics, setup, phases, or results.
+|  -> [E##] = cross-reference; the adjacent verb states the relationship.
+|  [label](E##/phase-id) = deep-link to a highlighted experiment phase.
+|  Finished = saved execution result, not a quality score.
+|
++-- Style and representation
+|   |
+|   +-- [E01] Baseline vs weighted 3+1                         Nov 03
+|   |   +-- Setup: pre-tldraw canvas domain; fixed seven-slot template
+|   |   |   Astra/high; two independent batches, baseline + weighted each
+|   |   +-- Change: measured modular/call/ownership/dependency emphasis
+|   |   `-- Results: 4/4 canvases finished
+|   |       +-- Saved judges: more explicit owners, calls, required inputs
+|   |       +-- Differences mainly emphasis; small samples, weak attribution
+|   |       `-- One judge attempt rejected by schema; later assessment finished
+|   |
+|   `-- [E02] Diagram style controls                            Nov 03
+|       +-- Setup: same pinned source context and template as -> [E01]
+|       |   Astra/high; 3 shared baselines + 1 sample at each of 6 extremes
+|       +-- Expression: code <-> natural language
+|       +-- Focus: modular contracts <-> runtime state and lifetimes
+|       +-- Topology: shallow <-> varied depth
+|       `-- Results: 9/9 canvases; 3 saved comparison reports
+|           +-- Each control moved outputs in its intended direction
+|           +-- Shallow: 1 branch level; varied: 4-6; baselines: 2-4
+|           `-- Single samples at extremes; no reliable overall winner
+|
++-- Updating diagrams as code changes
+|   |
+|   +-- [E03] AgentChat modification chain                      Nov 03
+|   |   +-- Setup: pinned ChangeSession v2 context 05; Astra/high, n=1
+|   |   +-- Modify existing -> generate central C1 -> expand C2 cluster
+|   |   `-- Results: 3/3 stages finished; proposals remained unaccepted
+|   |
+|   `-- [E04] Diagram change strategy                          Nov 05
+|       +-- Setup: 7 ChangeSession contexts; context 05 shared with -> [E03]
+|       +-- [P1](E04/baseline): original rules, Sol/high, 3 samples/context
+|       |   `-- 19/21 finished; 16 syntax-valid; new canvases 0, redraws 0
+|       +-- [P2](E04/phase-2): revised rules + derived contexts, Sol/high, 3/context
+|       |   `-- 17/21 finished; 16 syntax-valid; new canvases 28, redraws 56
+|       +-- [P3](E04/phase-3): same P2 prompt/contexts, Astra/high, 2/context
+|       |   `-- 14/14 finished and syntax-valid; new canvases 11, redraws 64
+|       +-- [P4](E04/phase-4): explicit architectural fit, Astra/high, 2/context
+|       |   `-- 14/14 finished and syntax-valid; new canvases 2, redraws 33
+|       +-- Interpretation
+|       |   +-- Counts above are operations, not numbers of outputs
+|       |   +-- P4 reduced new-canvas/redraw operations relative to P3
+|       |   `-- Syntax/count assessment only; P1->P2 changes prompt AND inputs
+|       |
+|       `-- Progressive history - both derive from P4's prompt
+|           +-- Shared setup: 03f2168..81f05a2; Astra/high, n=1
+|           |   Plan across the full sequence; execute 11 multi-commit batches
+|           |   Each execution starts from the preceding saved canvas state
+|           |
+|           +-- [E07] Standard history                         Nov 10
+|           |   +-- Setup: plan first, then serial diagram updates
+|           |   `-- Results: 1 plan + 11/11 execution checkpoints finished
+|           |
+|           `-- [E08] Structure-first history                  Nov 10
+|               +-- Setup: preplan geometry, edges, and diagram sizes
+|               +-- Results: 1 plan + 11 deterministic scaffolds + 9/11 updates
+|               +-- B10: persistence error, "Saved timeline view changed"
+|               +-- B11: not attempted after upstream failure
+|               `-- Comparator: -> [E07]; scaffolds are not extra model samples
+|
++-- Turning diagrams into connected canvases
+|   |
+|   `-- [E05] Mapping architecture expansion                   Nov 05
+|       +-- Setup: one architecture seed at 03f2168; Astra/high, n=3
+|       |   Reduce the central diagram 20-40%; expand connected peripherals
+|       +-- Results: 3/3 alternative canvases; no attached quality comparison
+|       |
+|       +-- [E06] Shopify expansion and navigation              Nov 07
+|       |   +-- Derivation: domain variation of parent's prompt v5
+|       |   +-- Setup: 10 central diagrams + pinned corpus; Astra/high, n=1 each
+|       |   +-- [Expansion](E06/phase-1): 9/10 finished; Buyer network hit an anchor error
+|       |   `-- [Navigation](E06/phase-2): link the 9 completed canvases from Company Map
+|       |       +-- 3 schema-rejected attempts before generation
+|       |       `-- 3 later navigation outputs finished
+|       |
+|       `-- [E09] Codebase canvas discovery                     Nov 11
+|           +-- Setup: 1,044 files at 8ca1437; Astra/high, n=1 per job
+|           +-- [P1](E09/phase-1): original / rewritten / 3+1 discovery -> 11 / 13 / 15 points
+|           +-- [P2](E09/phase-2): each discovery x minimal or explicit-3+1 tree prompt
+|           |   `-- A1/A2: 11 each; B1/B2: 13 each; C1/C2: 15 each = 78 trees
+|           +-- [P3](E09/phase-3): 78/78 canvas expansions; prompt derived from -> [E05] v5
+|           +-- [P4](E09/phase-4): judge selected B2 and C1 for complementary strengths
+|           |   +-- B2: architectural distinctions; repetition to reduce
+|           |   +-- C1: useful boundaries and clearer workflow hierarchy
+|           |   `-- Improvement work cancelled: 40/44 registered outputs finished
+|           +-- Recorded total: 211/219 finished, including 11/15 superseded
+|           |   Full planned three-round improvement programme was not completed
+|           |
+|           `-- [E10] C1 prompt style study                    Nov 13-14
+|               +-- Setup: reuse 4 C1 trees and their pinned contexts
+|               |   Workspace / revisions / agent access / change proposals
+|               +-- [P1](E10/prompt-trial): add 3+1 + 60/40 wording; retain six short examples
+|               |   `-- 4 new trees + 1 collection critique finished
+|               +-- [P2](E10/fewshot-trial): replace examples with larger compiler + telemetry trees
+|               |   `-- 4/4 new trees finished; remaining settings unchanged
+|               +-- Total: 4 reused + 8 new trees + 1 critique = 13 artifacts
+|               `-- Findings
+|                   +-- P1 critique: repeated four-view outlines and inventories
+|                   +-- Saved observation: long few-shot examples steer style
+|                   `-- No saved quantitative P1-vs-P2 judgement
+|
++-- Discovering the core directly
+|   |
+|   `-- [E11] Core component discovery                        Nov 14
+|       +-- Setup: 259 pinned files at 03f2168; Astra/high, n=1
+|       |   3+1, two examples, 60/40 guidance; no supplied reference/rankings
+|       +-- Results: 1/1 tree finished; no attached comparative judgement
+|       |
+|       `-- [E12] Core discovery across repositories               Nov 14-16
+|           +-- Derivation: repository-browsing variation of -> [E11]
+|           +-- Setup: Mapping, Pi, OpenCode, Ghostty; pinned checkouts
+|           +-- [Baseline](E12/mapping): 4 trees, Astra/high and Sol/high
+|           +-- [Repository discovery](E12/pi): 12 trees + 4 coverage reports
+|           |   Mapping mixes prompt v2/v4; other repositories use v4
+|           +-- No-fewshot variation: 4 trees, same pinned inputs
+|           +-- Total: 20 trees + 4 deterministic reports finished
+|           |   Coverage reports measure source exposure, not correctness
+|           |
+|           +-- [E13] Tree similarity judge                        Nov 16
+|           |   +-- Reuses saved Phase 2 trees from -> [E12]
+|           |   +-- [Judge pairs](E13/judge): Astra/high vs Sol/high
+|           |   |   Repeated pairs, reversed order, self/cross-repository controls
+|           |   +-- Results: 40 reports; 12 failed attempts retained
+|           |   +-- Self / cross-repository controls scored 1 / 0
+|           |   `-- Saved review: grouping and relocation can skew scores
+|           |
+|           +-- [E14] Core diagram to canvas                       Nov 17
+|           |   +-- Reuses one core tree per repository from -> [E12]
+|           |   |   Mapping sample 1 (v2), Pi sample 3, OpenCode sample 2, Ghostty sample 3
+|           |   +-- Setup: Astra/high; 3 samples per participating repository per phase
+|           |   +-- [P1](E14/canvas): central + peripheral diagrams; 12/12 finished
+|           |   +-- [P2](E14/expand): recursive expansion; 12/12 finished
+|           |   |   Starts from each repository's first P1 canvas
+|           |   +-- [P3](E14/expand-again) expands Mapping and Ghostty a second time (6/6 finished)
+|           |   +-- For breadth-first seeds with the same canvas prompts, see [E16]
+|           |   |
+|           |   `-- [E15] Source mapping effort                    Nov 17
+|           |       +-- Inputs: 4 core trees from -> [E12]
+|           |       |   Plus 4 matched P1 canvases from -> [E14]
+|           |       +-- Setup: Sol low / medium / high; 3 samples/input
+|           |       +-- [Core diagrams](E15/core): 36/36 final outputs finished
+|           |       +-- [Full canvases](E15/canvas): 36/36 final outputs finished
+|           |       +-- [Initial trials](E15/baseline-v1): 3 finished, 4 failed
+|           |       +-- All 72 final outputs validated, saved and reopened
+|           |       +-- Medium: 100% core / 99.7% canvas direct node coverage
+|           |       `-- Semantic accuracy remains unjudged
+|           |
+|           +-- [E17] Core diagram few-shot permutations          Nov 18
+|           |   `-- [E12 baseline](E17/baseline) reuses six Phase 2 trees from [E12]
+|           |       Three Mapping and three Ghostty trees retain their original prompts and runs
+|           |
+|           `-- [E16] Breadth-first core to canvas                 Nov 18
+|               +-- [Core discovery](E16/core) uses a breadth-first variation of [E12] v4
+|               |   One tree each for Mapping, Pi, OpenCode and Ghostty (4/4 finished)
+|               |   Name the major subsystems at depth 1–2 before expanding any one of them
+|               +-- Uses the canvas prompts from [E14] with its own core trees
+|               +-- [P1 · Generate canvas](E16/p1) generates three canvases per tree (12/12 finished)
+|               +-- [P2 · Expand canvas](E16/p2) expands the first P1 canvas from each repository (12/12 finished)
+|               +-- [P3 · Second expansion](E16/p3) expands one reviewer-selected P2 canvas per repository (12/12 finished)
+|               |
+|               +-- [E18] 3+1 Model Core Component                 Nov 19
+|               |   +-- [Core views](E18/core) adapts the [E16] prompt to four Ghostty views
+|               |   |   Modular structure, call, ownership and data dependency
+|               |   |   Two samples per view with examples and two without (15/16 finished)
+|               |   +-- [Expand canvas](E18/expand) uses sample 1 with examples from each view
+|               |   |   Two canvases per tree using variations of the [E14] expansion prompt (7/8 finished)
+|               |   +-- [Second expansion](E18/expand2) expands each saved canvas once (6/7 finished)
+|               |   |
+|               |   `-- [E20] Recombine 3+1 trees                    Nov 20
+|               |       +-- Weaves the four [E18] core trees into one Hierarchical Graph
+|               |       |   Formal intersections; no lens is the default backbone
+|               |       `-- [Recombine into HierGraph](E20/recombine) targets 3 canvases, N≈6, M≈3
+|               |           Attempt 1 failed validation; v2 relaunch finished (1/2 finished)
+|               |
+|               `-- [E21] HierGraph spread plan                    Nov 21
+|                   +-- Same Ghostty core tree input as [P1](E16/p1); prompt forked from the [E16] P1 canvas prompt
+|                   |   HierGraph formalization: spread coverage along T (composition) and E (relations)
+|                   +-- [Spread plan](E21/plan) returns Markdown plans of new diagrams and canvases (5/5 finished)
+|                   `-- [Build canvases](E21/build) builds the merged plan as one linked canvas set with a single agent
+|                       v3 3/3 finished (one column, 63–70 jumps); v4 layout cancelled; v5 jump budget (3/3, no edges); v6 edges between diagrams + centered layout (0/3, running)
+|                       The merged plan is an in-session Claude synthesis of the five plans, not a model run
+|
+`-- Evaluating diagram critiques
+    |
+    `-- [E19] Claude critique benchmark                           Nov 20
+        +-- Four original queries paired with Claude’s historical critiques as judge references
+        +-- Pinned evidence by query
+        |   +-- Ghostty canvas lineage uses core and canvas outputs from [E12] and [E14]
+        |   +-- C1 prompt style uses original and revised trees and the critique from [E10]
+        |   +-- Mapping seed choice uses canvases from [E05] and core trees from [E12]
+        |   `-- Ghostty source mappings use central diagrams and expanded canvases from [E15]
+        `-- [Evaluate supplied outputs](E19/critique) is planned, with zero saved outputs

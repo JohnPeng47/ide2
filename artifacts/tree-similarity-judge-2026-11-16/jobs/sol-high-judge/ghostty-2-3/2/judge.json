@@ -1,0 +1,1789 @@
+{
+  "score": 0.960018,
+  "anchors": {
+    "pairs": [
+      {
+        "label": "Surface integration and App host boundary",
+        "a": [
+          [
+            3,
+            14
+          ]
+        ],
+        "b": [
+          [
+            3,
+            12
+          ]
+        ],
+        "grouped": false,
+        "relocated": false,
+        "offset": 0,
+        "inner": {
+          "pairs": [
+            {
+              "label": "surface event and draw entry points",
+              "a": [
+                [
+                  4,
+                  5
+                ]
+              ],
+              "b": [
+                [
+                  4,
+                  5
+                ]
+              ],
+              "grouped": false,
+              "relocated": false,
+              "offset": 0,
+              "inner": "leaves",
+              "s": 1
+            },
+            {
+              "label": "apprt platform runtime and actions",
+              "a": [
+                [
+                  6,
+                  8
+                ]
+              ],
+              "b": [
+                [
+                  6,
+                  8
+                ]
+              ],
+              "grouped": false,
+              "relocated": false,
+              "offset": 0,
+              "inner": {
+                "pairs": [
+                  {
+                    "label": "selected host runtime",
+                    "a": [
+                      [
+                        7,
+                        7
+                      ]
+                    ],
+                    "b": [
+                      [
+                        7,
+                        7
+                      ]
+                    ],
+                    "grouped": false,
+                    "relocated": false,
+                    "offset": 0,
+                    "inner": "leaves",
+                    "s": 1
+                  },
+                  {
+                    "label": "host UI actions",
+                    "a": [
+                      [
+                        8,
+                        8
+                      ]
+                    ],
+                    "b": [
+                      [
+                        8,
+                        8
+                      ]
+                    ],
+                    "grouped": false,
+                    "relocated": false,
+                    "offset": 0,
+                    "inner": "leaves",
+                    "s": 1
+                  }
+                ],
+                "unmatchedA": [],
+                "unmatchedB": [],
+                "J": 1
+              },
+              "s": 1
+            },
+            {
+              "label": "App multi-session coordination",
+              "a": [
+                [
+                  9,
+                  14
+                ]
+              ],
+              "b": [
+                [
+                  9,
+                  12
+                ]
+              ],
+              "grouped": false,
+              "relocated": false,
+              "offset": 0,
+              "inner": {
+                "pairs": [
+                  {
+                    "label": "registered surfaces and focus",
+                    "a": [
+                      [
+                        10,
+                        10
+                      ]
+                    ],
+                    "b": [
+                      [
+                        10,
+                        10
+                      ]
+                    ],
+                    "grouped": false,
+                    "relocated": false,
+                    "offset": 0,
+                    "inner": "leaves",
+                    "s": 1
+                  },
+                  {
+                    "label": "shared font grids and graphics device",
+                    "a": [
+                      [
+                        11,
+                        12
+                      ]
+                    ],
+                    "b": [
+                      [
+                        11,
+                        11
+                      ],
+                      [
+                        12,
+                        12
+                      ]
+                    ],
+                    "grouped": true,
+                    "relocated": false,
+                    "offset": 0,
+                    "inner": "leaves",
+                    "s": 1
+                  },
+                  {
+                    "label": "app mailbox dispatch",
+                    "a": [
+                      [
+                        13,
+                        14
+                      ]
+                    ],
+                    "b": [
+                      [
+                        54,
+                        55
+                      ]
+                    ],
+                    "grouped": false,
+                    "relocated": true,
+                    "offset": 2,
+                    "inner": "leaves",
+                    "s": 0.405
+                  }
+                ],
+                "unmatchedA": [],
+                "unmatchedB": [],
+                "J": 0.801667
+              },
+              "s": 0.900834
+            }
+          ],
+          "unmatchedA": [],
+          "unmatchedB": [],
+          "J": 0.966945
+        },
+        "s": 0.983472
+      },
+      {
+        "label": "Surface session resources",
+        "a": [
+          [
+            16,
+            25
+          ]
+        ],
+        "b": [
+          [
+            14,
+            25
+          ]
+        ],
+        "grouped": false,
+        "relocated": false,
+        "offset": 0,
+        "inner": {
+          "pairs": [
+            {
+              "label": "Termio and IO thread",
+              "a": [
+                [
+                  17,
+                  17
+                ]
+              ],
+              "b": [
+                [
+                  16,
+                  16
+                ]
+              ],
+              "grouped": false,
+              "relocated": false,
+              "offset": 0,
+              "inner": "leaves",
+              "s": 1
+            },
+            {
+              "label": "renderer and worker threads",
+              "a": [
+                [
+                  18,
+                  18
+                ]
+              ],
+              "b": [
+                [
+                  17,
+                  17
+                ],
+                [
+                  18,
+                  18
+                ]
+              ],
+              "grouped": true,
+              "relocated": false,
+              "offset": 0,
+              "inner": "leaves",
+              "s": 1
+            },
+            {
+              "label": "renderer.State and shared model",
+              "a": [
+                [
+                  19,
+                  21
+                ]
+              ],
+              "b": [
+                [
+                  22,
+                  25
+                ]
+              ],
+              "grouped": false,
+              "relocated": false,
+              "offset": 0,
+              "inner": {
+                "pairs": [
+                  {
+                    "label": "reference to Termio terminal",
+                    "a": [
+                      [
+                        20,
+                        20
+                      ]
+                    ],
+                    "b": [
+                      [
+                        23,
+                        23
+                      ]
+                    ],
+                    "grouped": false,
+                    "relocated": false,
+                    "offset": 0,
+                    "inner": "leaves",
+                    "s": 1
+                  },
+                  {
+                    "label": "shared state synchronization",
+                    "a": [
+                      [
+                        21,
+                        21
+                      ]
+                    ],
+                    "b": [
+                      [
+                        24,
+                        24
+                      ]
+                    ],
+                    "grouped": false,
+                    "relocated": false,
+                    "offset": 0,
+                    "inner": "leaves",
+                    "s": 1
+                  }
+                ],
+                "unmatchedA": [],
+                "unmatchedB": [
+                  {
+                    "lines": [
+                      25,
+                      25
+                    ],
+                    "label": "lock-demand starvation handoff"
+                  }
+                ],
+                "J": 0.666667
+              },
+              "s": 0.833333
+            },
+            {
+              "label": "interaction state",
+              "a": [
+                [
+                  22,
+                  23
+                ]
+              ],
+              "b": [
+                [
+                  19,
+                  19
+                ]
+              ],
+              "grouped": false,
+              "relocated": false,
+              "offset": 0,
+              "inner": "leaves",
+              "s": 1
+            },
+            {
+              "label": "owned derived configuration",
+              "a": [
+                [
+                  24,
+                  25
+                ]
+              ],
+              "b": [
+                [
+                  20,
+                  20
+                ]
+              ],
+              "grouped": false,
+              "relocated": false,
+              "offset": 0,
+              "inner": "leaves",
+              "s": 1
+            }
+          ],
+          "unmatchedA": [],
+          "unmatchedB": [],
+          "J": 0.966667
+        },
+        "s": 0.983334
+      },
+      {
+        "label": "user input and PTY writes",
+        "a": [
+          [
+            27,
+            40
+          ]
+        ],
+        "b": [
+          [
+            27,
+            38
+          ]
+        ],
+        "grouped": false,
+        "relocated": false,
+        "offset": 0,
+        "inner": {
+          "pairs": [
+            {
+              "label": "key processing",
+              "a": [
+                [
+                  28,
+                  32
+                ]
+              ],
+              "b": [
+                [
+                  28,
+                  31
+                ]
+              ],
+              "grouped": false,
+              "relocated": false,
+              "offset": 0,
+              "inner": {
+                "pairs": [
+                  {
+                    "label": "keybinding actions",
+                    "a": [
+                      [
+                        29,
+                        29
+                      ]
+                    ],
+                    "b": [
+                      [
+                        29,
+                        29
+                      ]
+                    ],
+                    "grouped": false,
+                    "relocated": false,
+                    "offset": 0,
+                    "inner": "leaves",
+                    "s": 1
+                  },
+                  {
+                    "label": "key encoder and mode-aware options",
+                    "a": [
+                      [
+                        30,
+                        32
+                      ]
+                    ],
+                    "b": [
+                      [
+                        30,
+                        31
+                      ]
+                    ],
+                    "grouped": false,
+                    "relocated": false,
+                    "offset": 0,
+                    "inner": "leaves",
+                    "s": 1
+                  }
+                ],
+                "unmatchedA": [],
+                "unmatchedB": [],
+                "J": 1
+              },
+              "s": 1
+            },
+            {
+              "label": "mouse, selection and paste",
+              "a": [
+                [
+                  33,
+                  36
+                ]
+              ],
+              "b": [
+                [
+                  32,
+                  34
+                ]
+              ],
+              "grouped": false,
+              "relocated": false,
+              "offset": 0,
+              "inner": {
+                "pairs": [
+                  {
+                    "label": "mouse encoding",
+                    "a": [
+                      [
+                        34,
+                        34
+                      ]
+                    ],
+                    "b": [
+                      [
+                        33,
+                        33
+                      ]
+                    ],
+                    "grouped": false,
+                    "relocated": false,
+                    "offset": 0,
+                    "inner": "leaves",
+                    "s": 1
+                  },
+                  {
+                    "label": "paste encoding",
+                    "a": [
+                      [
+                        36,
+                        36
+                      ]
+                    ],
+                    "b": [
+                      [
+                        34,
+                        34
+                      ]
+                    ],
+                    "grouped": false,
+                    "relocated": false,
+                    "offset": 0,
+                    "inner": "leaves",
+                    "s": 1
+                  }
+                ],
+                "unmatchedA": [
+                  {
+                    "lines": [
+                      35,
+                      35
+                    ],
+                    "label": "local tracked selection"
+                  }
+                ],
+                "unmatchedB": [],
+                "J": 0.666667
+              },
+              "s": 0.833333
+            },
+            {
+              "label": "queued writes to child",
+              "a": [
+                [
+                  37,
+                  40
+                ]
+              ],
+              "b": [
+                [
+                  35,
+                  38
+                ]
+              ],
+              "grouped": false,
+              "relocated": false,
+              "offset": 0,
+              "inner": {
+                "pairs": [
+                  {
+                    "label": "readonly write ownership",
+                    "a": [
+                      [
+                        38,
+                        38
+                      ]
+                    ],
+                    "b": [
+                      [
+                        36,
+                        36
+                      ]
+                    ],
+                    "grouped": false,
+                    "relocated": false,
+                    "offset": 0,
+                    "inner": "leaves",
+                    "s": 1
+                  },
+                  {
+                    "label": "Termio mailbox and PTY queue write",
+                    "a": [
+                      [
+                        39,
+                        40
+                      ]
+                    ],
+                    "b": [
+                      [
+                        37,
+                        38
+                      ]
+                    ],
+                    "grouped": false,
+                    "relocated": false,
+                    "offset": 0,
+                    "inner": "leaves",
+                    "s": 1
+                  }
+                ],
+                "unmatchedA": [],
+                "unmatchedB": [],
+                "J": 1
+              },
+              "s": 1
+            }
+          ],
+          "unmatchedA": [],
+          "unmatchedB": [],
+          "J": 0.944444
+        },
+        "s": 0.972222
+      },
+      {
+        "label": "child output and VT interpretation",
+        "a": [
+          [
+            42,
+            58
+          ]
+        ],
+        "b": [
+          [
+            40,
+            55
+          ]
+        ],
+        "grouped": false,
+        "relocated": false,
+        "offset": 0,
+        "inner": {
+          "pairs": [
+            {
+              "label": "Exec subprocess and read threads",
+              "a": [
+                [
+                  43,
+                  49
+                ]
+              ],
+              "b": [
+                [
+                  41,
+                  44
+                ]
+              ],
+              "grouped": false,
+              "relocated": false,
+              "offset": 0,
+              "inner": {
+                "pairs": [
+                  {
+                    "label": "Subprocess and PTY launch",
+                    "a": [
+                      [
+                        45,
+                        45
+                      ]
+                    ],
+                    "b": [
+                      [
+                        42,
+                        42
+                      ]
+                    ],
+                    "grouped": false,
+                    "relocated": false,
+                    "offset": 0,
+                    "inner": "leaves",
+                    "s": 1
+                  },
+                  {
+                    "label": "POSIX and Windows reader paths",
+                    "a": [
+                      [
+                        47,
+                        49
+                      ]
+                    ],
+                    "b": [
+                      [
+                        43,
+                        44
+                      ]
+                    ],
+                    "grouped": false,
+                    "relocated": false,
+                    "offset": 0,
+                    "inner": "leaves",
+                    "s": 1
+                  }
+                ],
+                "unmatchedA": [
+                  {
+                    "lines": [
+                      46,
+                      46
+                    ],
+                    "label": "child exit watcher"
+                  }
+                ],
+                "unmatchedB": [],
+                "J": 0.666667
+              },
+              "s": 0.833333
+            },
+            {
+              "label": "Termio output lock and parsing",
+              "a": [
+                [
+                  50,
+                  54
+                ]
+              ],
+              "b": [
+                [
+                  45,
+                  49
+                ]
+              ],
+              "grouped": false,
+              "relocated": false,
+              "offset": 0,
+              "inner": {
+                "pairs": [
+                  {
+                    "label": "synchronized output parsing",
+                    "a": [
+                      [
+                        50,
+                        51
+                      ]
+                    ],
+                    "b": [
+                      [
+                        45,
+                        46
+                      ]
+                    ],
+                    "grouped": false,
+                    "relocated": false,
+                    "offset": 0,
+                    "inner": "leaves",
+                    "s": 1
+                  },
+                  {
+                    "label": "StreamHandler VT terminal operations",
+                    "a": [
+                      [
+                        52,
+                        54
+                      ]
+                    ],
+                    "b": [
+                      [
+                        47,
+                        49
+                      ]
+                    ],
+                    "grouped": false,
+                    "relocated": false,
+                    "offset": 0,
+                    "inner": "leaves",
+                    "s": 1
+                  }
+                ],
+                "unmatchedA": [],
+                "unmatchedB": [],
+                "J": 1
+              },
+              "s": 1
+            },
+            {
+              "label": "StreamHandler side effects",
+              "a": [
+                [
+                  55,
+                  58
+                ]
+              ],
+              "b": [
+                [
+                  50,
+                  53
+                ]
+              ],
+              "grouped": false,
+              "relocated": false,
+              "offset": 0,
+              "inner": {
+                "pairs": [
+                  {
+                    "label": "protocol replies via IO mailbox",
+                    "a": [
+                      [
+                        56,
+                        56
+                      ]
+                    ],
+                    "b": [
+                      [
+                        50,
+                        50
+                      ]
+                    ],
+                    "grouped": false,
+                    "relocated": false,
+                    "offset": 0,
+                    "inner": "leaves",
+                    "s": 1
+                  },
+                  {
+                    "label": "surface UI effects and mailbox",
+                    "a": [
+                      [
+                        57,
+                        57
+                      ]
+                    ],
+                    "b": [
+                      [
+                        52,
+                        53
+                      ]
+                    ],
+                    "grouped": false,
+                    "relocated": false,
+                    "offset": 1,
+                    "inner": "leaves",
+                    "s": 0.9
+                  },
+                  {
+                    "label": "renderer notification",
+                    "a": [
+                      [
+                        58,
+                        58
+                      ]
+                    ],
+                    "b": [
+                      [
+                        51,
+                        51
+                      ]
+                    ],
+                    "grouped": false,
+                    "relocated": false,
+                    "offset": 0,
+                    "inner": "leaves",
+                    "s": 1
+                  }
+                ],
+                "unmatchedA": [],
+                "unmatchedB": [],
+                "J": 0.966667
+              },
+              "s": 0.983334
+            }
+          ],
+          "unmatchedA": [],
+          "unmatchedB": [],
+          "J": 0.938889
+        },
+        "s": 0.969445
+      },
+      {
+        "label": "emulator terminal screens",
+        "a": [
+          [
+            60,
+            73
+          ]
+        ],
+        "b": [
+          [
+            57,
+            70
+          ]
+        ],
+        "grouped": false,
+        "relocated": false,
+        "offset": 0,
+        "inner": {
+          "pairs": [
+            {
+              "label": "terminal operations",
+              "a": [
+                [
+                  61,
+                  62
+                ]
+              ],
+              "b": [
+                [
+                  58,
+                  58
+                ]
+              ],
+              "grouped": false,
+              "relocated": false,
+              "offset": 0,
+              "inner": "summarized",
+              "s": 0.9
+            },
+            {
+              "label": "ScreenSet, Screen and PageList",
+              "a": [
+                [
+                  63,
+                  71
+                ]
+              ],
+              "b": [
+                [
+                  61,
+                  70
+                ]
+              ],
+              "grouped": false,
+              "relocated": false,
+              "offset": 0,
+              "inner": {
+                "pairs": [
+                  {
+                    "label": "initial primary and lazy alternate",
+                    "a": [
+                      [
+                        64,
+                        64
+                      ]
+                    ],
+                    "b": [
+                      [
+                        62,
+                        62
+                      ]
+                    ],
+                    "grouped": false,
+                    "relocated": false,
+                    "offset": 0,
+                    "inner": "leaves",
+                    "s": 1
+                  },
+                  {
+                    "label": "active Screen",
+                    "a": [
+                      [
+                        65,
+                        71
+                      ]
+                    ],
+                    "b": [
+                      [
+                        63,
+                        70
+                      ]
+                    ],
+                    "grouped": false,
+                    "relocated": false,
+                    "offset": 0,
+                    "inner": {
+                      "pairs": [
+                        {
+                          "label": "active screen pointer",
+                          "a": [
+                            [
+                              65,
+                              65
+                            ]
+                          ],
+                          "b": [
+                            [
+                              63,
+                              63
+                            ]
+                          ],
+                          "grouped": false,
+                          "relocated": false,
+                          "offset": 0,
+                          "inner": "leaves",
+                          "s": 1
+                        },
+                        {
+                          "label": "Screen state and PageList",
+                          "a": [
+                            [
+                              66,
+                              71
+                            ]
+                          ],
+                          "b": [
+                            [
+                              64,
+                              70
+                            ]
+                          ],
+                          "grouped": false,
+                          "relocated": false,
+                          "offset": 0,
+                          "inner": {
+                            "pairs": [
+                              {
+                                "label": "cursor, selection and keyboard state",
+                                "a": [
+                                  [
+                                    66,
+                                    66
+                                  ]
+                                ],
+                                "b": [
+                                  [
+                                    65,
+                                    65
+                                  ]
+                                ],
+                                "grouped": false,
+                                "relocated": false,
+                                "offset": 0,
+                                "inner": "leaves",
+                                "s": 1
+                              },
+                              {
+                                "label": "Kitty graphics and semantic prompts",
+                                "a": [
+                                  [
+                                    67,
+                                    67
+                                  ]
+                                ],
+                                "b": [
+                                  [
+                                    66,
+                                    66
+                                  ]
+                                ],
+                                "grouped": false,
+                                "relocated": false,
+                                "offset": 0,
+                                "inner": "leaves",
+                                "s": 1
+                              },
+                              {
+                                "label": "PageList and tracked locations",
+                                "a": [
+                                  [
+                                    68,
+                                    71
+                                  ]
+                                ],
+                                "b": [
+                                  [
+                                    67,
+                                    70
+                                  ]
+                                ],
+                                "grouped": false,
+                                "relocated": false,
+                                "offset": 0,
+                                "inner": {
+                                  "pairs": [
+                                    {
+                                      "label": "scrollback and visible ordered pages",
+                                      "a": [
+                                        [
+                                          69,
+                                          69
+                                        ]
+                                      ],
+                                      "b": [
+                                        [
+                                          68,
+                                          68
+                                        ]
+                                      ],
+                                      "grouped": false,
+                                      "relocated": false,
+                                      "offset": 0,
+                                      "inner": "leaves",
+                                      "s": 1
+                                    },
+                                    {
+                                      "label": "page rows and cells",
+                                      "a": [
+                                        [
+                                          70,
+                                          70
+                                        ]
+                                      ],
+                                      "b": [
+                                        [
+                                          69,
+                                          69
+                                        ]
+                                      ],
+                                      "grouped": false,
+                                      "relocated": false,
+                                      "offset": 0,
+                                      "inner": "leaves",
+                                      "s": 1
+                                    },
+                                    {
+                                      "label": "tracked pins",
+                                      "a": [
+                                        [
+                                          71,
+                                          71
+                                        ]
+                                      ],
+                                      "b": [
+                                        [
+                                          70,
+                                          70
+                                        ]
+                                      ],
+                                      "grouped": false,
+                                      "relocated": false,
+                                      "offset": 0,
+                                      "inner": "leaves",
+                                      "s": 1
+                                    }
+                                  ],
+                                  "unmatchedA": [],
+                                  "unmatchedB": [],
+                                  "J": 1
+                                },
+                                "s": 1
+                              }
+                            ],
+                            "unmatchedA": [],
+                            "unmatchedB": [],
+                            "J": 1
+                          },
+                          "s": 1
+                        }
+                      ],
+                      "unmatchedA": [],
+                      "unmatchedB": [],
+                      "J": 1
+                    },
+                    "s": 1
+                  }
+                ],
+                "unmatchedA": [],
+                "unmatchedB": [],
+                "J": 1
+              },
+              "s": 1
+            },
+            {
+              "label": "terminal dimensions, protocol and session attributes",
+              "a": [
+                [
+                  72,
+                  73
+                ]
+              ],
+              "b": [
+                [
+                  59,
+                  60
+                ]
+              ],
+              "grouped": false,
+              "relocated": false,
+              "offset": 0,
+              "inner": "leaves",
+              "s": 1
+            }
+          ],
+          "unmatchedA": [],
+          "unmatchedB": [],
+          "J": 0.966667
+        },
+        "s": 0.983334
+      },
+      {
+        "label": "renderer frame and presentation",
+        "a": [
+          [
+            75,
+            88
+          ]
+        ],
+        "b": [
+          [
+            72,
+            83
+          ]
+        ],
+        "grouped": false,
+        "relocated": false,
+        "offset": 0,
+        "inner": {
+          "pairs": [
+            {
+              "label": "renderer worker scheduling",
+              "a": [
+                [
+                  76,
+                  76
+                ]
+              ],
+              "b": [
+                [
+                  73,
+                  74
+                ]
+              ],
+              "grouped": false,
+              "relocated": false,
+              "offset": 0,
+              "inner": "leaves",
+              "s": 1
+            },
+            {
+              "label": "generic renderer, updateFrame and fonts",
+              "a": [
+                [
+                  77,
+                  78
+                ],
+                [
+                  79,
+                  83
+                ],
+                [
+                  84,
+                  85
+                ]
+              ],
+              "b": [
+                [
+                  75,
+                  80
+                ]
+              ],
+              "grouped": true,
+              "relocated": false,
+              "offset": 0,
+              "inner": {
+                "pairs": [
+                  {
+                    "label": "generic renderer and graphics API",
+                    "a": [
+                      [
+                        77,
+                        78
+                      ]
+                    ],
+                    "b": [
+                      [
+                        75,
+                        75
+                      ]
+                    ],
+                    "grouped": false,
+                    "relocated": false,
+                    "offset": 0,
+                    "inner": "summarized",
+                    "s": 0.9
+                  },
+                  {
+                    "label": "terminal state extraction",
+                    "a": [
+                      [
+                        79,
+                        83
+                      ]
+                    ],
+                    "b": [
+                      [
+                        76,
+                        78
+                      ],
+                      [
+                        80,
+                        80
+                      ]
+                    ],
+                    "grouped": true,
+                    "relocated": false,
+                    "offset": 1,
+                    "inner": {
+                      "pairs": [
+                        {
+                          "label": "lock-demanded snapshot",
+                          "a": [
+                            [
+                              79,
+                              79
+                            ]
+                          ],
+                          "b": [
+                            [
+                              77,
+                              77
+                            ]
+                          ],
+                          "grouped": false,
+                          "relocated": false,
+                          "offset": 0,
+                          "inner": "leaves",
+                          "s": 1
+                        },
+                        {
+                          "label": "viewport and presentation inputs",
+                          "a": [
+                            [
+                              80,
+                              83
+                            ]
+                          ],
+                          "b": [
+                            [
+                              78,
+                              78
+                            ],
+                            [
+                              80,
+                              80
+                            ]
+                          ],
+                          "grouped": true,
+                          "relocated": false,
+                          "offset": 0,
+                          "inner": "leaves",
+                          "s": 1
+                        }
+                      ],
+                      "unmatchedA": [],
+                      "unmatchedB": [],
+                      "J": 1
+                    },
+                    "s": 0.9
+                  },
+                  {
+                    "label": "font shaping and glyph preparation",
+                    "a": [
+                      [
+                        84,
+                        85
+                      ]
+                    ],
+                    "b": [
+                      [
+                        79,
+                        79
+                      ]
+                    ],
+                    "grouped": false,
+                    "relocated": false,
+                    "offset": 1,
+                    "inner": "leaves",
+                    "s": 0.9
+                  }
+                ],
+                "unmatchedA": [],
+                "unmatchedB": [],
+                "J": 0.9
+              },
+              "s": 0.95
+            },
+            {
+              "label": "drawFrame and host presentation",
+              "a": [
+                [
+                  86,
+                  88
+                ]
+              ],
+              "b": [
+                [
+                  81,
+                  83
+                ]
+              ],
+              "grouped": false,
+              "relocated": false,
+              "offset": 0,
+              "inner": {
+                "pairs": [
+                  {
+                    "label": "graphics API and visibility",
+                    "a": [
+                      [
+                        87,
+                        87
+                      ]
+                    ],
+                    "b": [
+                      [
+                        82,
+                        82
+                      ]
+                    ],
+                    "grouped": false,
+                    "relocated": false,
+                    "offset": 0,
+                    "inner": "leaves",
+                    "s": 1
+                  },
+                  {
+                    "label": "surface-driven drawing",
+                    "a": [
+                      [
+                        88,
+                        88
+                      ]
+                    ],
+                    "b": [
+                      [
+                        83,
+                        83
+                      ]
+                    ],
+                    "grouped": false,
+                    "relocated": false,
+                    "offset": 0,
+                    "inner": "leaves",
+                    "s": 1
+                  }
+                ],
+                "unmatchedA": [],
+                "unmatchedB": [],
+                "J": 1
+              },
+              "s": 1
+            }
+          ],
+          "unmatchedA": [],
+          "unmatchedB": [],
+          "J": 0.983333
+        },
+        "s": 0.991667
+      },
+      {
+        "label": "resize and configuration coordination",
+        "a": [
+          [
+            90,
+            99
+          ]
+        ],
+        "b": [
+          [
+            85,
+            91
+          ]
+        ],
+        "grouped": false,
+        "relocated": false,
+        "offset": 0,
+        "inner": {
+          "pairs": [
+            {
+              "label": "Surface dimensions and resize messages",
+              "a": [
+                [
+                  91,
+                  93
+                ]
+              ],
+              "b": [
+                [
+                  86,
+                  87
+                ]
+              ],
+              "grouped": false,
+              "relocated": false,
+              "offset": 0,
+              "inner": {
+                "pairs": [
+                  {
+                    "label": "size to cell geometry",
+                    "a": [
+                      [
+                        92,
+                        92
+                      ]
+                    ],
+                    "b": [
+                      [
+                        87,
+                        87
+                      ]
+                    ],
+                    "grouped": false,
+                    "relocated": false,
+                    "offset": 0,
+                    "inner": "leaves",
+                    "s": 1
+                  },
+                  {
+                    "label": "I/O resize request",
+                    "a": [
+                      [
+                        93,
+                        93
+                      ]
+                    ],
+                    "b": [
+                      [
+                        86,
+                        86
+                      ]
+                    ],
+                    "grouped": false,
+                    "relocated": false,
+                    "offset": 1,
+                    "inner": "leaves",
+                    "s": 0.9
+                  }
+                ],
+                "unmatchedA": [],
+                "unmatchedB": [],
+                "J": 0.95
+              },
+              "s": 0.975
+            },
+            {
+              "label": "Termio resize and renderer notification",
+              "a": [
+                [
+                  94,
+                  97
+                ]
+              ],
+              "b": [
+                [
+                  88,
+                  91
+                ]
+              ],
+              "grouped": false,
+              "relocated": false,
+              "offset": 0,
+              "inner": {
+                "pairs": [
+                  {
+                    "label": "under lock PTY and Terminal resize",
+                    "a": [
+                      [
+                        95,
+                        96
+                      ]
+                    ],
+                    "b": [
+                      [
+                        89,
+                        90
+                      ]
+                    ],
+                    "grouped": false,
+                    "relocated": false,
+                    "offset": 0,
+                    "inner": "leaves",
+                    "s": 1
+                  },
+                  {
+                    "label": "renderer resize notification",
+                    "a": [
+                      [
+                        97,
+                        97
+                      ]
+                    ],
+                    "b": [
+                      [
+                        91,
+                        91
+                      ]
+                    ],
+                    "grouped": false,
+                    "relocated": false,
+                    "offset": 0,
+                    "inner": "leaves",
+                    "s": 1
+                  }
+                ],
+                "unmatchedA": [],
+                "unmatchedB": [],
+                "J": 1
+              },
+              "s": 1
+            },
+            {
+              "label": "config update propagation",
+              "a": [
+                [
+                  98,
+                  99
+                ]
+              ],
+              "b": [
+                [
+                  21,
+                  21
+                ]
+              ],
+              "grouped": false,
+              "relocated": true,
+              "offset": 2,
+              "inner": "leaves",
+              "s": 0.405
+            }
+          ],
+          "unmatchedA": [],
+          "unmatchedB": [],
+          "J": 0.793333
+        },
+        "s": 0.896667
+      },
+      {
+        "label": "session close and teardown",
+        "a": [
+          [
+            101,
+            109
+          ]
+        ],
+        "b": [
+          [
+            93,
+            103
+          ]
+        ],
+        "grouped": false,
+        "relocated": false,
+        "offset": 0,
+        "inner": {
+          "pairs": [
+            {
+              "label": "runtime-driven close",
+              "a": [
+                [
+                  102,
+                  102
+                ]
+              ],
+              "b": [
+                [
+                  96,
+                  97
+                ]
+              ],
+              "grouped": false,
+              "relocated": false,
+              "offset": 0,
+              "inner": "leaves",
+              "s": 1
+            },
+            {
+              "label": "stop and join workers",
+              "a": [
+                [
+                  103,
+                  104
+                ]
+              ],
+              "b": [
+                [
+                  98,
+                  100
+                ]
+              ],
+              "grouped": false,
+              "relocated": false,
+              "offset": 0,
+              "inner": {
+                "pairs": [
+                  {
+                    "label": "search then render and I/O workers",
+                    "a": [
+                      [
+                        103,
+                        103
+                      ]
+                    ],
+                    "b": [
+                      [
+                        99,
+                        99
+                      ]
+                    ],
+                    "grouped": false,
+                    "relocated": false,
+                    "offset": 0,
+                    "inner": "leaves",
+                    "s": 1
+                  },
+                  {
+                    "label": "Exec reader shutdown",
+                    "a": [
+                      [
+                        104,
+                        104
+                      ]
+                    ],
+                    "b": [
+                      [
+                        100,
+                        100
+                      ]
+                    ],
+                    "grouped": false,
+                    "relocated": false,
+                    "offset": 0,
+                    "inner": "leaves",
+                    "s": 1
+                  }
+                ],
+                "unmatchedA": [],
+                "unmatchedB": [],
+                "J": 1
+              },
+              "s": 1
+            },
+            {
+              "label": "resource release in Surface.deinit",
+              "a": [
+                [
+                  105,
+                  107
+                ]
+              ],
+              "b": [
+                [
+                  101,
+                  102
+                ]
+              ],
+              "grouped": false,
+              "relocated": false,
+              "offset": 0,
+              "inner": "leaves",
+              "s": 1
+            },
+            {
+              "label": "App shared resource teardown",
+              "a": [
+                [
+                  108,
+                  109
+                ]
+              ],
+              "b": [
+                [
+                  103,
+                  103
+                ]
+              ],
+              "grouped": false,
+              "relocated": false,
+              "offset": 0,
+              "inner": "leaves",
+              "s": 1
+            }
+          ],
+          "unmatchedA": [],
+          "unmatchedB": [
+            {
+              "lines": [
+                94,
+                95
+              ],
+              "label": "child exit and wait-after-command"
+            }
+          ],
+          "J": 0.8
+        },
+        "s": 0.9
+      }
+    ],
+    "unmatchedA": [],
+    "unmatchedB": [],
+    "J": 0.960018
+  },
+  "markdown": "### Anchor tree\n- A 3–14 ↔ B 3–12 · same · offset 0 · s = 0.983 · Surface integration and App boundary\n  - A 4–5 ↔ B 4–5 · same · offset 0 · s = 1 · event and draw entry points\n  - A 6–8 ↔ B 6–8 · same · offset 0 · s = 1 · apprt runtime and actions\n    - A 7 ↔ B 7 · same · offset 0 · s = 1 · host runtime\n    - A 8 ↔ B 8 · same · offset 0 · s = 1 · host UI actions\n  - A 9–14 ↔ B 9–12 · same · offset 0 · s = 0.901 · App coordination\n    - A 10 ↔ B 10 · same · offset 0 · s = 1 · surfaces and focus\n    - A 11–12 ↔ B 11, 12 · grouped · offset 0 · s = 1 · shared fonts and device\n    - A 13–14 ↔ B 54–55 · relocated · offset 2 · s = 0.405 · App mailbox dispatch\n- A 16–25 ↔ B 14–25 · same · offset 0 · s = 0.983 · Surface session resources\n  - A 17 ↔ B 16 · same · offset 0 · s = 1 · Termio and I/O thread\n  - A 18 ↔ B 17, 18 · grouped · offset 0 · s = 1 · renderer and workers\n  - A 19–21 ↔ B 22–25 · same · offset 0 · s = 0.833 · renderer.State\n    - A 20 ↔ B 23 · same · offset 0 · s = 1 · shared terminal reference\n    - A 21 ↔ B 24 · same · offset 0 · s = 1 · mutex\n    - unmatched: B 25 (demand handoff)\n  - A 22–23 ↔ B 19 · same · offset 0 · s = 1 · interaction state\n  - A 24–25 ↔ B 20 · same · offset 0 · s = 1 · derived configuration\n- A 27–40 ↔ B 27–38 · same · offset 0 · s = 0.972 · input and PTY writes\n  - A 28–32 ↔ B 28–31 · same · offset 0 · s = 1 · keys\n    - A 29 ↔ B 29 · same · offset 0 · s = 1 · bindings\n    - A 30–32 ↔ B 30–31 · same · offset 0 · s = 1 · key encoding\n  - A 33–36 ↔ B 32–34 · same · offset 0 · s = 0.833 · mouse and paste\n    - A 34 ↔ B 33 · same · offset 0 · s = 1 · mouse encoding\n    - A 36 ↔ B 34 · same · offset 0 · s = 1 · paste encoding\n    - unmatched: A 35 (local tracked selection)\n  - A 37–40 ↔ B 35–38 · same · offset 0 · s = 1 · queued writes\n    - A 38 ↔ B 36 · same · offset 0 · s = 1 · readonly handling\n    - A 39–40 ↔ B 37–38 · same · offset 0 · s = 1 · mailbox and PTY write\n- A 42–58 ↔ B 40–55 · same · offset 0 · s = 0.969 · child output and VT\n  - A 43–49 ↔ B 41–44 · same · offset 0 · s = 0.833 · Exec and readers\n    - A 45 ↔ B 42 · same · offset 0 · s = 1 · PTY launch\n    - A 47–49 ↔ B 43–44 · same · offset 0 · s = 1 · read paths\n    - unmatched: A 46 (child exit watcher)\n  - A 50–54 ↔ B 45–49 · same · offset 0 · s = 1 · locked parsing\n    - A 50–51 ↔ B 45–46 · same · offset 0 · s = 1 · output parsing\n    - A 52–54 ↔ B 47–49 · same · offset 0 · s = 1 · VT operations\n  - A 55–58 ↔ B 50–53 · same · offset 0 · s = 0.983 · StreamHandler effects\n    - A 56 ↔ B 50 · same · offset 0 · s = 1 · protocol replies\n    - A 57 ↔ B 52–53 · same · offset 1 · s = 0.9 · UI effects\n    - A 58 ↔ B 51 · same · offset 0 · s = 1 · render notification\n- A 60–73 ↔ B 57–70 · same · offset 0 · s = 0.983 · terminal model\n  - A 61–62 ↔ B 58 · summarized · offset 0 · s = 0.9 · terminal operations\n  - A 63–71 ↔ B 61–70 · same · offset 0 · s = 1 · ScreenSet, Screen and PageList\n    - A 64 ↔ B 62 · same · offset 0 · s = 1 · primary and alternate\n    - A 65–71 ↔ B 63–70 · same · offset 0 · s = 1 · active Screen\n      - A 65 ↔ B 63 · same · offset 0 · s = 1 · active pointer\n      - A 66–71 ↔ B 64–70 · same · offset 0 · s = 1 · Screen state\n        - A 66 ↔ B 65 · same · offset 0 · s = 1 · cursor and selection\n        - A 67 ↔ B 66 · same · offset 0 · s = 1 · images and prompts\n        - A 68–71 ↔ B 67–70 · same · offset 0 · s = 1 · PageList\n          - A 69 ↔ B 68 · same · offset 0 · s = 1 · ordered pages\n          - A 70 ↔ B 69 · same · offset 0 · s = 1 · rows and cells\n          - A 71 ↔ B 70 · same · offset 0 · s = 1 · tracked pins\n  - A 72–73 ↔ B 59–60 · same · offset 0 · s = 1 · terminal attributes\n- A 75–88 ↔ B 72–83 · same · offset 0 · s = 0.992 · rendering\n  - A 76 ↔ B 73–74 · same · offset 0 · s = 1 · worker scheduling\n  - A 77–78, 79–83, 84–85 ↔ B 75–80 · grouped · offset 0 · s = 0.95 · generic renderer, frames and fonts\n    - A 77–78 ↔ B 75 · summarized · offset 0 · s = 0.9 · generic renderer\n    - A 79–83 ↔ B 76–78, 80 · grouped · offset 1 · s = 0.9 · terminal extraction\n      - A 79 ↔ B 77 · same · offset 0 · s = 1 · locked snapshot\n      - A 80–83 ↔ B 78, 80 · grouped · offset 0 · s = 1 · presentation inputs\n    - A 84–85 ↔ B 79 · same · offset 1 · s = 0.9 · font shaping\n  - A 86–88 ↔ B 81–83 · same · offset 0 · s = 1 · presentation\n    - A 87 ↔ B 82 · same · offset 0 · s = 1 · graphics API\n    - A 88 ↔ B 83 · same · offset 0 · s = 1 · Surface drawing\n- A 90–99 ↔ B 85–91 · same · offset 0 · s = 0.897 · resize and configuration\n  - A 91–93 ↔ B 86–87 · same · offset 0 · s = 0.975 · Surface resize\n    - A 92 ↔ B 87 · same · offset 0 · s = 1 · grid geometry\n    - A 93 ↔ B 86 · same · offset 1 · s = 0.9 · I/O request\n  - A 94–97 ↔ B 88–91 · same · offset 0 · s = 1 · Termio resize\n    - A 95–96 ↔ B 89–90 · same · offset 0 · s = 1 · locked backend and terminal resize\n    - A 97 ↔ B 91 · same · offset 0 · s = 1 · renderer notification\n  - A 98–99 ↔ B 21 · relocated · offset 2 · s = 0.405 · configuration propagation\n- A 101–109 ↔ B 93–103 · same · offset 0 · s = 0.9 · teardown\n  - A 102 ↔ B 96–97 · same · offset 0 · s = 1 · runtime close\n  - A 103–104 ↔ B 98–100 · same · offset 0 · s = 1 · worker shutdown\n    - A 103 ↔ B 99 · same · offset 0 · s = 1 · search and worker threads\n    - A 104 ↔ B 100 · same · offset 0 · s = 1 · Exec reader shutdown\n  - A 105–107 ↔ B 101–102 · same · offset 0 · s = 1 · Surface resource release\n  - A 108–109 ↔ B 103 · same · offset 0 · s = 1 · App shared-resource release\n  - unmatched: B 94–95 (child exit and wait-after-command)\n\n### Score\nEight top-level anchors and no top-level unmatched nodes: J = (0.983472 + 0.983334 + 0.972222 + 0.969445 + 0.983334 + 0.991667 + 0.896667 + 0.900000) / 8 = **0.960018**.\n\n### Verdict\nThe trees identify the same eight main components and closely agree on their internal ownership. B groups generic rendering and font preparation under `updateFrame`, while A presents those as separate renderer branches; the implied parent is the generic renderer’s frame preparation. App mailbox dispatch appears under App in A but under child-output effects in B, and configuration propagation appears under resize in A but session settings in B. The remaining differences are mostly local detail, not different components."
+}

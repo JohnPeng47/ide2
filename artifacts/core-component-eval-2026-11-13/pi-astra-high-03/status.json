@@ -1,0 +1,29 @@
+{
+  "status": "partial",
+  "experimentId": "08ccc7fa-8ea6-4cfa-b0b7-8819b7fcbf35",
+  "model": "gpt-6-astra",
+  "effort": "high",
+  "samples": [
+    {
+      "status": "failed",
+      "phase": "validation",
+      "sample": 1,
+      "runId": "5ff157b0-09da-4b19-bcf2-a8066c83031d",
+      "error": "Expected one ASCII tree root"
+    },
+    {
+      "status": "failed",
+      "phase": "validation",
+      "sample": 2,
+      "runId": "967708ee-ef6d-4a70-868d-252e4aa5dc4f",
+      "error": "Expected one ASCII tree root"
+    },
+    {
+      "status": "failed",
+      "phase": "validation",
+      "sample": 3,
+      "runId": "c5093116-76d6-4fc5-b6a6-cefab77ef511",
+      "error": "Expected one ASCII tree root"
+    }
+  ]
+}

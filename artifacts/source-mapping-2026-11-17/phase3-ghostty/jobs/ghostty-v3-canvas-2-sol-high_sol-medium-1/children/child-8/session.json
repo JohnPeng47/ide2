@@ -1,0 +1,19 @@
+{
+  "id": "child-8",
+  "name": "exec",
+  "assignment": "Map d4 nodes n1-n30 only. Return mappings JSON.",
+  "model": "gpt-6-sol",
+  "effort": "medium",
+  "status": "generating",
+  "queuedAt": "2026-11-19T03:49:11.791Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-19T03:49:11.801Z",
+  "sessionId": "01a1f1ec-35fd-7978-8e88-03634c6ac3bb",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-dvs4w6s2-agent-repository-mP9uWe-checkout--/2026-11-19T03-49-11-805Z_01a1f1ec-35fd-7978-8e88-03634c6ac3bb.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase3-dvs4w6s2/agent-repository-mP9uWe/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

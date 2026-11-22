@@ -1,0 +1,183 @@
+Ghostty's terminal-surface core: interactive PTY session, terminal state and presentation (src/Surface.zig)
+|
+|-- [T] Terminal state: primary/alternate screens, scrollback, cursor, modes, colors and images
+|   `-- Compute: apply VT operations and local edits; resize/reflow existing screens
+|       |   src/termio/stream_handler.zig:vtFallible; src/terminal/Terminal.zig:resize
+|       |-- [A] Decoded text and VT actions
+|       |   `-- Compute: incrementally decode UTF-8 and parse control sequences
+|       |       |   src/termio/Termio.zig:processOutputLocked; src/terminal/stream.zig:nextSlice
+|       |       |-- PTY output bytes from the shell/application [external]
+|       |       `-- Previous parser/UTF-8 decoder state; initially ground
+|       |-- Previous [T]; initially Terminal.init via src/termio/Termio.zig:init
+|       |-- [G] Geometry (reference)
+|       |-- Local viewport/clear operations
+|       |   `-- Compute: Surface.scrollCallback/performBindingAction; Termio.scrollViewport/clearScreen
+|       |       |-- [B] Binding decisions (reference)
+|       |       |-- Mouse wheel/scroll gestures [external]
+|       |       `-- Previous [T] modes, active screen, viewport and prompt markers
+|       |-- [I] Selection state (reference; stored on the active screen)
+|       |-- [P] Session outcome (reference; exit may insert terminal status text)
+|       `-- [C] Effective configuration and derived settings
+|           `-- Compute: apply conditional configuration, then derive consumer-specific settings
+|               |   src/Surface.zig:init/updateConfig/DerivedConfig.init;
+|               |   src/termio/Termio.zig:DerivedConfig.init; src/renderer/generic.zig:DerivedConfig.init
+|               |-- Loaded config: terminal defaults, history limits, fonts, bindings and policies [external]
+|               |-- Runtime light/dark conditional state [external]
+|               `-- Previous font-size override; changed by Surface.setFontSize/binding actions
+|
+|-- [G] Geometry: pixel area, cell dimensions, padding and terminal rows/columns
+|   `-- Compute: subtract padding and divide usable pixels by cell size
+|       |   src/renderer/size.zig:Size.grid/terminal; src/Surface.zig:resize/setCellSize
+|       |-- Surface pixel dimensions and content scale/DPI [external]
+|       |-- [FG] Font grid and metrics
+|       |   `-- Compute: resolve the font stack at the desired point size and DPI
+|       |       |   src/Surface.zig:init/setFontSize; src/font/SharedGrid.zig:init/cellSize
+|       |       |-- [C] Font configuration and current font-size override (reference)
+|       |       |-- Runtime content scale/DPI [external]
+|       |       `-- Available font faces/font data [external]
+|       `-- Scaled, optionally balanced padding
+|           `-- Compute: DerivedConfig.scaledPadding + Size.balancePadding
+|               |   src/Surface.zig:balancePaddingIfNeeded; src/renderer/size.zig:49
+|               |-- [C] Padding values and balancing policy (reference)
+|               |-- Surface pixel dimensions and DPI [external]
+|               `-- [FG] Cell metrics (reference)
+|
+|-- [F] Rendered terminal frame
+|   `-- Compute: upload draw data and composite background, images, cells and optional shaders
+|       |   src/renderer/generic.zig:drawFrameLocked
+|       |-- Text/cursor draw cells and glyph atlas contents
+|       |   `-- Compute: rebuild cells, shape text runs and rasterize glyphs
+|       |       |   src/renderer/generic.zig:rebuildCells; font_shaper.shape;
+|       |       |   src/font/SharedGrid.zig:renderGlyph
+|       |       |-- [R] Render snapshot: visible rows, styles, colors, cursor and image placements
+|       |       |   `-- Compute: snapshot terminal data and finish style normalization
+|       |       |       |   src/renderer/generic.zig:updateFrame;
+|       |       |       |   src/terminal/render.zig:RenderState.beginUpdate/endUpdate
+|       |       |       |-- [T] Current terminal state and viewport (reference)
+|       |       |       `-- Previous render snapshot and dirty markers; initially empty
+|       |       |-- [FG] Font grid (reference)
+|       |       |-- [I] Selection and [Q] search highlights (references)
+|       |       |-- Link highlights
+|       |       |   `-- Compute: RenderState.linkCells + config.links.renderCellMap
+|       |       |       |   src/renderer/generic.zig:updateFrame
+|       |       |       |-- [R] Visible text/hyperlinks and [C] link rules (references)
+|       |       |       `-- Pointer position and modifier keys [external]
+|       |       |-- IME preedit text [external; src/Surface.zig:preeditCallback]
+|       |       |-- Focus and cursor-blink timer state [external]
+|       |       `-- [C] Shaping, colors, opacity and cursor appearance settings (reference)
+|       |-- Image draw data
+|       |   `-- Compute: update Kitty placements/animation frames and upload textures
+|       |       |   src/renderer/generic.zig:updateFrame/drawFrameLocked; images.kittyUpdate/upload
+|       |       |-- [T] Kitty image storage and [R] placements (references)
+|       |       `-- Animation clock [external]
+|       |-- [G] Geometry and [C] render settings (references)
+|       |-- Optional background-image/custom-shader files [external]
+|       `-- Graphics surface/context, actual drawable size and frame timing [external]
+|
+|-- [W] Bytes written back to the terminal application
+|   `-- Compute: encode inputs/replies, queue writes and suppress writes after process exit
+|       |   src/Surface.zig:queueIo; src/termio/Termio.zig:queueWrite; src/termio/Exec.zig:queueWrite
+|       |-- Keyboard bytes
+|       |   `-- Compute: encode only unconsumed keys using negotiated terminal keyboard modes
+|       |       |   src/Surface.zig:keyCallback/encodeKey/encodeKeyOpts; src/input/key_encode.zig:encode
+|       |       |-- Key events, text, modifiers and platform keyboard layout [external]
+|       |       |-- [T] Keyboard modes and [C] keyboard options (references)
+|       |       `-- [B] Binding decisions: consumed action, pending sequence or ordinary key
+|       |           `-- Compute: remap modifiers and match active key tables/sequences
+|       |               |   src/Surface.zig:keyCallback/maybeHandleBinding
+|       |               |-- Key events [external]
+|       |               |-- [C] Key remaps and bindings (reference)
+|       |               `-- Previous keyboard sequence/table state; initially empty
+|       |-- Mouse-report bytes
+|       |   `-- Compute: encode enabled mouse reports with cell/pixel coordinates and deduplication
+|       |       |   src/Surface.zig:mouseReport; src/input/mouse_encode.zig:encode
+|       |       |-- Mouse button/motion/wheel events [external]
+|       |       |-- [T] Mouse protocol, [G] geometry and [C] mouse policy (references)
+|       |       `-- Previous button state and last reported cell
+|       |-- Paste/text bytes
+|       |   `-- Compute: check paste safety, frame bracketed paste and normalize text as required
+|       |       |   src/Surface.zig:completeClipboardPaste; src/input/paste.zig:encode
+|       |       |-- Clipboard/text payload and user safety confirmation [external]
+|       |       `-- [T] Paste modes and [C] paste-protection settings (references)
+|       |-- Protocol replies and terminal reports
+|       |   `-- Compute: format requested attributes/status/colors/clipboard data and enabled reports
+|       |       |   src/termio/stream_handler.zig:deviceAttributes/deviceStatusReport/colorOperation;
+|       |       |   src/termio/Termio.zig:sizeReport/focusGained/colorSchemeReport/visibilityReport;
+|       |       |   src/Surface.zig:completeClipboardReadOSC52/completeKittyClipboardRead
+|       |       |-- [A] Query actions, [T] queried state and [G] reported size (references)
+|       |       |-- [C] Reporting and clipboard-access policy (reference)
+|       |       `-- Focus/visibility/color-scheme events, clipboard contents and permission decisions [external]
+|       `-- [P] Live session endpoint/exited state (reference);
+|           Surface-originated writes also depend on readonly mode, changed by binding actions
+|
+|-- [I] Selection range and selected/not-selected state
+|   `-- Compute: turn selection gestures/actions into screen pins, then commit the changed range
+|       |   src/Surface.zig:mouseButtonCallback/cursorPosCallback/setSelection;
+|       |   src/terminal/SelectionGesture.zig:press/drag/release
+|       |-- Mouse position, click timing, modifiers and drag events [external]
+|       |-- [B] Selection/clear binding decisions (reference)
+|       |-- [T] Screen text, viewport and tracked pins; [G] coordinate geometry (references)
+|       |-- [C] Selection behavior (reference)
+|       `-- Previous gesture/selection state; initially no selection
+|
+|-- [Q] Search matches: total count, viewport highlights and selected match
+|   `-- Compute: feed terminal contents, incrementally search and select a match
+|       |   src/terminal/search/Thread.zig:changeNeedle/feedLocked/select/notify;
+|       |   TerminalSearch.feed/tick; src/Surface.zig:searchCallback_
+|       |-- Search query and next/previous-match requests [external]
+|       |-- [T] Active screen, scrollback, viewport and dirty state (reference)
+|       `-- Previous search progress and selected index; reset when the query changes
+|
+|-- [E] Exported terminal text and clipboard contents
+|   `-- Compute: format a requested terminal range or validate a program's clipboard write
+|       |   src/Surface.zig:dumpTextLocked/copySelectionToClipboards/clipboardWrite/kittyClipboardWrite
+|       |-- Formatted terminal content
+|       |   `-- Compute: ScreenFormatter.format with plain, VT or HTML output options
+|       |       |   src/Surface.zig:copySelectionToClipboards; src/terminal/formatter.zig
+|       |       |-- [T] Text, styles and colors (reference)
+|       |       |-- [I] Selection, or requested screen/viewport range (reference or external request)
+|       |       `-- [C] Trimming/codepoint mapping and requested export format (reference or external request)
+|       |-- Program-supplied clipboard content
+|       |   `-- Compute: decode/assemble OSC clipboard requests and apply write policy
+|       |       |   src/termio/stream_handler.zig:clipboardContents/kittyClipboardWriteData/kittyClipboardWriteCommit
+|       |       |-- [A] Clipboard actions and [C] access/size limits (references)
+|       |       `-- Previous clipboard-protocol transfer state; initially empty
+|       `-- Copy/export request, destination and any required clipboard confirmation [external]
+|
+|-- [H] Host-visible actions: title, cwd, bell, progress, notifications and UI requests
+|   `-- Compute: translate terminal/user state changes into apprt.performAction requests
+|       |   src/Surface.zig:handleMessage/performBindingAction/showDesktopNotification
+|       |-- Terminal-requested metadata and events
+|       |   `-- Compute: interpret OSC/control actions and shell-integration markers
+|       |       |   src/termio/stream_handler.zig:windowTitle/reportPwd/bell/semanticPrompt/progressReport
+|       |       |-- [A] Decoded actions and [T] relevant terminal state (references)
+|       |       `-- Previous metadata/command markers; initially unset
+|       |-- [B] Binding decisions for window/tab/split, zoom and other host actions (reference)
+|       |-- Scrollbar values
+|       |   `-- Compute: active.pages.scrollbar during renderer updateFrame
+|       |       |   src/renderer/generic.zig:updateFrame; src/Surface.zig:updateScrollbar
+|       |       `-- [T] History extent and viewport position (reference)
+|       |-- [I] Selection changes, [Q] search totals/index and [P] exit outcome (references)
+|       |-- [C] Title override, notification and presentation policies (reference)
+|       `-- Clock plus previous bell/command timestamps
+|           `-- Compute: rate-limit bells and subtract command start from stop time
+|               |   src/Surface.zig:handleMessage
+|               |-- Monotonic clock [external]
+|               `-- Earlier [A] bell and semantic-prompt events (reference)
+|
+`-- [P] Session state: running PTY endpoint, exited/held-open state and close decision
+    `-- Compute: launch the configured process; combine exit information with hold/close policy
+        |   src/termio/Exec.zig:Subprocess.start/processExitCommon;
+        |   src/Surface.zig:childExited/needsConfirmQuit/keyCallback
+        |-- Launch specification: command, environment, cwd and shell integration
+        |   `-- Compute: choose initial/default command and prepare subprocess environment
+        |       |   src/Surface.zig:init; src/termio/Exec.zig:Subprocess.init
+        |       |-- [C] Command, cwd, environment overrides and integration settings (reference)
+        |       |-- First-surface status from the application runtime [external]
+        |       `-- Inherited environment, executable/resource paths and OS account information [external]
+        |-- [G] Initial/updated PTY dimensions (reference; Exec.Subprocess.start/resize)
+        |-- OS process-spawn result, exit status and elapsed runtime [external]
+        |-- [C] Wait-after-command, abnormal-exit and confirmation policies (reference)
+        |-- [T] Prompt state for close confirmation (reference)
+        |-- User close/key action and runtime support for a native exit message [external]
+        `-- Previous session state and readonly flag; updated by exit events and binding actions

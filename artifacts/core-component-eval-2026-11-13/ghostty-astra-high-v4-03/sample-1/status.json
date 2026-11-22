@@ -1,0 +1,72 @@
+{
+  "status": "finished",
+  "sample": 1,
+  "runId": "3d97670a-8d2d-41fe-86c6-7b3914204965",
+  "characters": 7252,
+  "lines": 97,
+  "nodes": 89,
+  "usage": {
+    "input": 38512,
+    "output": 2701,
+    "cacheRead": 90752,
+    "cacheWrite": 0,
+    "reasoning": 126,
+    "totalTokens": 131965
+  },
+  "execution": {
+    "runtime": "pi-agent-context",
+    "sessionId": "01a1dc72-4f9c-7607-afe1-2249924a7e6f",
+    "contextHash": "c26f9e1d07185d26d78fd7cf31b447b58604b2cae4a040b1dc623aaaf9e7848a",
+    "cacheKey": "eval-de697394e46b7c2876cafa318840ad01b790c8364357106dc1c6fe36c74ef9ce",
+    "modelContextHash": "ed8f24de6f535566ee5873fde521ddf130b7362a02e5d35ae9ae0262b78a2913",
+    "repositories": [
+      {
+        "repository": "repo-1",
+        "repositoryPath": "/home/john/softwarez/ghostty",
+        "commit": "ea8b12a8a9894b5259c441eadd8f6f0c65e215af",
+        "exclusions": [
+          "**/*-LICENSE",
+          "**/*.md",
+          "**/*.mdx",
+          "**/*.spec.*",
+          "**/*.test.*",
+          "**/AGENTS.md",
+          "**/CODEX-LICENSE",
+          "**/LICENSE*",
+          "**/Tests/**",
+          "**/__fixtures__/**",
+          "**/__tests__/**",
+          "**/benchmark/**",
+          "**/benchmarks/**",
+          "**/build/**",
+          "**/dist/**",
+          "**/docs/**",
+          "**/examples/**",
+          "**/fixtures/**",
+          "**/node_modules/**",
+          "**/scripts/**",
+          "**/test/**",
+          "**/tests/**",
+          ".agents/**",
+          ".github/**",
+          ".husky/**",
+          ".pi/**",
+          "deps/**",
+          "example/**",
+          "flake.lock",
+          "flatpak/**",
+          "images/**",
+          "nix/**",
+          "package-lock.json",
+          "po/**",
+          "scripts/**",
+          "snap/**",
+          "vendor/**"
+        ],
+        "checkout": "/tmp/agent-repository-LxxqbK/checkout",
+        "inspectionSource": "session-transcript"
+      }
+    ]
+  },
+  "outputUrl": "http://localhost:5191/evals?run=3d97670a-8d2d-41fe-86c6-7b3914204965&output=0b3af2dd-ba89-4032-936a-40070a3e167e%3A1%3Aalternative"
+}

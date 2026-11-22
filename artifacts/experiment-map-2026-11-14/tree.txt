@@ -1,0 +1,123 @@
+Experiment map - 12 saved experiments, inspected 2026-11-14
+|
+|  [E##] = local alias; see links.json for stable experiment UUIDs.
+|  Nested experiments = verified derivation or reused outputs.
+|  Unnumbered branches = topics, setup, phases, or results.
+|  -> [E##] = cross-reference; the adjacent verb states the relationship.
+|  Finished = saved execution result, not a quality score.
+|
++-- Style and representation
+|   |
+|   +-- [E01] Baseline vs weighted 3+1                         Nov 03
+|   |   +-- Setup: pre-tldraw canvas domain; fixed seven-slot template
+|   |   |   Astra/high; two independent batches, baseline + weighted each
+|   |   +-- Change: measured modular/call/ownership/dependency emphasis
+|   |   `-- Results: 4/4 canvases finished
+|   |       +-- Saved judges: more explicit owners, calls, required inputs
+|   |       +-- Differences mainly emphasis; small samples, weak attribution
+|   |       `-- One judge attempt rejected by schema; later assessment finished
+|   |
+|   `-- [E02] Diagram style controls                            Nov 03
+|       +-- Setup: same pinned source context and template as -> [E01]
+|       |   Astra/high; 3 shared baselines + 1 sample at each of 6 extremes
+|       +-- Expression: code <-> natural language
+|       +-- Focus: modular contracts <-> runtime state and lifetimes
+|       +-- Topology: shallow <-> varied depth
+|       `-- Results: 9/9 canvases; 3 saved comparison reports
+|           +-- Each control moved outputs in its intended direction
+|           +-- Shallow: 1 branch level; varied: 4-6; baselines: 2-4
+|           `-- Single samples at extremes; no reliable overall winner
+|
++-- Updating diagrams as code changes
+|   |
+|   +-- [E03] AgentChat modification chain                      Nov 03
+|   |   +-- Setup: pinned ChangeSession v2 context 05; Astra/high, n=1
+|   |   +-- Modify existing -> generate central C1 -> expand C2 cluster
+|   |   `-- Results: 3/3 stages finished; proposals remained unaccepted
+|   |
+|   `-- [E04] Diagram change strategy                          Nov 05
+|       +-- Setup: 7 ChangeSession contexts; context 05 shared with -> [E03]
+|       +-- P1: original rules, Sol/high, 3 samples/context
+|       |   `-- 19/21 finished; 16 syntax-valid; new canvases 0, redraws 0
+|       +-- P2: revised rules + derived contexts, Sol/high, 3/context
+|       |   `-- 17/21 finished; 16 syntax-valid; new canvases 28, redraws 56
+|       +-- P3: same P2 prompt/contexts, Astra/high, 2/context
+|       |   `-- 14/14 finished and syntax-valid; new canvases 11, redraws 64
+|       +-- P4: explicit architectural fit, Astra/high, 2/context
+|       |   `-- 14/14 finished and syntax-valid; new canvases 2, redraws 33
+|       +-- Interpretation
+|       |   +-- Counts above are operations, not numbers of outputs
+|       |   +-- P4 reduced new-canvas/redraw operations relative to P3
+|       |   `-- Syntax/count assessment only; P1->P2 changes prompt AND inputs
+|       |
+|       `-- Progressive history - both derive from P4's prompt
+|           +-- Shared setup: 03f2168..81f05a2; Astra/high, n=1
+|           |   Plan across the full sequence; execute 11 multi-commit batches
+|           |   Each execution starts from the preceding saved canvas state
+|           |
+|           +-- [E07] Standard history                         Nov 10
+|           |   +-- Setup: plan first, then serial diagram updates
+|           |   `-- Results: 1 plan + 11/11 execution checkpoints finished
+|           |
+|           `-- [E08] Structure-first history                  Nov 10
+|               +-- Setup: preplan geometry, edges, and diagram sizes
+|               +-- Results: 1 plan + 11 deterministic scaffolds + 9/11 updates
+|               +-- B10: persistence error, "Saved timeline view changed"
+|               +-- B11: not attempted after upstream failure
+|               `-- Comparator: -> [E07]; scaffolds are not extra model samples
+|
++-- Turning diagrams into connected canvases
+|   |
+|   `-- [E05] Mapping architecture expansion                   Nov 05
+|       +-- Setup: one architecture seed at 03f2168; Astra/high, n=3
+|       |   Reduce the central diagram 20-40%; expand connected peripherals
+|       +-- Results: 3/3 alternative canvases; no attached quality comparison
+|       |
+|       +-- [E06] Shopify expansion and navigation              Nov 07
+|       |   +-- Derivation: domain variation of parent's prompt v5
+|       |   +-- Setup: 10 central diagrams + pinned corpus; Astra/high, n=1 each
+|       |   +-- Expansion: 9/10 finished; Buyer network hit an anchor error
+|       |   `-- Navigation: link the 9 completed canvases from Company Map
+|       |       +-- 3 schema-rejected attempts before generation
+|       |       `-- 3 later navigation outputs finished
+|       |
+|       `-- [E09] Codebase canvas discovery                     Nov 11
+|           +-- Setup: 1,044 files at 8ca1437; Astra/high, n=1 per job
+|           +-- P1: original / rewritten / 3+1 discovery -> 11 / 13 / 15 points
+|           +-- P2: each discovery x minimal or explicit-3+1 tree prompt
+|           |   `-- A1/A2: 11 each; B1/B2: 13 each; C1/C2: 15 each = 78 trees
+|           +-- P3: 78/78 canvas expansions; prompt derived from -> [E05] v5
+|           +-- P4: judge selected B2 and C1 for complementary strengths
+|           |   +-- B2: architectural distinctions; repetition to reduce
+|           |   +-- C1: useful boundaries and clearer workflow hierarchy
+|           |   `-- Improvement work cancelled: 40/44 registered outputs finished
+|           +-- Recorded total: 211/219 finished, including 11/15 superseded
+|           |   Full planned three-round improvement programme was not completed
+|           |
+|           `-- [E10] C1 prompt style study                    Nov 13-14
+|               +-- Setup: reuse 4 C1 trees and their pinned contexts
+|               |   Workspace / revisions / agent access / change proposals
+|               +-- P1: add 3+1 + 60/40 wording; retain six short examples
+|               |   `-- 4 new trees + 1 collection critique finished
+|               +-- P2: replace examples with larger compiler + telemetry trees
+|               |   `-- 4/4 new trees finished; remaining settings unchanged
+|               +-- Total: 4 reused + 8 new trees + 1 critique = 13 artifacts
+|               `-- Findings
+|                   +-- P1 critique: repeated four-view outlines and inventories
+|                   +-- Saved observation: long few-shot examples steer style
+|                   `-- No saved quantitative P1-vs-P2 judgement
+|
+`-- Discovering the core directly
+    |
+    `-- [E11] Core component discovery                        Nov 14
+        +-- Setup: 259 pinned files at 03f2168; Astra/high, n=1
+        |   3+1, two examples, 60/40 guidance; no supplied reference/rankings
+        +-- Results: 1/1 tree finished; no attached comparative judgement
+        |
+        `-- [E12] Core discovery via checkout                  Nov 14
+            +-- Derivation: parent's prompt -> repository-browsing variation
+            +-- Setup: same commit; ordinary shell/read tools; pinned prompt v2
+            |   Astra/high x1 and Sol/high x3 share prompt, context, exclusions
+            +-- Results: 4/4 trees finished; no attached comparative judgement
+            `-- Judge-side reference: model-written core kernel at 8ca1437
+                Later snapshot than inputs; not a measured score or human review

@@ -1,0 +1,89 @@
+Browser Workspace Ownership
+|-- MappingWorkspacePage [MappingPage.tsx]: composes the browser workspace
+|   |-- Creates one CanvasWorkspace and uses injected or locally owned WorkspaceStorage
+|   |-- Startup: load project catalog + stored workspace concurrently
+|   |   `-- Restore drafts or open a requested/available canvas; then attach WorkspacePersistence
+|   |-- Active canvas ID controls visibility, not session lifetime
+|   |   `-- First activation mounts MappingEditorCanvas(session)
+|   |       |-- Previously visited canvases remain mounted but hidden when inactive
+|   |       `-- Workspace epoch / reload key can remount editors
+|   `-- Commands address workspace.controllers by document ID
+|       `-- Editing contexts remain available even without a mounted editor
+|-- CanvasWorkspace [canvasWorkspace.ts]: owns the draft registry and session lifetimes
+|   |-- drafts[id] = metadata + stable CanvasSession handle
+|   |-- setDrafts(seed containing document, canvas, history)
+|   |   `-- Create CanvasSession -> register its controller and subscriptions
+|   |-- Metadata update with the same session -> retain controller and editing context
+|   |   `-- Refresh saved baseline; persist changes to tracked metadata
+|   |-- Session removed or replaced
+|   |   `-- Unsubscribe -> remove controller entry -> dispose old session
+|   `-- Each CanvasSession [canvasSession.ts]
+|       |-- Owns MappingDocumentController and cursor-copy state
+|       |-- Exposes read/subscribe stores; mutations go through commands
+|       |   |-- document     -> document reference changes
+|       |   |   `-- Refresh registry entry for document consumers such as search/explorer
+|       |   |-- presentation -> display + diagramViews changes
+|       |   |-- selection    -> selection changes
+|       |   |-- controls     -> controls changes
+|       |   |-- geometry     -> endpointBounds, cell, version changes
+|       |   `-- status       -> isDirty, sceneDirty, canUndo, canRedo changes
+|       |       |-- Scene/edge keys and name are compared with the saved baseline
+|       |       `-- sceneDirty feeds the workspace's dirty-scene ID list
+|       |-- Controller notifications publish changed stores synchronously
+|       |   `-- canvasRevisionId changed? -> onCommit -> workspace.onPersist([id])
+|       |-- Mounted editor owns live geometry and undo navigation
+|       |   `-- Pointer/camera samples do not publish session application state
+|       `-- Save acknowledgement updates the captured baseline
+|           `-- Newer edits can remain dirty after that save
+|-- WorkspacePersistence [workspacePersistence.ts]: shared live-state-to-record adapter
+|   |-- workspace.onPersist(ids) -> sync only those canvas IDs
+|   |   |-- Write metadata + saved baseline
+|   |   |-- Per-session cursor -> controller.persistenceChanges(cursor)
+|   |   |   |-- Emit incremental history records; advance cursor to delta.sequence
+|   |   |   `-- First sync / replaced session
+|   |   |       |-- Delete obsolete revision/checkpoint keys in the replacement batch
+|   |   |       `-- Skip stored immutable revisions and identical checkpoint deltas
+|   |   |-- Capture canvas view records and, when needed, viewport
+|   |   `-- Removed draft -> delete its document-prefixed records
+|   |-- SourcePaneViewState subscription -> syncView(id)
+|   |   `-- Capture display + camera into view/viewport records
+|   |-- Active canvas / transfers update -> workspace index record
+|   |   `-- projectId + documentIds + activeDocumentId + transfers
+|   |-- Submission -> deduplicate by key; skip already stored content-addressed items
+|   |   `-- All canvases feed the same RecordStorage.batch(changes)
+|   `-- Paused during workspace operations; resume -> update index and sync
+|-- Shared persistence pipeline [recordStorage.ts, workspaceStorage.ts, workspaceStorage.worker.ts]
+|   |-- RecordStorage.batch: synchronous cache update
+|   |   |-- Deep-equal values / absent deletions -> no queued write
+|   |   |-- pending[key] retains the latest change for that key
+|   |   `-- Default debounce: 150 ms; scheduling window capped at 1 s from first pending change
+|   |-- pump(): one write in flight
+|   |   |-- Freeze pending changes as { requestId, expectedRevision, changes }
+|   |   |-- New edits accumulate separately while that batch is in flight
+|   |   `-- WorkspaceStorage sends the batch to one reusable worker
+|   |       |-- Normalize records and cache encoded body by requestId
+|   |       `-- POST /api/mapping/workspace/records
+|   |           |-- Success -> update known records and release cached body
+|   |           |   `-- RecordStorage advances revision/persisted sequence and clears flight
+|   |           |-- Transport/server uncertainty -> retain flight and encoded body
+|   |           |   `-- Retry identical request ID, expected revision and changes
+|   |           |       `-- Background exponential backoff capped at 30 s
+|   |           `-- HTTP 4xx -> REJECTED; discard cached body
+|   |               `-- Background scheduling stops on rejection or version/request-ID conflict
+|   |-- flush(): wait until the sequence captured at entry is acknowledged
+|   |-- Explicit commit(changes)
+|   |   |-- Flush earlier writes -> save prior cache -> submit transaction -> await flush
+|   |   |-- Ambiguous failure -> retry same flight after 500 ms while not disposed
+|   |   `-- Definitive rejection -> restore prior cache, clear abandoned write, throw
+|   `-- WorkspaceStorage operations share this queue
+|       |-- load -> worker GET ?history=current -> reconstruct workspace + initialize records
+|       |-- save(snapshot) -> flush -> worker diffs full replacement -> commit
+|       |-- saveDocument(document, index) -> flush -> commit canvas records + index together
+|       `-- Transfer/projection UI installs prepared state only after storage acknowledgement
+`-- Lifetime boundaries
+    |-- Visibility becomes hidden -> flush view state and attempt storage flush
+    |-- Pending view/storage changes or dirty/busy drafts -> beforeunload warning
+    |-- Page cleanup -> detach persistence subscriptions; dispose workspace sessions and view state
+    |   `-- Locally owned storage: attempt flush, then dispose records and terminate worker
+    |       `-- Injected storage remains under its external owner's lifetime
+    `-- Abrupt tab termination has no flush guarantee

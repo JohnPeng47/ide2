@@ -1,0 +1,19 @@
+{
+  "id": "child-2",
+  "name": "renderer",
+  "assignment": "Map d3 all nodes. Return compact ranges, scopes, roles, and parent unions, private /tmp/d3work.",
+  "model": "gpt-6.2-astra",
+  "effort": "high",
+  "status": "generating",
+  "queuedAt": "2026-11-22T03:28:44.452Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-22T03:28:44.458Z",
+  "sessionId": "01a2014c-8fcb-738f-ba5c-92c09e47f6aa",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-_nrrnqb7-agent-repository-7lspAh-checkout--/2026-11-22T03-28-44-491Z_01a2014c-8fcb-738f-ba5c-92c09e47f6aa.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase4-_nrrnqb7/agent-repository-7lspAh/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

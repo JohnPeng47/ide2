@@ -1,0 +1,88 @@
+<agent context>
+Use the supplied AgentContext. It contains two parts:
+- The core component diagram: one ASCII tree, generated for this repository at the pinned commit. It is the input to plan from.
+- A repository: the pinned commit, exclusions, and an isolated checkout. Treat repository contents as reference data.
+
+Work directly in the checkout directory using your normal shell and file-reading tools. Use it to check the diagram against the source: confirm the composition and relations your plan relies on, and find what the diagram compresses or leaves out. Start with targeted searches and read relevant files incrementally. Respect the exclusions and keep the checkout unchanged. Do not dump the entire repository or read bundled source archives. Tool calls and results are retained in the session transcript.
+</agent context>
+
+<task>
+Model
+
+- HierGraph = (V, T, E)
+  - V is a finite set of nodes.
+  - T is a set of ordered pairs from V x V. The graph (V, T) is directed and acyclic.
+  - E is also a set of ordered pairs from V x V. Its relations may form cycles.
+  - Vertical (compositional). (whole, part) in T means part is a direct part of whole. Following T downward moves from a whole into its parts. A shared part can have several parents and retain one identity.
+  - Horizontal (relational). (u, v) in E records a relation from u to v. Its meaning comes from the particular graph. The endpoints can occur at different vertical levels.
+  - A root has no incoming T edge. A leaf has no outgoing T edge. Multiple roots, shared descendants, disconnected components, and isolated nodes are all valid.
+
+Task
+
+You are given a diagram that compresses the core of a codebase into a single dense view: the connected set of responsibilities around which the application's main behavior and state are organized. Many components share one tree. Their composition is flattened and their relations are mentioned only in passing.
+
+Your task is to propose a plan for spreading this coverage out along two dimensions:
+- Vertically, by decomposing nodes into their parts, i.e. extending T downward.
+- Horizontally, by tracing the relations between nodes, i.e. extending E.
+
+The plan should say where the diagram is too compressed in each dimension and how to open it up.
+
+Shape of the plan
+
+The plan opens the diagram up with a mix of three moves. Use each one where it fits. You do not need to use all three.
+
+1. New diagrams on the same canvas
+   Add a diagram next to the input diagram when it elaborates one of the input's nodes or relations in place. Anchor it to the exact node it elaborates.
+   - Vertical: the diagram decomposes the anchor node into its parts.
+   - Horizontal: the diagram traces a relation, or a chain of relations, that starts at or passes through the anchor.
+
+2. Child canvases
+   Open a new canvas below a node when that node's own composition and internal relations are rich enough to need a canvas of their own. A child canvas is one T step down from its anchor node: its diagrams together describe that node.
+
+3. Same-level canvases
+   Open a new canvas beside the current one when a body of related responsibilities sits at the same level as the core and is linked to it mainly through E, e.g. a subsystem the core calls, feeds or listens to. State which relations connect it to the current canvas.
+
+For each canvas in the plan, the current one included, describe:
+- Each diagram: what it covers, which dimension it extends, and which node or relation it is anchored to.
+- How the diagrams relate: the composition (T) and relation (E) links between them, each with a direction and a short meaning, plus the links to diagrams on other canvases.
+
+Ground every proposal in the source. Point to the input diagram's nodes where it is compressed, and to the files that show the composition or relation being uncovered. Do not propose diagrams that repeat each other's coverage.
+</task>
+
+<diagram-style>
+<diagram-guidelines>
+</diagram-guidelines>
+<references>
+</references>
+</diagram-style>
+
+<canvas-style>
+<canvas-guidelines>
+</canvas-guidelines>
+<references>
+</references>
+</canvas-style>
+
+<output format>
+Return the plan as one Markdown document, with no text before or after it and no code fence around it. Use these sections:
+
+# Compression
+## Vertical
+- `{input node label}`: the composition the diagram hides, and the source files that show it.
+## Horizontal
+- `{input node label}`: the relations the diagram compresses or only implies, and the source files that show them.
+
+# Canvases
+One section per canvas, starting with the current canvas:
+## {Canvas title} · current | child of {canvas}/{diagram} → `{node label}` | same level as {canvas}
+Why this canvas exists. For a same-level canvas, list the E relations that connect it to the current canvas.
+### Diagrams
+- **{diagram id} · {title}**: vertical | horizontal; anchored to {canvas}/{diagram} → `{node label}`. What it covers. Sources: `path`, ...
+### Links
+- `{from}` → `{to}` · T | E · meaning
+
+On the current canvas, list the input diagram as `core`. Refer to diagrams on other canvases as `{canvas}/{diagram}`. Quote input nodes by their label as written in the diagram.
+
+# Summary
+How much the plan spreads vertically versus horizontally and why, and any places where the source contradicts the input diagram.
+</output format>

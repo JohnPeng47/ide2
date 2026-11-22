@@ -5,7 +5,7 @@ import { gridOutputId } from '../rollup/rollUp';
 const diagramId = z.string().min(1).max(200);
 /** Model IDs are local to the output. Persistence assigns real document/revision IDs. */
 export const linkedCanvasesOutputSchema = z.object({
-  explanation: z.string().min(1).max(10000),
+  explanation: z.string().min(1),
   rootCanvas: gridOutputId,
   // Plain union exports anyOf; discriminatedUnion exports oneOf, which Codex strict output rejects.
   // The distinct kind literals still make the two variants mutually exclusive.
@@ -13,7 +13,7 @@ export const linkedCanvasesOutputSchema = z.object({
     z.object({ kind: z.literal('new'), id: gridOutputId, name: z.string().trim().min(1).max(120),
       diagrams: alternativeOutputSchema.shape.diagrams, edges: alternativeOutputSchema.shape.edges }).strict(),
     z.object({ kind: z.literal('existing'), id: gridOutputId, sourceCanvas: gridOutputId,
-      edits: z.array(z.object({ diagram: diagramId, ascii: z.string().min(1).max(50000) }).strict()).max(100) }).strict()
+      edits: z.array(z.object({ diagram: diagramId, ascii: z.string().min(1) }).strict()).max(100) }).strict()
   ])).min(2).max(20),
   jumps: z.array(z.object({
     source: z.object({ canvas: gridOutputId, diagram: diagramId, line: z.number().int().positive(),

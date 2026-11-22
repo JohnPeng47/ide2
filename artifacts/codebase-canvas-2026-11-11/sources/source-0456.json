@@ -1,0 +1,1 @@
+{"path": "infrastructure/core/persistence/paths.ts", "text": "import path from \"node:path\";\nimport type { PersistenceContext } from './context';\n\nexport function projectPath(context: PersistenceContext): string {\n  return path.join(context.storeRoot, \"project.json\");\n}\n"}

@@ -1,0 +1,18 @@
+{
+  "text": "Renderer branch `d1/n66–n77` is mapped in **`/tmp/renderer/subset.json`**: 12 scope records and 396 ranges, including child coverage. Merge its `diagrams[0].nodes` and `diagrams[0].mappings` into the complete candidate.\n\nThe compact, per-node handoff is in `/tmp/renderer/scopes` and `/tmp/renderer/ranges`. In `ranges`, paths are relative to `src/` with `.zig` omitted; `d/u/i` mean declaration/use/implementation, and `+N` includes child N. The expanded JSON excludes draw-only image passes from `n69` while retaining placement preparation.\n\nBoth presentation paths are covered: Metal completes the command buffer and sets the host layer’s IOSurface; OpenGL exports a frame, queues a redraw, and GTK takes the frame in its snapshot handler. `n77` maps the main-thread draw **request**, without implying that OpenGL waits for presentation. File bounds were checked locally; complete-candidate validation remains with the lead.",
+  "usage": {
+    "input": 84446,
+    "output": 5456,
+    "cacheRead": 582784,
+    "cacheWrite": 0,
+    "reasoning": 293,
+    "totalTokens": 672686
+  },
+  "cost": {
+    "input": 0.8444600000000001,
+    "output": 0.27280000000000004,
+    "cacheRead": 0.582784,
+    "cacheWrite": 0,
+    "total": 1.700044
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "text": "d1/n38–n48: expanded mapping in `/tmp/d1exit/d1exit.json`. File bounds, node coverage, and absence of within-node overlaps checked locally. No `validate_source_mappings` tool was available for this subset.\n\n```text\nS=src/Surface.zig\nA=src/App.zig\nM=src/apprt/surface.zig\nQ=src/terminal/search/Thread.zig\nI=src/inspector/Inspector.zig\nT=src/termio/Thread.zig\nO=src/termio/Termio.zig\nE=src/termio/Exec.zig\nB=src/termio/backend.zig\nR=src/renderer/Thread.zig\nG=src/renderer/generic.zig\nF=src/font/SharedGridSet.zig\nH=src/terminal/SelectionGesture.zig\nK=src/apprt/gtk/Surface.zig\nW=src/apprt/gtk/class/surface.zig\nX=src/apprt/gtk/class/split_tree.zig\nJ=src/apprt/gtk/class/application.zig\nV=src/apprt/gtk/class/surface_child_exited.zig\nL=src/apprt/embedded.zig\nMA=macos/Sources/Ghostty/Ghostty.App.swift\nMS=macos/Sources/Ghostty/Ghostty.Surface.swift\nMV=macos/Sources/Ghostty/Surface View/SurfaceView_AppKit.swift\nMB=macos/Sources/Features/Terminal/BaseTerminalController.swift\nMC=macos/Sources/Features/Terminal/TerminalController.swift\n\nNATIVE = J:789:u J:3052-3060:ui W:1526-1539:ui V:69-84:i V:89-110:i MA:768-769:u MA:1854-1872:ui\nHOST = K:36-39:ui W:1517-1524:ui X:499-508:ui X:786-834:ui X:838-841:d X:860-871:i W:1963-1981:ui L:678-685:ui MA:79:u MA:291-296:ui MB:184-188:ui MB:658-664:ui MC:695-721:i MB:469-495:ui MB:518:d MB:528-538:ui MV:181:d MV:395:ui MS:28-45:ui L:1859-1861:ui L:291-294:ui L:634-646:ui S:829:d\nSTOP = S:214-226:di Q:142:d Q:162:u Q:172-192:i Q:462-471:i R:200:d R:228-233:ui R:253-257:i R:722-731:i\nIOEXIT = T:236:d T:267-279:ui T:473-482:i\nEXECEXIT = O:427-429:ui B:50-54:ui E:196-230:di E:1105-1133:di E:1161-1216:i E:1254-1258:i\nFREE = G:841-874:di R:177-189:di T:127-133:di O:354-365:di\nRELEASE = H:172-179:i S:442-445:i F:413-431:di\n\nn38 sry S:138-139:d S:184-185:d S:209-227:di S:830-831:ui S:860-863:ui S:931-956:di S:971-991:di S:1225-1239:ui S:1485-1600:di S:4941:d S:5059-5159:ui Q:118-131:i Q:134-142:di Q:160-254:i Q:257-268:ui I:1-4:d I:58-66:di T:325:i O:740-754:ui R:417-435:i\nn39 ebr S:156-157:d E:274-315:ui M:187-207:ui A:273:d A:293:u A:532-550:ui S:1017:d S:1141:u S:1297-1375:di S:1377-1454:di S:881-885:ui S:309:d S:390:i S:335:d S:416:i NATIVE\nn40 bg S:309:d S:390:i S:1297-1331:di S:1377-1454:di NATIVE\nn41 b S:335:d S:416:i S:1297:d S:1368-1375:i S:881-885:ui\nn42 ebr S:881-885:di S:993-1013:di HOST\nn43 bry S:881-885:ui HOST\nn44 ebg S:829-879:di I:64-66:i STOP IOEXIT EXECEXIT FREE RELEASE\nn45 brg S:829-845:di STOP IOEXIT\nn46 brg S:829:d S:840-845:ui IOEXIT EXECEXIT\nn47 bg S:829:d S:847-858:ui FREE\nn48 br S:829:d S:857:ui S:865-876:ui RELEASE\n```\n\n**Qualifiers:** n40 uses an inclusive runtime threshold; a short exit with code zero bypasses the abnormal branch on non-Darwin systems. For n43, closing is a request, not synchronous destruction: confirmation may intervene, the embedded callback is optional, and retained host references can delay finalization.",
+  "usage": {
+    "input": 51744,
+    "output": 5112,
+    "cacheRead": 301184,
+    "cacheWrite": 0,
+    "reasoning": 172,
+    "totalTokens": 358040
+  },
+  "cost": {
+    "input": 0.51744,
+    "output": 0.2556,
+    "cacheRead": 0.301184,
+    "cacheWrite": 0,
+    "total": 1.074224
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "id": "child-1",
+  "name": "app-surface",
+  "assignment": "Map all d1 nodes n1-n48 only. Return JSON partial mappings with ranges and notes; read numbered source.",
+  "model": "gpt-6-sol",
+  "effort": "medium",
+  "status": "generating",
+  "queuedAt": "2026-11-19T04:01:45.637Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-19T04:01:45.643Z",
+  "sessionId": "01a1f1f7-b6c8-71d8-882b-137721da6894",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-lnrqytap-agent-repository-QbrbnL-checkout--/2026-11-19T04-01-45-672Z_01a1f1f7-b6c8-71d8-882b-137721da6894.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase3-lnrqytap/agent-repository-QbrbnL/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

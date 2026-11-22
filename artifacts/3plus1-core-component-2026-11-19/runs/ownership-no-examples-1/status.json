@@ -1,0 +1,72 @@
+{
+  "status": "finished",
+  "repository": "Ownership · No few-shot examples · 1",
+  "runId": "115a94bb-bd29-45f4-a006-71be4a5c474d",
+  "characters": 14110,
+  "lines": 189,
+  "nodes": 62,
+  "usage": {
+    "input": 43586,
+    "output": 5822,
+    "cacheRead": 150656,
+    "cacheWrite": 0,
+    "reasoning": 543,
+    "totalTokens": 200064
+  },
+  "execution": {
+    "runtime": "pi-agent-context",
+    "sessionId": "01a1f471-eeeb-7dbf-bb4d-41aa5634f48f",
+    "contextHash": "c26f9e1d07185d26d78fd7cf31b447b58604b2cae4a040b1dc623aaaf9e7848a",
+    "cacheKey": "eval-0eb3b036292ce73b81166633e158cc4a36ba0e6a401ff6c0cc94b484a3decdf0",
+    "modelContextHash": "4a16c534624aefd7e748a3249301c5a1d52571bc05e42f9ad1c2d19c70aca8c8",
+    "repositories": [
+      {
+        "repository": "repo-1",
+        "repositoryPath": "/home/john/softwarez/ghostty",
+        "commit": "ea8b12a8a9894b5259c441eadd8f6f0c65e215af",
+        "exclusions": [
+          "**/*-LICENSE",
+          "**/*.md",
+          "**/*.mdx",
+          "**/*.spec.*",
+          "**/*.test.*",
+          "**/AGENTS.md",
+          "**/CODEX-LICENSE",
+          "**/LICENSE*",
+          "**/Tests/**",
+          "**/__fixtures__/**",
+          "**/__tests__/**",
+          "**/benchmark/**",
+          "**/benchmarks/**",
+          "**/build/**",
+          "**/dist/**",
+          "**/docs/**",
+          "**/examples/**",
+          "**/fixtures/**",
+          "**/node_modules/**",
+          "**/scripts/**",
+          "**/test/**",
+          "**/tests/**",
+          ".agents/**",
+          ".github/**",
+          ".husky/**",
+          ".pi/**",
+          "deps/**",
+          "example/**",
+          "flake.lock",
+          "flatpak/**",
+          "images/**",
+          "nix/**",
+          "package-lock.json",
+          "po/**",
+          "scripts/**",
+          "snap/**",
+          "vendor/**"
+        ],
+        "checkout": "/tmp/agent-repository-Ho3Id6/checkout",
+        "inspectionSource": "session-transcript"
+      }
+    ]
+  },
+  "outputUrl": "http://127.0.0.1:5191/evals?run=115a94bb-bd29-45f4-a006-71be4a5c474d&output=9bb3a7e9-8d22-4268-bc2c-df1011ac31f4%3A1%3Aalternative"
+}

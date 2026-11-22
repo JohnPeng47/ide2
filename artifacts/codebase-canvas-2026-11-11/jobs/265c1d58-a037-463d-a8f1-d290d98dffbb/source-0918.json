@@ -1,0 +1,1 @@
+{"path":"tests/browser/core/browser-diagram-canvas-check.mjs","text":"// Shared camera, source panes, connectors, selection, and viewport persistence\n// are covered through Mapping's project-backed projection workflow.\nimport \"../mapping/browser-projection-check.mjs\";\n\nimport \"../mapping/browser-code-panel-check.mjs\";\n"}

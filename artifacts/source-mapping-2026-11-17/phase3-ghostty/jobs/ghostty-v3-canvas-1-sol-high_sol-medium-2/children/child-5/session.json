@@ -1,0 +1,19 @@
+{
+  "id": "child-5",
+  "name": "terminal",
+  "assignment": "Map all d5 nodes n1-n29 only. Return JSON partial mappings with ranges and notes; read numbered source.",
+  "model": "gpt-6-sol",
+  "effort": "medium",
+  "status": "generating",
+  "queuedAt": "2026-11-19T04:01:45.638Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-19T04:02:27.500Z",
+  "sessionId": "01a1f1f8-5a31-7b4d-9d30-4595d16a7bd3",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-lnrqytap-agent-repository-QbrbnL-checkout--/2026-11-19T04-02-27-506Z_01a1f1f8-5a31-7b4d-9d30-4595d16a7bd3.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase3-lnrqytap/agent-repository-QbrbnL/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

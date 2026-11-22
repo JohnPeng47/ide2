@@ -1,0 +1,1 @@
+{"path":"src/features/mapping/workspace/workspaceTask.worker.ts","text":"import { executeWorkspaceTask, type WorkspaceTask } from './workspaceTask';\nonmessage = ({ data }: MessageEvent<WorkspaceTask>) => {\n  try { postMessage({ result: executeWorkspaceTask(data) }); }\n  catch (error) { postMessage({ error: error instanceof Error ? error.message : String(error) }); }\n};\n"}

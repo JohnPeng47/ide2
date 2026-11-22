@@ -1,0 +1,602 @@
+{
+  "projectId": "project-4971c06b-83d5-49eb-998d-043d5fc2dca4",
+  "experimentId": "b8ad87a7-698a-45e9-9cc0-b640ede5efa6",
+  "phaseId": "phase-2",
+  "model": "gpt-6-sol",
+  "commit": "ea8b12a8a9894b5259c441eadd8f6f0c65e215af",
+  "jobs": [
+    {
+      "key": "ghostty-v3-core-1-low-1",
+      "caseId": "ghostty-v3-core-1",
+      "number": 1,
+      "effort": "low",
+      "runId": "056ab6bf-8f1b-4419-9159-48d427d74f74",
+      "kind": "core",
+      "cellKey": "ff376a21-67fd-4112-8618-6144a0307f66:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-core-1-low-2",
+      "caseId": "ghostty-v3-core-1",
+      "number": 2,
+      "effort": "low",
+      "runId": "ab45380d-1f97-4b09-a4dd-02070ee610f4",
+      "kind": "core",
+      "cellKey": "ff376a21-67fd-4112-8618-6144a0307f66:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-core-1-low-3",
+      "caseId": "ghostty-v3-core-1",
+      "number": 3,
+      "effort": "low",
+      "runId": "89620240-631a-4f77-8aa1-aee3e09decdc",
+      "kind": "core",
+      "cellKey": "ff376a21-67fd-4112-8618-6144a0307f66:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-core-1-medium-1",
+      "caseId": "ghostty-v3-core-1",
+      "number": 1,
+      "effort": "medium",
+      "runId": "f8d49dd8-7878-49e3-9dd2-207c686bb02f",
+      "kind": "core",
+      "cellKey": "ff376a21-67fd-4112-8618-6144a0307f66:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-core-1-medium-2",
+      "caseId": "ghostty-v3-core-1",
+      "number": 2,
+      "effort": "medium",
+      "runId": "94dc5fed-c7ab-4a56-b337-f5e636ccea02",
+      "kind": "core",
+      "cellKey": "ff376a21-67fd-4112-8618-6144a0307f66:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-core-1-medium-3",
+      "caseId": "ghostty-v3-core-1",
+      "number": 3,
+      "effort": "medium",
+      "runId": "2c2c8ef2-250b-407b-8cd2-c3df7e4fa7f2",
+      "kind": "core",
+      "cellKey": "ff376a21-67fd-4112-8618-6144a0307f66:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-core-1-high-1",
+      "caseId": "ghostty-v3-core-1",
+      "number": 1,
+      "effort": "high",
+      "runId": "aa6c0191-7b31-4485-9d8a-43128b6cfaa0",
+      "kind": "core",
+      "cellKey": "ff376a21-67fd-4112-8618-6144a0307f66:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-core-1-high-2",
+      "caseId": "ghostty-v3-core-1",
+      "number": 2,
+      "effort": "high",
+      "runId": "219952b1-eeae-4b50-a64a-f4718c7bfd1c",
+      "kind": "core",
+      "cellKey": "ff376a21-67fd-4112-8618-6144a0307f66:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-core-1-high-3",
+      "caseId": "ghostty-v3-core-1",
+      "number": 3,
+      "effort": "high",
+      "runId": "a8d3b798-b566-4a92-ba51-ad3417c726ad",
+      "kind": "core",
+      "cellKey": "ff376a21-67fd-4112-8618-6144a0307f66:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-core-2-low-1",
+      "caseId": "ghostty-v3-core-2",
+      "number": 1,
+      "effort": "low",
+      "runId": "ca60a288-7bcf-42cc-94f5-94f15bcd45f5",
+      "kind": "core",
+      "cellKey": "ff376a21-67fd-4112-8618-6144a0307f66:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-core-2-low-2",
+      "caseId": "ghostty-v3-core-2",
+      "number": 2,
+      "effort": "low",
+      "runId": "8f51d65a-13d6-4343-8c11-8485e9f551fc",
+      "kind": "core",
+      "cellKey": "ff376a21-67fd-4112-8618-6144a0307f66:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-core-2-low-3",
+      "caseId": "ghostty-v3-core-2",
+      "number": 3,
+      "effort": "low",
+      "runId": "3edd4196-d892-421e-8dc6-9c837546a4c2",
+      "kind": "core",
+      "cellKey": "ff376a21-67fd-4112-8618-6144a0307f66:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-core-2-medium-1",
+      "caseId": "ghostty-v3-core-2",
+      "number": 1,
+      "effort": "medium",
+      "runId": "936bb376-73a0-4679-9d80-e8c2dcd3e84f",
+      "kind": "core",
+      "cellKey": "ff376a21-67fd-4112-8618-6144a0307f66:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-core-2-medium-2",
+      "caseId": "ghostty-v3-core-2",
+      "number": 2,
+      "effort": "medium",
+      "runId": "ece6d7c9-3bc9-4bcd-8d3e-8a9daac37d79",
+      "kind": "core",
+      "cellKey": "ff376a21-67fd-4112-8618-6144a0307f66:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-core-2-medium-3",
+      "caseId": "ghostty-v3-core-2",
+      "number": 3,
+      "effort": "medium",
+      "runId": "6b0ff7db-268b-4313-9385-067af646f2d6",
+      "kind": "core",
+      "cellKey": "ff376a21-67fd-4112-8618-6144a0307f66:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-core-2-high-1",
+      "caseId": "ghostty-v3-core-2",
+      "number": 1,
+      "effort": "high",
+      "runId": "997d9d25-37a7-433f-b8ae-7709b73cf319",
+      "kind": "core",
+      "cellKey": "ff376a21-67fd-4112-8618-6144a0307f66:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-core-2-high-2",
+      "caseId": "ghostty-v3-core-2",
+      "number": 2,
+      "effort": "high",
+      "runId": "f5510a0b-e8d4-4289-9b92-39de00157976",
+      "kind": "core",
+      "cellKey": "ff376a21-67fd-4112-8618-6144a0307f66:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-core-2-high-3",
+      "caseId": "ghostty-v3-core-2",
+      "number": 3,
+      "effort": "high",
+      "runId": "f3a55636-3923-4209-afb0-c71ae39edeb8",
+      "kind": "core",
+      "cellKey": "ff376a21-67fd-4112-8618-6144a0307f66:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-core-3-low-1",
+      "caseId": "ghostty-v3-core-3",
+      "number": 1,
+      "effort": "low",
+      "runId": "27aace05-09d6-4668-9fd3-2d8dd90c3d18",
+      "kind": "core",
+      "cellKey": "ff376a21-67fd-4112-8618-6144a0307f66:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-core-3-low-2",
+      "caseId": "ghostty-v3-core-3",
+      "number": 2,
+      "effort": "low",
+      "runId": "d5455836-5dd0-4ad1-b56b-630025b08b93",
+      "kind": "core",
+      "cellKey": "ff376a21-67fd-4112-8618-6144a0307f66:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-core-3-low-3",
+      "caseId": "ghostty-v3-core-3",
+      "number": 3,
+      "effort": "low",
+      "runId": "0d131841-9ddf-40ce-92bf-2317c55ddcfa",
+      "kind": "core",
+      "cellKey": "ff376a21-67fd-4112-8618-6144a0307f66:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-core-3-medium-1",
+      "caseId": "ghostty-v3-core-3",
+      "number": 1,
+      "effort": "medium",
+      "runId": "7ed8f82e-2a53-4e39-bedf-1680ee5dbabf",
+      "kind": "core",
+      "cellKey": "ff376a21-67fd-4112-8618-6144a0307f66:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-core-3-medium-2",
+      "caseId": "ghostty-v3-core-3",
+      "number": 2,
+      "effort": "medium",
+      "runId": "6be43298-9c03-461d-8f0e-1f3d2a45250e",
+      "kind": "core",
+      "cellKey": "ff376a21-67fd-4112-8618-6144a0307f66:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-core-3-medium-3",
+      "caseId": "ghostty-v3-core-3",
+      "number": 3,
+      "effort": "medium",
+      "runId": "3e389181-a85e-44f1-907d-4cde3ff03606",
+      "kind": "core",
+      "cellKey": "ff376a21-67fd-4112-8618-6144a0307f66:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-core-3-high-1",
+      "caseId": "ghostty-v3-core-3",
+      "number": 1,
+      "effort": "high",
+      "runId": "f7c2cf9e-aee3-4ddd-8e52-6c2c684d05e3",
+      "kind": "core",
+      "cellKey": "ff376a21-67fd-4112-8618-6144a0307f66:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-core-3-high-2",
+      "caseId": "ghostty-v3-core-3",
+      "number": 2,
+      "effort": "high",
+      "runId": "ed6eee15-15a8-458f-a3a4-83f999f88c4e",
+      "kind": "core",
+      "cellKey": "ff376a21-67fd-4112-8618-6144a0307f66:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-core-3-high-3",
+      "caseId": "ghostty-v3-core-3",
+      "number": 3,
+      "effort": "high",
+      "runId": "a174aa7f-c679-4da3-ae7a-8536ea72a44f",
+      "kind": "core",
+      "cellKey": "ff376a21-67fd-4112-8618-6144a0307f66:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-canvas-1-low-1",
+      "caseId": "ghostty-v3-canvas-1",
+      "number": 1,
+      "effort": "low",
+      "runId": "b8309867-22b9-4232-a559-8719b56ae793",
+      "kind": "canvas",
+      "cellKey": "e45566cf-a9bf-477f-9774-b5758a2785bb:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-canvas-1-low-2",
+      "caseId": "ghostty-v3-canvas-1",
+      "number": 2,
+      "effort": "low",
+      "runId": "d1bf660a-287b-4a09-b4d2-a42b60e7925c",
+      "kind": "canvas",
+      "cellKey": "e45566cf-a9bf-477f-9774-b5758a2785bb:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-canvas-1-low-3",
+      "caseId": "ghostty-v3-canvas-1",
+      "number": 3,
+      "effort": "low",
+      "runId": "6cd65c44-ece3-4684-b828-dfa2309753b3",
+      "kind": "canvas",
+      "cellKey": "e45566cf-a9bf-477f-9774-b5758a2785bb:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-canvas-1-medium-1",
+      "caseId": "ghostty-v3-canvas-1",
+      "number": 1,
+      "effort": "medium",
+      "runId": "4c467845-5968-4b2f-bb14-7e52894bb2d1",
+      "kind": "canvas",
+      "cellKey": "e45566cf-a9bf-477f-9774-b5758a2785bb:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-canvas-1-medium-2",
+      "caseId": "ghostty-v3-canvas-1",
+      "number": 2,
+      "effort": "medium",
+      "runId": "205f6cc7-9641-474a-9a63-f7d0d8ff5c85",
+      "kind": "canvas",
+      "cellKey": "e45566cf-a9bf-477f-9774-b5758a2785bb:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-canvas-1-medium-3",
+      "caseId": "ghostty-v3-canvas-1",
+      "number": 3,
+      "effort": "medium",
+      "runId": "fd6ab7ed-ed09-43a4-aca6-9bca31c2a465",
+      "kind": "canvas",
+      "cellKey": "e45566cf-a9bf-477f-9774-b5758a2785bb:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-canvas-1-high-1",
+      "caseId": "ghostty-v3-canvas-1",
+      "number": 1,
+      "effort": "high",
+      "runId": "53131521-027b-40a7-a411-bd4907f374d9",
+      "kind": "canvas",
+      "cellKey": "e45566cf-a9bf-477f-9774-b5758a2785bb:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-canvas-1-high-2",
+      "caseId": "ghostty-v3-canvas-1",
+      "number": 2,
+      "effort": "high",
+      "runId": "7ce0e12b-9eee-4c86-b7c5-8f5278031038",
+      "kind": "canvas",
+      "cellKey": "e45566cf-a9bf-477f-9774-b5758a2785bb:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-canvas-1-high-3",
+      "caseId": "ghostty-v3-canvas-1",
+      "number": 3,
+      "effort": "high",
+      "runId": "6bcaf9fe-300d-4b6a-ab3a-76498f6b9a88",
+      "kind": "canvas",
+      "cellKey": "e45566cf-a9bf-477f-9774-b5758a2785bb:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-canvas-2-low-1",
+      "caseId": "ghostty-v3-canvas-2",
+      "number": 1,
+      "effort": "low",
+      "runId": "fcf9d0bb-8983-42c3-a965-9deae2cf4760",
+      "kind": "canvas",
+      "cellKey": "e45566cf-a9bf-477f-9774-b5758a2785bb:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-canvas-2-low-2",
+      "caseId": "ghostty-v3-canvas-2",
+      "number": 2,
+      "effort": "low",
+      "runId": "48afd381-a621-43f4-9a85-2e73e0ad774b",
+      "kind": "canvas",
+      "cellKey": "e45566cf-a9bf-477f-9774-b5758a2785bb:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-canvas-2-low-3",
+      "caseId": "ghostty-v3-canvas-2",
+      "number": 3,
+      "effort": "low",
+      "runId": "c907af06-a803-4413-8e6b-82bf6620b878",
+      "kind": "canvas",
+      "cellKey": "e45566cf-a9bf-477f-9774-b5758a2785bb:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-canvas-2-medium-1",
+      "caseId": "ghostty-v3-canvas-2",
+      "number": 1,
+      "effort": "medium",
+      "runId": "34eb8d6d-8f8c-4be6-8c0d-d344d7cd5c66",
+      "kind": "canvas",
+      "cellKey": "e45566cf-a9bf-477f-9774-b5758a2785bb:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-canvas-2-medium-2",
+      "caseId": "ghostty-v3-canvas-2",
+      "number": 2,
+      "effort": "medium",
+      "runId": "69e1065d-24d9-4a6f-aa89-87df8135c198",
+      "kind": "canvas",
+      "cellKey": "e45566cf-a9bf-477f-9774-b5758a2785bb:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-canvas-2-medium-3",
+      "caseId": "ghostty-v3-canvas-2",
+      "number": 3,
+      "effort": "medium",
+      "runId": "6523b544-b4a8-49e8-ad2e-fa51d001f2ed",
+      "kind": "canvas",
+      "cellKey": "e45566cf-a9bf-477f-9774-b5758a2785bb:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-canvas-2-high-1",
+      "caseId": "ghostty-v3-canvas-2",
+      "number": 1,
+      "effort": "high",
+      "runId": "6b69ff01-0fd8-4bb5-b7af-afd38be27d26",
+      "kind": "canvas",
+      "cellKey": "e45566cf-a9bf-477f-9774-b5758a2785bb:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-canvas-2-high-2",
+      "caseId": "ghostty-v3-canvas-2",
+      "number": 2,
+      "effort": "high",
+      "runId": "42d84a00-6595-4de7-bc27-56f65a3a943f",
+      "kind": "canvas",
+      "cellKey": "e45566cf-a9bf-477f-9774-b5758a2785bb:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-canvas-2-high-3",
+      "caseId": "ghostty-v3-canvas-2",
+      "number": 3,
+      "effort": "high",
+      "runId": "ebedbe47-6b8d-4f00-8a0e-0fbea3e9ae01",
+      "kind": "canvas",
+      "cellKey": "e45566cf-a9bf-477f-9774-b5758a2785bb:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-canvas-3-low-1",
+      "caseId": "ghostty-v3-canvas-3",
+      "number": 1,
+      "effort": "low",
+      "runId": "9b25d08b-4d69-4ae2-9db5-312622dc310e",
+      "kind": "canvas",
+      "cellKey": "e45566cf-a9bf-477f-9774-b5758a2785bb:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-canvas-3-low-2",
+      "caseId": "ghostty-v3-canvas-3",
+      "number": 2,
+      "effort": "low",
+      "runId": "1c52da57-1cb8-4d7a-8fc2-0ae3494a19f6",
+      "kind": "canvas",
+      "cellKey": "e45566cf-a9bf-477f-9774-b5758a2785bb:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-canvas-3-low-3",
+      "caseId": "ghostty-v3-canvas-3",
+      "number": 3,
+      "effort": "low",
+      "runId": "2e0f48c6-bfe9-4e13-86b5-b95add83219d",
+      "kind": "canvas",
+      "cellKey": "e45566cf-a9bf-477f-9774-b5758a2785bb:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-canvas-3-medium-1",
+      "caseId": "ghostty-v3-canvas-3",
+      "number": 1,
+      "effort": "medium",
+      "runId": "bd7d259a-0aba-461d-b192-4ad892539213",
+      "kind": "canvas",
+      "cellKey": "e45566cf-a9bf-477f-9774-b5758a2785bb:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-canvas-3-medium-2",
+      "caseId": "ghostty-v3-canvas-3",
+      "number": 2,
+      "effort": "medium",
+      "runId": "aa817c8d-8462-4939-890a-152b3090893e",
+      "kind": "canvas",
+      "cellKey": "e45566cf-a9bf-477f-9774-b5758a2785bb:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-canvas-3-medium-3",
+      "caseId": "ghostty-v3-canvas-3",
+      "number": 3,
+      "effort": "medium",
+      "runId": "dfb30ee5-a8ea-42d1-af73-0cc913e05258",
+      "kind": "canvas",
+      "cellKey": "e45566cf-a9bf-477f-9774-b5758a2785bb:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-canvas-3-high-1",
+      "caseId": "ghostty-v3-canvas-3",
+      "number": 1,
+      "effort": "high",
+      "runId": "022d660d-fc98-48c1-816d-36d31ee56f84",
+      "kind": "canvas",
+      "cellKey": "e45566cf-a9bf-477f-9774-b5758a2785bb:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-canvas-3-high-2",
+      "caseId": "ghostty-v3-canvas-3",
+      "number": 2,
+      "effort": "high",
+      "runId": "79e7aa92-e39e-465a-8b9a-45c5d8d236fb",
+      "kind": "canvas",
+      "cellKey": "e45566cf-a9bf-477f-9774-b5758a2785bb:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-canvas-3-high-3",
+      "caseId": "ghostty-v3-canvas-3",
+      "number": 3,
+      "effort": "high",
+      "runId": "1733af2d-b15e-4c45-b2db-bf4a9cffbe32",
+      "kind": "canvas",
+      "cellKey": "e45566cf-a9bf-477f-9774-b5758a2785bb:1:alternative"
+    }
+  ],
+  "cases": [
+    {
+      "key": "ghostty-v3-core-1",
+      "kind": "core",
+      "name": "Ghostty · Central diagram 1",
+      "source": {
+        "experimentId": "08ccc7fa-8ea6-4cfa-b0b7-8819b7fcbf35",
+        "runId": "3d97670a-8d2d-41fe-86c6-7b3914204965",
+        "cellKey": "0b3af2dd-ba89-4032-936a-40070a3e167e:1:alternative",
+        "label": "Ghostty · Central diagram 1"
+      },
+      "agentContextId": "saved-agent-context-a746677e-3df7-4ad4-8ce6-f57f7fec085f",
+      "contentHash": "8af6ea337c0c8929ae0d1c072bfda8d43f7310dbb13703ec2fbb33fc3c418ce2",
+      "diagramCount": 1,
+      "nodeCount": 89
+    },
+    {
+      "key": "ghostty-v3-core-2",
+      "kind": "core",
+      "name": "Ghostty · Central diagram 2",
+      "source": {
+        "experimentId": "08ccc7fa-8ea6-4cfa-b0b7-8819b7fcbf35",
+        "runId": "87b0635d-e644-43cd-856a-81c73fbc2af6",
+        "cellKey": "0b3af2dd-ba89-4032-936a-40070a3e167e:1:alternative",
+        "label": "Ghostty · Central diagram 2"
+      },
+      "agentContextId": "saved-agent-context-fbcfe84b-9f06-4a02-9dad-eeb71c335864",
+      "contentHash": "1ecbc023996db06896fa758bb7ac185ab7aa5b374b7c4bef608a936275283e31",
+      "diagramCount": 1,
+      "nodeCount": 101
+    },
+    {
+      "key": "ghostty-v3-core-3",
+      "kind": "core",
+      "name": "Ghostty · Central diagram 3",
+      "source": {
+        "experimentId": "08ccc7fa-8ea6-4cfa-b0b7-8819b7fcbf35",
+        "runId": "d8ddfcb7-6be0-4a68-9277-c40a1254248f",
+        "cellKey": "0b3af2dd-ba89-4032-936a-40070a3e167e:1:alternative",
+        "label": "Ghostty · Central diagram 3"
+      },
+      "agentContextId": "saved-agent-context-4679475e-8f5d-4455-91ba-f4e3d46cf4b8",
+      "contentHash": "4c24cea2f1585e10a1390c92e4a7b19033ed3832e1a4861db77a71686f70f897",
+      "diagramCount": 1,
+      "nodeCount": 95
+    },
+    {
+      "key": "ghostty-v3-canvas-1",
+      "kind": "canvas",
+      "name": "Ghostty · Expanded canvas 1",
+      "source": {
+        "experimentId": "7821c7da-cfcd-446d-8d7f-43b26df049fe",
+        "runId": "55bf4eb7-f1e9-4f36-aab2-ead60da799d4",
+        "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative",
+        "label": "Ghostty · Expanded canvas 1",
+        "checkpointId": "canvas-revision-34bf475c-72ec-459c-9519-fc7db199a4a2"
+      },
+      "agentContextId": "saved-agent-context-952866b0-4afc-446f-8220-ab80a40582c5",
+      "contentHash": "f80fdfee53c9c2eecb607117514795b67267e5117b0960c2a77e390d08a58685",
+      "diagramCount": 5,
+      "nodeCount": 152
+    },
+    {
+      "key": "ghostty-v3-canvas-2",
+      "kind": "canvas",
+      "name": "Ghostty · Expanded canvas 2",
+      "source": {
+        "experimentId": "7821c7da-cfcd-446d-8d7f-43b26df049fe",
+        "runId": "55bf4eb7-f1e9-4f36-aab2-ead60da799d4",
+        "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:2:alternative",
+        "label": "Ghostty · Expanded canvas 2",
+        "checkpointId": "canvas-revision-12cfbb89-87e9-46aa-a418-ec796f2fadae"
+      },
+      "agentContextId": "saved-agent-context-7cc79fd6-9b61-4a41-ab68-ccdb7f5a8c91",
+      "contentHash": "a78433ee817e7fb327fb6c961669e4dc7f2433a76841a8dadb62f83fef0f20d3",
+      "diagramCount": 5,
+      "nodeCount": 160
+    },
+    {
+      "key": "ghostty-v3-canvas-3",
+      "kind": "canvas",
+      "name": "Ghostty · Expanded canvas 3",
+      "source": {
+        "experimentId": "7821c7da-cfcd-446d-8d7f-43b26df049fe",
+        "runId": "55bf4eb7-f1e9-4f36-aab2-ead60da799d4",
+        "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:3:alternative",
+        "label": "Ghostty · Expanded canvas 3",
+        "checkpointId": "canvas-revision-7d96d7cb-fe58-4276-ba9c-5b29a14990a0"
+      },
+      "agentContextId": "saved-agent-context-d6a3ce48-1fce-4f4c-83ad-76384bb982f7",
+      "contentHash": "21f82361f0234bd5dd1721ef1abd0b59f186e2a02083338289ce52191c012552",
+      "diagramCount": 5,
+      "nodeCount": 148
+    }
+  ],
+  "prompts": {
+    "core": {
+      "promptId": "ff376a21-67fd-4112-8618-6144a0307f66",
+      "version": 3,
+      "contentHash": "47df0b0a1d6d6cad34d2dea9b86898de9f1443922e8d83cefbca161740154eca"
+    },
+    "canvas": {
+      "promptId": "e45566cf-a9bf-477f-9774-b5758a2785bb",
+      "version": 3,
+      "contentHash": "022ced24c3a5e6f7816ca2dedafc5f243554487e7fe03fd831517dd72f9808b4"
+    }
+  }
+}

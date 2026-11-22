@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export const strategyCodes = ['1a', '1b', '2', '3', '4'] as const;
 export type StrategyCode = typeof strategyCodes[number];
-export const diagramChangeProposalSchema = z.object({ tree: z.string().min(1).max(50000) }).strict();
+export const diagramChangeProposalSchema = z.object({ tree: z.string().min(1) }).strict();
 const countsSchema = z.object({ '1a': z.number().int().nonnegative(), '1b': z.number().int().nonnegative(), '2': z.number().int().nonnegative(), '3': z.number().int().nonnegative(), '4': z.number().int().nonnegative() }).strict();
 export const diagramChangeTreeResultSchema = z.object({
   parser: z.literal('diagram-change-tree'), version: z.literal(1),

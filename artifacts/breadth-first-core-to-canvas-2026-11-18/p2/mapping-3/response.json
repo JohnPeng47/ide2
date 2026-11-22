@@ -1,0 +1,400 @@
+{
+  "output": {
+    "explanation": "Expanded workspace because its draft/session lifetimes and mounted surfaces hide substantial internal composition. The central diagram retains App, shared client services and page-owned coordination; two peripherals deepen CanvasWorkspace ownership and mounted rendering. Domain and backend remain unchanged as separate semantic and service-boundary maps. Verified against the pinned checkout, including App/services, MappingPage, CanvasWorkspace, CanvasSession, WorkspacePersistence, editor runtimes, controller/history and backend wiring. Corrected SourceWindowPanel to a sibling of MappingEditorCanvas, distinguished borrowed sessions and editor drivers from ownership, and replaced the unconditional BOTH-controller transfer claim with participating controllers plus the projection-copy child-only navigation exception. All existing edges are retained, with moved endpoints redirected; added ownership, borrowing and notification links. New diagrams fit below workspace without moving existing diagrams.",
+    "diagrams": [
+      {
+        "id": "workspace",
+        "ascii": "Mapping: browser workspace ownership\n|\n`-- App (src/app/App.tsx)\n    |-- Client services (src/app/services.ts)\n    |   |-- DefaultCanvasHistoryService -> shared across workspace sessions\n    |   `-- WorkspaceStorage\n    |       |-- RecordStorage: buffered record state / batches\n    |       `-- Storage worker -> /api/mapping/workspace/records\n    |-- MappingPocPage: service context provider\n    |   `-- MappingWorkspacePage (src/features/mapping/MappingPage.tsx)\n    |       |-- CanvasWorkspace: owns draft registry and session lifetimes\n    |       |   `-- CanvasDraft per document -> session detail\n    |       |-- Transfer coordination: pending selection + transaction records\n    |       |   |-- Copy/move + linked undo/redo -> participating controllers\n    |       |   `-- Projection-copy navigation replaces only the child session\n    |       |-- Mounted document surfaces: borrow draft sessions -> surface detail\n    |       |-- Explorer, submenu, FloatingPane / WindowPanel tool surfaces\n    |       |   |-- ProjectionLayoutPanel -> commitProjectionLayout(expectedVersion)\n    |       |   `-- Change previews / DiffTree / saved views / generated canvases\n    |       |-- DiagramSearchService + symbol search -> focusBox / navigation\n    |       |-- PromptComposerCoordinator\n    |       |   |-- Drafts, references, exact retries and polling timers\n    |       |   `-- DiagramEditClient -> agent service; revision receivers -> controller\n    |       |-- useAgentCanvasBridge: register / poll / execute / reply / unregister\n    |       |   `-- Received commands -> workspace controllers; publish selection\n    |       |-- AgentChatPanel -> agent chat; selections -> selection/local-chat APIs\n    |       |-- SourcePaneViewState: pane scroll state and captured cameras\n    |       |-- WorkspacePersistence (borrows workspace, records and view state)\n    |       |   |-- Per-session cursors, known drafts and subscriptions\n    |       |   |-- onPersist + view changes -> history deltas / metadata / view records\n    |       |   `-- Deduplicated batches + active ID + transfers -> RecordStorage\n    |       `-- Save / reload / publish coordination -> MappingDiagramService\n    `-- EvalsPage: alternative /evals surface -> evaluation services",
+        "position": {
+          "column": 0,
+          "row": 0
+        }
+      },
+      {
+        "id": "domain",
+        "ascii": "Controller semantics and shared history (domain/)\n|\n|-- MappingDocumentController (mapping/workspace/mappingDocumentController.ts)\n|   |-- ControllerSnapshot\n|   |   |-- MappingGridDocument\n|   |   |   |-- LineGridScene\n|   |   |   |   |-- Root container tree: positioned diagram/container instances\n|   |   |   |   `-- contents: versioned Diagram values referenced by instances\n|   |   |   |       |-- Identity/revision + highlights + jumps\n|   |   |   |       |-- DiagramContent: ASCII/hash; pinned asciiTree/asciiGraph parsing\n|   |   |   |       `-- DiagramSourceContext: binding, hash, mappings, evidence\n|   |   |   |           `-- diagramSource().forSelection() -> source ranges\n|   |   |   `-- Edges, canvas jumps, presentations, contexts, alternatives/reviews\n|   |   `-- MappingCanvasState\n|   |       |-- SelectionState: membership (not captured regions or menu focus)\n|   |       |-- DisplayState: pane ownership tree, regions and conversations\n|   |       `-- Diagram views, controls and optional viewport/projection layout\n|   |-- Editing-context handle -> injected CanvasHistoryService\n|   |-- Semantic operations: diagrams, mappings, edges, highlights, alternatives\n|   |   `-- Version checks + reconciliation -> append history; publish snapshot\n|   |-- commitEditorGesture / commitProjectionLayout -> same semantic boundary\n|   `-- undo(): live driver if attached; otherwise history.navigate()\n|       `-- Transfer navigation requires workspace coordination across contexts\n|\n|-- DefaultCanvasHistoryService (core/diagrams/canvasHistoryService.ts)\n|   |-- WeakMap<CanvasEditingContext, CanvasHistory>\n|   |   `-- CanvasHistory per editing handle (not one per document identity)\n|   |       |-- CanvasHistoryRecord: head/baseline, past/future, checkpoints\n|   |       |   |-- Composition + diagramBindings to immutable revisions\n|   |       |   `-- Retained revisions, saved views and generation candidates\n|   |       |-- DiagramRevisionEditor: resolve / merge against context bindings\n|   |       `-- Checkpoint encoder and incremental change log\n|   |-- openContext / append / navigate / forkContext / adopt / prepareTransfer\n|   |   `-- Runtime revision reads and restores -> shared revision registry\n|   `-- persistenceChanges(since) -> revision/checkpoint records for adapters\n|\n`-- Runtime revision registry (core/diagrams/internal/revisionRegistry.ts)\n    |-- Immutable DiagramRevision records indexed by revision ID\n    |-- diagramRevisionStore.ts: create / revise / import / retain API\n    `-- Shared runtime identity storage; NOT owned by a controller/history",
+        "position": {
+          "column": 110,
+          "row": 0
+        }
+      },
+      {
+        "id": "backend",
+        "ascii": "Backend composition and external workspace collaborators\ncreateBackend (src/server/app/bootstrap.ts): wires services, ports and stores\n|\n|-- MappingWorkspaceService: project-scoped loadRecords / applyBatch / import/export\n|   `-- Injected MappingWorkspaceStore\n|       `-- WorkspaceRecordStore: durable workspace records, separate from publication\n|-- MappingDiagramService: initialize / save / publishCheckpoint / delete\n|   `-- -> shared DiagramStore: project catalogs + DiagramPersistence / revisions\n|-- ProjectSourceService: files / source / definitions\n|   |-- Resolve DiagramSourceContext binding -> CorpusAccess reads\n|   `-- -> optional ProjectLanguageService for definition lookup\n|-- FileCompactionService\n|   |-- Injected runtime + FileCompactionStore; owns active tasks\n|   `-- Workflow validates compacted source -> CoreApplication / project catalog\n|\n|-- AgentDiagrammingSessionService\n|   |-- Attachments, request receipts, execution runs and ChatCanvasBindings\n|   |-- CanvasReadAliases; injected shared CanvasApiProjection\n|   |-- Optional DiagramEditService + DiagramBatchService\n|   |   `-- Generate/apply revision proposals -> CanvasSessionPort\n|   |-- Validated tools -> shared GenerationCanvasBridge or ChangeSessionService\n|   `-- Execution -> QuickJsAgentRuntime; context resolution -> AgentContextService\n|-- AgentContextService -> shared AgentContextLibrary / stored source snapshots\n|-- GenerationCanvasBridge (shared CanvasSessionPort, NOT owned by AgentChatService)\n|   |-- Isolated generation contexts\n|   |   |-- MappingDocumentController per context -> domain history\n|   |   `-- Mutation receipts, serial queue and persistence callback\n|   `-- Wrapped CanvasSessionBridge: dispatch / poll / reply -> browser bridge\n|-- LiveCanvasService: availability/context -> bridge; selection updates -> clients\n|-- AgentChatService\n|   |-- Injected Codex connection, FileChatStore, ChatDiagramTools and MCP binding\n|   |-- -> shared agent service / context library / GenerationCanvasBridge\n|   `-- Isolated candidates use domain commands without changing browser selection\n|-- SelectionService + LocalChatService\n|   `-- Captured ASCII / selection / source evidence -> Pi or Codex runtime adapters\n|\n|-- ChangeSessionService\n|   |-- Own history service and serialization queues; injected change-session store\n|   |-- Stored baseline/proposed documents, pinned Git context, DiffTree, receipts\n|   |-- Proposal operations -> headless MappingDocumentController (not live drafts)\n|   `-- accept(): proposal version + live baseline check -> catalog.acceptCanvasChanges\n|-- DiffSessionWorkflowService\n|   |-- Injected runtime + run store; captured Git hunks and canvases\n|   `-- -> agent service + ChangeSessionService proposals\n|-- PushIntegrationService -> Git push source + DiffSessionWorkflowService\n|\n|-- CompareSessionService: pinned comparisons -> workspace + GeneratedCanvasCatalog\n|-- ComparisonGenerationService: persisted comparison runs -> CompareSessionService\n|-- EvalRunService: prepared inputs, generation cells, running tasks and results\n|   |-- Assigned LayoutTemplateService + ReferenceGenerationService\n|   |-- Assigned JudgementService + ExperimentService\n|   `-- -> compare/workspace/context/prompt services; roll-up and result stores\n|-- EvalPromptService -> EvalReferenceService\n`-- GeneratedCanvasCatalog: reusable outputs; snapshot callback -> EvalRunService\n`-- dispose(): stop tasks, bridges and optional language services",
+        "position": {
+          "column": 110,
+          "row": 48
+        }
+      },
+      {
+        "id": "sessions",
+        "ascii": "CanvasWorkspace: draft and session ownership\n(src/features/mapping/workspace/canvasWorkspace.ts)\n|\n|-- Registry stores: drafts, change version and dirty-scene IDs\n|-- Controller index, session subscriptions and persistence listeners\n|-- CanvasDraft per document\n|   |-- Metadata: name, revision, visibility, busy, viewport and focus\n|   |-- Saved baseline: savedName / savedScene / savedEdges\n|   `-- CanvasSession (canvasSession.ts)\n|       |-- Read-only store facades\n|       |   |-- Document / presentation / selection\n|       |   `-- Controls / geometry / dirty and undo status\n|       |-- Baseline and scene/edge keys -> dirty comparisons\n|       |-- cursorCopy: pending pasted content\n|       |-- MappingDocumentController -> domain semantics\n|       |   |-- Snapshot: document + canvas + version + geometry\n|       |   |-- Editing-context handle -> injected shared history service\n|       |   |-- Optional editor driver: borrowed from mounted runtime\n|       |   `-- applyUpdate / select / commitDocument / canvasView\n|       |       `-- Validate, reconcile -> history; notify subscribers\n|       `-- Controller subscription: synchronously refresh changed stores\n|           `-- New canvasRevisionId -> onCommit -> workspace.onPersist\n|-- setDrafts(): seeds create sessions with the injected history service\n|   |-- Reuse stable handles; update each session's saved baseline\n|   |-- Removed/replaced sessions: unsubscribe, remove index, dispose\n|   `-- Install subscriptions; refresh registry and dirty-scene index\n|-- copyDocument(): fork controller history; create a new draft/session\n`-- dispose(): unsubscribe; dispose sessions and clear persistence listeners",
+        "position": {
+          "column": 0,
+          "row": 38
+        }
+      },
+      {
+        "id": "surfaces",
+        "ascii": "Mounted document surface (MappingWorkspacePage)\n|\n|-- Per-document contexts: document ID and active state\n|-- MappingEditorCanvas (tldraw/MappingEditorCanvas.tsx)\n|   |-- Borrowed CanvasSession -> session controller and cursorCopy\n|   |-- Tldraw / Editor: live geometry, camera and native undo\n|   |   |-- MappingShapeUtil: registered renderer\n|   |   |   `-- DiagramShapeContent / FloatingShapeContent / DiagramSidePanelContent\n|   |   `-- ApplicationOverlay: camera transform for application children\n|   |       `-- MappingPocSelectionCanvas\n|   |           |-- CanvasSelectionLayer / CanvasSelectionActions\n|   |           |-- SelectionEffectsLayer / CursorCopyOverlay\n|   |           |-- Node, subtree, clipboard, highlight actions -> controller\n|   |           `-- Undo/redo and transfer callbacks -> workspace page\n|   |-- MappingEditorRuntime: editor/controller adapter, not session owner\n|   |   |-- Projected-shape cache; subscriptions; settle/navigation guards\n|   |   |-- hydrate/publish: checkpoints -> native history and shapes\n|   |   |-- Attached editor driver -> controller delegates live undo\n|   |   |-- settle(): native moves/pane geometry -> commitEditorGesture()\n|   |   `-- dispose(): settle, unsubscribe and detach driver\n|   |-- CanvasRuntime: borrows session and editor\n|   |   |-- Models: grids, side panels, floats and edges\n|   |   |-- SelectionToolBridge: gestures and selection ownership\n|   |   |   `-- Ownership shared with MappingEditorRuntime\n|   |   |-- LocalAnchorStore: renderer-local measurements keyed by layout\n|   |   |-- NativeRoutingStore: geometry, obstacles, result cache and worker\n|   |   |-- Focus / interaction / catalog atoms; application action callbacks\n|   |   `-- Controller subscription -> projected models and routing inputs\n|   `-- Camera ticks -> captureViewCamera + page's SourcePaneViewState\n`-- SourceWindowPanel (sibling of MappingEditorCanvas)\n    `-- SourceCodePane -> selected source evidence and definitions",
+        "position": {
+          "column": 0,
+          "row": 72
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": {
+          "diagram": "sessions",
+          "line": 15
+        },
+        "target": {
+          "diagram": "domain",
+          "line": 3
+        },
+        "label": "Controller internals and semantic boundary"
+      },
+      {
+        "source": {
+          "diagram": "workspace",
+          "line": 5
+        },
+        "target": {
+          "diagram": "domain",
+          "line": 25
+        },
+        "label": "Shared service; isolated editing handles"
+      },
+      {
+        "source": {
+          "diagram": "domain",
+          "line": 35
+        },
+        "target": {
+          "diagram": "workspace",
+          "line": 30
+        },
+        "label": "Incremental history records"
+      },
+      {
+        "source": {
+          "diagram": "workspace",
+          "line": 14
+        },
+        "target": {
+          "diagram": "domain",
+          "line": 23
+        },
+        "label": "Linked transfer navigation"
+      },
+      {
+        "source": {
+          "diagram": "workspace",
+          "line": 8
+        },
+        "target": {
+          "diagram": "backend",
+          "line": 4
+        },
+        "label": "Workspace record HTTP API"
+      },
+      {
+        "source": {
+          "diagram": "workspace",
+          "line": 23
+        },
+        "target": {
+          "diagram": "backend",
+          "line": 16
+        },
+        "label": "Create, edit, extend and alternative requests"
+      },
+      {
+        "source": {
+          "diagram": "backend",
+          "line": 28
+        },
+        "target": {
+          "diagram": "workspace",
+          "line": 24
+        },
+        "label": "Browser command polling and replies"
+      },
+      {
+        "source": {
+          "diagram": "surfaces",
+          "line": 31
+        },
+        "target": {
+          "diagram": "backend",
+          "line": 9
+        },
+        "label": "Fetch bound source and definitions"
+      },
+      {
+        "source": {
+          "diagram": "domain",
+          "line": 12
+        },
+        "target": {
+          "diagram": "surfaces",
+          "line": 31
+        },
+        "label": "Selected diagram regions yield source evidence"
+      },
+      {
+        "source": {
+          "diagram": "domain",
+          "line": 11
+        },
+        "target": {
+          "diagram": "backend",
+          "line": 10
+        },
+        "label": "Repository/corpus binding for source resolution"
+      },
+      {
+        "source": {
+          "diagram": "workspace",
+          "line": 19
+        },
+        "target": {
+          "diagram": "backend",
+          "line": 37
+        },
+        "label": "Proposal preview, edits and acceptance"
+      },
+      {
+        "source": {
+          "diagram": "workspace",
+          "line": 32
+        },
+        "target": {
+          "diagram": "backend",
+          "line": 7
+        },
+        "label": "Published representations, distinct from workspace records"
+      },
+      {
+        "source": {
+          "diagram": "workspace",
+          "line": 26
+        },
+        "target": {
+          "diagram": "backend",
+          "line": 30
+        },
+        "label": "Agent conversations and isolated generation"
+      },
+      {
+        "source": {
+          "diagram": "workspace",
+          "line": 26
+        },
+        "target": {
+          "diagram": "backend",
+          "line": 34
+        },
+        "label": "Selection-scoped generation and local conversations"
+      },
+      {
+        "source": {
+          "diagram": "workspace",
+          "line": 33
+        },
+        "target": {
+          "diagram": "backend",
+          "line": 49
+        },
+        "label": "Separate evaluation surface"
+      },
+      {
+        "source": {
+          "diagram": "backend",
+          "line": 26
+        },
+        "target": {
+          "diagram": "domain",
+          "line": 3
+        },
+        "label": "Same controller semantics in isolated generation contexts"
+      },
+      {
+        "source": {
+          "diagram": "backend",
+          "line": 40
+        },
+        "target": {
+          "diagram": "domain",
+          "line": 3
+        },
+        "label": "Headless proposal controller; separate history context"
+      },
+      {
+        "source": {
+          "diagram": "workspace",
+          "line": 11
+        },
+        "target": {
+          "diagram": "sessions",
+          "line": 1
+        },
+        "label": "Expanded registry, draft and session composition"
+      },
+      {
+        "source": {
+          "diagram": "workspace",
+          "line": 16
+        },
+        "target": {
+          "diagram": "surfaces",
+          "line": 1
+        },
+        "label": "Expanded mounted document composition"
+      },
+      {
+        "source": {
+          "diagram": "surfaces",
+          "line": 5
+        },
+        "target": {
+          "diagram": "sessions",
+          "line": 9
+        },
+        "label": "Borrows the draft's session; does not own its lifetime"
+      },
+      {
+        "source": {
+          "diagram": "surfaces",
+          "line": 18
+        },
+        "target": {
+          "diagram": "sessions",
+          "line": 18
+        },
+        "label": "Mount attaches driver; disposal detaches it"
+      },
+      {
+        "source": {
+          "diagram": "surfaces",
+          "line": 19
+        },
+        "target": {
+          "diagram": "domain",
+          "line": 21
+        },
+        "label": "Settled native geometry enters semantic checkpoint boundary"
+      },
+      {
+        "source": {
+          "diagram": "sessions",
+          "line": 22
+        },
+        "target": {
+          "diagram": "workspace",
+          "line": 30
+        },
+        "label": "Commit notification triggers incremental persistence"
+      },
+      {
+        "source": {
+          "diagram": "surfaces",
+          "line": 14
+        },
+        "target": {
+          "diagram": "workspace",
+          "line": 13
+        },
+        "label": "Application callbacks preserve workspace transfer coordination"
+      },
+      {
+        "source": {
+          "diagram": "surfaces",
+          "line": 29
+        },
+        "target": {
+          "diagram": "workspace",
+          "line": 27
+        },
+        "label": "Camera capture feeds page-owned view state"
+      }
+    ]
+  },
+  "usage": {
+    "input": 35074,
+    "output": 7615,
+    "cacheRead": 155264,
+    "cacheWrite": 0,
+    "reasoning": 554,
+    "totalTokens": 197953
+  },
+  "execution": {
+    "runtime": "pi-agent-context",
+    "sessionId": "01a1efaf-649b-74b7-881f-be14fcdac0c6",
+    "contextHash": "e30d4023074e1051b1f435867f8100e2bd0f5b0f290bd2273e4dfd44fd35dd4e",
+    "cacheKey": "eval-54abd0ee5e22212c22eca726d08a8a53891ccd4732f226cbaf01b98ce05f9385",
+    "modelContextHash": "c7773292ba58e7b21e7ae504dd645bfc01906da5f67ecf4a95b53514e45aa341",
+    "repositories": [
+      {
+        "repository": "repo-1",
+        "repositoryPath": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax",
+        "commit": "8ca143700ca4d2c870f1101b8cd4601ab68abd41",
+        "exclusions": [
+          "**/*.spec.*",
+          "**/*.test.*",
+          "**/__fixtures__/**",
+          "**/__tests__/**",
+          "**/fixtures/**",
+          ".diagrams-code/**",
+          ".diagrams-local/**",
+          ".diagrams-parent-architecture/**",
+          ".diagrams/**",
+          ".gitignore",
+          ".materialized-parent-manifests/**",
+          ".skills/**",
+          "A · Gutter glyphs (apply directly, cycle variants inline)@1x.png",
+          "AGENTS.md",
+          "COMPARE_PLAN.md",
+          "FORMAL.md",
+          "LLM_API.MD",
+          "OLD_AGENTS.md",
+          "PLAN.md",
+          "README.md",
+          "artifacts/**",
+          "benchmarks/**",
+          "corpus/**",
+          "deploy/**",
+          "diagram-plan-small-spine.md",
+          "diagram-plan-small.md",
+          "diagram-plan.md",
+          "docs/**",
+          "domain/core/diagrams/interpreter/README.md",
+          "examples/**",
+          "exports/**",
+          "infrastructure/mapping/agents/compaction/prompts/compaction/single-file-compact.md",
+          "infrastructure/mapping/agents/compaction/prompts/compaction/single-file-compact2.md",
+          "infrastructure/mapping/agents/compaction/prompts/compaction/single-file-prompt.md",
+          "infrastructure/mapping/agents/compaction/prompts/compaction/single-file-refinement-prompt.md",
+          "infrastructure/mapping/agents/compaction/prompts/system/CODEX-LICENSE",
+          "infrastructure/mapping/agents/compaction/prompts/system/codex.md",
+          "infrastructure/mapping/agents/diagram-edit/prompts/edit-diagram.md",
+          "investigations/**",
+          "mapping-initial-diagram.txt",
+          "package-lock.json",
+          "packages/ui-test-framework/README.md",
+          "projection-3d/**",
+          "projection-3d/.gitignore",
+          "scripts/**",
+          "src/server/features/mapping/compaction/prompts/compaction/single-file-compact2-herdr-w3A-pB.md",
+          "tests/**",
+          "tools/**",
+          "tools/diagram-parser/diagram_parser/.gitignore",
+          "vitest.config.ts"
+        ],
+        "checkout": "/tmp/agent-repository-9pT3yd/checkout",
+        "inspectionSource": "session-transcript"
+      }
+    ]
+  }
+}

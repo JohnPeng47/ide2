@@ -1,0 +1,31 @@
+{
+  "status": "finished",
+  "key": "sol-high-judge/control-self/1",
+  "runId": "c218a761-50a0-4f39-aa35-5973bc12f5ab",
+  "model": "gpt-6-sol",
+  "caseId": "control-self",
+  "number": 1,
+  "reportedScore": 1,
+  "score": 1,
+  "rescore": {
+    "score": 1,
+    "reportedScore": 1,
+    "J": 1,
+    "reportedJ": 1,
+    "pairs": 8,
+    "unmatchedA": 0,
+    "unmatchedB": 0,
+    "depth": 6,
+    "maxPairError": 0,
+    "rangeIssues": []
+  },
+  "usage": {
+    "input": 6317,
+    "output": 10143,
+    "cacheRead": 6272,
+    "cacheWrite": 0,
+    "reasoning": 1588,
+    "totalTokens": 22732
+  },
+  "outputUrl": "http://localhost:5191/evals?run=c218a761-50a0-4f39-aa35-5973bc12f5ab&output=450c8f11-3b30-485c-a282-7fc0e4dc74c0%3A1%3Aalternative"
+}

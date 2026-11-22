@@ -1,0 +1,162 @@
+Mapping application: core = per-document canvas editing kernel     HEAD 8ca1437
+|
+|-- [M] MappingDocumentController: single command path for one canvas
+|   |   domain/mapping/workspace/mappingDocumentController.ts
+|   |
+|   |-- [O] Owns the current ControllerSnapshot
+|   |   |-- document: MappingGridDocument (persistent composition)
+|   |   |   |-- scene: LineGridScene
+|   |   |   |   |-- root: GridBox tree
+|   |   |   |   |   |-- diagram box -> contentId
+|   |   |   |   |   `-- container box -> children, push-right layout
+|   |   |   |   `-- contents[id]: Diagram -> current revision
+|   |   |   |-- edges: DiagramConnection[] (node or box anchors)
+|   |   |   |-- jumps / sections
+|   |   |   `-- alternatives / revisionSelections / diagramContexts
+|   |   |-- canvas: MappingCanvasState (interaction, never content)
+|   |   |   |-- selection.items[] / controls
+|   |   |   |-- diagramViews (per-diagram folding)
+|   |   |   `-- display: floating panes + geometry policies
+|   |   `-- version / canvasRevisionId / canUndo / canRedo
+|   |       `-- [D] version is the optimistic-concurrency token
+|   |
+|   |-- [O] Retains a CanvasEditingContext (an opaque handle)
+|   |   `-- history state lives in CanvasHistoryService, not here
+|   |
+|   |-- [M] Write entry points (all converge on updateSnapshot)
+|   |   |-- applyUpdate(expectedVersion, DiagramOperation[])
+|   |   |   |-- [C] Called by agent bridge and ChangeSessionService
+|   |   |   `-- [C] applyOperations
+|   |   |       |-- [D] expectedVersion != version -> VERSION_CONFLICT
+|   |   |       |-- [D] clone snapshot -> staged document + canvas
+|   |   |       |-- Content operations
+|   |   |       |   |-- diagram-create / replace / patchDiagram
+|   |   |       |   |-- setSourceMappings / setJumps / highlight
+|   |   |       |   `-- [C] reviseStoredDiagram / createStoredDiagram
+|   |   |       |       `-- [D] new revision + nodeIds correspondence
+|   |   |       |-- Composition operations
+|   |   |       |   `-- move / group / remove / edge-* -> layoutScene
+|   |   |       |-- Floating operations
+|   |   |       |   `-- move / collapse / remove on display nodes
+|   |   |       `-- Invariants: >= 1 visible diagram, valid activeBoxId
+|   |   |-- commitEditorGesture(operations, canvas)
+|   |   |   `-- [C] One native tldraw gesture -> one checkpoint
+|   |   |-- commitDocument / commitProjectionLayout
+|   |   `-- updateCanvas / select
+|   |       `-- [D] record=false -> transient, no checkpoint
+|   |
+|   |-- [C] updateSnapshot(next, record): the commit pipeline
+|   |   |-- Prune selection items for deleted boxes
+|   |   |-- [C] reconcileConnections(before, after, edges)
+|   |   |   `-- [D] node correspondence -> retained or stale endpoints
+|   |   |-- [C] rebaseDiagramJumps -> jumps follow edited content
+|   |   |-- [C] validateConnections / normalizeDiagramViews
+|   |   |-- [C] resolveFloatingGeometry (panes never displace grid)
+|   |   |-- [C] historyService.append(context, document, canvas, nodeIds)
+|   |   |   `-- only when record = true
+|   |   |-- [D] contents re-bound via getDiagramRevision (frozen)
+|   |   `-- [C] notify listeners synchronously
+|   |
+|   |-- [M] History navigation
+|   |   |-- undo / redo
+|   |   |   `-- [C] delegated to editorDriver when tldraw is mounted
+|   |   |       `-- otherwise historyService.navigate (headless)
+|   |   |-- restoreEditorCheckpoint(id) <- tldraw history meta
+|   |   `-- reset / exportHistory / forkHistory / canvasViews
+|   |
+|   `-- [M] Read models
+|       |-- getSnapshot() / subscribe(listener)
+|       |-- nodes(): canvasDisplayNodes (cached, derived registry)
+|       |-- resolveDiagram(id): DiagramView (ascii, nodes, sourceContext)
+|       `-- persistenceChanges(cursor): incremental HistoryChanges
+|
+|-- [M] Diagram content model: immutable, identity-preserving
+|   |   domain/core/diagrams/
+|   |
+|   |-- Diagram (diagram.ts)
+|   |   |-- diagramId (stable) / revisionId / revision
+|   |   |-- content: DiagramContent
+|   |   |   |-- ascii + asciiSha256
+|   |   |   `-- structure: tree nodes | derived graph nodes
+|   |   |       `-- [D] parserVersion pins node-ID derivation
+|   |   |-- sourceContext: the product's link to code
+|   |   |   |-- binding: repository / corpus / domain profile
+|   |   |   |-- mappings: DiagramElementMapping[] (node -> range)
+|   |   |   `-- evidence: ProjectRepresentationEvidenceRecord
+|   |   `-- highlights / jumps
+|   |
+|   |-- DiagramRevision { id, diagramId, parentId, diagram, nodeRefs }
+|   |   `-- [D] nodeRefs: content node -> logical identity across revisions
+|   |
+|   |-- [C] reviseDiagram(base, DiagramEdit) via DiagramRevisionEditor
+|   |   |-- edit kinds: patch / patches / replace / source-mappings / ...
+|   |   |-- [C] correspondingNodes / matchDiagramNodes
+|   |   |   `-- [D] before + after nodes -> nodeIds map
+|   |   `-- [C] retainSourceMappings(before, after, nodeIds)
+|   |       `-- mappings survive text edits
+|   |
+|   `-- [O] diagramRevisionStore -> RevisionRegistry (module singleton)
+|       |-- register: validate, deep-freeze, reject mutated IDs
+|       |-- restore: deferred validation for history imports
+|       `-- [!] written directly by ~15 modules (controller, grid,
+|           agent edit, chat, change sessions, transfers, ...)
+|
+|-- [O] CanvasHistoryService: owns every editing context's history
+|   |   domain/core/diagrams/canvasHistoryService.ts, canvasHistory.ts
+|   |
+|   |-- WeakMap<CanvasEditingContext, CanvasHistory>
+|   |-- CanvasHistoryRecord (portable)
+|   |   |-- baselineId / headId / past[] / future[]
+|   |   |-- snapshots[id]: StoredCanvasSnapshot
+|   |   |   |-- document (composition only, no content)
+|   |   |   |-- diagramBindings: diagramId -> revisionId
+|   |   |   |-- view (personal, restored separately)
+|   |   |   `-- nodeOrigins (correspondence across checkpoints)
+|   |   `-- diagramRevisions: revision table for those bindings
+|   |-- append / navigate / reset / state / resolve
+|   |-- exportContext / forkContext / adopt
+|   |-- persistenceChanges(since) -> sequence-cursored delta
+|   `-- prepareTransfer / transferBoundary (cross-canvas moves)
+|
+|-- [M] Boundary: live renderer (tldraw)
+|   |   src/features/mapping/tldraw/MappingEditorRuntime.ts
+|   |-- [O] Editor owns live geometry and native undo stack
+|   |-- [C] controller.subscribe -> publish() projects shapes
+|   |-- [C] tick after gesture -> settle() -> commitEditorGesture
+|   |   `-- pointer/camera frames never write the controller
+|   |-- [D] document meta.mappingCheckpoint = canvasRevisionId
+|   |   `-- native undo -> restoreEditorCheckpoint(id)
+|   `-- [C] attachEditorDriver({ settle, undo }), one per controller
+|
+|-- [M] Boundary: workspace and sessions (browser)
+|   |   src/features/mapping/workspace/
+|   |-- CanvasWorkspace: drafts[documentId] -> CanvasSession
+|   |   `-- [C] onPersist(ids) when a session commits
+|   `-- CanvasSession
+|       |-- [O] constructs and retains the MappingDocumentController
+|       |-- [D] controller snapshot -> zustand slices
+|       |   `-- document / presentation / selection / controls / geometry / status
+|       `-- [C] canvasRevisionId changed -> onCommit listeners
+|
+|-- [M] Boundary: agent access
+|   |-- [C] MCP -> HTTP -> AgentDiagrammingSessionService.exec
+|   |-- [C] CanvasSessionBridge.dispatch -> command queue
+|   |   `-- browser long-polls (15s), 25s timeout, retry by requestId
+|   `-- [C] useAgentCanvasBridge -> attached controller.applyUpdate
+|
+|-- [M] Boundary: proposals (ChangeSessions, headless)
+|   |   application/mapping/changes/changeSessionService.ts
+|   |-- [O] new MappingDocumentController per proposed document
+|   |   `-- shares the same command path, without editorDriver
+|   |-- [C] apply -> controller.applyUpdate -> exportHistory
+|   `-- [C] accept -> projectCatalogs.acceptCanvasChanges
+|
+`-- [M] Boundary: persistence
+    |-- WorkspacePersistence.sync(ids)
+    |   |-- [C] controller.persistenceChanges(cursor)
+    |   |   `-- revision/* (immutable) + checkpoint/* records
+    |   |-- metadata / baseline / view / viewport records
+    |   `-- [C] RecordStorage.batch(changes) -> storage worker
+    `-- [D] restore: history record -> CanvasSession(history)
+
+[M] modular boundary | [O] ownership | [C] call flow | [D] data dependency | [!] caveat

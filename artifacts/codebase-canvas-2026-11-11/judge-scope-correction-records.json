@@ -1,0 +1,115 @@
+{
+  "at": "2026-11-11T14:34:11.678163+00:00",
+  "reason": "User correction: judges receive all outputs of each phase and the complete final canvas collection.",
+  "superseded": [
+    {
+      "key": "feedback/B2/phase2/runtime/round1/judge",
+      "runId": "d762ad2c-97fa-4c1f-adc1-7565fb4ed9e6",
+      "completed": true,
+      "modelStarted": true,
+      "responseRetained": true
+    },
+    {
+      "key": "feedback/B2/phase3/runtime/round1/judge",
+      "runId": "13609d82-8f02-47a1-a39a-a9a519ef66b1",
+      "completed": true,
+      "modelStarted": true,
+      "responseRetained": true
+    },
+    {
+      "key": "feedback/B2/phase2/diagrams/round1/judge",
+      "runId": "cb67b26c-4be0-43e2-a327-0a78bd9867ac",
+      "completed": true,
+      "modelStarted": true,
+      "responseRetained": true
+    },
+    {
+      "key": "feedback/B2/phase3/diagrams/round1/judge",
+      "runId": "096126cd-3b46-4a13-abe2-1a25634c6859",
+      "completed": true,
+      "modelStarted": true,
+      "responseRetained": true
+    },
+    {
+      "key": "feedback/B2/phase2/canvas/round1/judge",
+      "runId": "49c0b716-05ac-46c6-a83f-b8d04f56a7f6",
+      "completed": true,
+      "modelStarted": true,
+      "responseRetained": true
+    },
+    {
+      "key": "feedback/B2/phase3/canvas/round1/judge",
+      "runId": "b158df79-1451-43a1-afa6-2fbe7a801a66",
+      "completed": true,
+      "modelStarted": true,
+      "responseRetained": true
+    },
+    {
+      "key": "feedback/B2/phase2/editor/round1/judge",
+      "runId": "5a1f79ce-7c0a-436e-aca9-8779646d5d57",
+      "completed": true,
+      "modelStarted": true,
+      "responseRetained": true
+    },
+    {
+      "key": "feedback/B2/phase3/editor/round1/judge",
+      "runId": "9061dcde-a12a-4f2e-aab5-04357b75fb61",
+      "completed": true,
+      "modelStarted": true,
+      "responseRetained": true
+    },
+    {
+      "key": "feedback/B2/phase2/storage/round1/judge",
+      "runId": "087c6901-6a52-4b31-a199-edd9d90e7b99",
+      "completed": true,
+      "modelStarted": true,
+      "responseRetained": true
+    },
+    {
+      "key": "feedback/B2/phase3/storage/round1/judge",
+      "runId": "0fb07d1f-c307-400f-a54c-128883b95119",
+      "completed": true,
+      "modelStarted": true,
+      "responseRetained": true
+    },
+    {
+      "key": "feedback/B2/phase2/source/round1/judge",
+      "runId": "61de9453-1a92-42b8-a631-8a5b2322483f",
+      "completed": true,
+      "modelStarted": true,
+      "responseRetained": true
+    },
+    {
+      "key": "feedback/B2/phase3/source/round1/judge",
+      "runId": "88543df6-c937-40bd-a352-5edcdbe45a27",
+      "completed": false,
+      "modelStarted": true,
+      "responseRetained": false
+    },
+    {
+      "key": "feedback/B2/phase2/agent-api/round1/judge",
+      "runId": "996bf06e-1d62-40db-a682-8c3163bad2f7",
+      "completed": false,
+      "modelStarted": true,
+      "responseRetained": false
+    },
+    {
+      "key": "feedback/B2/phase3/agent-api/round1/judge",
+      "runId": "6828266b-86f0-460c-ab24-3c6b2ee86d94",
+      "completed": false,
+      "modelStarted": true,
+      "responseRetained": false
+    },
+    {
+      "key": "feedback/B2/phase2/contexts/round1/judge",
+      "runId": "f5040e26-e7be-400c-a35a-526a5f6f5c5a",
+      "completed": false,
+      "modelStarted": true,
+      "responseRetained": false
+    }
+  ],
+  "plannedImprovementCritiques": 18,
+  "initialOutputsReused": 160,
+  "selectionReused": true,
+  "validPhase1CritiqueReused": true
+}

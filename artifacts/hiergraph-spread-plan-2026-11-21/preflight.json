@@ -1,0 +1,23 @@
+{
+  "modelCalls": 0,
+  "at": "2026-11-21T20:32:36.926Z",
+  "model": {
+    "provider": "openai-codex",
+    "model": "gpt-6-astra"
+  },
+  "checkout": {
+    "commit": "ea8b12a8a9894b5259c441eadd8f6f0c65e215af",
+    "tools": [
+      "read",
+      "bash"
+    ]
+  },
+  "checks": [
+    "input context hash equals E16 P1 Ghostty case",
+    "prompt v1 saved and equal to prompt.txt",
+    "5 runs queued and attached",
+    "model resolves",
+    "checkout at pinned commit with read,bash",
+    "Markdown capture and reload in disposable storage"
+  ]
+}

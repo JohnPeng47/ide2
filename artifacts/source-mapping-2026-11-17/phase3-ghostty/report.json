@@ -1,0 +1,310 @@
+{
+  "completedAt": "2026-11-19T04:51:16.979646+00:00",
+  "experimentUrl": "http://localhost:5191/evals?experiment=b8ad87a7-698a-45e9-9cc0-b640ede5efa6&focusPhase=phase-3",
+  "scope": {
+    "inputs": 4,
+    "conditions": 2,
+    "repeats": 3,
+    "originalAttempts": 24,
+    "pilotsIncluded": 2,
+    "successful": 21,
+    "failed": 3,
+    "replacementAttempts": 0
+  },
+  "verification": {
+    "sdkTestsPassed": 4,
+    "typecheck": "passed",
+    "preflightInputs": 4,
+    "pilotsPassed": 2,
+    "savedOutputsReopenedAndMatched": 21,
+    "allSuccessfulNodesMapped": true
+  },
+  "concurrency": {
+    "initialMains": 6,
+    "finalMains": 2,
+    "childrenPerMain": 4,
+    "maximumFinalActiveSessions": 10,
+    "remainingJobsFinishedWithoutRateLimitFailures": 15
+  },
+  "matchedComparison": {
+    "method": "Exclude failed Phase 3 slots and their matching baseline case/repeat slots. Pairing identifies input/repeat slots, not shared random seeds. Descriptive only; prompt and delegation changed together, and Astra also changes the lead model. Failed-attempt usage is excluded from per-success means and reported separately.",
+    "comparisons": [
+      {
+        "condition": "astra-high_sol-medium",
+        "slots": [
+          [
+            "ghostty-v3-canvas-1",
+            1
+          ],
+          [
+            "ghostty-v3-canvas-1",
+            2
+          ],
+          [
+            "ghostty-v3-canvas-1",
+            3
+          ],
+          [
+            "ghostty-v3-canvas-2",
+            1
+          ],
+          [
+            "ghostty-v3-canvas-2",
+            2
+          ],
+          [
+            "ghostty-v3-canvas-2",
+            3
+          ],
+          [
+            "ghostty-v3-core-1",
+            1
+          ],
+          [
+            "ghostty-v3-core-1",
+            2
+          ],
+          [
+            "ghostty-v3-core-1",
+            3
+          ],
+          [
+            "ghostty-v3-core-2",
+            2
+          ],
+          [
+            "ghostty-v3-core-2",
+            3
+          ]
+        ],
+        "current": {
+          "samples": 11,
+          "meanUniqueSourceLines": 10177.545454545454,
+          "meanElapsedSeconds": 451.5159090909091,
+          "meanTotalTokens": 1252943,
+          "mappedNodes": 1405,
+          "nodes": 1405,
+          "fullDefinitions": 106,
+          "functionObservations": 142,
+          "fullDefinitionRate": 0.7464788732394366
+        },
+        "baselines": {
+          "sol-medium_baseline": {
+            "samples": 11,
+            "meanUniqueSourceLines": 2588.181818181818,
+            "meanElapsedSeconds": 399.694,
+            "meanTotalTokens": 1417663.3636363635,
+            "mappedNodes": 1405,
+            "nodes": 1405,
+            "fullDefinitions": 24,
+            "functionObservations": 142,
+            "fullDefinitionRate": 0.16901408450704225
+          },
+          "sol-high_baseline": {
+            "samples": 11,
+            "meanUniqueSourceLines": 2768.909090909091,
+            "meanElapsedSeconds": 383.4820909090909,
+            "meanTotalTokens": 1146663.3636363635,
+            "mappedNodes": 1405,
+            "nodes": 1405,
+            "fullDefinitions": 24,
+            "functionObservations": 142,
+            "fullDefinitionRate": 0.16901408450704225
+          }
+        }
+      },
+      {
+        "condition": "sol-high_sol-medium",
+        "slots": [
+          [
+            "ghostty-v3-canvas-1",
+            1
+          ],
+          [
+            "ghostty-v3-canvas-1",
+            2
+          ],
+          [
+            "ghostty-v3-canvas-1",
+            3
+          ],
+          [
+            "ghostty-v3-canvas-2",
+            2
+          ],
+          [
+            "ghostty-v3-canvas-2",
+            3
+          ],
+          [
+            "ghostty-v3-core-1",
+            1
+          ],
+          [
+            "ghostty-v3-core-1",
+            2
+          ],
+          [
+            "ghostty-v3-core-1",
+            3
+          ],
+          [
+            "ghostty-v3-core-2",
+            2
+          ],
+          [
+            "ghostty-v3-core-2",
+            3
+          ]
+        ],
+        "current": {
+          "samples": 10,
+          "meanUniqueSourceLines": 7605.7,
+          "meanElapsedSeconds": 322.2475,
+          "meanTotalTokens": 938479.6,
+          "mappedNodes": 1245,
+          "nodes": 1245,
+          "fullDefinitions": 68,
+          "functionObservations": 129,
+          "fullDefinitionRate": 0.5271317829457365
+        },
+        "baselines": {
+          "sol-medium_baseline": {
+            "samples": 10,
+            "meanUniqueSourceLines": 2535,
+            "meanElapsedSeconds": 383.5457,
+            "meanTotalTokens": 1410376.4,
+            "mappedNodes": 1245,
+            "nodes": 1245,
+            "fullDefinitions": 21,
+            "functionObservations": 129,
+            "fullDefinitionRate": 0.16279069767441862
+          },
+          "sol-high_baseline": {
+            "samples": 10,
+            "meanUniqueSourceLines": 2733.1,
+            "meanElapsedSeconds": 385.1025,
+            "meanTotalTokens": 1184776.8,
+            "mappedNodes": 1245,
+            "nodes": 1245,
+            "fullDefinitions": 22,
+            "functionObservations": 129,
+            "fullDefinitionRate": 0.17054263565891473
+          }
+        }
+      }
+    ]
+  },
+  "successfulUsage": [
+    {
+      "condition": "sol-high_sol-medium",
+      "successfulSamples": 10,
+      "children": 50,
+      "meanChildren": 5,
+      "totalTokens": 9384796,
+      "sdkPriceEstimateTotalUSD": 7.9070224,
+      "sdkPriceEstimateMeanUSD": 0.79070224
+    },
+    {
+      "condition": "astra-high_sol-medium",
+      "successfulSamples": 11,
+      "children": 57,
+      "meanChildren": 5.181818181818182,
+      "totalTokens": 13782373,
+      "sdkPriceEstimateTotalUSD": 23.3772116,
+      "sdkPriceEstimateMeanUSD": 2.1252010545454545
+    }
+  ],
+  "failedUsage": {
+    "knownTotalTokens": 5900172,
+    "complete": false,
+    "attempts": [
+      {
+        "key": "ghostty-v3-core-2-sol-high_sol-medium-1",
+        "knownCompletedMessageUsage": {
+          "input": 367729,
+          "output": 21484,
+          "cacheRead": 1336320,
+          "cacheWrite": 0,
+          "reasoning": 1484,
+          "totalTokens": 1725533
+        },
+        "reportedModelCost": {
+          "input": 0.7354580000000001,
+          "output": 0.21483999999999995,
+          "cacheRead": 0.267264,
+          "cacheWrite": 0,
+          "total": 1.217562
+        },
+        "assistantMessages": 86,
+        "complete": false,
+        "note": "Only completed messages with returned usage are included. In-flight generation at termination may not have returned its usage."
+      },
+      {
+        "key": "ghostty-v3-core-2-astra-high_sol-medium-1",
+        "knownCompletedMessageUsage": {
+          "input": 467933,
+          "output": 22422,
+          "cacheRead": 1835648,
+          "cacheWrite": 0,
+          "reasoning": 860,
+          "totalTokens": 2326003
+        },
+        "reportedModelCost": {
+          "input": 1.2145620000000001,
+          "output": 0.26489999999999997,
+          "cacheRead": 0.42232320000000007,
+          "cacheWrite": 0,
+          "total": 1.9017851999999997
+        },
+        "assistantMessages": 87,
+        "complete": false,
+        "note": "Only completed messages with returned usage are included. In-flight generation at termination may not have returned its usage."
+      },
+      {
+        "key": "ghostty-v3-canvas-2-sol-high_sol-medium-1",
+        "knownCompletedMessageUsage": {
+          "input": 356595,
+          "output": 25161,
+          "cacheRead": 1466880,
+          "cacheWrite": 0,
+          "reasoning": 1668,
+          "totalTokens": 1848636
+        },
+        "reportedModelCost": {
+          "input": 0.7131900000000001,
+          "output": 0.25161000000000006,
+          "cacheRead": 0.293376,
+          "cacheWrite": 0,
+          "total": 1.2581760000000006
+        },
+        "assistantMessages": 74,
+        "complete": false,
+        "note": "Only completed messages with returned usage are included. In-flight generation at termination may not have returned its usage."
+      }
+    ]
+  },
+  "findings": [
+    "Named-function declaration-start coverage improved from 65.4% in all 12 Phase 2 Sol/high samples to 76.9% for Sol and 84.0% for Astra successful Phase 3 samples. The stricter whole-body comparison uses exactly matched successful case/repeat slots and is stored above.",
+    "Across the 11 successful canvas outputs, the direct font reference-count probe passes 2 times, the direct shaping-call probe passes 2 times, and glyph-cache/atlas implementation probes pass 0 times. These probes are specific coverage checks, not exhaustive semantic certification.",
+    "Astra covers the active-screen assignment in both successful core-2 outputs; Sol covers it in neither. Neither condition attaches both selected mutex-locking sites directly to the mutex node, although the sites occur elsewhere in every core-2 output.",
+    "The earlier discovery-to-submission loss recurs: Sol canvas-2 repeat 2 assembled a 301-range draft, passed a filename rather than JSON to the validator, and submitted a reduced 160-range mapping. Its final output omitted font lifetime and device-ownership evidence found by the children. Offline replay confirms the original 301-range draft passes the structural validator.",
+    "Compared with the original v2 results on the 68 identical Core/Renderer canvas nodes, v4 selects substantially more unique source lines, but broad source selection does not establish complete semantic coverage."
+  ],
+  "limitations": [
+    "Prompt and delegation changed together; Astra also changes the lead model. Effects cannot be attributed to delegation alone.",
+    "Three failed slots remain missing. Paired comparisons exclude the corresponding baseline slots; no statistical significance is claimed.",
+    "Per-success runtime/token means exclude failed attempts. Known failed-attempt usage is reported separately and is a lower bound.",
+    "SDK prices are model-price estimates, not actual Codex allowance or billing. Baseline dollar costs were not recorded.",
+    "Read-only repository and private temporary mounts isolate samples. Children within one sample share its temporary directory."
+  ],
+  "evidence": {
+    "metrics": "analysis.json",
+    "wholeFunctions": "function-comparison.json",
+    "previousPaneProbes": "p68-comparison.json",
+    "originalV2": "original-comparison.json",
+    "retention": "retention-analysis.json",
+    "draftValidation": "analysis-evidence/draft-validation.json",
+    "verification": "completion-verification.json"
+  }
+}

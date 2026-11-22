@@ -1,0 +1,62 @@
+{
+  "agentContextId": "saved-agent-context-b81e4b20-5460-4409-896f-75046f89eb7b",
+  "name": "Ghostty · 3+1 trees · recombine",
+  "description": "Sample 1 (existing few-shot examples) of each 3+1 view's core tree from experiment 044f0072-fded-4c61-b694-2a75fd2433ca: 959850e3-81aa-4e37-a24a-8a32860cea1b, a0075b75-ea50-4c2b-b7a1-13496ed95456, 938d0e94-1797-4078-a2f3-6acc3495c919, 6ff63464-5fa4-4cdf-916b-d287b395baf7.",
+  "createdAt": "2026-11-20T22:11:15.696Z",
+  "group": "Recombine 3+1 trees",
+  "contentHash": "7f5af678d0e0b88e3e5e59e2e7b500671792f3bcf906746dbb117f1aa31ca71a",
+  "messageCount": 1,
+  "source": {
+    "agentType": "saved-context",
+    "sourceSessionId": "b81e4b20-5460-4409-896f-75046f89eb7b",
+    "format": "messages-v1"
+  },
+  "trees": [
+    {
+      "id": "modular-tree",
+      "lines": 126
+    },
+    {
+      "id": "call-tree",
+      "lines": 243
+    },
+    {
+      "id": "ownership-tree",
+      "lines": 153
+    },
+    {
+      "id": "data-tree",
+      "lines": 200
+    }
+  ],
+  "sources": [
+    {
+      "experimentId": "044f0072-fded-4c61-b694-2a75fd2433ca",
+      "runId": "959850e3-81aa-4e37-a24a-8a32860cea1b",
+      "cellKey": "7b35b0e6-03fe-4733-9df6-6e6addcd97cd:1:alternative",
+      "checkpointId": "canvas-revision-4f18d2f8-46fd-485d-a616-f34a0abcb2ae",
+      "label": "Ghostty · Modular structure · core tree"
+    },
+    {
+      "experimentId": "044f0072-fded-4c61-b694-2a75fd2433ca",
+      "runId": "a0075b75-ea50-4c2b-b7a1-13496ed95456",
+      "cellKey": "054e7ca0-c62a-49d9-bafa-2fc7750f7f6f:1:alternative",
+      "checkpointId": "canvas-revision-489c62dc-a08a-4a34-a656-6287cc85f593",
+      "label": "Ghostty · Call · core tree"
+    },
+    {
+      "experimentId": "044f0072-fded-4c61-b694-2a75fd2433ca",
+      "runId": "938d0e94-1797-4078-a2f3-6acc3495c919",
+      "cellKey": "5048e138-dd64-4c4b-8856-cdc2243e12ea:1:alternative",
+      "checkpointId": "canvas-revision-d4b61d51-2887-4244-b838-2f2c018a6838",
+      "label": "Ghostty · Ownership · core tree"
+    },
+    {
+      "experimentId": "044f0072-fded-4c61-b694-2a75fd2433ca",
+      "runId": "6ff63464-5fa4-4cdf-916b-d287b395baf7",
+      "cellKey": "a97d8e92-be48-433d-b98b-a868a36583e8:1:alternative",
+      "checkpointId": "canvas-revision-c1464820-045c-4a4b-bef5-f45c8a23e2f3",
+      "label": "Ghostty · Data dependency · core tree"
+    }
+  ]
+}

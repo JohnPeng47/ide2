@@ -1,0 +1,23 @@
++-- Expand a single core tree
+|   +-- Nov 17 · [E14] Original core
+|   |   +-- Start from Ghostty sample 3 in the [E12 seed trees](E12/pi)
+|   |   `-- [Generate a canvas](E14/canvas) → [Expand it](E14/expand) → [Expand again](E14/expand-again)
+|   +-- Nov 18 · [E16] Breadth-first core
+|   |   +-- [Generate a core tree](E16/core) that names major subsystems before going deeper
+|   |   `-- Reuse the [E14] prompts to [generate](E16/p1), [expand](E16/p2), and [expand again](E16/p3)
+|   `-- Nov 21 · [E21] HierGraph spread plan
+|       +-- Plan how to spread the [E16] Ghostty core tree along T and E · [Spread plan](E21/plan)
+|       `-- Merge the five plans and [build the canvases](E21/build) with one agent
++-- Expand each 3+1 view separately
+|   `-- Nov 19 · [E18] View-specific cores
+|       +-- Adapt the [E16] core prompt and the [E14] recursive expansion prompt
+|       +-- Use the first [core tree](E18/core) generated with examples for each view
+|       `-- Saved canvases by view · [First expansion](E18/expand) → [Second expansion](E18/expand2)
+|           +-- Modular structure   2 → 2
+|           +-- Call                2 → 2
+|           +-- Ownership           1 → 0
+|           `-- Data dependency     2 → 2
+`-- Recombine the 3+1 views
+    `-- Nov 20 · [E20] Recombine 3+1 trees
+        +-- Weave the four [E18 core trees](E18/core) into one Hierarchical Graph
+        `-- [Recombine into HierGraph](E20/recombine) · 3 canvases, 3–4 diagrams each, N≈6, M≈3

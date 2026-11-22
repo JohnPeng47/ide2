@@ -12,7 +12,7 @@ import { highlightedDiagramIds, projectDiagramsCommandSchema } from '../../../do
 import { ProjectionLayoutPanel } from './workspace/ProjectionLayoutPanel';
 import { highlightNodeIds } from '../../../domain/core/diagrams/diagramHighlight';
 import { canvasMutationResult } from '../../../domain/mapping/agent/mutationReceipt';
-import { currentCanvasRead } from '../../../domain/mapping/agent/currentCanvasRead';
+import { currentCanvasRead, type CanvasReadOptions } from '../../../domain/mapping/agent/currentCanvasRead';
 import { useWindowPanelHotkeys } from './window-panel/windowPanelHotkeys';
 import type { ChatTabCommand } from './agent-chat/chatTabs';
 import { CanvasTreemapContent } from './treemap/CanvasTreemapContent';
@@ -26,6 +26,7 @@ import { WindowPanel } from './window-panel/WindowPanel';
 import { diagramContentNodes } from '../../../domain/core/diagrams/diagramContentNodes';
 import type { ContentNodeAnchor } from '../../../domain/core/diagrams/diagramConnection';
 import { DiffTreePanel } from './changes/DiffTreePanel';
+import { canvasAgentContextId } from '../../../domain/core/diagrams/generatedCanvas';
 import { inferRepositoryId } from '../../../domain/core/repositories/repository';
 import { PromptComposer, type PromptRevision, type PromptRevisionSource } from './prompt-composer/PromptComposer';
 import { PromptComposerCoordinator, composerUnsettled } from './prompt-composer/promptComposerCoordinator';
@@ -385,7 +386,7 @@ function MappingWorkspacePage() {
         representationId: receipt.representation.id, repositoryId: receipt.representation.repositoryId, revisionId: receipt.revisionId } }));
       return { updated: true };
     }
-    if (command.method === 'read') return { ...identity, ...currentCanvasRead(controller.getSnapshot(), command.payload as { level: 'small' | 'full'; nodeIds?: string[] }) };
+    if (command.method === 'read') return { ...identity, ...currentCanvasRead(controller.getSnapshot(), command.payload as CanvasReadOptions) };
     if (command.method === 'snapshot') {
       const options = command.payload as { revisionIds?: string[]; currentRevisions?: boolean } | undefined;
       const state = controller.getSnapshot();
@@ -1249,6 +1250,7 @@ function MappingWorkspacePage() {
                   <AgentChatPanel onHighlightReference={jumpToHighlight} tabCommand={chatTabCommand} open={toolsOpen && toolTab === 'chat'} projectId={snapshot?.project?.id}
                     referenceCanvas={!changeMode && active && !active.hidden && activeId ? { session: active.session, target: { workspaceInstanceId: canvasId, documentId: activeId }, name: active.name } : undefined}
                     onCopyDiagram={!changeMode && active && !active.hidden ? copyChatDiagram : undefined}
+                    agentContextId={!changeMode && activeId ? canvasAgentContextId(snapshot?.catalog?.representations[active?.representationId ?? activeId]) : undefined}
                     canvasTarget={!changeMode && active && activeId ? { workspaceInstanceId: canvasId, documentId: activeId } : undefined} />
                 </Suspense> }
               ]} />
@@ -1296,7 +1298,7 @@ function MappingWorkspacePage() {
           <option value="" disabled>Select a repository</option>{snapshot.project.repositories.map(repository => <option key={repository.id} value={repository.id}>{repository.name}</option>)}
         </select></label>}
         {active && <label><input type="checkbox" checked={copyCurrent} onChange={(event) => setCopyCurrent(event.target.checked)} />Start from current diagram</label>}
-        {!copyCurrent && <label>ASCII content<textarea aria-label="Initial diagram content" value={newAscii} onChange={(event) => setNewAscii(event.target.value)} rows={8} maxLength={20000} /></label>}
+        {!copyCurrent && <label>ASCII content<textarea aria-label="Initial diagram content" value={newAscii} onChange={(event) => setNewAscii(event.target.value)} rows={8} /></label>}
         <p>Start from a mapped diagram to keep its source evidence for select → prompt.</p>
         {error && <p role="alert">{error}</p>}
         <footer><button type="button" disabled={Boolean(savingId)} onClick={() => { setCreating(false); setError(""); }}>Cancel</button>

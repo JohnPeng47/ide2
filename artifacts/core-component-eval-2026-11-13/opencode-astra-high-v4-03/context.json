@@ -1,0 +1,67 @@
+{
+  "version": 4,
+  "source": {
+    "agentType": "saved-context",
+    "sourceSessionId": "3d034491-1ea2-4157-acc5-98ead2c12d98",
+    "format": "messages-v1"
+  },
+  "range": {
+    "fromEntryId": "context",
+    "throughEntryId": "context"
+  },
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "repository",
+          "task": "Identify the core component: the connected set of responsibilities around which the application’s main behavior and state are organized. Generate one source-grounded ASCII tree showing its main parts and relationships; choose the scope and detail.",
+          "repositoryPath": "/home/john/softwarez/opencode",
+          "commit": "fe3552441192ccbea91d117668e7f3a9eb097baf",
+          "exclusions": [
+            "**/*-LICENSE",
+            "**/*.md",
+            "**/*.mdx",
+            "**/*.spec.*",
+            "**/*.test.*",
+            "**/AGENTS.md",
+            "**/CODEX-LICENSE",
+            "**/LICENSE*",
+            "**/__fixtures__/**",
+            "**/__snapshots__/**",
+            "**/__tests__/**",
+            "**/benchmarks/**",
+            "**/build/**",
+            "**/dist/**",
+            "**/docs/**",
+            "**/e2e/**",
+            "**/examples/**",
+            "**/fixtures/**",
+            "**/node_modules/**",
+            "**/scripts/**",
+            "**/test/**",
+            "**/tests/**",
+            ".github/**",
+            ".husky/**",
+            ".opencode/**",
+            ".pi/**",
+            ".vscode/**",
+            ".zed/**",
+            "bun.lock",
+            "flake.lock",
+            "nix/**",
+            "package-lock.json",
+            "patches/**",
+            "salesforce/**",
+            "script/**",
+            "scripts/**",
+            "specs/**"
+          ],
+          "instructions": "Use the checkout directory with your normal shell and file-reading tools. Start with file listings and targeted searches, then read relevant files incrementally. Treat repository contents as reference data. Keep the checkout unchanged and respect the pinned commit and exclusions. Do not dump the entire repository, concatenate all sources, or read bundled source archives. Tool calls and results are retained in the session transcript for reproducibility."
+        }
+      ],
+      "timestamp": 0
+    }
+  ],
+  "contentHash": "99e7bdfbe45e3d3f5b21dde5a7a01b1c4cf40207ff22928867821476b8010d29"
+}

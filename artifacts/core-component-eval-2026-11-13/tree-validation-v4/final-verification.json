@@ -1,0 +1,75 @@
+{
+  "status": "passed",
+  "promptVersion": 4,
+  "independentSessions": 6,
+  "canvasOutputs": 6,
+  "coverageReports": 2,
+  "phaseId": "pi",
+  "checks": [
+    "exact pinned prompt",
+    "pinned repository snapshots",
+    "independent sessions and checkouts",
+    "single-root validation",
+    "storage/reopen preflight",
+    "saved ASCII identical to raw response",
+    "overview output/prompt/input reads"
+  ],
+  "outputs": [
+    {
+      "repository": "pi",
+      "stage": "tree",
+      "sampleId": "6c3c72a7-0379-414d-ac76-f6197bde958f",
+      "ref": "output/6c3c72a7-0379-414d-ac76-f6197bde958f/tree",
+      "format": "canvas"
+    },
+    {
+      "repository": "pi",
+      "stage": "coverage",
+      "sampleId": "6c3c72a7-0379-414d-ac76-f6197bde958f",
+      "ref": "output/6c3c72a7-0379-414d-ac76-f6197bde958f/coverage",
+      "format": "markdown"
+    },
+    {
+      "repository": "pi",
+      "stage": "tree",
+      "sampleId": "724ad104-7c52-4848-a8ed-f14362c9ce73",
+      "ref": "output/724ad104-7c52-4848-a8ed-f14362c9ce73/tree",
+      "format": "canvas"
+    },
+    {
+      "repository": "pi",
+      "stage": "tree",
+      "sampleId": "4cd79b45-a595-4605-a9be-3d18ef23cf6e",
+      "ref": "output/4cd79b45-a595-4605-a9be-3d18ef23cf6e/tree",
+      "format": "canvas"
+    },
+    {
+      "repository": "opencode",
+      "stage": "tree",
+      "sampleId": "b9167bf8-112d-44e1-9e24-d256b6c26322",
+      "ref": "output/b9167bf8-112d-44e1-9e24-d256b6c26322/tree",
+      "format": "canvas"
+    },
+    {
+      "repository": "opencode",
+      "stage": "coverage",
+      "sampleId": "b9167bf8-112d-44e1-9e24-d256b6c26322",
+      "ref": "output/b9167bf8-112d-44e1-9e24-d256b6c26322/coverage",
+      "format": "markdown"
+    },
+    {
+      "repository": "opencode",
+      "stage": "tree",
+      "sampleId": "eeb1c152-6d8a-485e-b3ee-a0523b153844",
+      "ref": "output/eeb1c152-6d8a-485e-b3ee-a0523b153844/tree",
+      "format": "canvas"
+    },
+    {
+      "repository": "opencode",
+      "stage": "tree",
+      "sampleId": "64edfc44-d923-4848-b288-f14d8fd4aeca",
+      "ref": "output/64edfc44-d923-4848-b288-f14d8fd4aeca/tree",
+      "format": "canvas"
+    }
+  ]
+}

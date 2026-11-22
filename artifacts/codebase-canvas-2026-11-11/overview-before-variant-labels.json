@@ -1,0 +1,4773 @@
+{
+  "name": "Codebase canvas discovery",
+  "description": "Pinned working-tree source at HEAD 8ca143700ca4d2c870f1101b8cd4601ab68abd41; 1044 files. All generation, prompt authoring and judges: gpt-6-astra/high, n=1. Six initial variants; judge selects two for three rounds at each phase. Status: cancelled. Generation cancelled.",
+  "phases": [
+    {
+      "id": "phase-1",
+      "name": "Phase 1 \u00b7 Identify epicenters",
+      "description": "Astra/high authors two variations, then three discovery conditions inspect the same pinned codebase. n=1 each; select important points rather than full coverage."
+    },
+    {
+      "id": "phase-2",
+      "name": "Phase 2 \u00b7 Generate trees",
+      "description": "Six conditions share three discovery outputs. One tree per point; paired minimal and verbatim 3+1 prompts use identical six synthetic examples."
+    },
+    {
+      "id": "phase-3",
+      "name": "Phase 3 \u00b7 Expand canvases",
+      "description": "Each seed and its backing source produce one connected central/peripheral canvas using the pinned extension task."
+    },
+    {
+      "id": "phase-4",
+      "name": "Phase 4 \u00b7 Judge and improve",
+      "description": "One selection judge chooses two variants. Each gets three independent phase-targeted branches, three critique/regeneration rounds per branch. Every judge evaluates the complete phase output and all final canvases for one variant. Exactly 18 phase critiques: two variants, three target phases, three rounds. No fourth terminal judge."
+    },
+    {
+      "id": "superseded-attempts",
+      "name": "Superseded attempts",
+      "description": "Archive of the incorrectly scoped per-point judges. Retained for provenance and cost accounting; excluded from the corrected Phase 4 improvement branches."
+    }
+  ],
+  "workflow": {
+    "id": "canvas-discovery",
+    "name": "Codebase to canvases",
+    "version": 1,
+    "stages": [
+      {
+        "id": "author",
+        "name": "Prompt variations",
+        "dependsOn": []
+      },
+      {
+        "id": "discover",
+        "name": "Selected points",
+        "dependsOn": []
+      },
+      {
+        "id": "tree",
+        "name": "Single tree",
+        "dependsOn": [
+          "discover"
+        ]
+      },
+      {
+        "id": "expand",
+        "name": "Expanded canvas",
+        "dependsOn": [
+          "tree"
+        ]
+      },
+      {
+        "id": "select",
+        "name": "Select two variants",
+        "dependsOn": [
+          "expand"
+        ]
+      },
+      {
+        "id": "critique",
+        "name": "Improvement critique",
+        "dependsOn": [
+          "expand"
+        ]
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "22455d40-48b9-497f-afa5-9adfab56bef5",
+      "name": "Author discovery variations",
+      "agentContextId": "saved-agent-context-eaf10d2f-7650-4ce1-aed2-362c89a10469",
+      "contentHash": "5dbe9eb98ecae76ab4d03f454510c6e8e88c45370876ee98c2fb8429ffaa208b"
+    },
+    {
+      "id": "3e0e7757-8d5c-4222-a12e-34450e6e1401",
+      "name": "A \u00b7 Select epicenters",
+      "agentContextId": "saved-agent-context-cb3f6bea-6c70-4653-ab36-39039eaaa927",
+      "contentHash": "73d4e5679a868563bcf39d69c471ba9cc7e6c1dfe31b09c6f2adc1da8d1b40c2"
+    },
+    {
+      "id": "1007ca87-651f-4f4a-aa3b-09fcd4b9536b",
+      "name": "B \u00b7 Select epicenters",
+      "agentContextId": "saved-agent-context-c991445f-959c-4a42-ac87-26fabdebbe7f",
+      "contentHash": "d731a07bbca81bf518730e4db9777ab28ec94d9135885cdbacde29f1aeed1168"
+    },
+    {
+      "id": "cd5be052-b184-45ac-aba5-4134145d5723",
+      "name": "C \u00b7 Select epicenters",
+      "agentContextId": "saved-agent-context-862124ef-e513-4d5a-a222-abf578c86619",
+      "contentHash": "a072c38b283fdcc0077243f61ad41f534e85f5714e7de53777952e9090754ea4"
+    },
+    {
+      "id": "9e8e807e-76df-43e7-abf1-20435d2d5105",
+      "name": "A1 \u00b7 Immutable Diagram Model",
+      "agentContextId": "saved-agent-context-04d9d576-7a42-442a-aba7-0d1295da68cd",
+      "contentHash": "0f089506a572d33afc92c6fd515fe63f8205ff0e4a32cc6d1b32bb2c689ace19"
+    },
+    {
+      "id": "9fdb411e-95cd-48a9-a26b-1919fa85a34f",
+      "name": "A1 \u00b7 Canvas Commands and History",
+      "agentContextId": "saved-agent-context-363e23fa-96bd-4ea3-aecf-10a0a17bdadf",
+      "contentHash": "5fbd32a668ca8da8f41aa2f0cf6bd8892fc6bb9e018536e21b20f7383c30b9a8"
+    },
+    {
+      "id": "4365755a-1275-4510-af34-57de884a7dc6",
+      "name": "A1 \u00b7 Interactive Canvas Editor",
+      "agentContextId": "saved-agent-context-2d52ce28-ae5c-493c-aceb-b6b63174615e",
+      "contentHash": "89092595c48ff8e573665c4242f3e6536ef852738adf96f4b9c73ea5af753eae"
+    },
+    {
+      "id": "3619ac24-1241-4088-ac0b-206b10c89618",
+      "name": "A1 \u00b7 Durable Canvas Persistence",
+      "agentContextId": "saved-agent-context-9d67625a-5898-4d1b-a3ee-ff3aa239cc3a",
+      "contentHash": "a2f1d8c45de79086b348eb5d7cac63dbdc8a41d254317e91415ff98a2ddb4032"
+    },
+    {
+      "id": "85160e77-5fb3-4938-a25c-55776a8cd69d",
+      "name": "A1 \u00b7 HTTP and MCP Boundary",
+      "agentContextId": "saved-agent-context-feb4dbc8-21f3-477d-a6ca-182dfc47a07d",
+      "contentHash": "3c6ce3ac86a1b1991f4fa984fd973211bc0558cdb5b43a15586c62a67a772325"
+    },
+    {
+      "id": "f35017fb-3a75-4533-a40e-9370bf27f64f",
+      "name": "A1 \u00b7 Live Canvas Agent Protocol",
+      "agentContextId": "saved-agent-context-7704ab5d-daea-44f0-a14a-2e52554a46aa",
+      "contentHash": "1df8a5b1e989655f99e32ebf7e64d94a444ba9173783ed3d5dc9dff06c132114"
+    },
+    {
+      "id": "27292383-db4e-4370-aa51-fff8e07ed890",
+      "name": "A1 \u00b7 Agent Chat and Generation",
+      "agentContextId": "saved-agent-context-2171dd41-0989-4a6a-ac34-9934f9232a04",
+      "contentHash": "63ba50f8236d7bde04391f0e9da784f222e6bb5cb275c7c103c03cf13f92756e"
+    },
+    {
+      "id": "52ebc722-15ed-4875-a823-e5b16bbff89d",
+      "name": "A1 \u00b7 Reusable Agent Context",
+      "agentContextId": "saved-agent-context-05943f5c-34da-4a71-ac08-63f36264f368",
+      "contentHash": "2ee5a4b2980cc524084c7d85979276f401c0abdf60202b0705fe2d79e4fb7ca4"
+    },
+    {
+      "id": "394b8368-7c48-4a76-a2be-8ac0132cde0a",
+      "name": "A1 \u00b7 Repository Evidence and Navigation",
+      "agentContextId": "saved-agent-context-247ea823-4939-48a3-a636-0ad3681f1baa",
+      "contentHash": "52705ce30303e11b99d81e5cf31e74b184862400a8a8434fca22476bdbbfc22f"
+    },
+    {
+      "id": "7295acd1-b482-4609-a324-ff4656dc9685",
+      "name": "A1 \u00b7 Repository Change Proposals",
+      "agentContextId": "saved-agent-context-40867a6d-35eb-4dc9-abb7-28f2fa598f8a",
+      "contentHash": "c64a2e5cad5a62112fd99013f4d3150dbd14c19e0fc46c5c45b792bafa0be0c3"
+    },
+    {
+      "id": "1e68ae2b-04d4-46c3-a9dc-229f1cbe2388",
+      "name": "A1 \u00b7 Evaluation and Comparison Workflows",
+      "agentContextId": "saved-agent-context-e33b7458-e280-495a-a450-01f8666bf816",
+      "contentHash": "063e74978474e2875f809f3e02a19bb50186faf9549917f00a14311598ed0904"
+    },
+    {
+      "id": "8177eaee-7c96-420d-ae07-43abcdddaf33",
+      "name": "A2 \u00b7 Immutable Diagram Model",
+      "agentContextId": "saved-agent-context-a5388e7d-47b1-430e-a863-61e20ff5c8f2",
+      "contentHash": "23b5a8a4371aba6504de052ca600d204da10bfc89c0244f7b9ab27931b1a5c19"
+    },
+    {
+      "id": "4a220689-1bea-45df-ab99-922702efc2bb",
+      "name": "A2 \u00b7 Canvas Commands and History",
+      "agentContextId": "saved-agent-context-e118d4bf-20a3-41c9-a337-18e658acf5f6",
+      "contentHash": "6306c95f6e605da69aeb3c42aee42874847c71ae524a422f75b260e164a72298"
+    },
+    {
+      "id": "2d789570-ef47-4d0c-a950-e11aaa6697ef",
+      "name": "A2 \u00b7 Interactive Canvas Editor",
+      "agentContextId": "saved-agent-context-7a3c2fab-4bd1-4af7-af3d-9fb8fba1cb2b",
+      "contentHash": "6b98e8b67bf9b0cab84055f0ad25e85b28a3a7b653b47cd4c270105e88d331c5"
+    },
+    {
+      "id": "b18bdd20-ba01-4521-aa1f-024958cbe906",
+      "name": "A2 \u00b7 Durable Canvas Persistence",
+      "agentContextId": "saved-agent-context-df128280-d0af-4eb4-a85f-0e7918f56557",
+      "contentHash": "1678229d7bcfe881fb9df8ec43e356c7f0cf83a75c30b385d0057edbbc87feca"
+    },
+    {
+      "id": "75b0398c-c5e7-47c8-a812-2064a316807a",
+      "name": "A2 \u00b7 HTTP and MCP Boundary",
+      "agentContextId": "saved-agent-context-5dd79b53-7309-4965-af29-6b77689da3d5",
+      "contentHash": "4a7372d71d4c822e9ba2f909cd31d390717a8103d6c64c2b516170e6b07f09e1"
+    },
+    {
+      "id": "d642a7b6-5b23-4f70-aaaf-6bfbb248d202",
+      "name": "A2 \u00b7 Live Canvas Agent Protocol",
+      "agentContextId": "saved-agent-context-9ce7d932-a7f3-4e94-a739-f607fe9793c4",
+      "contentHash": "f7d92e8d36965f905f8b07f730220c057d6ac461cfc6fc523cd6b719dcd46b6a"
+    },
+    {
+      "id": "293236a0-ce8c-4183-ab81-3fe91ac16bca",
+      "name": "A2 \u00b7 Agent Chat and Generation",
+      "agentContextId": "saved-agent-context-f60101b9-88ca-42c4-ab02-6e6b85f8bae7",
+      "contentHash": "9aed141d94c488cae987cf02338155d4b87c0ac035842018db646e332edb1bcd"
+    },
+    {
+      "id": "10070d12-0a5d-4b48-a3dd-38a29ac4cbe8",
+      "name": "A2 \u00b7 Reusable Agent Context",
+      "agentContextId": "saved-agent-context-56e2301e-7a42-4f3b-ade2-af0d535d2757",
+      "contentHash": "cf24fcd967757b73686316ce4ce5c0600de30cb84b2d8092abe4541d6b8368af"
+    },
+    {
+      "id": "a31db9b2-6cca-4a90-ac84-cffc43169056",
+      "name": "A2 \u00b7 Repository Evidence and Navigation",
+      "agentContextId": "saved-agent-context-284236cf-6ce2-4129-a8ef-730c03309222",
+      "contentHash": "ab7323ee00cc3c12ca4401e071fab88407a0b2aa1c0bcb5a8ae1c3539b36951d"
+    },
+    {
+      "id": "a38afdab-9761-4ae4-a93b-b9e585ad4747",
+      "name": "A2 \u00b7 Repository Change Proposals",
+      "agentContextId": "saved-agent-context-e5ef62a3-f62c-49de-ac1d-964764255cf7",
+      "contentHash": "e4613ddd1bd5ee9b20ac5ea3e1929b80b3de42514f2cea84a6c44d8e903a35bc"
+    },
+    {
+      "id": "91dceaa8-a76c-4af7-ac3d-87ce65e674c7",
+      "name": "A2 \u00b7 Evaluation and Comparison Workflows",
+      "agentContextId": "saved-agent-context-e24ab5b9-a5c2-4698-a05e-3f7a904c93c9",
+      "contentHash": "17d48da5fcb742ac6b4d7ae05cbba734bb50b5bd39f893ae35e54e63031392f8"
+    },
+    {
+      "id": "c22f7c22-4183-4d6f-a11f-3a8f71059e81",
+      "name": "B1 \u00b7 Runtime Composition and APIs",
+      "agentContextId": "saved-agent-context-30998f6e-7065-4d4c-a149-b2a15bcd0789",
+      "contentHash": "e760d0bac394fafafc84aee38d874671639200e8305f7589bca25ad037034e1e"
+    },
+    {
+      "id": "5ced748e-0a82-4f81-a844-00646c8216ff",
+      "name": "B1 \u00b7 Immutable Diagram Revisions",
+      "agentContextId": "saved-agent-context-309f4c3c-a497-4fea-a8fe-01b90cfd6267",
+      "contentHash": "894ffe5bee108a3f7f4f473beb6b5fd6eaf4cd63203b04770b6d64ebb6d17402"
+    },
+    {
+      "id": "d805cbd3-a8f8-442b-a7cc-cc2c76f70f25",
+      "name": "B1 \u00b7 Canvas Commands and History",
+      "agentContextId": "saved-agent-context-b96bba36-d49b-4607-a2b8-3dce37951f33",
+      "contentHash": "dddfd0079e3bde8d6533a6face27ccfbb262918ffe4e41544af89f44830bbc2a"
+    },
+    {
+      "id": "0f57aad0-1943-4b10-a2c6-01e2dac5e7b7",
+      "name": "B1 \u00b7 Interactive Canvas Runtime",
+      "agentContextId": "saved-agent-context-e9f3e950-3997-4707-a49d-59749548f862",
+      "contentHash": "cad6e8835d7be8629827587de4f8dc1779daf565fbb672c674a82e374e3c6c9a"
+    },
+    {
+      "id": "a8f5f715-11ed-479d-ab27-cb5945a51749",
+      "name": "B1 \u00b7 Checkpoint and Catalog Persistence",
+      "agentContextId": "saved-agent-context-7e8430ef-d30b-42b8-adb5-9b9a5f6e46f3",
+      "contentHash": "b2435b85343403a8933f58c46fcfae2b5cfbb4e259888f19d6aff97925007a1a"
+    },
+    {
+      "id": "a5b3252a-8c49-4e71-acda-6f5f04f27fab",
+      "name": "B1 \u00b7 Source Evidence and Navigation",
+      "agentContextId": "saved-agent-context-260aa533-2fa5-47d3-a552-524a6dbe0ceb",
+      "contentHash": "1df8f31b7ca0cbdcd7f267bc5717c2ff0479f2913907b9c0609be52e46ed1061"
+    },
+    {
+      "id": "41a4835f-3321-451d-a336-f61c4eb115c3",
+      "name": "B1 \u00b7 Live Canvas Agent API",
+      "agentContextId": "saved-agent-context-220bd064-dccb-4b9e-a5fc-8aa1358ea81e",
+      "contentHash": "e19c5f39ae52cb719e16c18dd9b28ad442a0f9236b855c29f68e8afb3c8fc22c"
+    },
+    {
+      "id": "a6b40c8f-17b3-43fa-a181-fce26de17bc0",
+      "name": "B1 \u00b7 Reusable Agent Contexts",
+      "agentContextId": "saved-agent-context-82509a42-dbdf-443a-a277-c143a06814fa",
+      "contentHash": "222f3889f5f6e0d220c3a573e36b300cae0a311b03da236fb12c38055ce17da3"
+    },
+    {
+      "id": "5162b2f2-7845-42eb-a7de-251525e9daba",
+      "name": "B1 \u00b7 Validated Diagram Generation",
+      "agentContextId": "saved-agent-context-6d199abc-7b13-42e8-aece-cdf9eae0cb0c",
+      "contentHash": "8fcb4e130d79e675d061e3e13e0a416ec4239f90ef5b20a01fadcfd873e2481b"
+    },
+    {
+      "id": "322adec1-bce8-463c-ac0d-4d2c4605328e",
+      "name": "B1 \u00b7 Agent Chat Orchestration",
+      "agentContextId": "saved-agent-context-3b2b3fed-47fb-4a5c-a08e-176904890351",
+      "contentHash": "d5d514df30ff40bec507b615bd88ba657583ffcf935d3371069415eb386f7d09"
+    },
+    {
+      "id": "949fb2db-c6c9-4fec-a2f5-699de7faec4d",
+      "name": "B1 \u00b7 Git Change Proposals",
+      "agentContextId": "saved-agent-context-cc962fb1-31a9-48a7-a1de-527e35659a41",
+      "contentHash": "1fb1010e7d87e784f535e989ba9b66b6b566ba44b4b04f06503f82f53c3d33f6"
+    },
+    {
+      "id": "5d73576a-ede7-42e3-a1d4-62597e42e88d",
+      "name": "B1 \u00b7 Generation Evaluation Workbench",
+      "agentContextId": "saved-agent-context-43a0452f-3926-4101-a45d-04a4fc747817",
+      "contentHash": "c93efa343a212a8c3b8a393c910e3ce06c37c3eae59d32acf2de029c7012e539"
+    },
+    {
+      "id": "ce2dfeff-2121-4689-a78f-dedcbb2dcf64",
+      "name": "B1 \u00b7 Static Architecture Analysis",
+      "agentContextId": "saved-agent-context-5c6672b7-1f2f-4bb2-a519-954417452014",
+      "contentHash": "8470f8b92dfe299fb3922eb5803660781bb1e82fd2fb56df152f53e7d1934627"
+    },
+    {
+      "id": "27362c04-a512-4964-a208-5836ad3790f9",
+      "name": "B2 \u00b7 Runtime Composition and APIs",
+      "agentContextId": "saved-agent-context-553f4ce8-03bf-4be4-a031-53a2eb7417a0",
+      "contentHash": "db850e4ca48760b5f582d6af21e261b6d502ab587de2a84ccff7e624f8a0b43e"
+    },
+    {
+      "id": "4737282b-8ab4-4cf2-a849-36388f993e1c",
+      "name": "B2 \u00b7 Immutable Diagram Revisions",
+      "agentContextId": "saved-agent-context-bebfbfe2-7b19-494e-a2c4-780c23558afb",
+      "contentHash": "15a6570d6687010590b4702aa9666e23272f9db8badc0dffbbca2bb1c6ed9436"
+    },
+    {
+      "id": "94fcb7d6-5590-4258-af64-aa0320bf9a21",
+      "name": "B2 \u00b7 Canvas Commands and History",
+      "agentContextId": "saved-agent-context-146459cf-1e2d-4dec-a408-d62c20125743",
+      "contentHash": "9bc8b88a8779bc073ede3cc1a77bad69fef0bfd2252e4dd7fd1557db50cfdd99"
+    },
+    {
+      "id": "e2d5d102-8018-498c-aa42-c5f2a7336fda",
+      "name": "B2 \u00b7 Interactive Canvas Runtime",
+      "agentContextId": "saved-agent-context-0edc9d4b-9dc9-4e02-a40f-37b025ca8b47",
+      "contentHash": "215768c9758e98cd6e1a82072e07a961d4983a06d16e41b4133d0ca5bbcaa3fa"
+    },
+    {
+      "id": "4d71754b-8587-4086-ac51-41897c019a8b",
+      "name": "B2 \u00b7 Checkpoint and Catalog Persistence",
+      "agentContextId": "saved-agent-context-43216ef6-d1dd-4280-a23f-89f02708064c",
+      "contentHash": "c4205777b044d3688bc5866cdb9edd0eeb134ded5874a7f00ef440e67c010613"
+    },
+    {
+      "id": "a6821c89-af55-4e1a-a0af-4686bb012210",
+      "name": "B2 \u00b7 Source Evidence and Navigation",
+      "agentContextId": "saved-agent-context-fb300a54-dc30-44f3-a83b-10501471c656",
+      "contentHash": "18251e0e118959d4145acdef5ec839e2abceb1ec6834261274a5681ddaa665e1"
+    },
+    {
+      "id": "186fb32b-04fc-483f-a6ad-6afda671cf9c",
+      "name": "B2 \u00b7 Live Canvas Agent API",
+      "agentContextId": "saved-agent-context-679af716-385d-4888-a85e-f95158a1e371",
+      "contentHash": "02e64c80c75c5b0df6cf3553ffd6b0c57b37e6261edc41047327b9710331b605"
+    },
+    {
+      "id": "b275bfd1-13b8-4014-abeb-15f0223ad1fe",
+      "name": "B2 \u00b7 Reusable Agent Contexts",
+      "agentContextId": "saved-agent-context-98c4a30b-4172-4095-a30e-be44523c8780",
+      "contentHash": "a07127c1854548d69d2e547a2bf772377bc03f54c949d4c285a0a60c5a405df4"
+    },
+    {
+      "id": "96402cc3-25a8-4ae1-a8dc-4b6e870e8928",
+      "name": "B2 \u00b7 Validated Diagram Generation",
+      "agentContextId": "saved-agent-context-66fae496-9d82-4aab-a3ae-809454d4a546",
+      "contentHash": "98aa67ecf0d56ab57c819f0431d0a2bd045c96294730be45dd7cf17ab79304bb"
+    },
+    {
+      "id": "ae1d5278-17d8-4869-a7eb-38a6c3c4b5ff",
+      "name": "B2 \u00b7 Agent Chat Orchestration",
+      "agentContextId": "saved-agent-context-362e9eca-9518-45ea-ad7d-12cd4021bbab",
+      "contentHash": "ae3ecd833fa550fadd2841482232a73201ed2f15de9b8258076f13419bd3bd73"
+    },
+    {
+      "id": "57c5190b-d7ce-435c-ac5b-972fafd94561",
+      "name": "B2 \u00b7 Git Change Proposals",
+      "agentContextId": "saved-agent-context-0f7621bf-f73c-43fd-a6e0-bb52f6809e23",
+      "contentHash": "aa379b476190cb9353595eeaf0955e82156443fc4206aef48d8be54882446595"
+    },
+    {
+      "id": "e8a64d5a-cbfd-4388-a57c-11fd28616e57",
+      "name": "B2 \u00b7 Generation Evaluation Workbench",
+      "agentContextId": "saved-agent-context-f1a0fdef-1c9d-4905-aac1-5c4c63eda9e5",
+      "contentHash": "fcd63b76b8a5636590e0c86223a0b8e2c1677312bf3c14e2ee021b110f8af84e"
+    },
+    {
+      "id": "4fd4c693-d7e0-4eff-a94d-b0d64b787284",
+      "name": "B2 \u00b7 Static Architecture Analysis",
+      "agentContextId": "saved-agent-context-391972a5-493f-45b4-aae1-938e2e157010",
+      "contentHash": "c178306447296cd21e2ef4b3499f65322e61b8accabf18d0da58636c10b988a9"
+    },
+    {
+      "id": "997fa993-801d-4aab-af80-75af72bb7cb2",
+      "name": "C1 \u00b7 Application Composition and Transports",
+      "agentContextId": "saved-agent-context-817a1c9a-eaf6-48ea-a6a0-9839359988dc",
+      "contentHash": "221d2127c1e03ec969e951643883d16e07d711ab290e0f27568afcae2d8c7323"
+    },
+    {
+      "id": "26342f3d-bb54-4f67-ab33-36c2b91cc1b7",
+      "name": "C1 \u00b7 Immutable Diagram Revisions",
+      "agentContextId": "saved-agent-context-44370132-c3b3-41f0-a368-3b6f7f50d697",
+      "contentHash": "ff523120f6949f4d04b1f4b43520d5794021f685a80d99436285856896c3aff5"
+    },
+    {
+      "id": "9dd71c15-cd27-49be-ac47-c1b3204e078f",
+      "name": "C1 \u00b7 ASCII Structure and Anchors",
+      "agentContextId": "saved-agent-context-3831df7f-2b80-474b-ad97-9d56ff819c3f",
+      "contentHash": "b9e9568c0190c5b7e25108c04064e094039a490d6532cbdd576ba3fb79a5b8b6"
+    },
+    {
+      "id": "dd797dc4-0012-4faf-a88d-bcff0d7b0df9",
+      "name": "C1 \u00b7 Canvas Commands and History",
+      "agentContextId": "saved-agent-context-dca69246-b189-4bd3-af1d-80a62d318806",
+      "contentHash": "f2ccb704f2b1164d063f02ab64b822f6e3073a3f9c3be8c7d17bcf23c0bfaa0d"
+    },
+    {
+      "id": "51582365-7362-4588-a54a-67c3b04e3099",
+      "name": "C1 \u00b7 Browser Workspace Ownership",
+      "agentContextId": "saved-agent-context-3d3dc5b9-88b3-4f93-ab2b-d5115413fc37",
+      "contentHash": "5e3c7cd69afd7421d5cfa6b41a0668cdf4f80c7a27b3a25b504878a5f1156e34"
+    },
+    {
+      "id": "6a3051cd-8e62-4bb6-aaf0-3f95c9e974d8",
+      "name": "C1 \u00b7 Native Canvas Interaction",
+      "agentContextId": "saved-agent-context-0b54acaf-a0e8-4be2-a77c-466340c25962",
+      "contentHash": "77b0746dc26d04766e4e99eec2dd052d6c07d8e2a63e69b91e3e6b1bdb532199"
+    },
+    {
+      "id": "328f02cf-b3c4-4236-ac2c-e04d550f8682",
+      "name": "C1 \u00b7 Durable Records and Publication",
+      "agentContextId": "saved-agent-context-91d42477-4e91-4d23-ab09-df0983a4bcf6",
+      "contentHash": "01b91f94241e820cced53e16d0be4af85f98be83e30156fd53c1f5ad43dfefa9"
+    },
+    {
+      "id": "8d9c03d9-124f-492d-ab5b-cdb93aa6925d",
+      "name": "C1 \u00b7 Repository Evidence and Navigation",
+      "agentContextId": "saved-agent-context-c837b38e-04f2-436c-adfe-e2378e6831a8",
+      "contentHash": "567fb2444411fa6714dc733538c02545142590488152ffa46493d8dbd59a2f55"
+    },
+    {
+      "id": "78bdafef-55b8-4bef-ac92-e20f2ffce4b2",
+      "name": "C1 \u00b7 Agent Canvas Access",
+      "agentContextId": "saved-agent-context-b7307449-98d6-4e5d-a752-7d59484188ae",
+      "contentHash": "a521994f81e9906adea2673d21489e60520458c0765a4ed3439cfca22ce9efd4"
+    },
+    {
+      "id": "fcab78e6-5230-433b-a659-76191f07c56f",
+      "name": "C1 \u00b7 Reusable Agent Contexts",
+      "agentContextId": "saved-agent-context-a9094444-897a-4381-ae8f-8c2cd47a85ac",
+      "contentHash": "17a78083cf6bc616633a3539d72230c36e4808e85cf2d2386870553ec9ea3b2d"
+    },
+    {
+      "id": "6fe4617f-17ec-42e2-a765-e2167d7bc5ff",
+      "name": "C1 \u00b7 Validated Diagram Generation",
+      "agentContextId": "saved-agent-context-157f1ac4-1e88-4e25-a2d2-3345d87d16a4",
+      "contentHash": "28252bcb7d57107df35b14b28f7226bed9b78c3281c0a8731aaefe5b660568d1"
+    },
+    {
+      "id": "bf9f551c-dfea-4e48-ad7e-bb1a84895e7b",
+      "name": "C1 \u00b7 Agent Chat Lifecycle",
+      "agentContextId": "saved-agent-context-4a69df0f-7f79-4c23-a727-7aa5b64d23a6",
+      "contentHash": "4377ce9e630579240b5699a871339ee7ceda68741bd4114050ab6457c24df5fe"
+    },
+    {
+      "id": "ee614919-aa18-4b22-a33b-d5c970b8bde1",
+      "name": "C1 \u00b7 Isolated Change Proposals",
+      "agentContextId": "saved-agent-context-1e29b936-1e16-4b40-a95e-22b32f3999a5",
+      "contentHash": "10ae7152ae244c3a9d8fb6727086ac1111dd4011c16641ea83f6de789ca0db89"
+    },
+    {
+      "id": "56691027-5f6d-414e-ab2e-7e238781f8e7",
+      "name": "C1 \u00b7 Generation Experiments and Evaluation",
+      "agentContextId": "saved-agent-context-570c6e86-e147-447e-a9fd-c13ddc23e7ea",
+      "contentHash": "7c703b0cbc7695224f844830c2fcdfa99da0519e5fa6de2912bcf0d511467f1f"
+    },
+    {
+      "id": "a4bff5be-bf55-4041-a089-854a6676c676",
+      "name": "C1 \u00b7 Static Architecture Analysis",
+      "agentContextId": "saved-agent-context-6894ee53-344c-488d-a3cd-f02fae360df5",
+      "contentHash": "4de4016fe99cf59a583442eff3876f5901a0029eafacb631022ebceafcba96df"
+    },
+    {
+      "id": "ffa6a24d-85b9-4810-a2e5-1cd866f29582",
+      "name": "C2 \u00b7 Application Composition and Transports",
+      "agentContextId": "saved-agent-context-80506cc1-397a-42ec-a8ea-a24f5cfba566",
+      "contentHash": "82185d8c4628916827d0e14beec2cfc70d89f9207d8993e370741ff6783d6da0"
+    },
+    {
+      "id": "cd64de99-486a-4aec-a68e-2e447997c8fb",
+      "name": "C2 \u00b7 Immutable Diagram Revisions",
+      "agentContextId": "saved-agent-context-a93e92a3-83f3-4dfe-a7cf-b8f009b421d8",
+      "contentHash": "ed889af49f77b39db7c7923fc679eea4e2fa1e04daae882e3632a99e450a7038"
+    },
+    {
+      "id": "755f2c51-9839-4b03-aeae-3e718c5b7764",
+      "name": "C2 \u00b7 ASCII Structure and Anchors",
+      "agentContextId": "saved-agent-context-ac52e475-f0b5-4c66-aefd-d73090b2f3f3",
+      "contentHash": "f9feb207e0dad75d6f290cf77c5c5ffc0cbf93e499398574681b2df241ca972d"
+    },
+    {
+      "id": "13e55e08-4dd6-4ba9-a27f-4b05319547a2",
+      "name": "C2 \u00b7 Canvas Commands and History",
+      "agentContextId": "saved-agent-context-012c69bd-abe0-4904-ae0b-c1e04a427705",
+      "contentHash": "0586b07dcd8d262b41771be3bc04224a83d39c4352bd370ed5550b6e31988ea0"
+    },
+    {
+      "id": "7182a1d7-8ccc-41bb-af28-73a35301b374",
+      "name": "C2 \u00b7 Browser Workspace Ownership",
+      "agentContextId": "saved-agent-context-4ef05aba-5fd9-4b9e-ae4c-11b9fd900d67",
+      "contentHash": "df74d40c07efbdc3c86a830e3027921d505cfe3b09185b41e8b2a873350c751e"
+    },
+    {
+      "id": "bf7d367d-1081-4524-ac8c-60a490a9afc2",
+      "name": "C2 \u00b7 Native Canvas Interaction",
+      "agentContextId": "saved-agent-context-f562a9d9-3a89-4443-a886-3670c05344dc",
+      "contentHash": "4a71dcc2c97fcae6e65ef31e62c314f6c86f3683bbe96c27fab875b974d753ad"
+    },
+    {
+      "id": "d90fa304-2c5d-462b-a2ac-1698c736a3e0",
+      "name": "C2 \u00b7 Durable Records and Publication",
+      "agentContextId": "saved-agent-context-8834bf5f-b9dd-46b3-aeb2-46785e7bcbac",
+      "contentHash": "9e6214dded14279d1200e23d21b960be427e1190082e7a742a46a2a5f7bb727d"
+    },
+    {
+      "id": "e3813e89-0aee-4be1-a575-303043257b32",
+      "name": "C2 \u00b7 Repository Evidence and Navigation",
+      "agentContextId": "saved-agent-context-3607c381-3179-4ec1-a7a1-4a3ed897085d",
+      "contentHash": "e53e13a3bd84b44fb1ecef1f231d6be81c9d5f212ab3a71903a8b6f5c5d529e1"
+    },
+    {
+      "id": "a8083f0d-e6d8-4ea6-a2f9-c234afd229fa",
+      "name": "C2 \u00b7 Agent Canvas Access",
+      "agentContextId": "saved-agent-context-8ae86076-1ba6-4de7-a974-75e1418e2a87",
+      "contentHash": "0c5b52e04d3c080ed29605ab64468867c95f0af0107a4f3406086857a6384248"
+    },
+    {
+      "id": "d4f0cda2-0711-4577-a403-fa4930977f73",
+      "name": "C2 \u00b7 Reusable Agent Contexts",
+      "agentContextId": "saved-agent-context-2f6f1ecd-dbc1-47f0-a75b-bd64e6a97e1f",
+      "contentHash": "1d1238a37f2291f4914be1f6be74c11d7b0076a7e1ee0fbd7dd80fe0bd224e42"
+    },
+    {
+      "id": "73b58cdf-7c38-4ccd-a74b-cf5c425bf865",
+      "name": "C2 \u00b7 Validated Diagram Generation",
+      "agentContextId": "saved-agent-context-8ac3b217-5347-4cd5-af5f-d32ec660b720",
+      "contentHash": "3fcebbb65488174669c6c4e6ee9ce765d83e37b3757488cb27f7ca434e5e05f2"
+    },
+    {
+      "id": "b6391430-5172-4ccd-a43b-37e3a12473e5",
+      "name": "C2 \u00b7 Agent Chat Lifecycle",
+      "agentContextId": "saved-agent-context-625da964-6a1d-4201-a6f5-5b4802fbe396",
+      "contentHash": "0430759028abb4478060d33f3832586007a5ab7204b3ded22e4808a13c2e936d"
+    },
+    {
+      "id": "d5f2aeca-0361-45ae-a315-cfcf254df2be",
+      "name": "C2 \u00b7 Isolated Change Proposals",
+      "agentContextId": "saved-agent-context-bf54d642-66f6-4c49-a20f-cb8dd36574ff",
+      "contentHash": "ec229764bc2b9e9866838913fb33f837a99411ad4bc66e61ecb3b88af1ed3aa4"
+    },
+    {
+      "id": "f6d44006-0388-4d46-acfc-d590a8aa316d",
+      "name": "C2 \u00b7 Generation Experiments and Evaluation",
+      "agentContextId": "saved-agent-context-a211b235-bcb9-411e-a043-b3da8b425bb1",
+      "contentHash": "1b1bdceb694710e7a8641a36a52d9ff6176d4ce7184ff2dea69af1cafacf64ac"
+    },
+    {
+      "id": "adbc6013-fc68-4c94-a4e7-48f6dfb0bbee",
+      "name": "C2 \u00b7 Static Architecture Analysis",
+      "agentContextId": "saved-agent-context-4d129baa-3819-4166-af47-f867dce6e6ab",
+      "contentHash": "b24d62c88f6c85dec8823c5dce65b1dc5b5feb404e8d849c2fecd8eeac8ff905"
+    },
+    {
+      "id": "35318938-4c16-4ace-ae5d-882e2cc334a1",
+      "name": "A1 \u00b7 Immutable Diagram Model",
+      "agentContextId": "saved-agent-context-a2592c3c-1132-4c5e-aa4b-8900894483f8",
+      "contentHash": "bc1d36fedd06c907dcdbf1b7b449022bb2deaf39b9dd103e132cbdd47da58d5e"
+    },
+    {
+      "id": "fb13358b-ae06-44f1-abfd-7a336a7737b8",
+      "name": "A1 \u00b7 Canvas Commands and History",
+      "agentContextId": "saved-agent-context-1d97e9a6-ac0e-4d07-a3d1-95de257b56f6",
+      "contentHash": "b52ee697c84e57508dcd0a2085125b9d0fe6c5041f871134cec09842c10d709d"
+    },
+    {
+      "id": "88c3db40-5c76-4111-a0cc-ec4b6f18aca1",
+      "name": "A1 \u00b7 Interactive Canvas Editor",
+      "agentContextId": "saved-agent-context-8843f292-7c86-4122-a519-0e8eae40a373",
+      "contentHash": "25bc48933190c9bda4df3d83a288680df3510461edb716a12de9c98036fee2fb"
+    },
+    {
+      "id": "b0e54177-d6d6-438c-aab3-3c29bf1dfda0",
+      "name": "A1 \u00b7 Durable Canvas Persistence",
+      "agentContextId": "saved-agent-context-6312bb61-c9bd-4f2a-aa47-84a1e549c185",
+      "contentHash": "ed4402cb887915a6bddc4fe30ac57c93116166f26d019d33d9c2faa5bebe4898"
+    },
+    {
+      "id": "2894ba92-4327-46d4-a8ae-e3837fcd8993",
+      "name": "A1 \u00b7 HTTP and MCP Boundary",
+      "agentContextId": "saved-agent-context-f2b402bc-0351-4446-ad07-96babb1dd90b",
+      "contentHash": "b89139163a431eae5b5118d66e664ecf6ebe88dd7bd8917e2a9c749a42096365"
+    },
+    {
+      "id": "f64ce561-8b9a-4202-a35f-a45346a6f1b2",
+      "name": "A1 \u00b7 Live Canvas Agent Protocol",
+      "agentContextId": "saved-agent-context-6be0aa01-f633-46bb-a3b3-101381fa49e7",
+      "contentHash": "0cd961012b6231d0156cf9669ca2db0f3044e72847e5969aabaa1e072647df04"
+    },
+    {
+      "id": "657401f7-a074-496a-a70b-b2b46fe44ff8",
+      "name": "A1 \u00b7 Agent Chat and Generation",
+      "agentContextId": "saved-agent-context-eb76074f-188e-4270-a1fc-6d0619854083",
+      "contentHash": "e2354f90b09dafaaa8e0d0fd743ff26dc8e1753be286cb1ace4feaef239d6a97"
+    },
+    {
+      "id": "8ae770b4-ee12-4478-acb2-1419cdef11bf",
+      "name": "A1 \u00b7 Reusable Agent Context",
+      "agentContextId": "saved-agent-context-a64900ce-68cd-47ad-a2f6-c729d021c225",
+      "contentHash": "d6c9c1c3b04fd7cfa8f20735d1f12673d7c402caa18c9ccd407882d2e7d41b07"
+    },
+    {
+      "id": "3cfcd84e-69fa-4747-af4c-a991e8076d3f",
+      "name": "A1 \u00b7 Repository Evidence and Navigation",
+      "agentContextId": "saved-agent-context-2ec9cfb9-aeb7-46a7-a125-8113fa088b69",
+      "contentHash": "b96ee40c6a547b568e127b1923efc8f48892f3d14a141d9f91ce5f32d7c560eb"
+    },
+    {
+      "id": "6bb73ad0-54fb-4901-ad7e-50a7596b06be",
+      "name": "A1 \u00b7 Repository Change Proposals",
+      "agentContextId": "saved-agent-context-65cbd411-98f1-467c-aff5-a59b4e7845b1",
+      "contentHash": "edeab00f8a7952869080f4bbc2abbaf931fed4080d4bbcbef1e1eb3cf62daf01"
+    },
+    {
+      "id": "56e19102-48ba-456c-aca5-e369a2e7e198",
+      "name": "A1 \u00b7 Evaluation and Comparison Workflows",
+      "agentContextId": "saved-agent-context-647805f2-b5be-4cff-ad3d-54952b431fa9",
+      "contentHash": "b53daf3f074dd9a2b34672bfb37f2b5d3b7dea0567ec45aaa54470c6036cd990"
+    },
+    {
+      "id": "a4077df0-1fa5-4902-ad56-bd6cae0e2646",
+      "name": "A2 \u00b7 Immutable Diagram Model",
+      "agentContextId": "saved-agent-context-04d54c9a-1786-47ee-a106-61f81540d50a",
+      "contentHash": "ccc5e0e629cd68d3041851cfbc3959c02d626bf7e78328374e67e83e52807baa"
+    },
+    {
+      "id": "eaa6a5ba-26dc-4e37-a39e-0ceac5301928",
+      "name": "A2 \u00b7 Canvas Commands and History",
+      "agentContextId": "saved-agent-context-87b9caec-68ab-4246-a46d-d5cc7821fd8d",
+      "contentHash": "011efb64861390aaf700ee52017e64bc318fe516aec6e5f66aa663c2a7b7890c"
+    },
+    {
+      "id": "4d63c854-cfcb-4961-aeca-7d93a21040f5",
+      "name": "A2 \u00b7 Interactive Canvas Editor",
+      "agentContextId": "saved-agent-context-a52e844d-020b-45d6-ad95-6c8ff5105904",
+      "contentHash": "ab200b0bba45410ec8deb97e4997387f2a06093baac7ef26fae31516976de50e"
+    },
+    {
+      "id": "a97802eb-0c5e-441a-a178-b1aa8e9aa31d",
+      "name": "A2 \u00b7 Durable Canvas Persistence",
+      "agentContextId": "saved-agent-context-63ec40a0-a91c-449f-abc8-643f9bcf4ecf",
+      "contentHash": "acb11681d230c404fcfbad195b3ce17213a167a95dfbf2efff77af81581b9980"
+    },
+    {
+      "id": "0b2c0f02-4682-4b22-ac80-58fe425079f2",
+      "name": "A2 \u00b7 HTTP and MCP Boundary",
+      "agentContextId": "saved-agent-context-5d07c33f-c8e8-445f-a436-f4f589b24bb7",
+      "contentHash": "aaa4a8937194084eb6be6429ed4f886bbc623811eb7e01a40017a1aa7807a3df"
+    },
+    {
+      "id": "fee00dc1-07fe-4737-a13f-23759ff3da3d",
+      "name": "A2 \u00b7 Live Canvas Agent Protocol",
+      "agentContextId": "saved-agent-context-3f5befe0-c714-41cc-a057-8ee6c6e9ffeb",
+      "contentHash": "373380ff2388f4106180eb00b16f94570f06f38846cd1b971b3c3353f905baeb"
+    },
+    {
+      "id": "5c581d11-ad2a-4e18-a289-542ffa331200",
+      "name": "A2 \u00b7 Agent Chat and Generation",
+      "agentContextId": "saved-agent-context-70a96403-f62b-4946-a141-961ad70c3403",
+      "contentHash": "230564fecd855cb5f7c2e022159919d35520d3466b6f53d59b99d5676606e6df"
+    },
+    {
+      "id": "91d2f0f7-86f3-42c6-a393-1dc95dd4daae",
+      "name": "A2 \u00b7 Reusable Agent Context",
+      "agentContextId": "saved-agent-context-c44f6e04-e224-4e5a-a6fe-b2079cdadd52",
+      "contentHash": "90ecf656081a4ecb18f436f82279e37d75038fc13a0f3be5518b4eab505e6758"
+    },
+    {
+      "id": "960b87c6-445c-471f-a2af-9c05731cd088",
+      "name": "A2 \u00b7 Repository Evidence and Navigation",
+      "agentContextId": "saved-agent-context-d88bd126-3681-42a3-a875-db6323db3e82",
+      "contentHash": "622759f4a6ec9b1ec9f6e2d69a26c70d68a10385d90eece78048bf1b5bb60e81"
+    },
+    {
+      "id": "52d5f98a-f5a3-41fa-a357-7e2ec602de88",
+      "name": "A2 \u00b7 Repository Change Proposals",
+      "agentContextId": "saved-agent-context-18dfd406-8f3f-4dbb-ac6a-de3eb8424d9c",
+      "contentHash": "9cedcefa2b840f2633c580593cf2308ac3288366c4b5a669600f5e461cdb7839"
+    },
+    {
+      "id": "b3b7071d-6ee2-443e-af18-4cdd24e1407e",
+      "name": "A2 \u00b7 Evaluation and Comparison Workflows",
+      "agentContextId": "saved-agent-context-d70aa536-8b79-4422-af0f-6eaaf3240c5f",
+      "contentHash": "8e9ede1db8075ff75bf66245fcdbbbc25b5acd6fd176cc0a24c3ba2b096aa1f9"
+    },
+    {
+      "id": "b77761ed-c3d7-45c4-a3b7-051f946b15db",
+      "name": "B1 \u00b7 Runtime Composition and APIs",
+      "agentContextId": "saved-agent-context-c15d03a6-87f4-4e47-ac0d-4f22c90709e8",
+      "contentHash": "7e198e2c6f78449c27d839702a2b1e6e9c65cc8e4c6479068171aba6aa19b8a6"
+    },
+    {
+      "id": "45d22e24-19b8-4ab8-a09f-e08aa608559e",
+      "name": "B1 \u00b7 Immutable Diagram Revisions",
+      "agentContextId": "saved-agent-context-dd150622-18e9-48c6-a812-ee4ad9eeefd4",
+      "contentHash": "a5e5c9009f4a8d0642c4c324f42ee30b4bb5c488156e951aea89d8be4cb18cb8"
+    },
+    {
+      "id": "aae54a04-1c47-4a6e-a73e-88866882ab11",
+      "name": "B1 \u00b7 Canvas Commands and History",
+      "agentContextId": "saved-agent-context-c486590e-0bde-4461-a7d2-e682e4a5fa80",
+      "contentHash": "eeab7c83cdd25f6d84fb929be7e67958606a7338e7493e4ffa19d5b172ecd43c"
+    },
+    {
+      "id": "e3fff462-66c7-4c22-ac89-a7ad5391a2c7",
+      "name": "B1 \u00b7 Interactive Canvas Runtime",
+      "agentContextId": "saved-agent-context-f118fb54-23b5-46c6-a750-de4b58fd7fe9",
+      "contentHash": "5da1baac39d925a5816f93fac21166b5f4a8ac6c1f07643d94f098ade1d57b4a"
+    },
+    {
+      "id": "8444fec5-b1fb-40f3-ae3c-6f31d0ed26d5",
+      "name": "B1 \u00b7 Checkpoint and Catalog Persistence",
+      "agentContextId": "saved-agent-context-445eeee1-cd89-4add-a761-1629288955b7",
+      "contentHash": "fdab81b1068a6f56211621e42bd9cb0e44b525de32a91a11a1674e07e762a048"
+    },
+    {
+      "id": "2ae0076c-a40c-49e9-ab4b-f57ae37d478f",
+      "name": "B1 \u00b7 Source Evidence and Navigation",
+      "agentContextId": "saved-agent-context-d52cceac-7b6a-4f37-a9a7-77e2d443ae35",
+      "contentHash": "4d6280c85bf50fcbe17a46d256526320c67ae4d182f4c2f699a4df0c39363cf2"
+    },
+    {
+      "id": "de1d890f-3b06-41c3-a512-6d913b230d81",
+      "name": "B1 \u00b7 Live Canvas Agent API",
+      "agentContextId": "saved-agent-context-e2642251-b19e-4571-ab7e-f52f2975772d",
+      "contentHash": "a6f230060c2495f00d4a370251e2bf434eadf18a8b8ea6efa38d20787f6b85ae"
+    },
+    {
+      "id": "de2ca702-e6a0-4ad2-a079-e5a90c9c07d5",
+      "name": "B1 \u00b7 Reusable Agent Contexts",
+      "agentContextId": "saved-agent-context-7d4685c4-7ffc-41eb-aa0a-781dbf533651",
+      "contentHash": "146640da95a2f1737204240bcebb3adbe763453c77e961185f0f5afa595e666e"
+    },
+    {
+      "id": "1b55236b-6f2d-4ed6-ad7f-91b98d9a2a9c",
+      "name": "B1 \u00b7 Validated Diagram Generation",
+      "agentContextId": "saved-agent-context-ab3692f1-9d3f-4c03-af72-c93fd62ac0cc",
+      "contentHash": "eed788532c0e9e96e4787f4d80ed6646ba06e79aa7d73c95a53ec55223f9313a"
+    },
+    {
+      "id": "b8f2e413-2bf5-47c8-a4f6-6d1170c71c83",
+      "name": "B1 \u00b7 Agent Chat Orchestration",
+      "agentContextId": "saved-agent-context-62fa54af-4f69-4a3e-a225-9f321c04e16d",
+      "contentHash": "149bd65d1150ec0ad40c76ca04c81245276777e76006a7737b357808afe63f38"
+    },
+    {
+      "id": "c0b3de1d-240f-4970-a446-7d3df0d3fcc5",
+      "name": "B1 \u00b7 Git Change Proposals",
+      "agentContextId": "saved-agent-context-01e47036-0c78-4718-a4bb-9c511b2a48f5",
+      "contentHash": "d58cb55ece78362ccf183b25f2b201395980caab052e711cd81dc23e5a595712"
+    },
+    {
+      "id": "9547ee9e-4d87-4bbd-a31f-49049e1fe3f5",
+      "name": "B1 \u00b7 Generation Evaluation Workbench",
+      "agentContextId": "saved-agent-context-236a5834-7481-4184-a3c5-75b2ad8b6d48",
+      "contentHash": "838f4ea37a2db1714988b8fbd7cb492038de4cc8365db37cd63953a0cb3e3e1b"
+    },
+    {
+      "id": "aa30494f-41a9-46ec-a399-88f19232161f",
+      "name": "B1 \u00b7 Static Architecture Analysis",
+      "agentContextId": "saved-agent-context-4c0aaab7-f818-49ac-a744-d3fb085a025d",
+      "contentHash": "4376f634b8ebb89fd691cb3a2b94f4aa4a8eda41a640c7311cd9934d3f96a7d5"
+    },
+    {
+      "id": "5f56387b-75fa-4e95-ab59-5805e1d1ce1b",
+      "name": "B2 \u00b7 Runtime Composition and APIs",
+      "agentContextId": "saved-agent-context-58ea17d9-a1a1-47e3-a58b-c455a3d8fad0",
+      "contentHash": "bd5f764c74945b59fce066318203258d96a5ce4efbcd7c4d1a6dd6e46fb34822"
+    },
+    {
+      "id": "46b5ebfc-11ae-4002-a8c2-2afaaa2800b6",
+      "name": "B2 \u00b7 Immutable Diagram Revisions",
+      "agentContextId": "saved-agent-context-e8291668-72f3-44fa-a4dc-6569ae402cf2",
+      "contentHash": "0694b4accc9d9eb73b688ab6630b7c1e9b28c809e47821e6ce91d6664def5b8a"
+    },
+    {
+      "id": "2a73f7c5-c0a8-468b-adcb-01ff420a2fe0",
+      "name": "B2 \u00b7 Canvas Commands and History",
+      "agentContextId": "saved-agent-context-df6d3367-3844-40d2-a8b3-593726d25e3d",
+      "contentHash": "11cb5c10e8355500d031752f5a27d5610c2ba80e058a0cb11604ee01a4466081"
+    },
+    {
+      "id": "7ad5c922-c199-4fa3-afb1-0691d99d6461",
+      "name": "B2 \u00b7 Interactive Canvas Runtime",
+      "agentContextId": "saved-agent-context-7e30c133-8864-46e7-afd8-e37abdcfee06",
+      "contentHash": "65fbce836f99d8443d049010bab5614b9df027b961ea7948c553418d1757f9dc"
+    },
+    {
+      "id": "1204d02f-0532-4a87-abee-677253c737d3",
+      "name": "B2 \u00b7 Checkpoint and Catalog Persistence",
+      "agentContextId": "saved-agent-context-f3cb278c-cf96-4b19-a681-2b7824f0b3c7",
+      "contentHash": "65c8a228e606ae05d06f35939f0d6f111156e612f28004a3fe906ce63f514518"
+    },
+    {
+      "id": "478e25cb-0403-4f73-a133-955deef08a91",
+      "name": "B2 \u00b7 Source Evidence and Navigation",
+      "agentContextId": "saved-agent-context-729a12e4-bc11-48b9-ac05-383611df724f",
+      "contentHash": "7cb8aade8b7ddb7cd3a92a179a1fe214b43524147b43a5fbc126a77c763cb183"
+    },
+    {
+      "id": "f14eaf10-9069-48c5-abca-155019e6f1de",
+      "name": "B2 \u00b7 Live Canvas Agent API",
+      "agentContextId": "saved-agent-context-87119040-e49f-4c03-a402-951ffb47b835",
+      "contentHash": "9a6e219be989f7650bdaf23002d67bb58a50e67919f68d023890d7e671041d07"
+    },
+    {
+      "id": "0bd6095d-9327-4bfe-a012-e4d05927ff23",
+      "name": "B2 \u00b7 Reusable Agent Contexts",
+      "agentContextId": "saved-agent-context-45d9ab10-7458-423a-a0d2-72fafb5b1785",
+      "contentHash": "64b9c318f5a13223333642499f41c207b750c326ff6948d0d510c7b5c114763d"
+    },
+    {
+      "id": "4357ce7c-593e-4fd6-ad40-094e6f21d1b2",
+      "name": "B2 \u00b7 Validated Diagram Generation",
+      "agentContextId": "saved-agent-context-ebc27380-2da8-480c-a233-0c3354abb573",
+      "contentHash": "60dace6cbbf8b3d40618936f57e94a5814b1948f32180cb98ada1558fab25a87"
+    },
+    {
+      "id": "0f359c00-6dbd-4958-a346-d4f6a638e294",
+      "name": "B2 \u00b7 Agent Chat Orchestration",
+      "agentContextId": "saved-agent-context-efd6d564-f2a8-416d-a1c4-4d7d5ea4e9b7",
+      "contentHash": "8f17bed71dc9b19392fcffe5f26723ada5f84707b2f7e4e407e6c66cb30be50f"
+    },
+    {
+      "id": "6a30f174-2a72-4c57-a824-c285019c2b22",
+      "name": "B2 \u00b7 Git Change Proposals",
+      "agentContextId": "saved-agent-context-4a2afb46-7dcb-4ee6-ac71-0b0d834e33bd",
+      "contentHash": "72a4db2afee97073b8ba59f39f9ccfd11d063081037fb088343d3b55a4574d7c"
+    },
+    {
+      "id": "f43c33a5-41ab-4b81-acc6-c564bb2b8fd8",
+      "name": "B2 \u00b7 Generation Evaluation Workbench",
+      "agentContextId": "saved-agent-context-be22b515-0c17-4810-ad3a-11fe77920ef9",
+      "contentHash": "f4f417511d932a1861c6bd4fae1f9ef58f9e81ad17098679a9e3ad6015f66f53"
+    },
+    {
+      "id": "a4c34e41-e678-46e1-a07f-6079e31d9f67",
+      "name": "B2 \u00b7 Static Architecture Analysis",
+      "agentContextId": "saved-agent-context-4b0fcddd-3ed0-45d4-a526-f2afff07d9e7",
+      "contentHash": "21feec1b09375befd82fa3f1276ba73d1c31c1c1d38e68e9ece054263516e8a5"
+    },
+    {
+      "id": "eb988e14-9c1e-450d-af11-e6fb5ee74e41",
+      "name": "C1 \u00b7 Application Composition and Transports",
+      "agentContextId": "saved-agent-context-08b73a63-afeb-4c95-a202-fac00ad97e98",
+      "contentHash": "5aa20191d43da2e33eb7589cde3be0a1e0e4e599b6e47b5d728d2539858b00b2"
+    },
+    {
+      "id": "fdd5cc91-22f0-40ea-ab13-f68d2b82f833",
+      "name": "C1 \u00b7 Immutable Diagram Revisions",
+      "agentContextId": "saved-agent-context-9de5c9ed-9af2-464d-ac99-dbca70dd402f",
+      "contentHash": "66a5e676b141956fa3ee538225fa81e1660c817cb6303b2c8fbe78124a6caa90"
+    },
+    {
+      "id": "1df5877e-0a7e-4585-ab3d-d418ef335923",
+      "name": "C1 \u00b7 ASCII Structure and Anchors",
+      "agentContextId": "saved-agent-context-dc771bb3-9610-4594-ace5-d47144f58582",
+      "contentHash": "27c1a37900444eea7bb6a4719b85281240d0064f81b1364b143f96840a1ce9d8"
+    },
+    {
+      "id": "5b9eda8a-ecb3-4efe-af5b-c2ce7d7517d9",
+      "name": "C1 \u00b7 Canvas Commands and History",
+      "agentContextId": "saved-agent-context-84cd73ef-7d32-4b81-a6af-1f6630add47d",
+      "contentHash": "6f639b873add213ad5afd09ec0274a10c6c464841a13dc7806357214479cfacb"
+    },
+    {
+      "id": "8be8d6ce-8a54-4f25-a47b-702cd1bef6b6",
+      "name": "C1 \u00b7 Browser Workspace Ownership",
+      "agentContextId": "saved-agent-context-cf4763f2-1ebb-4a61-a146-7ac19c38707d",
+      "contentHash": "e0bbd1bcd3579ccee673080e9e2ed1396b92b76a1b25af36442c8abcc7bc5dc7"
+    },
+    {
+      "id": "25b6b1d8-9c96-4d71-a01b-434dba5704e0",
+      "name": "C1 \u00b7 Native Canvas Interaction",
+      "agentContextId": "saved-agent-context-583a624b-24a8-437a-ae11-1e0fd683f3b5",
+      "contentHash": "8ec26c940de3c8cdad3ed23d6701a0bee4ca6a1e9323e78642e360eca2f71372"
+    },
+    {
+      "id": "33a35888-88f5-446b-a399-417045d2aa0b",
+      "name": "C1 \u00b7 Durable Records and Publication",
+      "agentContextId": "saved-agent-context-077d2497-6105-4a7d-a91a-c3c95e09a4f2",
+      "contentHash": "fba9680428e8cc9b1b94d3cd68132f93c9e5adf5c4e3dfb5207ac7fcfdc9e5fe"
+    },
+    {
+      "id": "adba8cd3-2dec-4232-a648-3cca6ea5e2a6",
+      "name": "C1 \u00b7 Repository Evidence and Navigation",
+      "agentContextId": "saved-agent-context-48314702-1036-42a3-aa49-85c5abfb49f2",
+      "contentHash": "a5ae0b41410a38456a1221df7c7b5805c8abc5e7654a034097920df13c983f13"
+    },
+    {
+      "id": "6fa38c5c-caa7-457c-a953-df460c0f8361",
+      "name": "C1 \u00b7 Agent Canvas Access",
+      "agentContextId": "saved-agent-context-a7e91ca0-12a0-4651-a639-2446921bd486",
+      "contentHash": "4fa69d509e58f7ac121926b215618e2126742df4ea94290f9bfb7f2c37364993"
+    },
+    {
+      "id": "6162eab4-8b59-4213-a43f-714fae31bf3d",
+      "name": "C1 \u00b7 Reusable Agent Contexts",
+      "agentContextId": "saved-agent-context-8497a80a-07b2-4d87-a35c-e74321bb0f65",
+      "contentHash": "5d67ff355172f709e98dc86d6339e13c32667f17af6ab058afa5851854d1dce2"
+    },
+    {
+      "id": "b6ba85df-b958-4939-af7e-66c2c6a8355d",
+      "name": "C1 \u00b7 Validated Diagram Generation",
+      "agentContextId": "saved-agent-context-9a6b287e-0af2-4106-a1c3-35340fa062d1",
+      "contentHash": "fdf07ad8651bec926a20c0b47e8f6f3fe59b4da0bce0fd3440507472e527c053"
+    },
+    {
+      "id": "c78245af-2138-47a6-a6c7-bf695984860f",
+      "name": "C1 \u00b7 Agent Chat Lifecycle",
+      "agentContextId": "saved-agent-context-d938101a-98f9-46df-a3ee-452b501c4b1e",
+      "contentHash": "2fa35bf3d0f381a0c2bf9adfc60396701aa5b391ce71c9a0200cbaad04e5ad1e"
+    },
+    {
+      "id": "3a4df72b-cc2f-41ff-ac07-c03d36527b63",
+      "name": "C1 \u00b7 Isolated Change Proposals",
+      "agentContextId": "saved-agent-context-2df22709-b8c5-4a39-aa75-ba41442f1011",
+      "contentHash": "c7a0a7eab0312305f83f937925c78e5b1c4a46af71b244ba64f1f36c4d17964c"
+    },
+    {
+      "id": "1afbd083-3e42-4886-a449-7d09642389ca",
+      "name": "C1 \u00b7 Generation Experiments and Evaluation",
+      "agentContextId": "saved-agent-context-daaae2b6-38ce-4a98-a734-4887ea0cf30b",
+      "contentHash": "5c9b2961d71ec9ae0a44ed880e0556e0044c6b6d778ffc093349a2194d78b2df"
+    },
+    {
+      "id": "7127459f-abc0-46b1-abb1-42d8566ad8fc",
+      "name": "C1 \u00b7 Static Architecture Analysis",
+      "agentContextId": "saved-agent-context-5b6b79c4-cc5f-4401-a28b-fc36c5b56261",
+      "contentHash": "d5b28604354751d7364ef3b2164ae75c26343ce01f97ead157e7727a0d67ac62"
+    },
+    {
+      "id": "2e752ee7-3b1f-41cd-a568-34de9a966faf",
+      "name": "C2 \u00b7 Application Composition and Transports",
+      "agentContextId": "saved-agent-context-ea1d5816-079d-4500-a876-2b3c8d20110a",
+      "contentHash": "989e519a2277164dbefedcf98c380cb3e25360e1eaab5a67f368be5de6c8f12e"
+    },
+    {
+      "id": "1d993a9b-108f-400d-aae2-ef647fc90dc9",
+      "name": "C2 \u00b7 Immutable Diagram Revisions",
+      "agentContextId": "saved-agent-context-664a6275-96d6-43c4-af3c-5534d5b5e4fe",
+      "contentHash": "e04aa3652845a343c65f1d70f1852b5b80515d7c8f7b8548135d193a868fc5f9"
+    },
+    {
+      "id": "9cd05878-26b9-4c39-a9d0-335061c4cafa",
+      "name": "C2 \u00b7 ASCII Structure and Anchors",
+      "agentContextId": "saved-agent-context-d350f51e-49e8-4150-af4d-f065639f48c6",
+      "contentHash": "1c37c4c40620b183cc9bad6e2f0e0788a6c2517ba22f807a9364ba6498be9c3d"
+    },
+    {
+      "id": "83b86c04-4cc9-4ff7-a260-731fd9d3a381",
+      "name": "C2 \u00b7 Canvas Commands and History",
+      "agentContextId": "saved-agent-context-43c1ec5a-fb48-448f-a461-d8617cf95758",
+      "contentHash": "8819dfd90f0695d922f2b5e5bed79f0ba7f01ce86b7344c363895f1c8a18171e"
+    },
+    {
+      "id": "4254b592-8fe4-4e56-ae52-49a123a871a3",
+      "name": "C2 \u00b7 Browser Workspace Ownership",
+      "agentContextId": "saved-agent-context-20ca51c4-91da-4c25-aba1-9291fe9b6ce7",
+      "contentHash": "c43dbb6f907485e041327ce6991d882b0bc5d4d733810782b9ae128a8f9146c5"
+    },
+    {
+      "id": "c5f99b13-ed2a-452c-a6df-c27fb7e0da89",
+      "name": "C2 \u00b7 Native Canvas Interaction",
+      "agentContextId": "saved-agent-context-9f547565-6c3e-458c-a05a-237beea5189a",
+      "contentHash": "c984033f68ca3877231d06fba559b3dfea2b228adc63e3288b5589714a6f781c"
+    },
+    {
+      "id": "a75df05d-5743-4a89-a772-b5376e2ec2c5",
+      "name": "C2 \u00b7 Durable Records and Publication",
+      "agentContextId": "saved-agent-context-6d534e4e-a2e6-40a3-a61f-adf71e97aff7",
+      "contentHash": "9364a9a3631d9a965b0e6d0c58cb3f7a850531a368eaaa4934e684851af40f03"
+    },
+    {
+      "id": "71f82263-0450-4cc9-a515-4f23e0bdde67",
+      "name": "C2 \u00b7 Repository Evidence and Navigation",
+      "agentContextId": "saved-agent-context-a8a36d07-a2dc-4e73-a14b-423aa35ed5ea",
+      "contentHash": "c05f15acada9954b24b7c87984fcf63338a9a63aecca340de7ecae134342c70b"
+    },
+    {
+      "id": "300204a2-c547-493e-a23a-defe9ffb6e16",
+      "name": "C2 \u00b7 Agent Canvas Access",
+      "agentContextId": "saved-agent-context-4b6f81b5-6c09-46ab-afb2-d551eb548056",
+      "contentHash": "f208d75cc7adf919ca8890ac7c8d12ca32c873bb231978eb09584637d797c89e"
+    },
+    {
+      "id": "95289acf-0085-42a6-a6db-15d2f625131c",
+      "name": "C2 \u00b7 Reusable Agent Contexts",
+      "agentContextId": "saved-agent-context-05c053e8-7daf-4d47-af13-3030fa64a420",
+      "contentHash": "d55ed86fc84be971f2de1058845e0587805a2acb8e7f403b8e5ae4b242dfdca4"
+    },
+    {
+      "id": "f74bcf12-38a2-4a9c-ab0c-8d92d7e72f65",
+      "name": "C2 \u00b7 Validated Diagram Generation",
+      "agentContextId": "saved-agent-context-fbf52311-2ead-4890-a5dc-bf6c4c477d63",
+      "contentHash": "f27372bba5323ad9176a6611b993ba85ef8163bdbc20aca017e8cc264b7052f0"
+    },
+    {
+      "id": "b7cb327d-e134-492b-a34e-18669e695d8e",
+      "name": "C2 \u00b7 Agent Chat Lifecycle",
+      "agentContextId": "saved-agent-context-0c160842-73ca-412b-addc-b94fd6be079c",
+      "contentHash": "808850c3a7bc055b7d955eaaa927c41ab14afcca37e4c2b0c1e93ecdc137a573"
+    },
+    {
+      "id": "5e14e37c-36cb-4b42-af43-67d9fe3bea5c",
+      "name": "C2 \u00b7 Isolated Change Proposals",
+      "agentContextId": "saved-agent-context-e293d788-5dbb-4810-ab15-99f40dec23e6",
+      "contentHash": "d2a097e6a7bb8dcfd5e3becce9082c24dba1ae07dc6670f14531078cb7902697"
+    },
+    {
+      "id": "6ddea778-5723-4b0d-a889-27bf6cee020a",
+      "name": "C2 \u00b7 Generation Experiments and Evaluation",
+      "agentContextId": "saved-agent-context-0bf1a730-545a-4a4c-aeb9-45b930f0b990",
+      "contentHash": "e11a5efe46efea2c01274aacbce369f54027bf52e96d98c76fa43f4d4a8ab8cd"
+    },
+    {
+      "id": "4aeca957-3a6e-48a6-a1b5-ac380b782a01",
+      "name": "C2 \u00b7 Static Architecture Analysis",
+      "agentContextId": "saved-agent-context-d0a6bb0b-15b6-41ca-a71c-42defbe2e80a",
+      "contentHash": "bac63c7852f60c8ca6bc465f0df02121b91c7f6df3ad39a7dc14503516ca10ec"
+    },
+    {
+      "id": "dacea325-7a70-4769-abb7-49b703a32347",
+      "name": "Select two variants",
+      "agentContextId": "saved-agent-context-35d531c5-1938-4e23-a4b8-526037f5165e",
+      "contentHash": "61a0b78d2db8838e090973e913652a573a1a0278f94c0b920e36e52bbca125e9"
+    },
+    {
+      "id": "2679964f-d89e-41b3-ad7c-0ee8e032b4c4",
+      "name": "B2-improve-P1 \u00b7 Critique R1",
+      "agentContextId": "saved-agent-context-c7c54618-b20d-4605-a727-84ef423014db",
+      "contentHash": "2fe8695e82c8c8c2a4e629ef6cbbf3316a49161f3ee02f5f92768af8c136db25"
+    },
+    {
+      "id": "16eebb42-9d96-46c1-a0e4-90a1264f2ec6",
+      "name": "Superseded \u00b7 B2-improve-P2 \u00b7 Critique R1 \u00b7 Runtime Composition and APIs",
+      "agentContextId": "saved-agent-context-525e540a-614e-4455-a2a3-ccb8c1bd2b02",
+      "contentHash": "48e293023def097017338dc7e248cd9db755589005a2809581e35f1e70e14caf"
+    },
+    {
+      "id": "e584cf7b-f03b-4755-a0e4-2b0507c1b15d",
+      "name": "Superseded \u00b7 B2-improve-P3 \u00b7 Critique R1 \u00b7 Runtime Composition and APIs",
+      "agentContextId": "saved-agent-context-314e2cd2-57ab-4634-a4c1-64224f1d7e04",
+      "contentHash": "306d10d133b85036e1e151828f4d7e7bfb32cb3e4832d5c0c8c44f889adce248"
+    },
+    {
+      "id": "0b300486-8b69-4aa3-ab4e-640960ab69f3",
+      "name": "Superseded \u00b7 B2-improve-P2 \u00b7 Critique R1 \u00b7 Immutable Diagram Revisions",
+      "agentContextId": "saved-agent-context-7fdf0a6c-39a7-4865-a3c9-95a893a3bac4",
+      "contentHash": "273094fc6dea4587417b7c52949907107e742a76b55644fbc9a068db02405150"
+    },
+    {
+      "id": "0a4f0817-b0e4-46a3-a799-de5d19094c45",
+      "name": "Superseded \u00b7 B2-improve-P3 \u00b7 Critique R1 \u00b7 Immutable Diagram Revisions",
+      "agentContextId": "saved-agent-context-ef76b824-4655-44b4-aaed-9289e83a08db",
+      "contentHash": "37477503b9a12dded09b743c8be64f5d1ef40389a7019ae513c3bb56049b0ce5"
+    },
+    {
+      "id": "668c853e-7885-4499-afd4-d6f84efe4cf2",
+      "name": "Superseded \u00b7 B2-improve-P2 \u00b7 Critique R1 \u00b7 Canvas Commands and History",
+      "agentContextId": "saved-agent-context-0ac6e7e0-4e25-4ce3-a21f-35f38efaa0e5",
+      "contentHash": "1a8bf1c821e42b229f7bce73064147d948cc8b71d00eadcf879829e657c75f57"
+    },
+    {
+      "id": "57f50d5e-2bb3-4458-ad11-e39546f17627",
+      "name": "Superseded \u00b7 B2-improve-P3 \u00b7 Critique R1 \u00b7 Canvas Commands and History",
+      "agentContextId": "saved-agent-context-3ea57387-7314-4d83-a288-c372210377fa",
+      "contentHash": "b0d162808de486bce4c04d12e188b7f6946b2de8105ae4d38779dc7601ff7b05"
+    },
+    {
+      "id": "775590c3-211c-4875-aefd-3ed092de6841",
+      "name": "Superseded \u00b7 B2-improve-P2 \u00b7 Critique R1 \u00b7 Interactive Canvas Runtime",
+      "agentContextId": "saved-agent-context-6733396a-5e1f-418d-a732-98a7c6560444",
+      "contentHash": "535ba4cc95f72d06c031c66979b3244e7a8e6380ed0f33787135f110a84e7087"
+    },
+    {
+      "id": "0160acd3-a237-40c5-a04c-7b77ad02f321",
+      "name": "Superseded \u00b7 B2-improve-P3 \u00b7 Critique R1 \u00b7 Interactive Canvas Runtime",
+      "agentContextId": "saved-agent-context-8a652334-4731-4fab-afcc-dd71ee605682",
+      "contentHash": "19a41ba9cb314b646d585ef192a4e6ea5f34d7e24bb6534c5e51980638b57c02"
+    },
+    {
+      "id": "066487b7-340f-4b7e-a486-21a25bb3dfa6",
+      "name": "Superseded \u00b7 B2-improve-P2 \u00b7 Critique R1 \u00b7 Checkpoint and Catalog Persistence",
+      "agentContextId": "saved-agent-context-74a69899-b447-43e5-a6a3-08de582af8bb",
+      "contentHash": "2dd6ea7908bd79f6989a8e7a6e4db7b44d2bed8fafdfaab8172b66b90b0bfa8c"
+    },
+    {
+      "id": "135a8473-739d-405f-a529-904d4204a443",
+      "name": "Superseded \u00b7 B2-improve-P3 \u00b7 Critique R1 \u00b7 Checkpoint and Catalog Persistence",
+      "agentContextId": "saved-agent-context-a00d9945-b6ac-47a6-a587-b4210b67bcb3",
+      "contentHash": "f4160b9ece316f98a01440f483dedbbab33facbf86fe5c62f43dd706085ab587"
+    },
+    {
+      "id": "7169fe93-9ee5-404b-ae64-3f746f816762",
+      "name": "Superseded \u00b7 B2-improve-P2 \u00b7 Critique R1 \u00b7 Source Evidence and Navigation",
+      "agentContextId": "saved-agent-context-84dab8b8-f058-4981-ad77-4ce5965dbf6a",
+      "contentHash": "417d1d3c8fde563be50c25d6b2713326e19b980b2df2b5a3e6f40d9bb3344196"
+    },
+    {
+      "id": "3a13345d-2a31-4c20-a9a0-f3cfab359ae8",
+      "name": "Superseded \u00b7 B2-improve-P3 \u00b7 Critique R1 \u00b7 Source Evidence and Navigation",
+      "agentContextId": "saved-agent-context-f691f5b6-8a73-42a8-aaa2-8edf89325df7",
+      "contentHash": "0b8bc3b7141b6c28be8985be1ec39f469621f85110179e3a926a5d60cb3794ed"
+    },
+    {
+      "id": "8ad341c0-9730-4c52-a0c6-fdb58d333b29",
+      "name": "Superseded \u00b7 B2-improve-P2 \u00b7 Critique R1 \u00b7 Live Canvas Agent API",
+      "agentContextId": "saved-agent-context-d9ee9b58-999a-411a-a7a5-46dc31f1835f",
+      "contentHash": "f8d1a1c76145bf4323d1cbf9706221bb2453da422da27ff115ea9ac24dc6984a"
+    },
+    {
+      "id": "bffc1b97-b57c-46b4-a2f5-5edc532d8e50",
+      "name": "Superseded \u00b7 B2-improve-P3 \u00b7 Critique R1 \u00b7 Live Canvas Agent API",
+      "agentContextId": "saved-agent-context-298d49df-608d-4ee3-acd8-c643b34d1b2e",
+      "contentHash": "2e850dd42d07f62160d478a3ffc2d35f3178d253f96df5f99afe7443bd5cf7f8"
+    },
+    {
+      "id": "ae4de0d3-1f19-4d61-a270-4f87051eafa9",
+      "name": "Superseded \u00b7 B2-improve-P2 \u00b7 Critique R1 \u00b7 Reusable Agent Contexts",
+      "agentContextId": "saved-agent-context-efc8eb44-2b01-4387-aa22-c564937e3e81",
+      "contentHash": "da71f94c739f8cf49e1211c08f66cd527724e3241c11f14df50f7aad95650e41"
+    },
+    {
+      "id": "c76e0ff3-b9e6-48f2-a4c3-1195fa078d18",
+      "name": "B2-improve-P2 \u00b7 Critique R1",
+      "agentContextId": "saved-agent-context-1fce830d-1bd6-4660-afb8-81fcbab83e5d",
+      "contentHash": "45ac75dfaf0efc094f38e831e08c2cac6f4c39503a902e75e56725f62890b2b3"
+    },
+    {
+      "id": "bc52677b-83e4-4c54-a1e7-9bed268e030f",
+      "name": "B2-improve-P3 \u00b7 Critique R1",
+      "agentContextId": "saved-agent-context-ac8c6da8-86a7-4536-a933-352889de0d15",
+      "contentHash": "424514e4d8280b1116d217de0ffca56bb875621717f2697a3f4a705a63ffec58"
+    },
+    {
+      "id": "f31b958a-fbee-4786-a7d8-7642a09baa5d",
+      "name": "C1-improve-P1 \u00b7 Critique R1",
+      "agentContextId": "saved-agent-context-f37629f2-b256-4329-a1a4-bf52e8851ed8",
+      "contentHash": "dc4cc037d0ab9c7aa42566fa67735364fe339831e35de7e140c58e4bda543ae7"
+    },
+    {
+      "id": "600c6c39-a266-405b-afc0-e0e0def4699b",
+      "name": "C1-improve-P2 \u00b7 Critique R1",
+      "agentContextId": "saved-agent-context-a14225f5-5786-40aa-a27c-d93487795fc6",
+      "contentHash": "f07946d908cb0814c480bef699337268c061bc9f3f30ac5c239b638b99c72011"
+    },
+    {
+      "id": "ca3565ed-8956-4868-a062-94fd20297af5",
+      "name": "C1-improve-P3 \u00b7 Critique R1",
+      "agentContextId": "saved-agent-context-94d3ab55-db2f-4630-a7c9-2027e6a91679",
+      "contentHash": "da7670a5a1975c6d5e24ef59e8e8d6b5cf58857d8433bce835f0ab35151dec39"
+    },
+    {
+      "id": "672bea46-4fb4-403d-a7ad-8b7d7a310f58",
+      "name": "B2-improve-P1 \u00b7 Points \u00b7 R1",
+      "agentContextId": "saved-agent-context-73ebc0a1-74d3-46cd-ab51-54c418b5a083",
+      "contentHash": "17879f5b65752e31fdde67f6a682e3b7c3647b721f92561b441ef37650fee3a7"
+    },
+    {
+      "id": "26f3930a-692d-4cbd-a0f8-6eaf176b2d86",
+      "name": "C1-improve-P1 \u00b7 Points \u00b7 R1",
+      "agentContextId": "saved-agent-context-b8325327-7014-4ba7-a2fa-12afc2b7d170",
+      "contentHash": "903c08a38cd5be919b293eb83ba360043186b4efb3b1f02285bd31604f813cfe"
+    },
+    {
+      "id": "0af94fc6-b9af-443e-af25-d2a8d793cc56",
+      "name": "B2-improve-P3 \u00b7 Runtime Composition and APIs \u00b7 R1",
+      "agentContextId": "saved-agent-context-7e6c3392-395d-42c0-a639-efe8ce8af54d",
+      "contentHash": "95b7954e2caf4853ca955bc40caec232a1d51f3cec6529710798f309cf2c7e2c"
+    },
+    {
+      "id": "56ba2f41-3bf3-40da-acbd-0b691d41c5e3",
+      "name": "B2-improve-P3 \u00b7 Immutable Diagram Revisions \u00b7 R1",
+      "agentContextId": "saved-agent-context-bcc7fd35-1580-478c-a4ca-3e4ef903fa88",
+      "contentHash": "4c610abac9d77c239ab0a09e741ad824bb8cf658af4a402cd7f782079b9f316a"
+    },
+    {
+      "id": "1a7fe374-fc4a-471d-ab1c-cf3afc3790dd",
+      "name": "B2-improve-P3 \u00b7 Canvas Commands and History \u00b7 R1",
+      "agentContextId": "saved-agent-context-ad506a5c-2a87-4d81-a97e-99aaabf3370d",
+      "contentHash": "15598e2f469fbddb2944175ddfd448968b30fe92e73f3dbe4b853a041a352c23"
+    },
+    {
+      "id": "981b9b00-3d79-4874-a3ee-a8551368d32f",
+      "name": "B2-improve-P3 \u00b7 Interactive Canvas Runtime \u00b7 R1",
+      "agentContextId": "saved-agent-context-d12298ba-3d5c-421b-a99b-b89ac2a0d511",
+      "contentHash": "dffca4fdf9092410a365c46079bfa7a9e14b7a5f906fd4237001f3ee838f8393"
+    },
+    {
+      "id": "5ee47f6b-928b-4b81-a6be-94363ece85cf",
+      "name": "B2-improve-P3 \u00b7 Checkpoint and Catalog Persistence \u00b7 R1",
+      "agentContextId": "saved-agent-context-b2881282-8ef6-4018-ae70-4f0db2ff9f52",
+      "contentHash": "3cc00266532754f2c758cfa54abf2ee42fff60bba1999f9fdebf10cd595f348e"
+    },
+    {
+      "id": "99682952-fb48-45fb-a394-309b92c56a42",
+      "name": "B2-improve-P3 \u00b7 Source Evidence and Navigation \u00b7 R1",
+      "agentContextId": "saved-agent-context-5ed7cb8f-9e05-4eac-afa1-64a3e9300035",
+      "contentHash": "e799ffd5d4b3711b48e5b1a19aa06b258337023b86b36bb9aebdeef4bfa6abf1"
+    },
+    {
+      "id": "6c842719-df31-4b54-a88b-411a2df7e80d",
+      "name": "B2-improve-P3 \u00b7 Live Canvas Agent API \u00b7 R1",
+      "agentContextId": "saved-agent-context-1b33979a-a15f-4052-a649-17d631ffb02b",
+      "contentHash": "724294acb2048ff4db160d1d1d97fa97c2ad76150925c397535dd31629334bae"
+    },
+    {
+      "id": "6f83114f-cb02-4810-a405-67383ae91e64",
+      "name": "B2-improve-P3 \u00b7 Reusable Agent Contexts \u00b7 R1",
+      "agentContextId": "saved-agent-context-f369297b-5e56-4060-ada0-350d223c42d6",
+      "contentHash": "52ee4131c59ac9403bed1dc6989ad00dac9901644a307e7a7983e2502bfaff4c"
+    },
+    {
+      "id": "7ad576dc-c8d0-4b66-ac96-b0a4aa72ce05",
+      "name": "B2-improve-P3 \u00b7 Validated Diagram Generation \u00b7 R1",
+      "agentContextId": "saved-agent-context-b4de1f5b-04d3-400a-a4fb-c83aec5895a5",
+      "contentHash": "442d18738cd6e136e304148307919f1cf7dfd3712f395d5dee38c45665386970"
+    },
+    {
+      "id": "1657e0e0-f783-4d62-a883-70e1dba9dee6",
+      "name": "B2-improve-P3 \u00b7 Agent Chat Orchestration \u00b7 R1",
+      "agentContextId": "saved-agent-context-a84d440a-c701-4afb-a58a-468efb9380a4",
+      "contentHash": "ec29072586f4a96737c5cb2a35945c3f788208003afa2cdb997ce8fb0b25e120"
+    },
+    {
+      "id": "0d16f99d-4d29-452f-a688-89ebe7dfba82",
+      "name": "B2-improve-P3 \u00b7 Git Change Proposals \u00b7 R1",
+      "agentContextId": "saved-agent-context-b9d92b3f-6f3d-473b-a3aa-922453755649",
+      "contentHash": "590f0c3f2ef4148a4b776046c6484beaca58c2e91f4d497d270a4fff4cece9dd"
+    },
+    {
+      "id": "cae29447-9db5-403c-aa2a-cd1a2304d25b",
+      "name": "B2-improve-P3 \u00b7 Generation Evaluation Workbench \u00b7 R1",
+      "agentContextId": "saved-agent-context-a5f5921a-c140-4d4e-ab67-8f2495dcf0f4",
+      "contentHash": "a6f96388ca0330a59da6be5cee6df076bbc3b13e86b75ebbc733b63ab9c2f87d"
+    },
+    {
+      "id": "6bed98b2-5a95-4bff-a115-53937f1184c3",
+      "name": "B2-improve-P3 \u00b7 Static Architecture Analysis \u00b7 R1",
+      "agentContextId": "saved-agent-context-28770d60-779a-4d37-ac3b-193f7f78c8a5",
+      "contentHash": "bae5e2740bf607ed21f0c6076ae2de9612c7feeccfba900a4a03d1962fb0099b"
+    },
+    {
+      "id": "bdf4e55a-9222-4f8a-a8d1-95c0d4db0afe",
+      "name": "B2-improve-P2 \u00b7 Runtime Composition and APIs \u00b7 R1",
+      "agentContextId": "saved-agent-context-c152d7e0-e286-4364-a97f-d9dbdc3eef6e",
+      "contentHash": "9c25bdac3cc731e33d238313e72a1a68347f9ffe91f2f4d792dfa73758be2f6a"
+    },
+    {
+      "id": "d51f4b5b-336f-4f73-acca-607d76e03859",
+      "name": "B2-improve-P2 \u00b7 Immutable Diagram Revisions \u00b7 R1",
+      "agentContextId": "saved-agent-context-c78c927c-1297-429a-a0a6-5cbbb7eb8c9d",
+      "contentHash": "c1cd770633148d0be182b0b5abf59d86e478edce27b31f86bf0beea9ea1166d6"
+    },
+    {
+      "id": "2c3cae02-83d4-4aaa-ab97-6f79a6321630",
+      "name": "B2-improve-P2 \u00b7 Canvas Commands and History \u00b7 R1",
+      "agentContextId": "saved-agent-context-6976b4dc-7528-4c0b-ac87-848e63193d11",
+      "contentHash": "094202d3e2611fbfe4152393dd095eb6279e31c5bc5ead049262b40211481de3"
+    },
+    {
+      "id": "31219540-60af-4f45-a272-905a43c7a07a",
+      "name": "B2-improve-P2 \u00b7 Interactive Canvas Runtime \u00b7 R1",
+      "agentContextId": "saved-agent-context-475ee3d8-6b6b-4366-af99-99e3b717d262",
+      "contentHash": "6d89c419c3d999c9b0a94560a537f83812d10e571817e99c947c5e51fb819176"
+    },
+    {
+      "id": "0cb381e6-7728-4dec-a1a7-1fa1d7ce3e26",
+      "name": "B2-improve-P2 \u00b7 Checkpoint and Catalog Persistence \u00b7 R1",
+      "agentContextId": "saved-agent-context-fe3ea841-e048-40bc-a669-d6dd5005d464",
+      "contentHash": "128dd99c8baafaa5456c7ead1a497152a07846a37ccec644ac7f3ccbe63d49c6"
+    },
+    {
+      "id": "a7afab79-9a05-4ef6-a410-304b4d80864c",
+      "name": "B2-improve-P2 \u00b7 Source Evidence and Navigation \u00b7 R1",
+      "agentContextId": "saved-agent-context-e097ccd5-888e-46ef-a2d8-6d82ecf43e75",
+      "contentHash": "2e24dc36f926234d4d53e101a76654aae89001f75c966e94e6de3ab676c70337"
+    },
+    {
+      "id": "57cd3e9e-e953-4f13-a188-186111f41f9c",
+      "name": "B2-improve-P2 \u00b7 Live Canvas Agent API \u00b7 R1",
+      "agentContextId": "saved-agent-context-6375e98b-745a-4d40-a0b4-964ece0d0b19",
+      "contentHash": "4d67c8513b3af2e644a473a9261b43d8fa626e5c1a1e753b5d9ca8b637414228"
+    },
+    {
+      "id": "024ea833-8e93-42bb-ada2-4005c165790c",
+      "name": "B2-improve-P2 \u00b7 Reusable Agent Contexts \u00b7 R1",
+      "agentContextId": "saved-agent-context-d32e74a8-a143-4e16-ab2d-5355b259a31b",
+      "contentHash": "2bd607d39d614df9a15c192bd97a70a7c830cd51f237200262149ffbc2f54c00"
+    },
+    {
+      "id": "ca098fcf-4283-4535-a20e-247eeb7f94c5",
+      "name": "B2-improve-P2 \u00b7 Validated Diagram Generation \u00b7 R1",
+      "agentContextId": "saved-agent-context-e815946b-cdb5-4fe4-a2ab-34ae989ae147",
+      "contentHash": "24a3c1fe0d10f815e90db8d6734940c984a20890114f16818e5c67c93ea5bba6"
+    },
+    {
+      "id": "f4689452-fa4f-4301-a755-c4cfae6af62d",
+      "name": "B2-improve-P2 \u00b7 Agent Chat Orchestration \u00b7 R1",
+      "agentContextId": "saved-agent-context-662f735e-ee82-46f0-ab7e-e8b9289e4c54",
+      "contentHash": "4087c3d58772d5a18ef048e2f427438f6e5a6d8118e4b0b116cb1146275b2bdf"
+    },
+    {
+      "id": "1e13dd0f-ab1a-458c-a80c-2f57b54d60db",
+      "name": "B2-improve-P2 \u00b7 Git Change Proposals \u00b7 R1",
+      "agentContextId": "saved-agent-context-f0631aa2-796d-4da7-a6c6-f8aa3c09b54b",
+      "contentHash": "94e7dd18e48ea3419313779567690bf4e799b4927416edd92b9f4ba978ff8800"
+    },
+    {
+      "id": "dbc07bf0-cf13-40f1-aea8-ad0d6528194d",
+      "name": "B2-improve-P2 \u00b7 Generation Evaluation Workbench \u00b7 R1",
+      "agentContextId": "saved-agent-context-2d8d9571-ec86-4e68-af00-7bd6ace5107a",
+      "contentHash": "2f92506559b8fc71484891ac518d9786ffc6d71c516c56231364da29e2806af9"
+    },
+    {
+      "id": "e14aaf47-2596-4ea4-a08e-395c42fdf2bb",
+      "name": "B2-improve-P2 \u00b7 Static Architecture Analysis \u00b7 R1",
+      "agentContextId": "saved-agent-context-55125871-7f1d-4749-a7fe-39989e906e9e",
+      "contentHash": "bf4efccba3eb9c04a372851fbca969b042d3857a36976424f3d4bb9dcbb76952"
+    },
+    {
+      "id": "a3b34e36-d339-4396-a552-409bf44b1556",
+      "name": "C1-improve-P2 \u00b7 Application Composition and Transports \u00b7 R1",
+      "agentContextId": "saved-agent-context-d2e8f747-968c-460f-ab2b-4aaf3643bca2",
+      "contentHash": "09de9afcd3bca9a45da0acf0c8074f70cdd71377dda696f4fd4d76c12243b286"
+    },
+    {
+      "id": "742284de-df0a-4aa0-a469-478f415fdc71",
+      "name": "C1-improve-P2 \u00b7 Immutable Diagram Revisions \u00b7 R1",
+      "agentContextId": "saved-agent-context-1b2b516e-b2c8-43e0-a51e-5496f407c2b4",
+      "contentHash": "25b7dd99b7ef8eb8369fdabca0440b88c3619e98b0fc627eea7b73ec464a4cd8"
+    },
+    {
+      "id": "373e0964-d2e3-4dbd-aa8e-e363b03f8ad5",
+      "name": "C1-improve-P2 \u00b7 ASCII Structure and Anchors \u00b7 R1",
+      "agentContextId": "saved-agent-context-beacef8b-9ffa-439d-a976-a3a873c14d96",
+      "contentHash": "b1a6290b09f6683f2bd22a8c650a136ff0aebf5a7ea89dd98c2678c493ddf2d5"
+    },
+    {
+      "id": "b53af269-cd4d-46ad-a808-28c4fe1cef58",
+      "name": "C1-improve-P2 \u00b7 Canvas Commands and History \u00b7 R1",
+      "agentContextId": "saved-agent-context-489d7d6a-2031-4b68-ac94-ebca46dc5f16",
+      "contentHash": "0f35afada1b394f9a1d00e57ee345ed8ec97e9c32fe30e4e29099ab43384671d"
+    },
+    {
+      "id": "05c5ac78-2246-45ff-ad89-2931c67bd36a",
+      "name": "C1-improve-P2 \u00b7 Browser Workspace Ownership \u00b7 R1",
+      "agentContextId": "saved-agent-context-f51d2940-2824-44ed-ad7e-cffd4515d478",
+      "contentHash": "f9593705e4cf74dc161912721f48659a9882785dca837c68a9911ed511ed6356"
+    },
+    {
+      "id": "fb052ff3-8e9b-4368-a62a-d161129123e6",
+      "name": "C1-improve-P2 \u00b7 Native Canvas Interaction \u00b7 R1",
+      "agentContextId": "saved-agent-context-13e5168f-a66a-47bb-a874-76b4bc9ad9dc",
+      "contentHash": "228aee47ea07bd3d07ca781a76d121f178cfd5119a9be9deaab98057d5f805b2"
+    },
+    {
+      "id": "36f28f3b-ed27-4456-a383-3e04cf365055",
+      "name": "C1-improve-P2 \u00b7 Durable Records and Publication \u00b7 R1",
+      "agentContextId": "saved-agent-context-efd1a018-7271-459a-a8f2-f868270558b2",
+      "contentHash": "e5dbea7e9907d15b0565eace12b641d79c6660873fbee8f0a23776fe68f61fd4"
+    },
+    {
+      "id": "e3fadcac-7aa3-48b6-a9fd-8e486a05cec3",
+      "name": "C1-improve-P2 \u00b7 Repository Evidence and Navigation \u00b7 R1",
+      "agentContextId": "saved-agent-context-7904d77a-bd4e-4fd8-a6db-e633e1e3c1b2",
+      "contentHash": "fb372afcad07172c008d2d878ebbc8ca07a0377609155920271c54a344ff2f48"
+    },
+    {
+      "id": "6528db49-1409-4aad-a7d8-f144da1a6876",
+      "name": "C1-improve-P2 \u00b7 Agent Canvas Access \u00b7 R1",
+      "agentContextId": "saved-agent-context-e4fc04f9-4c27-4bf2-accc-27fd8b9d3395",
+      "contentHash": "dcb28767ff4d296138e2fcc0d5473d9e5b0b5d1511f51522676ab8bf662c6c9c"
+    }
+  ],
+  "conditions": [
+    {
+      "id": "Prompt-authoring",
+      "name": "Prompt-authoring",
+      "description": "Pinned initial condition; Astra/high."
+    },
+    {
+      "id": "A",
+      "name": "A",
+      "description": "Pinned initial condition; Astra/high."
+    },
+    {
+      "id": "B",
+      "name": "B",
+      "description": "Pinned initial condition; Astra/high."
+    },
+    {
+      "id": "C",
+      "name": "C",
+      "description": "Pinned initial condition; Astra/high."
+    },
+    {
+      "id": "A1",
+      "name": "A1",
+      "description": "Pinned initial condition; Astra/high."
+    },
+    {
+      "id": "A2",
+      "name": "A2",
+      "description": "Pinned initial condition; Astra/high."
+    },
+    {
+      "id": "B1",
+      "name": "B1",
+      "description": "Pinned initial condition; Astra/high."
+    },
+    {
+      "id": "B2",
+      "name": "B2",
+      "description": "Pinned initial condition; Astra/high."
+    },
+    {
+      "id": "C1",
+      "name": "C1",
+      "description": "Pinned initial condition; Astra/high."
+    },
+    {
+      "id": "C2",
+      "name": "C2",
+      "description": "Pinned initial condition; Astra/high."
+    },
+    {
+      "id": "Selection-judge",
+      "name": "Selection-judge",
+      "description": "Pinned initial condition; Astra/high."
+    },
+    {
+      "id": "B2-improve-P1",
+      "name": "B2-improve-P1",
+      "description": "Independent feedback branch; upstream initial results remain frozen."
+    },
+    {
+      "id": "B2-improve-P2",
+      "name": "B2-improve-P2",
+      "description": "Independent feedback branch; upstream initial results remain frozen."
+    },
+    {
+      "id": "B2-improve-P3",
+      "name": "B2-improve-P3",
+      "description": "Independent feedback branch; upstream initial results remain frozen."
+    },
+    {
+      "id": "C1-improve-P1",
+      "name": "C1-improve-P1",
+      "description": "Independent feedback branch; upstream initial results remain frozen."
+    },
+    {
+      "id": "C1-improve-P2",
+      "name": "C1-improve-P2",
+      "description": "Independent feedback branch; upstream initial results remain frozen."
+    },
+    {
+      "id": "C1-improve-P3",
+      "name": "C1-improve-P3",
+      "description": "Independent feedback branch; upstream initial results remain frozen."
+    }
+  ],
+  "samples": [
+    {
+      "id": "f53bdcd5-c90b-4aa2-a20e-e42d895e9f8a",
+      "phaseId": "phase-1",
+      "caseId": "22455d40-48b9-497f-afa5-9adfab56bef5",
+      "conditionId": "Prompt-authoring",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "author",
+          "runId": "f53bdcd5-c90b-4aa2-a20e-e42d895e9f8a",
+          "cellKey": "541758c6-709a-423b-ad51-c99ba69c34bc:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "e3437636-ecbe-4258-a021-352e428e2826",
+      "phaseId": "phase-1",
+      "caseId": "3e0e7757-8d5c-4222-a12e-34450e6e1401",
+      "conditionId": "A",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "discover",
+          "runId": "e3437636-ecbe-4258-a021-352e428e2826",
+          "cellKey": "3c9c128b-ea9c-4a0c-afbd-6939c7b10e14:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "8f4eea7f-9b6e-46f0-a4e2-2373b217ea7d",
+      "phaseId": "phase-1",
+      "caseId": "1007ca87-651f-4f4a-aa3b-09fcd4b9536b",
+      "conditionId": "B",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "discover",
+          "runId": "8f4eea7f-9b6e-46f0-a4e2-2373b217ea7d",
+          "cellKey": "c8843494-9039-4eaf-ae06-a27d8e8b617d:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "4a460c8c-3a78-471b-a273-47240996ba52",
+      "phaseId": "phase-1",
+      "caseId": "cd5be052-b184-45ac-aba5-4134145d5723",
+      "conditionId": "C",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "discover",
+          "runId": "4a460c8c-3a78-471b-a273-47240996ba52",
+          "cellKey": "292d8763-2371-44c9-afd6-c4a58a0daf2b:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "1156a033-0d17-4981-a102-1da9b1d6b79a",
+      "phaseId": "phase-2",
+      "caseId": "9e8e807e-76df-43e7-abf1-20435d2d5105",
+      "conditionId": "A1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "1156a033-0d17-4981-a102-1da9b1d6b79a",
+          "cellKey": "d4362791-e3dd-404b-a36a-c96ed08d177b:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "93b98b75-2d67-41a6-aa44-d31f78dbf5a1",
+      "phaseId": "phase-2",
+      "caseId": "9fdb411e-95cd-48a9-a26b-1919fa85a34f",
+      "conditionId": "A1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "93b98b75-2d67-41a6-aa44-d31f78dbf5a1",
+          "cellKey": "717ff3ac-0f3e-4c4c-a04b-f7a6f124b6f9:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "69c9aad2-9ae9-4ee6-ad0c-c2549d00fd0d",
+      "phaseId": "phase-2",
+      "caseId": "4365755a-1275-4510-af34-57de884a7dc6",
+      "conditionId": "A1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "69c9aad2-9ae9-4ee6-ad0c-c2549d00fd0d",
+          "cellKey": "95284e2f-2145-4622-a01e-3d7d51f0c190:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "b394fbac-9362-4ab0-aca0-e2ceb19a900e",
+      "phaseId": "phase-2",
+      "caseId": "3619ac24-1241-4088-ac0b-206b10c89618",
+      "conditionId": "A1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "b394fbac-9362-4ab0-aca0-e2ceb19a900e",
+          "cellKey": "6c425cd7-e183-48eb-a041-9cbc918c38cb:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "75293f88-39c4-4cc0-aff2-25c7423ae824",
+      "phaseId": "phase-2",
+      "caseId": "85160e77-5fb3-4938-a25c-55776a8cd69d",
+      "conditionId": "A1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "75293f88-39c4-4cc0-aff2-25c7423ae824",
+          "cellKey": "16ee7225-55d2-414d-a0de-a12c0638baa9:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "2a2c566c-c657-49b5-a187-4df9920ebb3f",
+      "phaseId": "phase-2",
+      "caseId": "f35017fb-3a75-4533-a40e-9370bf27f64f",
+      "conditionId": "A1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "2a2c566c-c657-49b5-a187-4df9920ebb3f",
+          "cellKey": "089efbd4-18cf-44e4-add9-7063cac4caa3:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "334ede85-4472-4747-a220-f15d7a62774c",
+      "phaseId": "phase-2",
+      "caseId": "27292383-db4e-4370-aa51-fff8e07ed890",
+      "conditionId": "A1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "334ede85-4472-4747-a220-f15d7a62774c",
+          "cellKey": "1c37b716-0cc1-421f-a78f-ad9ea6a1f47f:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "47ca760d-9520-4e68-abe1-e0667534ba00",
+      "phaseId": "phase-2",
+      "caseId": "52ebc722-15ed-4875-a823-e5b16bbff89d",
+      "conditionId": "A1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "47ca760d-9520-4e68-abe1-e0667534ba00",
+          "cellKey": "8ce9d566-7684-4dd3-a2e2-aa955c646ad5:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "29c86bc4-3c4f-4d11-ae4b-dee761dfd357",
+      "phaseId": "phase-2",
+      "caseId": "394b8368-7c48-4a76-a2be-8ac0132cde0a",
+      "conditionId": "A1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "29c86bc4-3c4f-4d11-ae4b-dee761dfd357",
+          "cellKey": "2a8e51f3-4bc0-4eb1-ad98-f5fcb2b83028:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "e48ab39d-4708-40fd-af20-7b81a15b5a8a",
+      "phaseId": "phase-2",
+      "caseId": "7295acd1-b482-4609-a324-ff4656dc9685",
+      "conditionId": "A1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "e48ab39d-4708-40fd-af20-7b81a15b5a8a",
+          "cellKey": "a72530d5-a5eb-4f15-a8f2-5353a4b1847d:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "bbb6e9e9-592f-4391-afeb-0962f64fe2d3",
+      "phaseId": "phase-2",
+      "caseId": "1e68ae2b-04d4-46c3-a9dc-229f1cbe2388",
+      "conditionId": "A1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "bbb6e9e9-592f-4391-afeb-0962f64fe2d3",
+          "cellKey": "7857935f-f78b-422b-a2c0-b6f1aa48f7ed:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "c274dc94-bd55-4e9a-a9ba-86d61250c099",
+      "phaseId": "phase-2",
+      "caseId": "8177eaee-7c96-420d-ae07-43abcdddaf33",
+      "conditionId": "A2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "c274dc94-bd55-4e9a-a9ba-86d61250c099",
+          "cellKey": "d51403f8-db75-4a59-a4d6-e74230a879c7:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "16c0651c-fa03-4ded-ac1b-802b420f8885",
+      "phaseId": "phase-2",
+      "caseId": "4a220689-1bea-45df-ab99-922702efc2bb",
+      "conditionId": "A2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "16c0651c-fa03-4ded-ac1b-802b420f8885",
+          "cellKey": "9057b876-e722-44ac-afba-876cc55f2fc0:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "28becfef-a0ec-4121-a428-da408a35b4f2",
+      "phaseId": "phase-2",
+      "caseId": "2d789570-ef47-4d0c-a950-e11aaa6697ef",
+      "conditionId": "A2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "28becfef-a0ec-4121-a428-da408a35b4f2",
+          "cellKey": "6359dd39-b1fc-4488-adfb-6ed56d8bfb08:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "a9c7a1c0-1130-4e53-a825-5581b76c3a12",
+      "phaseId": "phase-2",
+      "caseId": "b18bdd20-ba01-4521-aa1f-024958cbe906",
+      "conditionId": "A2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "a9c7a1c0-1130-4e53-a825-5581b76c3a12",
+          "cellKey": "3f7c1125-f659-49df-a006-e538d9445661:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "003b874e-7471-4049-a11f-4b335549c97a",
+      "phaseId": "phase-2",
+      "caseId": "75b0398c-c5e7-47c8-a812-2064a316807a",
+      "conditionId": "A2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "003b874e-7471-4049-a11f-4b335549c97a",
+          "cellKey": "73c9489d-e42a-46a2-aba6-413efb2a4207:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "a3cf5ad6-0aad-4fc7-a980-5e16118f1b8c",
+      "phaseId": "phase-2",
+      "caseId": "d642a7b6-5b23-4f70-aaaf-6bfbb248d202",
+      "conditionId": "A2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "a3cf5ad6-0aad-4fc7-a980-5e16118f1b8c",
+          "cellKey": "b8481e41-d4fa-4d99-af23-faa76d304071:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "1d9d0f56-abb7-4ff8-abe1-2ce5225a4348",
+      "phaseId": "phase-2",
+      "caseId": "293236a0-ce8c-4183-ab81-3fe91ac16bca",
+      "conditionId": "A2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "1d9d0f56-abb7-4ff8-abe1-2ce5225a4348",
+          "cellKey": "a91cbb84-84bb-4193-a245-bc1e36cdc983:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "284d6e80-19e7-495c-a81a-31e8b6de6233",
+      "phaseId": "phase-2",
+      "caseId": "10070d12-0a5d-4b48-a3dd-38a29ac4cbe8",
+      "conditionId": "A2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "284d6e80-19e7-495c-a81a-31e8b6de6233",
+          "cellKey": "8254c0af-151d-43b7-a96f-c43385cbd78b:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "f7b5c6e1-97f0-4d93-aa80-d9fe9dfb6b65",
+      "phaseId": "phase-2",
+      "caseId": "a31db9b2-6cca-4a90-ac84-cffc43169056",
+      "conditionId": "A2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "f7b5c6e1-97f0-4d93-aa80-d9fe9dfb6b65",
+          "cellKey": "fa139a33-96b1-493e-a945-4c54bd5a22be:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "0abe7888-bc7b-4284-ad3e-9cef64ad01c8",
+      "phaseId": "phase-2",
+      "caseId": "a38afdab-9761-4ae4-a93b-b9e585ad4747",
+      "conditionId": "A2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "0abe7888-bc7b-4284-ad3e-9cef64ad01c8",
+          "cellKey": "fc7462c1-38eb-418c-aaad-fa1bc638835d:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "4f0f0ade-aef6-4c6a-ac7e-aaed85e692b7",
+      "phaseId": "phase-2",
+      "caseId": "91dceaa8-a76c-4af7-ac3d-87ce65e674c7",
+      "conditionId": "A2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "4f0f0ade-aef6-4c6a-ac7e-aaed85e692b7",
+          "cellKey": "796a0e21-e8f1-4081-a4e8-cb4e4451bb07:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "80e04106-8b46-4308-a88f-896f558467d3",
+      "phaseId": "phase-2",
+      "caseId": "c22f7c22-4183-4d6f-a11f-3a8f71059e81",
+      "conditionId": "B1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "80e04106-8b46-4308-a88f-896f558467d3",
+          "cellKey": "963f06cf-d694-4d9a-a717-7823a18d3f13:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "3e66c1d2-5e0c-49f5-a592-05404efe0c4e",
+      "phaseId": "phase-2",
+      "caseId": "5ced748e-0a82-4f81-a844-00646c8216ff",
+      "conditionId": "B1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "3e66c1d2-5e0c-49f5-a592-05404efe0c4e",
+          "cellKey": "3ee49b55-d64b-4c3b-a9ca-06e3bef8b2ff:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "60f33b9d-1002-47a5-a651-82d6b03f19bb",
+      "phaseId": "phase-2",
+      "caseId": "d805cbd3-a8f8-442b-a7cc-cc2c76f70f25",
+      "conditionId": "B1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "60f33b9d-1002-47a5-a651-82d6b03f19bb",
+          "cellKey": "9ecd2238-c0bd-44ba-af05-da8740f502a4:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "9cbcfe5a-8d7e-43a8-afa4-30be1a0f43a5",
+      "phaseId": "phase-2",
+      "caseId": "0f57aad0-1943-4b10-a2c6-01e2dac5e7b7",
+      "conditionId": "B1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "9cbcfe5a-8d7e-43a8-afa4-30be1a0f43a5",
+          "cellKey": "04ef7281-df65-4ffc-a278-58b71f6d3f6c:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "bbc54c70-701c-4c88-ae9a-e03d774ea5e7",
+      "phaseId": "phase-2",
+      "caseId": "a8f5f715-11ed-479d-ab27-cb5945a51749",
+      "conditionId": "B1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "bbc54c70-701c-4c88-ae9a-e03d774ea5e7",
+          "cellKey": "e4ecd912-9e93-403e-a6b5-98c1b2bff5cd:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "435d3849-4f15-45e4-a047-0263c907e667",
+      "phaseId": "phase-2",
+      "caseId": "a5b3252a-8c49-4e71-acda-6f5f04f27fab",
+      "conditionId": "B1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "435d3849-4f15-45e4-a047-0263c907e667",
+          "cellKey": "8be38a6b-f2a9-4ab2-a077-b1060767162d:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "a706e200-fb4a-47af-abf4-b942f318b132",
+      "phaseId": "phase-2",
+      "caseId": "41a4835f-3321-451d-a336-f61c4eb115c3",
+      "conditionId": "B1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "a706e200-fb4a-47af-abf4-b942f318b132",
+          "cellKey": "749c6ce4-d96c-42b5-ac0d-5c5e4d181ad3:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "d6a28b47-190d-40bf-aceb-4b925b8addff",
+      "phaseId": "phase-2",
+      "caseId": "a6b40c8f-17b3-43fa-a181-fce26de17bc0",
+      "conditionId": "B1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "d6a28b47-190d-40bf-aceb-4b925b8addff",
+          "cellKey": "8b60c7d3-d2ea-41e1-a7e9-bfda65c7c43c:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "3fba0541-3b5b-4e4d-a2c8-0e2113768a43",
+      "phaseId": "phase-2",
+      "caseId": "5162b2f2-7845-42eb-a7de-251525e9daba",
+      "conditionId": "B1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "3fba0541-3b5b-4e4d-a2c8-0e2113768a43",
+          "cellKey": "3871d35d-afa1-4398-a064-b990b2b9099f:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "77b8619e-2768-4218-ae02-678c1a58a455",
+      "phaseId": "phase-2",
+      "caseId": "322adec1-bce8-463c-ac0d-4d2c4605328e",
+      "conditionId": "B1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "77b8619e-2768-4218-ae02-678c1a58a455",
+          "cellKey": "f46ce0da-89f0-45c8-aa74-88bf820576b4:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "e1fde8b4-6644-40d0-a08b-c7bc9d911103",
+      "phaseId": "phase-2",
+      "caseId": "949fb2db-c6c9-4fec-a2f5-699de7faec4d",
+      "conditionId": "B1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "e1fde8b4-6644-40d0-a08b-c7bc9d911103",
+          "cellKey": "d82d3407-7947-4316-a879-53be660288b0:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "0bc5ac1e-b981-457e-ac9c-3d66002f4a94",
+      "phaseId": "phase-2",
+      "caseId": "5d73576a-ede7-42e3-a1d4-62597e42e88d",
+      "conditionId": "B1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "0bc5ac1e-b981-457e-ac9c-3d66002f4a94",
+          "cellKey": "f209d3ea-e02e-4ed3-a01d-e49bd56f47a8:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "d889e577-bdd2-4c4c-a0c1-72f57c0cd25b",
+      "phaseId": "phase-2",
+      "caseId": "ce2dfeff-2121-4689-a78f-dedcbb2dcf64",
+      "conditionId": "B1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "d889e577-bdd2-4c4c-a0c1-72f57c0cd25b",
+          "cellKey": "ba4e9fd0-1686-4110-a389-ee6a085c2b04:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "54e61dbb-4cc3-4962-a555-68086528ab00",
+      "phaseId": "phase-2",
+      "caseId": "27362c04-a512-4964-a208-5836ad3790f9",
+      "conditionId": "B2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "54e61dbb-4cc3-4962-a555-68086528ab00",
+          "cellKey": "1250e6eb-17bf-4492-a69c-48da89139146:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "364caa58-4378-4124-a60c-21acae38d576",
+      "phaseId": "phase-2",
+      "caseId": "4737282b-8ab4-4cf2-a849-36388f993e1c",
+      "conditionId": "B2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "364caa58-4378-4124-a60c-21acae38d576",
+          "cellKey": "4b08e75f-a65f-42f6-a087-0619a78b4d58:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "891d9bba-cbec-46b7-a588-5658291d9fda",
+      "phaseId": "phase-2",
+      "caseId": "94fcb7d6-5590-4258-af64-aa0320bf9a21",
+      "conditionId": "B2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "891d9bba-cbec-46b7-a588-5658291d9fda",
+          "cellKey": "c2b828b2-3f4a-486e-a430-65b80aaff005:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "e3fc3428-79ca-4390-a104-6db5653c3701",
+      "phaseId": "phase-2",
+      "caseId": "e2d5d102-8018-498c-aa42-c5f2a7336fda",
+      "conditionId": "B2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "e3fc3428-79ca-4390-a104-6db5653c3701",
+          "cellKey": "044d289e-1ea3-4f93-a7a1-9d11b55a4326:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "6b8c6fe3-5e0e-4f11-ac83-221ed66f894b",
+      "phaseId": "phase-2",
+      "caseId": "4d71754b-8587-4086-ac51-41897c019a8b",
+      "conditionId": "B2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "6b8c6fe3-5e0e-4f11-ac83-221ed66f894b",
+          "cellKey": "e69d4da8-1d50-44c7-a03c-c2fd98df64ec:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "0e5e9082-ad69-4941-a581-235aaba9c867",
+      "phaseId": "phase-2",
+      "caseId": "a6821c89-af55-4e1a-a0af-4686bb012210",
+      "conditionId": "B2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "0e5e9082-ad69-4941-a581-235aaba9c867",
+          "cellKey": "bb270238-2854-4c6a-aeec-5d14a8e95efe:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "87b59241-2dee-459c-ae4f-4b6ee678b944",
+      "phaseId": "phase-2",
+      "caseId": "186fb32b-04fc-483f-a6ad-6afda671cf9c",
+      "conditionId": "B2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "87b59241-2dee-459c-ae4f-4b6ee678b944",
+          "cellKey": "e831bf93-4025-4d82-a68c-65feb3b9d19b:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "b84910b2-2814-46b2-a93a-f70b74d5d83b",
+      "phaseId": "phase-2",
+      "caseId": "b275bfd1-13b8-4014-abeb-15f0223ad1fe",
+      "conditionId": "B2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "b84910b2-2814-46b2-a93a-f70b74d5d83b",
+          "cellKey": "fe8558c6-6bcf-485a-a86f-a4dc5bc1410d:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "db10f6c7-7bf8-462c-a020-d163d99e6b66",
+      "phaseId": "phase-2",
+      "caseId": "96402cc3-25a8-4ae1-a8dc-4b6e870e8928",
+      "conditionId": "B2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "db10f6c7-7bf8-462c-a020-d163d99e6b66",
+          "cellKey": "a8e95db0-643f-4189-a05e-b27ce62d053d:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "45f07e2b-8ddf-416b-a081-bad2d5ab2e20",
+      "phaseId": "phase-2",
+      "caseId": "ae1d5278-17d8-4869-a7eb-38a6c3c4b5ff",
+      "conditionId": "B2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "45f07e2b-8ddf-416b-a081-bad2d5ab2e20",
+          "cellKey": "152d621b-cf34-4ab3-a476-cc693e50211f:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "34a6b308-d987-4a2a-ac6d-d76b781c8ea9",
+      "phaseId": "phase-2",
+      "caseId": "57c5190b-d7ce-435c-ac5b-972fafd94561",
+      "conditionId": "B2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "34a6b308-d987-4a2a-ac6d-d76b781c8ea9",
+          "cellKey": "287ba388-c27f-4153-a98c-fc43bf18599c:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "d162209a-c832-4f3c-a07e-d297ae623cbc",
+      "phaseId": "phase-2",
+      "caseId": "e8a64d5a-cbfd-4388-a57c-11fd28616e57",
+      "conditionId": "B2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "d162209a-c832-4f3c-a07e-d297ae623cbc",
+          "cellKey": "ed52daae-835f-44ff-ada5-095fbff43379:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "372406ff-b1a1-4793-aa12-66a807463af6",
+      "phaseId": "phase-2",
+      "caseId": "4fd4c693-d7e0-4eff-a94d-b0d64b787284",
+      "conditionId": "B2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "372406ff-b1a1-4793-aa12-66a807463af6",
+          "cellKey": "2f6e583d-fad1-4329-a34c-29f38b09790c:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "e8e982e2-a6d7-46a9-af18-b5ead9a9a895",
+      "phaseId": "phase-2",
+      "caseId": "997fa993-801d-4aab-af80-75af72bb7cb2",
+      "conditionId": "C1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "e8e982e2-a6d7-46a9-af18-b5ead9a9a895",
+          "cellKey": "747ca579-8f1a-4b40-a814-03bdaef998e5:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "2bc7f0dc-8335-44db-a0db-6fe74ffe1958",
+      "phaseId": "phase-2",
+      "caseId": "26342f3d-bb54-4f67-ab33-36c2b91cc1b7",
+      "conditionId": "C1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "2bc7f0dc-8335-44db-a0db-6fe74ffe1958",
+          "cellKey": "5073254b-a3b1-4eb9-adf7-3d0cd092da6a:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "1b7c75da-8572-4a1c-a849-93fed649fa6a",
+      "phaseId": "phase-2",
+      "caseId": "9dd71c15-cd27-49be-ac47-c1b3204e078f",
+      "conditionId": "C1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "1b7c75da-8572-4a1c-a849-93fed649fa6a",
+          "cellKey": "714fcf07-c26b-4d34-a39f-319d7fae57e2:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "53904eb0-bb10-4eca-adc0-fa0bd3478d0c",
+      "phaseId": "phase-2",
+      "caseId": "dd797dc4-0012-4faf-a88d-bcff0d7b0df9",
+      "conditionId": "C1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "53904eb0-bb10-4eca-adc0-fa0bd3478d0c",
+          "cellKey": "fe8814c1-1a15-41c7-ad62-46e688346d71:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "1862519a-4f8b-441b-a45f-2636c9a91b89",
+      "phaseId": "phase-2",
+      "caseId": "51582365-7362-4588-a54a-67c3b04e3099",
+      "conditionId": "C1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "1862519a-4f8b-441b-a45f-2636c9a91b89",
+          "cellKey": "a55a7264-84e2-4285-a4c3-9cd252ebd0d5:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "a0fec71c-cc4c-4227-ac63-0d08044739a1",
+      "phaseId": "phase-2",
+      "caseId": "6a3051cd-8e62-4bb6-aaf0-3f95c9e974d8",
+      "conditionId": "C1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "a0fec71c-cc4c-4227-ac63-0d08044739a1",
+          "cellKey": "8ef679d7-e5d8-4372-a2fe-1b0950dd0297:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "483dad75-5840-4360-ac6f-61df9eee8a7e",
+      "phaseId": "phase-2",
+      "caseId": "328f02cf-b3c4-4236-ac2c-e04d550f8682",
+      "conditionId": "C1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "483dad75-5840-4360-ac6f-61df9eee8a7e",
+          "cellKey": "808b3b1c-84b2-4b93-af74-01a8732ce202:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "240f1fe0-1f0c-4447-a835-f8cfcb561aa3",
+      "phaseId": "phase-2",
+      "caseId": "8d9c03d9-124f-492d-ab5b-cdb93aa6925d",
+      "conditionId": "C1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "240f1fe0-1f0c-4447-a835-f8cfcb561aa3",
+          "cellKey": "154a6f08-db76-4e7e-a1ae-f90828399b21:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "bc537a0e-48fd-4359-ad2f-f84ea929b1a0",
+      "phaseId": "phase-2",
+      "caseId": "78bdafef-55b8-4bef-ac92-e20f2ffce4b2",
+      "conditionId": "C1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "bc537a0e-48fd-4359-ad2f-f84ea929b1a0",
+          "cellKey": "9ba9fe0b-d7e4-4a4e-a900-1a0418360206:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "b82610da-ba1a-4f3a-a0b1-8830a18f4456",
+      "phaseId": "phase-2",
+      "caseId": "fcab78e6-5230-433b-a659-76191f07c56f",
+      "conditionId": "C1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "b82610da-ba1a-4f3a-a0b1-8830a18f4456",
+          "cellKey": "cedaa735-b1ee-4203-ac5c-4a8a8ceedb1e:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "ee201d42-0336-4fd7-a30f-4016d66d371c",
+      "phaseId": "phase-2",
+      "caseId": "6fe4617f-17ec-42e2-a765-e2167d7bc5ff",
+      "conditionId": "C1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "ee201d42-0336-4fd7-a30f-4016d66d371c",
+          "cellKey": "b9873d7c-fd65-4b74-a98f-39021f417aeb:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "c9493344-1c4e-4f82-a825-71f935fa08fd",
+      "phaseId": "phase-2",
+      "caseId": "bf9f551c-dfea-4e48-ad7e-bb1a84895e7b",
+      "conditionId": "C1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "c9493344-1c4e-4f82-a825-71f935fa08fd",
+          "cellKey": "c25ea8d4-9734-4ee7-a069-e7804a57c977:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "9a0e8742-60de-495d-a006-5572ed9b58d9",
+      "phaseId": "phase-2",
+      "caseId": "ee614919-aa18-4b22-a33b-d5c970b8bde1",
+      "conditionId": "C1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "9a0e8742-60de-495d-a006-5572ed9b58d9",
+          "cellKey": "b1ad9606-b08a-451d-ab79-8860ad269766:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "7243ab72-63dd-476f-af7d-25e22ad5b968",
+      "phaseId": "phase-2",
+      "caseId": "56691027-5f6d-414e-ab2e-7e238781f8e7",
+      "conditionId": "C1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "7243ab72-63dd-476f-af7d-25e22ad5b968",
+          "cellKey": "a8a117a0-7cf8-4ff4-a3c1-5347c5709970:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "ed3687a1-67d3-465a-a707-c3beedb74d55",
+      "phaseId": "phase-2",
+      "caseId": "a4bff5be-bf55-4041-a089-854a6676c676",
+      "conditionId": "C1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "ed3687a1-67d3-465a-a707-c3beedb74d55",
+          "cellKey": "22970b04-666d-4e54-a814-8c8b04ead937:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "261ee173-2f08-4194-a051-c529e9df0177",
+      "phaseId": "phase-2",
+      "caseId": "ffa6a24d-85b9-4810-a2e5-1cd866f29582",
+      "conditionId": "C2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "261ee173-2f08-4194-a051-c529e9df0177",
+          "cellKey": "4b521f32-bcd2-4d5c-ac4a-7985476dfb01:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "832d0c47-4e8a-44d6-a3bf-3fe79ef3db23",
+      "phaseId": "phase-2",
+      "caseId": "cd64de99-486a-4aec-a68e-2e447997c8fb",
+      "conditionId": "C2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "832d0c47-4e8a-44d6-a3bf-3fe79ef3db23",
+          "cellKey": "1d70c687-b041-4cd5-aeef-d96c73ff4a7f:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "076b6883-af71-43cb-aceb-aedf72ab910a",
+      "phaseId": "phase-2",
+      "caseId": "755f2c51-9839-4b03-aeae-3e718c5b7764",
+      "conditionId": "C2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "076b6883-af71-43cb-aceb-aedf72ab910a",
+          "cellKey": "3bf742f7-ab10-4fa7-a072-d7cbcd28c451:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "d4973411-ffd3-4821-a6b6-5d3bf4dc0f88",
+      "phaseId": "phase-2",
+      "caseId": "13e55e08-4dd6-4ba9-a27f-4b05319547a2",
+      "conditionId": "C2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "d4973411-ffd3-4821-a6b6-5d3bf4dc0f88",
+          "cellKey": "53c79998-f2f2-4d84-aa0a-4b939acbc3de:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "bb9a6e7b-8fdc-401a-a044-69002cba0d6f",
+      "phaseId": "phase-2",
+      "caseId": "7182a1d7-8ccc-41bb-af28-73a35301b374",
+      "conditionId": "C2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "bb9a6e7b-8fdc-401a-a044-69002cba0d6f",
+          "cellKey": "1025c15b-08e0-47d3-ad7e-e97057f173a3:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "df97328c-9a08-4f1e-a192-888ceaa5942a",
+      "phaseId": "phase-2",
+      "caseId": "bf7d367d-1081-4524-ac8c-60a490a9afc2",
+      "conditionId": "C2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "df97328c-9a08-4f1e-a192-888ceaa5942a",
+          "cellKey": "00a685e1-a196-4ca8-a4ef-4367a6599b6c:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "9cd86c54-9aeb-474a-a91f-ac2a926e651f",
+      "phaseId": "phase-2",
+      "caseId": "d90fa304-2c5d-462b-a2ac-1698c736a3e0",
+      "conditionId": "C2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "9cd86c54-9aeb-474a-a91f-ac2a926e651f",
+          "cellKey": "4e0b1615-7995-4fd0-a589-fa39bae3fa29:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "80680f59-9a77-49df-ac27-9f5bcfc289d3",
+      "phaseId": "phase-2",
+      "caseId": "e3813e89-0aee-4be1-a575-303043257b32",
+      "conditionId": "C2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "80680f59-9a77-49df-ac27-9f5bcfc289d3",
+          "cellKey": "75c6111e-874a-4ec2-ac2f-a5c544ffa8f1:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "0baebcbd-df9a-4f6f-a1ad-926144618461",
+      "phaseId": "phase-2",
+      "caseId": "a8083f0d-e6d8-4ea6-a2f9-c234afd229fa",
+      "conditionId": "C2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "0baebcbd-df9a-4f6f-a1ad-926144618461",
+          "cellKey": "b1912131-70f3-4b2b-aab6-1f10ee20ecf7:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "a8aa2a76-ae50-4501-acd6-22d7940a9c6e",
+      "phaseId": "phase-2",
+      "caseId": "d4f0cda2-0711-4577-a403-fa4930977f73",
+      "conditionId": "C2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "a8aa2a76-ae50-4501-acd6-22d7940a9c6e",
+          "cellKey": "fab8487f-b22d-4145-a17a-9941667a1e62:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "d2d0b4eb-2326-40b8-aee4-60252048e5e3",
+      "phaseId": "phase-2",
+      "caseId": "73b58cdf-7c38-4ccd-a74b-cf5c425bf865",
+      "conditionId": "C2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "d2d0b4eb-2326-40b8-aee4-60252048e5e3",
+          "cellKey": "68b29021-d6b9-402c-a903-a4c2f8bc6165:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "2c07604b-ac8e-4201-a56e-4a5f8943787c",
+      "phaseId": "phase-2",
+      "caseId": "b6391430-5172-4ccd-a43b-37e3a12473e5",
+      "conditionId": "C2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "2c07604b-ac8e-4201-a56e-4a5f8943787c",
+          "cellKey": "b5a12413-2761-4096-a5a1-b5359ab60cf2:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "4e64fe4d-c960-4feb-ad55-9ca7e51e5249",
+      "phaseId": "phase-2",
+      "caseId": "d5f2aeca-0361-45ae-a315-cfcf254df2be",
+      "conditionId": "C2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "4e64fe4d-c960-4feb-ad55-9ca7e51e5249",
+          "cellKey": "79fb5b23-e9b9-4fbb-a60a-665a24672515:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "946806fe-3e54-40c5-a67f-8333b7c8211c",
+      "phaseId": "phase-2",
+      "caseId": "f6d44006-0388-4d46-acfc-d590a8aa316d",
+      "conditionId": "C2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "946806fe-3e54-40c5-a67f-8333b7c8211c",
+          "cellKey": "728725bd-cc79-41ab-ab1b-56dac645e88f:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "4c02d1c5-461f-4095-aa69-5a656f48d2c5",
+      "phaseId": "phase-2",
+      "caseId": "adbc6013-fc68-4c94-a4e7-48f6dfb0bbee",
+      "conditionId": "C2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "4c02d1c5-461f-4095-aa69-5a656f48d2c5",
+          "cellKey": "cd3a5404-2ff4-4dad-a831-bfffed358a27:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "4e607018-86e9-423c-a25a-15560974bd8c",
+      "phaseId": "phase-3",
+      "caseId": "35318938-4c16-4ace-ae5d-882e2cc334a1",
+      "conditionId": "A1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "4e607018-86e9-423c-a25a-15560974bd8c",
+          "cellKey": "3b4087be-7511-4db3-a236-9018a6f8f3f4:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "ce1ddf9a-3668-4975-a6d2-aeb50961a280",
+      "phaseId": "phase-3",
+      "caseId": "fb13358b-ae06-44f1-abfd-7a336a7737b8",
+      "conditionId": "A1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "ce1ddf9a-3668-4975-a6d2-aeb50961a280",
+          "cellKey": "2a2def51-5393-4dac-a46c-de4ef2ac5e33:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "71904d12-309d-430d-ab30-9de1100286f1",
+      "phaseId": "phase-3",
+      "caseId": "88c3db40-5c76-4111-a0cc-ec4b6f18aca1",
+      "conditionId": "A1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "71904d12-309d-430d-ab30-9de1100286f1",
+          "cellKey": "be23d068-3713-4a62-a5bc-2cdb9b7c05df:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "e2866370-f406-4a4f-a6be-9bc511d5d1b2",
+      "phaseId": "phase-3",
+      "caseId": "b0e54177-d6d6-438c-aab3-3c29bf1dfda0",
+      "conditionId": "A1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "e2866370-f406-4a4f-a6be-9bc511d5d1b2",
+          "cellKey": "79960d27-72dc-4e1d-a669-fd7ed2bd2e58:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "9ee2f60f-8cab-4996-a4e1-b83b840c4106",
+      "phaseId": "phase-3",
+      "caseId": "2894ba92-4327-46d4-a8ae-e3837fcd8993",
+      "conditionId": "A1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "9ee2f60f-8cab-4996-a4e1-b83b840c4106",
+          "cellKey": "c3c9b710-101d-4606-a14c-d2e31ea49dd8:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "9e51a39d-154b-424c-a1b9-9c361253c4d3",
+      "phaseId": "phase-3",
+      "caseId": "f64ce561-8b9a-4202-a35f-a45346a6f1b2",
+      "conditionId": "A1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "9e51a39d-154b-424c-a1b9-9c361253c4d3",
+          "cellKey": "b32715cd-f33a-49a9-a8c5-772e44ca418c:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "ca485062-e540-45fd-aa38-6a05f308d7a2",
+      "phaseId": "phase-3",
+      "caseId": "657401f7-a074-496a-a70b-b2b46fe44ff8",
+      "conditionId": "A1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "ca485062-e540-45fd-aa38-6a05f308d7a2",
+          "cellKey": "c531d4dd-343c-4263-a087-f55ace3d7337:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "d02ff9c9-a271-470e-ad06-39be65215032",
+      "phaseId": "phase-3",
+      "caseId": "8ae770b4-ee12-4478-acb2-1419cdef11bf",
+      "conditionId": "A1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "d02ff9c9-a271-470e-ad06-39be65215032",
+          "cellKey": "9cb926ef-ab15-4b74-ab1d-fae15687de19:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "1a09aa68-7ff1-4e0b-ad61-0df8f0248eaa",
+      "phaseId": "phase-3",
+      "caseId": "3cfcd84e-69fa-4747-af4c-a991e8076d3f",
+      "conditionId": "A1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "1a09aa68-7ff1-4e0b-ad61-0df8f0248eaa",
+          "cellKey": "d347d584-07f9-4778-ad74-04f34b96b974:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "9ae95fae-298a-40d2-a2aa-480e1e75255f",
+      "phaseId": "phase-3",
+      "caseId": "6bb73ad0-54fb-4901-ad7e-50a7596b06be",
+      "conditionId": "A1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "9ae95fae-298a-40d2-a2aa-480e1e75255f",
+          "cellKey": "308b12ae-8113-48a0-a245-a59b7c0c9c40:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "2055c31a-7029-49b7-a540-7c1a210880fe",
+      "phaseId": "phase-3",
+      "caseId": "56e19102-48ba-456c-aca5-e369a2e7e198",
+      "conditionId": "A1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "2055c31a-7029-49b7-a540-7c1a210880fe",
+          "cellKey": "f6fe8cdc-37b7-4093-a39a-7ec2891885f2:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "a7ce09fd-1102-47d2-aeb8-8305213d6f41",
+      "phaseId": "phase-3",
+      "caseId": "a4077df0-1fa5-4902-ad56-bd6cae0e2646",
+      "conditionId": "A2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "a7ce09fd-1102-47d2-aeb8-8305213d6f41",
+          "cellKey": "a2b0437e-ecfb-4de5-a6ee-25926195e2a0:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "7589f41f-5951-4f8f-a2fd-ef98d7081755",
+      "phaseId": "phase-3",
+      "caseId": "eaa6a5ba-26dc-4e37-a39e-0ceac5301928",
+      "conditionId": "A2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "7589f41f-5951-4f8f-a2fd-ef98d7081755",
+          "cellKey": "411d0b6d-24cd-4243-aecf-41c7eb03be97:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "c7deaf94-95be-4dde-a73d-9da93161d681",
+      "phaseId": "phase-3",
+      "caseId": "4d63c854-cfcb-4961-aeca-7d93a21040f5",
+      "conditionId": "A2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "c7deaf94-95be-4dde-a73d-9da93161d681",
+          "cellKey": "e78ba8e6-c8e4-41ea-a7a4-cf10334e6f5b:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "46c4fb45-a387-41c5-aba2-6ac8179fd8cc",
+      "phaseId": "phase-3",
+      "caseId": "a97802eb-0c5e-441a-a178-b1aa8e9aa31d",
+      "conditionId": "A2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "46c4fb45-a387-41c5-aba2-6ac8179fd8cc",
+          "cellKey": "ad9d2c14-bf20-4508-ae59-2e148aa92e43:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "47746ddd-5889-4f9f-adb1-3f78ef15416d",
+      "phaseId": "phase-3",
+      "caseId": "0b2c0f02-4682-4b22-ac80-58fe425079f2",
+      "conditionId": "A2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "47746ddd-5889-4f9f-adb1-3f78ef15416d",
+          "cellKey": "e23fecec-c582-4f5f-a64a-2c7b55558b4b:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "c6f84dab-b980-440c-a606-3c7334d4929d",
+      "phaseId": "phase-3",
+      "caseId": "fee00dc1-07fe-4737-a13f-23759ff3da3d",
+      "conditionId": "A2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "c6f84dab-b980-440c-a606-3c7334d4929d",
+          "cellKey": "1790aedf-acbb-4ef3-aad8-bea9b0227bff:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "7827aaf4-e636-417e-aa8b-106dedca8e30",
+      "phaseId": "phase-3",
+      "caseId": "5c581d11-ad2a-4e18-a289-542ffa331200",
+      "conditionId": "A2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "7827aaf4-e636-417e-aa8b-106dedca8e30",
+          "cellKey": "5c1392c5-f1cf-4e1c-a522-86dc7b465ba2:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "9703a909-969c-436c-afbd-757c995ebc56",
+      "phaseId": "phase-3",
+      "caseId": "91d2f0f7-86f3-42c6-a393-1dc95dd4daae",
+      "conditionId": "A2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "9703a909-969c-436c-afbd-757c995ebc56",
+          "cellKey": "3518356a-7bba-499b-a0fc-5905a6e9a510:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "34c314c5-4c37-48ff-a16d-866a89916b4c",
+      "phaseId": "phase-3",
+      "caseId": "960b87c6-445c-471f-a2af-9c05731cd088",
+      "conditionId": "A2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "34c314c5-4c37-48ff-a16d-866a89916b4c",
+          "cellKey": "e05cb447-1ba8-44d5-aea3-c7691d9e29c1:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "16f0393c-5948-4383-abb9-80caa6764186",
+      "phaseId": "phase-3",
+      "caseId": "52d5f98a-f5a3-41fa-a357-7e2ec602de88",
+      "conditionId": "A2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "16f0393c-5948-4383-abb9-80caa6764186",
+          "cellKey": "8e48edb4-a760-4c12-acbb-aac173a32e43:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "8e430454-3944-44bc-a1c3-1c0c05dcc068",
+      "phaseId": "phase-3",
+      "caseId": "b3b7071d-6ee2-443e-af18-4cdd24e1407e",
+      "conditionId": "A2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "8e430454-3944-44bc-a1c3-1c0c05dcc068",
+          "cellKey": "f93423fa-6906-4fc1-a187-63c77586b757:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "ab205282-a428-4454-a5a0-551a134ed9b6",
+      "phaseId": "phase-3",
+      "caseId": "b77761ed-c3d7-45c4-a3b7-051f946b15db",
+      "conditionId": "B1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "ab205282-a428-4454-a5a0-551a134ed9b6",
+          "cellKey": "e516b7ef-ae1e-4679-aab4-ed08e7ba2106:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "8cab3f02-0ba8-4da0-aa25-353c4980c712",
+      "phaseId": "phase-3",
+      "caseId": "45d22e24-19b8-4ab8-a09f-e08aa608559e",
+      "conditionId": "B1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "8cab3f02-0ba8-4da0-aa25-353c4980c712",
+          "cellKey": "09fb14ba-bf50-4bec-ab6f-adbb8524715c:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "822156ce-ae6b-44fb-abc4-d29c9a5ddc5f",
+      "phaseId": "phase-3",
+      "caseId": "aae54a04-1c47-4a6e-a73e-88866882ab11",
+      "conditionId": "B1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "822156ce-ae6b-44fb-abc4-d29c9a5ddc5f",
+          "cellKey": "bb430f93-6de0-4757-a40b-be79fcf6abec:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "822adb2c-72fd-4268-ab24-7661ab18a468",
+      "phaseId": "phase-3",
+      "caseId": "e3fff462-66c7-4c22-ac89-a7ad5391a2c7",
+      "conditionId": "B1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "822adb2c-72fd-4268-ab24-7661ab18a468",
+          "cellKey": "42fa77ac-da79-4c2c-adf3-278c9358ca18:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "b03e55e5-d1b4-480c-a9d2-2bb2fe6106cc",
+      "phaseId": "phase-3",
+      "caseId": "8444fec5-b1fb-40f3-ae3c-6f31d0ed26d5",
+      "conditionId": "B1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "b03e55e5-d1b4-480c-a9d2-2bb2fe6106cc",
+          "cellKey": "c8da9103-c9f1-4e0c-a636-f0989aa4c2b0:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "a04eb1d9-5c54-49b6-af5a-722082dec22d",
+      "phaseId": "phase-3",
+      "caseId": "2ae0076c-a40c-49e9-ab4b-f57ae37d478f",
+      "conditionId": "B1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "a04eb1d9-5c54-49b6-af5a-722082dec22d",
+          "cellKey": "0cb1531b-532b-4877-afdc-0eec52510cc4:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "2a5c6ddc-6c25-4d06-a540-79f87776c977",
+      "phaseId": "phase-3",
+      "caseId": "de1d890f-3b06-41c3-a512-6d913b230d81",
+      "conditionId": "B1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "2a5c6ddc-6c25-4d06-a540-79f87776c977",
+          "cellKey": "07caa0b9-dcee-4785-aaa5-f3f749088f99:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "5841330e-9965-4b88-a550-f722eb241d7d",
+      "phaseId": "phase-3",
+      "caseId": "de2ca702-e6a0-4ad2-a079-e5a90c9c07d5",
+      "conditionId": "B1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "5841330e-9965-4b88-a550-f722eb241d7d",
+          "cellKey": "b54a37e0-6720-4a9f-a529-95051d93388c:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "05abcf73-41a9-4ee6-a76f-5e01f99f3dde",
+      "phaseId": "phase-3",
+      "caseId": "1b55236b-6f2d-4ed6-ad7f-91b98d9a2a9c",
+      "conditionId": "B1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "05abcf73-41a9-4ee6-a76f-5e01f99f3dde",
+          "cellKey": "f444d5c0-b06b-49e4-a658-0a3ab9c6873d:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "d978bde1-70cf-44df-a711-3ce461472ce9",
+      "phaseId": "phase-3",
+      "caseId": "b8f2e413-2bf5-47c8-a4f6-6d1170c71c83",
+      "conditionId": "B1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "d978bde1-70cf-44df-a711-3ce461472ce9",
+          "cellKey": "8838216c-a2c1-4466-a6b5-852fd3c7e0af:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "a2ab8e6c-c53c-48d4-a769-7cf7eb1da511",
+      "phaseId": "phase-3",
+      "caseId": "c0b3de1d-240f-4970-a446-7d3df0d3fcc5",
+      "conditionId": "B1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "a2ab8e6c-c53c-48d4-a769-7cf7eb1da511",
+          "cellKey": "edc286eb-8022-4c9a-a088-5f1a32f0098f:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "25846579-872b-4d10-a334-a4094a38c491",
+      "phaseId": "phase-3",
+      "caseId": "9547ee9e-4d87-4bbd-a31f-49049e1fe3f5",
+      "conditionId": "B1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "25846579-872b-4d10-a334-a4094a38c491",
+          "cellKey": "398e0acf-a22d-4216-ac94-c946be8d3915:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "10a9708b-11e4-4379-a30a-e901b8abd9d0",
+      "phaseId": "phase-3",
+      "caseId": "aa30494f-41a9-46ec-a399-88f19232161f",
+      "conditionId": "B1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "10a9708b-11e4-4379-a30a-e901b8abd9d0",
+          "cellKey": "109eb9e3-e667-44b4-aeb0-9da0826251de:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "0a15ecec-f7af-4d7e-a2ca-e4e61b53c31d",
+      "phaseId": "phase-3",
+      "caseId": "5f56387b-75fa-4e95-ab59-5805e1d1ce1b",
+      "conditionId": "B2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "0a15ecec-f7af-4d7e-a2ca-e4e61b53c31d",
+          "cellKey": "28d21fef-c143-4eb5-ae1b-8c14f06d8018:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "208761ec-897f-4caf-a6f9-bba4b7201276",
+      "phaseId": "phase-3",
+      "caseId": "46b5ebfc-11ae-4002-a8c2-2afaaa2800b6",
+      "conditionId": "B2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "208761ec-897f-4caf-a6f9-bba4b7201276",
+          "cellKey": "6762d74c-e0f1-4854-a748-246fa5382cf9:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "705460c4-128f-4a87-a680-964e417c9c51",
+      "phaseId": "phase-3",
+      "caseId": "2a73f7c5-c0a8-468b-adcb-01ff420a2fe0",
+      "conditionId": "B2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "705460c4-128f-4a87-a680-964e417c9c51",
+          "cellKey": "b7c20211-e7ad-4db1-ac09-8096602d6815:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "c34d51a0-7875-456c-a293-85bed087160d",
+      "phaseId": "phase-3",
+      "caseId": "7ad5c922-c199-4fa3-afb1-0691d99d6461",
+      "conditionId": "B2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "c34d51a0-7875-456c-a293-85bed087160d",
+          "cellKey": "ac9ba2ef-68f8-4786-aa45-20ca4ef4c240:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "77c7fb10-9a1c-413a-a236-3d2db61531b7",
+      "phaseId": "phase-3",
+      "caseId": "1204d02f-0532-4a87-abee-677253c737d3",
+      "conditionId": "B2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "77c7fb10-9a1c-413a-a236-3d2db61531b7",
+          "cellKey": "d97ed3ea-9983-4375-a54b-67775a876148:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "411596eb-d0da-4e7b-a956-0365f5b36b4d",
+      "phaseId": "phase-3",
+      "caseId": "478e25cb-0403-4f73-a133-955deef08a91",
+      "conditionId": "B2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "411596eb-d0da-4e7b-a956-0365f5b36b4d",
+          "cellKey": "e9aafa48-7cee-4afb-afa5-61bf1d6bf362:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "3c7e82bb-95da-4d0b-a7f7-eb54c6d28ea8",
+      "phaseId": "phase-3",
+      "caseId": "f14eaf10-9069-48c5-abca-155019e6f1de",
+      "conditionId": "B2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "3c7e82bb-95da-4d0b-a7f7-eb54c6d28ea8",
+          "cellKey": "1090b6d0-9e62-417d-a6a0-d4b97fd6fec5:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "22dedf60-224f-4dc1-a57a-de4a885d1ace",
+      "phaseId": "phase-3",
+      "caseId": "0bd6095d-9327-4bfe-a012-e4d05927ff23",
+      "conditionId": "B2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "22dedf60-224f-4dc1-a57a-de4a885d1ace",
+          "cellKey": "67818178-a75b-49be-a4ab-8be924813658:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "83ad6e99-934c-44a4-a13c-c146827ba56e",
+      "phaseId": "phase-3",
+      "caseId": "4357ce7c-593e-4fd6-ad40-094e6f21d1b2",
+      "conditionId": "B2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "83ad6e99-934c-44a4-a13c-c146827ba56e",
+          "cellKey": "da0a2f03-a601-46e8-aedb-5c09b48d4681:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "8606211e-1e6d-48b5-a57b-6741e9c6bdaa",
+      "phaseId": "phase-3",
+      "caseId": "0f359c00-6dbd-4958-a346-d4f6a638e294",
+      "conditionId": "B2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "8606211e-1e6d-48b5-a57b-6741e9c6bdaa",
+          "cellKey": "59cc0913-711b-489a-a72f-ad0a92e45245:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "1dedb7d6-22db-4c28-aab0-7453ddcf98ea",
+      "phaseId": "phase-3",
+      "caseId": "6a30f174-2a72-4c57-a824-c285019c2b22",
+      "conditionId": "B2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "1dedb7d6-22db-4c28-aab0-7453ddcf98ea",
+          "cellKey": "81231b00-56cf-45f9-afe9-9c3bd27291f3:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "c05596f6-b2d2-41a0-adc4-8a364f689dca",
+      "phaseId": "phase-3",
+      "caseId": "f43c33a5-41ab-4b81-acc6-c564bb2b8fd8",
+      "conditionId": "B2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "c05596f6-b2d2-41a0-adc4-8a364f689dca",
+          "cellKey": "a4b9ae08-5a01-4de7-a452-85c881bfb42c:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "d69125f8-70cd-46c0-a977-1e4fb9cf7d07",
+      "phaseId": "phase-3",
+      "caseId": "a4c34e41-e678-46e1-a07f-6079e31d9f67",
+      "conditionId": "B2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "d69125f8-70cd-46c0-a977-1e4fb9cf7d07",
+          "cellKey": "ef2eb058-5d37-4d57-a0c0-70c2ebdcfb1d:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "0f70ea03-94d8-48f2-a957-20915207194e",
+      "phaseId": "phase-3",
+      "caseId": "eb988e14-9c1e-450d-af11-e6fb5ee74e41",
+      "conditionId": "C1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "0f70ea03-94d8-48f2-a957-20915207194e",
+          "cellKey": "b4338a95-d035-40ab-aab0-290828605e24:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "d04dfcf3-a3b0-4c30-a991-b93466019c17",
+      "phaseId": "phase-3",
+      "caseId": "fdd5cc91-22f0-40ea-ab13-f68d2b82f833",
+      "conditionId": "C1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "d04dfcf3-a3b0-4c30-a991-b93466019c17",
+          "cellKey": "f6d98521-3562-4c9f-ab79-09eecf6ff2e3:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "24f5b71b-367e-4ab8-a023-6763c3cf7d35",
+      "phaseId": "phase-3",
+      "caseId": "1df5877e-0a7e-4585-ab3d-d418ef335923",
+      "conditionId": "C1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "24f5b71b-367e-4ab8-a023-6763c3cf7d35",
+          "cellKey": "ccb526d9-85b0-459f-af85-fee1d47da0c2:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "2aa587f0-3428-44a9-a5bf-df488d4b3c57",
+      "phaseId": "phase-3",
+      "caseId": "5b9eda8a-ecb3-4efe-af5b-c2ce7d7517d9",
+      "conditionId": "C1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "2aa587f0-3428-44a9-a5bf-df488d4b3c57",
+          "cellKey": "67bc9f7b-28dc-442e-a5cf-5ce72ca67cbe:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "57ba597f-1a41-4e8e-a1e2-55799d857590",
+      "phaseId": "phase-3",
+      "caseId": "8be8d6ce-8a54-4f25-a47b-702cd1bef6b6",
+      "conditionId": "C1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "57ba597f-1a41-4e8e-a1e2-55799d857590",
+          "cellKey": "bc7479b9-b1c2-4457-a853-f248a0283fb3:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "db3bf6db-9fc1-4b88-a7fd-9b667183120f",
+      "phaseId": "phase-3",
+      "caseId": "25b6b1d8-9c96-4d71-a01b-434dba5704e0",
+      "conditionId": "C1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "db3bf6db-9fc1-4b88-a7fd-9b667183120f",
+          "cellKey": "807be170-8842-4025-a6fd-ab86062e88b4:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "9c7f5e5c-151a-4986-acb4-30fd8b1c6d67",
+      "phaseId": "phase-3",
+      "caseId": "33a35888-88f5-446b-a399-417045d2aa0b",
+      "conditionId": "C1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "9c7f5e5c-151a-4986-acb4-30fd8b1c6d67",
+          "cellKey": "543f83b9-03f7-4755-a8a3-ae3945936589:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "de5c8398-a587-40dd-a5fd-b58f54488180",
+      "phaseId": "phase-3",
+      "caseId": "adba8cd3-2dec-4232-a648-3cca6ea5e2a6",
+      "conditionId": "C1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "de5c8398-a587-40dd-a5fd-b58f54488180",
+          "cellKey": "60ea553d-e1a8-4508-a24d-871429b5c0cc:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "8610042f-bacd-4056-a591-472c52a91fef",
+      "phaseId": "phase-3",
+      "caseId": "6fa38c5c-caa7-457c-a953-df460c0f8361",
+      "conditionId": "C1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "8610042f-bacd-4056-a591-472c52a91fef",
+          "cellKey": "d9a96b17-2555-4881-a165-0084c6e6109d:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "d74fbf39-1f0f-436c-a14b-62f2b166c403",
+      "phaseId": "phase-3",
+      "caseId": "6162eab4-8b59-4213-a43f-714fae31bf3d",
+      "conditionId": "C1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "d74fbf39-1f0f-436c-a14b-62f2b166c403",
+          "cellKey": "4d1d6a64-4feb-4a9d-a984-8f3524dbbba8:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "728ee0fa-3d26-4e5d-a175-b8c7edd9d971",
+      "phaseId": "phase-3",
+      "caseId": "b6ba85df-b958-4939-af7e-66c2c6a8355d",
+      "conditionId": "C1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "728ee0fa-3d26-4e5d-a175-b8c7edd9d971",
+          "cellKey": "9949fb01-9414-40f8-ae9c-f57c9ee712ec:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "3da98753-2a56-4056-a261-f0393e26347e",
+      "phaseId": "phase-3",
+      "caseId": "c78245af-2138-47a6-a6c7-bf695984860f",
+      "conditionId": "C1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "3da98753-2a56-4056-a261-f0393e26347e",
+          "cellKey": "770c7380-79b8-42da-af93-f3839dc8c358:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "9337800e-abab-4f42-a598-f0652205453a",
+      "phaseId": "phase-3",
+      "caseId": "3a4df72b-cc2f-41ff-ac07-c03d36527b63",
+      "conditionId": "C1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "9337800e-abab-4f42-a598-f0652205453a",
+          "cellKey": "1a7bb37a-bb25-4218-abd2-4d4b2c74ef0c:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "abab78b5-860a-4e26-a67f-4db8eb889312",
+      "phaseId": "phase-3",
+      "caseId": "1afbd083-3e42-4886-a449-7d09642389ca",
+      "conditionId": "C1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "abab78b5-860a-4e26-a67f-4db8eb889312",
+          "cellKey": "8394662a-cfd8-48f4-aae8-cb5015b54e70:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "d1ab8ad3-f700-4b74-a690-533bd5e28263",
+      "phaseId": "phase-3",
+      "caseId": "7127459f-abc0-46b1-abb1-42d8566ad8fc",
+      "conditionId": "C1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "d1ab8ad3-f700-4b74-a690-533bd5e28263",
+          "cellKey": "7078a8ca-fffc-4cab-ab46-6ab65a6513eb:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "b642a4d0-abd7-4c67-a12b-673859b3c91a",
+      "phaseId": "phase-3",
+      "caseId": "2e752ee7-3b1f-41cd-a568-34de9a966faf",
+      "conditionId": "C2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "b642a4d0-abd7-4c67-a12b-673859b3c91a",
+          "cellKey": "eac12e96-862f-47d3-a040-eaf14bd60646:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "6957807b-6653-44b7-af78-76aea9f6a14a",
+      "phaseId": "phase-3",
+      "caseId": "1d993a9b-108f-400d-aae2-ef647fc90dc9",
+      "conditionId": "C2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "6957807b-6653-44b7-af78-76aea9f6a14a",
+          "cellKey": "3c638e83-7cb6-408a-a29a-a4a637cd3b19:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "80fd9848-34d9-4476-a0c7-a4dc5852ac7d",
+      "phaseId": "phase-3",
+      "caseId": "9cd05878-26b9-4c39-a9d0-335061c4cafa",
+      "conditionId": "C2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "80fd9848-34d9-4476-a0c7-a4dc5852ac7d",
+          "cellKey": "10d2dcc5-0d2f-4e05-a98b-382bacb1c21e:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "96542424-3a8b-4cc5-a619-827a56750010",
+      "phaseId": "phase-3",
+      "caseId": "83b86c04-4cc9-4ff7-a260-731fd9d3a381",
+      "conditionId": "C2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "96542424-3a8b-4cc5-a619-827a56750010",
+          "cellKey": "34dbc4f1-559b-4a9c-a993-a5565765d747:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "acee3d57-ab10-4612-a317-a26f19790ed1",
+      "phaseId": "phase-3",
+      "caseId": "4254b592-8fe4-4e56-ae52-49a123a871a3",
+      "conditionId": "C2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "acee3d57-ab10-4612-a317-a26f19790ed1",
+          "cellKey": "44d97040-aec4-48a7-a622-311495ce1e30:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "4a51ec55-8163-4882-a654-f9e2be2480ca",
+      "phaseId": "phase-3",
+      "caseId": "c5f99b13-ed2a-452c-a6df-c27fb7e0da89",
+      "conditionId": "C2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "4a51ec55-8163-4882-a654-f9e2be2480ca",
+          "cellKey": "b920d83b-9188-4efa-a8fb-2af3bead05dd:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "ca79c7c3-a752-4024-a36d-67835107e6c8",
+      "phaseId": "phase-3",
+      "caseId": "a75df05d-5743-4a89-a772-b5376e2ec2c5",
+      "conditionId": "C2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "ca79c7c3-a752-4024-a36d-67835107e6c8",
+          "cellKey": "79ed34b8-4d59-4793-a172-3af9a8da3ca8:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "52076e5a-d538-46e2-a26b-f5f16837bea1",
+      "phaseId": "phase-3",
+      "caseId": "71f82263-0450-4cc9-a515-4f23e0bdde67",
+      "conditionId": "C2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "52076e5a-d538-46e2-a26b-f5f16837bea1",
+          "cellKey": "25a7b0e9-5d76-4bc2-a67b-e77779f7eab1:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "45a639fc-7e77-4c04-a885-f0b930d1352e",
+      "phaseId": "phase-3",
+      "caseId": "300204a2-c547-493e-a23a-defe9ffb6e16",
+      "conditionId": "C2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "45a639fc-7e77-4c04-a885-f0b930d1352e",
+          "cellKey": "f44815af-e19e-4d1f-a466-beacc5269673:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "e38080a3-f8e5-484d-a3ed-b146e394ac93",
+      "phaseId": "phase-3",
+      "caseId": "95289acf-0085-42a6-a6db-15d2f625131c",
+      "conditionId": "C2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "e38080a3-f8e5-484d-a3ed-b146e394ac93",
+          "cellKey": "508f5de1-c5e7-49be-ac06-eddcb3051caa:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "9a2b8489-6a08-4b5c-acee-b04cb34ce978",
+      "phaseId": "phase-3",
+      "caseId": "f74bcf12-38a2-4a9c-ab0c-8d92d7e72f65",
+      "conditionId": "C2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "9a2b8489-6a08-4b5c-acee-b04cb34ce978",
+          "cellKey": "533512ef-b1c4-4e7c-a8d1-6f6c17facc73:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "98f35d71-a4ce-48cb-af8a-bd907c0ee71e",
+      "phaseId": "phase-3",
+      "caseId": "b7cb327d-e134-492b-a34e-18669e695d8e",
+      "conditionId": "C2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "98f35d71-a4ce-48cb-af8a-bd907c0ee71e",
+          "cellKey": "22a1a859-4ef1-4441-a5dd-a94b7f757f16:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "3b57401f-b6a0-494f-aa83-fad0b3be60e0",
+      "phaseId": "phase-3",
+      "caseId": "5e14e37c-36cb-4b42-af43-67d9fe3bea5c",
+      "conditionId": "C2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "3b57401f-b6a0-494f-aa83-fad0b3be60e0",
+          "cellKey": "62b8cae4-51bb-4539-aa2e-d81d16f7a175:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "e9982ea6-2b87-4918-a1e0-b63915be0a7e",
+      "phaseId": "phase-3",
+      "caseId": "6ddea778-5723-4b0d-a889-27bf6cee020a",
+      "conditionId": "C2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "e9982ea6-2b87-4918-a1e0-b63915be0a7e",
+          "cellKey": "c117945f-62a5-44d5-abad-0b4aa55a3fdf:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "9eb230ae-af1a-4211-a4ff-81df7e3e76d1",
+      "phaseId": "phase-3",
+      "caseId": "4aeca957-3a6e-48a6-a1b5-ac380b782a01",
+      "conditionId": "C2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "9eb230ae-af1a-4211-a4ff-81df7e3e76d1",
+          "cellKey": "b740a73b-4d99-4db0-abd9-983797021b86:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "08351f6c-bc90-455d-a63f-e96af9704373",
+      "phaseId": "phase-4",
+      "caseId": "dacea325-7a70-4769-abb7-49b703a32347",
+      "conditionId": "Selection-judge",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "select",
+          "runId": "08351f6c-bc90-455d-a63f-e96af9704373",
+          "cellKey": "0bd90f1e-6a8b-4cda-ac7d-02473eb3f3bf:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "07205005-ad7d-46f7-a034-a85a2f9562b7",
+      "phaseId": "phase-4",
+      "caseId": "2679964f-d89e-41b3-ad7c-0ee8e032b4c4",
+      "conditionId": "B2-improve-P1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "critique",
+          "runId": "07205005-ad7d-46f7-a034-a85a2f9562b7",
+          "cellKey": "608ec2c4-c0ca-448e-afe1-54230b749172:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "d762ad2c-97fa-4c1f-adc1-7565fb4ed9e6",
+      "phaseId": "superseded-attempts",
+      "caseId": "16eebb42-9d96-46c1-a0e4-90a1264f2ec6",
+      "conditionId": "B2-improve-P2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "critique",
+          "runId": "d762ad2c-97fa-4c1f-adc1-7565fb4ed9e6",
+          "cellKey": "90bcdbf8-6c59-436b-af05-0890ae580d13:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "13609d82-8f02-47a1-a39a-a9a519ef66b1",
+      "phaseId": "superseded-attempts",
+      "caseId": "e584cf7b-f03b-4755-a0e4-2b0507c1b15d",
+      "conditionId": "B2-improve-P3",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "critique",
+          "runId": "13609d82-8f02-47a1-a39a-a9a519ef66b1",
+          "cellKey": "a9649d8e-36e7-4704-a358-0309516d8684:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "cb67b26c-4be0-43e2-a327-0a78bd9867ac",
+      "phaseId": "superseded-attempts",
+      "caseId": "0b300486-8b69-4aa3-ab4e-640960ab69f3",
+      "conditionId": "B2-improve-P2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "critique",
+          "runId": "cb67b26c-4be0-43e2-a327-0a78bd9867ac",
+          "cellKey": "db271dc3-9efb-41f1-afd4-90e82ed8e97b:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "096126cd-3b46-4a13-abe2-1a25634c6859",
+      "phaseId": "superseded-attempts",
+      "caseId": "0a4f0817-b0e4-46a3-a799-de5d19094c45",
+      "conditionId": "B2-improve-P3",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "critique",
+          "runId": "096126cd-3b46-4a13-abe2-1a25634c6859",
+          "cellKey": "8e172722-4267-4a22-ae8d-91c2168db874:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "49c0b716-05ac-46c6-a83f-b8d04f56a7f6",
+      "phaseId": "superseded-attempts",
+      "caseId": "668c853e-7885-4499-afd4-d6f84efe4cf2",
+      "conditionId": "B2-improve-P2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "critique",
+          "runId": "49c0b716-05ac-46c6-a83f-b8d04f56a7f6",
+          "cellKey": "f50c594b-9083-4d3a-a058-b37794a90247:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "b158df79-1451-43a1-afa6-2fbe7a801a66",
+      "phaseId": "superseded-attempts",
+      "caseId": "57f50d5e-2bb3-4458-ad11-e39546f17627",
+      "conditionId": "B2-improve-P3",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "critique",
+          "runId": "b158df79-1451-43a1-afa6-2fbe7a801a66",
+          "cellKey": "19e9af77-8b2e-4c70-aefe-c98faeb0a6ca:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "5a1f79ce-7c0a-436e-aca9-8779646d5d57",
+      "phaseId": "superseded-attempts",
+      "caseId": "775590c3-211c-4875-aefd-3ed092de6841",
+      "conditionId": "B2-improve-P2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "critique",
+          "runId": "5a1f79ce-7c0a-436e-aca9-8779646d5d57",
+          "cellKey": "2fed5b24-ab3e-41ec-aaf4-c05baf1dc71c:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "9061dcde-a12a-4f2e-aab5-04357b75fb61",
+      "phaseId": "superseded-attempts",
+      "caseId": "0160acd3-a237-40c5-a04c-7b77ad02f321",
+      "conditionId": "B2-improve-P3",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "critique",
+          "runId": "9061dcde-a12a-4f2e-aab5-04357b75fb61",
+          "cellKey": "7a14b523-24b2-4edf-af90-336b9b84b6ed:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "087c6901-6a52-4b31-a199-edd9d90e7b99",
+      "phaseId": "superseded-attempts",
+      "caseId": "066487b7-340f-4b7e-a486-21a25bb3dfa6",
+      "conditionId": "B2-improve-P2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "critique",
+          "runId": "087c6901-6a52-4b31-a199-edd9d90e7b99",
+          "cellKey": "9d424f57-dcec-4dee-af58-16fbd133930f:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "0fb07d1f-c307-400f-a54c-128883b95119",
+      "phaseId": "superseded-attempts",
+      "caseId": "135a8473-739d-405f-a529-904d4204a443",
+      "conditionId": "B2-improve-P3",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "critique",
+          "runId": "0fb07d1f-c307-400f-a54c-128883b95119",
+          "cellKey": "831b2f6f-8044-4dbd-a0a3-e24ff7950292:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "61de9453-1a92-42b8-a631-8a5b2322483f",
+      "phaseId": "superseded-attempts",
+      "caseId": "7169fe93-9ee5-404b-ae64-3f746f816762",
+      "conditionId": "B2-improve-P2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "critique",
+          "runId": "61de9453-1a92-42b8-a631-8a5b2322483f",
+          "cellKey": "61c97954-579d-4842-a45c-59665068b81d:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "88543df6-c937-40bd-a352-5edcdbe45a27",
+      "phaseId": "superseded-attempts",
+      "caseId": "3a13345d-2a31-4c20-a9a0-f3cfab359ae8",
+      "conditionId": "B2-improve-P3",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "critique",
+          "runId": "88543df6-c937-40bd-a352-5edcdbe45a27",
+          "cellKey": "173707b4-90e2-43b0-af93-5c51ac3d4eb6:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "996bf06e-1d62-40db-a682-8c3163bad2f7",
+      "phaseId": "superseded-attempts",
+      "caseId": "8ad341c0-9730-4c52-a0c6-fdb58d333b29",
+      "conditionId": "B2-improve-P2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "critique",
+          "runId": "996bf06e-1d62-40db-a682-8c3163bad2f7",
+          "cellKey": "b7fa4887-6b59-4426-a560-9d9dfbf127d6:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "6828266b-86f0-460c-ab24-3c6b2ee86d94",
+      "phaseId": "superseded-attempts",
+      "caseId": "bffc1b97-b57c-46b4-a2f5-5edc532d8e50",
+      "conditionId": "B2-improve-P3",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "critique",
+          "runId": "6828266b-86f0-460c-ab24-3c6b2ee86d94",
+          "cellKey": "0352c08d-aa8a-46a1-a1ef-d0bd2a3644a4:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "f5040e26-e7be-400c-a35a-526a5f6f5c5a",
+      "phaseId": "superseded-attempts",
+      "caseId": "ae4de0d3-1f19-4d61-a270-4f87051eafa9",
+      "conditionId": "B2-improve-P2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "critique",
+          "runId": "f5040e26-e7be-400c-a35a-526a5f6f5c5a",
+          "cellKey": "c3a1b59d-36dc-4f75-ae22-4aa91fe82e48:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "4aefdc53-8554-4897-a8c2-194c85c7e693",
+      "phaseId": "phase-4",
+      "caseId": "c76e0ff3-b9e6-48f2-a4c3-1195fa078d18",
+      "conditionId": "B2-improve-P2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "critique",
+          "runId": "4aefdc53-8554-4897-a8c2-194c85c7e693",
+          "cellKey": "10f7f4e2-6ac2-4059-a7fe-92ceba5101cb:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "6d8597d6-07c4-421b-aed8-89a28bf70f4e",
+      "phaseId": "phase-4",
+      "caseId": "bc52677b-83e4-4c54-a1e7-9bed268e030f",
+      "conditionId": "B2-improve-P3",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "critique",
+          "runId": "6d8597d6-07c4-421b-aed8-89a28bf70f4e",
+          "cellKey": "3f91f714-23b3-49d5-ae5b-a73cfaac0e76:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "44113a5f-a67b-4d2e-a080-478cf4177848",
+      "phaseId": "phase-4",
+      "caseId": "f31b958a-fbee-4786-a7d8-7642a09baa5d",
+      "conditionId": "C1-improve-P1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "critique",
+          "runId": "44113a5f-a67b-4d2e-a080-478cf4177848",
+          "cellKey": "386131f0-3c7a-463e-a035-1fa086943b1a:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "7a5f3bbb-69b3-424f-a255-9e221d702107",
+      "phaseId": "phase-4",
+      "caseId": "600c6c39-a266-405b-afc0-e0e0def4699b",
+      "conditionId": "C1-improve-P2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "critique",
+          "runId": "7a5f3bbb-69b3-424f-a255-9e221d702107",
+          "cellKey": "b0e46ecd-621e-408c-ab98-c97ac33c77a0:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "f3ab3514-579b-4423-a73a-ede995d61467",
+      "phaseId": "phase-4",
+      "caseId": "ca3565ed-8956-4868-a062-94fd20297af5",
+      "conditionId": "C1-improve-P3",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "critique",
+          "runId": "f3ab3514-579b-4423-a73a-ede995d61467",
+          "cellKey": "5ceffa20-d9d1-4ff3-adf4-0f5a3f0b67d6:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "839a0c58-fe05-4b1a-a4ab-d7c1b9855e00",
+      "phaseId": "phase-4",
+      "caseId": "672bea46-4fb4-403d-a7ad-8b7d7a310f58",
+      "conditionId": "B2-improve-P1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "discover",
+          "runId": "839a0c58-fe05-4b1a-a4ab-d7c1b9855e00",
+          "cellKey": "45d8c006-5ae7-4888-a871-a1185cd7ea12:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "265c1d58-a037-463d-a8f1-d290d98dffbb",
+      "phaseId": "phase-4",
+      "caseId": "26f3930a-692d-4cbd-a0f8-6eaf176b2d86",
+      "conditionId": "C1-improve-P1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "discover",
+          "runId": "265c1d58-a037-463d-a8f1-d290d98dffbb",
+          "cellKey": "48436382-6f38-43d6-a0aa-8c5e542b139e:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "6940d402-71e9-4636-ad01-934ea62a75aa",
+      "phaseId": "phase-4",
+      "caseId": "0af94fc6-b9af-443e-af25-d2a8d793cc56",
+      "conditionId": "B2-improve-P3",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "6940d402-71e9-4636-ad01-934ea62a75aa",
+          "cellKey": "9371c983-01c5-4f11-a1ab-35910cf52047:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "58ce226b-2523-4140-ab7d-7736589e3ebd",
+      "phaseId": "phase-4",
+      "caseId": "56ba2f41-3bf3-40da-acbd-0b691d41c5e3",
+      "conditionId": "B2-improve-P3",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "58ce226b-2523-4140-ab7d-7736589e3ebd",
+          "cellKey": "fd91588a-de28-44f0-a981-b9f163f4b5e7:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "37c4173b-8829-4f47-a050-7af85a48266f",
+      "phaseId": "phase-4",
+      "caseId": "1a7fe374-fc4a-471d-ab1c-cf3afc3790dd",
+      "conditionId": "B2-improve-P3",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "37c4173b-8829-4f47-a050-7af85a48266f",
+          "cellKey": "ccc7f1e4-1a12-4dab-a82d-8a47757205d1:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "6423d06e-7e6a-4c48-af0b-f347157bb6ca",
+      "phaseId": "phase-4",
+      "caseId": "981b9b00-3d79-4874-a3ee-a8551368d32f",
+      "conditionId": "B2-improve-P3",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "6423d06e-7e6a-4c48-af0b-f347157bb6ca",
+          "cellKey": "a4d97f14-62ab-4aa5-a8e5-66625ec8f443:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "2da68202-5959-4347-a2a9-aafec2f547e0",
+      "phaseId": "phase-4",
+      "caseId": "5ee47f6b-928b-4b81-a6be-94363ece85cf",
+      "conditionId": "B2-improve-P3",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "2da68202-5959-4347-a2a9-aafec2f547e0",
+          "cellKey": "4497500c-177c-41bd-afc3-3613b942008c:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "94221fcc-3de4-4ea2-a4fb-82e220e02513",
+      "phaseId": "phase-4",
+      "caseId": "99682952-fb48-45fb-a394-309b92c56a42",
+      "conditionId": "B2-improve-P3",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "94221fcc-3de4-4ea2-a4fb-82e220e02513",
+          "cellKey": "f6c6ce7e-39c3-4fb1-a505-9720937773be:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "7bc99690-192d-49a6-aafa-fdc1c7d64d83",
+      "phaseId": "phase-4",
+      "caseId": "6c842719-df31-4b54-a88b-411a2df7e80d",
+      "conditionId": "B2-improve-P3",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "7bc99690-192d-49a6-aafa-fdc1c7d64d83",
+          "cellKey": "70ec6808-ae53-4ab8-aedc-765dc9a44eea:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "9fd3509d-0f81-46c4-a1b9-b8e99796e95f",
+      "phaseId": "phase-4",
+      "caseId": "6f83114f-cb02-4810-a405-67383ae91e64",
+      "conditionId": "B2-improve-P3",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "9fd3509d-0f81-46c4-a1b9-b8e99796e95f",
+          "cellKey": "71b9771d-b014-400c-a5c1-5d09c880e424:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "5ae2efee-e37e-4d6c-a7d9-2152b4d102ec",
+      "phaseId": "phase-4",
+      "caseId": "7ad576dc-c8d0-4b66-ac96-b0a4aa72ce05",
+      "conditionId": "B2-improve-P3",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "5ae2efee-e37e-4d6c-a7d9-2152b4d102ec",
+          "cellKey": "32d0d971-63e7-4740-a8f2-97a322ebd76d:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "80bac571-fd92-4846-a472-a9ac968661e6",
+      "phaseId": "phase-4",
+      "caseId": "1657e0e0-f783-4d62-a883-70e1dba9dee6",
+      "conditionId": "B2-improve-P3",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "80bac571-fd92-4846-a472-a9ac968661e6",
+          "cellKey": "ef56fc69-aaf8-44b8-afa4-f12f4a3cd86a:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "73260ee9-cb1c-40d0-a8dd-1548cf36cdef",
+      "phaseId": "phase-4",
+      "caseId": "0d16f99d-4d29-452f-a688-89ebe7dfba82",
+      "conditionId": "B2-improve-P3",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "73260ee9-cb1c-40d0-a8dd-1548cf36cdef",
+          "cellKey": "df693319-864e-4aed-a2c6-cd52b75fdd1e:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "75971151-7d2a-468d-ac18-577793ee77b9",
+      "phaseId": "phase-4",
+      "caseId": "cae29447-9db5-403c-aa2a-cd1a2304d25b",
+      "conditionId": "B2-improve-P3",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "75971151-7d2a-468d-ac18-577793ee77b9",
+          "cellKey": "08baf2a1-e84a-47f9-aa3b-3dd453a95007:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "fd7f4cb0-cdea-4f25-a4d6-617b5505b3ce",
+      "phaseId": "phase-4",
+      "caseId": "6bed98b2-5a95-4bff-a115-53937f1184c3",
+      "conditionId": "B2-improve-P3",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "fd7f4cb0-cdea-4f25-a4d6-617b5505b3ce",
+          "cellKey": "67ae969a-93fd-4108-ab31-e62d7a321a18:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "9421e861-ea5a-49e1-ab57-0878ee2f9986",
+      "phaseId": "phase-4",
+      "caseId": "bdf4e55a-9222-4f8a-a8d1-95c0d4db0afe",
+      "conditionId": "B2-improve-P2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "9421e861-ea5a-49e1-ab57-0878ee2f9986",
+          "cellKey": "cdc5cb12-b088-44da-ae90-d9f5c82f1dad:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "f6c9d5e3-808a-4e30-abfb-c835bff7b6ef",
+      "phaseId": "phase-4",
+      "caseId": "d51f4b5b-336f-4f73-acca-607d76e03859",
+      "conditionId": "B2-improve-P2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "f6c9d5e3-808a-4e30-abfb-c835bff7b6ef",
+          "cellKey": "da948d1c-2937-42b1-aa14-fa240833bc28:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "e51d0b13-5821-43f8-ade7-27b8ab2f0102",
+      "phaseId": "phase-4",
+      "caseId": "2c3cae02-83d4-4aaa-ab97-6f79a6321630",
+      "conditionId": "B2-improve-P2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "e51d0b13-5821-43f8-ade7-27b8ab2f0102",
+          "cellKey": "bd8d8b5d-0630-4e86-a63b-dd5323cff23c:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "f8ef33e8-18a2-4477-a231-e9f6aea9664b",
+      "phaseId": "phase-4",
+      "caseId": "31219540-60af-4f45-a272-905a43c7a07a",
+      "conditionId": "B2-improve-P2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "f8ef33e8-18a2-4477-a231-e9f6aea9664b",
+          "cellKey": "893fe54c-9d9e-4b5b-a4bc-ee1b5a5f952c:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "ebe400f0-e042-4750-ab7b-e8ba8816d543",
+      "phaseId": "phase-4",
+      "caseId": "0cb381e6-7728-4dec-a1a7-1fa1d7ce3e26",
+      "conditionId": "B2-improve-P2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "ebe400f0-e042-4750-ab7b-e8ba8816d543",
+          "cellKey": "def84468-19cd-4c76-a1e6-76bfbc048536:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "69920da1-c641-43bf-a897-b598f1d648e4",
+      "phaseId": "phase-4",
+      "caseId": "a7afab79-9a05-4ef6-a410-304b4d80864c",
+      "conditionId": "B2-improve-P2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "69920da1-c641-43bf-a897-b598f1d648e4",
+          "cellKey": "d9e835a0-92bf-4b1a-a3ed-27524cdbb0f7:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "7ded6a4f-81a9-4335-a211-e3364f9aa59f",
+      "phaseId": "phase-4",
+      "caseId": "57cd3e9e-e953-4f13-a188-186111f41f9c",
+      "conditionId": "B2-improve-P2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "7ded6a4f-81a9-4335-a211-e3364f9aa59f",
+          "cellKey": "296246b1-7ee4-4ba3-aeeb-6c9f86c97e37:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "ceace888-dd50-441b-a81f-ffcc0a17b0cb",
+      "phaseId": "phase-4",
+      "caseId": "024ea833-8e93-42bb-ada2-4005c165790c",
+      "conditionId": "B2-improve-P2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "ceace888-dd50-441b-a81f-ffcc0a17b0cb",
+          "cellKey": "0371af7e-e88b-42e5-a941-2b26e3bab12e:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "b78b8b2b-3493-4805-a325-f4fa7a95c46d",
+      "phaseId": "phase-4",
+      "caseId": "ca098fcf-4283-4535-a20e-247eeb7f94c5",
+      "conditionId": "B2-improve-P2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "b78b8b2b-3493-4805-a325-f4fa7a95c46d",
+          "cellKey": "211f9275-66d7-47e8-ab9a-647e5c4aab33:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "649c5983-6d13-4fa4-a3d1-ebfd2ef87b20",
+      "phaseId": "phase-4",
+      "caseId": "f4689452-fa4f-4301-a755-c4cfae6af62d",
+      "conditionId": "B2-improve-P2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "649c5983-6d13-4fa4-a3d1-ebfd2ef87b20",
+          "cellKey": "5729250f-be7c-40f8-ab2a-ac60bf3f3172:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "b3dbd189-b0c8-434c-a3d3-dfbffb539367",
+      "phaseId": "phase-4",
+      "caseId": "1e13dd0f-ab1a-458c-a80c-2f57b54d60db",
+      "conditionId": "B2-improve-P2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "b3dbd189-b0c8-434c-a3d3-dfbffb539367",
+          "cellKey": "568f95cb-0288-4b22-a1d3-ac0b70467fec:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "793b09b8-b0c2-4869-accc-f09a94037a02",
+      "phaseId": "phase-4",
+      "caseId": "dbc07bf0-cf13-40f1-aea8-ad0d6528194d",
+      "conditionId": "B2-improve-P2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "793b09b8-b0c2-4869-accc-f09a94037a02",
+          "cellKey": "ab9419b4-4e0a-4bd6-a22d-0925122d52e2:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "bc0c6b38-a8ad-4ea2-a126-42aef17c796b",
+      "phaseId": "phase-4",
+      "caseId": "e14aaf47-2596-4ea4-a08e-395c42fdf2bb",
+      "conditionId": "B2-improve-P2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "bc0c6b38-a8ad-4ea2-a126-42aef17c796b",
+          "cellKey": "9452d32c-b2fa-459d-adf8-29ddb8e93db8:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "932e9b24-3c4e-40f2-a3d2-8535a25599c2",
+      "phaseId": "phase-4",
+      "caseId": "a3b34e36-d339-4396-a552-409bf44b1556",
+      "conditionId": "C1-improve-P2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "932e9b24-3c4e-40f2-a3d2-8535a25599c2",
+          "cellKey": "cdbba3d1-00cc-4741-a19c-e4e893c351c6:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "36c7b218-6d9a-4659-a42c-bcf58cef0c4b",
+      "phaseId": "phase-4",
+      "caseId": "742284de-df0a-4aa0-a469-478f415fdc71",
+      "conditionId": "C1-improve-P2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "36c7b218-6d9a-4659-a42c-bcf58cef0c4b",
+          "cellKey": "26306975-cba2-434a-ae3c-03df384bea0d:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "2c3f45df-9a43-47b1-abec-6f250ba921ec",
+      "phaseId": "phase-4",
+      "caseId": "373e0964-d2e3-4dbd-aa8e-e363b03f8ad5",
+      "conditionId": "C1-improve-P2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "2c3f45df-9a43-47b1-abec-6f250ba921ec",
+          "cellKey": "b5a155da-89f7-4739-ab72-4a01994ef425:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "8f52951d-0dca-4560-ab68-e2f0bac92b07",
+      "phaseId": "phase-4",
+      "caseId": "b53af269-cd4d-46ad-a808-28c4fe1cef58",
+      "conditionId": "C1-improve-P2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "8f52951d-0dca-4560-ab68-e2f0bac92b07",
+          "cellKey": "bf4929e2-2dfc-427d-a0d9-cf0eea88d8fa:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "e843b8b3-1286-4f84-aa06-a8866b4ae43b",
+      "phaseId": "phase-4",
+      "caseId": "05c5ac78-2246-45ff-ad89-2931c67bd36a",
+      "conditionId": "C1-improve-P2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "e843b8b3-1286-4f84-aa06-a8866b4ae43b",
+          "cellKey": "ec77b439-5ae7-44f8-a9fe-d91564337532:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "e732aa0b-ac08-4a3a-afa8-e6ff11ce18ca",
+      "phaseId": "phase-4",
+      "caseId": "fb052ff3-8e9b-4368-a62a-d161129123e6",
+      "conditionId": "C1-improve-P2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "e732aa0b-ac08-4a3a-afa8-e6ff11ce18ca",
+          "cellKey": "53a0aeb3-4b6e-4b84-a89f-7ad0f4636aa4:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "10e99ef4-f1ad-4343-a697-8d2f8fda8e02",
+      "phaseId": "phase-4",
+      "caseId": "36f28f3b-ed27-4456-a383-3e04cf365055",
+      "conditionId": "C1-improve-P2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "10e99ef4-f1ad-4343-a697-8d2f8fda8e02",
+          "cellKey": "9a9f76bc-53d8-4f76-a778-14a15a96b916:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "da137791-9a47-4476-a24e-a9bddef8f033",
+      "phaseId": "phase-4",
+      "caseId": "e3fadcac-7aa3-48b6-a9fd-8e486a05cec3",
+      "conditionId": "C1-improve-P2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "da137791-9a47-4476-a24e-a9bddef8f033",
+          "cellKey": "da366762-1040-4413-ac48-bd91f9d93e34:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "e9d587d8-3091-420f-a945-e99137c72372",
+      "phaseId": "phase-4",
+      "caseId": "6528db49-1409-4aad-a7d8-f144da1a6876",
+      "conditionId": "C1-improve-P2",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "e9d587d8-3091-420f-a945-e99137c72372",
+          "cellKey": "8eda439c-00e4-4ef7-aa89-de58ce195c8b:1:alternative"
+        }
+      ]
+    }
+  ],
+  "comparisons": [],
+  "schemaVersion": 1,
+  "id": "1bccd8d6-7f5e-47f7-bd42-3b8a39c347b3",
+  "projectId": "project-4971c06b-83d5-49eb-998d-043d5fc2dca4",
+  "revision": 651,
+  "createdAt": "2026-11-11T06:10:35.077Z",
+  "updatedAt": "2026-11-11T15:07:29.965Z"
+}

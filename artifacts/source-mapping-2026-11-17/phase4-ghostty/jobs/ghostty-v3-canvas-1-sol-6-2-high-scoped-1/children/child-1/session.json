@@ -1,0 +1,19 @@
+{
+  "id": "child-1",
+  "name": "app",
+  "assignment": "Map d1 n1–n10 (and App/runtime parts of n43 if useful). Read relevant numbered sources. Return compact text per node with scope and precise ranges + role (D/U/I); for n1 indicate union of descendant coverage where appropriate and independent anchor. Own private /tmp via mktemp if useful.",
+  "model": "gpt-6.2-sol",
+  "effort": "high",
+  "status": "generating",
+  "queuedAt": "2026-11-22T02:48:13.476Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-22T02:48:13.479Z",
+  "sessionId": "01a20127-77cd-71fb-979f-fd2d8a66feba",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-gr3iob08-agent-repository-kN3gdl-checkout--/2026-11-22T02-48-13-517Z_01a20127-77cd-71fb-979f-fd2d8a66feba.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase4-gr3iob08/agent-repository-kN3gdl/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "status": "passed",
+  "phaseId": "pi",
+  "sourceCommit": "682c7b93ce3e0a52b579c2b65b4c06bb392e7180",
+  "sessions": 3,
+  "model": "gpt-6-astra",
+  "effort": "high",
+  "validation": "three single-root parser failures retained",
+  "outputRefs": [
+    "output/cca240fa-314c-4034-9185-deb132719a43/raw-output",
+    "output/cca240fa-314c-4034-9185-deb132719a43/coverage",
+    "output/e9f22385-f7f1-4a48-ae2a-d74d325ba568/raw-output",
+    "output/f30b00ed-4b90-4a84-83e3-038b901b34be/raw-output"
+  ],
+  "checks": [
+    "same pinned inputs",
+    "independent sessions",
+    "exact raw output preservation",
+    "read/bash trace coverage",
+    "aggregate report and output loading"
+  ]
+}

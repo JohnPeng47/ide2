@@ -1,0 +1,18 @@
+{
+  "text": "The full mapping for the assigned nodes **d1/n24–n35** is saved in `/tmp/ghostty-input/candidate.json` in the requested JSON schema. The compact handoff, one node per line with `path:start-end:roles`, is in `/tmp/ghostty-input/compact.jsonl` (`d` = declaration, `u` = use, `i` = implementation).\n\nThe dedicated validator was unavailable. Local checks verified all 451 ranges against the pinned commit, including tracked paths, exclusions, line bounds, and no duplicate line coverage within a node. The checkout is unchanged.\n\nNotes for integration: **n25** bindings can run without consuming the key, allowing it to be encoded too. **n29–n31** Kitty mode 5522 sends a MIME listing instead of ordinary paste text. **n33** read-only mode filters write messages at `Surface.queueIo`; it is not a universal Termio write lock. **n35** follows the write through to the PTY-backed stream; the OS write scheduling itself is in external libxev.",
+  "usage": {
+    "input": 187268,
+    "output": 11069,
+    "cacheRead": 2438656,
+    "cacheWrite": 0,
+    "reasoning": 1642,
+    "totalTokens": 2636993
+  },
+  "cost": {
+    "input": 0.37453599999999987,
+    "output": 0.11069000000000001,
+    "cacheRead": 0.4877312000000001,
+    "cacheWrite": 0,
+    "total": 0.9729571999999999
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "fingerprint": "74debb659c54c83bebdd120274c7de9d3f0ddba5cf6c208470a738242f080d4e",
+  "files": {
+    "judge-input.json": {
+      "sha256": "fbf2fe6199eadf695e0257a7a24f024acb78386db5ad01226842ee27b321bec6",
+      "bytes": 229891
+    }
+  },
+  "dependencies": [
+    "initial/C1/expand/composition",
+    "initial/C1/expand/diagrams",
+    "initial/C1/expand/parsing",
+    "initial/C1/expand/canvas_commands",
+    "initial/C1/expand/workspace",
+    "initial/C1/expand/rendering",
+    "initial/C1/expand/persistence",
+    "initial/C1/expand/source_evidence",
+    "initial/C1/expand/agent_access",
+    "initial/C1/expand/contexts",
+    "initial/C1/expand/diagram_generation",
+    "initial/C1/expand/chat",
+    "initial/C1/expand/changes",
+    "initial/C1/expand/evals",
+    "initial/C1/expand/static_analysis"
+  ],
+  "round": 1
+}

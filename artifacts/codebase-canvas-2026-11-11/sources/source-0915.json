@@ -1,0 +1,1 @@
+{"path": "src/shared/theme/themeDefinitions.ts", "text": "export type ThemeName = 'dark' | 'light';\nexport const themeDefinitions = {\n  dark: { label: 'Current Dark', source: 'dark-plus', markdown: 'catppuccin-mocha', browserColor: '#0f1115' },\n  light: { label: 'Neutral Light', source: 'light-plus', markdown: 'catppuccin-latte', browserColor: '#f3f4f6' }\n} as const;\n"}

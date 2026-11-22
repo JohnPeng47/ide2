@@ -1,0 +1,414 @@
+{
+  "projectId": "project-4971c06b-83d5-49eb-998d-043d5fc2dca4",
+  "experimentId": "b8ad87a7-698a-45e9-9cc0-b640ede5efa6",
+  "phaseId": "phase-3",
+  "commit": "ea8b12a8a9894b5259c441eadd8f6f0c65e215af",
+  "mainConcurrency": 2,
+  "childConcurrency": 4,
+  "pilot": [
+    "ghostty-v3-canvas-1-sol-high_sol-medium-1",
+    "ghostty-v3-canvas-1-astra-high_sol-medium-1"
+  ],
+  "conditions": [
+    {
+      "id": "sol-high_sol-medium",
+      "name": "Sol high \u00b7 Sol medium children",
+      "model": "gpt-6-sol"
+    },
+    {
+      "id": "astra-high_sol-medium",
+      "name": "Astra high \u00b7 Sol medium children",
+      "model": "gpt-6-astra"
+    }
+  ],
+  "jobs": [
+    {
+      "key": "ghostty-v3-core-1-sol-high_sol-medium-1",
+      "caseId": "ghostty-v3-core-1",
+      "conditionId": "sol-high_sol-medium",
+      "number": 1,
+      "model": "gpt-6-sol",
+      "effort": "high",
+      "childModel": "gpt-6-sol",
+      "childEffort": "medium",
+      "runId": "509c11d3-9cd9-4c3b-b2fa-00d51c2e0451",
+      "kind": "core",
+      "cellKey": "ff376a21-67fd-4112-8618-6144a0307f66:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-core-1-sol-high_sol-medium-2",
+      "caseId": "ghostty-v3-core-1",
+      "conditionId": "sol-high_sol-medium",
+      "number": 2,
+      "model": "gpt-6-sol",
+      "effort": "high",
+      "childModel": "gpt-6-sol",
+      "childEffort": "medium",
+      "runId": "73b55dcc-a36f-4e7a-b669-3960887a40c2",
+      "kind": "core",
+      "cellKey": "ff376a21-67fd-4112-8618-6144a0307f66:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-core-1-sol-high_sol-medium-3",
+      "caseId": "ghostty-v3-core-1",
+      "conditionId": "sol-high_sol-medium",
+      "number": 3,
+      "model": "gpt-6-sol",
+      "effort": "high",
+      "childModel": "gpt-6-sol",
+      "childEffort": "medium",
+      "runId": "ae876a87-e75c-47a9-9465-741ef1d0a1e3",
+      "kind": "core",
+      "cellKey": "ff376a21-67fd-4112-8618-6144a0307f66:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-core-1-astra-high_sol-medium-1",
+      "caseId": "ghostty-v3-core-1",
+      "conditionId": "astra-high_sol-medium",
+      "number": 1,
+      "model": "gpt-6-astra",
+      "effort": "high",
+      "childModel": "gpt-6-sol",
+      "childEffort": "medium",
+      "runId": "8b9d6ea8-a8cf-48ae-b8d8-1939ef26cdc3",
+      "kind": "core",
+      "cellKey": "ff376a21-67fd-4112-8618-6144a0307f66:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-core-1-astra-high_sol-medium-2",
+      "caseId": "ghostty-v3-core-1",
+      "conditionId": "astra-high_sol-medium",
+      "number": 2,
+      "model": "gpt-6-astra",
+      "effort": "high",
+      "childModel": "gpt-6-sol",
+      "childEffort": "medium",
+      "runId": "7fb6b859-b92b-425a-a1f4-a12949562dae",
+      "kind": "core",
+      "cellKey": "ff376a21-67fd-4112-8618-6144a0307f66:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-core-1-astra-high_sol-medium-3",
+      "caseId": "ghostty-v3-core-1",
+      "conditionId": "astra-high_sol-medium",
+      "number": 3,
+      "model": "gpt-6-astra",
+      "effort": "high",
+      "childModel": "gpt-6-sol",
+      "childEffort": "medium",
+      "runId": "93beb4c6-3a32-4876-9956-723530390454",
+      "kind": "core",
+      "cellKey": "ff376a21-67fd-4112-8618-6144a0307f66:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-core-2-sol-high_sol-medium-1",
+      "caseId": "ghostty-v3-core-2",
+      "conditionId": "sol-high_sol-medium",
+      "number": 1,
+      "model": "gpt-6-sol",
+      "effort": "high",
+      "childModel": "gpt-6-sol",
+      "childEffort": "medium",
+      "runId": "18043c33-8db8-4fce-bd0e-423ea956edca",
+      "kind": "core",
+      "cellKey": "ff376a21-67fd-4112-8618-6144a0307f66:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-core-2-sol-high_sol-medium-2",
+      "caseId": "ghostty-v3-core-2",
+      "conditionId": "sol-high_sol-medium",
+      "number": 2,
+      "model": "gpt-6-sol",
+      "effort": "high",
+      "childModel": "gpt-6-sol",
+      "childEffort": "medium",
+      "runId": "207f5817-ba0a-4507-b06d-9b7ff6c72649",
+      "kind": "core",
+      "cellKey": "ff376a21-67fd-4112-8618-6144a0307f66:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-core-2-sol-high_sol-medium-3",
+      "caseId": "ghostty-v3-core-2",
+      "conditionId": "sol-high_sol-medium",
+      "number": 3,
+      "model": "gpt-6-sol",
+      "effort": "high",
+      "childModel": "gpt-6-sol",
+      "childEffort": "medium",
+      "runId": "2bfead7f-842f-4750-bce7-0cc58a5ab0df",
+      "kind": "core",
+      "cellKey": "ff376a21-67fd-4112-8618-6144a0307f66:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-core-2-astra-high_sol-medium-1",
+      "caseId": "ghostty-v3-core-2",
+      "conditionId": "astra-high_sol-medium",
+      "number": 1,
+      "model": "gpt-6-astra",
+      "effort": "high",
+      "childModel": "gpt-6-sol",
+      "childEffort": "medium",
+      "runId": "5a65b24f-ad7c-4a39-97c4-30ca199459e9",
+      "kind": "core",
+      "cellKey": "ff376a21-67fd-4112-8618-6144a0307f66:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-core-2-astra-high_sol-medium-2",
+      "caseId": "ghostty-v3-core-2",
+      "conditionId": "astra-high_sol-medium",
+      "number": 2,
+      "model": "gpt-6-astra",
+      "effort": "high",
+      "childModel": "gpt-6-sol",
+      "childEffort": "medium",
+      "runId": "537bf92c-d0ea-46d2-a2b6-f59c06a377c6",
+      "kind": "core",
+      "cellKey": "ff376a21-67fd-4112-8618-6144a0307f66:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-core-2-astra-high_sol-medium-3",
+      "caseId": "ghostty-v3-core-2",
+      "conditionId": "astra-high_sol-medium",
+      "number": 3,
+      "model": "gpt-6-astra",
+      "effort": "high",
+      "childModel": "gpt-6-sol",
+      "childEffort": "medium",
+      "runId": "526c7322-d76e-4ac4-84ed-bb94312afb9b",
+      "kind": "core",
+      "cellKey": "ff376a21-67fd-4112-8618-6144a0307f66:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-canvas-1-sol-high_sol-medium-1",
+      "caseId": "ghostty-v3-canvas-1",
+      "conditionId": "sol-high_sol-medium",
+      "number": 1,
+      "model": "gpt-6-sol",
+      "effort": "high",
+      "childModel": "gpt-6-sol",
+      "childEffort": "medium",
+      "runId": "83a35411-07d4-4b3a-82ae-649fbede8862",
+      "kind": "canvas",
+      "cellKey": "e45566cf-a9bf-477f-9774-b5758a2785bb:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-canvas-1-sol-high_sol-medium-2",
+      "caseId": "ghostty-v3-canvas-1",
+      "conditionId": "sol-high_sol-medium",
+      "number": 2,
+      "model": "gpt-6-sol",
+      "effort": "high",
+      "childModel": "gpt-6-sol",
+      "childEffort": "medium",
+      "runId": "03fdb750-32e6-4a95-8cc5-fce8e422026f",
+      "kind": "canvas",
+      "cellKey": "e45566cf-a9bf-477f-9774-b5758a2785bb:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-canvas-1-sol-high_sol-medium-3",
+      "caseId": "ghostty-v3-canvas-1",
+      "conditionId": "sol-high_sol-medium",
+      "number": 3,
+      "model": "gpt-6-sol",
+      "effort": "high",
+      "childModel": "gpt-6-sol",
+      "childEffort": "medium",
+      "runId": "4e1e776d-7e0d-4a16-a74a-654329e4befc",
+      "kind": "canvas",
+      "cellKey": "e45566cf-a9bf-477f-9774-b5758a2785bb:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-canvas-1-astra-high_sol-medium-1",
+      "caseId": "ghostty-v3-canvas-1",
+      "conditionId": "astra-high_sol-medium",
+      "number": 1,
+      "model": "gpt-6-astra",
+      "effort": "high",
+      "childModel": "gpt-6-sol",
+      "childEffort": "medium",
+      "runId": "142ee37c-7b3e-4a78-afdd-5d0233ade823",
+      "kind": "canvas",
+      "cellKey": "e45566cf-a9bf-477f-9774-b5758a2785bb:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-canvas-1-astra-high_sol-medium-2",
+      "caseId": "ghostty-v3-canvas-1",
+      "conditionId": "astra-high_sol-medium",
+      "number": 2,
+      "model": "gpt-6-astra",
+      "effort": "high",
+      "childModel": "gpt-6-sol",
+      "childEffort": "medium",
+      "runId": "14a25734-30bd-4f6e-afe5-86df1b4096e1",
+      "kind": "canvas",
+      "cellKey": "e45566cf-a9bf-477f-9774-b5758a2785bb:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-canvas-1-astra-high_sol-medium-3",
+      "caseId": "ghostty-v3-canvas-1",
+      "conditionId": "astra-high_sol-medium",
+      "number": 3,
+      "model": "gpt-6-astra",
+      "effort": "high",
+      "childModel": "gpt-6-sol",
+      "childEffort": "medium",
+      "runId": "bedcc03b-5868-49cb-b364-92d6f3d08ced",
+      "kind": "canvas",
+      "cellKey": "e45566cf-a9bf-477f-9774-b5758a2785bb:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-canvas-2-sol-high_sol-medium-1",
+      "caseId": "ghostty-v3-canvas-2",
+      "conditionId": "sol-high_sol-medium",
+      "number": 1,
+      "model": "gpt-6-sol",
+      "effort": "high",
+      "childModel": "gpt-6-sol",
+      "childEffort": "medium",
+      "runId": "22ba0a71-5863-43c1-a102-304fa19d72af",
+      "kind": "canvas",
+      "cellKey": "e45566cf-a9bf-477f-9774-b5758a2785bb:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-canvas-2-sol-high_sol-medium-2",
+      "caseId": "ghostty-v3-canvas-2",
+      "conditionId": "sol-high_sol-medium",
+      "number": 2,
+      "model": "gpt-6-sol",
+      "effort": "high",
+      "childModel": "gpt-6-sol",
+      "childEffort": "medium",
+      "runId": "70a29aae-86a7-48f7-a1d0-efdbff54e974",
+      "kind": "canvas",
+      "cellKey": "e45566cf-a9bf-477f-9774-b5758a2785bb:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-canvas-2-sol-high_sol-medium-3",
+      "caseId": "ghostty-v3-canvas-2",
+      "conditionId": "sol-high_sol-medium",
+      "number": 3,
+      "model": "gpt-6-sol",
+      "effort": "high",
+      "childModel": "gpt-6-sol",
+      "childEffort": "medium",
+      "runId": "42fc0f97-f936-485e-b816-d0000f2d9f9b",
+      "kind": "canvas",
+      "cellKey": "e45566cf-a9bf-477f-9774-b5758a2785bb:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-canvas-2-astra-high_sol-medium-1",
+      "caseId": "ghostty-v3-canvas-2",
+      "conditionId": "astra-high_sol-medium",
+      "number": 1,
+      "model": "gpt-6-astra",
+      "effort": "high",
+      "childModel": "gpt-6-sol",
+      "childEffort": "medium",
+      "runId": "4752271b-45e7-413c-bd32-f41fb9fb2b31",
+      "kind": "canvas",
+      "cellKey": "e45566cf-a9bf-477f-9774-b5758a2785bb:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-canvas-2-astra-high_sol-medium-2",
+      "caseId": "ghostty-v3-canvas-2",
+      "conditionId": "astra-high_sol-medium",
+      "number": 2,
+      "model": "gpt-6-astra",
+      "effort": "high",
+      "childModel": "gpt-6-sol",
+      "childEffort": "medium",
+      "runId": "9de0dbad-9cde-4f0f-b81d-d1ad2afe25c1",
+      "kind": "canvas",
+      "cellKey": "e45566cf-a9bf-477f-9774-b5758a2785bb:1:alternative"
+    },
+    {
+      "key": "ghostty-v3-canvas-2-astra-high_sol-medium-3",
+      "caseId": "ghostty-v3-canvas-2",
+      "conditionId": "astra-high_sol-medium",
+      "number": 3,
+      "model": "gpt-6-astra",
+      "effort": "high",
+      "childModel": "gpt-6-sol",
+      "childEffort": "medium",
+      "runId": "59f2c7cd-c9a5-450f-96a0-c769e3ea1cb8",
+      "kind": "canvas",
+      "cellKey": "e45566cf-a9bf-477f-9774-b5758a2785bb:1:alternative"
+    }
+  ],
+  "cases": [
+    {
+      "key": "ghostty-v3-core-1",
+      "kind": "core",
+      "name": "Ghostty \u00b7 Central diagram 1",
+      "source": {
+        "experimentId": "08ccc7fa-8ea6-4cfa-b0b7-8819b7fcbf35",
+        "runId": "3d97670a-8d2d-41fe-86c6-7b3914204965",
+        "cellKey": "0b3af2dd-ba89-4032-936a-40070a3e167e:1:alternative",
+        "label": "Ghostty \u00b7 Central diagram 1"
+      },
+      "agentContextId": "saved-agent-context-a746677e-3df7-4ad4-8ce6-f57f7fec085f",
+      "contentHash": "8af6ea337c0c8929ae0d1c072bfda8d43f7310dbb13703ec2fbb33fc3c418ce2",
+      "diagramCount": 1,
+      "nodeCount": 89
+    },
+    {
+      "key": "ghostty-v3-core-2",
+      "kind": "core",
+      "name": "Ghostty \u00b7 Central diagram 2",
+      "source": {
+        "experimentId": "08ccc7fa-8ea6-4cfa-b0b7-8819b7fcbf35",
+        "runId": "87b0635d-e644-43cd-856a-81c73fbc2af6",
+        "cellKey": "0b3af2dd-ba89-4032-936a-40070a3e167e:1:alternative",
+        "label": "Ghostty \u00b7 Central diagram 2"
+      },
+      "agentContextId": "saved-agent-context-fbcfe84b-9f06-4a02-9dad-eeb71c335864",
+      "contentHash": "1ecbc023996db06896fa758bb7ac185ab7aa5b374b7c4bef608a936275283e31",
+      "diagramCount": 1,
+      "nodeCount": 101
+    },
+    {
+      "key": "ghostty-v3-canvas-1",
+      "kind": "canvas",
+      "name": "Ghostty \u00b7 Expanded canvas 1",
+      "source": {
+        "experimentId": "7821c7da-cfcd-446d-8d7f-43b26df049fe",
+        "runId": "55bf4eb7-f1e9-4f36-aab2-ead60da799d4",
+        "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative",
+        "label": "Ghostty \u00b7 Expanded canvas 1",
+        "checkpointId": "canvas-revision-34bf475c-72ec-459c-9519-fc7db199a4a2"
+      },
+      "agentContextId": "saved-agent-context-952866b0-4afc-446f-8220-ab80a40582c5",
+      "contentHash": "f80fdfee53c9c2eecb607117514795b67267e5117b0960c2a77e390d08a58685",
+      "diagramCount": 5,
+      "nodeCount": 152
+    },
+    {
+      "key": "ghostty-v3-canvas-2",
+      "kind": "canvas",
+      "name": "Ghostty \u00b7 Expanded canvas 2",
+      "source": {
+        "experimentId": "7821c7da-cfcd-446d-8d7f-43b26df049fe",
+        "runId": "55bf4eb7-f1e9-4f36-aab2-ead60da799d4",
+        "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:2:alternative",
+        "label": "Ghostty \u00b7 Expanded canvas 2",
+        "checkpointId": "canvas-revision-12cfbb89-87e9-46aa-a418-ec796f2fadae"
+      },
+      "agentContextId": "saved-agent-context-7cc79fd6-9b61-4a41-ab68-ccdb7f5a8c91",
+      "contentHash": "a78433ee817e7fb327fb6c961669e4dc7f2433a76841a8dadb62f83fef0f20d3",
+      "diagramCount": 5,
+      "nodeCount": 160
+    }
+  ],
+  "prompts": {
+    "core": {
+      "promptId": "ff376a21-67fd-4112-8618-6144a0307f66",
+      "version": 4,
+      "contentHash": "e8c653ee162f0aafa4b03450092f609addb46f22a26dc39377bbf83c1dbb21a1"
+    },
+    "canvas": {
+      "promptId": "e45566cf-a9bf-477f-9774-b5758a2785bb",
+      "version": 4,
+      "contentHash": "19023eea70f834e1037202f179c6db9827c3b2762f840a6c70638a10b8b1b384"
+    }
+  }
+}

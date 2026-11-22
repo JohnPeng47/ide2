@@ -1,0 +1,18 @@
+{
+  "text": "**d1 n12–n21:** `/tmp/d1input/fragment.json` contains the merge-ready subset. All file paths and line bounds were checked locally. `+n` includes that child’s ranges, deduplicated in the JSON.\n\nPaths below are relative to `src/`, with `.zig` implied:\n\n```text\nS=Surface A=App T=termio/Termio IT=termio/Thread IM=termio/message MB=termio/mailbox\nR=renderer/Thread RM=renderer/message G=renderer/generic Z=renderer/size\nE=apprt/embedded GA=apprt/gtk/App GS=apprt/gtk/class/surface GC=apprt/gtk/class/application\nB=input/Binding K=input/key_encode M=input/mouse_encode P=input/paste TP=terminal/paste\n\nn12 srg S:74-79:d,477-484:d,624-626:i,881-893:u E:615-624:ui,634-646:i GS:1968-1980:i,3610-3624:ui\nn13 ser S:144-147:d,301-472:di,505-507:i,643-644:i,876-876:i,1804-1831:ui +14\nn14 ebr A:172-176:u S:1017-1019:u,1804-1906:di,2536-2572:ui,899-920:ui,2577-2579:i RM:48-53:d,86-104:i IM:38-43:d T:182-248:di,437-447:ui,466-521:i IT:289-296:d,308-313:i,321-324:ui R:103-111:di,290-290:d,301-303:i,397-400:ui,406-415:ui,446-458:i,474-493:ui G:627-703:i,2171-2246:i\nn15 s S:104-131:d,141-142:d,155-166:d,229-299:d,638-639:i,643-643:i,1297-1299:i,3437-3444:i,3466-3477:i\nn16 seby S:190-207:d,2790-2982:di,3421-3432:di,3915-4297:di E:202-228:u,1052-1062:u,1131-1136:u GS:1445-1458:u,2963-2974:u +17 +18 +19\nn17 br S:2792-2795:d,2834-2840:u,2987-3219:i,3280-3322:i,4941-5819:di A:444-482:i,486-529:ui B:303-303:d,1539-1557:i,2722-2760:i E:303-323:di GA:61-68:ui GC:692-835:di\nn18 br S:2792-2795:d,2834-2846:u,2938-2961:ui,3324-3419:di,3421-3432:ui,3802-3805:i,3813-3875:di,3880-3905:i,3918-3923:d,3944-3948:u,4057-4094:ui,4180-4191:u,6017-6033:ui,6219-6262:i,6264-6398:di K:59-72:i,82-550:i,1028-1117:i M:41-50:i,81-280:i P:5-22:di,42-119:i TP:167-242:i\nn19 ebrg S:171-175:d,895-920:di,2953-2957:u,3871-3875:u,6335-6341:u IM:91-98:d,107-132:i T:431-447:di MB:47-55:i,63-108:i IT:289-313:i,349-366:ui\nn20 ebr S:447-471:i,536-562:i,2510-2516:ui,2549-2553:u,2600-2649:di,2651-2658:i Z:28-79:di,186-204:di,238-262:di,279-306:i E:1026-1043:u GS:3497-3502:d,3514-3538:u +21\nn21 br S:2618-2621:d,2637-2649:ui,895-920:i,2577-2579:i T:437-447:i,524-564:i IM:48-49:d RM:45-46:d IT:289-296:d,308-313:i,326-326:ui,389-406:i,427-451:ui,453-471:ui R:232-232:u,290-290:d,301-303:i,404-404:ui,474-493:ui G:2249-2266:i\n```",
+  "usage": {
+    "input": 79888,
+    "output": 4893,
+    "cacheRead": 565120,
+    "cacheWrite": 0,
+    "reasoning": 258,
+    "totalTokens": 649901
+  },
+  "cost": {
+    "input": 0.79888,
+    "output": 0.24465000000000003,
+    "cacheRead": 0.56512,
+    "cacheWrite": 0,
+    "total": 1.6086500000000001
+  }
+}

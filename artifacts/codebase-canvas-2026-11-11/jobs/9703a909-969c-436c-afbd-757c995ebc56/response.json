@@ -1,0 +1,155 @@
+{
+  "output": {
+    "explanation": "The central tree retains all five conceptual boundaries while shrinking from 120 lines / 8,796 characters to 77 lines / 5,949 characters: 35.8% fewer lines and 32.4% fewer characters. Four peripherals expand validation/model conversion, retry and storage ownership, pinned evidence, and diagram identity. [M] denotes modular structure, [C] calls or execution sequences, [O] ownership/lifetime, and [D] data dependencies; data dependencies remain distinct from organizational boundaries. Edges connect specific concept lines, using 1-based numbering. Positions were checked against actual text dimensions for non-overlap.\n\nCorrections: agentContext.ts establishes that toPiMessages calls agentContextModelContent; resolveSources is a separate caller-managed prerequisite, not the invocation chain suggested by the seed. Recomputing a descriptor hash does not necessarily change it, particularly when portable conversion leaves descriptors identical. diagramAgentContext.ts makes the inline wrapper contentHash optional, requires it for stored references, and does not verify freshness against the current revision or recompute sourceFingerprint during loading.\n\nAdditional source-grounded details include validation limited to the selected parent walk, out-of-order matching tool results, repeated-range byte accounting, distinct request/descriptor hashing rules, comment retries preceding current-hash checks, service-wide capacity, Git cache eviction order, and sourceId fallback during diagram capture. fileAgentContextSources.ts enforces the imported 16 MiB limit despite a stale 2 MiB diagnostic/comment.\n\nEvidence is limited to the point definition, nine embedded source files in context.json, and seed.json. The peripherals derive from agentContext.ts, agentContextSource.ts, savedAgentContext.ts, agentContextLibrary.ts, agentContextService.ts, fileAgentContextRepository.ts, fileAgentContextSources.ts, diagramAgentContext.ts, and fileDiagramAgentContextStore.ts. ImmutableRecords internals, crash recovery, garbage collection, and downstream edit/chat/evaluation integration are not established by these inputs; no implementation guarantees beyond the supplied code are assumed.",
+    "diagrams": [
+      {
+        "id": "central",
+        "ascii": "Reusable Agent Context\n|-- [M] Conversation value: AgentContext\n|   |-- Public: fromTrajectory / fromMessages / fromSnapshot -> validated value\n|   |-- Public: toSnapshot / withoutSourceFiles -> copied descriptors\n|   |-- Public: withMessages / resolveSources -> new value; toPiMessages -> model input\n|   |-- [O] Private snapshot cloned on construction and export; no source I/O owned\n|   |-- Internal validation: selected parent chain + complete tool-call/result pairs\n|   |   `-- Reverse selected branch; reject missing entries, cycles and duplicate IDs\n|   |-- [D] contentHash <- SHA-256(canonical descriptor)\n|   |   |-- Descriptor <- version + source identity + range + ordered messages\n|   |   |-- Content <- text, pinned ranges, named sections; assistant tool calls\n|   |   `-- Generated version: sections=3; else ranges=2; else=1\n|   |-- [D] Attached sourceFiles have separate hashes; excluded from descriptor hash\n|   |   `-- Validate attachment hashes, references and range coverage\n|   |-- [C] resolveSources reads attachments or injected reader -> new text context\n|   |   `-- Share identical reads; retain sections/order; bound expanded sources to 16 MiB\n|   `-- [C] toPiMessages calls agentContextModelContent; unresolved ranges fail\n|       `-- Emit section labels and assistant provenance; resolution is caller-managed\n|-- [M] Durable reuse: AgentContextLibrary\n|   |-- Public: create, read, list, fork, lineage, update group, add comment\n|   |   `-- Dependencies: AgentContext + repository + optional source service\n|   |-- [C] create: text / constituents with sections / existing snapshot\n|   |   |-- Capture sourceFile constituents sequentially -> pinned source ranges\n|   |   `-- Validate -> optional sources.persist -> repository.create -> summary\n|   |-- [D] Saved ID <- request UUID; requestHash identifies creation arguments\n|   |   |-- Same ID + matching requestHash returns prior record; mismatch conflicts\n|   |   `-- Constituent retries check receipt before recapturing current files\n|   |-- [C] read -> compact snapshot + optional, separate resolvedSnapshot\n|   |   `-- list -> name/description filter -> newest first -> paginated summaries\n|   |-- [C] fork -> retry receipt -> parent hash check -> copy snapshot under new ID\n|   |   `-- Record parent ID/hash; inherit description/group; leave comments on parent\n|   |-- [C] lineage -> root-to-selected summaries with parentMatches\n|   |   `-- Missing ancestors or cycles fail; group and comments are outer metadata\n|   `-- [O] FileAgentContextRepository retains application-store records across restarts\n|       |-- Snapshot identity is separate from mutable group/comment metadata\n|       |-- Create: temporary file -> sync -> exclusive link -> reread receipt\n|       `-- Metadata: per-record lock -> read/modify -> sync/rename -> cleanup\n|-- [M] Transient uploads: AgentContextService\n|   |-- Public: upload(scope, requestId, trajectory), get(scope, id), resolve(scope, id)\n|   |-- [C] upload -> fromTrajectory -> retry check -> capacity check -> receipt\n|   |   |-- Retry identity <- workspaceInstanceId + documentId + requestId\n|   |   `-- Same hash returns receipt; changed hash conflicts; new ID uses random UUID\n|   |-- [C] resolve: saved ID -> library.read(id, false).snapshot\n|   |   `-- Other ID -> get; enforce matching workspace and document\n|   `-- [O] Private records, request receipts and byte counter last for backend lifetime\n|       |-- Reconnects retain uploads; default total capacity is 100 contexts / 32 MiB\n|       `-- No per-record release operation is exposed in the supplied service\n|-- [M] Diagram binding: compile / store / load diagram context\n|   |-- [D] Background <- evidence + binding + diagram/revision identity\n|   |   |-- originalLines + starting line -> hashed evidence slices\n|   |   `-- sourceFingerprint <- SHA-256(JSON(binding + evidence))\n|   |-- [C] compileDiagramAgentContext -> inline snapshot with evidence attachments\n|   |   `-- agentType=diagram-context; sourceSessionId=diagramId; capture revision retained\n|   |-- [C] storeDiagramAgentContext -> store.put -> compact backing reference\n|   |   `-- FileDiagramAgentContextStore.put -> sources.persist -> immutable records\n|   |-- [C] loadDiagramAgentContext -> inline snapshot or store.get(backingRecordId)\n|   |   `-- Validate descriptor hash, diagram-context type, session ID and supplied hash\n|   `-- [O] Diagram retains identity/fingerprint; stored form adds hash + backing ID\n|       |-- Immutable store records live outside canvas checkpoints\n|       `-- Inline form supports legacy/export use; store delegates portable/resolve\n`-- [M] Shared source boundary: FileAgentContextSources\n    |-- Public: capture, read, persist, portable\n    |   `-- Dependencies: registered bindings + corpus provider/Git + ImmutableRecords\n    |-- [C] capture -> validate relative path/range -> registry lookup -> pinned bytes\n    |   |-- Explicit or binding revision -> commit -> regular Git file\n    |   `-- Otherwise capture current text; matching HEAD uses Git, else snapshot blob\n    |-- [D] Evidence text <- range descriptor + pinned bytes\n    |   |-- Descriptor <- sourceId + path + inclusive lines + Git commit or snapshot hash\n    |   |-- Git bytes need registered binding; snapshot bytes need attachment or blob\n    |   `-- Source hash <- SHA-256(JSON(startLine + lines)); check coverage before slicing\n    |-- [C] persist -> validate -> save attachments -> check references -> strip attachments\n    |   `-- Compact descriptor retains its contentHash\n    |-- [C] portable -> selected slices -> snapshot references + attachments -> rehash\n    |   `-- Export includes selected evidence; unrelated lines are omitted\n    `-- [O] Shared blobs serve library and diagram contexts; callers retain references\n        |-- Private Git cache: root + commit + path; at most 16 entries; failures evicted\n        `-- Git retention is external; no blob deletion or garbage collection shown",
+        "position": {
+          "column": 0,
+          "row": 0
+        }
+      },
+      {
+        "id": "value",
+        "ascii": "Value validation and model conversion\n|-- [C] fromTrajectory: validate raw size/schema -> select parent chain\n|   |-- Duplicate entry IDs rejected across all supplied entries\n|   |-- Walk throughEntryId back to fromEntryId, inclusive; reverse selected messages\n|   `-- Cycles/missing entries checked on that walk; older ancestry is not traversed\n|-- [C] validateMessages: pending call ID -> tool name; seen IDs never reused\n|   |-- toolResult must match pending ID AND name; remove matched pending entry\n|   |-- Pending calls block the next user/assistant message and the end of the slice\n|   `-- Multiple pending results may arrive in any order\n|-- [D] Descriptor canonicalization sorts object keys recursively, preserves arrays\n|   |-- Tool argument key order does not change contentHash\n|   |-- fromMessages builds message-N chain with agentType=diagram-composer\n|   `-- withMessages keeps source/range identity, recalculates version and hash\n|-- [C] fromSnapshot validates version constraints, descriptor and attachment hashes\n|   |-- A referenced snapshot attachment may be absent; parsing alone permits this\n|   `-- Supplied attachments must be referenced and cover their selected ranges\n|-- [C] resolveSources: per-call cache keyed by canonical range descriptor\n|   |-- Attached slice first; otherwise injected reader; neither -> unavailable\n|   |-- Repeated ranges share reads but each occurrence counts toward expanded bytes\n|   |-- Split resolved text into chunks of at most 1,000,000 string units\n|   `-- Return a rehashed context, version 3 with sections or version 1 without\n`-- [C] toPiMessages -> agentContextModelContent for each message\n    |-- Caller must first resolve any ranges; no automatic resolveSources call\n    |-- Sections become opening label + children + closing label\n    |-- Assistant retains tool calls; other roles retain text blocks\n    `-- Assistant gets synthetic provider/model, stop reason and zero usage/cost\n        `-- Imported-history provenance does not choose the run model",
+        "position": {
+          "column": 104,
+          "row": 0
+        }
+      },
+      {
+        "id": "retry",
+        "ascii": "Retry receipts and state ownership\n|-- [D] Library creation receipt: requestHash + saved ID derived from request UUID\n|   |-- Constituents: hash JSON(name, description, raw constituents, optional group)\n|   |   `-- Check receipt before reading source files that may since have changed\n|   |-- Text/snapshot: hash JSON(name, description, context hash, optional group)\n|   `-- Receipt hash uses JSON.stringify; descriptor hash uses sorted-key canonical JSON\n|-- [C] Fork receipt: hash JSON([\"fork\", parsed input]); check before reading parent\n|   |-- Matching retry returns existing fork even if parent/fork content later changed\n|   `-- New fork checks parent hash; group:null clears inherited group\n|-- [C] Comment retry runs inside the repository metadata lock\n|   |-- Existing commentId=requestId: compare text + expectedContentHash\n|   |   `-- Matching retry returns before checking the snapshot's current hash\n|   `-- New comment: check current hash -> append request ID, text, hash and timestamp\n|-- [O] File repository publishes records without replacing an existing saved ID\n|   |-- Open unique temp with wx and mode 0600 -> write -> file sync -> close\n|   |-- Hard link to final path; EEXIST -> reread winning record and compare receipt\n|   `-- Sync directory; remove temp in finally\n|-- [O] Metadata changes serialize through a per-record lock directory\n|   |-- Retry lock acquisition every 10 ms; deadline 5 seconds -> busy error\n|   |-- Read -> mutate -> schema check -> temp write/sync -> rename -> directory sync\n|   `-- Finally remove temp and lock; no crash-recovery policy is shown\n`-- [O] Transient service owns maps and serialized-snapshot byte accounting\n    |-- Scope key = JSON([workspaceInstanceId, documentId])\n    |-- Request key = JSON([scope key, requestId]); receipts returned as copies\n    |-- Retry precedes capacity check, so an unchanged retry works at capacity\n    `-- Count/byte limits span the service instance, across its scopes",
+        "position": {
+          "column": 104,
+          "row": 32
+        }
+      },
+      {
+        "id": "sources",
+        "ascii": "Pinned evidence: selection, storage and export\n|-- [M] capture accepts registered sourceId and a relative path\n|   |-- Reject absolute/drive paths, backslashes, NUL, empty, dot and dot-dot segments\n|   `-- Lines are positive and inclusive; start defaults to 1, end to file end\n|-- [C] Git revision: input revision overrides binding revision\n|   |-- Resolve revision to commit; ls-tree accepts only 100644/100755 blob entries\n|   |-- Reject symlinks, submodules and trees; git show reads commit:path\n|   `-- Without revision, capture corpus text; compare whole-file hash to HEAD\n|       `-- HEAD unavailable or bytes differ -> immutable snapshot blob\n|-- [O] Git cache holds promises keyed by root + commit + path\n|   |-- At most 16 entries; evict oldest insertion, not least-recently-used\n|   `-- Failed promise evicted only if still the current entry for that key\n|-- [D] Source file value = startLine + lines, retaining original offsets\n|   |-- Hash includes offset; same text at another offset has a different identity\n|   |-- NUL-containing text rejected; split source lines on LF or CRLF\n|   `-- Actual file-size guard is 16 MiB; diagnostic/comment still say 2 MiB\n|-- [C] persist validates descriptor, writes attachments, then loads distinct ranges\n|   |-- Missing Git/blob evidence prevents successful descriptor publication\n|   `-- Attachments stripped only after checks; descriptor hash is preserved\n`-- [C] portable loads each distinct range, preferring attached snapshot bytes\n    |-- Slice only selected lines, preserving the starting line\n    |-- Hash each slice; replace Git/full-file refs with snapshot slice refs\n    |-- Replace references both at message level and inside sections\n    `-- withMessages attaches slices and recomputes descriptor hash\n        |-- Hash may stay equal when rewritten descriptors are already identical\n        `-- Git-backed export needs its binding/commit available during conversion",
+        "position": {
+          "column": 210,
+          "row": 0
+        }
+      },
+      {
+        "id": "diagram",
+        "ascii": "Diagram capture identity and loading\n|-- [D] compileDiagramAgentContext builds one user message at timestamp 0\n|   |-- Text includes binding, evidence metadata and captured revision\n|   |-- Each originalLines slice -> file hash -> attached snapshot source range\n|   |-- Range sourceId <- evidence sourceId, else binding sourceId, else diagramId\n|   `-- Message appends all ranges; sourceSessionId=diagramId; agentType=diagram-context\n|-- [D] Two identities serve different checks\n|   |-- sourceFingerprint hashes JSON(binding or null + original evidence)\n|   `-- contentHash hashes the AgentContext descriptor, excluding attached files\n|-- [C] validateDiagramAgentContext checks wrapper shape and backing choice\n|   |-- Diagram/revision ID prefixes; fingerprint and optional content hash syntax\n|   |-- Inline: snapshot present; backingRecordId forbidden; wrapper hash optional\n|   `-- Stored: contentHash and 64-hex backingRecordId required\n|-- [C] storeDiagramAgentContext validates; already-stored values pass through\n|   `-- Inline -> store.put -> require 64-hex backing ID -> compact wrapper\n|-- [C] loadDiagramAgentContext validates wrapper -> inline value or store.get\n|   |-- fromSnapshot validates actual descriptor hash\n|   |-- Compare supplied wrapper hash, agent type and diagram/session identity\n|   `-- Does not recompute sourceFingerprint or compare with the current revision\n`-- [O] File store owns diagram-agent-contexts records; source service owns blobs\n    |-- Default source service has no registry resolver for Git references\n    |-- Snapshot-backed evidence can resolve through shared stored blobs\n    `-- Captured text tells later edits to use their supplied current diagram\n        `-- Actual edit-request assembly is outside these pinned sources",
+        "position": {
+          "column": 210,
+          "row": 32
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": {
+          "diagram": "central",
+          "line": 7
+        },
+        "target": {
+          "diagram": "value",
+          "line": 2
+        },
+        "label": "Selected branch and message invariants"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 17
+        },
+        "target": {
+          "diagram": "value",
+          "line": 22
+        },
+        "label": "Actual conversion calls and resolution prerequisite"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 25
+        },
+        "target": {
+          "diagram": "retry",
+          "line": 2
+        },
+        "label": "Creation identity and replay rules"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 37
+        },
+        "target": {
+          "diagram": "retry",
+          "line": 18
+        },
+        "label": "Metadata writer lifecycle"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 45
+        },
+        "target": {
+          "diagram": "retry",
+          "line": 22
+        },
+        "label": "Transient scope, copies and capacity"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 64
+        },
+        "target": {
+          "diagram": "sources",
+          "line": 2
+        },
+        "label": "Capture validation and pinned-file selection"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 73
+        },
+        "target": {
+          "diagram": "sources",
+          "line": 20
+        },
+        "label": "Portable slicing and descriptor identity"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 52
+        },
+        "target": {
+          "diagram": "diagram",
+          "line": 2
+        },
+        "label": "Evidence capture and identity inputs"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 56
+        },
+        "target": {
+          "diagram": "diagram",
+          "line": 16
+        },
+        "label": "Load-time checks and their limits"
+      }
+    ]
+  },
+  "usage": {
+    "input_tokens": 240798,
+    "cached_input_tokens": 197760,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 9269,
+    "reasoning_output_tokens": 760
+  }
+}

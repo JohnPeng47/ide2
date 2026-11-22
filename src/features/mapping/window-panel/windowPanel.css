@@ -63,7 +63,7 @@
 .diff-tree-ascii [data-scroll-tracked=true] { box-shadow: 0 2px var(--accent-warning); background: color-mix(in srgb, var(--diff-modified-fill) 40.000%, transparent); }
 .diff-tree-ascii [data-scroll-tracked=true][aria-selected=true] { background: var(--selection-fill); box-shadow: 0 2px var(--accent-warning); }
 .diff-coverage { color: var(--accent-warning); font: var(--text-xs)/1.4 var(--font-mono); margin-left: 12px; white-space: nowrap; text-decoration: none; }
-.diff-tree-ascii .diagram-jump { margin-left: 8px; padding: 0 5px; }
+.diff-tree-ascii .diagram-jump-container > .diagram-jump { margin-left: 8px; padding: 0 5px; }
 .diff-hunk:focus-visible { outline: 2px solid var(--accent-primary); outline-offset: -2px; }
 .change-inline-coverage { position: absolute; width: 145px; text-align: right; margin: 0; pointer-events: auto; font-size: var(--text-xs); z-index: 2; }
 @media (max-width: 800px) { .window-panel-minimized { width: 40%; left: auto; } }

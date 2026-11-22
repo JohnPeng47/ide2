@@ -1,0 +1,41 @@
+{
+  "output": {
+    "summary": "Phase 2 supplied a strong semantic foundation: the final canvas expands coherent concepts rather than file boundaries, and preserves important distinctions between staging, publication, ownership and exact restoration. Its main weaknesses are excessive detail in the command spine, unconditional transition summaries, and scattered concepts whose relationships require readers to reconstruct them. Later expansion repairs several ambiguities; the evidence supports presentation critiques, not independent claims about repository correctness.",
+    "strengths": [
+      "The seed separates contracts from implementations: phaseOutput lines 3–25 distinguish controller coordination, history services, checkpoint machinery and external workspace publication. This supports focused expansions in transfer lines 2–6 and restore lines 25–31 without inventing external implementations.",
+      "The restoration model is particularly effective. PhaseOutput lines 113–138 separate composition, exact revision bindings, personal view and derived geometry. Central lines 78–92 retain that model, while restore lines 2–13 expand anchor encoding and decoding.",
+      "Selective behavioral distinctions provide useful expansion anchors: failed staging versus issued revisions (phaseOutput lines 49–51), stale endpoint preservation (60–64), and transfer navigation guards (88–90) become substantive explanations in patch lines 18–27 and transfer lines 23–28.",
+      "The seed's conceptual groupings support different expansion depths. Named views, transfers and geometry receive focused peripheral diagrams, while runtime handle ownership remains compact in central lines 61–73."
+    ],
+    "issues": [
+      {
+        "evidence": "PhaseOutput lines 26–90 devote 65 lines to commands, including operation inventories at 34–39, numerical batch limits at 31, and deeply nested checkpoint steps at 41–48. Despite compression, central lines 18–59 still contain 42 command lines. Layout details also appear in central lines 39–42 and grid lines 8–12.",
+        "impact": "The seed already resembles an expanded reference tree, leaving less distinction between overview and drill-down. The final central diagram retains substantial procedural detail alongside its peripheral explanations. Later compression mitigates this, but the seed establishes the competing levels of detail.",
+        "recommendation": "Regenerate the command spine around consequential boundaries: ordered staging, validation, reconciliation, checkpoint installation and publication. Keep exceptions that change the reader's model, while moving operation catalogs, numerical limits and local layout mechanics beneath concise expansion anchors."
+      },
+      {
+        "evidence": "PhaseOutput line 55 states 'One gesture -> one saved checkpoint, including a view-only gesture'; central line 38 adds an early-return qualification, and patch line 27 describes empty native batches. PhaseOutput lines 73–74 describe opening a view as restoring a fresh checkpoint; views lines 8–11 distinguish reopening the active view from opening another view. The final explanation explicitly identifies both seed statements as generalizations requiring qualification.",
+        "impact": "These seed labels present conditional transitions as unconditional guarantees. Expansion must repair the overview rather than simply elaborate it. The final output addresses both cases, so this is a seed precision problem that later work partly resolves, not evidence of an uncorrected source-level error.",
+        "recommendation": "State the transition condition next to its outcome. Distinguish checkpoint-producing gestures from unchanged-state exits, and opening another view from reopening the active view. Preserve these qualifications in the seed without importing the full implementation."
+      },
+      {
+        "evidence": "Node identity appears as staged correspondence in phaseOutput line 35, endpoint reconciliation in lines 60–64, and canonical restoration in lines 121–124. Geometry similarly appears under modular collaborators (18–21), edit processing (56–59), runtime measurements (94), and data dependencies (132–136). The final canvas expands these into patch, grid and restore, but all six supplied edges connect central to a peripheral diagram; none directly explains the relationship between patch identity and restored anchors.",
+        "impact": "The lenses usefully expose different responsibilities, but the seed leaves their shared concepts implicit. The final canvas consequently offers strong local explanations while requiring readers to infer how edit-time correspondence relates to checkpoint-time logical anchors. Edge selection belongs to the later phase; the seed's contribution is the lack of explicit cross-lens relationship cues.",
+        "recommendation": "Add concise, named cross-references where the same concept crosses boundaries. Explain how staged correspondence updates endpoint identity before checkpoint encoding, and distinguish that mapping from restoration through bound revision node references. Use references selectively rather than repeating each mechanism under every lens."
+      },
+      {
+        "evidence": "PhaseOutput line 75 says 'fork/alternatives create children pinned to a saved endpoint', while line 104 says 'Fork creates a new context/baseline with empty navigation stacks'. Both survive in central lines 51 and 71. Views line 15 further specifies that 'fork opens its child', while the context/baseline operation remains elsewhere.",
+        "impact": "The unqualified word 'fork' describes two apparently different scopes: a named-view child and a history context/baseline. The output does not make their relationship explicit, so readers may incorrectly combine their effects. This is an ambiguity in the supplied presentation, not a claim that either behavior is factually wrong.",
+        "recommendation": "Qualify each fork label with its owning abstraction and resulting state. If the operations are related, state that relationship; otherwise, make their separate scopes explicit so expansion does not inherit an overloaded term."
+      }
+    ],
+    "regenerationInstructions": "Preserve the semantic boundaries, exact-revision restoration model, publication limits and meaningful failure distinctions. Make the seed more selective by reducing procedural inventories and retaining concise anchors for deeper explanation. Qualify conditional checkpoint and view transitions, disambiguate fork scopes, and explicitly connect shared identity concepts across editing and restoration. Choose grouping and detail according to explanatory value; do not impose uniform branch sizes or relationship categories. Treat the supplied final output as evidence of presentation effects and later qualifications, not as independently verified repository source."
+  },
+  "usage": {
+    "input_tokens": 70070,
+    "cached_input_tokens": 39808,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 1602,
+    "reasoning_output_tokens": 199
+  }
+}

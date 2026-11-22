@@ -1,0 +1,19 @@
+{
+  "id": "child-5",
+  "name": "SurfaceInput",
+  "assignment": "Map d1 n12-21 (input/config/resize focus) including descendants and call chains. private scratch /tmp/d1input. Return compact text: nID scope letters (s structure,e entity,b behavior,r relationship,g guarantee,y subsystem) then path:start-end:roles (d declaration,u use,i implementation); path aliases ok. Verify.",
+  "model": "gpt-6.2-astra",
+  "effort": "high",
+  "status": "generating",
+  "queuedAt": "2026-11-22T02:48:10.226Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-22T02:54:27.754Z",
+  "sessionId": "01a2012d-2db2-7624-a028-4a59bd83773e",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-0k2pl7su-agent-repository-ny3xVh-checkout--/2026-11-22T02-54-27-762Z_01a2012d-2db2-7624-a028-4a59bd83773e.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase4-0k2pl7su/agent-repository-ny3xVh/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

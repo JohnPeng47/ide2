@@ -15,6 +15,7 @@ type PaneContent<Pane extends string> = { id: Pane; title: string; content: Reac
 function SplitWindowPanel<Pane extends string>(props: { title: string; subtitle?: string; notice?: ReactNode; actions?: ReactNode; canvasId: string; state: WindowPanelLayout<Pane>;
   onChange: (patch: Partial<WindowPanelLayout<Pane>>) => void; onClose: () => void; panes: readonly [PaneContent<Pane>, ...PaneContent<Pane>[]]; canvas: ReactNode;
   /** Stable identity for this panel's saved dimensions, independent of its title. */ sizeStorageKey?: string;
+  /** Text readers can use native browser zoom without a blocking wheel listener. */ allowBrowserZoom?: boolean;
   /** Layouts offered in the header; panels without a canvas pane omit split-single. */ modes?: readonly WindowPanelMode[]; className?: string }) {
   const tabId = useId();
   const body = useRef<HTMLDivElement>(null), drag = useRef(false);
@@ -43,13 +44,14 @@ function SplitWindowPanel<Pane extends string>(props: { title: string; subtitle?
     props.onChange(patch);
   };
   useEffect(() => {
+    if (props.allowBrowserZoom) return;
     const element = panel.current!;
     // Trackpad pinch arrives as Ctrl-wheel. Outside the canvas it otherwise
     // magnifies the browser's visual viewport and clips the entire workspace.
     const wheel = (event: WheelEvent) => { if (event.ctrlKey || event.metaKey) event.preventDefault(); };
     element.addEventListener('wheel', wheel, { passive: false });
     return () => element.removeEventListener('wheel', wheel);
-  }, []);
+  }, [props.allowBrowserZoom]);
   const resize = useRef<{ x: number; y: number; width: number; height: number; areaWidth: number; areaHeight: number; right: number; top: number } | undefined>(undefined);
   const width = props.state.minimized ? props.state.minimizedWidth : props.state.expandedWidth;
   const style: CSSProperties = { ...(width !== undefined ? { left: 'auto', width: `${width * 100}%` } : {}),

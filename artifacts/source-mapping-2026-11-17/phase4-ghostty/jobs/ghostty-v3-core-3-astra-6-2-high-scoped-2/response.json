@@ -1,0 +1,268 @@
+{
+  "output": {
+    "validatedCandidate": "79fb56e30c4505e5d451502a0c55b81116d91e23c5c0a643de4303112e9b6bae"
+  },
+  "usage": {
+    "input": 605462,
+    "output": 50251,
+    "cacheRead": 5326976,
+    "cacheWrite": 0,
+    "reasoning": 3468,
+    "totalTokens": 5982689
+  },
+  "execution": {
+    "runtime": "pi-agent-context",
+    "sessionId": "01a20160-2e9a-711a-9c8d-f67f1809cff0",
+    "contextHash": "4c24cea2f1585e10a1390c92e4a7b19033ed3832e1a4861db77a71686f70f897",
+    "cacheKey": "eval-45a761c7e4db2eb8a47e6f81e4f25648d63bb6eaa9892a3fec5d4fa26589c0ba",
+    "modelContextHash": "977cfb761be9d35a397f6a36092d295e540be4648b8b140319d0d37879cf67ba",
+    "repositories": [
+      {
+        "repository": "repo-1",
+        "repositoryPath": "/home/john/softwarez/ghostty",
+        "commit": "ea8b12a8a9894b5259c441eadd8f6f0c65e215af",
+        "exclusions": [
+          "**/*-LICENSE",
+          "**/*.md",
+          "**/*.mdx",
+          "**/*.spec.*",
+          "**/*.test.*",
+          "**/AGENTS.md",
+          "**/CODEX-LICENSE",
+          "**/LICENSE*",
+          "**/Tests/**",
+          "**/__fixtures__/**",
+          "**/__tests__/**",
+          "**/benchmark/**",
+          "**/benchmarks/**",
+          "**/build/**",
+          "**/dist/**",
+          "**/docs/**",
+          "**/examples/**",
+          "**/fixtures/**",
+          "**/node_modules/**",
+          "**/scripts/**",
+          "**/test/**",
+          "**/tests/**",
+          ".agents/**",
+          ".github/**",
+          ".husky/**",
+          ".pi/**",
+          "deps/**",
+          "example/**",
+          "flake.lock",
+          "flatpak/**",
+          "images/**",
+          "nix/**",
+          "package-lock.json",
+          "po/**",
+          "scripts/**",
+          "snap/**",
+          "vendor/**"
+        ],
+        "checkout": "/home/john/.cache/mapping-phase4-ea05rgun/agent-repository-SbUvQM/checkout",
+        "inspectionSource": "session-transcript"
+      }
+    ],
+    "subagents": {
+      "model": "gpt-6.2-astra",
+      "effort": "high",
+      "concurrency": 2,
+      "sessions": [
+        {
+          "id": "child-1",
+          "name": "surface",
+          "assignment": "Map n2-n23 top two branches including App, runtime, Surface resources. Use private /tmp/surface if needed. Return compact text scopes and path:start-end with roles per node, verified independently; indicate child inclusions.",
+          "model": "gpt-6.2-astra",
+          "effort": "high",
+          "status": "finished",
+          "queuedAt": "2026-11-22T03:50:16.233Z",
+          "usage": {
+            "input": 87076,
+            "output": 10071,
+            "cacheRead": 1020032,
+            "cacheWrite": 0,
+            "reasoning": 448,
+            "totalTokens": 1117179
+          },
+          "cost": {
+            "input": 0.87076,
+            "output": 0.50355,
+            "cacheRead": 1.020032,
+            "cacheWrite": 0,
+            "total": 2.394342
+          },
+          "startedAt": "2026-11-22T03:50:16.237Z",
+          "sessionId": "01a20160-45c8-7214-b437-22d73cb90374",
+          "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-ea05rgun-agent-repository-SbUvQM-checkout--/2026-11-22T03-50-16-264Z_01a20160-45c8-7214-b437-22d73cb90374.jsonl",
+          "completedAt": "2026-11-22T03:54:52.634Z"
+        },
+        {
+          "id": "child-2",
+          "name": "input",
+          "assignment": "Map n24-n35 user input branch end-to-end; private /tmp/input. Return compact text scopes and path:start-end roles per node (indicate inherited child coverage).",
+          "model": "gpt-6.2-astra",
+          "effort": "high",
+          "status": "finished",
+          "queuedAt": "2026-11-22T03:50:16.234Z",
+          "usage": {
+            "input": 69691,
+            "output": 3189,
+            "cacheRead": 260352,
+            "cacheWrite": 0,
+            "reasoning": 61,
+            "totalTokens": 333232
+          },
+          "cost": {
+            "input": 0.6969100000000001,
+            "output": 0.15944999999999998,
+            "cacheRead": 0.260352,
+            "cacheWrite": 0,
+            "total": 1.116712
+          },
+          "startedAt": "2026-11-22T03:50:16.237Z",
+          "sessionId": "01a20160-45cb-7ccb-a381-40e1703ad2f3",
+          "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-ea05rgun-agent-repository-SbUvQM-checkout--/2026-11-22T03-50-16-267Z_01a20160-45cb-7ccb-a381-40e1703ad2f3.jsonl",
+          "completedAt": "2026-11-22T03:52:07.408Z"
+        },
+        {
+          "id": "child-3",
+          "name": "output",
+          "assignment": "Map n36-n51 child output branch; private /tmp/output. Return compact text scopes and path:start-end roles per node (indicate child coverage).",
+          "model": "gpt-6.2-astra",
+          "effort": "high",
+          "status": "finished",
+          "queuedAt": "2026-11-22T03:50:16.234Z",
+          "usage": {
+            "input": 82190,
+            "output": 5684,
+            "cacheRead": 545664,
+            "cacheWrite": 0,
+            "reasoning": 275,
+            "totalTokens": 633538
+          },
+          "cost": {
+            "input": 0.8219,
+            "output": 0.2842,
+            "cacheRead": 0.545664,
+            "cacheWrite": 0,
+            "total": 1.651764
+          },
+          "startedAt": "2026-11-22T03:52:07.409Z",
+          "sessionId": "01a20161-f7f8-735f-bbfc-385a4c52082a",
+          "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-ea05rgun-agent-repository-SbUvQM-checkout--/2026-11-22T03-52-07-416Z_01a20161-f7f8-735f-bbfc-385a4c52082a.jsonl",
+          "completedAt": "2026-11-22T03:54:39.985Z"
+        },
+        {
+          "id": "child-4",
+          "name": "terminal",
+          "assignment": "Map n52-n65 terminal state branch; private /tmp/terminal. Return compact text scopes and path:start-end roles per node, with child inclusions.",
+          "model": "gpt-6.2-astra",
+          "effort": "high",
+          "status": "finished",
+          "queuedAt": "2026-11-22T03:50:16.234Z",
+          "usage": {
+            "input": 60424,
+            "output": 4829,
+            "cacheRead": 356224,
+            "cacheWrite": 0,
+            "reasoning": 323,
+            "totalTokens": 421477
+          },
+          "cost": {
+            "input": 0.6042399999999999,
+            "output": 0.24145,
+            "cacheRead": 0.356224,
+            "cacheWrite": 0,
+            "total": 1.201914
+          },
+          "startedAt": "2026-11-22T03:54:39.986Z",
+          "sessionId": "01a20164-4bfe-7db9-86f3-a1f45d2c8bb7",
+          "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-ea05rgun-agent-repository-SbUvQM-checkout--/2026-11-22T03-54-39-998Z_01a20164-4bfe-7db9-86f3-a1f45d2c8bb7.jsonl",
+          "completedAt": "2026-11-22T03:56:47.313Z"
+        },
+        {
+          "id": "child-5",
+          "name": "renderer",
+          "assignment": "Map n66-n77 renderer branch including backend dispatch and actual implementations; private /tmp/renderer. Return compact text scopes and path:start-end roles per node with child inclusions.",
+          "model": "gpt-6.2-astra",
+          "effort": "high",
+          "status": "finished",
+          "queuedAt": "2026-11-22T03:50:16.234Z",
+          "usage": {
+            "input": 84446,
+            "output": 5456,
+            "cacheRead": 582784,
+            "cacheWrite": 0,
+            "reasoning": 293,
+            "totalTokens": 672686
+          },
+          "cost": {
+            "input": 0.8444600000000001,
+            "output": 0.27280000000000004,
+            "cacheRead": 0.582784,
+            "cacheWrite": 0,
+            "total": 1.700044
+          },
+          "startedAt": "2026-11-22T03:54:52.634Z",
+          "sessionId": "01a20164-7d62-7fb5-b0c8-4b83d3b38ddc",
+          "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-ea05rgun-agent-repository-SbUvQM-checkout--/2026-11-22T03-54-52-642Z_01a20164-7d62-7fb5-b0c8-4b83d3b38ddc.jsonl",
+          "completedAt": "2026-11-22T03:57:23.079Z"
+        },
+        {
+          "id": "child-6",
+          "name": "renderer-transcript",
+          "assignment": "Map n66-77 renderer branch. Private temp directories NOT shared; you MUST return all ranges and roles in TEXT, not a file path. Scope + leaf-to-parent inheritance and compact path range lists for every node. In particular include platform rendering.",
+          "model": "gpt-6.2-astra",
+          "effort": "high",
+          "status": "finished",
+          "queuedAt": "2026-11-22T03:57:38.096Z",
+          "usage": {
+            "input": 80149,
+            "output": 4837,
+            "cacheRead": 513024,
+            "cacheWrite": 0,
+            "reasoning": 105,
+            "totalTokens": 598010
+          },
+          "cost": {
+            "input": 0.8014899999999999,
+            "output": 0.24185,
+            "cacheRead": 0.5130239999999999,
+            "cacheWrite": 0,
+            "total": 1.556364
+          },
+          "startedAt": "2026-11-22T03:57:38.098Z",
+          "sessionId": "01a20167-03be-700f-aeb2-a27bffff2491",
+          "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-ea05rgun-agent-repository-SbUvQM-checkout--/2026-11-22T03-57-38-110Z_01a20167-03be-700f-aeb2-a27bffff2491.jsonl",
+          "completedAt": "2026-11-22T03:59:58.759Z"
+        }
+      ]
+    }
+  },
+  "accounting": {
+    "mainUsage": {
+      "input": 141486,
+      "output": 16185,
+      "cacheRead": 2048896,
+      "cacheWrite": 0,
+      "reasoning": 1963,
+      "totalTokens": 2206567
+    },
+    "mainCost": {
+      "input": 1.41486,
+      "output": 0.80925,
+      "cacheRead": 2.048896,
+      "cacheWrite": 0,
+      "total": 4.273006
+    },
+    "totalCost": {
+      "input": 6.054619999999999,
+      "output": 2.51255,
+      "cacheRead": 5.326976,
+      "cacheWrite": 0,
+      "total": 13.894146000000001
+    },
+    "children": 6
+  }
+}

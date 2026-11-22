@@ -1,6 +1,6 @@
 # Development server
 
-- Only if the agent started the task: after completing that task and its checks, run `npm run dev:reload` from the project working directory to refresh all running Vite dev-server instances started from that directory; do not reload during intermediate edits or refresh instances from other worktrees.
+- Only for agent-started tasks that change application code or runtime/build configuration: after completing the coding changes and their checks, run `npm run dev:reload` from the project working directory to refresh running Vite dev-server instances started from that directory. Do not reload for documentation-only edits (including `AGENTS.md` and `docs/EXPERIMENTS.md`), read-only investigations, or experiment runs that do not change code. Do not reload during intermediate edits or refresh instances from other worktrees.
 
 # Canvas API
 
@@ -17,6 +17,7 @@ once at startup, then omit `sessionId`. Agent Chat binds the active document aut
 
 ## Usage rules
 
+- For canvas reads use `canvas.read({projectionType:"graph"})`. Use `layout` only for a requested write that needs geometry, and `detail` on specific diagrams for anchors or evidence.
 - Use live canvases unless the user explicitly requests a ChangeSession.
 - Methods inside `exec.code` are synchronous. Use `return`, not `await`.
 - Consecutive `exec` mutations batch by default: one commit, version increment,
@@ -77,3 +78,7 @@ Call them directly through MCP, outside `exec.code`.
 - there is a "type" argument in create-agent-context that lets you group different contexts together
   > this shud mostly be used to group heterogenous context types together
 
+
+# Experiments
+
+For experiment workflows, also read [docs/EXPERIMENTS.md](docs/EXPERIMENTS.md).

@@ -22,8 +22,8 @@ export class SelectionService {
     if (!/^[A-Za-z0-9-]{8,120}$/.test(clientSessionId)) {
       throw new Error("valid clientSessionId is required");
     }
-    if (!diagramAscii || diagramAscii.length > 20000) {
-      throw new Error("diagramAscii must contain at most 20000 characters");
+    if (!diagramAscii) {
+      throw new Error("diagramAscii is required");
     }
     if (!Number.isInteger(diagramRevision) || diagramRevision < 0) {
       throw new Error("diagramRevision must be a non-negative integer");

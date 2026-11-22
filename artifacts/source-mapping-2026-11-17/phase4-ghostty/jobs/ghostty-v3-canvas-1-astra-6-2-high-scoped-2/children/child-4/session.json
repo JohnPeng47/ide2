@@ -1,0 +1,19 @@
+{
+  "id": "child-4",
+  "name": "terminal",
+  "assignment": "Map d5 all nodes including related files; return compact ranges/scopes/roles and parent union instructions. Private /tmp/d5work.",
+  "model": "gpt-6.2-astra",
+  "effort": "high",
+  "status": "generating",
+  "queuedAt": "2026-11-22T03:28:44.453Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-22T03:33:27.276Z",
+  "sessionId": "01a20150-e07e-737c-991b-97cec16bbd91",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-_nrrnqb7-agent-repository-7lspAh-checkout--/2026-11-22T03-33-27-294Z_01a20150-e07e-737c-991b-97cec16bbd91.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase4-_nrrnqb7/agent-repository-7lspAh/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

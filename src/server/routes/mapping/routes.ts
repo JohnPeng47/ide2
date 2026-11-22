@@ -1,3 +1,6 @@
+import { queryProjection } from '../../../../domain/mapping/projections/projectionType';
+import { projectCanvas } from '../../../../domain/mapping/projections/canvasProjection';
+import type { UsageStatisticsService } from '../../../../application/core/usage/usageStatisticsService';
 import type { EvalRunService } from '../../../../application/mapping/evals/evalRunService';
 import type { EvalPromptService } from '../../../../application/mapping/evals/evalPromptService';
 import type { EvalReferenceService } from '../../../../application/mapping/evals/evalReferenceService';
@@ -30,7 +33,8 @@ import { handleFileCompaction } from './compaction/fileCompactionRoutes';
 import type { DiffSessionWorkflowService } from '../../../../application/mapping/changes/diffSessionWorkflowService';
 import { handleDiffSessionWorkflow } from './changes/diffSessionWorkflowRoutes';
 
-export function createMappingRoutes({ selection, diagrams, workspace, chat, compactionService, agent, agentChat, liveCanvas, diffSessionWorkflows, pushIntegrations, pushToken, compareSessions, comparisonRuns, evalRuns, evalPrompts, evalReferences }: {
+export function createMappingRoutes({ selection, diagrams, workspace, chat, compactionService, agent, agentChat, liveCanvas, diffSessionWorkflows, pushIntegrations, pushToken, compareSessions, comparisonRuns, evalRuns, evalPrompts, evalReferences, usageStatistics }: {
+  usageStatistics?: UsageStatisticsService;
   evalRuns?: EvalRunService; evalPrompts?: EvalPromptService; evalReferences?: EvalReferenceService;
   compareSessions?: CompareSessionService;
   comparisonRuns?: ComparisonGenerationService;
@@ -44,6 +48,7 @@ export function createMappingRoutes({ selection, diagrams, workspace, chat, comp
   return async (request: Connect.IncomingMessage, response: ServerResponse, url: URL): Promise<void> => {
     if ((url.pathname === '/api/mapping/generated-canvases' || url.pathname.startsWith('/api/mapping/generated-canvases/')) && evalRuns)
       return handleGeneratedCanvasRoutes(request, response, url, evalRuns);
+    if (url.pathname === '/api/mapping/evals/cost-statistics' && request.method === 'GET' && usageStatistics) return sendJson(response, 200, usageStatistics.read());
     if (url.pathname.startsWith('/api/mapping/evals/') && evalRuns && evalPrompts && evalReferences) return handleEvalRoutes(request, response, url, evalPrompts, evalRuns, evalReferences);
     if ((url.pathname === '/api/mapping/comparison-runs' || url.pathname.startsWith('/api/mapping/comparison-runs/')) && comparisonRuns)
       return handleComparisonGenerationRoutes(request, response, url, comparisonRuns);
@@ -75,7 +80,12 @@ export function createMappingRoutes({ selection, diagrams, workspace, chat, comp
       return sendJson(response, 200, await workspace.prepareImport(await readBody(request, 64 * 1024 * 1024)));
     }
     if (url.pathname === '/api/mapping/workspace') {
-      if (request.method === 'GET') return sendJson(response, 200, await workspace.load());
+      if (request.method === 'GET') {
+        const type = queryProjection(url), state = await workspace.load();
+        return sendJson(response, 200, state && type ? { projectId: state.projectId, activeDocumentId: state.activeDocumentId,
+          documents: state.documents.map(doc => ({ id: doc.representationId, name: doc.name, projectionType: type,
+            canvas: projectCanvas(doc.document, type, doc.history?.diagramRevisions) })) } : state);
+      }
       if (request.method !== 'PUT') return sendJson(response, 405, { error: 'method not allowed' });
       // Workspace saves include revision histories and captured source evidence.
       return sendJson(response, 200, await workspace.save(await readBody(request, 64 * 1024 * 1024)));

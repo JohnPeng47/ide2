@@ -1,0 +1,43 @@
+{
+  "status": "finished",
+  "nodes": 89,
+  "mappedNodes": 89,
+  "ranges": 173,
+  "sourceLines": 11910,
+  "files": 25,
+  "diagrams": 1,
+  "children": 6,
+  "usage": {
+    "input": 231874,
+    "output": 20280,
+    "cacheRead": 715008,
+    "cacheWrite": 0,
+    "reasoning": 1194,
+    "totalTokens": 967162
+  },
+  "accounting": {
+    "mainUsage": {
+      "input": 31517,
+      "output": 10553,
+      "cacheRead": 144256,
+      "cacheWrite": 0,
+      "reasoning": 614,
+      "totalTokens": 186326
+    },
+    "mainCost": {
+      "input": 0.06303399999999999,
+      "output": 0.10553000000000001,
+      "cacheRead": 0.028851200000000004,
+      "cacheWrite": 0,
+      "total": 0.1974152
+    },
+    "totalCost": {
+      "input": 0.46374799999999994,
+      "output": 0.20280000000000004,
+      "cacheRead": 0.1430016,
+      "cacheWrite": 0,
+      "total": 0.8095495999999999
+    },
+    "children": 6
+  }
+}

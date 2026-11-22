@@ -38,7 +38,7 @@ export function buildDiagramContent(ascii: string, revisionId: string, kind: 'di
   const lines = ascii.split('\n');
   const blankRectangle = kind === 'diagram' && lines.length > 1 && lines[0].length > 0
     && lines.every(line => line.length === lines[0].length && /^ +$/.test(line));
-  if ((!ascii.trim() && !blankRectangle) || ascii.length > 20000 || /[^\x20-\x7e\n]/.test(ascii)) throw new Error('Diagram must contain 1–20000 printable ASCII characters with LF newlines');
+  if ((!ascii.trim() && !blankRectangle) || /[^\x20-\x7e\n]/.test(ascii)) throw new Error('Diagram must contain printable ASCII content with LF newlines');
   const content: DiagramContent = { revisionId, ascii, asciiSha256: asciiSha256(ascii),
     structure: parserVersion === 'ascii-graph-1' ? { kind: 'diagram', parserVersion } : { kind: 'diagram' } };
   if (kind === 'diagram') return content;
@@ -53,7 +53,7 @@ export function buildDiagramContent(ascii: string, revisionId: string, kind: 'di
       endColumn: node.textColumn + Math.max(1, node.text.length) - 1,
       parentId: node.parentLine === undefined ? undefined : ids.get(node.parentLine),
       childIds: parsed.filter(child => child.parentLine === node.line).map(child => ids.get(child.line)!),
-      foldRanges: node.descendantLines.length ? [{ startLine: node.line + 1, endLine: peer ? peer.line - 1 : ascii.split('\n').length }] : [] };
+      foldRanges: node.descendantLines.length ? [{ startLine: node.line + 1, endLine: peer ? peer.line - 1 : lines.length }] : [] };
   }
   return { ...content, structure: { kind: 'tree', parserVersion: treeVersion, rootIds: Object.values(nodes).filter(node => !node.parentId).map(node => node.id), nodes } };
 }

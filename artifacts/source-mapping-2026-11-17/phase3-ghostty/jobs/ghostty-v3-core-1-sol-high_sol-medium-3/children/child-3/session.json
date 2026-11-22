@@ -1,0 +1,19 @@
+{
+  "id": "child-3",
+  "name": "output-terminal",
+  "assignment": "Map nodes n32-n57. Return JSON partial mappings; use numbered reads.",
+  "model": "gpt-6-sol",
+  "effort": "medium",
+  "status": "generating",
+  "queuedAt": "2026-11-19T04:40:46.614Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-19T04:40:46.618Z",
+  "sessionId": "01a1f21b-6f37-714a-b38a-4b5ed0525b93",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-890xorfx-agent-repository-UrrAMG-checkout--/2026-11-19T04-40-46-648Z_01a1f21b-6f37-714a-b38a-4b5ed0525b93.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase3-890xorfx/agent-repository-UrrAMG/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

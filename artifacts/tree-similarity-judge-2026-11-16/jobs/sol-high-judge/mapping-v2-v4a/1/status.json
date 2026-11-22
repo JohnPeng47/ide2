@@ -1,0 +1,31 @@
+{
+  "status": "finished",
+  "key": "sol-high-judge/mapping-v2-v4a/1",
+  "runId": "254a4e80-d771-44e4-a9bb-3965b9215fc9",
+  "model": "gpt-6-sol",
+  "caseId": "mapping-v2-v4a",
+  "number": 1,
+  "reportedScore": 0.897205,
+  "score": 0.8968229166666667,
+  "rescore": {
+    "score": 0.8968229166666667,
+    "reportedScore": 0.897205,
+    "J": 0.8968229166666667,
+    "reportedJ": 0.897205,
+    "pairs": 6,
+    "unmatchedA": 0,
+    "unmatchedB": 0,
+    "depth": 4,
+    "maxPairError": 3.333333334909483e-7,
+    "rangeIssues": []
+  },
+  "usage": {
+    "input": 13775,
+    "output": 21950,
+    "cacheRead": 110976,
+    "cacheWrite": 0,
+    "reasoning": 11897,
+    "totalTokens": 146701
+  },
+  "outputUrl": "http://localhost:5191/evals?run=254a4e80-d771-44e4-a9bb-3965b9215fc9&output=450c8f11-3b30-485c-a282-7fc0e4dc74c0%3A1%3Aalternative"
+}

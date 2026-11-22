@@ -1,0 +1,67 @@
+68
+renderer/Thread 1-3d 32-40d 46-59d 69-80d 116-124d 127-164i 192-200di 225-257i 290d 301-324i 462-493ui 516-517i 519-586ui 596-608ui 610-615d 629-652ui
+67 +68
+Surface 597-604u 717-719u 753-759u 2574-2579ui
+termio/stream_handler 117-119ui
+renderer/generic 1074-1086ui 1371-1375d 1716-1719d
+70
+renderer/generic 274-275d 1371-1375d 1479-1493ui 1564-1567u
+terminal/main 51d
+terminal/render 289-334d 941-947di 983-1039i 1157-1171i 1200-1208i 1241-1283i 1399-1414i 2666-2675di 2694-2732i
+72
+renderer/generic 1371-1375d 1399-1409i 1420-1426ui 1479-1487ui 1500-1526ui 1555-1567ui 1645-1665ui
+terminal/render 941-947di 1241-1279i 1416-1484di 2666-2675di 2694-2732i
+71 +72
+renderer/State 13-20d 67-80di
+73
+renderer/generic 204-207d 274-275d 1371-1375d 1650-1659ui 2630-2656di 2679-2685u 2721-2757ui 2925-2942di 2973-2991ui 3284-3356ui 3477-3537ui
+font/shape 19-58di 70-85d
+font/shaper/run 47-51di 297-304i
+font/shaper/harfbuzz 131-156ui 238-243i
+font/shaper/coretext 316-320d 374-385ui 505-512i
+font/shaper/noop 79-95di 97-118i
+font/shaper/web_canvas 81-86d 188-203i
+font/SharedGrid 379-464di
+font/CodepointResolver 327-349di
+font/face 10-24di
+font/face/freetype 426-438du 758-778i
+font/face/coretext 289-296d 542-567i
+font/face/web_canvas 187-194d 223-238i
+font/sprite/Face 174-180d 222-229i
+renderer/cell 181-203di
+74
+renderer/generic 1371-1375d 1502-1526ui 1650-1659ui 1950-2000ui 2630-2636d 2679-2685u 2696-2719ui 2721-2750ui 2760-2787ui 2828-2832u 2895-2917ui 2925-2935d 3066-3083i 3117-3130i 3166-3171i 3539-3546d 3563-3626ui 3628-3672ui
+terminal/render 1029-1044i 1173-1198i 1290-1315ui 1356-1397i
+renderer/cursor 36-68di
+renderer/image 116-146du 181-191i 253-266di 274-289di 318-377ui
+renderer/cell 136-154di
+69 +70 +71 +73 +74
+renderer 17-19d 35-42du
+renderer/generic 90-96d 1370-1710di
+renderer/Thread 537-542d 572-577u
+76
+renderer 16-19d 35-42di
+build_config 43d
+renderer/backend 4-17di
+renderer/generic 90-109d
+77
+Surface 922-929dui
+apprt/embedded 1001-1006ui 1988-1992ui
+renderer/generic 1712-1731di 1740-1743d 1785-1807i
+75 +76 +77
+renderer/generic 341-353di 1055-1072di 1712-2043di 2045-2067di
+renderer/Metal 91-117ui 236-243ui 377-387di
+renderer/metal/Frame 29-56di 67-103ui 105-131ui
+renderer/metal/RenderPass 124-132di 212-229ui
+renderer/metal/IOSurfaceLayer 50-89di 96-123di
+renderer/OpenGL 273-303di 438-449di
+renderer/opengl/Frame 24-49di 51-90di
+renderer/opengl/RenderPass 62-82di 131-144ui
+Surface 1017d 1154u 1777-1787ui
+apprt/gtk/class/application 692-697d 772u 2877-2882ui
+apprt/gtk/class/surface 835-838ui
+apprt/gtk/class/render_surface 149-205ui 307-312ui
+66 +67 +69 +75
+renderer 1-8d 22-23d
+Surface 631-636ui
+renderer/generic 114-116d 3674-3691ui

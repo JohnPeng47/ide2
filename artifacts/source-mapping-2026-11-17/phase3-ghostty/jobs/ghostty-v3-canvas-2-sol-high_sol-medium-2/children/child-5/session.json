@@ -1,0 +1,19 @@
+{
+  "id": "child-5",
+  "name": "terminal",
+  "assignment": "Map ALL nodes d5 n1-n31 only. Read numbered files targeted. Return JSON partial mappings same schema and notes.",
+  "model": "gpt-6-sol",
+  "effort": "medium",
+  "status": "generating",
+  "queuedAt": "2026-11-19T04:08:42.662Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-19T04:09:20.855Z",
+  "sessionId": "01a1f1fe-a8d9-7f4e-b38a-ac8880750fa9",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-y47tglji-agent-repository-CZQWTb-checkout--/2026-11-19T04-09-20-857Z_01a1f1fe-a8d9-7f4e-b38a-ac8880750fa9.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase3-y47tglji/agent-repository-CZQWTb/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

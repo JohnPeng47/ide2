@@ -1,0 +1,19 @@
+{
+  "id": "child-1",
+  "name": "input",
+  "assignment": "Map n24–n35 input/bindings/write branch; private scratch via mktemp -d /tmp/input-map.XXXXXX. Return compact node scope and path/ranges/roles (can use short codes and parent union references), plus notes. Include cross-file implementation. Do not map other branches.",
+  "model": "gpt-6.2-sol",
+  "effort": "high",
+  "status": "generating",
+  "queuedAt": "2026-11-22T03:29:48.732Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-22T03:29:48.735Z",
+  "sessionId": "01a2014d-8adc-71e7-8f98-61a0de57f920",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-1kmg0f14-agent-repository-DG1M8J-checkout--/2026-11-22T03-29-48-764Z_01a2014d-8adc-71e7-8f98-61a0de57f920.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase4-1kmg0f14/agent-repository-DG1M8J/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

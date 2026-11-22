@@ -1,0 +1,108 @@
+Pi coding-session core -- AgentSession coordinates live execution and a persistent conversation tree
+|
+|-- [M] Entry and composition -- packages/coding-agent/src/main.ts, core/sdk.ts
+|   |-- InteractiveMode / runPrintMode / runRpcMode -> shared AgentSessionRuntime
+|   |   `-- Presentation and transport surround the same session behavior
+|   |-- createAgentSessionServices() -> SettingsManager + ModelRuntime + DefaultResourceLoader
+|   |   `-- core/agent-session-services.ts: configuration, provider access, loaded resources
+|   `-- createAgentSession() -> new Agent(...) -> new AgentSession(...)
+|       |-- SessionManager.buildSessionContext() supplies restored messages and selections
+|       |-- SDK wires streamFn, convertToLlm, extension context hooks and queue modes
+|       `-- Returns session, extensionsResult and modelFallbackMessage to the host
+|
+|-- [O] AgentSession owns application-level coordination -- core/agent-session.ts
+|   |-- Public surface: prompt(), steer(), followUp(), subscribe(), compact(), navigateTree()
+|   |-- Retains agent, sessionManager, settingsManager and _modelRuntime
+|   |-- Private state: run/preflight flags, queued-message bookkeeping, retry/compaction controllers
+|   |   `-- Also retains tool registries, ExtensionRunner and pending custom/bash messages
+|   |
+|   |-- [C] prompt(text, options) -> _preparePrompt() -> _startRun()
+|   |   |-- Extension slash command may handle input without invoking a model
+|   |   |-- Input hooks -> skill/template expansion -> model/auth validation
+|   |   |-- Already running -> queue through steering or follow-up behavior
+|   |   `-- _prepareRun(): check compaction -> before_agent_start -> normalize images
+|   |       `-- Prompt options + active tools + pending messages -> starting AgentMessage[]
+|   |
+|   |-- [C] _startRun() -> agent.prompt(messages)
+|   |   |-- _handlePostAgentRun() can arrange recovery -> agent.continue()
+|   |   |-- _runBeforeSettleBoundary() can request another continuation
+|   |   `-- Finally flush pending messages -> _emitAgentSettled() -> resolve idle waiters
+|   |       `-- agent_end ends one loop; agent_settled ends session-level work
+|   |
+|   `-- [C] _handleAgentEvent() connects execution, observers and history
+|       |-- Update delivered-input queues -> extension events -> public subscribers
+|       |-- message_end -> appendMessage() or appendCustomMessageEntry()
+|       |   `-- _entryIdsByMessage associates live message objects with stored entry IDs
+|       `-- turn_end -> flush context-only custom messages after tool results
+|           `-- Avoid inserting unrelated context between a tool call and its result
+|
+|-- [M] Agent is the reusable execution engine -- packages/agent/src/agent.ts, agent-loop.ts
+|   |-- [O] AgentState: messages, model, thinkingLevel, tools, streamingMessage, pendingToolCalls
+|   |   |-- activeRun owns a promise and AbortController; only one run is active
+|   |   `-- processEvents() reduces state before awaiting subscribed listeners
+|   |
+|   |-- [C] Agent.prompt() / continue() -> runAgentLoop() / runAgentLoopContinue()
+|   |   `-- runLoop() alternates assistant responses and tool-result turns
+|   |       |-- prepareNextTurn / prepareRequest refresh context and request selection
+|   |       |-- streamAssistantResponse() -> message_start/update/end events
+|   |       |-- executeToolCalls() -> tool results -> next assistant response
+|   |       |-- Steering messages enter between turns; follow-ups enter when the loop would stop
+|   |       `-- finishTurn() may end or continue; otherwise no pending work -> agent_end
+|   |
+|   |-- [D] Request pipeline separates stored context from provider input
+|   |   |-- AgentSession._installAgentRequestProjection() supplies canonical session projection
+|   |   |-- transformContext -> convertToLlm -> normalizeContext -> streamFunction
+|   |   `-- SDK streamFn -> ModelRuntime.streamSimple() -- core/model-runtime.ts
+|   |       |-- Model selection + credentials + request options -> provider stream
+|   |       `-- Virtual selection may resolve to a different model for this request only
+|   |
+|   `-- [C] Tool execution -> validateToolArguments -> beforeToolCall -> execute -> afterToolCall
+|       |-- executeToolCallsParallel() or executeToolCallsSequential() selects scheduling
+|       |-- Truncated assistant output fails tool calls rather than executing partial arguments
+|       `-- ToolResultMessage feeds both the next model turn and session persistence
+|
+|-- [O] SessionManager owns durable history -- core/session-manager.ts
+|   |-- fileEntries[] + byId + leafId + labelsById represent a branching conversation
+|   |   |-- SessionEntry.id / parentId link each entry to its preceding history
+|   |   `-- Messages, model/thinking changes, summaries, context edits and custom data share the tree
+|   |-- appendMessage() -> _appendEntry() -> _persist()
+|   |   |-- Append beneath current leaf, update index, advance leaf
+|   |   |-- Persisted sessions use JSONL; inMemory() keeps the same model without disk writes
+|   |   `-- First conversation flushes buffered entries; later entries append to the file
+|   |
+|   |-- [D] buildSessionProjection() derives model-visible context, not the entire stored log
+|   |   |-- Current leaf -> ancestor path -> latest compaction + retained entries
+|   |   |-- Latest context_edit per target -> replacement content or omission
+|   |   `-- ProjectedSessionEntry retains sourceEntry alongside its projected messages
+|   |       `-- buildSessionContext() exposes messages, thinkingLevel and model for restoration
+|   |
+|   `-- [C] AgentSession.compact() / _runAutoCompaction() / navigateTree()
+|       |-- Context size + model limits + settings -> threshold compaction or overflow recovery
+|       |-- Summary generation -> appendCompaction(summary, firstKeptEntryId, ...)
+|       |   `-- Rebuild projected context while retaining older history in the session tree
+|       `-- branch() / branchWithSummary() change the active path without deleting other branches
+|
+|-- [M] Session capabilities and policy -- core/agent-session.ts, core/extensions/, core/tools/
+|   |-- DefaultResourceLoader supplies extensions, skills, templates and prompt resources
+|   |-- _buildRuntime() / _bindExtensionCore() connect ExtensionRunner to session operations
+|   |   |-- Extensions can send messages, append custom entries and change active tools/model
+|   |   `-- Hooks participate in input, context, tool calls, turn boundaries and provider requests
+|   |-- _toolRegistry + _toolDefinitions -> _applyToolLoadout() -> agent.state.tools
+|   |   |-- Built-ins: read, edit, write, bash, powershell, grep, find, ls
+|   |   |-- Custom and extension tools join the registry; allow/exclude rules constrain exposure
+|   |   `-- NestedToolCallRunner records calls made through ctx.executeTool() on parent results
+|   `-- [D] Executable tools and provider-visible declarations are distinct
+|       |-- context.tools retains implementations; system messages carry declaration changes
+|       `-- declareToolChanges() records toolsAdded/toolsRemoved for subsequent requests
+|
+`-- [O] AgentSessionRuntime owns replacement and teardown -- core/agent-session-runtime.ts
+    |-- Retains current _session, _services and createRuntime factory
+    |-- switchSession() / newSession() / fork() select or create another session history
+    |   |-- Extension before-switch/before-fork hooks can cancel the operation
+    |   `-- teardownCurrent() -> createRuntime() -> apply() -> rebindSession()
+    |       `-- Reconstruct session-scoped services and reconnect the host to the replacement
+    `-- teardownCurrent(): await session.abort() -> session_shutdown -> session.dispose()
+        |-- abort() cancels run/retry/compaction/summary work and awaits session idle
+        |-- Outgoing response and tool results settle before the session is replaced
+        `-- dispose() invalidates extension contexts, detaches listeners and cancels resources
+            `-- In-memory runtime lifetime ends; persisted SessionManager history remains

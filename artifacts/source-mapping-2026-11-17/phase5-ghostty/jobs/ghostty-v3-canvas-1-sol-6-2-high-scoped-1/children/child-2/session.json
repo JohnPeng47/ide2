@@ -1,0 +1,19 @@
+{
+  "id": "child-2",
+  "name": "d1input",
+  "assignment": "Map d1 n16-n28. Return compact verified lines + scopes/roles; follow input and I/O paths needed.",
+  "model": "gpt-6.2-sol",
+  "effort": "high",
+  "status": "generating",
+  "queuedAt": "2026-11-22T15:27:50.288Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-22T15:27:50.291Z",
+  "sessionId": "01a203de-ea32-72c2-af6b-65ed4473efa0",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase5-kerh8ebv-agent-repository-tUNAhF-checkout--/2026-11-22T15-27-50-322Z_01a203de-ea32-72c2-af6b-65ed4473efa0.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase5-kerh8ebv/agent-repository-tUNAhF/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

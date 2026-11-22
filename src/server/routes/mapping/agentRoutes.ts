@@ -1,3 +1,5 @@
+import { projectChangeDocument } from '../../../../domain/mapping/projections/savedCanvasProjection';
+import { queryProjection } from '../../../../domain/mapping/projections/projectionType';
 import type { ServerResponse } from 'node:http';
 import type { Connect } from 'vite';
 import { z } from 'zod';
@@ -42,12 +44,15 @@ export async function handleAgentRoutes(request: Connect.IncomingMessage, respon
       const version = url.searchParams.has('version') ? Number(url.searchParams.get('version')) : undefined;
       if (version !== undefined && (!Number.isSafeInteger(version) || version < 0)) throw Error('Invalid session version');
       response.setHeader('cache-control', 'no-store');
-      return sendJson(response, 200, await service.changes.preview(decodeURIComponent(preview[1]), documentId, version));
+      const type = queryProjection(url);
+      const result = await service.changes.preview(decodeURIComponent(preview[1]), documentId, version);
+      return sendJson(response, 200, type && result ? { ...result, document: projectChangeDocument(result.document, type) } : result);
     }
     const changeSession = path.match(/^\/change-sessions\/([^/]+)$/);
     if (changeSession && request.method === 'GET' && service.changes) {
       const { receipts, ...session } = await service.changes.get(decodeURIComponent(changeSession[1]));
-      return sendJson(response, 200, session);
+      const type = queryProjection(url);
+      return sendJson(response, 200, type ? { ...session, documents: session.documents.map(doc => projectChangeDocument(doc, type, doc.history?.diagramRevisions)) } : session);
     }
     if (path === '/canvases') {
       if (request.method === 'GET') return sendJson(response, 200, service.bridge.list());

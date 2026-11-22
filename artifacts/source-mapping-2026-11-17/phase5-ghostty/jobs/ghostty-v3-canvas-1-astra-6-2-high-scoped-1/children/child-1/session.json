@@ -1,0 +1,19 @@
+{
+  "id": "child-1",
+  "name": "termio",
+  "assignment": "Map d2 all nodes per instructions. Return compact text node scopes + path abbreviations, ranges with roles. Include parent coverage via child references where helpful.",
+  "model": "gpt-6.2-astra",
+  "effort": "high",
+  "status": "generating",
+  "queuedAt": "2026-11-22T15:27:49.169Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-22T15:27:49.184Z",
+  "sessionId": "01a203de-e5e1-703b-bcbb-27904f8742b8",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase5-gcchw3sl-agent-repository-E7lXKk-checkout--/2026-11-22T15-27-49-217Z_01a203de-e5e1-703b-bcbb-27904f8742b8.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase5-gcchw3sl/agent-repository-E7lXKk/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

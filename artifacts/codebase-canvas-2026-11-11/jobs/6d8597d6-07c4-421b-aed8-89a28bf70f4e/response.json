@@ -1,0 +1,51 @@
+{
+  "output": {
+    "summary": "Across all 13 canvases and 78 diagrams, Phase 3 produces a well-connected technical reference with useful conceptual expansions. Every supplied edge has valid line endpoints, every peripheral is reachable from its central diagram, and the supplied text rectangles do not overlap. The main weakness is editorial: dense central trees, repeated detail and unreconciled point-local qualifications make the collection harder to navigate than its decomposition suggests. These are actionable Phase 3 choices; rendered connector routing, clipping and interaction behavior cannot be judged from this output.",
+    "strengths": [
+      "Peripherals usually expand meaningful concepts rather than reproduce file boundaries. Examples include changes/capture L2–24 separating capture provenance from mutation receipts, source/mapping L2–18 explaining evidence identity and ordering, and analysis/reuse L11–26 separating reuse decisions from checkpoint publication.",
+      "Many attachments are precise and informative: diagrams/central L51 connects to diagrams/source L19 for scoped mapping transformations; storage/central L54 connects to storage/publish L6 for pinned manifest capture; chat/central L45 connects to chat/isolate L21 for terminal save and cleanup.",
+      "Important distinctions survive compression: canvas/transfer L23–27 distinguishes copy from move navigation, generation/batch L20–22 distinguishes acknowledgement retry from regeneration, and evals/retain L11–19 distinguishes ordinary promotion from stricter placement backfill.",
+      "The collection carefully marks evidence limits. analysis/central L37 distinguishes static relations from recorded execution, while storage/publish L20–22 separates publication boundaries and identifies the unavailable helper implementation."
+    ],
+    "issues": [
+      {
+        "evidence": "runtime/central remains 105 lines, including the service-by-service constructor inventory at L27–71. storage/central remains 98 lines and retains details such as the eight-writer publication sequence at L51–53 and cache limits at L95–98. evals/central spans 94 lines, with workflow variants at L29–34 and deletion mechanics at L44–52 alongside its main subsystem map.",
+        "impact": "The central diagrams still require sustained implementation-level reading before readers can locate the relevant expansion. The reported reduction percentages do not translate consistently into a strong overview/detail hierarchy.",
+        "recommendation": "Regenerate these central trees around the relationships needed to orient readers: major owners, inputs, transitions and publication boundaries. Move constructor inventories, numeric limits and detailed cleanup sequences into the relevant existing peripherals, retaining only details essential to understanding the central relationship. Let each point's subject determine its structure and depth."
+      },
+      {
+        "evidence": "source/central L35–46 already explains definition freshness checks and session ownership, substantially repeated in source/lsp L2–15 and L22–28. editor/central L18–21 repeats session lifecycle covered by editor/session L2–6, and editor/central L70–72 repeats dirty-state rules in editor/session L19–22. generation/central L55–64 repeats retention and runtime lifetime developed in generation/lifetime L2–18.",
+        "impact": "Several expansions ask readers to reread the overview before reaching new information. This increases the collection's 2,645-line reading burden and weakens the distinction between summary and drill-down.",
+        "recommendation": "Give each repeated concept a primary explanatory location. Keep a short consequence or contract in the central tree, then make the peripheral begin with the additional decisions, exceptions or mechanisms. Preserve repetition only when needed to make an independently readable peripheral understandable."
+      },
+      {
+        "evidence": "agent-api/identity L21–24 says construction wiring does not prove projection sharing, while runtime/central L41–47 explicitly presents one shared projection supplied to both services. contexts/central L74–77 and contexts/binding L17–20 leave current-evidence comparison to unshown callers, while agent-api/central L91–93 and agent-api/records L10–15 describe the caller's fingerprint-based status calculation. generation/lifetime L19–21 leaves concrete apply/batch deduplication unspecified, while chat/isolate L13–18 describes receipts and persistence retries for the isolated-controller implementation.",
+        "impact": "These are compatible local evidence scopes, but the final collection leaves readers to reconcile them. A limitation in one point can look like a collection-wide unknown even where another point supplies a bounded answer.",
+        "recommendation": "Reconcile these passages during Phase 3 regeneration. Retain local evidence qualifications, but explicitly identify the related point and its scope: runtime composition supplies the sharing description; the agent API supplies context-status behavior; chat supplies the isolated-controller receipt behavior. Do not generalize that last implementation to every live canvas transport."
+      },
+      {
+        "evidence": "chat/central L12 names AgentDiagrammingSessionService, agent-api/central L14 names generation services, generation/central L9–14 names revision issuance, diagrams/central L57–65 describes retention, and canvas/central L74–76 hands records to persistence. storage/central L17–28 supplies the next persistence boundary. Their supplied edges connect diagrams only within their own point, and these handoff labels do not identify the destination point/diagram. Likewise, changes/central L60–63 hands acceptance to the catalog covered by storage/central L69–77.",
+        "impact": "Each canvas is connected internally, but the collection provides little explicit navigation through end-to-end workflows. Readers must infer which similarly named service or persistence diagram contains the next part of the story.",
+        "recommendation": "Add concise destination references at the important handoffs, using existing point/diagram IDs and descriptive labels. Where supported, use navigable references; otherwise include textual pointers. Keep local explanations focused on their side of the boundary instead of repeating the destination's implementation."
+      },
+      {
+        "evidence": "generation connects central L15 to workflow L1, but central starts at row 0 and workflow at row 83: the attachment spans 69 rows vertically. runtime connects central L68 at absolute row 67 to eval L2 at row 1, and central L71 to eval L17. diagrams places source at column 210, beyond the intervening parse and edits diagrams at column 110, although its incoming attachments originate in central at column 0.",
+        "impact": "The nonoverlapping layout is structurally sound, but several related concepts are far apart or separated by other expansions. This increases tracing distance and places additional demands on later connector routing. Actual crossings or obscured labels are not established by the supplied coordinates.",
+        "recommendation": "Place peripherals with attention to their attachment rows and intervening diagrams, not only text bounds. Bring runtime/eval closer to its evaluation branch and reconsider generation/workflow's placement relative to its early central anchor. For multiple-column layouts, reserve a clear route to farther expansions or rearrange them nearer their principal anchors."
+      },
+      {
+        "evidence": "The edge labeled 'Scheduling, validation and resource lifetime' runs from evals/central L36, 'Runtime adapter: AgentContextEvalRuntime implements EvalRuntime', to evals/runtime L1. However, evals/runtime L2–9 covers scheduling and generateValidated(), while only L11 onward introduces the adapter. The matching validation concept already appears at evals/central L35, and run orchestration begins at L20.",
+        "impact": "This attachment makes the peripheral appear to elaborate the runtime adapter alone, although it also covers orchestration responsibilities. The hierarchy and edge label consequently suggest a broader adapter responsibility than the peripheral's own organization supports.",
+        "recommendation": "Attach the whole expansion to the run-orchestration concept, or use distinct meaningful anchors for validation and adapter lifetime if that improves navigation. Recheck attachment scope across the collection so the source node describes the material reached by the edge, rather than merely naming one participant."
+      }
+    ],
+    "regenerationInstructions": "Regenerate Phase 3 as a coordinated collection edit. Preserve its valid connectivity, meaningful conceptual peripherals and careful evidence qualifications. Make dense central diagrams easier to scan by relocating implementation inventories and removing repeated explanations. Reconcile point-local unknowns with bounded evidence elsewhere in the collection, add explicit navigation at major handoffs, and align peripheral positions and attachment scopes with the concepts they expand. Revalidate line endpoints, connectivity and text bounds after editing. Choose structure and detail independently for each subject; do not impose a common branch count or relationship template. Treat rendered routing and interaction defects as unverified later-stage concerns."
+  },
+  "usage": {
+    "input_tokens": 485212,
+    "cached_input_tokens": 402304,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 4093,
+    "reasoning_output_tokens": 730
+  }
+}

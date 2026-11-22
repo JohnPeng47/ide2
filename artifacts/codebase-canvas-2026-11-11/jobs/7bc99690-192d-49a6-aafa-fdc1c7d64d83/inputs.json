@@ -1,0 +1,27 @@
+{
+  "fingerprint": "6a3d27f263cdc434895c2a86e3a6695d1730387dceb54ab4717ff14fc56c9d48",
+  "files": {
+    "context.json": {
+      "sha256": "4533609a6088e886a3c0683c7f171e46f742ad60a824a90fa3e3bff42944d834",
+      "bytes": 129088
+    },
+    "seed.json": {
+      "sha256": "a874767c5eef6fdd762acdef3b0e551e4a90247dba94b0aeb46b88618b99f058",
+      "bytes": 10181
+    },
+    "critique.json": {
+      "sha256": "897cd960e7a4926ad60e68b02050c4f3ff3df83956babdf65398dab7e4b221af",
+      "bytes": 9201
+    },
+    "previous-output.json": {
+      "sha256": "50d7128d96ece6123f0a31ec64edd092c5d67030c33dd0726b0a3127751f4620",
+      "bytes": 19590
+    }
+  },
+  "dependencies": [
+    "initial/B2/expand/agent-api",
+    "initial/B2/tree/agent-api",
+    "feedback/B2/phase3/round1/judge"
+  ],
+  "round": 1
+}

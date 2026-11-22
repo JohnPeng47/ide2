@@ -1,0 +1,19 @@
+{
+  "id": "child-2",
+  "name": "input",
+  "assignment": "Map nodes n24-n37 (key, mouse, paste, write pipeline). Return partial JSON mappings only for assigned nodes, notes.",
+  "model": "gpt-6-sol",
+  "effort": "medium",
+  "status": "generating",
+  "queuedAt": "2026-11-19T04:19:17.160Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-19T04:19:17.166Z",
+  "sessionId": "01a1f207-c24a-78c2-a452-b7972456d255",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-jwcn3zwe-agent-repository-AiLY88-checkout--/2026-11-19T04-19-17-195Z_01a1f207-c24a-78c2-a452-b7972456d255.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase3-jwcn3zwe/agent-repository-AiLY88/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "id": "01a1f21b-5f92-7769-abf1-9b3ebed7ed24",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-890xorfx-agent-repository-UrrAMG-checkout--/2026-11-19T04-40-42-642Z_01a1f21b-5f92-7769-abf1-9b3ebed7ed24.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase3-890xorfx/agent-repository-UrrAMG/checkout",
+  "model": "gpt-6-sol",
+  "effort": "high",
+  "tools": [
+    "read",
+    "bash",
+    "validate_source_mappings",
+    "delegate_subagents"
+  ]
+}

@@ -1,0 +1,163 @@
+# Compression
+
+## Vertical
+- `Session IO and emulation: io, io_thread, io_thr`: separates into owned `Termio` state, a writer/event-loop manager, and worker handles—not one IO execution context. `Exec` adds subprocess/PTY state and a POSIX gather–parse pipeline with rotating buffers; Windows retains serial reading. Sources: `src/Surface.zig`, `src/termio/Termio.zig`, `src/termio/Thread.zig`, `src/termio/Exec.zig`.
+- `terminal_stream: StreamHandler.Stream`: hides the stream’s parser and handler, followed by handler-owned APC/DCS state, Kitty clipboard grants and transactions, and an optional build-gated tmux viewer. Sources: `src/terminal/stream.zig`, `src/termio/stream_handler.zig`.
+- `terminal: terminal.Terminal -- authoritative emulator state`: flattens terminal-wide state, lazily created screens, and screen-local storage. Cursor, selection, charset and Kitty state belong to `Screen`, alongside—not inside—its `PageList`. Pages contain rows, cells, styles, grapheme storage and hyperlinks. Sources: `src/terminal/Terminal.zig`, `src/terminal/ScreenSet.zig`, `src/terminal/Screen.zig`, `src/terminal/PageList.zig`, `src/terminal/page.zig`.
+- `Presentation: renderer, renderer_state, renderer_thread, renderer_thr`: combines separate Surface-owned objects. Renderer-private snapshots, shaping caches, GPU resources and draw synchronization need separation from shared terminal access and scheduling. Sources: `src/Surface.zig`, `src/renderer/generic.zig`, `src/renderer/State.zig`, `src/renderer/Thread.zig`.
+- `keyboard: Keyboard; pressed_key; last_binding_trigger`: obscures the distinction between owned queued writes, borrowed binding-set pointers, and Surface-level key bookkeeping. Sources: `src/Surface.zig`.
+- `Search: optional Surface.Search`: compresses worker control, `TerminalSearch`, per-live-screen searches and active-viewport searching. Sources: `src/Surface.zig`, `src/terminal/search/Thread.zig`, `src/terminal/search/terminal.zig`, `src/terminal/search/screen.zig`.
+- `Inspector: optional owned Inspector`: combines mouse inspection with GUI-owned keyboard history and VT recording. Sources: `src/inspector/Inspector.zig`.
+- `-> App-owned font.SharedGridSet shares matching font configurations`: hides the keyed, reference-counted grid set, font library/discovery, and grid-local resolver, caches, atlases and lock. Sources: `src/App.zig`, `src/font/SharedGridSet.zig`, `src/font/SharedGrid.zig`.
+
+## Horizontal
+- `surfaceMailbox(), handleMessage() (src/Surface.zig; src/apprt/surface.zig)`: implies a Surface queue, but messages are wrapped with a Surface pointer, placed in the App queue, and dispatched only if that Surface remains registered. Sources: `src/apprt/surface.zig`, `src/App.zig`.
+- `queueIo() -- common outgoing-message gate`: needs separate user-write, control-message and protocol-reply paths. Readonly filtering applies to write messages passing through this gate; stream-generated replies also reach the IO mailbox without it. Sources: `src/Surface.zig`, `src/termio/Termio.zig`, `src/termio/stream_handler.zig`.
+- `Configuration, font selection and geometry (src/Surface.zig)`: compresses asynchronous configuration delivery, invalidation of borrowed key-table pointers, font-reference handoff and two resize notifications. `Termio.resize()` additionally notifies the renderer after resizing the PTY and terminal under the shared mutex. Sources: `src/Surface.zig`, `src/termio/Termio.zig`, `src/renderer/Thread.zig`.
+- `renderer_state: renderer.State (src/renderer/State.zig)`: hides the shared-access contract among parsing, input, rendering and search. Its terminal pointer is not terminal ownership; renderer snapshots and draw synchronization are separate. Sources: `src/renderer/State.zig`, `src/renderer/generic.zig`, `src/termio/Exec.zig`, `src/terminal/search/Thread.zig`.
+- `Text, IME and clipboard operations`: compresses asynchronous runtime requests, completion/denial, paste protection, mode-dependent encoding and terminal-originated clipboard protocols. Sources: `src/Surface.zig`, `src/apprt/structs.zig`, `src/termio/stream_handler.zig`.
+- `Search: optional Surface.Search`: hides a split delivery path: copied highlights go to the renderer, while counts and selected indices go through the App mailbox to Surface/UI. Sources: `src/Surface.zig`, `src/renderer/Thread.zig`.
+- `Lifecycle implementation: init(), deinit(), needsConfirmQuit(), close()`: needs explicit ownership and ordering: host-mediated close, search/renderer/IO joins, renderer destruction before its thread manager, and release of borrowed/shared resources afterward. Sources: `src/Surface.zig`, `src/termio/Exec.zig`, `src/apprt/embedded.zig`.
+
+# Canvases
+
+## Session · current
+
+Keep the input as the orientation diagram, but move detailed coverage into the views below rather than reproducing its dense tree.
+
+Diagram identifiers denote views; link endpoints name the actual nodes within those views. Repeated references identify the same node. T expresses composition, while borrowing, dispatch, calls and synchronization use E. Responsibility-group nodes remain organizational parts of Surface, not invented Zig objects.
+
+### Diagrams
+- **core · Surface ownership overview**: vertical; anchored to the input root → `Ghostty terminal-session core -- Surface (src/Surface.zig)`. Retain Surface’s responsibility groups and retained state. Distinguish owned values/optional allocations from references to App, runtime objects, terminal state and shared fonts. Replace expanded IO/presentation branches with child-canvas entrances. Sources: `src/Surface.zig`.
+- **interaction · Input state and binding references**: vertical; anchored to Session/core → `User interaction and terminal actions (src/Surface.zig)`. Expand Keyboard’s sequence queue and table stack, Surface-level pressed-key bookkeeping, Mouse’s gesture/buttons/scroll accumulation/link state, and their references into configuration and terminal storage. Sources: `src/Surface.zig`.
+- **events · Input, composition and clipboard routing**: horizontal; anchored to Session/core → `queueIo() -- common outgoing-message gate`. Trace key remapping and binding handling, unconsumed-event encoding, mouse reporting versus local selection/scrolling, preedit updates, clipboard request/completion/denial and paste encoding. Show readonly filtering only at the Surface write gate. Sources: `src/Surface.zig`, `src/input/key_encode.zig`, `src/input/mouse_encode.zig`, `src/input/paste.zig`.
+- **changes · Configuration, font and geometry propagation**: horizontal; anchored to Session/core → `Configuration, font selection and geometry (src/Surface.zig)`. Trace conditional derivation, replacement of copied settings, sequence/table reset, font-grid acquisition/handoff, cell-size calculation and IO/renderer messages. Distinguish immediate Surface geometry from asynchronously applied worker state. Sources: `src/Surface.zig`, `src/renderer/size.zig`, `src/termio/Termio.zig`, `src/renderer/Thread.zig`.
+- **lifetime · Startup, close and teardown**: horizontal; anchored to Session/core → `Lifecycle implementation: init(), deinit(), needsConfirmQuit(), close()`. Show construction and worker startup, host-mediated close, then search → renderer → IO stop/join ordering. Show renderer destruction before renderer-thread-manager destruction and final font/preedit/mutex cleanup. Sources: `src/Surface.zig`, `src/termio/Exec.zig`.
+- **search · Optional search ownership**: vertical; anchored to Session/core → `Search: optional Surface.Search`. Expand worker state/handle, mailbox, refresh timer, `TerminalSearch`, per-screen searches and viewport search. Keep terminal references distinct from search-owned copies and matches. Sources: `src/Surface.zig`, `src/terminal/search/Thread.zig`, `src/terminal/search/terminal.zig`, `src/terminal/search/screen.zig`.
+- **inspection · Optional diagnostic state**: vertical; anchored to Session/core → `Inspector: optional owned Inspector`. Expand mouse inspection and GUI state, including key-event history and VT recording. Do not introduce another emulator or rendering pipeline. Sources: `src/inspector/Inspector.zig`, `src/Surface.zig`.
+
+### Links
+- `Session/core/User interaction and terminal actions` → `Session/interaction/Keyboard and Mouse` · T · owns interaction state.
+- `Session/interaction/Keyboard` → `Session/interaction/sequence queue and table stack` · T · contains queued writes and binding references.
+- `Session/interaction/table entries` → `Session/core/DerivedConfig bindings` · E · borrow binding sets; configuration replacement clears them.
+- `Session/events/key and mouse callbacks` → `Session/interaction/input state` · E · update event and gesture bookkeeping.
+- `Session/events/encoders` → `IO/storage/Terminal modes and active Screen` · E · read protocol state to choose emitted bytes.
+- `Session/events/local mouse actions` → `IO/storage/Screen selection and PageList viewport` · E · mutate selection or scrolling instead of writing input.
+- `Session/events/preeditCallback()` → `Presentation/parts/State.preedit` · E · supplies composition display text.
+- `Session/events/queueIo()` → `IO/parts/Termio mailbox` · E · transfers accepted writes and control messages.
+- `Session/changes/updateConfig()` → `Session/interaction/sequence queue and table stack` · E · drops queued sequence state and invalidates borrowed bindings.
+- `Session/changes/setFontSize()` → `Services/fonts/SharedGridSet` · E · acquires the replacement grid reference.
+- `Session/changes/font-grid message` → `Presentation/frames/renderer mailbox handling` · E · installs the new grid before releasing the old reference.
+- `Session/changes/resize and configuration messages` → `IO/parts/Termio mailbox` · E · request worker-side updates.
+- `Session/changes/resize and configuration messages` → `Presentation/parts/renderer mailbox` · E · request presentation updates.
+- `Session/core/Surface` → `Session/search/Search` · T · owns optional search state.
+- `Session/search/Search` → `Session/search/worker state and handle` · T · owns worker lifetime.
+- `Session/search/worker state` → `Session/search/TerminalSearch` · T · contains the active search, when present.
+- `Session/search/TerminalSearch` → `Session/search/screen searches and viewport search` · T · contains search engines and results.
+- `Session/search/worker` → `IO/storage/Terminal` · E · feeds search data under the shared mutex, then advances copied-data searches.
+- `Session/search/searchCallback_()` → `Presentation/parts/renderer mailbox` · E · transfers copied highlight payloads.
+- `Session/search/searchCallback_()` → `Services/dispatch/App mailbox` · E · sends Surface-addressed counts and selected indices.
+- `Session/core/Surface` → `Session/inspection/Inspector` · T · owns the optional allocation.
+- `Session/inspection/Inspector` → `Session/inspection/mouse state and GUI state` · T · contains diagnostic state.
+- `Session/events/keyCallback()` → `Session/inspection/key history` · E · records events and their encoded bytes.
+- `IO/traffic/processOutput()` → `Session/inspection/VT recording` · E · uses byte-wise inspection when Inspector is active.
+- `Presentation/parts/State` → `Session/inspection/Inspector` · E · borrows the active inspector pointer.
+- `Session/lifetime/close()` → `Services/host/runtime Surface` · E · requests host-managed close with confirmation information.
+- `Session/lifetime/deinit()` → `Session/search/worker` · E · stops and joins first.
+- `Session/lifetime/deinit()` → `Presentation/parts/renderer worker` · E · stops and joins before IO teardown.
+- `Session/lifetime/deinit()` → `IO/parts/IO worker` · E · stops and joins before shared terminal state is freed.
+
+## IO · child of Session/core → `Session IO and emulation: io, io_thread, io_thr`
+
+This branch needs its own canvas because execution contexts, parser ownership and emulator storage are substantially different structures.
+
+### Diagrams
+- **parts · Session IO composition**: vertical; anchored to Session/core → `Session IO and emulation: io, io_thread, io_thr`. Separate Surface’s `Termio`, `termio.Thread` and OS handle. Expand Termio into backend, stream, terminal, configuration and mailbox; expand Exec into subprocess/PTY and execution-time read machinery. Show stream parser/handler ownership and handler protocol state. Sources: `src/Surface.zig`, `src/termio/Termio.zig`, `src/termio/Thread.zig`, `src/termio/Exec.zig`, `src/terminal/stream.zig`, `src/termio/stream_handler.zig`.
+- **storage · Emulator and page hierarchy**: vertical; anchored to IO/parts → `terminal: terminal.Terminal -- authoritative emulator state`. Expand terminal-wide modes/colors/title/directory/tabstops, ScreenSet’s owned screens and active reference, Screen-local state, and PageList’s pages/pins/viewport/compression bookkeeping. Expand a Page into row/cell and auxiliary storage. Sources: `src/terminal/Terminal.zig`, `src/terminal/ScreenSet.zig`, `src/terminal/Screen.zig`, `src/terminal/PageList.zig`, `src/terminal/page.zig`.
+- **traffic · PTY transport and protocol effects**: horizontal; anchored to IO/parts → `backend: termio.Backend.exec -- subprocess and PTY (src/termio/Exec.zig)`. Trace writer-mailbox handling separately from POSIX gather → buffered batches → parser execution, with the Windows serial variant. Follow handler effects into terminal mutations, replies, Surface messages and renderer wakeups. Include resize coalescing, synchronized-output timeout and shutdown of read machinery. Sources: `src/termio/Exec.zig`, `src/termio/Thread.zig`, `src/termio/Termio.zig`, `src/termio/stream_handler.zig`.
+
+### Links
+- `Session/core/Session IO and emulation` → `IO/parts/Termio, thread manager and worker handle` · T · direct session-IO constituents, not three children of Termio.
+- `IO/parts/Termio` → `IO/parts/backend, stream, mailbox and DerivedConfig` · T · owns IO state.
+- `IO/parts/Termio` → `IO/storage/Terminal` · T · owns the authoritative emulator.
+- `IO/parts/stream` → `IO/parts/parser and StreamHandler` · T · contains parser and dispatch state.
+- `IO/parts/StreamHandler` → `IO/parts/APC, DCS and clipboard state` · T · owns protocol-specific state; optional tmux state is build-gated.
+- `IO/storage/Terminal` → `IO/storage/ScreenSet` · T · contains the screen collection.
+- `IO/storage/ScreenSet` → `IO/storage/live Screens` · T · owns allocated screens; alternate is created on demand.
+- `IO/storage/ScreenSet.active` → `IO/storage/selected Screen` · E · aliases an existing screen.
+- `IO/storage/Screen` → `IO/storage/PageList and screen-local state` · T · owns grid/scrollback alongside cursor, selection, charset and Kitty state.
+- `IO/storage/PageList` → `IO/storage/pages, tracked pins and viewport state` · T · owns storage and location bookkeeping.
+- `IO/storage/Page` → `IO/storage/rows, cells, styles, graphemes and hyperlinks` · T · contains page-local data.
+- `IO/traffic/IO mailbox consumer` → `IO/parts/Exec backend` · E · executes writes and backend operations.
+- `IO/traffic/gather stage` → `IO/traffic/parser stage` · E · transfers bounded buffer batches with backpressure.
+- `IO/traffic/parser stage` → `IO/parts/StreamHandler` · E · parses bytes while holding the shared terminal mutex.
+- `IO/parts/StreamHandler` → `IO/storage/Terminal` · E · applies terminal operations; does not own a second terminal.
+- `IO/parts/StreamHandler` → `IO/parts/Termio mailbox` · E · queues protocol replies independently of Surface’s readonly gate.
+- `IO/parts/StreamHandler` → `Services/dispatch/App mailbox` · E · sends Surface-addressed UI and clipboard requests.
+- `IO/parts/StreamHandler` → `Presentation/frames/renderer wakeup` · E · schedules observation of changed state.
+- `IO/traffic/Termio.resize()` → `Presentation/parts/renderer mailbox` · E · sends a post-terminal-resize notification.
+- `IO/traffic/synchronized-output timeout` → `IO/storage/Terminal modes` · E · clears a stalled rendering pause.
+
+## Presentation · child of Session/core → `Presentation: renderer, renderer_state, renderer_thread, renderer_thr`
+
+Separate shared emulator access from renderer-private derived data and GPU execution.
+
+### Diagrams
+- **parts · Presentation ownership and scheduling**: vertical; anchored to Session/core → `Presentation: renderer, renderer_state, renderer_thread, renderer_thr`. Show State, renderer, thread manager and handle as siblings. Expand State’s mutex/demand coordination/preedit/mouse data; renderer snapshots, shaping/cache, cells/images, draw mutex and GPU resources; thread mailbox, timers and compression scheduler. Sources: `src/Surface.zig`, `src/renderer/State.zig`, `src/renderer/generic.zig`, `src/renderer/Thread.zig`.
+- **frames · Snapshot, draw and maintenance cycle**: horizontal; anchored to Session/core → `renderer: GenericRenderer(GraphicsAPI) (src/renderer.zig; src/renderer/generic.zig)`. Trace wakeup → locked snapshot → cell/image preparation → drawing, distinguishing the terminal lock from the draw mutex. Include synchronized-output suppression, visibility/display realization, host-driven drawing, font-atlas synchronization, highlight validation and incremental compression. Sources: `src/renderer/generic.zig`, `src/renderer/Thread.zig`, `src/renderer/State.zig`, `src/Surface.zig`.
+
+### Links
+- `Session/core/Presentation` → `Presentation/parts/State, renderer, thread manager and handle` · T · direct presentation constituents.
+- `Presentation/parts/renderer` → `Presentation/parts/snapshot, shaper/cache, cells/images and GPU resources` · T · owns per-surface derived/rendering state.
+- `Presentation/parts/thread manager` → `Presentation/parts/mailbox, timers and compression scheduler` · T · owns scheduling machinery.
+- `Presentation/parts/State` → `IO/storage/Terminal` · E · borrows the authoritative terminal pointer.
+- `Presentation/frames/updateFrame()` → `Presentation/parts/State` · E · acquires demand-aware shared access for snapshots.
+- `Presentation/frames/updateFrame()` → `Presentation/parts/renderer snapshot` · E · refreshes renderer-private state.
+- `Presentation/frames/cell preparation` → `Services/fonts/SharedGrid` · E · resolves/rasterizes glyphs and reads shared atlas data.
+- `Presentation/parts/renderer` → `Services/dispatch/App render device` · E · borrows the app-scoped device.
+- `Presentation/frames/renderer mailbox handling` → `Services/fonts/SharedGridSet` · E · releases the old grid after installing its replacement.
+- `Session/lifetime/Surface.draw()` → `Presentation/frames/drawFrame(true)` · E · supports synchronous host-driven drawing.
+- `Presentation/parts/compression scheduler` → `IO/storage/Terminal and PageList` · E · invokes incremental compression under shared synchronization; storage owns compression implementation/state.
+- `Presentation/frames/scrollbar and presentation updates` → `Services/dispatch/App mailbox` · E · send Surface-addressed runtime updates.
+
+## Services · same level as Session
+
+App-scoped resources and native runtime services are not Surface children. Their connecting E relations are Surface → App dispatch/fonts, renderer → shared device/fonts, runtime → Surface callbacks, and Surface → runtime actions/clipboard/close.
+
+### Diagrams
+- **dispatch · App resources and Surface-addressed delivery**: vertical; anchored to Session/core → `-> App tracks active surfaces and dispatches its mailbox (src/App.zig)`. Expand App’s surface registry, queue, font-grid set and optional shared render device. Registry entries reference runtime surfaces; they do not make App a child of Surface. Sources: `src/App.zig`, `src/apprt/surface.zig`.
+- **fonts · Shared font storage**: vertical; anchored to Session/core → `-> App-owned font.SharedGridSet shares matching font configurations`. Expand keyed grid entries/reference counts, font library/discovery, and each grid’s resolver, caches, atlases, metrics and lock. Keep one identity for a grid shared by several surfaces. Sources: `src/font/SharedGridSet.zig`, `src/font/SharedGrid.zig`.
+- **host · Runtime boundary and asynchronous services**: horizontal; anchored to Session/core → `-> apprt.runtime supplies native UI/services (src/apprt.zig)`. Trace selected-runtime callbacks, `performAction`, clipboard requests/results and close delegation. Show App mailbox wakeup/drain/liveness checking as the worker-to-main-thread route. Native layout remains beyond the Surface boundary, without expanding platform widget hierarchies. Sources: `src/apprt.zig`, `src/apprt/surface.zig`, `src/apprt/structs.zig`, `src/apprt/embedded.zig`, `src/apprt/gtk/Surface.zig`, `src/App.zig`.
+
+### Links
+- `Services/dispatch/App` → `Services/dispatch/registry, mailbox and render device` · T · contains app-scoped tracking, delivery and rendering resources.
+- `Services/dispatch/App` → `Services/fonts/SharedGridSet` · T · owns shared font storage.
+- `Services/fonts/SharedGridSet` → `Services/fonts/grid entries, font library and discovery` · T · owns keyed shared resources.
+- `Services/fonts/SharedGrid` → `Services/fonts/resolver, caches, atlases, metrics and lock` · T · owns grid-local resources.
+- `Services/dispatch/registry` → `Services/host/runtime surfaces` · E · tracks active runtime-surface references.
+- `Session/core/app reference` → `Services/dispatch/App` · E · refers to its associated App without owning it.
+- `Services/host/surface mailbox wrapper` → `Services/dispatch/App mailbox` · E · wraps the destination Surface pointer and wakes the runtime loop.
+- `Services/dispatch/App mailbox dispatch` → `Session/core/handleMessage()` · E · delivers only while the Surface remains registered.
+- `Services/host/runtime callbacks` → `Session/events/input callbacks` · E · deliver keyboard, mouse, text and IME events.
+- `Services/host/runtime geometry callbacks` → `Session/changes/size and scale callbacks` · E · report host geometry.
+- `Session/core/handleMessage()` → `Services/host/performAction()` · E · applies titles, notifications, search status and other UI changes.
+- `Session/events/clipboard request` → `Services/host/runtime clipboard services` · E · initiates asynchronous clipboard access.
+- `Services/host/clipboard completion or denial` → `Session/events/clipboard continuation` · E · resumes paste or terminal-protocol handling.
+- `Services/host/close handling` → `Session/lifetime/Surface destruction` · E · host completes destruction when its lifecycle permits.
+
+# Summary
+
+The plan uses four canvases: the current Surface canvas, two compositional child canvases, and one same-level services canvas. Vertical expansion concentrates on IO/storage and presentation ownership; horizontal expansion exposes execution contexts, asynchronous delivery, synchronization and resource handoffs.
+
+Source-driven corrections and qualifications:
+
+- POSIX PTY output uses separate gather and parsing workers; “read worker” is incomplete.
+- Screen-local cursor, selection, charset and Kitty state are not PageList children.
+- Surface mailboxes are App-mailbox routing wrappers, not independent queues.
+- Shared terminal/font/device references remain E links, not ownership edges.
+- Readonly suppresses Surface-gated writes, not every protocol reply.
+- Font replacement releases the old reference on the renderer thread.
+- Resize reaches the renderer both directly from Surface and after Termio’s locked PTY/terminal resize.
+- The stream also contains clipboard transaction/grant state and optional tmux-viewer state omitted from the input.
+
+All proposals are grounded in checkout commit `ea8b12a8a9894b5259c441eadd8f6f0c65e215af`; the checkout remains unchanged.

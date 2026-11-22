@@ -1,0 +1,19 @@
+{
+  "id": "child-6",
+  "name": "renderer-transcript",
+  "assignment": "Map n66-77 renderer branch. Private temp directories NOT shared; you MUST return all ranges and roles in TEXT, not a file path. Scope + leaf-to-parent inheritance and compact path range lists for every node. In particular include platform rendering.",
+  "model": "gpt-6.2-astra",
+  "effort": "high",
+  "status": "generating",
+  "queuedAt": "2026-11-22T03:57:38.096Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-22T03:57:38.098Z",
+  "sessionId": "01a20167-03be-700f-aeb2-a27bffff2491",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-ea05rgun-agent-repository-SbUvQM-checkout--/2026-11-22T03-57-38-110Z_01a20167-03be-700f-aeb2-a27bffff2491.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase4-ea05rgun/agent-repository-SbUvQM/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

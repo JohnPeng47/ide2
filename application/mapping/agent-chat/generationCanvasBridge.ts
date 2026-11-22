@@ -3,7 +3,7 @@ import type { CanvasCommand, CanvasDescriptor } from '../../../domain/mapping/ag
 import { MappingDocumentController, type DiagramOperation } from '../../../domain/mapping/workspace/mappingDocumentController';
 import { documentFromHistory, type CanvasHistoryRecord } from '../../../domain/core/diagrams/canvasHistory';
 import type { MappingCanvasState } from '../../../domain/mapping/workspace/mappingWorkspace';
-import { currentCanvasRead } from '../../../domain/mapping/agent/currentCanvasRead';
+import { currentCanvasRead, type CanvasReadOptions } from '../../../domain/mapping/agent/currentCanvasRead';
 import { canvasMutationResult } from '../../../domain/mapping/agent/mutationReceipt';
 import { generatedDiagramOperations } from '../../../domain/mapping/workspace/generatedDiagramOperations';
 import type { DiagramBatchApplication } from '../../../domain/mapping/agent/diagramBatch';
@@ -43,7 +43,7 @@ export class GenerationCanvasBridge implements CanvasSessionPort {
       if (command.method === 'identity') return identity;
       if (command.method === 'context') return { ...identity, nodes: c.nodes(), edges: state.document.edges };
       if (command.method === 'document-state') return { document: state.document, name: entry.name };
-      if (command.method === 'read') return { ...identity, ...currentCanvasRead(state, command.payload as { level: 'small' | 'full'; nodeIds?: string[] }) };
+      if (command.method === 'read') return { ...identity, ...currentCanvasRead(state, command.payload as CanvasReadOptions) };
       if (command.method === 'snapshot') {
         const options = command.payload as { revisionIds?: string[]; currentRevisions?: boolean } | undefined;
         const ids = [...(options?.revisionIds ?? []), ...(options?.currentRevisions ? Object.values(state.document.scene.contents).map(diagram => diagram.revisionId) : [])];

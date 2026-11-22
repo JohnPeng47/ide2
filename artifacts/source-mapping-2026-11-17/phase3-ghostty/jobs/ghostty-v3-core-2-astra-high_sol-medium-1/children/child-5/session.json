@@ -1,0 +1,19 @@
+{
+  "id": "child-5",
+  "name": "io",
+  "assignment": "Map n38-n68 only. Return partial JSON mappings per prompt.",
+  "model": "gpt-6-sol",
+  "effort": "medium",
+  "status": "generating",
+  "queuedAt": "2026-11-19T03:49:14.515Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-19T03:49:14.542Z",
+  "sessionId": "01a1f1ec-40b3-7ee8-81f3-070e4d2eed51",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-n9wevnax-agent-repository-qnhQ37-checkout--/2026-11-19T03-49-14-547Z_01a1f1ec-40b3-7ee8-81f3-070e4d2eed51.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase3-n9wevnax/agent-repository-qnhQ37/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

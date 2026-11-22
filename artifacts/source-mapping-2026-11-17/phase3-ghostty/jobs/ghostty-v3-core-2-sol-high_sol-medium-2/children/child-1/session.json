@@ -1,0 +1,19 @@
+{
+  "id": "child-1",
+  "name": "boundary-init",
+  "assignment": "Map nodes n2-n23 and n91-n92 (Surface/App/apprt integration, init, configuration) to pinned source ranges. Return partial JSON mappings only for assigned nodes, notes.",
+  "model": "gpt-6-sol",
+  "effort": "medium",
+  "status": "generating",
+  "queuedAt": "2026-11-19T04:19:17.160Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-19T04:19:17.164Z",
+  "sessionId": "01a1f207-c249-7a8c-a8bd-fd515d11b060",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-jwcn3zwe-agent-repository-AiLY88-checkout--/2026-11-19T04-19-17-193Z_01a1f207-c249-7a8c-a8bd-fd515d11b060.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase3-jwcn3zwe/agent-repository-AiLY88/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

@@ -26,8 +26,8 @@ export interface ParseOptions {
   recognizers?: readonly Recognizer[];
   glyphs?: Readonly<Record<string, GlyphKind>>;
 }
-export type Policy = Required<Omit<ParseOptions, 'recognizers' | 'glyphs' | 'compatibility'>> &
-  Pick<ParseOptions, 'compatibility'>;
+export type Policy = Required<Omit<ParseOptions, 'recognizers' | 'glyphs' | 'compatibility' | 'maxChars'>> &
+  Pick<ParseOptions, 'compatibility' | 'maxChars'>;
 export type GlyphKind = 'horizontal' | 'vertical' | 'joint' | 'left' | 'right' | 'up' | 'down';
 
 export interface SourceRow {

@@ -63,6 +63,8 @@ try {
   await expect(preview.getByText('2 / 2', { exact: true })).toBeVisible();
   await expect(preview.getByLabel('Output canvas')).toHaveValue(run.cells[0].output.canvases[1].id);
   await page.reload();
+  await expect(preview.getByText('2 / 2', { exact: true })).toBeVisible();
+  await page.keyboard.press('Alt+ArrowLeft');
   await expect(preview.getByText('1 / 2', { exact: true })).toBeVisible();
   await preview.getByRole('button', { name: 'Changes', exact: true }).click();
   await expect(preview.getByRole('button', { name: 'Changes', exact: true })).toHaveAttribute('aria-pressed', 'true');
@@ -101,7 +103,7 @@ try {
   await page.reload();
   assert.equal(await readFile(savedFile, 'utf8'), before);
   assert.deepEqual(errors, []);
-  console.log('PASS: launcher pins a canvas, fake generation saves one linked result, span click navigates, reload restores root, Changes works without a ChangeSession, promotion creates a persistent project, promotes a diagram into an existing canvas and a standalone canvas, and preserves evidence.');
+  console.log('PASS: launcher pins a canvas, fake generation saves one linked result, span click navigates, reload restores the selected canvas, Changes works without a ChangeSession, promotion creates a persistent project, promotes a diagram into an existing canvas and a standalone canvas, and preserves evidence.');
 } finally {
   await browser?.close();
   if (server) { const exited = new Promise(resolve => server.once('exit', resolve)); server.kill('SIGTERM'); await exited; }

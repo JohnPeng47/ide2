@@ -1,0 +1,948 @@
+{
+  "schemaVersion": 1,
+  "inspectedAt": "2026-11-20T15:53:52.437Z",
+  "sourceBaseUrl": "http://127.0.0.1:5191",
+  "scope": "21 mapped experiments. E01–E16 retained from the November 19 map. E17–E19 inspected November 20. E20 added November 20. E21 added November 21.",
+  "aliasPolicy": "Aliases are local to this saved map; preserve this mapping, never derive aliases from sidebar order.",
+  "statusMeaning": "Finished means a saved result, not quality or a distinct model call. Counts may include reused, deterministic, judge and superseded artifacts.",
+  "treeFile": "tree.txt",
+  "experiments": {
+    "E01": {
+      "experimentId": "bd2081d9-9fa5-4eb0-a777-cc1e9ad0a729",
+      "name": "Baseline vs weighted 3+1",
+      "revision": 1,
+      "createdAt": "2026-11-03T23:11:32.411Z",
+      "overviewUrl": "/api/mapping/evals/experiments/bd2081d9-9fa5-4eb0-a777-cc1e9ad0a729/overview",
+      "status": "finished",
+      "counts": {
+        "finished": 4,
+        "total": 4
+      },
+      "phases": [
+        {
+          "nodeId": "phase/generate",
+          "label": "Phase 1 · Generate canvas",
+          "status": "finished",
+          "counts": {
+            "finished": 4,
+            "total": 4
+          }
+        }
+      ]
+    },
+    "E02": {
+      "experimentId": "708ed1bd-ed6e-495f-a5be-c9852343b05c",
+      "name": "Diagram style controls",
+      "revision": 3,
+      "createdAt": "2026-11-03T23:11:32.874Z",
+      "overviewUrl": "/api/mapping/evals/experiments/708ed1bd-ed6e-495f-a5be-c9852343b05c/overview",
+      "status": "finished",
+      "counts": {
+        "finished": 9,
+        "total": 9
+      },
+      "phases": [
+        {
+          "nodeId": "phase/generate",
+          "label": "Phase 1 · Generate canvas",
+          "status": "finished",
+          "counts": {
+            "finished": 9,
+            "total": 9
+          }
+        }
+      ]
+    },
+    "E03": {
+      "experimentId": "41f10540-6cc6-494e-b3e7-82c5429d9cc2",
+      "name": "ChangeSession - AgentChat: modify -> C1 -> C2",
+      "revision": 4,
+      "createdAt": "2026-11-03T23:19:36.046Z",
+      "overviewUrl": "/api/mapping/evals/experiments/41f10540-6cc6-494e-b3e7-82c5429d9cc2/overview",
+      "status": "finished",
+      "counts": {
+        "finished": 3,
+        "total": 3
+      },
+      "phases": [
+        {
+          "nodeId": "phase/modify",
+          "label": "Phase 1 · Modify existing",
+          "status": "finished",
+          "counts": {
+            "finished": 1,
+            "total": 1
+          }
+        },
+        {
+          "nodeId": "phase/c1",
+          "label": "Phase 2 · Generate C1",
+          "status": "finished",
+          "counts": {
+            "finished": 1,
+            "total": 1
+          }
+        },
+        {
+          "nodeId": "phase/c2",
+          "label": "Phase 3 · Generate C2 cluster",
+          "status": "finished",
+          "counts": {
+            "finished": 1,
+            "total": 1
+          }
+        }
+      ]
+    },
+    "E04": {
+      "experimentId": "f1ee9846-f13d-448d-9628-99e7c3bd6d1a",
+      "name": "Diagram change strategy selection",
+      "revision": 18,
+      "createdAt": "2026-11-05T23:40:53.175Z",
+      "overviewUrl": "/api/mapping/evals/experiments/f1ee9846-f13d-448d-9628-99e7c3bd6d1a/overview",
+      "status": "failed",
+      "counts": {
+        "finished": 64,
+        "total": 70
+      },
+      "phases": [
+        {
+          "nodeId": "phase/baseline",
+          "label": "Baseline",
+          "status": "failed",
+          "counts": {
+            "finished": 19,
+            "total": 21
+          }
+        },
+        {
+          "nodeId": "phase/phase-2",
+          "label": "Phase 2 · revised strategy",
+          "status": "failed",
+          "counts": {
+            "finished": 17,
+            "total": 21
+          }
+        },
+        {
+          "nodeId": "phase/phase-3",
+          "label": "Astra high · unchanged Phase 2 prompt",
+          "status": "finished",
+          "counts": {
+            "finished": 14,
+            "total": 14
+          }
+        },
+        {
+          "nodeId": "phase/phase-4",
+          "label": "Explicit architectural fit · astra high",
+          "status": "finished",
+          "counts": {
+            "finished": 14,
+            "total": 14
+          }
+        }
+      ]
+    },
+    "E05": {
+      "experimentId": "9b91034e-e576-4fc5-baa8-d7ce47e760df",
+      "name": "Single diagram → canvas · Mapping architecture",
+      "revision": 9,
+      "createdAt": "2026-11-05T16:18:14.404Z",
+      "overviewUrl": "/api/mapping/evals/experiments/9b91034e-e576-4fc5-baa8-d7ce47e760df/overview",
+      "status": "finished",
+      "counts": {
+        "finished": 3,
+        "total": 3
+      },
+      "phases": [
+        {
+          "nodeId": "phase/split",
+          "label": "Phase 1 · Generate canvas",
+          "status": "finished",
+          "counts": {
+            "finished": 3,
+            "total": 3
+          }
+        }
+      ]
+    },
+    "E06": {
+      "experimentId": "2c9f0ce0-2b7e-42cb-aa4d-a2302f13fd08",
+      "name": "Shopify - central diagrams to full canvases",
+      "revision": 13,
+      "createdAt": "2026-11-07T18:57:25.137Z",
+      "overviewUrl": "/api/mapping/evals/experiments/2c9f0ce0-2b7e-42cb-aa4d-a2302f13fd08/overview",
+      "status": "failed",
+      "counts": {
+        "finished": 12,
+        "total": 16
+      },
+      "phases": [
+        {
+          "nodeId": "phase/phase-1",
+          "label": "Independent canvas generation",
+          "status": "failed",
+          "counts": {
+            "finished": 9,
+            "total": 10
+          }
+        },
+        {
+          "nodeId": "phase/phase-2",
+          "label": "Inter-canvas navigation",
+          "status": "failed",
+          "counts": {
+            "finished": 3,
+            "total": 6
+          }
+        }
+      ]
+    },
+    "E07": {
+      "experimentId": "f46ef917-eea6-4fdd-8354-13935e343c00",
+      "name": "History · standard",
+      "revision": 11,
+      "createdAt": "2026-11-10T21:13:09.183Z",
+      "overviewUrl": "/api/mapping/evals/experiments/f46ef917-eea6-4fdd-8354-13935e343c00/overview",
+      "status": "finished",
+      "counts": {
+        "finished": 12,
+        "total": 12
+      },
+      "phases": [
+        {
+          "nodeId": "phase/phase-1",
+          "label": "Phase 1 · Plan",
+          "status": "finished",
+          "counts": {
+            "finished": 1,
+            "total": 1
+          }
+        },
+        {
+          "nodeId": "phase/phase-2",
+          "label": "Phase 2 · Execute",
+          "status": "finished",
+          "counts": {
+            "finished": 11,
+            "total": 11
+          }
+        }
+      ]
+    },
+    "E08": {
+      "experimentId": "0f5f8e4e-226e-481c-9c77-9190762aebcb",
+      "name": "History · structure first",
+      "revision": 11,
+      "createdAt": "2026-11-10T21:13:08.842Z",
+      "overviewUrl": "/api/mapping/evals/experiments/0f5f8e4e-226e-481c-9c77-9190762aebcb/overview",
+      "status": "failed",
+      "counts": {
+        "finished": 21,
+        "total": 23
+      },
+      "phases": [
+        {
+          "nodeId": "phase/phase-1",
+          "label": "Phase 1 · Plan",
+          "status": "finished",
+          "counts": {
+            "finished": 12,
+            "total": 12
+          }
+        },
+        {
+          "nodeId": "phase/phase-2",
+          "label": "Phase 2 · Execute",
+          "status": "failed",
+          "counts": {
+            "finished": 9,
+            "total": 11
+          }
+        }
+      ]
+    },
+    "E09": {
+      "experimentId": "1bccd8d6-7f5e-47f7-bd42-3b8a39c347b3",
+      "name": "Codebase canvas discovery",
+      "revision": 653,
+      "createdAt": "2026-11-11T06:10:35.077Z",
+      "overviewUrl": "/api/mapping/evals/experiments/1bccd8d6-7f5e-47f7-bd42-3b8a39c347b3/overview",
+      "status": "cancelled",
+      "counts": {
+        "finished": 211,
+        "total": 219
+      },
+      "phases": [
+        {
+          "nodeId": "phase/phase-1",
+          "label": "Phase 1 · Identify epicenters",
+          "status": "finished",
+          "counts": {
+            "finished": 4,
+            "total": 4
+          }
+        },
+        {
+          "nodeId": "phase/phase-2",
+          "label": "Phase 2 · Generate trees",
+          "status": "finished",
+          "counts": {
+            "finished": 78,
+            "total": 78
+          }
+        },
+        {
+          "nodeId": "phase/phase-3",
+          "label": "Phase 3 · Expand canvases",
+          "status": "finished",
+          "counts": {
+            "finished": 78,
+            "total": 78
+          }
+        },
+        {
+          "nodeId": "phase/phase-4",
+          "label": "Phase 4 · Judge and improve",
+          "status": "cancelled",
+          "counts": {
+            "finished": 40,
+            "total": 44
+          }
+        },
+        {
+          "nodeId": "phase/superseded-attempts",
+          "label": "Superseded attempts",
+          "status": "cancelled",
+          "counts": {
+            "finished": 11,
+            "total": 15
+          }
+        }
+      ]
+    },
+    "E10": {
+      "experimentId": "494ea720-15c0-41c6-ba56-bf727967c8ff",
+      "name": "C1 · Prompt style study",
+      "revision": 7,
+      "createdAt": "2026-11-13T23:34:22.526Z",
+      "overviewUrl": "/api/mapping/evals/experiments/494ea720-15c0-41c6-ba56-bf727967c8ff/overview",
+      "status": "finished",
+      "counts": {
+        "finished": 13,
+        "total": 13
+      },
+      "phases": [
+        {
+          "nodeId": "phase/prompt-trial",
+          "label": "Phase 1 · Initial prompt study",
+          "status": "finished",
+          "counts": {
+            "finished": 9,
+            "total": 9
+          }
+        },
+        {
+          "nodeId": "phase/fewshot-trial",
+          "label": "Phase 2 · Two larger examples",
+          "status": "finished",
+          "counts": {
+            "finished": 4,
+            "total": 4
+          }
+        }
+      ]
+    },
+    "E11": {
+      "experimentId": "1f091ac8-ec2e-4787-ad26-c1c96226a923",
+      "name": "Core component discovery",
+      "revision": 1,
+      "createdAt": "2026-11-14T04:28:26.324Z",
+      "overviewUrl": "/api/mapping/evals/experiments/1f091ac8-ec2e-4787-ad26-c1c96226a923/overview",
+      "status": "finished",
+      "counts": {
+        "finished": 1,
+        "total": 1
+      },
+      "phases": [
+        {
+          "nodeId": "phase/baseline",
+          "label": "Generate baseline",
+          "status": "finished",
+          "counts": {
+            "finished": 1,
+            "total": 1
+          }
+        }
+      ]
+    },
+    "E12": {
+      "experimentId": "08ccc7fa-8ea6-4cfa-b0b7-8819b7fcbf35",
+      "name": "Core component discovery",
+      "revision": 35,
+      "createdAt": "2026-11-14T16:57:54.270Z",
+      "overviewUrl": "/api/mapping/evals/experiments/08ccc7fa-8ea6-4cfa-b0b7-8819b7fcbf35/overview",
+      "status": "finished",
+      "counts": {
+        "finished": 24,
+        "total": 24
+      },
+      "phases": [
+        {
+          "nodeId": "phase/mapping",
+          "label": "Phase 1 · Baseline",
+          "status": "finished",
+          "counts": {
+            "finished": 4,
+            "total": 4
+          }
+        },
+        {
+          "nodeId": "phase/pi",
+          "label": "Phase 2 · Repository discovery",
+          "status": "finished",
+          "counts": {
+            "finished": 20,
+            "total": 20
+          }
+        }
+      ]
+    },
+    "E13": {
+      "experimentId": "ec6457e2-7b98-4f0a-847e-c0adba745c83",
+      "name": "Tree similarity judge",
+      "revision": 2,
+      "createdAt": "2026-11-16T19:25:42.050Z",
+      "overviewUrl": "/api/mapping/evals/experiments/ec6457e2-7b98-4f0a-847e-c0adba745c83/overview",
+      "status": "failed",
+      "counts": {
+        "finished": 40,
+        "total": 52
+      },
+      "phases": [
+        {
+          "nodeId": "phase/judge",
+          "label": "Judge pairs",
+          "status": "failed",
+          "counts": {
+            "finished": 40,
+            "total": 52
+          }
+        }
+      ]
+    },
+    "E14": {
+      "experimentId": "7821c7da-cfcd-446d-8d7f-43b26df049fe",
+      "name": "Core component → canvas",
+      "revision": 12,
+      "createdAt": "2026-11-17T18:00:00.651Z",
+      "overviewUrl": "/api/mapping/evals/experiments/7821c7da-cfcd-446d-8d7f-43b26df049fe/overview",
+      "status": "finished",
+      "counts": {
+        "finished": 30,
+        "total": 30
+      },
+      "phases": [
+        {
+          "nodeId": "phase/canvas",
+          "label": "Phase 1 · Core diagram → canvas",
+          "status": "finished",
+          "counts": {
+            "finished": 12,
+            "total": 12
+          }
+        },
+        {
+          "nodeId": "phase/expand",
+          "label": "Phase 2 · Expand canvas",
+          "status": "finished",
+          "counts": {
+            "finished": 12,
+            "total": 12
+          }
+        },
+        {
+          "nodeId": "phase/expand-again",
+          "label": "Phase 3 · Second expansion",
+          "status": "finished",
+          "counts": {
+            "finished": 6,
+            "total": 6
+          }
+        }
+      ]
+    },
+    "E15": {
+      "experimentId": "b8ad87a7-698a-45e9-9cc0-b640ede5efa6",
+      "name": "Source mapping · Effort comparison",
+      "revision": 6,
+      "createdAt": "2026-11-17T20:20:16.887Z",
+      "overviewUrl": "/api/mapping/evals/experiments/b8ad87a7-698a-45e9-9cc0-b640ede5efa6/overview",
+      "status": "failed",
+      "counts": {
+        "finished": 75,
+        "total": 79
+      },
+      "phases": [
+        {
+          "nodeId": "phase/baseline-v1",
+          "label": "Initial trials",
+          "status": "failed",
+          "counts": {
+            "finished": 3,
+            "total": 7
+          }
+        },
+        {
+          "nodeId": "phase/core",
+          "label": "Core diagrams · v2",
+          "status": "finished",
+          "counts": {
+            "finished": 36,
+            "total": 36
+          }
+        },
+        {
+          "nodeId": "phase/canvas",
+          "label": "Full canvases · v2",
+          "status": "finished",
+          "counts": {
+            "finished": 36,
+            "total": 36
+          }
+        }
+      ]
+    },
+    "E16": {
+      "experimentId": "d6db3d5a-0042-4bc3-b633-c1ffc3027efd",
+      "name": "Breadth-first core to canvas",
+      "revision": 12,
+      "createdAt": "2026-11-18T17:16:46.919Z",
+      "overviewUrl": "/api/mapping/evals/experiments/d6db3d5a-0042-4bc3-b633-c1ffc3027efd/overview",
+      "status": "finished",
+      "counts": {
+        "finished": 40,
+        "total": 40
+      },
+      "phases": [
+        {
+          "nodeId": "phase/core",
+          "label": "Core discovery",
+          "status": "finished",
+          "counts": {
+            "finished": 4,
+            "total": 4
+          }
+        },
+        {
+          "nodeId": "phase/p1",
+          "label": "P1 · Generate canvas",
+          "status": "finished",
+          "counts": {
+            "finished": 12,
+            "total": 12
+          }
+        },
+        {
+          "nodeId": "phase/p2",
+          "label": "P2 · Expand canvas",
+          "status": "finished",
+          "counts": {
+            "finished": 12,
+            "total": 12
+          }
+        },
+        {
+          "nodeId": "phase/p3",
+          "label": "P3 · Second expansion",
+          "status": "finished",
+          "counts": {
+            "finished": 12,
+            "total": 12
+          }
+        }
+      ]
+    },
+    "E17": {
+      "experimentId": "f579350b-0a1a-5ddb-8c2c-e0ea72e2335e",
+      "name": "Core diagram few-shot permutations",
+      "revision": 1,
+      "createdAt": "2026-11-18T16:51:13.798Z",
+      "overviewUrl": "/api/mapping/evals/experiments/f579350b-0a1a-5ddb-8c2c-e0ea72e2335e/overview",
+      "status": "finished",
+      "counts": {
+        "finished": 6,
+        "total": 6
+      },
+      "phases": [
+        {
+          "nodeId": "phase/baseline",
+          "label": "E12 baseline",
+          "status": "finished",
+          "counts": {
+            "finished": 6,
+            "total": 6
+          }
+        }
+      ]
+    },
+    "E18": {
+      "experimentId": "044f0072-fded-4c61-b694-2a75fd2433ca",
+      "name": "3+1 Model Core Component",
+      "revision": 10,
+      "createdAt": "2026-11-19T15:25:34.907Z",
+      "overviewUrl": "/api/mapping/evals/experiments/044f0072-fded-4c61-b694-2a75fd2433ca/overview",
+      "status": "failed",
+      "counts": {
+        "finished": 28,
+        "total": 31
+      },
+      "phases": [
+        {
+          "nodeId": "phase/core",
+          "label": "Core views",
+          "status": "failed",
+          "counts": {
+            "finished": 15,
+            "total": 16
+          }
+        },
+        {
+          "nodeId": "phase/expand",
+          "label": "Expand canvas",
+          "status": "failed",
+          "counts": {
+            "finished": 7,
+            "total": 8
+          }
+        },
+        {
+          "nodeId": "phase/expand2",
+          "label": "Second expansion",
+          "status": "failed",
+          "counts": {
+            "finished": 6,
+            "total": 7
+          }
+        }
+      ]
+    },
+    "E19": {
+      "experimentId": "62f5c79a-07c0-5e5e-acbb-d41ee64acdda",
+      "name": "Claude critique benchmark",
+      "revision": 5,
+      "createdAt": "2026-11-20T15:49:15.450Z",
+      "overviewUrl": "/api/mapping/evals/experiments/62f5c79a-07c0-5e5e-acbb-d41ee64acdda/overview",
+      "status": "planned",
+      "counts": {
+        "finished": 0,
+        "total": 0
+      },
+      "phases": [
+        {
+          "nodeId": "phase/critique",
+          "label": "Phase 1 · Evaluate the supplied outputs",
+          "status": "planned",
+          "counts": {
+            "finished": 0,
+            "total": 0
+          }
+        }
+      ]
+    },
+    "E20": {
+      "experimentId": "58c7e7b1-7e83-4507-aef2-a16b8ad6c8ed",
+      "name": "Recombine 3+1 trees",
+      "revision": 4,
+      "createdAt": "2026-11-20T22:11:50.562Z",
+      "overviewUrl": "/api/mapping/evals/experiments/58c7e7b1-7e83-4507-aef2-a16b8ad6c8ed/overview",
+      "status": "finished",
+      "counts": {
+        "finished": 1,
+        "total": 2
+      },
+      "phases": [
+        {
+          "nodeId": "phase/recombine",
+          "label": "Recombine into HierGraph",
+          "status": "finished",
+          "counts": {
+            "finished": 1,
+            "total": 2
+          }
+        }
+      ]
+    },
+    "E21": {
+      "experimentId": "fa78995f-d25a-40bf-8972-9b6855349e5f",
+      "name": "HierGraph spread plan",
+      "revision": 6,
+      "createdAt": "2026-11-21T20:32:22.734Z",
+      "overviewUrl": "/api/mapping/evals/experiments/fa78995f-d25a-40bf-8972-9b6855349e5f/overview",
+      "status": "generating",
+      "counts": {
+        "finished": 8,
+        "total": 11
+      },
+      "phases": [
+        {
+          "nodeId": "phase/plan",
+          "label": "Spread plan",
+          "status": "finished",
+          "counts": {
+            "finished": 5,
+            "total": 5
+          }
+        },
+        {
+          "nodeId": "phase/build",
+          "label": "Build canvases",
+          "status": "generating",
+          "counts": {
+            "finished": 3,
+            "total": 6
+          }
+        }
+      ]
+    }
+  },
+  "relationships": [
+    {
+      "from": "E02",
+      "to": "E01",
+      "type": "shared-inputs",
+      "placement": "reference",
+      "evidence": {
+        "agentContextId": "saved-agent-context-4d7a8b9e-2ffb-46ea-a2e0-d49a9067802e",
+        "layoutTemplateId": "cd88600f-9922-4a80-a5df-6a84c463a71d"
+      }
+    },
+    {
+      "from": "E04",
+      "to": "E03",
+      "type": "shared-input",
+      "placement": "reference",
+      "evidence": {
+        "agentContextId": "saved-agent-context-b4df6a6c-83f6-428f-9247-7bd2f2548e7c"
+      }
+    },
+    {
+      "from": "E07",
+      "to": "E04",
+      "type": "prompt-derivation",
+      "placement": "child",
+      "evidence": {
+        "parentPromptId": "6a9c0f27-0b23-422f-965d-cc8ca56212e3",
+        "parentVersion": 1,
+        "childPromptId": "6b12006b-3de1-4e03-8dda-3410cacad2e0"
+      }
+    },
+    {
+      "from": "E08",
+      "to": "E04",
+      "type": "prompt-derivation",
+      "placement": "child",
+      "evidence": {
+        "parentPromptId": "6a9c0f27-0b23-422f-965d-cc8ca56212e3",
+        "parentVersion": 1,
+        "childPromptId": "d74122d6-8c6c-457a-9ea8-b956d989cd68"
+      }
+    },
+    {
+      "from": "E08",
+      "to": "E07",
+      "type": "paired-comparison",
+      "placement": "reference",
+      "evidence": {
+        "commitRange": "03f2168deba364103c2450ca9b8168cd1fc9ddc5..81f05a2bf9efa2334985d2298dcbd7b044dc4c1e",
+        "dimension": "history-structure-timing"
+      }
+    },
+    {
+      "from": "E06",
+      "to": "E05",
+      "type": "prompt-derivation",
+      "placement": "child",
+      "evidence": {
+        "parentPromptId": "6842c979-55e4-459f-acd8-27e03df51df9",
+        "parentVersion": 5,
+        "childPromptId": "68561489-721c-4ac0-b269-3b3f6f662a53"
+      }
+    },
+    {
+      "from": "E09",
+      "to": "E05",
+      "type": "prompt-derivation",
+      "placement": "child",
+      "scope": "Phase 3 canvas-expansion prompts",
+      "evidence": {
+        "parentPromptId": "6842c979-55e4-459f-acd8-27e03df51df9",
+        "parentVersion": 5
+      }
+    },
+    {
+      "from": "E10",
+      "to": "E09",
+      "type": "reused-outputs-and-derived-prompt",
+      "placement": "child",
+      "scope": "Four initial Phase 2 C1 outputs",
+      "evidence": {
+        "parentPromptId": "a55a7264-84e2-4285-a4c3-9cd252ebd0d5",
+        "parentVersion": 1,
+        "childPromptId": "cabd33be-5ed4-4e41-a61a-54a45f770825"
+      }
+    },
+    {
+      "from": "E12",
+      "to": "E11",
+      "type": "prompt-derivation",
+      "placement": "child",
+      "evidence": {
+        "parentPromptId": "783b2232-709d-4c13-8e3e-311739be5983",
+        "parentVersion": 1,
+        "childPromptId": "0b3af2dd-ba89-4032-936a-40070a3e167e",
+        "executedChildVersion": 2
+      }
+    },
+    {
+      "from": "E13",
+      "to": "E12",
+      "type": "reused-outputs",
+      "placement": "child",
+      "scope": "Saved Phase 2 trees"
+    },
+    {
+      "from": "E14",
+      "to": "E12",
+      "type": "reused-outputs",
+      "placement": "child",
+      "scope": "One core tree per repository"
+    },
+    {
+      "from": "E15",
+      "to": "E14",
+      "type": "reused-outputs",
+      "placement": "child",
+      "scope": "First Phase 1 canvas per repository"
+    },
+    {
+      "from": "E15",
+      "to": "E12",
+      "type": "reused-outputs",
+      "placement": "reference",
+      "scope": "Matched core trees"
+    },
+    {
+      "from": "E16",
+      "to": "E12",
+      "type": "prompt-derivation",
+      "placement": "child",
+      "scope": "Core discovery",
+      "evidence": {
+        "parentPromptId": "0b3af2dd-ba89-4032-936a-40070a3e167e",
+        "parentVersion": 4,
+        "childPromptId": "aa99c302-b7f5-46de-80d5-f7224b19cc2b",
+        "executedChildVersion": 1
+      }
+    },
+    {
+      "from": "E16",
+      "to": "E14",
+      "type": "shared-prompts",
+      "placement": "reference",
+      "scope": "Canvas generation and both expansions",
+      "evidence": {
+        "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+        "versions": [
+          1,
+          2
+        ]
+      }
+    },
+    {
+      "from": "E17",
+      "to": "E12",
+      "type": "reused-outputs",
+      "placement": "child",
+      "scope": "Three Mapping and three Ghostty Phase 2 trees"
+    },
+    {
+      "from": "E18",
+      "to": "E16",
+      "type": "prompt-derivation",
+      "placement": "child",
+      "scope": "Ghostty core view prompts",
+      "evidence": {
+        "parentPromptId": "aa99c302-b7f5-46de-80d5-f7224b19cc2b",
+        "parentVersion": 1
+      }
+    },
+    {
+      "from": "E18",
+      "to": "E14",
+      "type": "prompt-derivation",
+      "placement": "reference",
+      "scope": "View-specific recursive expansion prompts",
+      "evidence": {
+        "parentPromptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+        "parentVersion": 2
+      }
+    },
+    {
+      "from": "E19",
+      "to": "E05",
+      "type": "reused-outputs",
+      "placement": "reference",
+      "scope": "Mapping canvas alternatives"
+    },
+    {
+      "from": "E19",
+      "to": "E10",
+      "type": "reused-outputs",
+      "placement": "reference",
+      "scope": "C1 style comparison"
+    },
+    {
+      "from": "E19",
+      "to": "E12",
+      "type": "reused-outputs",
+      "placement": "reference",
+      "scope": "Mapping and Ghostty core trees"
+    },
+    {
+      "from": "E19",
+      "to": "E14",
+      "type": "reused-outputs",
+      "placement": "reference",
+      "scope": "Ghostty canvas lineage"
+    },
+    {
+      "from": "E19",
+      "to": "E15",
+      "type": "reused-outputs",
+      "placement": "reference",
+      "scope": "Ghostty source mappings"
+    },
+    {
+      "from": "E20",
+      "to": "E18",
+      "type": "reused-outputs",
+      "placement": "child",
+      "scope": "Sample 1 with examples of each 3+1 core tree"
+    },
+    {
+      "from": "E21",
+      "to": "E16",
+      "type": "prompt-derivation",
+      "placement": "child",
+      "scope": "Ghostty P1 input and canvas prompt",
+      "evidence": {
+        "parentPromptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+        "parentVersion": 1,
+        "childPromptId": "939c1f43-c7f6-4c1a-8864-349c095f3a63",
+        "agentContextId": "saved-agent-context-63f31964-5848-4ed2-b47f-eee31575b626"
+      }
+    }
+  ]
+}

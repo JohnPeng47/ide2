@@ -1,0 +1,79 @@
+### Anchor tree
+- A 3–15 ↔ B 3–13 · same · offset 0 · s = 0.983333 · Surface, apprt and App
+  - A 4–5 ↔ B 4–5 · same · s = 1 · Surface events
+  - A 6–8 ↔ B 6–8 · same · s = 1 · apprt boundary
+  - A 9–14 ↔ B 9–12 · same · s = 0.9 · App
+    - A 10 ↔ B 10 · same · s = 1 · surfaces and focus
+    - A 11–12 ↔ B 11, 12 · grouped/summarized · s = 0.9 · shared fonts and device
+    - A 13–14 ↔ B 54–55 · relocated to B’s output branch · s = 0.5 · App mailbox dispatch
+      - A 14 ↔ B 55 · same · s = 1 · Surface message delivery
+- A 16–26 ↔ B 14–26 · same · offset 0 · s = 0.923333 · session resources
+  - A 17 ↔ B 16 · same · s = 1 · Termio
+  - A 18 ↔ B 17, 18 · grouped · s = 1 · renderer and thread
+  - A 19–21 ↔ B 22–25 · same · s = 0.833333 · shared renderer.State
+    - A 20 ↔ B 23 · same · s = 1 · terminal reference
+    - A 21 ↔ B 24 · same · s = 1 · mutex
+    - unmatched: B 25 (demand-lock scheduling)
+  - A 22–23 ↔ B 19 · summarized · s = 0.9 · interaction state
+  - A 24–25 ↔ B 20–21 · same · s = 0.5 · derived configuration; unmatched: A 25 (caller lifetime). B 21 also supplies the relocated configuration-propagation anchor below.
+- A 27–41 ↔ B 27–39 · same · offset 0 · s = 0.970139 · input
+  - A 28–32 ↔ B 28–31 · same · s = 0.9875 · keys
+    - A 29 ↔ B 29 · same · s = 1 · bindings
+    - A 30–32 ↔ B 30–31 · same · s = 0.95 · encoding
+      - A 31–32 ↔ B 31 · summarized · s = 0.9 · protocol options
+  - A 33–36 ↔ B 32–34 · same · s = 0.833333 · mouse and paste
+    - A 34 ↔ B 33 · same · s = 1 · mouse reports
+    - A 36 ↔ B 34 · same · s = 1 · paste
+    - unmatched: A 35 (local selection)
+  - A 37–40 ↔ B 35–38 · same · s = 1 · queued PTY writes
+    - A 38 ↔ B 36 · same · s = 1 · readonly handling
+    - A 39–40 ↔ B 37–38 · same · s = 1 · Termio/Exec write; A 40 ↔ B 38 · s = 1 · Exec.queueWrite
+- A 42–59 ↔ B 40–56 · same · offset 0 · s = 0.995313 · child output
+  - A 43–49 ↔ B 41–44 · same · s = 0.99375 · Exec and reads
+    - A 44 ↔ B 42 · same · s = 1 · subprocess
+    - A 45–49 ↔ B 43–44 · same · s = 0.975 · read paths
+      - A 46–47, 48 ↔ B 43 · grouped/summarized · s = 0.9 · POSIX reads
+      - A 49 ↔ B 44 · same · s = 1 · Windows reads
+  - A 50–54, 55–58 ↔ B 45–51, 52–55 · grouped · s = 0.9875 · parser and StreamHandler effects
+    - A 51–54 ↔ B 46–49 · same · s = 1 · VT interpretation; A 52–54 ↔ B 47–49 · s = 1 · dispatch; A 53 ↔ B 48 and A 54 ↔ B 49 · s = 1 each
+    - A 56 ↔ B 50 · same · s = 1 · replies
+    - A 57 ↔ B 52–53 · summarized · s = 0.9 · UI mailbox
+    - A 58 ↔ B 51 · same · s = 1 · renderer wakeup
+- A 60–74 ↔ B 57–71 · same · offset 0 · s = 0.9875 · terminal model
+  - A 61–62, 72–73 ↔ B 58–60 · grouped · s = 0.95 · Terminal operations and state
+    - A 72–73 ↔ B 59, 60 · grouped/summarized · s = 0.9 · geometry and modes
+  - A 63–71 ↔ B 61–70 · same · s = 1 · ScreenSet
+    - A 64 ↔ B 62 · same · s = 1 · primary/alternate
+    - A 65–71 ↔ B 63, 64–70 · grouped · s = 1 · active Screen
+      - A 66 ↔ B 65 and A 67 ↔ B 66 · s = 1 each · screen state
+      - A 68–71 ↔ B 67–70 · s = 1 · PageList; A 69 ↔ B 68, A 70 ↔ B 69, A 71 ↔ B 70 · s = 1 each
+- A 75–89 ↔ B 72–84 · same · offset 0 · s = 0.92625 · renderer
+  - A 76 ↔ B 73–74 · summarized · s = 0.9 · render thread
+  - A 77–78 ↔ B 82 · summarized · offset 1 · s = 0.81 · graphics API selection
+  - A 79–85 ↔ B 75–80 · same · s = 0.95 · updateFrame
+    - A 80–83 ↔ B 76–78, 80 · grouped/summarized · s = 0.9 · RenderState and frame inputs
+    - A 84–85 ↔ B 79 · summarized · s = 0.9 · fonts
+  - A 86–88 ↔ B 81–83 · same · s = 0.75 · drawing
+    - A 88 ↔ B 83 · same · s = 1 · Surface.draw
+    - unmatched: A 87 (visibility/vsync scheduling)
+- A 90–100 ↔ B 85–92 · same · offset 0 · s = 0.850469 · resize and configuration
+  - A 91–97 ↔ B 86–91 · same · s = 0.996875 · resize
+    - A 92 ↔ B 87 · same · s = 1 · grid sizing
+    - A 93–97 ↔ B 88–91 · same · s = 0.9875 · resize messages and Termio
+      - A 94–97 ↔ B 89–91 · s = 0.975 · backend, Terminal and renderer
+        - A 95–96 ↔ B 89, 90 · grouped/summarized · s = 0.9 · dimensions
+        - A 97 ↔ B 91 · same · s = 1 · renderer notification
+  - A 98–99 ↔ B 21 · relocated to B’s session-resource branch, summarized · offset 1 · s = 0.405 · configuration propagation
+- A 101–109 ↔ B 93–103 · same · offset 0 · s = 0.891667 · teardown
+  - A 102 ↔ B 96–97 · summarized · s = 0.9 · close
+  - A 103–104 ↔ B 98–100 · same · s = 1 · worker shutdown; A 104 ↔ B 100 · s = 1 · Exec.threadExit
+  - A 105–106 ↔ B 101 · summarized · s = 0.9 · resource cleanup
+  - A 107 ↔ B 102 · same · s = 1 · input/config cleanup
+  - A 108–109 ↔ B 103 · summarized · s = 0.9 · App resource lifetime
+  - unmatched: B 94–95 (child-exit reporting)
+
+### Score
+Eight top-level anchors, no unmatched top-level nodes: **J = (0.983333 + 0.923333 + 0.970139 + 0.995313 + 0.9875 + 0.92625 + 0.850469 + 0.891667) / 8 = 0.938917**.
+
+### Verdict
+The trees identify the same eight major components: the Surface/App boundary, session resources, input, child-output processing, terminal model, rendering, resize/configuration, and teardown. Their differences are chiefly detail and grouping: B separates shared fonts and the device, while A groups them; A folds parser effects together differently from B’s StreamHandler and UI-message branches. The App mailbox is placed under App in A but under output handling in B; configuration propagation is under resize in A but derived session settings in B. These are different owners in the diagrams, not missing components.

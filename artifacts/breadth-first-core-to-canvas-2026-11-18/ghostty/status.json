@@ -1,0 +1,72 @@
+{
+  "status": "finished",
+  "repository": "Ghostty",
+  "runId": "3e584127-5e25-47b1-aef4-51f4738230cb",
+  "characters": 7791,
+  "lines": 106,
+  "nodes": 98,
+  "usage": {
+    "input": 44690,
+    "output": 3073,
+    "cacheRead": 71168,
+    "cacheWrite": 0,
+    "reasoning": 245,
+    "totalTokens": 118931
+  },
+  "execution": {
+    "runtime": "pi-agent-context",
+    "sessionId": "01a1efa9-7dd3-727d-9e49-2d8e375aa683",
+    "contextHash": "c26f9e1d07185d26d78fd7cf31b447b58604b2cae4a040b1dc623aaaf9e7848a",
+    "cacheKey": "eval-cfe458fe5d4f841a1d253c3af15f31c827624bce21d0ceb0184fce9a3a6b585f",
+    "modelContextHash": "2a6a12f9d0c6d578c3ff139558467cbf58333233946dce6b553bed55df1a3951",
+    "repositories": [
+      {
+        "repository": "repo-1",
+        "repositoryPath": "/home/john/softwarez/ghostty",
+        "commit": "ea8b12a8a9894b5259c441eadd8f6f0c65e215af",
+        "exclusions": [
+          "**/*-LICENSE",
+          "**/*.md",
+          "**/*.mdx",
+          "**/*.spec.*",
+          "**/*.test.*",
+          "**/AGENTS.md",
+          "**/CODEX-LICENSE",
+          "**/LICENSE*",
+          "**/Tests/**",
+          "**/__fixtures__/**",
+          "**/__tests__/**",
+          "**/benchmark/**",
+          "**/benchmarks/**",
+          "**/build/**",
+          "**/dist/**",
+          "**/docs/**",
+          "**/examples/**",
+          "**/fixtures/**",
+          "**/node_modules/**",
+          "**/scripts/**",
+          "**/test/**",
+          "**/tests/**",
+          ".agents/**",
+          ".github/**",
+          ".husky/**",
+          ".pi/**",
+          "deps/**",
+          "example/**",
+          "flake.lock",
+          "flatpak/**",
+          "images/**",
+          "nix/**",
+          "package-lock.json",
+          "po/**",
+          "scripts/**",
+          "snap/**",
+          "vendor/**"
+        ],
+        "checkout": "/tmp/agent-repository-3vvdZz/checkout",
+        "inspectionSource": "session-transcript"
+      }
+    ]
+  },
+  "outputUrl": "http://127.0.0.1:5191/evals?run=3e584127-5e25-47b1-aef4-51f4738230cb&output=aa99c302-b7f5-46de-80d5-f7224b19cc2b%3A1%3Aalternative"
+}

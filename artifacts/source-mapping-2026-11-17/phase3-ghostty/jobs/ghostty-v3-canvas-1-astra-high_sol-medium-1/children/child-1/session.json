@@ -1,0 +1,19 @@
+{
+  "id": "child-1",
+  "name": "app-surface",
+  "assignment": "Map d1 all nodes. Read declarations and flows, return JSON mappings. Focus complete coverage. You own d1 exclusively.",
+  "model": "gpt-6-sol",
+  "effort": "medium",
+  "status": "generating",
+  "queuedAt": "2026-11-19T03:37:54.785Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-19T03:37:54.796Z",
+  "sessionId": "01a1f1e1-e1a2-7a26-8366-b3ef2a783717",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-stcd_055-agent-repository-6pEPqZ-checkout--/2026-11-19T03-37-54-850Z_01a1f1e1-e1a2-7a26-8366-b3ef2a783717.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase3-stcd_055/agent-repository-6pEPqZ/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

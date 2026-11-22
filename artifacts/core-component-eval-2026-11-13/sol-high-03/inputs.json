@@ -1,0 +1,32 @@
+{
+  "model": "gpt-6-sol",
+  "effort": "high",
+  "samples": 3,
+  "conditionId": "sol-high",
+  "experimentId": "08ccc7fa-8ea6-4cfa-b0b7-8819b7fcbf35",
+  "promptId": "0b3af2dd-ba89-4032-936a-40070a3e167e",
+  "promptVersion": 2,
+  "promptSha256": "9efae5ac4de1a1934c3e9bd4c5a6640155db583c920edbd94a7cd0c9a40517ea",
+  "savedPromptContentHash": "a4d289a45eb89ff0d53248e3d0e8ceea2e9565611cbd75d07d137fcb1337d10b",
+  "agentContextId": "saved-agent-context-7344b95b-5c8c-4f6e-86e5-4323ee2478e4",
+  "contextHash": "00b9ed11b05d12f61ea9897c890dca21baf63782b67254a23c6fb80d94ae0fc2",
+  "sourceCommit": "03f2168deba364103c2450ca9b8168cd1fc9ddc5",
+  "attachRequestId": "0805d594-38e7-4c6c-b084-4785f26a371d",
+  "cases": [
+    {
+      "number": 1,
+      "runId": "e0da55e9-87bf-4567-85bc-22bb197073cf",
+      "sampleId": "859eb44c-0634-483b-8163-3f8426bf8cf5"
+    },
+    {
+      "number": 2,
+      "runId": "d2663236-2eee-470b-841c-50ea8055ae1f",
+      "sampleId": "c7d66451-c54a-4207-95a9-c6d52d48af5a"
+    },
+    {
+      "number": 3,
+      "runId": "c70d3c75-a3c2-49fe-9ff8-ed36ba609fb8",
+      "sampleId": "b29b0427-55c3-4000-a783-438eb364a0cf"
+    }
+  ]
+}

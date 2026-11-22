@@ -1,0 +1,19 @@
+{
+  "id": "child-2",
+  "name": "resources",
+  "assignment": "Map n12-23 resource and state branch. Use private /tmp/resources. Return compact text scope + path ranges with roles D,U,I per node; parent can reference child ranges.",
+  "model": "gpt-6.2-astra",
+  "effort": "high",
+  "status": "generating",
+  "queuedAt": "2026-11-22T03:05:57.870Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-22T03:05:57.879Z",
+  "sessionId": "01a20137-b5a3-7374-a6d6-92d6e42fa4cf",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-7vmfpdh9-agent-repository-RuKCrG-checkout--/2026-11-22T03-05-57-923Z_01a20137-b5a3-7374-a6d6-92d6e42fa4cf.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase4-7vmfpdh9/agent-repository-RuKCrG/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

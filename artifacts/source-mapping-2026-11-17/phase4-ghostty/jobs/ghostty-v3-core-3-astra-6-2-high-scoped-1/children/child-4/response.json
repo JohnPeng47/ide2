@@ -1,0 +1,18 @@
+{
+  "text": "The merge-ready mapping for **d1, n36–n51** is in `/tmp/output/d1-36-51.json`. It contains all 16 scope records and expanded, nonoverlapping ranges per node. The compact D/U/I version, including child-range references, is in `/tmp/output/branch.py`.\n\nAll referenced paths and bounds were checked against the pinned checkout. `validate_source_mappings` was not available to this worker; the combined candidate still needs validation.\n\nTwo implementation details matter when merging:\n\n- **n41–n42, n47:** `processOutput` acquires the mutex, then schedules rendering **before** parsing while it holds the lock. Normal processing calls `nextSlice`; inspector mode calls `next` byte by byte (`src/termio/Termio.zig:705–762`).\n- **n48–n51:** The surface mailbox wraps the payload with its target `Surface`; the app mailbox enqueues it and wakes the runtime. `App.surfaceMessage` checks the registered surfaces before invoking `Surface.handleMessage` (`src/apprt/surface.zig:186–207`, `src/App.zig:596–613,531–550`).",
+  "usage": {
+    "input": 70191,
+    "output": 3865,
+    "cacheRead": 473728,
+    "cacheWrite": 0,
+    "reasoning": 174,
+    "totalTokens": 547784
+  },
+  "cost": {
+    "input": 0.7019100000000001,
+    "output": 0.19325,
+    "cacheRead": 0.473728,
+    "cacheWrite": 0,
+    "total": 1.368888
+  }
+}

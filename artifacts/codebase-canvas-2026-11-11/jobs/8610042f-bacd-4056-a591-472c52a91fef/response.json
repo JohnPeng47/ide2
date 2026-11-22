@@ -1,0 +1,122 @@
+{
+  "output": {
+    "explanation": "The central tree is reduced from 110 to 73 lines (33.6%) and from 7,312 to 4,812 characters (34.2%). Four peripherals expand retry ownership, live selection dependencies, compact identities, and persistence. The decomposition combines modular boundaries, call paths, state lifetimes, and the data required for each operation. Edges attach to the relevant concepts; positions leave gaps between measured text rectangles.\n\nSource-grounded corrections: version checks are operation-specific, rather than universal for mutations: canvas.createDocument has no expectedVersion and canvas.copyDocument makes it optional (contracts.ts:68-69; sessionService.ts:403-429). Live attachment reads identity, while proposal attachment reads a snapshot (sessionService.ts:299-310). Tool-bridge redispatch allocates a new command ID, so its browser command cache must not be confused with operation retry state; live copy/paste retains the same command across retries (canvasSessionBridge.ts:29-41; useAgentCanvasBridge.ts:45-50; liveCanvasService.ts:37-129). The bridge's 100-command limit is global. Shared projection handles are a declared contract, but shared-instance wiring is not established by the supplied constructors, which each default to a new projection.\n\nDetails beyond the seed include queued IDs supporting dependent writes, selection-region validation, retained unavailable reader bindings, transport limits, jump-target membership checks, serialized saves, and successful saves whose browser notification fails. These come from the supplied sessionService.ts, liveCanvasService.ts, apiProjection.ts, and liveCanvasRoutes.ts implementations. Imported implementations such as readAliases, browser document handlers, and generation services are absent; their internals and end-to-end persistence guarantees are not inferred. Only context.json and seed.json supply codebase evidence.",
+    "diagrams": [
+      {
+        "id": "central",
+        "ascii": "Agent Canvas Access\n|-- Tool boundary: MCP posts HTTP tool calls; session service executes\n|   |-- Contracts expose tool schemas and validated canvas methods\n|   |-- Unbound: canvas.list() -> canvas.attach({canvasId, documentId})\n|   |-- Explicit MCP target -> lazy attachment -> inject sessionId\n|   |   `-- Different supplied sessionId -> BINDING_MISMATCH\n|   `-- Chat: callBound() captures target and propagates readOnly\n|       |-- Reuse attachment for captured workspace + document\n|       `-- Different canvas binding -> CHAT_BINDING_MISMATCH\n|-- AgentDiagrammingSessionService: scope and application routing\n|   |-- Own sessions: sessionId -> canvas + document + optional proposal\n|   |   |-- Attach verifies membership; live identity or proposal snapshot\n|   |   |-- Live use requires a registered browser canvas\n|   |   `-- Proposal scope must match -> CHANGE_SESSION_MISMATCH\n|   |-- Access and validation\n|   |   |-- Parse tool input; exec validates each invoked method\n|   |   |-- Read-only allowlists plus CanvasView/context operation checks\n|   |   `-- Node edits pin expectedVersion; some operations also pin revisions\n|   |-- Read and mutation destinations\n|   |   |-- Live -> CanvasSessionPort.dispatch() -> owning browser\n|   |   |-- Proposal -> ChangeSessionService snapshot/apply\n|   |   |   `-- Search selects baseline/proposed; save rejects proposals\n|   |   |-- Saved search -> representation catalog + selected revisions\n|   |   `-- save_diagram -> publish document checkpoint or isolated diagram\n|   |-- Generation: DiagramEditService / DiagramBatchService\n|   |   |-- Live attachment; optional context resolved for workspace + document\n|   |   |-- Async runs expose status/cancel; direct submission waits for batch\n|   |   `-- Browser applies revision, creation, or atomic diagram batch\n|   `-- Contexts\n|       |-- Saved context tools delegate to AgentContextService.library\n|       |-- Diagram context read reports absent/ready/stale\n|       `-- Prepare/delete pin version + revision; browser applies binding\n|-- exec(code): AgentExecRuntime calls validated canvas/nodes/edges methods\n|   |-- Default batched mode queues consecutive mutations\n|   |   `-- Read/boundary or completion -> flush -> compact receipts\n|   |-- Immediate mode applies each edit and projects its result\n|   |-- Version checks reject conflicting node edits or snapshot reads\n|   `-- Identical arguments + requestId recover uncertain outcomes\n|       |-- Request signature conflict -> REQUEST_ID_CONFLICT\n|       |-- Retain unfinished exec steps; replay completed API results\n|       `-- Retry state is bounded and held in memory\n|-- Browser command channel: CanvasSessionBridge <-> useAgentCanvasBridge\n|   |-- Register ephemeral canvasId + stableWorkspaceId + documents\n|   |-- Dispatch allocates command ID, queues command, wakes long poll\n|   |   `-- Browser handle(command) -> POST reply -> resolve matching pending call\n|   |-- Browser retains up to 200 mutation results by command ID\n|   |-- Poll waits 15s; bridge permits 100 pending commands globally\n|   |-- Reply timeout 25s; list() retires registrations untouched for >35s\n|   `-- Loop retries after 1s; pagehide/cleanup unregisters instance\n|       `-- Unregister/dispose wakes poller and rejects pending calls\n|-- Live reader channel: /api/mapping/live WebSocket -> LiveCanvasService\n|   |-- One role per socket: registered browser publisher or external reader\n|   |   |-- One publisher owner per workspace instance\n|   |   `-- Reader needs snapshot; connectionId binds document + canvasEpoch\n|   |-- Selection mirror\n|   |   |-- Full snapshot establishes state; delta needs epoch + baseSequence\n|   |   `-- Same-epoch updates notify active readers with selection.delta\n|   |-- Reader operations\n|   |   |-- HTTP selection GET -> snapshot + identity/version headers + ETag\n|   |   |-- context.get / attach context -> load and recheck browser identity\n|   |   |-- HTTP short context -> compact context + epoch/version headers\n|   |   |-- Context upload -> AgentContextService using reader binding\n|   |   `-- Copy/paste -> publisher commands with retained retry receipts\n|   |-- New epoch / remove / disconnect -> invalidate affected readers\n|   |   `-- Reader membership changes -> agents.changed count to publisher\n|   `-- Transport gates writes/uploads; checks roles, Origin and slow readers\n`-- Compact identity boundary\n    |-- CanvasReadAliases projects canvas.read() and resolves later arguments\n    |   `-- Resolution binding includes canvas + document + proposal\n    `-- CanvasApiProjection maps full content-node IDs to opaque handles\n        |-- Project nodes, edges, jumps and migration endpoints\n        |-- Decode handles before mutations; full IDs remain accepted\n        `-- Never evict/reassign; unknown handle -> STALE_CONTENT_NODE",
+        "position": {
+          "column": 0,
+          "row": 0
+        }
+      },
+      {
+        "id": "retry",
+        "ascii": "Retry ownership and uncertain outcomes\n|-- Session request cache\n|   |-- Key: readOnly + proposal + tool + session + requestId\n|   |-- Same signature reuses promise; changed signature conflicts\n|   |-- Timeout / oversized / rejected reply removes cache entry\n|   |-- Context/view PERSISTENCE_PENDING also permits retry\n|   `-- Successful versioned exec read without transaction drops cache\n|-- exec retains unfinished run\n|   |-- Step signature freezes method + original arguments\n|   |-- Decode handles; allocate operation IDs before retaining step\n|   |-- Batched writes return IDs with status: queued\n|   |   `-- Dependent writes can use IDs before commit acknowledgement\n|   |-- Flush retains indices, expectedVersion and batch requestId\n|   |-- Retry replays outcomes and resends unacknowledged work\n|   `-- Success or non-transport failure removes run\n|-- Tool bridge transport\n|   |-- Every dispatch allocates a NEW command ID\n|   |-- Timeout drops pending entry and any still-queued command\n|   `-- Hook's 200-result command cache is not operation-level retry state\n|-- Live copy/paste receipts\n|   |-- Key: workspace + document + epoch + requestId\n|   |-- Changed arguments -> REQUEST_ID_REUSED\n|   |-- Normalize text once; retain command ID and paste node ID\n|   |-- After 25s timeout, clear waiter but retain command/receipt\n|   |   `-- Identical retry resends SAME command; late reply can fill receipt\n|   |-- Copy requires publisher capability unless result already exists\n|   |-- Paste success must match node ID and expectedVersion + 1\n|   `-- Invalidation rejects waiters; receipts remain allocated\n`-- Capacity stops new work instead of forgetting retry identities\n    |-- Session requests / exec runs: 2000 each\n    `-- Copy / paste: 2000 receipts and 100 pending waits each",
+        "position": {
+          "column": 96,
+          "row": 0
+        }
+      },
+      {
+        "id": "live",
+        "ascii": "Live selection identity and transport\n|-- LiveCanvasService owns publisher and reader maps\n|   |-- Publisher owner object must match on updates and replies\n|   |-- Reader binding retains epoch and optional unavailable reason\n|   `-- Invalidation marks binding; detach deletes it\n|-- Selection update depends on previous snapshot\n|   |-- Same epoch + non-increasing sequence -> ignore immediately\n|   |-- Delta needs exact baseSequence and matching epoch\n|   |   |-- Reject duplicate upserts/removals or overlap between them\n|   |   `-- Remove then upsert regions; omitted diagramIds inherit previous\n|   |-- Whole-diagram IDs must be unique grid: IDs\n|   |   `-- Whole diagram cannot coexist with its selected regions\n|   |-- Max 100 documents per publisher; 1000 regions / diagram IDs\n|   |-- Region text total <= 2,000,000 characters\n|   `-- Store receivedAt; compute delta for matching active readers\n|-- Context depends on browser identity surviving the await\n|   |-- Need publisher selection and configured loadContext callback\n|   |-- Recheck publisher object + epoch after load\n|   `-- connection-based context() also rechecks reader availability\n|-- HTTP selection caching\n|   |-- ETag = connectionId + sequence\n|   `-- Matching strong/weak tag or * -> 304\n`-- WebSocket route owns transport lifetime\n    |-- Incoming payload <= 8 MiB; at most 1024 sockets\n    |-- Attach deadline 10s; includeContext extends to 30s\n    |-- Copy/paste and context uploads use separate enable flags\n    |-- Missing Origin allowed; supplied Origin host must match\n    |-- Buffered data > 64 KiB + context allowance -> close 1013\n    |   `-- Reconnect for authoritative snapshot; do not drop deltas\n    |-- Context frame <= 64 MiB; allowance released after send callback\n    |-- One context request at a time -> otherwise CONTEXT_BUSY\n    `-- Heartbeat every 15s; close detaches reader/disconnects publisher",
+        "position": {
+          "column": 96,
+          "row": 38
+        }
+      },
+      {
+        "id": "ids",
+        "ascii": "Compact identities and data dependencies\n|-- Read aliases\n|   |-- canvas.read() -> aliases.project(read, binding)\n|   |-- Later input -> aliases.resolve(input, binding)\n|   `-- Binding = canvasId + documentId + changeSessionId\n|-- CanvasApiProjection owns bidirectional handle maps\n|   |-- Full revision/hash prefix selects scope; opaque ID gets own scope\n|   |-- Handle = @generation.scope:counter\n|   |-- Random generation per instance; scope/counter use base 36\n|   |-- Repeated full ID reuses handle; maps never evict or reassign\n|   |-- Default cap 1,000,000 anchors -> ANCHOR_CAPACITY\n|   `-- Unknown handle -> STALE_CONTENT_NODE; full ID passes through\n|-- API payload projection\n|   |-- Grid nodes omit render rows, domain node and duplicate content index\n|   |-- Keep canonical content; diagram contains metadata\n|   `-- Rewrite parents/children, highlights, collapse targets, edges, jumps\n|-- Mutation input -> decoded full IDs -> domain operations\n|   `-- New jump handle also needs target catalog membership check\n|       |-- Load current saved representation and target diagram content\n|       |-- Missing anchor -> STALE_CONTENT_NODE\n|       `-- Existing unchanged stale jump target may survive metadata update\n`-- Shared handles across tools/live context are the declared contract\n    `-- Shared instance wiring is outside the supplied sources",
+        "position": {
+          "column": 190,
+          "row": 0
+        }
+      },
+      {
+        "id": "save",
+        "ascii": "Persistence and context boundaries\n|-- save_diagram serializes saves per canvas + document\n|   |-- Proposal attachment -> CHANGE_SESSION_SAVE_FORBIDDEN\n|   |-- Whole document\n|   |   |-- Browser checkpoint(expectedVersion, requestId)\n|   |   |-- MappingDiagramService.publishCheckpoint(checkpointId, ...)\n|   |   `-- Notify browser: saved\n|   |-- One diagram\n|   |   |-- Snapshot must match expectedVersion\n|   |   |-- Build isolated scene preserving source, evidence and mappings\n|   |   |-- Rebase jumps/highlights; export fresh history with no edges\n|   |   `-- MappingDiagramService.save() -> notify browser: saved\n|   `-- Notification failure returns displayUpdated: false after save\n|-- Diagram context\n|   |-- Read status compares binding fingerprint to current diagram source\n|   |   `-- Context materialization is a separate load\n|   |-- Prepare: compile + store context, then dispatch browser binding\n|   |-- Delete: dispatch binding change without compiled context\n|   |-- Both require current document version AND diagram revision\n|   `-- Retain payload for retry; context mutation capacity is 500\n`-- Version requirements depend on operation\n    |-- Node edits compare exec expectedVersion to initial document version\n    |-- canvas.createDocument has no expectedVersion field\n    |-- canvas.copyDocument makes expectedVersion optional\n    `-- Create/copy require unbound exec; one document per exec call",
+        "position": {
+          "column": 190,
+          "row": 30
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": {
+          "diagram": "central",
+          "line": 38
+        },
+        "target": {
+          "diagram": "retry",
+          "line": 1
+        },
+        "label": "Which state survives an uncertain outcome?"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 63
+        },
+        "target": {
+          "diagram": "retry",
+          "line": 20
+        },
+        "label": "Live commands retain their own retry receipts"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 51
+        },
+        "target": {
+          "diagram": "live",
+          "line": 1
+        },
+        "label": "Reader identity, selection dependencies and transport lifetime"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 70
+        },
+        "target": {
+          "diagram": "ids",
+          "line": 6
+        },
+        "label": "Handle ownership, projection and resolution"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 24
+        },
+        "target": {
+          "diagram": "save",
+          "line": 2
+        },
+        "label": "Save paths and browser acknowledgement"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 32
+        },
+        "target": {
+          "diagram": "save",
+          "line": 14
+        },
+        "label": "Context storage, version checks and retained payload"
+      }
+    ]
+  },
+  "usage": {
+    "input_tokens": 465619,
+    "cached_input_tokens": 409088,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 8046,
+    "reasoning_output_tokens": 614
+  }
+}

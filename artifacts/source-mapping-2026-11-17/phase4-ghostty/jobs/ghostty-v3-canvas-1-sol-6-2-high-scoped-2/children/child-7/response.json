@@ -1,0 +1,18 @@
+{
+  "text": "Mapped all 29 Terminal nodes in `d5` at the pinned commit.\n\n- Full JSON in the requested schema: `/tmp/ghostty-terminal.zFgVKo/candidate.json`\n- Compact node scopes, source ranges, and roles: `/tmp/ghostty-terminal.zFgVKo/compact.txt`\n\nLocal checks passed for node coverage, scope and role values, file paths, line bounds, and non-overlapping ranges within each node. The checkout is unchanged. `validate_source_mappings` was not available, so the candidate has no validator-issued hash.\n\nNo unresolved `d5` nodes. The mapping notes distinguish a screen replacement from an in-place reset, explain what happens to tracked pins when their content is discarded, and distinguish a compressed page’s retained virtual address range from its discarded physical contents.",
+  "usage": {
+    "input": 167422,
+    "output": 10639,
+    "cacheRead": 1510400,
+    "cacheWrite": 0,
+    "reasoning": 1702,
+    "totalTokens": 1688461
+  },
+  "cost": {
+    "input": 0.3348439999999999,
+    "output": 0.10639,
+    "cacheRead": 0.30208,
+    "cacheWrite": 0,
+    "total": 0.7433139999999999
+  }
+}

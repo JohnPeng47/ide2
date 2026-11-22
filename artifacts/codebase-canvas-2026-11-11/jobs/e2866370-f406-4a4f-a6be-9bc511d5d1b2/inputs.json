@@ -1,0 +1,17 @@
+{
+  "fingerprint": "caf3d6521fa75ec3937f9cac459db9a92145cf681c6fa54dd94e9a308cb3f738",
+  "files": {
+    "context.json": {
+      "sha256": "cb6c90b91768c3c4ad15a3934597a708b8da4d60c889abc66a53b17b0771da54",
+      "bytes": 115830
+    },
+    "seed.json": {
+      "sha256": "434a5c091d66f47d93a1c1be82c7128fe72866e8e991f76b15264d3b9082088f",
+      "bytes": 8483
+    }
+  },
+  "dependencies": [
+    "initial/A1/tree/persistence"
+  ],
+  "round": 0
+}

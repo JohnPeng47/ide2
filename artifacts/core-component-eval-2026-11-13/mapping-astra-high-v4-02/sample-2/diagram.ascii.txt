@@ -1,0 +1,104 @@
+Source-linked diagram workspace -- compose, inspect and revise canvases around immutable diagram revisions
+|
+|-- [O] CanvasWorkspace owns open documents and their session lifetimes
+|   |-- App -> MappingPocPage -> MappingWorkspacePage
+|   |   `-- src/app/App.tsx; src/features/mapping/MappingPage.tsx
+|   |-- drafts[documentId]: CanvasDraft = metadata + CanvasSession
+|   |   |-- Metadata: name, repositoryId, saved baseline, busy state, viewport
+|   |   `-- controllers: Map<documentId, MappingDocumentController>
+|   |-- CanvasSession exposes read-only Zustand subscriptions
+|   |   |-- document / presentation / selection / controls / geometry / status
+|   |   |-- Controller notifications publish completed semantic changes
+|   |   `-- Saved baseline + current scene/edges/name -> isDirty and sceneDirty
+|   `-- setDrafts() creates/replaces sessions; removal unsubscribes and disposes them
+|       `-- src/features/mapping/workspace/{canvasWorkspace,canvasSession}.ts
+|
+|-- [M] Revision-backed canvas model separates content from composition
+|   |-- Diagram: diagramId + revisionId + content + sourceContext
+|   |   |-- DiagramContent: ASCII, asciiSha256, versioned tree/graph structure
+|   |   |   `-- buildDiagramContent() / diagramContentNodes() -> selectable content nodes
+|   |   |-- DiagramRevision: parentId + diagram + nodeRefs
+|   |   |   `-- createDiagram() / reviseDiagram() return immutable revisions
+|   |   `-- domain/core/diagrams/{diagram,diagramContent,diagramRevision}.ts
+|   |-- CanvasDocument: composition, not embedded mutable diagram text
+|   |   |-- scene.root: GridBox containers and diagram instances
+|   |   |-- edges / jumps / sections / presentations / alternatives / agent contexts
+|   |   `-- StoredCanvasSnapshot.diagramBindings[contentId] -> exact revisionId
+|   |-- [D] Composition + pinned revisions -> ResolvedCanvasDocument
+|   |   |-- LineGridScene.contents[contentId]: Diagram
+|   |   `-- Rendering, selection, source panes and agents share this resolved model
+|   `-- domain/core/diagrams/{lineGrid,canvasHistory,projectDiagramCanvas}.ts
+|
+|-- [C] MappingDocumentController is the shared semantic command boundary
+|   |-- applyUpdate(expectedVersion, DiagramOperation[]) / transact()
+|   |   |-- Settle any pending editor gesture; reject VERSION_CONFLICT
+|   |   |-- Stage create/replace/patch, move/group/delete, edges and source mappings
+|   |   |-- Also handle highlights, revision application, variants and presentation
+|   |   `-- Reconcile connections/jumps/selection -> validate -> publish one update
+|   |-- commitEditorGesture() / commitDocument() / updateCanvas()
+|   |   `-- Recorded updates -> CanvasHistoryService.append(); transient updates need not
+|   |-- [O] CanvasHistoryService owns history behind CanvasEditingContext handles
+|   |   |-- DefaultCanvasHistoryService.contexts: WeakMap<handle, CanvasHistory>
+|   |   |-- CanvasHistoryRecord: headId / past / future / snapshots / diagramRevisions
+|   |   |-- append() retains checkpoints; navigate() restores pinned content and view
+|   |   `-- persistenceChanges(since) exposes incremental records, not a global UI dump
+|   |-- CanvasViews pin named checkpoint sequences and independent working copies
+|   |   |-- canvasView(): create / open / fork / save / alternatives / keep / discard
+|   |   `-- View metadata lives outside the state restored by ordinary undo
+|   |-- prepareTransfer() / prepareTransferNavigation()
+|   |   `-- Cross-canvas copy/move links histories; transfer undo requires workspace coordination
+|   `-- domain/mapping/workspace/mappingDocumentController.ts
+|       `-- Depends on domain/core/diagrams/{canvasHistoryService,canvasHistory,canvasTransfer}.ts
+|
+|-- [M] Canvas presentation and source inspection consume the same session
+|   |-- MappingEditorCanvas + MappingEditorRuntime adapt the model to tldraw
+|   |   |-- [D] ControllerSnapshot -> projectMappingShapes() -> native editor shapes
+|   |   |-- [O] Editor owns live geometry and native undo navigation
+|   |   |   `-- Pointer/camera frames do not write semantic controller state
+|   |   |-- settle() -> controller.commitEditorGesture(moves, canvas)
+|   |   `-- Native history checkpoint -> controller.restoreEditorCheckpoint()
+|   |-- MappingCanvas supplies diagram content interaction and selection
+|   |   `-- MappingCanvasState separates selection membership, display panes and controls
+|   |-- [D] Diagram.sourceContext joins diagram spans to repository evidence
+|   |   |-- mappings[].entityId + sourceRangeIndex -> evidence[].sourceRanges[]
+|   |   |-- diagramSource().entries() -> diagramSelectionNodes() and mapped source files
+|   |   `-- binding identifies sourceId, repositoryIdentity and corpus
+|   |-- SourceWindowPanel / SessionCodePanel / SourceCodePane
+|   |   `-- CodeRepoService.readFile() / definitions() fetch source and navigation targets
+|   `-- Sources: src/features/mapping/{tldraw,canvas,source-pane}/
+|       `-- domain/core/diagrams/diagram.ts; domain/mapping/workspace/mappingDocument.ts
+|
+|-- [C] Agent-assisted edits re-enter the same versioned command path
+|   |-- PromptComposerCoordinator + DiagramEditService
+|   |   |-- [D] Pinned base/reference revisions + prompt + AgentContext -> generation request
+|   |   |-- DiagramGenerator -> new DiagramRevision or reviewable variants
+|   |   `-- Base revision and expectedVersion prevent installing over newer edits
+|   |-- [O] DiagramEditService retains runs, request signatures and AbortControllers
+|   |   |-- Same sessionId/requestId + same arguments -> reuse run, not another model call
+|   |   |-- Cancellation stops generation before application
+|   |   `-- Uncertain installation -> awaiting-acknowledgement; retry installation
+|   |-- AgentDiagrammingSessionService -> canvas bridge -> owning browser
+|   |   |-- useAgentCanvasBridge() registers, polls commands and returns replies
+|   |   `-- LiveCanvasService separately mirrors selections and dispatches live copy/paste
+|   |-- DiagramRevisionReceiver.apply()/batch()
+|   |   |-- controller.applyUpdate(expectedVersion, revision/variant/create operations)
+|   |   `-- Retain receipt before persistence; retry flush without applying the edit twice
+|   `-- Sources: application/mapping/agent/{sessionService,diagramEditService,liveCanvasService}.ts
+|       `-- src/features/mapping/agent/{useAgentCanvasBridge,diagramRevisionReceiver}.ts
+|
+`-- [O] Workspace persistence and project publication have distinct responsibilities
+    |-- WorkspacePersistence subscribes to CanvasWorkspace.onPersist()
+    |   |-- Per-session cursors -> controller.persistenceChanges(cursor)
+    |   |-- Store metadata, baselines, history, revisions and personal view records
+    |   `-- RecordStorage.batch() -> WorkspaceStorage worker -> /api/mapping/workspace/records
+    |-- MappingWorkspaceService -> MappingWorkspaceStore -> WorkspaceRecordStore
+    |   |-- [D] requestId + expectedRevision + changes -> validated workspace batch
+    |   |-- Reject stale writers; matching request receipts make retries idempotent
+    |   `-- Content-addressed record files become visible through atomic manifest replacement
+    |-- Explicit project save: MappingDiagramService.publishCheckpoint()
+    |   |-- WorkspaceRecordStore.capture(documentId, checkpointId, expectedVersion)
+    |   `-- Pin the persisted checkpoint -> projectCatalogs.publishCheckpoint()
+    |-- Reload reconstructs sessions from workspace records; dispose releases subscriptions/workers
+    `-- Sources: src/features/mapping/workspace/{workspacePersistence,workspaceStorage}.ts
+        |-- application/mapping/{workspace/workspaceService,diagrams/diagramService}.ts
+        `-- infrastructure/mapping/persistence/workspace/workspaceRecordStore.ts

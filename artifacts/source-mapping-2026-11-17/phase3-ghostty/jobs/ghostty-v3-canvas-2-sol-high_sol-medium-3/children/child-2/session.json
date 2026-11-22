@@ -1,0 +1,19 @@
+{
+  "id": "child-2",
+  "name": "termio",
+  "assignment": "Map all nodes d2 n1-n31. Return JSON partial with nl-verified ranges.",
+  "model": "gpt-6-sol",
+  "effort": "medium",
+  "status": "generating",
+  "queuedAt": "2026-11-19T04:34:01.331Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-19T04:34:01.337Z",
+  "sessionId": "01a1f215-4013-7273-ad51-3fc77d48b5f0",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-ndc66q4v-agent-repository-poUpRX-checkout--/2026-11-19T04-34-01-363Z_01a1f215-4013-7273-ad51-3fc77d48b5f0.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase3-ndc66q4v/agent-repository-poUpRX/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

@@ -1,3 +1,5 @@
+import { type ProjectionType } from '../../../domain/mapping/projections/projectionType';
+import { type ProjectedLiveContext } from '../../../domain/mapping/agent/liveCanvasStatus';
 import { CanvasApiProjection } from './apiProjection';
 import { shortCanvasContext } from '../../../domain/mapping/agent/shortContext';
 import { AgentContextService } from './agentContextService';
@@ -33,7 +35,8 @@ export class LiveCanvasService {
   private copyCommands = new Map<string, CopyReceipt>();
   constructor(private readonly listCanvases: () => CanvasDescriptor[],
     private readonly loadContext?: (workspaceInstanceId: string, documentId: string) => Promise<LiveCanvasContext>,
-    private readonly agentContexts = new AgentContextService(), private readonly projection = new CanvasApiProjection()) {}
+    private readonly agentContexts = new AgentContextService(), private readonly projection = new CanvasApiProjection(),
+    private readonly loadProjection?: (workspace: string, doc: string, type: ProjectionType) => Promise<ProjectedLiveContext>) {}
   async copy(connectionId: string, raw: LiveCopy) {
     const input = liveCopySchema.parse(raw), binding = this.read(connectionId);
     const key = JSON.stringify([binding.workspaceInstanceId, binding.documentId, binding.canvasEpoch, input.requestId]);
@@ -132,31 +135,42 @@ export class LiveCanvasService {
     const binding = this.read(connectionId);
     return this.agentContexts.upload(binding, requestId, trajectory);
   }
-  async contextForCanvas(workspaceInstanceId: string, documentId: string) {
-    return (await this.loadCanvasContext(workspaceInstanceId, documentId)).context;
+  async contextForCanvas(workspace: string, doc: string, type?: ProjectionType) {
+    if (type) return (await this.projectedContextForCanvas(workspace, doc, type));
+    return (await this.readBoundContext(workspace, doc, () => this.fullContext(workspace, doc))).context;
+  }
+  async projectedContextForCanvas(workspaceInstanceId: string, documentId: string, type: ProjectionType) {
+    const { context, canvasEpoch } = await this.readBoundContext(workspaceInstanceId, documentId, () => {
+      if (!this.loadProjection) throw new LiveCanvasError('CONTEXT_UNAVAILABLE', 503);
+      return this.loadProjection(workspaceInstanceId, documentId, type);
+    });
+    return { workspaceInstanceId, documentId, canvasEpoch, ...context };
   }
   async shortContextForCanvas(workspaceInstanceId: string, documentId: string) {
-    const { context, canvasEpoch } = await this.loadCanvasContext(workspaceInstanceId, documentId);
+    const { context, canvasEpoch } = await this.readBoundContext(workspaceInstanceId, documentId, () => this.fullContext(workspaceInstanceId, documentId));
     return { workspaceInstanceId, documentId, canvasEpoch, ...shortCanvasContext(context) };
   }
-  private async loadCanvasContext(workspaceInstanceId: string, documentId: string) {
+  private async fullContext(workspace: string, doc: string) {
+    if (!this.loadContext) throw new LiveCanvasError('CONTEXT_UNAVAILABLE', 503);
+    const context = await this.loadContext(workspace, doc);
+    return { ...this.projection.result(context), edges: context.edges.map(edge => this.projection.edge(edge)) };
+  }
+  private async readBoundContext<T>(workspaceInstanceId: string, documentId: string, load: () => Promise<T>) {
     const publisher = this.publishers.get(workspaceInstanceId);
     const canvases = this.listCanvases();
     if (!publisher && canvases.length && !canvases.some(canvas => canvas.canvasId === workspaceInstanceId))
       throw new LiveCanvasError('CANVAS_INSTANCE_GONE', 410, 'The browser workspace instance is no longer available. Discover the current canvas ID and reconnect.');
     const selection = publisher?.selections.get(documentId);
     if (!selection) throw new LiveCanvasError('CANVAS_NOT_READY', 503, 'Canvas has not published a selection snapshot; retry attach');
-    if (!this.loadContext) throw new LiveCanvasError('CONTEXT_UNAVAILABLE', 503, 'Canvas context is unavailable on this server');
-    const context = await this.loadContext(workspaceInstanceId, documentId);
+    const context = await load();
     if (this.publishers.get(workspaceInstanceId) !== publisher
       || publisher?.selections.get(documentId)?.canvasEpoch !== selection.canvasEpoch)
       throw new LiveCanvasError('CANVAS_REPLACED', 409, 'Canvas changed identity while reading context; reconnect');
-    return { canvasEpoch: selection.canvasEpoch,
-      context: { ...this.projection.result(context), edges: context.edges.map(edge => this.projection.edge(edge)) } };
+    return { canvasEpoch: selection.canvasEpoch, context };
   }
-  async context(connectionId: string) {
+  async context(connectionId: string, type?: ProjectionType) {
     const before = this.read(connectionId);
-    const context = await this.contextForCanvas(before.workspaceInstanceId, before.documentId);
+    const context = await this.contextForCanvas(before.workspaceInstanceId, before.documentId, type);
     this.read(connectionId); // A close or replacement while awaiting the browser invalidates this response.
     return { connectionId, workspaceInstanceId: before.workspaceInstanceId, documentId: before.documentId, canvasEpoch: before.canvasEpoch, context };
   }

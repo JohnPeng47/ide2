@@ -1,0 +1,31 @@
+{
+  "status": "finished",
+  "key": "astra-high-judge/ghostty-1-3-swapped/3",
+  "runId": "c93d5f54-3ef5-470f-9e49-57157fe5ec26",
+  "model": "gpt-6-astra",
+  "caseId": "ghostty-1-3-swapped",
+  "number": 3,
+  "reportedScore": 0.9415581597,
+  "score": 0.9436414930555554,
+  "rescore": {
+    "score": 0.9436414930555554,
+    "reportedScore": 0.9415581597,
+    "J": 0.9436414930555554,
+    "reportedJ": 0.9415581597,
+    "pairs": 8,
+    "unmatchedA": 0,
+    "unmatchedB": 0,
+    "depth": 4,
+    "maxPairError": 0.016666666633333382,
+    "rangeIssues": []
+  },
+  "usage": {
+    "input": 16419,
+    "output": 17755,
+    "cacheRead": 20608,
+    "cacheWrite": 0,
+    "reasoning": 8639,
+    "totalTokens": 54782
+  },
+  "outputUrl": "http://localhost:5191/evals?run=c93d5f54-3ef5-470f-9e49-57157fe5ec26&output=450c8f11-3b30-485c-a282-7fc0e4dc74c0%3A1%3Aalternative"
+}

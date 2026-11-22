@@ -16,7 +16,6 @@ export function patchDiagramRanges(before: Diagram, input: readonly { start: num
       throw Error('INVALID_PATCH_RANGE: use nonoverlapping existing 1-based inclusive lines');
     if (typeof patch !== 'string' && (!Array.isArray(patch) || patch.some(line => typeof line !== 'string' || /[\r\n]/.test(line)))) throw Error('Invalid patch lines');
     const normalized = typeof patch === 'string' ? patch.replace(/\r\n?/g, '\n') : patch.join('\n');
-    if (normalized.length > 20000) throw Error('Invalid patch text');
     const inserted = typeof patch === 'string' ? normalized === '' ? [] : normalized.split('\n') : [...patch];
     return { start, end, inserted, unchanged: inserted.length === end - start + 1 && inserted.every((line, i) => line === lines[start - 1 + i]) };
   });

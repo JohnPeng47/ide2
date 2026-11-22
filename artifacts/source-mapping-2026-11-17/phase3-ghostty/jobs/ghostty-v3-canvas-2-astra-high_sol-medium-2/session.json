@@ -1,0 +1,13 @@
+{
+  "id": "01a1f1f7-a30a-7147-a33f-7ed8ea5ce542",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-xfq61g3l-agent-repository-eXuuFp-checkout--/2026-11-19T04-01-40-618Z_01a1f1f7-a30a-7147-a33f-7ed8ea5ce542.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase3-xfq61g3l/agent-repository-eXuuFp/checkout",
+  "model": "gpt-6-astra",
+  "effort": "high",
+  "tools": [
+    "read",
+    "bash",
+    "validate_source_mappings",
+    "delegate_subagents"
+  ]
+}

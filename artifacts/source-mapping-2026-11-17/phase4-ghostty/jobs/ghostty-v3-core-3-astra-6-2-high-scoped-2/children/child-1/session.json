@@ -1,0 +1,19 @@
+{
+  "id": "child-1",
+  "name": "surface",
+  "assignment": "Map n2-n23 top two branches including App, runtime, Surface resources. Use private /tmp/surface if needed. Return compact text scopes and path:start-end with roles per node, verified independently; indicate child inclusions.",
+  "model": "gpt-6.2-astra",
+  "effort": "high",
+  "status": "generating",
+  "queuedAt": "2026-11-22T03:50:16.233Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-22T03:50:16.237Z",
+  "sessionId": "01a20160-45c8-7214-b437-22d73cb90374",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-ea05rgun-agent-repository-SbUvQM-checkout--/2026-11-22T03-50-16-264Z_01a20160-45c8-7214-b437-22d73cb90374.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase4-ea05rgun/agent-repository-SbUvQM/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

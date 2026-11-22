@@ -1,0 +1,19 @@
+{
+  "id": "child-5",
+  "name": "terminal",
+  "assignment": "Map diagram d5 ALL nodes n1..n29. Return JSON partial mappings each node with repository-relative exact line ranges. Read line-numbered files; prioritize complete coverage.",
+  "model": "gpt-6-sol",
+  "effort": "medium",
+  "status": "generating",
+  "queuedAt": "2026-11-19T03:38:06.233Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-19T03:38:54.694Z",
+  "sessionId": "01a1f1e2-cb6a-7b85-910d-d5904c27cd2e",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-r_dte9ic-agent-repository-E4c9YX-checkout--/2026-11-19T03-38-54-698Z_01a1f1e2-cb6a-7b85-910d-d5904c27cd2e.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase3-r_dte9ic/agent-repository-E4c9YX/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

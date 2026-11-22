@@ -1,0 +1,26 @@
+{
+  "fingerprint": "10b9aab07bffa7a0363438194625fe5c432e2e40f988ff02485db0831bc77668",
+  "files": {
+    "judge-input.json": {
+      "sha256": "3bec9f9ebc1965843816ef6fffff2ee59fdec785022536c7887e5a2f7ec83a71",
+      "bytes": 248419
+    }
+  },
+  "dependencies": [
+    "initial/discover/B",
+    "initial/B2/expand/runtime",
+    "initial/B2/expand/diagrams",
+    "initial/B2/expand/canvas",
+    "initial/B2/expand/editor",
+    "initial/B2/expand/storage",
+    "initial/B2/expand/source",
+    "initial/B2/expand/agent-api",
+    "initial/B2/expand/contexts",
+    "initial/B2/expand/generation",
+    "initial/B2/expand/chat",
+    "initial/B2/expand/changes",
+    "initial/B2/expand/evals",
+    "initial/B2/expand/analysis"
+  ],
+  "round": 1
+}

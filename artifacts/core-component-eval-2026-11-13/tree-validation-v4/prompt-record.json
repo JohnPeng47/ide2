@@ -1,0 +1,283 @@
+{
+  "schemaVersion": 1,
+  "id": "0b3af2dd-ba89-4032-936a-40070a3e167e",
+  "projectId": "project-4971c06b-83d5-49eb-998d-043d5fc2dca4",
+  "workflow": "alternatives",
+  "name": "Core discovery \u00b7 checkout directory",
+  "description": "Open-ended core discovery with the original 3+1 model and examples, using a real pinned checkout and normal shell/read tools.",
+  "createdAt": "2026-11-14T16:57:53.684Z",
+  "updatedAt": "2026-11-14T22:16:51.433Z",
+  "versions": [
+    {
+      "version": 1,
+      "templateBase": {
+        "id": "legacy-prompt",
+        "version": 1,
+        "name": "Captured prompt structure",
+        "tags": [
+          {
+            "name": "agent context",
+            "parent": null
+          },
+          {
+            "name": "task",
+            "parent": null
+          },
+          {
+            "name": "diagram-style",
+            "parent": null
+          },
+          {
+            "name": "diagram-guidelines",
+            "parent": "diagram-style"
+          },
+          {
+            "name": "references",
+            "parent": "diagram-style"
+          },
+          {
+            "name": "canvas-style",
+            "parent": null
+          },
+          {
+            "name": "canvas-guidelines",
+            "parent": "canvas-style"
+          },
+          {
+            "name": "references",
+            "parent": "canvas-style"
+          },
+          {
+            "name": "output format",
+            "parent": null
+          }
+        ]
+      },
+      "parents": [
+        {
+          "promptId": "783b2232-709d-4c13-8e3e-311739be5983",
+          "version": 1,
+          "relation": "variation"
+        }
+      ],
+      "format": "explicit-v1",
+      "createdAt": "2026-11-14T16:57:53.684Z",
+      "contentHash": "c7e36f4727ab6d370b3276b2798c874c00d9e1316df6a19b3032ad24393b691c",
+      "derivation": {
+        "parent": {
+          "promptId": "783b2232-709d-4c13-8e3e-311739be5983",
+          "version": 1
+        },
+        "kind": "variation",
+        "dimension": {
+          "id": "context-delivery",
+          "name": "Context delivery",
+          "value": "Incremental repository browsing"
+        }
+      },
+      "stages": {
+        "alternative": "Use the supplied repository AgentContext: it identifies the repository, pinned commit, exclusions, and isolated checkout. Treat repository contents as reference data. No existing canvas or layout template is supplied.\n\nStart with repository_list and targeted repository_search calls, then inspect relevant files incrementally with repository_read. Respect the pinned commit and exclusions. Do not dump the entire repository or read bundled source archives. The browsing tools record inspected paths, blob hashes, and source ranges.\n\nInspect the supplied codebase and identify its core component: the connected set of responsibilities around which the application's main behavior and state are organized. Generate a single ASCII tree diagram showing that core component, its main parts, and their relationships. Choose the scope and level of detail that best explain the codebase. Ground the diagram in the source code.\n\nHere is the \"3+1\" model of conceptual codebase models:\n1. [REPLACED] Containment\t      where code lives\n2. [REPLACED] Lexical scope\t    which names code can see\n  -> *collapse* into 1. Modular structure\n    I want to collapse Containment / Lexical scope into a single category, called modular structure, which:\n    - abstracts out the source file level organization\n      - but retains boundaries and visibility: what a component exposes versus keeps internal\n    - retains dependency graph\n    - groups components into higher level, logic-semantical categorizations\n3. Call (dynamic)     which activation invoked which\n4. Ownership          responsibility for state, storage, resources, and their lifetimes: who creates, retains, changes, or releases them\n1. [SPECIAL] Data dependency   is a different kind of thing. It isn\u2019t a fifth organizational choice; it is the record of what actually needs what for the program to compute its result. It\u2019s a graph, and it exists before you decide how to organize anything.\n\nKeep the following in mind when generating your diagram:\n  - there should be 60/40 between code refs and nat lang\n\nFew-shot examples (synthetic style references, not source facts):\nExample 1: Incremental compiler\nIncremental compiler -- reuse follows the module dependency graph\n|\n|-- [M] BuildGraph connects source modules to their compilation artifacts\n|   |-- modules[moduleId]: ModuleUnit\n|   |   |-- sourceHash -> immutable source bytes\n|   |   |-- imports[] -> resolved module identities\n|   |   `-- interfaceHash -> names and types visible to consumers\n|   `-- units[unitId]: AnalysisUnit\n|       |-- mutually dependent modules share one unit\n|       `-- dependencies[] -> units whose interfaces must be available first\n|\n|-- [C] compileUnit(unitId) resolves one reusable result\n|   |-- [D] member source hashes + dependency interfaces + compiler options\n|   |   `-- analysisKey, including the compiler implementation version\n|   |-- ArtifactCache.lookup(analysisKey)\n|   |   |-- Hit -> recover typed modules and diagnostics\n|   |   `-- Miss -> analyze the unit\n|   |       |-- [C] Parser.parse(source) -> syntax with source spans\n|   |       |-- [C] Binder.bind(syntax, dependencyInterfaces)\n|   |       |   `-- Scope\n|   |       |       |-- declarations[name] -> local Symbol\n|   |       |       |-- parent -> enclosing lexical scope\n|   |       |       `-- exports -> symbols visible across the module boundary\n|   |       `-- [C] TypeChecker.check(boundUnit) -> typed modules + diagnostics\n|   `-- Successful analysis -> Emitter.emit(typedModules, target)\n|       |-- [D] typed modules + target version + emission options -> objectKey\n|       `-- ObjectArtifact\n|           |-- object code / exported interface / source map\n|           `-- [O] ArtifactCache retains complete immutable entries\n|               `-- consumers borrow artifacts; eviction follows cache policy\n|\n|-- [C] rebuild(changedPaths) propagates only relevant changes\n|   |-- Capture new source hashes and resolve changed imports\n|   |   `-- [D] updated graph -> regroup cycles and order affected units\n|   |-- Reanalyze affected units\n|   |   |-- Exported interface changed -> invalidate dependent analysis keys\n|   |   `-- Interface unchanged -> consumers can reuse their typed modules\n|   `-- [D] reachable object hashes + runtime + linker options -> bundleKey\n|       `-- Linker.link(objects) produces the executable bundle\n|           `-- changed implementation can require linking without retyping consumers\n|\n`-- [O] BuildScheduler controls transient execution\n    |-- ready queue -> units whose dependency results are available\n    |   `-- independent units may run concurrently\n    |-- running[unitId] -> task + worker lease\n    |   |-- [C] invoke compileUnit(unitId)\n    |   `-- task settlement returns the worker lease\n    |-- cancel(buildId)\n    |   `-- stop scheduling -> signal tasks -> await settlement -> release snapshot\n    `-- BuildResult retains bundle references and source-located diagnostics\n        `-- [D] diagnostic spans + captured sources -> stable reported locations\n\nExample 2: Telemetry ingestion service\nTelemetry ingestion service\n|\n|-- [M] IngestGateway accepts batches from device connections\n|   |-- accept(connection, envelope): BatchReceipt\n|   |   |-- [D] credentials + device registry -> authorized tenant/device\n|   |   `-- [C] decode -> validate envelope -> PartitionRouter.route(batch)\n|   |       |-- Partition key = tenantId + deviceId\n|   |       `-- One device's batches reach the same ordered partition\n|   |-- [O] Retains connection state until disconnect\n|   |   |-- pending[batchId] -> receipt waiter\n|   |   `-- socket close detaches waiters; accepted work can still finish\n|   `-- Admission limit\n|       |-- available capacity -> enqueue batch\n|       `-- full partition queue -> return retryable rejection\n|\n|-- [O] PartitionWorker owns one partition's ingestion progress\n|   |-- Retained state\n|   |   |-- queue: BoundedQueue<AcceptedBatch>\n|   |   |   `-- accepted batches wait here before processing\n|   |   |-- checkpoint: PartitionCheckpoint\n|   |   |   |-- partitionId / committedOffset\n|   |   |   `-- lastSequence[deviceId] -> latest committed device sequence\n|   |   `-- lease: PartitionLease\n|   |       |-- ownerId / epoch / expiresAt\n|   |       `-- [D] current epoch -> authority to commit new progress\n|   |\n|   |-- [C] run() drains the queue one batch at a time\n|   |   `-- process(batch)\n|   |       |-- Establish batch identity\n|   |       |   |-- key = tenantId + deviceId + batchId\n|   |       |   `-- [C] EventStore.lookupReceipt(key)\n|   |       |       |-- Same payload hash -> return committed receipt\n|   |       |       |-- Different payload hash -> reject identity conflict\n|   |       |       `-- Missing receipt -> prepare a new commit\n|   |       |\n|   |       |-- Normalize measurements\n|   |       |   `-- [C] SchemaRegistry.resolve(batch.schemaVersion)\n|   |       |       |-- [M] Exposes versioned field and unit definitions\n|   |       |       `-- [D] raw samples + exact schema -> Measurement[]\n|   |       |           |-- identity: tenantId / deviceId / sequence\n|   |       |           |-- observation: timestamp / metric / value / unit\n|   |       |           `-- provenance: batchId / schemaVersion / payloadHash\n|   |       |\n|   |       |-- Check sequence continuity\n|   |       |   |-- [D] firstSequence + checkpoint.lastSequence[deviceId]\n|   |       |   |   `-- next expected sequence or a detected gap\n|   |       |   |-- Contiguous -> stage measurements\n|   |       |   `-- Gap or overlap -> reject without advancing checkpoint\n|   |       |\n|   |       `-- Commit and acknowledge\n|   |           |-- [C] EventStore.commit(batch, checkpoint, lease.epoch)\n|   |           |   |-- [D] measurements + batch identity + next checkpoint\n|   |           |   |   `-- one durable transaction\n|   |           |   `-- Stale lease epoch -> reject the former owner\n|   |           `-- After confirmed commit\n|   |               |-- Install returned checkpoint\n|   |               `-- Resolve gateway waiters with BatchReceipt\n|   |                   `-- receipt confirms storage, not downstream indexing\n|   |\n|   `-- Lease loss or shutdown\n|       |-- [C] Stop admission and stop dequeuing new work\n|       |-- In-flight commit may have an uncertain outcome\n|       |   `-- retry resolves through its durable batch receipt\n|       `-- [O] Release queue entries and detach remaining waiters\n|           `-- next owner restores progress from EventStore\n|\n|-- [M] EventStore binds stored events to durable progress\n|   |-- [M] Exposes commit / lookupReceipt / restoreCheckpoint / scan\n|   |-- Internal transaction\n|   |   |-- Verify current partition lease epoch\n|   |   |-- Append measurements with partition offsets\n|   |   |-- Insert receipt under the unique batch identity\n|   |   `-- Advance PartitionCheckpoint in the same commit\n|   |       `-- failure rolls back events, receipt and checkpoint together\n|   |-- [O] Retains the durable event log and retry receipts\n|   |   |-- worker restarts leave both intact\n|   |   `-- receipt retention defines the supported retry horizon\n|   `-- scan(partitionId, afterOffset): EventPage\n|       `-- [D] committed log + cursor -> ordered events and next cursor\n|\n`-- [M] ProjectionHost maintains independently rebuildable read models\n    |-- [O] consumers[name]: ProjectionConsumer\n    |   |-- cursor[partitionId] -> last applied event offset\n    |   |-- handler: ProjectionHandler\n    |   `-- cancellation + poll subscription\n    |\n    |-- Registered consumers\n    |   |-- LatestReading\n    |   |   |-- [D] device/metric + sequence -> newest accepted value\n    |   |   `-- older replayed events cannot replace a newer reading\n    |   `-- HourlySummary\n    |       |-- [D] metric + observation timestamp -> aggregation bucket\n    |       `-- count / sum / minimum / maximum\n    |           `-- late observations update their original time bucket\n    |\n    |-- [C] poll() -> EventStore.scan() -> handler.apply(page)\n    |   `-- Projection transaction\n    |       |-- Apply only offsets beyond the stored consumer cursor\n    |       `-- Save changed rows and cursor atomically\n    |           `-- crash before commit -> safely read the same page again\n    |\n    `-- rebuild(name, newVersion)\n        |-- [O] Create separate projection tables and fresh cursors\n        |-- [C] Replay retained events while the current version serves reads\n        `-- [D] rebuilt cursors + captured log positions -> readiness\n            `-- switch readers after catch-up; retire the previous tables\n\nUse the examples as a varied pool of representational choices. Let the supplied evidence determine depth, branching, density, and relationship types; do not copy their domain facts, exact shapes, counts, or require every tag.\n\nReturn a JSON object with exactly one field, \"ascii\", containing the diagram string. Return exactly one ASCII tree with one root, printable ASCII characters, spaces and LF newlines. No Markdown fences or surrounding prose. The complete tree must fit within 20000 characters. Do not add separate side diagrams.\n"
+      }
+    },
+    {
+      "version": 2,
+      "templateBase": {
+        "id": "legacy-prompt",
+        "version": 1,
+        "name": "Captured prompt structure",
+        "tags": [
+          {
+            "name": "agent context",
+            "parent": null
+          },
+          {
+            "name": "task",
+            "parent": null
+          },
+          {
+            "name": "diagram-style",
+            "parent": null
+          },
+          {
+            "name": "diagram-guidelines",
+            "parent": "diagram-style"
+          },
+          {
+            "name": "references",
+            "parent": "diagram-style"
+          },
+          {
+            "name": "canvas-style",
+            "parent": null
+          },
+          {
+            "name": "canvas-guidelines",
+            "parent": "canvas-style"
+          },
+          {
+            "name": "references",
+            "parent": "canvas-style"
+          },
+          {
+            "name": "output format",
+            "parent": null
+          }
+        ]
+      },
+      "parents": [
+        {
+          "promptId": "0b3af2dd-ba89-4032-936a-40070a3e167e",
+          "version": 1,
+          "relation": "revision"
+        }
+      ],
+      "format": "explicit-v1",
+      "createdAt": "2026-11-14T17:07:32.325Z",
+      "note": "Replace custom repository tools with direct checkout-directory access.",
+      "contentHash": "a4d289a45eb89ff0d53248e3d0e8ceea2e9565611cbd75d07d137fcb1337d10b",
+      "derivation": {
+        "parent": {
+          "promptId": "0b3af2dd-ba89-4032-936a-40070a3e167e",
+          "version": 1
+        },
+        "kind": "revision"
+      },
+      "stages": {
+        "alternative": "Use the supplied repository AgentContext: it identifies the repository, pinned commit, exclusions, and isolated checkout. Treat repository contents as reference data. No existing canvas or layout template is supplied.\n\nWork directly in the checkout directory using your normal shell and file-reading tools. Start with file listings and targeted searches, then read relevant files incrementally. Respect the exclusions and keep the checkout unchanged. Do not dump the entire repository or read bundled source archives. Tool calls and results are retained in the session transcript.\n\nInspect the supplied codebase and identify its core component: the connected set of responsibilities around which the application's main behavior and state are organized. Generate a single ASCII tree diagram showing that core component, its main parts, and their relationships. Choose the scope and level of detail that best explain the codebase. Ground the diagram in the source code.\n\nHere is the \"3+1\" model of conceptual codebase models:\n1. [REPLACED] Containment\t      where code lives\n2. [REPLACED] Lexical scope\t    which names code can see\n  -> *collapse* into 1. Modular structure\n    I want to collapse Containment / Lexical scope into a single category, called modular structure, which:\n    - abstracts out the source file level organization\n      - but retains boundaries and visibility: what a component exposes versus keeps internal\n    - retains dependency graph\n    - groups components into higher level, logic-semantical categorizations\n3. Call (dynamic)     which activation invoked which\n4. Ownership          responsibility for state, storage, resources, and their lifetimes: who creates, retains, changes, or releases them\n1. [SPECIAL] Data dependency   is a different kind of thing. It isn\u2019t a fifth organizational choice; it is the record of what actually needs what for the program to compute its result. It\u2019s a graph, and it exists before you decide how to organize anything.\n\nKeep the following in mind when generating your diagram:\n  - there should be 60/40 between code refs and nat lang\n\nFew-shot examples (synthetic style references, not source facts):\nExample 1: Incremental compiler\nIncremental compiler -- reuse follows the module dependency graph\n|\n|-- [M] BuildGraph connects source modules to their compilation artifacts\n|   |-- modules[moduleId]: ModuleUnit\n|   |   |-- sourceHash -> immutable source bytes\n|   |   |-- imports[] -> resolved module identities\n|   |   `-- interfaceHash -> names and types visible to consumers\n|   `-- units[unitId]: AnalysisUnit\n|       |-- mutually dependent modules share one unit\n|       `-- dependencies[] -> units whose interfaces must be available first\n|\n|-- [C] compileUnit(unitId) resolves one reusable result\n|   |-- [D] member source hashes + dependency interfaces + compiler options\n|   |   `-- analysisKey, including the compiler implementation version\n|   |-- ArtifactCache.lookup(analysisKey)\n|   |   |-- Hit -> recover typed modules and diagnostics\n|   |   `-- Miss -> analyze the unit\n|   |       |-- [C] Parser.parse(source) -> syntax with source spans\n|   |       |-- [C] Binder.bind(syntax, dependencyInterfaces)\n|   |       |   `-- Scope\n|   |       |       |-- declarations[name] -> local Symbol\n|   |       |       |-- parent -> enclosing lexical scope\n|   |       |       `-- exports -> symbols visible across the module boundary\n|   |       `-- [C] TypeChecker.check(boundUnit) -> typed modules + diagnostics\n|   `-- Successful analysis -> Emitter.emit(typedModules, target)\n|       |-- [D] typed modules + target version + emission options -> objectKey\n|       `-- ObjectArtifact\n|           |-- object code / exported interface / source map\n|           `-- [O] ArtifactCache retains complete immutable entries\n|               `-- consumers borrow artifacts; eviction follows cache policy\n|\n|-- [C] rebuild(changedPaths) propagates only relevant changes\n|   |-- Capture new source hashes and resolve changed imports\n|   |   `-- [D] updated graph -> regroup cycles and order affected units\n|   |-- Reanalyze affected units\n|   |   |-- Exported interface changed -> invalidate dependent analysis keys\n|   |   `-- Interface unchanged -> consumers can reuse their typed modules\n|   `-- [D] reachable object hashes + runtime + linker options -> bundleKey\n|       `-- Linker.link(objects) produces the executable bundle\n|           `-- changed implementation can require linking without retyping consumers\n|\n`-- [O] BuildScheduler controls transient execution\n    |-- ready queue -> units whose dependency results are available\n    |   `-- independent units may run concurrently\n    |-- running[unitId] -> task + worker lease\n    |   |-- [C] invoke compileUnit(unitId)\n    |   `-- task settlement returns the worker lease\n    |-- cancel(buildId)\n    |   `-- stop scheduling -> signal tasks -> await settlement -> release snapshot\n    `-- BuildResult retains bundle references and source-located diagnostics\n        `-- [D] diagnostic spans + captured sources -> stable reported locations\n\nExample 2: Telemetry ingestion service\nTelemetry ingestion service\n|\n|-- [M] IngestGateway accepts batches from device connections\n|   |-- accept(connection, envelope): BatchReceipt\n|   |   |-- [D] credentials + device registry -> authorized tenant/device\n|   |   `-- [C] decode -> validate envelope -> PartitionRouter.route(batch)\n|   |       |-- Partition key = tenantId + deviceId\n|   |       `-- One device's batches reach the same ordered partition\n|   |-- [O] Retains connection state until disconnect\n|   |   |-- pending[batchId] -> receipt waiter\n|   |   `-- socket close detaches waiters; accepted work can still finish\n|   `-- Admission limit\n|       |-- available capacity -> enqueue batch\n|       `-- full partition queue -> return retryable rejection\n|\n|-- [O] PartitionWorker owns one partition's ingestion progress\n|   |-- Retained state\n|   |   |-- queue: BoundedQueue<AcceptedBatch>\n|   |   |   `-- accepted batches wait here before processing\n|   |   |-- checkpoint: PartitionCheckpoint\n|   |   |   |-- partitionId / committedOffset\n|   |   |   `-- lastSequence[deviceId] -> latest committed device sequence\n|   |   `-- lease: PartitionLease\n|   |       |-- ownerId / epoch / expiresAt\n|   |       `-- [D] current epoch -> authority to commit new progress\n|   |\n|   |-- [C] run() drains the queue one batch at a time\n|   |   `-- process(batch)\n|   |       |-- Establish batch identity\n|   |       |   |-- key = tenantId + deviceId + batchId\n|   |       |   `-- [C] EventStore.lookupReceipt(key)\n|   |       |       |-- Same payload hash -> return committed receipt\n|   |       |       |-- Different payload hash -> reject identity conflict\n|   |       |       `-- Missing receipt -> prepare a new commit\n|   |       |\n|   |       |-- Normalize measurements\n|   |       |   `-- [C] SchemaRegistry.resolve(batch.schemaVersion)\n|   |       |       |-- [M] Exposes versioned field and unit definitions\n|   |       |       `-- [D] raw samples + exact schema -> Measurement[]\n|   |       |           |-- identity: tenantId / deviceId / sequence\n|   |       |           |-- observation: timestamp / metric / value / unit\n|   |       |           `-- provenance: batchId / schemaVersion / payloadHash\n|   |       |\n|   |       |-- Check sequence continuity\n|   |       |   |-- [D] firstSequence + checkpoint.lastSequence[deviceId]\n|   |       |   |   `-- next expected sequence or a detected gap\n|   |       |   |-- Contiguous -> stage measurements\n|   |       |   `-- Gap or overlap -> reject without advancing checkpoint\n|   |       |\n|   |       `-- Commit and acknowledge\n|   |           |-- [C] EventStore.commit(batch, checkpoint, lease.epoch)\n|   |           |   |-- [D] measurements + batch identity + next checkpoint\n|   |           |   |   `-- one durable transaction\n|   |           |   `-- Stale lease epoch -> reject the former owner\n|   |           `-- After confirmed commit\n|   |               |-- Install returned checkpoint\n|   |               `-- Resolve gateway waiters with BatchReceipt\n|   |                   `-- receipt confirms storage, not downstream indexing\n|   |\n|   `-- Lease loss or shutdown\n|       |-- [C] Stop admission and stop dequeuing new work\n|       |-- In-flight commit may have an uncertain outcome\n|       |   `-- retry resolves through its durable batch receipt\n|       `-- [O] Release queue entries and detach remaining waiters\n|           `-- next owner restores progress from EventStore\n|\n|-- [M] EventStore binds stored events to durable progress\n|   |-- [M] Exposes commit / lookupReceipt / restoreCheckpoint / scan\n|   |-- Internal transaction\n|   |   |-- Verify current partition lease epoch\n|   |   |-- Append measurements with partition offsets\n|   |   |-- Insert receipt under the unique batch identity\n|   |   `-- Advance PartitionCheckpoint in the same commit\n|   |       `-- failure rolls back events, receipt and checkpoint together\n|   |-- [O] Retains the durable event log and retry receipts\n|   |   |-- worker restarts leave both intact\n|   |   `-- receipt retention defines the supported retry horizon\n|   `-- scan(partitionId, afterOffset): EventPage\n|       `-- [D] committed log + cursor -> ordered events and next cursor\n|\n`-- [M] ProjectionHost maintains independently rebuildable read models\n    |-- [O] consumers[name]: ProjectionConsumer\n    |   |-- cursor[partitionId] -> last applied event offset\n    |   |-- handler: ProjectionHandler\n    |   `-- cancellation + poll subscription\n    |\n    |-- Registered consumers\n    |   |-- LatestReading\n    |   |   |-- [D] device/metric + sequence -> newest accepted value\n    |   |   `-- older replayed events cannot replace a newer reading\n    |   `-- HourlySummary\n    |       |-- [D] metric + observation timestamp -> aggregation bucket\n    |       `-- count / sum / minimum / maximum\n    |           `-- late observations update their original time bucket\n    |\n    |-- [C] poll() -> EventStore.scan() -> handler.apply(page)\n    |   `-- Projection transaction\n    |       |-- Apply only offsets beyond the stored consumer cursor\n    |       `-- Save changed rows and cursor atomically\n    |           `-- crash before commit -> safely read the same page again\n    |\n    `-- rebuild(name, newVersion)\n        |-- [O] Create separate projection tables and fresh cursors\n        |-- [C] Replay retained events while the current version serves reads\n        `-- [D] rebuilt cursors + captured log positions -> readiness\n            `-- switch readers after catch-up; retire the previous tables\n\nUse the examples as a varied pool of representational choices. Let the supplied evidence determine depth, branching, density, and relationship types; do not copy their domain facts, exact shapes, counts, or require every tag.\n\nReturn a JSON object with exactly one field, \"ascii\", containing the diagram string. Return exactly one ASCII tree with one root, printable ASCII characters, spaces and LF newlines. No Markdown fences or surrounding prose. The complete tree must fit within 20000 characters. Do not add separate side diagrams.\n"
+      }
+    },
+    {
+      "version": 3,
+      "templateBase": {
+        "id": "legacy-prompt",
+        "version": 1,
+        "name": "Captured prompt structure",
+        "tags": [
+          {
+            "name": "agent context",
+            "parent": null
+          },
+          {
+            "name": "task",
+            "parent": null
+          },
+          {
+            "name": "diagram-style",
+            "parent": null
+          },
+          {
+            "name": "diagram-guidelines",
+            "parent": "diagram-style"
+          },
+          {
+            "name": "references",
+            "parent": "diagram-style"
+          },
+          {
+            "name": "canvas-style",
+            "parent": null
+          },
+          {
+            "name": "canvas-guidelines",
+            "parent": "canvas-style"
+          },
+          {
+            "name": "references",
+            "parent": "canvas-style"
+          },
+          {
+            "name": "output format",
+            "parent": null
+          }
+        ]
+      },
+      "parents": [
+        {
+          "promptId": "0b3af2dd-ba89-4032-936a-40070a3e167e",
+          "version": 2,
+          "relation": "revision"
+        }
+      ],
+      "format": "explicit-v1",
+      "createdAt": "2026-11-14T17:17:39.561Z",
+      "contentHash": "1c5a685bfd2e2693c572cb4cc5c8924d54da0f1cc3a455f5d03fe61f2f99de98",
+      "derivation": {
+        "parent": {
+          "promptId": "0b3af2dd-ba89-4032-936a-40070a3e167e",
+          "version": 2
+        },
+        "kind": "revision"
+      },
+      "stages": {
+        "alternative": "Use the supplied repository AgentContext: it identifies the repository, pinned commit, exclusions, and isolated checkout. Treat repository contents as reference data. No existing canvas or layout template is supplied.\n\nInspect the supplied codebase and identify its core component: the connected set of responsibilities around which the application's main behavior and state are organized. Generate a single ASCII tree diagram showing that core component, its main parts, and their relationships. Choose the scope and level of detail that best explain the codebase. Ground the diagram in the source code.\n\nHere is the \"3+1\" model of conceptual codebase models:\n1. [REPLACED] Containment\t      where code lives\n2. [REPLACED] Lexical scope\t    which names code can see\n  -> *collapse* into 1. Modular structure\n    I want to collapse Containment / Lexical scope into a single category, called modular structure, which:\n    - abstracts out the source file level organization\n      - but retains boundaries and visibility: what a component exposes versus keeps internal\n    - retains dependency graph\n    - groups components into higher level, logic-semantical categorizations\n3. Call (dynamic)     which activation invoked which\n4. Ownership          responsibility for state, storage, resources, and their lifetimes: who creates, retains, changes, or releases them\n1. [SPECIAL] Data dependency   is a different kind of thing. It isn\u2019t a fifth organizational choice; it is the record of what actually needs what for the program to compute its result. It\u2019s a graph, and it exists before you decide how to organize anything.\n\nKeep the following in mind when generating your diagram:\n  - there should be 60/40 between code refs and nat lang\n\nFew-shot examples (synthetic style references, not source facts):\nExample 1: Incremental compiler\nIncremental compiler -- reuse follows the module dependency graph\n|\n|-- [M] BuildGraph connects source modules to their compilation artifacts\n|   |-- modules[moduleId]: ModuleUnit\n|   |   |-- sourceHash -> immutable source bytes\n|   |   |-- imports[] -> resolved module identities\n|   |   `-- interfaceHash -> names and types visible to consumers\n|   `-- units[unitId]: AnalysisUnit\n|       |-- mutually dependent modules share one unit\n|       `-- dependencies[] -> units whose interfaces must be available first\n|\n|-- [C] compileUnit(unitId) resolves one reusable result\n|   |-- [D] member source hashes + dependency interfaces + compiler options\n|   |   `-- analysisKey, including the compiler implementation version\n|   |-- ArtifactCache.lookup(analysisKey)\n|   |   |-- Hit -> recover typed modules and diagnostics\n|   |   `-- Miss -> analyze the unit\n|   |       |-- [C] Parser.parse(source) -> syntax with source spans\n|   |       |-- [C] Binder.bind(syntax, dependencyInterfaces)\n|   |       |   `-- Scope\n|   |       |       |-- declarations[name] -> local Symbol\n|   |       |       |-- parent -> enclosing lexical scope\n|   |       |       `-- exports -> symbols visible across the module boundary\n|   |       `-- [C] TypeChecker.check(boundUnit) -> typed modules + diagnostics\n|   `-- Successful analysis -> Emitter.emit(typedModules, target)\n|       |-- [D] typed modules + target version + emission options -> objectKey\n|       `-- ObjectArtifact\n|           |-- object code / exported interface / source map\n|           `-- [O] ArtifactCache retains complete immutable entries\n|               `-- consumers borrow artifacts; eviction follows cache policy\n|\n|-- [C] rebuild(changedPaths) propagates only relevant changes\n|   |-- Capture new source hashes and resolve changed imports\n|   |   `-- [D] updated graph -> regroup cycles and order affected units\n|   |-- Reanalyze affected units\n|   |   |-- Exported interface changed -> invalidate dependent analysis keys\n|   |   `-- Interface unchanged -> consumers can reuse their typed modules\n|   `-- [D] reachable object hashes + runtime + linker options -> bundleKey\n|       `-- Linker.link(objects) produces the executable bundle\n|           `-- changed implementation can require linking without retyping consumers\n|\n`-- [O] BuildScheduler controls transient execution\n    |-- ready queue -> units whose dependency results are available\n    |   `-- independent units may run concurrently\n    |-- running[unitId] -> task + worker lease\n    |   |-- [C] invoke compileUnit(unitId)\n    |   `-- task settlement returns the worker lease\n    |-- cancel(buildId)\n    |   `-- stop scheduling -> signal tasks -> await settlement -> release snapshot\n    `-- BuildResult retains bundle references and source-located diagnostics\n        `-- [D] diagnostic spans + captured sources -> stable reported locations\n\nExample 2: Telemetry ingestion service\nTelemetry ingestion service\n|\n|-- [M] IngestGateway accepts batches from device connections\n|   |-- accept(connection, envelope): BatchReceipt\n|   |   |-- [D] credentials + device registry -> authorized tenant/device\n|   |   `-- [C] decode -> validate envelope -> PartitionRouter.route(batch)\n|   |       |-- Partition key = tenantId + deviceId\n|   |       `-- One device's batches reach the same ordered partition\n|   |-- [O] Retains connection state until disconnect\n|   |   |-- pending[batchId] -> receipt waiter\n|   |   `-- socket close detaches waiters; accepted work can still finish\n|   `-- Admission limit\n|       |-- available capacity -> enqueue batch\n|       `-- full partition queue -> return retryable rejection\n|\n|-- [O] PartitionWorker owns one partition's ingestion progress\n|   |-- Retained state\n|   |   |-- queue: BoundedQueue<AcceptedBatch>\n|   |   |   `-- accepted batches wait here before processing\n|   |   |-- checkpoint: PartitionCheckpoint\n|   |   |   |-- partitionId / committedOffset\n|   |   |   `-- lastSequence[deviceId] -> latest committed device sequence\n|   |   `-- lease: PartitionLease\n|   |       |-- ownerId / epoch / expiresAt\n|   |       `-- [D] current epoch -> authority to commit new progress\n|   |\n|   |-- [C] run() drains the queue one batch at a time\n|   |   `-- process(batch)\n|   |       |-- Establish batch identity\n|   |       |   |-- key = tenantId + deviceId + batchId\n|   |       |   `-- [C] EventStore.lookupReceipt(key)\n|   |       |       |-- Same payload hash -> return committed receipt\n|   |       |       |-- Different payload hash -> reject identity conflict\n|   |       |       `-- Missing receipt -> prepare a new commit\n|   |       |\n|   |       |-- Normalize measurements\n|   |       |   `-- [C] SchemaRegistry.resolve(batch.schemaVersion)\n|   |       |       |-- [M] Exposes versioned field and unit definitions\n|   |       |       `-- [D] raw samples + exact schema -> Measurement[]\n|   |       |           |-- identity: tenantId / deviceId / sequence\n|   |       |           |-- observation: timestamp / metric / value / unit\n|   |       |           `-- provenance: batchId / schemaVersion / payloadHash\n|   |       |\n|   |       |-- Check sequence continuity\n|   |       |   |-- [D] firstSequence + checkpoint.lastSequence[deviceId]\n|   |       |   |   `-- next expected sequence or a detected gap\n|   |       |   |-- Contiguous -> stage measurements\n|   |       |   `-- Gap or overlap -> reject without advancing checkpoint\n|   |       |\n|   |       `-- Commit and acknowledge\n|   |           |-- [C] EventStore.commit(batch, checkpoint, lease.epoch)\n|   |           |   |-- [D] measurements + batch identity + next checkpoint\n|   |           |   |   `-- one durable transaction\n|   |           |   `-- Stale lease epoch -> reject the former owner\n|   |           `-- After confirmed commit\n|   |               |-- Install returned checkpoint\n|   |               `-- Resolve gateway waiters with BatchReceipt\n|   |                   `-- receipt confirms storage, not downstream indexing\n|   |\n|   `-- Lease loss or shutdown\n|       |-- [C] Stop admission and stop dequeuing new work\n|       |-- In-flight commit may have an uncertain outcome\n|       |   `-- retry resolves through its durable batch receipt\n|       `-- [O] Release queue entries and detach remaining waiters\n|           `-- next owner restores progress from EventStore\n|\n|-- [M] EventStore binds stored events to durable progress\n|   |-- [M] Exposes commit / lookupReceipt / restoreCheckpoint / scan\n|   |-- Internal transaction\n|   |   |-- Verify current partition lease epoch\n|   |   |-- Append measurements with partition offsets\n|   |   |-- Insert receipt under the unique batch identity\n|   |   `-- Advance PartitionCheckpoint in the same commit\n|   |       `-- failure rolls back events, receipt and checkpoint together\n|   |-- [O] Retains the durable event log and retry receipts\n|   |   |-- worker restarts leave both intact\n|   |   `-- receipt retention defines the supported retry horizon\n|   `-- scan(partitionId, afterOffset): EventPage\n|       `-- [D] committed log + cursor -> ordered events and next cursor\n|\n`-- [M] ProjectionHost maintains independently rebuildable read models\n    |-- [O] consumers[name]: ProjectionConsumer\n    |   |-- cursor[partitionId] -> last applied event offset\n    |   |-- handler: ProjectionHandler\n    |   `-- cancellation + poll subscription\n    |\n    |-- Registered consumers\n    |   |-- LatestReading\n    |   |   |-- [D] device/metric + sequence -> newest accepted value\n    |   |   `-- older replayed events cannot replace a newer reading\n    |   `-- HourlySummary\n    |       |-- [D] metric + observation timestamp -> aggregation bucket\n    |       `-- count / sum / minimum / maximum\n    |           `-- late observations update their original time bucket\n    |\n    |-- [C] poll() -> EventStore.scan() -> handler.apply(page)\n    |   `-- Projection transaction\n    |       |-- Apply only offsets beyond the stored consumer cursor\n    |       `-- Save changed rows and cursor atomically\n    |           `-- crash before commit -> safely read the same page again\n    |\n    `-- rebuild(name, newVersion)\n        |-- [O] Create separate projection tables and fresh cursors\n        |-- [C] Replay retained events while the current version serves reads\n        `-- [D] rebuilt cursors + captured log positions -> readiness\n            `-- switch readers after catch-up; retire the previous tables\n\nUse the examples as a varied pool of representational choices. Let the supplied evidence determine depth, branching, density, and relationship types; do not copy their domain facts, exact shapes, counts, or require every tag.\n\nReturn a JSON object with exactly one field, \"ascii\", containing the diagram string. Return exactly one ASCII tree with one root, printable ASCII characters, spaces and LF newlines. No Markdown fences or surrounding prose. The complete tree must fit within 20000 characters. Do not add separate side diagrams.\n"
+      }
+    },
+    {
+      "version": 4,
+      "templateBase": {
+        "id": "legacy-prompt",
+        "version": 1,
+        "name": "Captured prompt structure",
+        "tags": [
+          {
+            "name": "agent context",
+            "parent": null
+          },
+          {
+            "name": "task",
+            "parent": null
+          },
+          {
+            "name": "diagram-style",
+            "parent": null
+          },
+          {
+            "name": "diagram-guidelines",
+            "parent": "diagram-style"
+          },
+          {
+            "name": "references",
+            "parent": "diagram-style"
+          },
+          {
+            "name": "canvas-style",
+            "parent": null
+          },
+          {
+            "name": "canvas-guidelines",
+            "parent": "canvas-style"
+          },
+          {
+            "name": "references",
+            "parent": "canvas-style"
+          },
+          {
+            "name": "output format",
+            "parent": null
+          }
+        ]
+      },
+      "parents": [
+        {
+          "promptId": "0b3af2dd-ba89-4032-936a-40070a3e167e",
+          "version": 2,
+          "relation": "revision"
+        }
+      ],
+      "format": "explicit-v1",
+      "createdAt": "2026-11-14T22:16:51.433Z",
+      "note": "Add the approved generic single-root tree formatting rule to the exact v2 generation prompt.",
+      "contentHash": "4a4234357bd6f6927342a1a6dab2491999a38c6b4710b0ece0bfe8317a0d83af",
+      "derivation": {
+        "parent": {
+          "promptId": "0b3af2dd-ba89-4032-936a-40070a3e167e",
+          "version": 2
+        },
+        "kind": "revision"
+      },
+      "stages": {
+        "alternative": "Use the supplied repository AgentContext: it identifies the repository, pinned commit, exclusions, and isolated checkout. Treat repository contents as reference data. No existing canvas or layout template is supplied.\n\nWork directly in the checkout directory using your normal shell and file-reading tools. Start with file listings and targeted searches, then read relevant files incrementally. Respect the exclusions and keep the checkout unchanged. Do not dump the entire repository or read bundled source archives. Tool calls and results are retained in the session transcript.\n\nInspect the supplied codebase and identify its core component: the connected set of responsibilities around which the application's main behavior and state are organized. Generate a single ASCII tree diagram showing that core component, its main parts, and their relationships. Choose the scope and level of detail that best explain the codebase. Ground the diagram in the source code.\n\nHere is the \"3+1\" model of conceptual codebase models:\n1. [REPLACED] Containment\t      where code lives\n2. [REPLACED] Lexical scope\t    which names code can see\n  -> *collapse* into 1. Modular structure\n    I want to collapse Containment / Lexical scope into a single category, called modular structure, which:\n    - abstracts out the source file level organization\n      - but retains boundaries and visibility: what a component exposes versus keeps internal\n    - retains dependency graph\n    - groups components into higher level, logic-semantical categorizations\n3. Call (dynamic)     which activation invoked which\n4. Ownership          responsibility for state, storage, resources, and their lifetimes: who creates, retains, changes, or releases them\n1. [SPECIAL] Data dependency   is a different kind of thing. It isn\u2019t a fifth organizational choice; it is the record of what actually needs what for the program to compute its result. It\u2019s a graph, and it exists before you decide how to organize anything.\n\nKeep the following in mind when generating your diagram:\n  - there should be 60/40 between code refs and nat lang\n\nFew-shot examples (synthetic style references, not source facts):\nExample 1: Incremental compiler\nIncremental compiler -- reuse follows the module dependency graph\n|\n|-- [M] BuildGraph connects source modules to their compilation artifacts\n|   |-- modules[moduleId]: ModuleUnit\n|   |   |-- sourceHash -> immutable source bytes\n|   |   |-- imports[] -> resolved module identities\n|   |   `-- interfaceHash -> names and types visible to consumers\n|   `-- units[unitId]: AnalysisUnit\n|       |-- mutually dependent modules share one unit\n|       `-- dependencies[] -> units whose interfaces must be available first\n|\n|-- [C] compileUnit(unitId) resolves one reusable result\n|   |-- [D] member source hashes + dependency interfaces + compiler options\n|   |   `-- analysisKey, including the compiler implementation version\n|   |-- ArtifactCache.lookup(analysisKey)\n|   |   |-- Hit -> recover typed modules and diagnostics\n|   |   `-- Miss -> analyze the unit\n|   |       |-- [C] Parser.parse(source) -> syntax with source spans\n|   |       |-- [C] Binder.bind(syntax, dependencyInterfaces)\n|   |       |   `-- Scope\n|   |       |       |-- declarations[name] -> local Symbol\n|   |       |       |-- parent -> enclosing lexical scope\n|   |       |       `-- exports -> symbols visible across the module boundary\n|   |       `-- [C] TypeChecker.check(boundUnit) -> typed modules + diagnostics\n|   `-- Successful analysis -> Emitter.emit(typedModules, target)\n|       |-- [D] typed modules + target version + emission options -> objectKey\n|       `-- ObjectArtifact\n|           |-- object code / exported interface / source map\n|           `-- [O] ArtifactCache retains complete immutable entries\n|               `-- consumers borrow artifacts; eviction follows cache policy\n|\n|-- [C] rebuild(changedPaths) propagates only relevant changes\n|   |-- Capture new source hashes and resolve changed imports\n|   |   `-- [D] updated graph -> regroup cycles and order affected units\n|   |-- Reanalyze affected units\n|   |   |-- Exported interface changed -> invalidate dependent analysis keys\n|   |   `-- Interface unchanged -> consumers can reuse their typed modules\n|   `-- [D] reachable object hashes + runtime + linker options -> bundleKey\n|       `-- Linker.link(objects) produces the executable bundle\n|           `-- changed implementation can require linking without retyping consumers\n|\n`-- [O] BuildScheduler controls transient execution\n    |-- ready queue -> units whose dependency results are available\n    |   `-- independent units may run concurrently\n    |-- running[unitId] -> task + worker lease\n    |   |-- [C] invoke compileUnit(unitId)\n    |   `-- task settlement returns the worker lease\n    |-- cancel(buildId)\n    |   `-- stop scheduling -> signal tasks -> await settlement -> release snapshot\n    `-- BuildResult retains bundle references and source-located diagnostics\n        `-- [D] diagnostic spans + captured sources -> stable reported locations\n\nExample 2: Telemetry ingestion service\nTelemetry ingestion service\n|\n|-- [M] IngestGateway accepts batches from device connections\n|   |-- accept(connection, envelope): BatchReceipt\n|   |   |-- [D] credentials + device registry -> authorized tenant/device\n|   |   `-- [C] decode -> validate envelope -> PartitionRouter.route(batch)\n|   |       |-- Partition key = tenantId + deviceId\n|   |       `-- One device's batches reach the same ordered partition\n|   |-- [O] Retains connection state until disconnect\n|   |   |-- pending[batchId] -> receipt waiter\n|   |   `-- socket close detaches waiters; accepted work can still finish\n|   `-- Admission limit\n|       |-- available capacity -> enqueue batch\n|       `-- full partition queue -> return retryable rejection\n|\n|-- [O] PartitionWorker owns one partition's ingestion progress\n|   |-- Retained state\n|   |   |-- queue: BoundedQueue<AcceptedBatch>\n|   |   |   `-- accepted batches wait here before processing\n|   |   |-- checkpoint: PartitionCheckpoint\n|   |   |   |-- partitionId / committedOffset\n|   |   |   `-- lastSequence[deviceId] -> latest committed device sequence\n|   |   `-- lease: PartitionLease\n|   |       |-- ownerId / epoch / expiresAt\n|   |       `-- [D] current epoch -> authority to commit new progress\n|   |\n|   |-- [C] run() drains the queue one batch at a time\n|   |   `-- process(batch)\n|   |       |-- Establish batch identity\n|   |       |   |-- key = tenantId + deviceId + batchId\n|   |       |   `-- [C] EventStore.lookupReceipt(key)\n|   |       |       |-- Same payload hash -> return committed receipt\n|   |       |       |-- Different payload hash -> reject identity conflict\n|   |       |       `-- Missing receipt -> prepare a new commit\n|   |       |\n|   |       |-- Normalize measurements\n|   |       |   `-- [C] SchemaRegistry.resolve(batch.schemaVersion)\n|   |       |       |-- [M] Exposes versioned field and unit definitions\n|   |       |       `-- [D] raw samples + exact schema -> Measurement[]\n|   |       |           |-- identity: tenantId / deviceId / sequence\n|   |       |           |-- observation: timestamp / metric / value / unit\n|   |       |           `-- provenance: batchId / schemaVersion / payloadHash\n|   |       |\n|   |       |-- Check sequence continuity\n|   |       |   |-- [D] firstSequence + checkpoint.lastSequence[deviceId]\n|   |       |   |   `-- next expected sequence or a detected gap\n|   |       |   |-- Contiguous -> stage measurements\n|   |       |   `-- Gap or overlap -> reject without advancing checkpoint\n|   |       |\n|   |       `-- Commit and acknowledge\n|   |           |-- [C] EventStore.commit(batch, checkpoint, lease.epoch)\n|   |           |   |-- [D] measurements + batch identity + next checkpoint\n|   |           |   |   `-- one durable transaction\n|   |           |   `-- Stale lease epoch -> reject the former owner\n|   |           `-- After confirmed commit\n|   |               |-- Install returned checkpoint\n|   |               `-- Resolve gateway waiters with BatchReceipt\n|   |                   `-- receipt confirms storage, not downstream indexing\n|   |\n|   `-- Lease loss or shutdown\n|       |-- [C] Stop admission and stop dequeuing new work\n|       |-- In-flight commit may have an uncertain outcome\n|       |   `-- retry resolves through its durable batch receipt\n|       `-- [O] Release queue entries and detach remaining waiters\n|           `-- next owner restores progress from EventStore\n|\n|-- [M] EventStore binds stored events to durable progress\n|   |-- [M] Exposes commit / lookupReceipt / restoreCheckpoint / scan\n|   |-- Internal transaction\n|   |   |-- Verify current partition lease epoch\n|   |   |-- Append measurements with partition offsets\n|   |   |-- Insert receipt under the unique batch identity\n|   |   `-- Advance PartitionCheckpoint in the same commit\n|   |       `-- failure rolls back events, receipt and checkpoint together\n|   |-- [O] Retains the durable event log and retry receipts\n|   |   |-- worker restarts leave both intact\n|   |   `-- receipt retention defines the supported retry horizon\n|   `-- scan(partitionId, afterOffset): EventPage\n|       `-- [D] committed log + cursor -> ordered events and next cursor\n|\n`-- [M] ProjectionHost maintains independently rebuildable read models\n    |-- [O] consumers[name]: ProjectionConsumer\n    |   |-- cursor[partitionId] -> last applied event offset\n    |   |-- handler: ProjectionHandler\n    |   `-- cancellation + poll subscription\n    |\n    |-- Registered consumers\n    |   |-- LatestReading\n    |   |   |-- [D] device/metric + sequence -> newest accepted value\n    |   |   `-- older replayed events cannot replace a newer reading\n    |   `-- HourlySummary\n    |       |-- [D] metric + observation timestamp -> aggregation bucket\n    |       `-- count / sum / minimum / maximum\n    |           `-- late observations update their original time bucket\n    |\n    |-- [C] poll() -> EventStore.scan() -> handler.apply(page)\n    |   `-- Projection transaction\n    |       |-- Apply only offsets beyond the stored consumer cursor\n    |       `-- Save changed rows and cursor atomically\n    |           `-- crash before commit -> safely read the same page again\n    |\n    `-- rebuild(name, newVersion)\n        |-- [O] Create separate projection tables and fresh cursors\n        |-- [C] Replay retained events while the current version serves reads\n        `-- [D] rebuilt cursors + captured log positions -> readiness\n            `-- switch readers after catch-up; retire the previous tables\n\nUse the examples as a varied pool of representational choices. Let the supplied evidence determine depth, branching, density, and relationship types; do not copy their domain facts, exact shapes, counts, or require every tag.\n\nTree validation: Start with one root title, followed by a connector-only line. Place all other content beneath explicit branches. Do not insert annotations, references, legends, or explanatory text between the root title and its first branch.\n\nRoot title\n|\n|-- First component\n|   `-- Supporting detail\n`-- Second component\n\nBefore returning, verify that every branch belongs to the single root.\n\nReturn a JSON object with exactly one field, \"ascii\", containing the diagram string. Return exactly one ASCII tree with one root, printable ASCII characters, spaces and LF newlines. No Markdown fences or surrounding prose. The complete tree must fit within 20000 characters. Do not add separate side diagrams.\n"
+      }
+    }
+  ]
+}

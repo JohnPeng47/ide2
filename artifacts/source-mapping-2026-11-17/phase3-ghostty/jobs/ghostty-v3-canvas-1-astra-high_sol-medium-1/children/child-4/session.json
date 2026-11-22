@@ -1,0 +1,19 @@
+{
+  "id": "child-4",
+  "name": "exec",
+  "assignment": "Map d4 all nodes. Return JSON mappings and notes; full named functions.",
+  "model": "gpt-6-sol",
+  "effort": "medium",
+  "status": "generating",
+  "queuedAt": "2026-11-19T03:37:54.785Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-19T03:37:54.798Z",
+  "sessionId": "01a1f1e1-e1a2-7a26-8366-b5a8d6039cd2",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-stcd_055-agent-repository-6pEPqZ-checkout--/2026-11-19T03-37-54-850Z_01a1f1e1-e1a2-7a26-8366-b5a8d6039cd2.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase3-stcd_055/agent-repository-6pEPqZ/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

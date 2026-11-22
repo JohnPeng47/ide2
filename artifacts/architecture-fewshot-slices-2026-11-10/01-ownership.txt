@@ -1,0 +1,19 @@
+[O] CanvasWorkspace manages open documents
+|-- [M] Exposes document lifecycle and persistence notifications
+|-- [O] Creates, subscribes to and disposes CanvasSessions
+|   `-- drafts[documentId]: CanvasDraft
+|       |-- Document identity and save baseline
+|       |   |-- representationId / name / revisionId
+|       |   `-- savedName / savedScene / savedEdges
+|       |-- Workspace presentation
+|       |   `-- busy / hidden / viewport / focusBox
+|       `-- session: CanvasSession
+|           |-- [O] Retains MappingDocumentController
+|           |-- [M] Exposes coordinated session stores
+|           |   |-- document
+|           |   |-- presentation / selection
+|           |   `-- controls / geometry / status
+|           `-- [C] onCommit()
+|               `-- notify workspace persistence
+`-- controllers[documentId]
+    `-- [D] indexes the controllers retained by sessions

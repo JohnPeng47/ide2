@@ -1,0 +1,349 @@
+[
+  {
+    "id": "child-1",
+    "name": "surface-app-runtime",
+    "assignment": "Map n2-n23 and n91-n92, n100-n101. Follow user instructions, line-numbered ranges, return JSON partial.",
+    "model": "gpt-6-sol",
+    "effort": "medium",
+    "status": "finished",
+    "queuedAt": "2026-11-19T03:47:41.664Z",
+    "usage": {
+      "input": 34690,
+      "output": 2601,
+      "cacheRead": 190336,
+      "cacheWrite": 0,
+      "reasoning": 215,
+      "totalTokens": 227627
+    },
+    "cost": {
+      "input": 0.06938,
+      "output": 0.02601,
+      "cacheRead": 0.0380672,
+      "cacheWrite": 0,
+      "total": 0.1334572
+    },
+    "startedAt": "2026-11-19T03:47:41.668Z",
+    "sessionId": "01a1f1ea-d608-7ae0-bc31-585de627c15c",
+    "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-92wf78fo-agent-repository-w3Qp4L-checkout--/2026-11-19T03-47-41-704Z_01a1f1ea-d608-7ae0-bc31-585de627c15c.jsonl",
+    "text": "{\"diagrams\":[{\"diagramId\":\"d1\",\"mappings\":[{\"node\":\"n2\",\"path\":\"src/Surface.zig\",\"startLine\":1,\"endLine\":16},{\"node\":\"n3\",\"path\":\"src/Surface.zig\",\"startLine\":477,\"endLine\":827},{\"node\":\"n3\",\"path\":\"src/Surface.zig\",\"startLine\":925,\"endLine\":929},{\"node\":\"n3\",\"path\":\"src/Surface.zig\",\"startLine\":2600,\"endLine\":2616},{\"node\":\"n3\",\"path\":\"src/Surface.zig\",\"startLine\":2792,\"endLine\":2982},{\"node\":\"n3\",\"path\":\"src/Surface.zig\",\"startLine\":3918,\"endLine\":4297},{\"node\":\"n4\",\"path\":\"src/Surface.zig\",\"startLine\":1,\"endLine\":11},{\"node\":\"n4\",\"path\":\"src/apprt.zig\",\"startLine\":1,\"endLine\":10},{\"node\":\"n5\",\"path\":\"src/apprt.zig\",\"startLine\":39,\"endLine\":53},{\"node\":\"n5\",\"path\":\"src/Surface.zig\",\"startLine\":74,\"endLine\":79},{\"node\":\"n6\",\"path\":\"src/apprt.zig\",\"startLine\":15,\"endLine\":20},{\"node\":\"n6\",\"path\":\"src/apprt.zig\",\"startLine\":39,\"endLine\":50},{\"node\":\"n7\",\"path\":\"src/Surface.zig\",\"startLine\":1015,\"endLine\":1036},{\"node\":\"n7\",\"path\":\"src/Surface.zig\",\"startLine\":1092,\"endLine\":1136},{\"node\":\"n7\",\"path\":\"src/Surface.zig\",\"startLine\":1164,\"endLine\":1177},{\"node\":\"n7\",\"path\":\"src/Surface.zig\",\"startLine\":5450,\"endLine\":5665},{\"node\":\"n8\",\"path\":\"src/App.zig\",\"startLine\":1,\"endLine\":28},{\"node\":\"n8\",\"path\":\"src/App.zig\",\"startLine\":199,\"endLine\":252},{\"node\":\"n9\",\"path\":\"src/App.zig\",\"startLine\":22,\"endLine\":47},{\"node\":\"n9\",\"path\":\"src/App.zig\",\"startLine\":254,\"endLine\":260},{\"node\":\"n10\",\"path\":\"src/App.zig\",\"startLine\":53,\"endLine\":58},{\"node\":\"n11\",\"path\":\"src/Surface.zig\",\"startLine\":528,\"endLine\":534},{\"node\":\"n11\",\"path\":\"src/Surface.zig\",\"startLine\":564,\"endLine\":588},{\"node\":\"n11\",\"path\":\"src/App.zig\",\"startLine\":136,\"endLine\":151},{\"node\":\"n12\",\"path\":\"src/App.zig\",\"startLine\":161,\"endLine\":167},{\"node\":\"n12\",\"path\":\"src/App.zig\",\"startLine\":272,\"endLine\":306},{\"node\":\"n12\",\"path\":\"src/App.zig\",\"startLine\":531,\"endLine\":542},{\"node\":\"n12\",\"path\":\"src/Surface.zig\",\"startLine\":1015,\"endLine\":1241},{\"node\":\"n13\",\"path\":\"src/App.zig\",\"startLine\":577,\"endLine\":581},{\"node\":\"n13\",\"path\":\"src/App.zig\",\"startLine\":596,\"endLine\":613},{\"node\":\"n13\",\"path\":\"src/Surface.zig\",\"startLine\":1015,\"endLine\":1019},{\"node\":\"n14\",\"path\":\"src/Surface.zig\",\"startLine\":477,\"endLine\":827},{\"node\":\"n15\",\"path\":\"src/Surface.zig\",\"startLine\":133,\"endLine\":136},{\"node\":\"n15\",\"path\":\"src/Surface.zig\",\"startLine\":607,\"endLine\":609},{\"node\":\"n15\",\"path\":\"src/Surface.zig\",\"startLine\":703,\"endLine\":725},{\"node\":\"n15\",\"path\":\"src/Surface.zig\",\"startLine\":761,\"endLine\":767},{\"node\":\"n16\",\"path\":\"src/Surface.zig\",\"startLine\":92,\"endLine\":102},{\"node\":\"n16\",\"path\":\"src/Surface.zig\",\"startLine\":572,\"endLine\":605},{\"node\":\"n16\",\"path\":\"src/Surface.zig\",\"startLine\":753,\"endLine\":759},{\"node\":\"n17\",\"path\":\"src/Surface.zig\",\"startLine\":95,\"endLine\":96},{\"node\":\"n17\",\"path\":\"src/Surface.zig\",\"startLine\":631,\"endLine\":636},{\"node\":\"n17\",\"path\":\"src/renderer/State.zig\",\"startLine\":1,\"endLine\":34},{\"node\":\"n18\",\"path\":\"src/Surface.zig\",\"startLine\":631,\"endLine\":640},{\"node\":\"n18\",\"path\":\"src/renderer/State.zig\",\"startLine\":13,\"endLine\":20},{\"node\":\"n19\",\"path\":\"src/Surface.zig\",\"startLine\":592,\"endLine\":595},{\"node\":\"n19\",\"path\":\"src/Surface.zig\",\"startLine\":631,\"endLine\":636},{\"node\":\"n19\",\"path\":\"src/renderer/State.zig\",\"startLine\":13,\"endLine\":34},{\"node\":\"n20\",\"path\":\"src/Surface.zig\",\"startLine\":104,\"endLine\":125},{\"node\":\"n20\",\"path\":\"src/Surface.zig\",\"startLine\":159,\"endLine\":175},{\"node\":\"n21\",\"path\":\"src/Surface.zig\",\"startLine\":104,\"endLine\":125},{\"node\":\"n21\",\"path\":\"src/Surface.zig\",\"startLine\":159,\"endLine\":175},{\"node\":\"n22\",\"path\":\"src/Surface.zig\",\"startLine\":81,\"endLine\":84},{\"node\":\"n22\",\"path\":\"src/Surface.zig\",\"startLine\":141,\"endLine\":147},{\"node\":\"n22\",\"path\":\"src/Surface.zig\",\"startLine\":301,\"endLine\":359},{\"node\":\"n23\",\"path\":\"src/Surface.zig\",\"startLine\":144,\"endLine\":147},{\"node\":\"n23\",\"path\":\"src/Surface.zig\",\"startLine\":361,\"endLine\":445},{\"node\":\"n91\",\"path\":\"src/App.zig\",\"startLine\":169,\"endLine\":197},{\"node\":\"n91\",\"path\":\"src/Surface.zig\",\"startLine\":1015,\"endLine\":1019},{\"node\":\"n91\",\"path\":\"src/Surface.zig\",\"startLine\":1801,\"endLine\":1906},{\"node\":\"n92\",\"path\":\"src/Surface.zig\",\"startLine\":301,\"endLine\":361},{\"node\":\"n92\",\"path\":\"src/Surface.zig\",\"startLine\":1822,\"endLine\":1831},{\"node\":\"n92\",\"path\":\"src/Surface.zig\",\"startLine\":1870,\"endLine\":1890},{\"node\":\"n100\",\"path\":\"src/App.zig\",\"startLine\":136,\"endLine\":151},{\"node\":\"n101\",\"path\":\"src/App.zig\",\"startLine\":136,\"endLine\":151},{\"node\":\"n101\",\"path\":\"src/Surface.zig\",\"startLine\":528,\"endLine\":534},{\"node\":\"n101\",\"path\":\"src/Surface.zig\",\"startLine\":564,\"endLine\":588}]}],\"notes\":\"\"}",
+    "completedAt": "2026-11-19T03:48:59.922Z"
+  },
+  {
+    "id": "child-2",
+    "name": "input-path",
+    "assignment": "Map n24-n37 (key/mouse/paste/io writing) with line numbered file ranges. Return JSON partial.",
+    "model": "gpt-6-sol",
+    "effort": "medium",
+    "status": "finished",
+    "queuedAt": "2026-11-19T03:47:41.664Z",
+    "usage": {
+      "input": 29860,
+      "output": 1348,
+      "cacheRead": 89728,
+      "cacheWrite": 0,
+      "reasoning": 50,
+      "totalTokens": 120936
+    },
+    "cost": {
+      "input": 0.05972,
+      "output": 0.01348,
+      "cacheRead": 0.017945600000000003,
+      "cacheWrite": 0,
+      "total": 0.09114560000000001
+    },
+    "startedAt": "2026-11-19T03:47:41.670Z",
+    "sessionId": "01a1f1ea-d60b-784e-963e-1026b2638765",
+    "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-92wf78fo-agent-repository-w3Qp4L-checkout--/2026-11-19T03-47-41-707Z_01a1f1ea-d60b-784e-963e-1026b2638765.jsonl",
+    "text": "{\"diagrams\":[{\"diagramId\":\"d1\",\"mappings\":[{\"node\":\"n24\",\"path\":\"src/Surface.zig\",\"startLine\":2790,\"endLine\":2982},{\"node\":\"n25\",\"path\":\"src/Surface.zig\",\"startLine\":2984,\"endLine\":3119},{\"node\":\"n26\",\"path\":\"src/Surface.zig\",\"startLine\":3121,\"endLine\":3219},{\"node\":\"n27\",\"path\":\"src/Surface.zig\",\"startLine\":3324,\"endLine\":3397},{\"node\":\"n28\",\"path\":\"src/input/key_encode.zig\",\"startLine\":12,\"endLine\":97},{\"node\":\"n28\",\"path\":\"src/Surface.zig\",\"startLine\":3399,\"endLine\":3419},{\"node\":\"n29\",\"path\":\"src/input/key_encode.zig\",\"startLine\":14,\"endLine\":73},{\"node\":\"n30\",\"path\":\"src/Surface.zig\",\"startLine\":3800,\"endLine\":3875},{\"node\":\"n30\",\"path\":\"src/Surface.zig\",\"startLine\":3915,\"endLine\":4299},{\"node\":\"n30\",\"path\":\"src/Surface.zig\",\"startLine\":6264,\"endLine\":6341},{\"node\":\"n31\",\"path\":\"src/input/mouse_encode.zig\",\"startLine\":12,\"endLine\":172},{\"node\":\"n31\",\"path\":\"src/Surface.zig\",\"startLine\":3813,\"endLine\":3875},{\"node\":\"n32\",\"path\":\"src/terminal/Screen.zig\",\"startLine\":3059,\"endLine\":3097},{\"node\":\"n33\",\"path\":\"src/input/paste.zig\",\"startLine\":4,\"endLine\":125},{\"node\":\"n33\",\"path\":\"src/Surface.zig\",\"startLine\":6264,\"endLine\":6341},{\"node\":\"n34\",\"path\":\"src/Surface.zig\",\"startLine\":895,\"endLine\":920},{\"node\":\"n34\",\"path\":\"src/Surface.zig\",\"startLine\":2938,\"endLine\":2957},{\"node\":\"n35\",\"path\":\"src/Surface.zig\",\"startLine\":895,\"endLine\":920},{\"node\":\"n35\",\"path\":\"src/Surface.zig\",\"startLine\":3915,\"endLine\":4299},{\"node\":\"n36\",\"path\":\"src/termio/Termio.zig\",\"startLine\":437,\"endLine\":463},{\"node\":\"n36\",\"path\":\"src/termio/Thread.zig\",\"startLine\":289,\"endLine\":375},{\"node\":\"n37\",\"path\":\"src/termio/Exec.zig\",\"startLine\":403,\"endLine\":469}]}],\"notes\":\"\"}",
+    "completedAt": "2026-11-19T03:48:18.794Z"
+  },
+  {
+    "id": "child-3",
+    "name": "child-output",
+    "assignment": "Map n38-n54 and n87-n90, n96, output parsing, exec, resize. Return JSON partial.",
+    "model": "gpt-6-sol",
+    "effort": "medium",
+    "status": "finished",
+    "queuedAt": "2026-11-19T03:47:41.664Z",
+    "usage": {
+      "input": 42168,
+      "output": 2049,
+      "cacheRead": 171520,
+      "cacheWrite": 0,
+      "reasoning": 68,
+      "totalTokens": 215737
+    },
+    "cost": {
+      "input": 0.08433600000000001,
+      "output": 0.02049,
+      "cacheRead": 0.034304,
+      "cacheWrite": 0,
+      "total": 0.13913
+    },
+    "startedAt": "2026-11-19T03:47:41.668Z",
+    "sessionId": "01a1f1ea-d609-75b1-a35b-8f4bc99047c9",
+    "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-92wf78fo-agent-repository-w3Qp4L-checkout--/2026-11-19T03-47-41-705Z_01a1f1ea-d609-75b1-a35b-8f4bc99047c9.jsonl",
+    "text": "{\"diagrams\":[{\"diagramId\":\"d1\",\"mappings\":[{\"node\":\"n38\",\"path\":\"src/termio/Termio.zig\",\"startLine\":702,\"endLine\":762},{\"node\":\"n39\",\"path\":\"src/termio/backend.zig\",\"startLine\":13,\"endLine\":25},{\"node\":\"n39\",\"path\":\"src/termio/Exec.zig\",\"startLine\":44,\"endLine\":57},{\"node\":\"n40\",\"path\":\"src/Surface.zig\",\"startLine\":651,\"endLine\":720},{\"node\":\"n41\",\"path\":\"src/termio/Exec.zig\",\"startLine\":86,\"endLine\":194},{\"node\":\"n41\",\"path\":\"src/termio/Exec.zig\",\"startLine\":895,\"endLine\":915},{\"node\":\"n41\",\"path\":\"src/termio/Exec.zig\",\"startLine\":1021,\"endLine\":1063},{\"node\":\"n42\",\"path\":\"src/termio/Exec.zig\",\"startLine\":106,\"endLine\":118},{\"node\":\"n42\",\"path\":\"src/termio/Exec.zig\",\"startLine\":158,\"endLine\":179},{\"node\":\"n42\",\"path\":\"src/termio/Exec.zig\",\"startLine\":274,\"endLine\":294},{\"node\":\"n43\",\"path\":\"src/termio/Exec.zig\",\"startLine\":139,\"endLine\":145},{\"node\":\"n43\",\"path\":\"src/termio/Exec.zig\",\"startLine\":1478,\"endLine\":1495},{\"node\":\"n43\",\"path\":\"src/termio/Exec.zig\",\"startLine\":1789,\"endLine\":1806},{\"node\":\"n44\",\"path\":\"src/termio/Exec.zig\",\"startLine\":1269,\"endLine\":1305},{\"node\":\"n44\",\"path\":\"src/termio/Exec.zig\",\"startLine\":1462,\"endLine\":1495},{\"node\":\"n44\",\"path\":\"src/termio/Exec.zig\",\"startLine\":1522,\"endLine\":1559},{\"node\":\"n45\",\"path\":\"src/termio/Exec.zig\",\"startLine\":1778,\"endLine\":1825},{\"node\":\"n46\",\"path\":\"src/termio/Termio.zig\",\"startLine\":702,\"endLine\":711},{\"node\":\"n47\",\"path\":\"src/termio/Termio.zig\",\"startLine\":713,\"endLine\":762},{\"node\":\"n48\",\"path\":\"src/termio/stream_handler.zig\",\"startLine\":19,\"endLine\":23},{\"node\":\"n48\",\"path\":\"src/termio/stream_handler.zig\",\"startLine\":96,\"endLine\":96},{\"node\":\"n48\",\"path\":\"src/terminal/stream.zig\",\"startLine\":588,\"endLine\":664},{\"node\":\"n49\",\"path\":\"src/termio/stream_handler.zig\",\"startLine\":188,\"endLine\":233},{\"node\":\"n49\",\"path\":\"src/termio/stream_handler.zig\",\"startLine\":196,\"endLine\":199},{\"node\":\"n50\",\"path\":\"src/termio/stream_handler.zig\",\"startLine\":226,\"endLine\":307},{\"node\":\"n50\",\"path\":\"src/termio/stream_handler.zig\",\"startLine\":369,\"endLine\":375},{\"node\":\"n51\",\"path\":\"src/termio/stream_handler.zig\",\"startLine\":19,\"endLine\":42},{\"node\":\"n51\",\"path\":\"src/termio/stream_handler.zig\",\"startLine\":114,\"endLine\":185},{\"node\":\"n52\",\"path\":\"src/termio/stream_handler.zig\",\"startLine\":151,\"endLine\":154},{\"node\":\"n52\",\"path\":\"src/termio/stream_handler.zig\",\"startLine\":830,\"endLine\":851},{\"node\":\"n52\",\"path\":\"src/termio/Termio.zig\",\"startLine\":756,\"endLine\":761},{\"node\":\"n53\",\"path\":\"src/termio/stream_handler.zig\",\"startLine\":138,\"endLine\":149},{\"node\":\"n53\",\"path\":\"src/termio/stream_handler.zig\",\"startLine\":555,\"endLine\":557},{\"node\":\"n53\",\"path\":\"src/termio/stream_handler.zig\",\"startLine\":1000,\"endLine\":1077},{\"node\":\"n54\",\"path\":\"src/termio/stream_handler.zig\",\"startLine\":114,\"endLine\":119},{\"node\":\"n54\",\"path\":\"src/termio/stream_handler.zig\",\"startLine\":156,\"endLine\":185},{\"node\":\"n54\",\"path\":\"src/termio/Termio.zig\",\"startLine\":713,\"endLine\":716},{\"node\":\"n87\",\"path\":\"src/termio/Termio.zig\",\"startLine\":523,\"endLine\":564},{\"node\":\"n88\",\"path\":\"src/termio/Termio.zig\",\"startLine\":532,\"endLine\":553},{\"node\":\"n89\",\"path\":\"src/termio/Termio.zig\",\"startLine\":532,\"endLine\":540},{\"node\":\"n90\",\"path\":\"src/termio/Termio.zig\",\"startLine\":561,\"endLine\":564},{\"node\":\"n96\",\"path\":\"src/termio/Exec.zig\",\"startLine\":196,\"endLine\":230}]}],\"notes\":\"\"}",
+    "completedAt": "2026-11-19T03:48:35.660Z"
+  },
+  {
+    "id": "child-4",
+    "name": "terminal-model",
+    "assignment": "Map n55-n68 terminal ScreenSet/PageList etc. Return JSON partial.",
+    "model": "gpt-6-sol",
+    "effort": "medium",
+    "status": "finished",
+    "queuedAt": "2026-11-19T03:47:41.664Z",
+    "usage": {
+      "input": 37836,
+      "output": 1905,
+      "cacheRead": 136832,
+      "cacheWrite": 0,
+      "reasoning": 94,
+      "totalTokens": 176573
+    },
+    "cost": {
+      "input": 0.075672,
+      "output": 0.01905,
+      "cacheRead": 0.0273664,
+      "cacheWrite": 0,
+      "total": 0.12208839999999999
+    },
+    "startedAt": "2026-11-19T03:47:41.669Z",
+    "sessionId": "01a1f1ea-d60a-7d65-82f0-8b27967cbe5b",
+    "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-92wf78fo-agent-repository-w3Qp4L-checkout--/2026-11-19T03-47-41-706Z_01a1f1ea-d60a-7d65-82f0-8b27967cbe5b.jsonl",
+    "text": "{\"diagrams\":[{\"diagramId\":\"d1\",\"mappings\":[{\"node\":\"n55\",\"path\":\"src/termio/Termio.zig\",\"startLine\":40,\"endLine\":43},{\"node\":\"n55\",\"path\":\"src/terminal/Terminal.zig\",\"startLine\":1,\"endLine\":4},{\"node\":\"n56\",\"path\":\"src/terminal/Terminal.zig\",\"startLine\":1893,\"endLine\":1915},{\"node\":\"n56\",\"path\":\"src/terminal/Terminal.zig\",\"startLine\":2543,\"endLine\":2597},{\"node\":\"n56\",\"path\":\"src/terminal/Terminal.zig\",\"startLine\":3521,\"endLine\":3530},{\"node\":\"n56\",\"path\":\"src/terminal/Terminal.zig\",\"startLine\":4912,\"endLine\":4953},{\"node\":\"n56\",\"path\":\"src/terminal/Terminal.zig\",\"startLine\":4718,\"endLine\":4729},{\"node\":\"n57\",\"path\":\"src/termio/Termio.zig\",\"startLine\":40,\"endLine\":46},{\"node\":\"n57\",\"path\":\"src/terminal/Terminal.zig\",\"startLine\":1,\"endLine\":4},{\"node\":\"n58\",\"path\":\"src/terminal/Terminal.zig\",\"startLine\":36,\"endLine\":49},{\"node\":\"n58\",\"path\":\"src/terminal/ScreenSet.zig\",\"startLine\":1,\"endLine\":31},{\"node\":\"n59\",\"path\":\"src/terminal/ScreenSet.zig\",\"startLine\":1,\"endLine\":7},{\"node\":\"n59\",\"path\":\"src/terminal/ScreenSet.zig\",\"startLine\":38,\"endLine\":53},{\"node\":\"n59\",\"path\":\"src/terminal/ScreenSet.zig\",\"startLine\":74,\"endLine\":88},{\"node\":\"n59\",\"path\":\"src/terminal/Terminal.zig\",\"startLine\":5680,\"endLine\":5715},{\"node\":\"n60\",\"path\":\"src/terminal/ScreenSet.zig\",\"startLine\":23,\"endLine\":31},{\"node\":\"n60\",\"path\":\"src/terminal/ScreenSet.zig\",\"startLine\":104,\"endLine\":109},{\"node\":\"n60\",\"path\":\"src/terminal/Terminal.zig\",\"startLine\":5740,\"endLine\":5747},{\"node\":\"n61\",\"path\":\"src/terminal/Screen.zig\",\"startLine\":52,\"endLine\":75},{\"node\":\"n62\",\"path\":\"src/terminal/Screen.zig\",\"startLine\":74,\"endLine\":84},{\"node\":\"n63\",\"path\":\"src/terminal/Screen.zig\",\"startLine\":15,\"endLine\":45},{\"node\":\"n63\",\"path\":\"src/terminal/PageList.zig\",\"startLine\":1,\"endLine\":4},{\"node\":\"n63\",\"path\":\"src/terminal/PageList.zig\",\"startLine\":401,\"endLine\":405},{\"node\":\"n64\",\"path\":\"src/terminal/PageList.zig\",\"startLine\":51,\"endLine\":54},{\"node\":\"n64\",\"path\":\"src/terminal/PageList.zig\",\"startLine\":648,\"endLine\":704},{\"node\":\"n65\",\"path\":\"src/terminal/page.zig\",\"startLine\":147,\"endLine\":186},{\"node\":\"n65\",\"path\":\"src/terminal/page.zig\",\"startLine\":2215,\"endLine\":2243},{\"node\":\"n65\",\"path\":\"src/terminal/page.zig\",\"startLine\":2392,\"endLine\":2427},{\"node\":\"n66\",\"path\":\"src/terminal/PageList.zig\",\"startLine\":472,\"endLine\":487},{\"node\":\"n66\",\"path\":\"src/terminal/PageList.zig\",\"startLine\":6309,\"endLine\":6334},{\"node\":\"n66\",\"path\":\"src/terminal/PageList.zig\",\"startLine\":7785,\"endLine\":7818},{\"node\":\"n66\",\"path\":\"src/terminal/Screen.zig\",\"startLine\":52,\"endLine\":62},{\"node\":\"n66\",\"path\":\"src/terminal/Screen.zig\",\"startLine\":329,\"endLine\":345},{\"node\":\"n67\",\"path\":\"src/terminal/Terminal.zig\",\"startLine\":56,\"endLine\":84},{\"node\":\"n68\",\"path\":\"src/terminal/Terminal.zig\",\"startLine\":48,\"endLine\":84},{\"node\":\"n68\",\"path\":\"src/terminal/page.zig\",\"startLine\":2392,\"endLine\":2421},{\"node\":\"n68\",\"path\":\"src/input/key_encode.zig\",\"startLine\":55,\"endLine\":72}]}],\"notes\":\"\"}",
+    "completedAt": "2026-11-19T03:48:31.868Z"
+  },
+  {
+    "id": "child-5",
+    "name": "renderer-flow",
+    "assignment": "Map n69-n82 renderer pipeline. Return JSON partial.",
+    "model": "gpt-6-sol",
+    "effort": "medium",
+    "status": "failed",
+    "queuedAt": "2026-11-19T03:47:41.664Z",
+    "usage": {
+      "input": 9435,
+      "output": 387,
+      "cacheRead": 21248,
+      "cacheWrite": 0,
+      "reasoning": 13,
+      "totalTokens": 31070
+    },
+    "cost": {
+      "input": 0.018869999999999998,
+      "output": 0.00387,
+      "cacheRead": 0.0042496,
+      "cacheWrite": 0,
+      "total": 0.0269896
+    },
+    "startedAt": "2026-11-19T03:48:18.795Z",
+    "sessionId": "01a1f1eb-66ee-7eb9-8f2f-cae3380164c5",
+    "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-92wf78fo-agent-repository-w3Qp4L-checkout--/2026-11-19T03-48-18-798Z_01a1f1eb-66ee-7eb9-8f2f-cae3380164c5.jsonl",
+    "error": "Error: {\"detail\":\"Rate limit exceeded\"}",
+    "completedAt": "2026-11-19T03:48:34.305Z"
+  },
+  {
+    "id": "child-6",
+    "name": "surface-resize-teardown",
+    "assignment": "Map n83-n86 and n93-n99 surface resize and teardown. Return JSON partial.",
+    "model": "gpt-6-sol",
+    "effort": "medium",
+    "status": "failed",
+    "queuedAt": "2026-11-19T03:47:41.664Z",
+    "usage": {
+      "input": 0,
+      "output": 0,
+      "cacheRead": 0,
+      "cacheWrite": 0,
+      "totalTokens": 0
+    },
+    "cost": {
+      "input": 0,
+      "output": 0,
+      "cacheRead": 0,
+      "cacheWrite": 0,
+      "total": 0
+    },
+    "startedAt": "2026-11-19T03:48:31.869Z",
+    "sessionId": "01a1f1eb-99ff-7970-85df-04784cb08af7",
+    "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-92wf78fo-agent-repository-w3Qp4L-checkout--/2026-11-19T03-48-31-871Z_01a1f1eb-99ff-7970-85df-04784cb08af7.jsonl",
+    "error": "Error: {\"detail\":\"Rate limit exceeded\"}",
+    "completedAt": "2026-11-19T03:48:32.044Z"
+  },
+  {
+    "id": "child-7",
+    "name": "surface-app-runtime",
+    "assignment": "Map n2-n23 and n91-n92, n100-n101. Return JSON partial line-numbered mappings.",
+    "model": "gpt-6-sol",
+    "effort": "medium",
+    "status": "finished",
+    "queuedAt": "2026-11-19T03:49:04.579Z",
+    "usage": {
+      "input": 30779,
+      "output": 2102,
+      "cacheRead": 109056,
+      "cacheWrite": 0,
+      "reasoning": 103,
+      "totalTokens": 141937
+    },
+    "cost": {
+      "input": 0.061558,
+      "output": 0.021020000000000004,
+      "cacheRead": 0.021811200000000003,
+      "cacheWrite": 0,
+      "total": 0.1043892
+    },
+    "startedAt": "2026-11-19T03:49:04.581Z",
+    "sessionId": "01a1f1ec-19c8-7bdc-b764-2c744e30338b",
+    "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-92wf78fo-agent-repository-w3Qp4L-checkout--/2026-11-19T03-49-04-584Z_01a1f1ec-19c8-7bdc-b764-2c744e30338b.jsonl",
+    "text": "{\"diagrams\":[{\"diagramId\":\"d1\",\"mappings\":[{\"node\":\"n2\",\"path\":\"src/Surface.zig\",\"startLine\":1,\"endLine\":12},{\"node\":\"n3\",\"path\":\"src/Surface.zig\",\"startLine\":477,\"endLine\":484},{\"node\":\"n3\",\"path\":\"src/Surface.zig\",\"startLine\":925,\"endLine\":929},{\"node\":\"n3\",\"path\":\"src/Surface.zig\",\"startLine\":2600,\"endLine\":2616},{\"node\":\"n3\",\"path\":\"src/Surface.zig\",\"startLine\":2790,\"endLine\":2795},{\"node\":\"n3\",\"path\":\"src/Surface.zig\",\"startLine\":3915,\"endLine\":3923},{\"node\":\"n4\",\"path\":\"src/Surface.zig\",\"startLine\":1,\"endLine\":11},{\"node\":\"n5\",\"path\":\"src/apprt.zig\",\"startLine\":1,\"endLine\":10},{\"node\":\"n5\",\"path\":\"src/apprt.zig\",\"startLine\":39,\"endLine\":53},{\"node\":\"n6\",\"path\":\"src/apprt.zig\",\"startLine\":43,\"endLine\":50},{\"node\":\"n7\",\"path\":\"src/Surface.zig\",\"startLine\":1015,\"endLine\":1036},{\"node\":\"n7\",\"path\":\"src/Surface.zig\",\"startLine\":5450,\"endLine\":5609},{\"node\":\"n8\",\"path\":\"src/App.zig\",\"startLine\":1,\"endLine\":28},{\"node\":\"n9\",\"path\":\"src/App.zig\",\"startLine\":22,\"endLine\":28},{\"node\":\"n9\",\"path\":\"src/App.zig\",\"startLine\":45,\"endLine\":47},{\"node\":\"n9\",\"path\":\"src/App.zig\",\"startLine\":254,\"endLine\":260},{\"node\":\"n10\",\"path\":\"src/App.zig\",\"startLine\":53,\"endLine\":58},{\"node\":\"n11\",\"path\":\"src/Surface.zig\",\"startLine\":528,\"endLine\":534},{\"node\":\"n11\",\"path\":\"src/Surface.zig\",\"startLine\":564,\"endLine\":588},{\"node\":\"n12\",\"path\":\"src/App.zig\",\"startLine\":161,\"endLine\":167},{\"node\":\"n12\",\"path\":\"src/App.zig\",\"startLine\":272,\"endLine\":306},{\"node\":\"n12\",\"path\":\"src/App.zig\",\"startLine\":531,\"endLine\":542},{\"node\":\"n12\",\"path\":\"src/Surface.zig\",\"startLine\":1015,\"endLine\":1019},{\"node\":\"n13\",\"path\":\"src/App.zig\",\"startLine\":562,\"endLine\":613},{\"node\":\"n13\",\"path\":\"src/App.zig\",\"startLine\":272,\"endLine\":306},{\"node\":\"n14\",\"path\":\"src/Surface.zig\",\"startLine\":474,\"endLine\":507},{\"node\":\"n14\",\"path\":\"src/Surface.zig\",\"startLine\":597,\"endLine\":767},{\"node\":\"n15\",\"path\":\"src/Surface.zig\",\"startLine\":133,\"endLine\":136},{\"node\":\"n15\",\"path\":\"src/Surface.zig\",\"startLine\":607,\"endLine\":609},{\"node\":\"n15\",\"path\":\"src/Surface.zig\",\"startLine\":761,\"endLine\":767},{\"node\":\"n16\",\"path\":\"src/Surface.zig\",\"startLine\":92,\"endLine\":102},{\"node\":\"n16\",\"path\":\"src/Surface.zig\",\"startLine\":574,\"endLine\":605},{\"node\":\"n16\",\"path\":\"src/Surface.zig\",\"startLine\":753,\"endLine\":759},{\"node\":\"n17\",\"path\":\"src/Surface.zig\",\"startLine\":95,\"endLine\":102},{\"node\":\"n17\",\"path\":\"src/Surface.zig\",\"startLine\":631,\"endLine\":636},{\"node\":\"n18\",\"path\":\"src/Surface.zig\",\"startLine\":631,\"endLine\":640},{\"node\":\"n18\",\"path\":\"src/renderer/State.zig\",\"startLine\":13,\"endLine\":20},{\"node\":\"n19\",\"path\":\"src/renderer/State.zig\",\"startLine\":13,\"endLine\":34},{\"node\":\"n19\",\"path\":\"src/Surface.zig\",\"startLine\":592,\"endLine\":595},{\"node\":\"n20\",\"path\":\"src/Surface.zig\",\"startLine\":104,\"endLine\":125},{\"node\":\"n20\",\"path\":\"src/Surface.zig\",\"startLine\":159,\"endLine\":175},{\"node\":\"n21\",\"path\":\"src/Surface.zig\",\"startLine\":104,\"endLine\":125},{\"node\":\"n21\",\"path\":\"src/Surface.zig\",\"startLine\":159,\"endLine\":175},{\"node\":\"n22\",\"path\":\"src/Surface.zig\",\"startLine\":81,\"endLine\":82},{\"node\":\"n22\",\"path\":\"src/Surface.zig\",\"startLine\":141,\"endLine\":147},{\"node\":\"n22\",\"path\":\"src/Surface.zig\",\"startLine\":303,\"endLine\":353},{\"node\":\"n23\",\"path\":\"src/Surface.zig\",\"startLine\":144,\"endLine\":147},{\"node\":\"n23\",\"path\":\"src/Surface.zig\",\"startLine\":361,\"endLine\":364},{\"node\":\"n23\",\"path\":\"src/Surface.zig\",\"startLine\":387,\"endLine\":445},{\"node\":\"n91\",\"path\":\"src/App.zig\",\"startLine\":169,\"endLine\":197},{\"node\":\"n91\",\"path\":\"src/Surface.zig\",\"startLine\":1015,\"endLine\":1019},{\"node\":\"n92\",\"path\":\"src/Surface.zig\",\"startLine\":1801,\"endLine\":1831},{\"node\":\"n92\",\"path\":\"src/Surface.zig\",\"startLine\":1870,\"endLine\":1889},{\"node\":\"n100\",\"path\":\"src/App.zig\",\"startLine\":136,\"endLine\":151},{\"node\":\"n101\",\"path\":\"src/App.zig\",\"startLine\":136,\"endLine\":150}]}],\"notes\":\"Partial mapping for assigned nodes only; validation must be performed by the main agent.\"}",
+    "completedAt": "2026-11-19T03:50:05.867Z"
+  },
+  {
+    "id": "child-8",
+    "name": "input-path",
+    "assignment": "Map n24-n37 key/mouse/paste/io writing. Return JSON partial line-numbered mappings.",
+    "model": "gpt-6-sol",
+    "effort": "medium",
+    "status": "finished",
+    "queuedAt": "2026-11-19T03:49:04.579Z",
+    "usage": {
+      "input": 38033,
+      "output": 1216,
+      "cacheRead": 72320,
+      "cacheWrite": 0,
+      "reasoning": 31,
+      "totalTokens": 111569
+    },
+    "cost": {
+      "input": 0.076066,
+      "output": 0.01216,
+      "cacheRead": 0.014464000000000001,
+      "cacheWrite": 0,
+      "total": 0.10268999999999999
+    },
+    "startedAt": "2026-11-19T03:49:04.585Z",
+    "sessionId": "01a1f1ec-19cb-770e-a87f-781ec59e8c18",
+    "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-92wf78fo-agent-repository-w3Qp4L-checkout--/2026-11-19T03-49-04-587Z_01a1f1ec-19cb-770e-a87f-781ec59e8c18.jsonl",
+    "text": "{\"diagrams\":[{\"diagramId\":\"d1\",\"mappings\":[{\"node\":\"n24\",\"path\":\"src/Surface.zig\",\"startLine\":2790,\"endLine\":2982},{\"node\":\"n25\",\"path\":\"src/Surface.zig\",\"startLine\":2790,\"endLine\":2840},{\"node\":\"n25\",\"path\":\"src/Surface.zig\",\"startLine\":2984,\"endLine\":3099},{\"node\":\"n26\",\"path\":\"src/Surface.zig\",\"startLine\":3101,\"endLine\":3219},{\"node\":\"n27\",\"path\":\"src/Surface.zig\",\"startLine\":3324,\"endLine\":3419},{\"node\":\"n27\",\"path\":\"src/Surface.zig\",\"startLine\":2938,\"endLine\":2957},{\"node\":\"n28\",\"path\":\"src/input/key.zig\",\"startLine\":8,\"endLine\":78},{\"node\":\"n28\",\"path\":\"src/input/key_encode.zig\",\"startLine\":12,\"endLine\":97},{\"node\":\"n29\",\"path\":\"src/input/key_encode.zig\",\"startLine\":14,\"endLine\":73},{\"node\":\"n30\",\"path\":\"src/Surface.zig\",\"startLine\":3813,\"endLine\":3875},{\"node\":\"n30\",\"path\":\"src/Surface.zig\",\"startLine\":2445,\"endLine\":2473},{\"node\":\"n30\",\"path\":\"src/Surface.zig\",\"startLine\":6264,\"endLine\":6341},{\"node\":\"n31\",\"path\":\"src/input/mouse_encode.zig\",\"startLine\":12,\"endLine\":170},{\"node\":\"n31\",\"path\":\"src/Surface.zig\",\"startLine\":3813,\"endLine\":3875},{\"node\":\"n32\",\"path\":\"src/terminal/Screen.zig\",\"startLine\":3053,\"endLine\":3097},{\"node\":\"n32\",\"path\":\"src/Surface.zig\",\"startLine\":2445,\"endLine\":2473},{\"node\":\"n33\",\"path\":\"src/input/paste.zig\",\"startLine\":4,\"endLine\":119},{\"node\":\"n33\",\"path\":\"src/Surface.zig\",\"startLine\":6264,\"endLine\":6341},{\"node\":\"n34\",\"path\":\"src/Surface.zig\",\"startLine\":895,\"endLine\":920},{\"node\":\"n34\",\"path\":\"src/Surface.zig\",\"startLine\":2938,\"endLine\":2957},{\"node\":\"n35\",\"path\":\"src/Surface.zig\",\"startLine\":895,\"endLine\":920},{\"node\":\"n35\",\"path\":\"src/Surface.zig\",\"startLine\":2445,\"endLine\":2473},{\"node\":\"n36\",\"path\":\"src/termio/Termio.zig\",\"startLine\":431,\"endLine\":463},{\"node\":\"n36\",\"path\":\"src/termio/Thread.zig\",\"startLine\":288,\"endLine\":375},{\"node\":\"n37\",\"path\":\"src/termio/Exec.zig\",\"startLine\":403,\"endLine\":469}]}],\"notes\":\"\"}",
+    "completedAt": "2026-11-19T03:49:39.370Z"
+  },
+  {
+    "id": "child-9",
+    "name": "child-output",
+    "assignment": "Map n38-n54 and n87-n90, n96 output parsing, exec, resize. Return JSON partial line-numbered mappings.",
+    "model": "gpt-6-sol",
+    "effort": "medium",
+    "status": "finished",
+    "queuedAt": "2026-11-19T03:49:04.579Z",
+    "usage": {
+      "input": 36970,
+      "output": 1910,
+      "cacheRead": 104064,
+      "cacheWrite": 0,
+      "reasoning": 44,
+      "totalTokens": 142944
+    },
+    "cost": {
+      "input": 0.07394,
+      "output": 0.019100000000000002,
+      "cacheRead": 0.0208128,
+      "cacheWrite": 0,
+      "total": 0.1138528
+    },
+    "startedAt": "2026-11-19T03:49:04.588Z",
+    "sessionId": "01a1f1ec-19ce-7c33-969a-6fa23748f16c",
+    "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-92wf78fo-agent-repository-w3Qp4L-checkout--/2026-11-19T03-49-04-590Z_01a1f1ec-19ce-7c33-969a-6fa23748f16c.jsonl",
+    "text": "{\"diagrams\":[{\"diagramId\":\"d1\",\"mappings\":[{\"node\":\"n38\",\"path\":\"src/termio/Termio.zig\",\"startLine\":702,\"endLine\":762},{\"node\":\"n39\",\"path\":\"src/Surface.zig\",\"startLine\":687,\"endLine\":721},{\"node\":\"n39\",\"path\":\"src/termio/Exec.zig\",\"startLine\":44,\"endLine\":57},{\"node\":\"n39\",\"path\":\"src/termio/Exec.zig\",\"startLine\":587,\"endLine\":609},{\"node\":\"n40\",\"path\":\"src/Surface.zig\",\"startLine\":651,\"endLine\":700},{\"node\":\"n41\",\"path\":\"src/termio/Exec.zig\",\"startLine\":86,\"endLine\":156},{\"node\":\"n41\",\"path\":\"src/termio/Exec.zig\",\"startLine\":895,\"endLine\":1095},{\"node\":\"n42\",\"path\":\"src/termio/Exec.zig\",\"startLine\":106,\"endLine\":118},{\"node\":\"n42\",\"path\":\"src/termio/Exec.zig\",\"startLine\":158,\"endLine\":179},{\"node\":\"n43\",\"path\":\"src/termio/Exec.zig\",\"startLine\":139,\"endLine\":145},{\"node\":\"n43\",\"path\":\"src/termio/Exec.zig\",\"startLine\":1478,\"endLine\":1495},{\"node\":\"n43\",\"path\":\"src/termio/Exec.zig\",\"startLine\":1778,\"endLine\":1811},{\"node\":\"n44\",\"path\":\"src/termio/Exec.zig\",\"startLine\":1300,\"endLine\":1412},{\"node\":\"n44\",\"path\":\"src/termio/Exec.zig\",\"startLine\":1441,\"endLine\":1495},{\"node\":\"n45\",\"path\":\"src/termio/Exec.zig\",\"startLine\":1778,\"endLine\":1826},{\"node\":\"n46\",\"path\":\"src/termio/Termio.zig\",\"startLine\":702,\"endLine\":711},{\"node\":\"n47\",\"path\":\"src/termio/Termio.zig\",\"startLine\":713,\"endLine\":762},{\"node\":\"n48\",\"path\":\"src/termio/stream_handler.zig\",\"startLine\":19,\"endLine\":42},{\"node\":\"n48\",\"path\":\"src/termio/stream_handler.zig\",\"startLine\":62,\"endLine\":96},{\"node\":\"n48\",\"path\":\"src/terminal/stream.zig\",\"startLine\":588,\"endLine\":665},{\"node\":\"n48\",\"path\":\"src/termio/Termio.zig\",\"startLine\":312,\"endLine\":351},{\"node\":\"n49\",\"path\":\"src/termio/stream_handler.zig\",\"startLine\":188,\"endLine\":233},{\"node\":\"n49\",\"path\":\"src/termio/stream_handler.zig\",\"startLine\":208,\"endLine\":394},{\"node\":\"n50\",\"path\":\"src/termio/stream_handler.zig\",\"startLine\":225,\"endLine\":321},{\"node\":\"n50\",\"path\":\"src/termio/stream_handler.zig\",\"startLine\":369,\"endLine\":375},{\"node\":\"n51\",\"path\":\"src/termio/stream_handler.zig\",\"startLine\":19,\"endLine\":42},{\"node\":\"n51\",\"path\":\"src/termio/stream_handler.zig\",\"startLine\":114,\"endLine\":199},{\"node\":\"n52\",\"path\":\"src/termio/stream_handler.zig\",\"startLine\":151,\"endLine\":154},{\"node\":\"n52\",\"path\":\"src/termio/stream_handler.zig\",\"startLine\":829,\"endLine\":852},{\"node\":\"n52\",\"path\":\"src/termio/stream_handler.zig\",\"startLine\":866,\"endLine\":911},{\"node\":\"n53\",\"path\":\"src/termio/stream_handler.zig\",\"startLine\":138,\"endLine\":149},{\"node\":\"n53\",\"path\":\"src/termio/stream_handler.zig\",\"startLine\":997,\"endLine\":1035},{\"node\":\"n53\",\"path\":\"src/termio/stream_handler.zig\",\"startLine\":1049,\"endLine\":1074},{\"node\":\"n53\",\"path\":\"src/termio/stream_handler.zig\",\"startLine\":555,\"endLine\":557},{\"node\":\"n54\",\"path\":\"src/termio/stream_handler.zig\",\"startLine\":114,\"endLine\":119},{\"node\":\"n54\",\"path\":\"src/termio/stream_handler.zig\",\"startLine\":156,\"endLine\":186},{\"node\":\"n54\",\"path\":\"src/termio/Termio.zig\",\"startLine\":713,\"endLine\":734},{\"node\":\"n87\",\"path\":\"src/termio/Termio.zig\",\"startLine\":523,\"endLine\":564},{\"node\":\"n88\",\"path\":\"src/termio/Termio.zig\",\"startLine\":529,\"endLine\":553},{\"node\":\"n89\",\"path\":\"src/termio/Termio.zig\",\"startLine\":532,\"endLine\":553},{\"node\":\"n90\",\"path\":\"src/termio/Termio.zig\",\"startLine\":561,\"endLine\":564},{\"node\":\"n96\",\"path\":\"src/termio/Exec.zig\",\"startLine\":196,\"endLine\":230}]}],\"notes\":\"\"}",
+    "completedAt": "2026-11-19T03:49:50.842Z"
+  },
+  {
+    "id": "child-10",
+    "name": "terminal-model",
+    "assignment": "Map n55-n68 terminal ScreenSet/PageList etc. Return JSON partial line-numbered mappings.",
+    "model": "gpt-6-sol",
+    "effort": "medium",
+    "status": "finished",
+    "queuedAt": "2026-11-19T03:50:12.002Z",
+    "usage": {
+      "input": 43025,
+      "output": 2068,
+      "cacheRead": 215296,
+      "cacheWrite": 0,
+      "reasoning": 117,
+      "totalTokens": 260389
+    },
+    "cost": {
+      "input": 0.08604999999999999,
+      "output": 0.02068,
+      "cacheRead": 0.043059200000000006,
+      "cacheWrite": 0,
+      "total": 0.1497892
+    },
+    "startedAt": "2026-11-19T03:50:12.014Z",
+    "sessionId": "01a1f1ed-2130-790f-8ffe-714b5b0cca58",
+    "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-92wf78fo-agent-repository-w3Qp4L-checkout--/2026-11-19T03-50-12-016Z_01a1f1ed-2130-790f-8ffe-714b5b0cca58.jsonl",
+    "text": "{\"diagrams\":[{\"diagramId\":\"d1\",\"mappings\":[{\"node\":\"n55\",\"path\":\"src/terminal/Terminal.zig\",\"startLine\":1,\"endLine\":49},{\"node\":\"n56\",\"path\":\"src/terminal/Terminal.zig\",\"startLine\":1893,\"endLine\":2271},{\"node\":\"n56\",\"path\":\"src/terminal/Terminal.zig\",\"startLine\":2540,\"endLine\":2589},{\"node\":\"n56\",\"path\":\"src/terminal/Terminal.zig\",\"startLine\":3478,\"endLine\":3530},{\"node\":\"n56\",\"path\":\"src/terminal/Terminal.zig\",\"startLine\":4912,\"endLine\":5074},{\"node\":\"n56\",\"path\":\"src/terminal/Terminal.zig\",\"startLine\":83,\"endLine\":84},{\"node\":\"n57\",\"path\":\"src/terminal/Terminal.zig\",\"startLine\":1,\"endLine\":97},{\"node\":\"n58\",\"path\":\"src/terminal/Terminal.zig\",\"startLine\":36,\"endLine\":49},{\"node\":\"n58\",\"path\":\"src/terminal/ScreenSet.zig\",\"startLine\":1,\"endLine\":36},{\"node\":\"n59\",\"path\":\"src/terminal/ScreenSet.zig\",\"startLine\":1,\"endLine\":7},{\"node\":\"n59\",\"path\":\"src/terminal/ScreenSet.zig\",\"startLine\":38,\"endLine\":53},{\"node\":\"n59\",\"path\":\"src/terminal/ScreenSet.zig\",\"startLine\":74,\"endLine\":88},{\"node\":\"n60\",\"path\":\"src/terminal/ScreenSet.zig\",\"startLine\":17,\"endLine\":31},{\"node\":\"n60\",\"path\":\"src/terminal/ScreenSet.zig\",\"startLine\":104,\"endLine\":109},{\"node\":\"n61\",\"path\":\"src/terminal/Screen.zig\",\"startLine\":52,\"endLine\":75},{\"node\":\"n62\",\"path\":\"src/terminal/Screen.zig\",\"startLine\":74,\"endLine\":84},{\"node\":\"n63\",\"path\":\"src/terminal/Screen.zig\",\"startLine\":15,\"endLine\":45},{\"node\":\"n63\",\"path\":\"src/terminal/PageList.zig\",\"startLine\":1,\"endLine\":4},{\"node\":\"n63\",\"path\":\"src/terminal/PageList.zig\",\"startLine\":401,\"endLine\":405},{\"node\":\"n64\",\"path\":\"src/terminal/PageList.zig\",\"startLine\":51,\"endLine\":54},{\"node\":\"n64\",\"path\":\"src/terminal/PageList.zig\",\"startLine\":401,\"endLine\":405},{\"node\":\"n65\",\"path\":\"src/terminal/page.zig\",\"startLine\":150,\"endLine\":195},{\"node\":\"n65\",\"path\":\"src/terminal/page.zig\",\"startLine\":2215,\"endLine\":2259},{\"node\":\"n65\",\"path\":\"src/terminal/page.zig\",\"startLine\":2392,\"endLine\":2442},{\"node\":\"n66\",\"path\":\"src/terminal/Screen.zig\",\"startLine\":52,\"endLine\":62},{\"node\":\"n66\",\"path\":\"src/terminal/Screen.zig\",\"startLine\":308,\"endLine\":345},{\"node\":\"n66\",\"path\":\"src/terminal/PageList.zig\",\"startLine\":46,\"endLine\":49},{\"node\":\"n66\",\"path\":\"src/terminal/PageList.zig\",\"startLine\":472,\"endLine\":487},{\"node\":\"n66\",\"path\":\"src/terminal/PageList.zig\",\"startLine\":6309,\"endLine\":6334},{\"node\":\"n66\",\"path\":\"src/terminal/PageList.zig\",\"startLine\":7790,\"endLine\":7818},{\"node\":\"n67\",\"path\":\"src/terminal/Terminal.zig\",\"startLine\":48,\"endLine\":84},{\"node\":\"n68\",\"path\":\"src/terminal/Terminal.zig\",\"startLine\":48,\"endLine\":84},{\"node\":\"n68\",\"path\":\"src/terminal/Screen.zig\",\"startLine\":44,\"endLine\":87},{\"node\":\"n68\",\"path\":\"src/input/key_encode.zig\",\"startLine\":55,\"endLine\":72}]}],\"notes\":\"\"}",
+    "completedAt": "2026-11-19T03:51:12.468Z"
+  },
+  {
+    "id": "child-11",
+    "name": "renderer-flow",
+    "assignment": "Map n69-n82 renderer pipeline. Return JSON partial line-numbered mappings.",
+    "model": "gpt-6-sol",
+    "effort": "medium",
+    "status": "finished",
+    "queuedAt": "2026-11-19T03:50:12.002Z",
+    "usage": {
+      "input": 33016,
+      "output": 1636,
+      "cacheRead": 129152,
+      "cacheWrite": 0,
+      "reasoning": 46,
+      "totalTokens": 163804
+    },
+    "cost": {
+      "input": 0.066032,
+      "output": 0.01636,
+      "cacheRead": 0.025830400000000003,
+      "cacheWrite": 0,
+      "total": 0.1082224
+    },
+    "startedAt": "2026-11-19T03:50:12.005Z",
+    "sessionId": "01a1f1ed-212a-7b6e-85fb-bdcb504afe7d",
+    "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-92wf78fo-agent-repository-w3Qp4L-checkout--/2026-11-19T03-50-12-010Z_01a1f1ed-212a-7b6e-85fb-bdcb504afe7d.jsonl",
+    "text": "{\"diagrams\":[{\"diagramId\":\"d1\",\"mappings\":[{\"node\":\"n69\",\"path\":\"src/renderer/Thread.zig\",\"startLine\":1,\"endLine\":3},{\"node\":\"n69\",\"path\":\"src/renderer/Thread.zig\",\"startLine\":69,\"endLine\":80},{\"node\":\"n70\",\"path\":\"src/renderer/Thread.zig\",\"startLine\":474,\"endLine\":517},{\"node\":\"n70\",\"path\":\"src/renderer/Thread.zig\",\"startLine\":290,\"endLine\":303},{\"node\":\"n70\",\"path\":\"src/renderer/Thread.zig\",\"startLine\":537,\"endLine\":586},{\"node\":\"n71\",\"path\":\"src/renderer.zig\",\"startLine\":16,\"endLine\":19},{\"node\":\"n71\",\"path\":\"src/renderer.zig\",\"startLine\":35,\"endLine\":42},{\"node\":\"n71\",\"path\":\"src/renderer/generic.zig\",\"startLine\":90,\"endLine\":108},{\"node\":\"n72\",\"path\":\"src/renderer.zig\",\"startLine\":35,\"endLine\":42},{\"node\":\"n73\",\"path\":\"src/renderer/generic.zig\",\"startLine\":1370,\"endLine\":1427},{\"node\":\"n73\",\"path\":\"src/renderer/State.zig\",\"startLine\":54,\"endLine\":80},{\"node\":\"n74\",\"path\":\"src/renderer/generic.zig\",\"startLine\":274,\"endLine\":281},{\"node\":\"n74\",\"path\":\"src/renderer/generic.zig\",\"startLine\":1479,\"endLine\":1487},{\"node\":\"n74\",\"path\":\"src/terminal/render.zig\",\"startLine\":289,\"endLine\":399},{\"node\":\"n75\",\"path\":\"src/terminal/render.zig\",\"startLine\":289,\"endLine\":374},{\"node\":\"n75\",\"path\":\"src/renderer/generic.zig\",\"startLine\":1484,\"endLine\":1526},{\"node\":\"n75\",\"path\":\"src/renderer/generic.zig\",\"startLine\":2679,\"endLine\":2685},{\"node\":\"n76\",\"path\":\"src/renderer/generic.zig\",\"startLine\":1399,\"endLine\":1406},{\"node\":\"n76\",\"path\":\"src/renderer/generic.zig\",\"startLine\":1502,\"endLine\":1506},{\"node\":\"n76\",\"path\":\"src/renderer/generic.zig\",\"startLine\":1555,\"endLine\":1561},{\"node\":\"n76\",\"path\":\"src/renderer/generic.zig\",\"startLine\":1645,\"endLine\":1681},{\"node\":\"n77\",\"path\":\"src/renderer/generic.zig\",\"startLine\":1420,\"endLine\":1427},{\"node\":\"n78\",\"path\":\"src/renderer/generic.zig\",\"startLine\":204,\"endLine\":207},{\"node\":\"n78\",\"path\":\"src/renderer/generic.zig\",\"startLine\":2973,\"endLine\":3050},{\"node\":\"n79\",\"path\":\"src/renderer/generic.zig\",\"startLine\":1370,\"endLine\":1427},{\"node\":\"n79\",\"path\":\"src/renderer/generic.zig\",\"startLine\":1479,\"endLine\":1487},{\"node\":\"n79\",\"path\":\"src/renderer/generic.zig\",\"startLine\":1564,\"endLine\":1567},{\"node\":\"n79\",\"path\":\"src/renderer/generic.zig\",\"startLine\":2623,\"endLine\":2636},{\"node\":\"n80\",\"path\":\"src/renderer/generic.zig\",\"startLine\":1712,\"endLine\":1743},{\"node\":\"n80\",\"path\":\"src/renderer/generic.zig\",\"startLine\":1907,\"endLine\":1919},{\"node\":\"n80\",\"path\":\"src/renderer/generic.zig\",\"startLine\":1950,\"endLine\":2000},{\"node\":\"n81\",\"path\":\"src/renderer/Thread.zig\",\"startLine\":460,\"endLine\":472},{\"node\":\"n81\",\"path\":\"src/renderer/Thread.zig\",\"startLine\":556,\"endLine\":583},{\"node\":\"n81\",\"path\":\"src/renderer/generic.zig\",\"startLine\":1273,\"endLine\":1306},{\"node\":\"n82\",\"path\":\"src/Surface.zig\",\"startLine\":922,\"endLine\":929},{\"node\":\"n82\",\"path\":\"src/renderer/generic.zig\",\"startLine\":1712,\"endLine\":1731}]}],\"notes\":\"\"}",
+    "completedAt": "2026-11-19T03:50:54.140Z"
+  },
+  {
+    "id": "child-12",
+    "name": "surface-resize-teardown",
+    "assignment": "Map n83-n86 and n93-n99 surface resize and teardown. Return JSON partial line-numbered mappings.",
+    "model": "gpt-6-sol",
+    "effort": "medium",
+    "status": "finished",
+    "queuedAt": "2026-11-19T03:50:12.002Z",
+    "usage": {
+      "input": 14121,
+      "output": 653,
+      "cacheRead": 23424,
+      "cacheWrite": 0,
+      "reasoning": 49,
+      "totalTokens": 38198
+    },
+    "cost": {
+      "input": 0.028241999999999996,
+      "output": 0.006530000000000001,
+      "cacheRead": 0.0046848,
+      "cacheWrite": 0,
+      "total": 0.0394568
+    },
+    "startedAt": "2026-11-19T03:50:12.017Z",
+    "sessionId": "01a1f1ed-2135-7798-9bfa-580046f9159f",
+    "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-92wf78fo-agent-repository-w3Qp4L-checkout--/2026-11-19T03-50-12-021Z_01a1f1ed-2135-7798-9bfa-580046f9159f.jsonl",
+    "text": "{\"diagrams\":[{\"diagramId\":\"d1\",\"mappings\":[{\"node\":\"n83\",\"path\":\"src/Surface.zig\",\"startLine\":2600,\"endLine\":2649},{\"node\":\"n84\",\"path\":\"src/Surface.zig\",\"startLine\":2600,\"endLine\":2649},{\"node\":\"n85\",\"path\":\"src/Surface.zig\",\"startLine\":2618,\"endLine\":2635},{\"node\":\"n85\",\"path\":\"src/renderer/size.zig\",\"startLine\":20,\"endLine\":38},{\"node\":\"n86\",\"path\":\"src/Surface.zig\",\"startLine\":2637,\"endLine\":2648},{\"node\":\"n93\",\"path\":\"src/Surface.zig\",\"startLine\":829,\"endLine\":885},{\"node\":\"n94\",\"path\":\"src/Surface.zig\",\"startLine\":881,\"endLine\":885},{\"node\":\"n95\",\"path\":\"src/Surface.zig\",\"startLine\":829,\"endLine\":845},{\"node\":\"n96\",\"path\":\"src/termio/Exec.zig\",\"startLine\":196,\"endLine\":230},{\"node\":\"n97\",\"path\":\"src/Surface.zig\",\"startLine\":840,\"endLine\":858},{\"node\":\"n98\",\"path\":\"src/Surface.zig\",\"startLine\":847,\"endLine\":856},{\"node\":\"n99\",\"path\":\"src/Surface.zig\",\"startLine\":860,\"endLine\":876}]}],\"notes\":\"\"}",
+    "completedAt": "2026-11-19T03:50:30.354Z"
+  }
+]

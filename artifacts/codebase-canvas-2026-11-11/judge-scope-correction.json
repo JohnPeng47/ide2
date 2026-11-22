@@ -1,0 +1,13 @@
+{
+  "at": "2026-11-11T14:29:03.679060+00:00",
+  "reason": "User clarified judges evaluate all outputs of each phase per variant; stop incorrect per-point judging.",
+  "runnerPid": 337499,
+  "supervisorPid": 338143,
+  "completed": 173,
+  "activeJobs": [
+    "feedback/B2/phase3/source/round1/judge",
+    "feedback/B2/phase2/agent-api/round1/judge",
+    "feedback/B2/phase3/agent-api/round1/judge",
+    "feedback/B2/phase2/contexts/round1/judge"
+  ]
+}

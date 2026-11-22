@@ -1,3 +1,5 @@
+import { projectCanvas } from '../projections/canvasProjection';
+import type { ProjectionType } from '../projections/projectionType';
 import { projectSidePanels, choosePanelSide } from './diagramSidePanelLayout';
 import { emptyDiagramAlternatives, type DiagramAlternative } from '../../core/presentation/diagramAlternative';
 import { applyAlternativeOperation, selectLegacyRevision, alternativeSelections, type AlternativeOperation } from './diagramAlternatives';
@@ -165,6 +167,13 @@ export class MappingDocumentController {
   }
   canvasViews() { return this.historyService.canvasViews(this.context); }
   canvasViewComparison(viewId: string) { return this.historyService.canvasViewComparison(this.context, viewId); }
+  readCanvasView(viewId: string, projectionType: ProjectionType) {
+    const view = this.canvasViews().saved[viewId];
+    if (!view?.finalCheckpointId) throw Error('Unknown saved CanvasView');
+    const checkpointId = view.finalCheckpointId;
+    const document = this.historyService.document(this.context, checkpointId);
+    return { version: this.snapshot.version, viewId, checkpointId, projectionType, canvas: projectCanvas(document, projectionType) };
+  }
   settlePendingGesture() { this.editorDriver?.settle(); }
   private viewCamera?: import('../../core/diagrams/diagramCanvas').CanvasTransform;
   captureViewCamera(viewport: import('../../core/diagrams/diagramCanvas').CanvasTransform) { this.viewCamera = viewport; }

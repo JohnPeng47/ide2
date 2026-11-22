@@ -1,0 +1,19 @@
+{
+  "id": "child-8",
+  "name": "output-fix",
+  "assignment": "Audit n38-n54 and return complete mappings. Prior n41 had only fragments Exec.threadEnter (86-104) and Subprocess.start (895-943,1021-1063). Must map full named function bodies per user. n48 must show incremental parsing state in actual terminal.Stream(StreamHandler), not only handler fields. Read relevant numbered ranges. Don't use all source unnecessarily.",
+  "model": "gpt-6-sol",
+  "effort": "medium",
+  "status": "generating",
+  "queuedAt": "2026-11-19T04:18:56.789Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-19T04:18:56.800Z",
+  "sessionId": "01a1f207-72a6-724d-94e6-527fa80c7eb2",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-koe4smto-agent-repository-QOMjtw-checkout--/2026-11-19T04-18-56-806Z_01a1f207-72a6-724d-94e6-527fa80c7eb2.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase3-koe4smto/agent-repository-QOMjtw/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

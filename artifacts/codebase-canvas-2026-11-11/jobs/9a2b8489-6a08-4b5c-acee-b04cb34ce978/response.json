@@ -1,0 +1,100 @@
+{
+  "output": {
+    "explanation": "The central tree is reduced from 119 to 79 lines (33.6%) and from 8,262 to 5,815 characters (29.6%). Four peripherals expand its pinned-input, validation, batch-staging and installation nodes. M denotes modular structure, C calls, O ownership and D data dependencies; these views are mixed where they explain the same mechanism. Positions use measured text dimensions, with a 16-column gap beside central and six empty rows between peripherals.\n\nTwo seed claims are qualified by the source. generatedDiagramEdit.ts:27 checks that each correspondence line identifies exactly one parsed output node; it does not check every output node for uniqueness. Conversation context is exposed by single-service apply/place, but diagramBatchService.ts:84 omits child agentContext when projecting batch results.\n\nAdditional source-grounded details include runtime resource-loader restrictions (diagramEditRuntime.ts:65-76), saved-context session handling and differing context propagation for creations versus variants (diagramEditService.ts:58-64, 167-197), staging receipts and automatic creation offsets (diagramBatchService.ts:58-84), and explicit-origin placement plus recalculated placement on retry (diagramEditService.ts:261-284).\n\nOnly context.json and seed.json supply behavioral evidence. Imported revision-store, content-validation and canvas implementations are absent, so their internal guarantees remain unspecified. A combined batch call does not establish storage atomicity; create explicitly promises request-ID idempotency, while apply/batch implementations are unavailable. Runtime cleanup describes the shown prompt-processing finally block.",
+    "diagrams": [
+      {
+        "id": "central",
+        "ascii": "Validated Diagram Generation\n|-- [M] Modular structure: orchestration, generation, domain, canvas\n|   |-- DiagramEditService exposes start / get / wait / cancel / dispose\n|   |   |-- Coordinates edits, variants, creation and extension\n|   |   `-- Private runs and helpers depend on generator, canvas and optional contexts\n|   |-- DiagramBatchService stages child edit services behind a canvas.batch port\n|   |-- DiagramGenerator.generate(request, options) is the generation boundary\n|   |   |-- Request: captured diagram, instruction, prompt, scope and node identities\n|   |   |-- Result: ASCII, structure, optional mappings and node correspondence\n|   |   `-- Options: abort signal plus progress, session and context callbacks\n|   |-- PiDiagramEditRuntime and FakeDiagramEditRuntime implement the contract\n|   |-- Domain validation checks candidates; submitStoredDiagramEdit issues revisions\n|   `-- Canvas port exposes snapshot / apply / optional create\n|       `-- Installation carries expected versions; receipts report applied versions\n|-- [C] Request execution\n|   |-- start validates operation options, context and template before launching\n|   |   |-- Key: (sessionId, requestId); changed signature -> REQUEST_ID_CONFLICT\n|   |   `-- Same signature returns run; idle acknowledgement retry installs again\n|   |-- generate reads pinned inputs and checks canvas/base versions\n|   |   |-- Resolve references, edit ranges and optional bound context\n|   |   `-- Refinement reads retained review revisions and reuses saved scope\n|   |-- Produce a revision through one of two paths\n|   |   |-- Supplied submission -> submitStoredDiagramEdit directly\n|   |   `-- generateDiagram -> generator.generate -> submitStoredDiagramEdit\n|   |       |-- Verify base ownership; clone request with authoritative nodeRefs\n|   |       `-- Check cancellation before generation and before domain submission\n|   |-- Pi runtime requires a validated tool submission\n|   |   |-- Render prompt, resolve context sources, create session and prompt agent\n|   |   |-- submit_diagram_edit checks candidate and scoped replacements\n|   |   |   |-- Rejected -> return issues and keep interaction running\n|   |   |   `-- Accepted -> retain candidate and return terminate: true\n|   |   `-- Missing accepted value fails; otherwise revalidate and capture context\n|   |-- Install the produced result\n|   |   |-- In-place edit -> canvas.apply(revision)\n|   |   |-- Variant -> validate review records -> canvas.apply(variants)\n|   |   |   `-- Optional presentation alternatives refer to revision scopes\n|   |   `-- Create / extend -> canvas.create(diagrams)\n|   |       |-- Create count runs sequentially; extend produces one diagram\n|   |       `-- Latest-state placement retries VERSION_CONFLICT up to 3 attempts\n|   |-- Batch execution stages operations against one shared snapshot\n|   |   |-- Reject multiple edits of the same logical diagram\n|   |   |-- Run children sequentially; child apply/create only collect changes\n|   |   `-- All children succeed -> one combined canvas.batch application\n|   `-- Outcome follows the application acknowledgement\n|       |-- Receipt -> completed; VERSION_CONFLICT -> conflict\n|       |-- Applying + timeout / unavailable / persistence pending -> awaiting-acknowledgement\n|       |   `-- Same request retries retained results without model regeneration\n|       `-- Other errors -> failed; pre-application cancellation -> cancelled\n|-- [O] State, cancellation and resource lifetimes\n|   |-- Edit service owns cloned input, signature, abort controller and pending work\n|   |   |-- Retains generated revisions / variants / creations for installation\n|   |   `-- Public state reads return clones; run registry has a 500-run cap\n|   |-- Batch service retains current child and final staged application\n|   |   `-- Its registry also caps at 500 runs; retries reuse the staged application\n|   |-- cancel acts while generating; batch cancellation reaches the active child\n|   |   `-- Applying may have an unknown outcome; cancellation leaves it alone\n|   |-- Service dispose requests cancellation of retained runs\n|   |-- Runtime owns the session subscription and abort listener\n|   |   `-- Prompt finally removes listener, unsubscribes, disposes and untracks session\n|   |-- Submission closure retains accepted candidate; rejection leaves it unchanged\n|   |-- Successful runtime validation can capture conversation history\n|   |   |-- Edit service checks source session and retains next context\n|   |   `-- Single-run application exposes context; batch result projection omits it\n|   `-- Revision issuance precedes installation; failed placement can leave issued revisions\n`-- [D] Data dependencies of an accepted, installed result\n    |-- Generation needs instruction, validated template and captured base diagram\n    |   |-- Pinned revision -> authoritative logical node identities\n    |   |-- Targets or saved variant scope -> editable ranges\n    |   |-- Pinned references -> full revision text or selected-node excerpts\n    |   `-- Captured connections and optional resolved agent context -> prompt/session input\n    |-- Candidate validation needs ASCII, structure, base and nodeRefs\n    |   |-- Strip continuity annotations and build content\n    |   |-- Each correspondence line must identify exactly one parsed output node\n    |   |-- Mapping flag: disabled rejects nonempty mappings; enabled requires an array\n    |   `-- Base source context + rebuilt content/hash -> validateDiagram\n    |-- Accepted candidate + request -> domain revision submission\n    `-- Installation needs issued result, destination/scope and version expectations\n        |-- Edits carry original document/base versions; creation uses latest snapshot version\n        `-- Canvas receipt supplies final document version and completion state",
+        "position": {
+          "column": 0,
+          "row": 0
+        }
+      },
+      {
+        "id": "validation",
+        "ascii": "Validated submission: candidate acceptance before revision issuance\n|-- [M/C] Pi runtime creates a restricted agent session\n|   |-- Requires enabled runtime and captured base; resolves configured model\n|   |-- Resource loader disables extensions, skills, templates, themes and context files\n|   |-- Explicit request template is still rendered; imported context sources are resolved\n|   `-- Session tool list contains submit_diagram_edit\n|-- [D/C] validateGeneratedDiagramEdit(base, raw, nodeRefs, sourceMappings)\n|   |-- Strict schema: ASCII length 1..200000; structure is diagram or tree\n|   |-- Optional replacementRanges: 1..100; optional mappings: at most 2000\n|   |-- Mappings disabled -> nonempty rejected; enabled -> array required, [] allowed\n|   |-- stripNodeContinuity removes annotations and derives node correspondence\n|   |-- Reject blank content, CR and tabs; rebuild parsed content\n|   |-- For each correspondence line: exactly one parsed node must occur there\n|   |   `-- This loop does not test all output nodes for uniqueness\n|   `-- validateDiagram receives incremented revision, rebuilt hash and base source context\n|       `-- jumps cleared; mappings become supplied array or []\n|-- [C] Runtime additionally checks any editable ranges\n|   |-- Preserve the base structure kind\n|   `-- scopedReplacements(base, clean ASCII, requested ranges, replacement ranges)\n|-- [O/C] createValidatedSubmission retains raw accepted candidate\n|   |-- Validation error -> accepted:false, terminate:false, correction message\n|   |-- Success -> replace accepted value; accepted:true, terminate:true\n|   `-- A later rejection leaves the previously accepted value intact\n`-- [C/O] After session.prompt returns\n    |-- Check abort and require accepted value; revalidate candidate\n    |-- llmSessionId present -> capture messages through onAgentContext\n    |-- finally -> remove abort listener, unsubscribe, dispose and untrack session\n    `-- generateDiagram checks abort, then calls submitStoredDiagramEdit\n        |-- Forwards ASCII, structure fallback, mappings, ranges and correspondence\n        `-- Actual revision-store implementation is outside the supplied files",
+        "position": {
+          "column": 110,
+          "row": 0
+        }
+      },
+      {
+        "id": "inputs",
+        "ascii": "Pinned inputs: revision identity, scope and conversation\n|-- [D/C] Capture target and requested reference revisions\n|   |-- Require snapshot.version == expectedVersion\n|   |-- Anchored operation requires diagram box and matching baseRevisionId\n|   |-- Unanchored create uses a temporary [New diagram] context diagram\n|   `-- Import retained revisions; history-only adapters initialize CanvasHistory\n|-- [D] Prompt references resolve history first, then revision registry\n|   |-- Missing revision or wrong diagramId -> PROMPT_REFERENCE_NOT_FOUND\n|   |-- Diagram reference -> exact retained ASCII\n|   `-- Node reference -> range, excerpt and selected IDs/labels\n|       |-- Explicit checks: endLine within revision; each node ID known\n|       |-- All selected IDs are content nodes -> selectionExcerpt\n|       `-- Otherwise slice requested rows/columns and trim line endings\n|-- [D/C] Variant refinement depends on retained review state\n|   |-- Review must exist and belong to target diagram\n|   |-- Read review revisions at expected version; generate from headRevisionId\n|   |-- New subtree targets forbidden; replacement mode must match saved scope\n|   |-- Saved replacement ranges with endLine < startLine are rejected\n|   `-- Without saved ranges: owner root means whole diagram; otherwise revisionScope\n|-- [D/O] Choose and normalize incoming agent context\n|   |-- Inline context excludes context ID / supplied snapshot and requires llmSessionId\n|   |-- Context ID requires an already resolved snapshot\n|   |-- Panel session must match; saved-agent-context-* IDs bypass this initial check\n|   `-- Bound diagram context loads only for generated edits without explicit context\n|       `-- Bound source fingerprint must match the base diagram\n`-- [O/D] Generation callbacks retain nextAgentContext\n    |-- Returned context must match llmSessionId, including for saved contexts\n    |-- Sequential creations pass next context into the following generation\n    |-- Variant generations reuse the original request context\n    `-- Single apply/place exposes latest context after its canvas receipt",
+        "position": {
+          "column": 110,
+          "row": 36
+        }
+      },
+      {
+        "id": "batch",
+        "ascii": "Batch staging: one snapshot, sequential children, combined application\n|-- [M/C] start chooses direct or generation schema and deduplicates request\n|   |-- Direct operations pass supplied edit/diagram into each child\n|   `-- Generation operations use the shared DiagramGenerator\n|-- [D] Shared snapshot pins all operation bases and references\n|   |-- Initial version must match expectedVersion\n|   |-- Duplicate logical diagram edit targets -> BATCH_TARGET_CONFLICT\n|   `-- Extra retained-revision reads must match the shared snapshot version\n|-- [M/O/C] Child DiagramEditService receives a staging canvas port\n|   |-- snapshot returns shared document plus any extra requested revisions\n|   |-- apply appends edit; receipt reports snapshot version and no unresolved edges\n|   |-- create appends creations; receipt reports snapshot version\n|   |   `-- Without explicit origin, add cumulative horizontal offset: ASCII width + 6\n|   |-- Optional contextFor resolves each operation's agentContextId\n|   `-- Child request ID is batch run ID plus operation index; await child completion\n|-- [O] Child completion means staged success\n|   |-- Record operation index, context ID/hash, result, variants and created metadata\n|   |-- Returned child agentContext is omitted from this projection\n|   `-- Cancellation or child failure before final call leaves staged changes unapplied\n|       `-- Domain revisions may already have been issued during child generation\n`-- [C/O] After all children complete, retain application and call canvas.batch\n    |-- Clear active child/index; application requestId is batch run ID\n    |-- Receipt replaces result versions and unresolved edge IDs; mark batch completed\n    |-- Retry after uncertain acknowledgement reuses the retained application\n    `-- One combined call is visible here; persistence/atomicity internals are not supplied",
+        "position": {
+          "column": 110,
+          "row": 72
+        }
+      },
+      {
+        "id": "delivery",
+        "ascii": "Installation: version checks, placement and uncertain acknowledgement\n|-- [C/D] Edit application uses retained revision and optional review records\n|   |-- requestId = run ID; expectedVersion and baseRevisionId stay from input\n|   `-- Receipt supplies document version and unresolved edge IDs\n|-- [D/O] Variant review records retain original base and append generated revision IDs\n|   |-- headRevisionId advances; decisions reset; validateRevisionReview is called\n|   |-- Multi-range replacement scope stores generated replacement ranges\n|   `-- Presentation alternatives map owner scopes to generated revision scopes\n|       `-- Requested selection applies only to the first generated alternative\n|-- [C/D] place reads latest canvas for each attempt\n|   |-- Revalidate extension source anchors before creation\n|   |-- Default position: beside anchor, same row; no anchor -> column 0, row 0\n|   |-- Horizontal spacing uses ASCII width + 6; nested default placement keeps parent\n|   |-- Explicit origin overrides default position and omits inherited parentId\n|   |   `-- Multiple created diagrams use the same explicit origin in this service\n|   |-- create gets retained content, run ID and latest snapshot version\n|   `-- VERSION_CONFLICT retries placement up to 3 total attempts\n|-- [O/C] A dispatched application may have an unknown outcome\n|   |-- CANVAS_TIMEOUT / CANVAS_UNAVAILABLE / PERSISTENCE_PENDING while applying\n|   |   `-- Mark awaiting-acknowledgement; retain generated results\n|   |-- Same request and signature, with no pending work -> install again\n|   |   |-- Edit resends retained revision/reviews with original expectations\n|   |   `-- Creation recalculates placement from latest snapshot; reuses run ID/content\n|   `-- No generator call on this retry; cancel only changes generating runs\n`-- [M] Evidence boundary\n    |-- create port explicitly promises requestId idempotency\n    `-- apply/batch implementations and their deduplication are outside supplied sources",
+        "position": {
+          "column": 110,
+          "row": 103
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": {
+          "diagram": "central",
+          "line": 27
+        },
+        "target": {
+          "diagram": "validation",
+          "line": 1
+        },
+        "label": "Expands runtime acceptance and domain handoff"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 19
+        },
+        "target": {
+          "diagram": "inputs",
+          "line": 1
+        },
+        "label": "Expands pinned inputs, refinement scope and context"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 40
+        },
+        "target": {
+          "diagram": "batch",
+          "line": 1
+        },
+        "label": "Expands staging and combined application"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 33
+        },
+        "target": {
+          "diagram": "delivery",
+          "line": 1
+        },
+        "label": "Expands installation, placement and retries"
+      }
+    ]
+  },
+  "usage": {
+    "input_tokens": 236072,
+    "cached_input_tokens": 193536,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 8955,
+    "reasoning_output_tokens": 975
+  }
+}

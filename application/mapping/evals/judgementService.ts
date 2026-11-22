@@ -90,6 +90,18 @@ export class JudgementService {
       return item;
     });
   }
+  /** Agent-authored evidence is immutable; identical retries return the saved record. */
+  saveTreeComparison(item: Extract<Judgement, { kind: 'comparison-report' }>) {
+    return this.serialize(async () => {
+      const previous = await this.store.read(item.id);
+      if (previous) {
+        if (previous.deletedAt || previous.source.fingerprint !== item.source.fingerprint) throw new ApplicationError('conflict', 'Judgement request ID already used.');
+        return previous;
+      }
+      await this.store.save(structuredClone(item));
+      return item;
+    });
+  }
   saveProgress(item: Extract<Judgement, { kind: 'few-shot-progress' }>) {
     return this.serialize(async () => {
       const previous = await this.store.read(item.id);

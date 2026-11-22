@@ -1,0 +1,7 @@
+{
+  "status": "failed",
+  "phase": "generation",
+  "key": "astra-high-judge/mapping-v2-v4b/2",
+  "runId": "0609d2c7-7ace-449f-a1a9-10f363739d2a",
+  "error": "Command failed: git --no-replace-objects -C /tmp/agent-repository-di5PeV/checkout -c core.hooksPath=/dev/null -c core.autocrlf=false checkout --quiet --detach 8ca143700ca4d2c870f1101b8cd4601ab68abd41\nerror: unable to write file investigations/silksong/docs/recon-001/raw/native/D3D12__D3D12Core.dll.objdump.txt\nerror: unable to write file investigations/silksong/docs/recon-001/raw/native/MonoBleedingEdge__EmbedRuntime__MonoPosixHelper.dll.objdump.txt\nerror: unable to write file investigations/silksong/docs/recon-001/raw/native/MonoBleedingEdge__EmbedRuntime__mono-2.0-bdwgc.dll.objdump.txt\nerror: unable to write file investigations/silksong/docs/recon-001/raw/native/UnityCrashHandler64.exe.objdump.txt\nerror: unable to write file investigations/silksong/docs/recon-001/raw/native/UnityPlayer.dll.objdump.txt\nerror: unable to write file investigations/silksong/docs/recon-001/raw/pe-metadata.json\nerror: unable to write file package-lock.json\nerror: unable to write file packages/ui-test-framework/src/UiTestFramework.test.ts\nerror: unable to write file packages/ui-test-framework/src/UiTestFramework.tsx\nerror: unable to write file packages/ui-test-framework/src/index.ts\nerror: unable to write file packages/ui-test-framework/src/styles.css\nfatal: cannot create directory at 'projection-3d': No space left on device\n"
+}

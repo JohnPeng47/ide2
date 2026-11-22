@@ -1,0 +1,376 @@
+{
+  "output": {
+    "explanation": "Expanded terminal-state because geometry and font metrics concealed further derivations. Its central tree now separates retained state, decoded output, resize results, configuration mutations and local edits. Pulled out terminal-geometry and font-grid, connecting geometry directly to its font-metric input and preserving shared configuration/action references. Left data-core and child-io unchanged because their existing dependency trees remain useful at this scope. Preserved every existing edge, redirecting endpoints where concepts moved. Checked the pinned checkout: clarified saturating screen-minus-padding arithmetic, rounded font DPI versus unrounded padding DPI, primary-face metric calculation, balance-mode behavior, and distinct PTY versus cell-aligned terminal pixels. Added resize's synchronized-output reset and configuration-driven terminal mutations; distinguished persistent parsing state from optional replay-suffix tracking, which Termio does not enable.",
+    "diagrams": [
+      {
+        "id": "data-core",
+        "ascii": "Ghostty Surface core -- observable results and their inputs\n|\n|-- [F] Presented terminal frame\n|   `-- Compute: Renderer.updateFrame/rebuildCells/drawFrameLocked\n|       |   (src/renderer/generic.zig:1371,1641-1708,1740,2630)\n|       |-- GPU cells: text, cursor, selection and highlights\n|       |   `-- Compute: rebuildCells + font_shaper.runIterator/shape + shaping cache\n|       |       |-- [R] Render-ready viewport snapshot\n|       |       |   `-- Compute: RenderState.beginUpdate under terminal lock;\n|       |       |       endUpdate denormalizes styles after unlocking (terminal/render.zig:941,1423)\n|       |       |       |-- [T] Terminal state <- terminal-state diagram (expanded there)\n|       |       |       |-- [S] Selection range stored on the active screen\n|       |       |       |   `-- Compute: Surface gestures/actions -> setSelection -> Screen.select\n|       |       |       |       |   (src/Surface.zig:2451-2475, mouseButtonCallback, cursorPosCallback)\n|       |       |       |       |-- Pointer gestures [external] or [U] selection action (reference)\n|       |       |       |       `-- [T] Contents/viewport/prior endpoints; [G] pixel mapping (references)\n|       |       |       `-- Prior [R] and dirty flags; updateFrame skips synchronized output\n|       |       |-- [B] Font grid/glyph resources; [C] shaping options (references)\n|       |       `-- Visual annotations and cursor appearance\n|       |           `-- Compute: updateHighlightsFlattened, linkCells, renderCellMap, cursorStyle\n|       |               |-- [X] Search matches, selected match, count and viewport highlights\n|       |               |   `-- Compute: search.Thread.changeNeedle/feedLocked/select/notify;\n|       |               |       Surface.searchCallback_ copies highlights and sends UI counters\n|       |               |       (src/terminal/search/Thread.zig:243-335; Surface.zig:1496-1595)\n|       |               |       |-- Needle and match-navigation request [external]\n|       |               |       |-- [T] Active screen/scrollback; renderer-set search dirty flag (reference)\n|       |               |       `-- Prior scan, selection and notification caches from earlier feeds\n|       |               |-- [R] Text, links, cursor; [C] link patterns (references)\n|       |               |-- Mouse position/modifiers and focus [external]\n|       |               `-- IME preedit and blink visibility\n|       |                   `-- Compute: Surface.preeditCallback and renderer timing\n|       |                       `-- Runtime preedit/focus events and clock ticks [external]\n|       |-- Image textures, background and shader effects\n|       |   `-- Compute: kittyUpdate, background preparation and shader uniforms\n|       |       |   (src/renderer/generic.zig:1460-1527, updateBgImageBuffer,\n|       |       |    updateCustomShaderUniformsFromState/updateCustomShaderUniformsForFrame)\n|       |       |-- [T] Kitty images/placements; updateFrame advances animations using clock (reference)\n|       |       |-- [R] Resolved terminal colors; [C] background/shader options (references)\n|       |       `-- Background/shader files and animation time [external]\n|       |-- [G] Screen/cell geometry and padding (reference)\n|       `-- Graphics target, drawable size and display realization [external]\n|\n|-- Exported text and clipboard representations\n|   `-- Compute: selectionString/dumpTextLocked or copySelectionToClipboards/ScreenFormatter\n|       |   (src/Surface.zig:2042,2167,2325-2395)\n|       |-- [T] Cells, wrapping, styles and colors (reference)\n|       |-- [S] Selection (reference), or requested screen region [external]\n|       `-- Formatting policy: raw selection/dump uses trim=false;\n|           clipboard formatting uses [C] trimming; plain text uses codepoint mapping;\n|           requested plain/VT/HTML/mixed format comes from the action\n|\n|-- [H] Host-facing requests, not ownership of native windows/tabs\n|   `-- Compute: Surface.handleMessage/performBindingAction -> runtime actions/clipboard APIs\n|       |   (src/Surface.zig:1017-1185,4941,6612)\n|       |-- Title/PWD/colors/pointer/progress payloads\n|       |   `-- Compute: StreamHandler protocol handlers -> Surface mailbox\n|       |       `-- [D] Decoded requests; [T] retained context; [C] static-title/policy (references)\n|       |-- Navigation, links and window/tab/split requests\n|       |   `-- Compute: performBindingAction/processLinks/openUrl/mouseRefreshLinks\n|       |       `-- [U] Action or pointer activation [external]; [T]/[G]/[C] link context (references)\n|       |-- Clipboard writes and permission prompts\n|       |   `-- Compute: copySelectionToClipboards/clipboardWrite/Kitty clipboard handlers\n|       |       |-- Exported representations above, or [D] application payload (reference)\n|       |       `-- [C] Access/limits; runtime capabilities and user authorization [external]\n|       |-- Scrollbar and search UI values\n|       |   `-- Compute: PageList.scrollbar -> renderer draw mailbox -> Surface.updateScrollbar;\n|       |       search callbacks -> Surface UI actions\n|       |       `-- [T] History/viewport and [X] match count/selected index (references)\n|       `-- Notification/bell eligibility\n|           `-- Compute: policy checks and timestamp/content-based rate limiting\n|               `-- [D] Payload, [C] policy; clock and prior notification/bell state (references/external)\n|\n`-- [W] Child-bound bytes and session decisions <- child-io diagram (expanded there)\n",
+        "position": {
+          "column": 0,
+          "row": 0
+        }
+      },
+      {
+        "id": "terminal-state",
+        "ascii": "[T] Terminal state -- screens, history, cursor, modes, colors, links and images\n`-- Compute: apply output, resize, config updates and local edits to retained state\n    (src/termio/Termio.zig:254-309,466-565,705-761; stream_handler.zig:188-290)\n    |-- Previous [T], or initial terminal state\n    |   `-- Compute: Terminal.init + Termio.init default palette and pixel extents\n    |       |-- [G] Initial grid/cell pixels <- terminal-geometry (reference)\n    |       `-- [C] Effective per-surface/subsystem configuration\n    |           `-- Compute: Surface.updateConfig applies conditional state;\n    |               Surface/termio/renderer DerivedConfig.init derives owned settings\n    |               (src/Surface.zig:1804-1834,4871-4890)\n    |               |-- Parsed config/reloads [external]\n    |               `-- Retained conditional state\n    |                   `-- Compute: colorSchemeCallback updates theme and requests refresh\n    |                       `-- Runtime color-scheme changes [external] and prior state\n    |-- [D] Decoded terminal actions and protocol requests\n    |   `-- Compute: persistent terminal.Stream(StreamHandler).nextSlice/next;\n    |       StreamHandler.vtFallible/vtPrintAscii applies actions while terminal is locked\n    |       (src/terminal/stream.zig:601-662,733,1371; termio/stream_handler.zig:19-99)\n    |       |-- Child output bytes [external: PTY/backend stream; endpoint in L]\n    |       `-- Previous parser/UTF-8/OSC state and handler DCS/APC state\n    |           `-- Earlier chunks; read boundaries do not reset parsing state\n    |               (optional replay-suffix tracking is not enabled by Termio.init)\n    |-- Resized/reflowed screen data\n    |   `-- Compute: Termio.resize locks across backend.resize and Terminal.resize\n    |       (src/termio/Termio.zig:524-565; terminal/Terminal.zig:4912-4995)\n    |       |-- Existing [T] screens, wraparound and shell-redraw/scrollback-pull flags\n    |       |   -> Primary reflows iff wraparound; alternate screen never reflows\n    |       `-- [G] Geometry: grid, cell pixels and padded-screen extents\n    |           `-- Expanded in terminal-geometry; [B] font metrics expanded in font-grid\n    |       Resize also updates cell-aligned pixels and clears synchronized output,\n    |       even if grid is unchanged; failures can roll those two changes back.\n    |-- Updated terminal defaults and image limits\n    |   `-- Compute: Termio.changeConfig under terminal lock (Termio.zig:466-520)\n    |       `-- [C] Reloaded palette/default colors and image storage limit (reference);\n    |           loading limits use the runtime temporary directory\n    `-- Local screen/viewport/selection/image-state mutations\n        `-- Compute: Surface actions/scrollCallback, Termio.scrollViewport,\n            search navigation, exit-message edits and renderer updateFrame\n            |-- [U] Clear/scroll actions; wheel/scrollbar gestures [external/reference]\n            |-- [S]/[X] Selection/search navigation from data-core (references)\n            |-- [L] Exit notice fallback from child-io (reference)\n            `-- [C] Scroll-on-output policy, prior bottom pin and animation clock\n                -> updateFrame may scroll viewport and advance Kitty animations (generic.zig:1420-1480)\n",
+        "position": {
+          "column": 125,
+          "row": 0
+        }
+      },
+      {
+        "id": "child-io",
+        "ascii": "[W] Child-bound bytes and session decisions\n|-- Bytes queued to the PTY/backend\n|   `-- Compute: Surface.queueIo or StreamHandler/Termio messages -> Termio.queueWrite\n|       -> Exec.queueWrite -> async write stream (ttyWrite is the completion callback)\n|       (src/Surface.zig:899-921; termio/Termio.zig:456; termio/Exec.zig:403-490)\n|       |-- Keyboard or explicit text/CSI/ESC binding payload\n|       |   `-- Compute: Surface.encodeKey/input.key_encode.encode or performBindingAction\n|       |       |   (src/Surface.zig:2792-3060,3326-3423,4941-5020)\n|       |       |-- [U] Resolved action and input disposition\n|       |       |   `-- Compute: keyCallback remaps modifiers; maybeHandleBinding matches\n|       |       |       sequences/tables/root bindings, consumes actions or allows encoding\n|       |       |       |-- Runtime key event or explicit action [external]\n|       |       |       |-- [C] Remaps/bindings (reference)\n|       |       |       `-- Prior sequence/table stack/handled-press state from earlier actions\n|       |       `-- Encoding options = Options.fromTerminal([T]); macOS Option-as-Alt\n|       |           uses [C] override or runtime keyboard-layout detection (references/external)\n|       |-- Paste/text bytes or Kitty clipboard paste event\n|       |   `-- Compute: completeClipboardPaste validates safety then input.paste.encode;\n|       |       mode-5522 completeClipboardPasteEvent can report MIME availability, not contents\n|       |       (src/Surface.zig:6264-6388)\n|       |       |-- Clipboard/text bytes, MIME list and unsafe-paste confirmation [external]\n|       |       |-- [T] Bracketed-paste/protocol modes; retained Kitty grants (reference)\n|       |       `-- [C] Paste protection and bracketed-paste trust policy (reference)\n|       |-- Mouse/focus/visibility/size/color-scheme reports\n|       |   `-- Compute: Surface.mouseReport and Termio reporting methods\n|       |       |   (src/Surface.zig:3813-3877; termio/Termio.zig:567,682,778,802)\n|       |       |-- Runtime events [external]; [T] modes, [G] geometry, [C] policy (references)\n|       |       `-- Previous button/report state from earlier events for deduplication\n|       |-- Protocol response payloads\n|       |   `-- Compute: StreamHandler DSR/DA/color/size handlers and Surface clipboard/title replies\n|       |       |-- [D] Query kind/parameters (reference to terminal-state)\n|       |       |-- [T] Requested cursor/mode/color data; [G] dimensions; [C] permissions/formats (refs)\n|       |       `-- Runtime title/clipboard contents and access decision [external, when requested]\n|       |-- Startup input\n|       |   `-- Compute: ThreadEnterState.prepareInput retains literals or opens input files;\n|       |       startup handling sends their contents (src/termio/Termio.zig:117-154,374-424)\n|       |       `-- [C] Configured literal/path entries; file contents [external]\n|       `-- [L] Writable session endpoint and write gates\n|           `-- Compute: Exec.Subprocess.init/start + Pty.open; Exec.queueWrite drops writes after exit\n|               |   (src/termio/Exec.zig:624-887,897-955,403-415)\n|               |-- Spawn command, cwd and environment\n|               |   `-- Compute: config/environment assembly and shell_integration.setup\n|               |       `-- [C] Command/env policy, inherited env, shell/resource discovery [ref/external]\n|               |-- [G] Initial grid and Size.terminal() pixels (reference)\n|               |-- OS PTY allocation/process-spawn result [external]\n|               `-- Read-only state from user actions\n|                   -> Surface.queueIo drops all write_small/write_stable/write_alloc messages\n|                      routed through it, including some replies; direct Termio writes bypass it\n|\n`-- Exit status, hold/close and confirmation decisions\n    `-- Compute: Exec.processExitCommon -> Surface.childExited/needsConfirmQuit/keyCallback/close\n        |   (src/termio/Exec.zig:274-294; Surface.zig:995-1013,1297-1435)\n        |-- Exit code and elapsed runtime\n        |   `-- Compute: wait result + max(0, now - recorded process-start time)\n        |       `-- OS child-exit result and clock [external]; [L] recorded startup time (reference)\n        |-- Native exit notice or terminal fallback; hold or immediate close\n        |   `-- Compute: childExited tests abnormal runtime/code, attempts native notice,\n        |       otherwise edits [T]; ordinary exit closes unless wait-after-command\n        |       |-- Exit code/runtime above; [C] threshold and wait-after-command (references)\n        |       `-- Platform (Darwin ignores success code in abnormal test) and native notice support\n        `-- Confirmation required?\n            `-- Compute: readonly -> true; else exited -> false; else confirm-close-surface:\n                always -> true, false -> false, true -> ![T].cursorIsAtPrompt()\n                |-- Read-only/exited state and [C] policy (references)\n                |-- [T] Shell-integration prompt state (reference)\n                `-- [U] Close/key action and user confirmation response [reference/external]\n",
+        "position": {
+          "column": 125,
+          "row": 60
+        }
+      },
+      {
+        "id": "terminal-geometry",
+        "ascii": "[G] Geometry consumed by resize, rendering, input mapping and size reports\n`-- Compute: Size.grid/terminal and Terminal.resize derive cell/pixel extents\n    (src/renderer/size.zig:28-77,197-203,238-261; terminal/Terminal.zig:4912-4954)\n    |-- Grid columns/rows\n    |   `-- Compute: max(1, floor(available pixels / cell pixels)) on each axis\n    |       |-- Cell pixels copied from [B] SharedGrid.metrics by Surface.setCellSize\n    |       |   `-- Expanded in font-grid (reference)\n    |       `-- Available pixels\n    |           `-- Compute: saturating_sub(screen pixels, opposing padding sum)\n    |               |-- Screen pixel dimensions retained in renderer.Size\n    |               |   `-- Compute: Surface.init/sizeCallback/resize copies runtime dimensions\n    |               |       `-- Runtime surface size [external] (Surface.zig:510-563,2599-2650)\n    |               `-- Effective padding retained in renderer.Size\n    |                   `-- Compute: explicit padding or Size.balancePadding(explicit, mode)\n    |                       |-- Explicit padding pixels\n    |                       |   `-- Compute: floor(configured points * axis DPI / 72)\n    |                       |       (src/Surface.zig:447-466,2652-2665,3765-3800)\n    |                       |       |-- [C] Per-side padding points (reference)\n    |                       |       `-- Axis DPI = runtime content scale * platform default DPI\n    |                       |           (72 on macOS, 96 otherwise; font/face.zig:29)\n    |                       |-- [C] Balance mode (reference): false keeps explicit padding\n    |                       `-- Balanced whitespace, for true/equal\n    |                           `-- Compute: provisional grid from explicit padding;\n    |                               each side = max(0, floor((screen - grid * cell) / 2))\n    |                               true additionally caps top at (explicit left + right\n    |                               + cell width) / 2, shifting excess to bottom;\n    |                               equal keeps the symmetric split (size.zig:49-77,279-304)\n    |                               `-- Explicit padding, screen and [B] cell pixels (references above)\n    |-- PTY pixels = Size.terminal() = available pixels above (reference)\n    |   -> May include a fractional-cell remainder; not necessarily grid * cell\n    `-- Terminal.width_px/height_px = columns/rows * cell width/height (references)\n        -> Terminal.resize saturates multiplication to u32 max; Termio.init sets initial pixels\n",
+        "position": {
+          "column": 245,
+          "row": 0
+        }
+      },
+      {
+        "id": "font-grid",
+        "ascii": "[B] Shared font grid, glyph resources and cell metrics\n`-- Compute: SharedGridSet.ref(config, DesiredSize) reuses or creates a reference-counted grid\n    (src/font/SharedGridSet.zig:96-154; Surface.zig:2536-2574)\n    |-- Cache identity and any existing matching grid\n    |   `-- Compute: Key.init clones font configuration, builds descriptors/modifiers,\n    |       and includes DesiredSize (SharedGridSet.zig:602-715)\n    |       |-- [C] Font families/styles/variations, codepoint map and metric adjustments\n    |       `-- DesiredSize: point size plus integer xdpi/ydpi\n    |           `-- Compute: configured/prior point size + Surface font-size actions;\n    |               DPI = round(runtime content scale * platform default DPI)\n    |               (src/Surface.zig:510-533,3765-3799,5250-5300)\n    |               |-- [C] Configured size; retained size and manual-adjustment state\n    |               |-- [U] Increase/decrease/set/reset font-size action (reference)\n    |               |   -> Increase/decrease clamp delta to 0..255; increase caps at 255,\n    |               |      decrease floors at 1; set clamps 1..255; reset uses configured size\n    |               `-- Runtime content scale [external]; default DPI 72 macOS / 96 otherwise\n    `-- Newly initialized resources, on cache miss only\n        `-- Compute: SharedGrid.init(resolver) creates atlases/caches and reloads metrics\n            (src/font/SharedGrid.zig:83-137)\n            |-- Resolver collection and style/discovery/codepoint-map settings\n            |   `-- Compute: SharedGridSet.collection loads/defer-loads configured faces,\n            |       completes synthetic styles and adds built-in fallback faces\n            |       (src/font/SharedGridSet.zig:157-309)\n            |       |-- Font configuration and DesiredSize above (references)\n            |       `-- Available discovered font faces [external] and embedded fallback fonts\n            `-- Grid metrics, also used to configure sprite glyphs\n                `-- Compute: Collection.updateMetrics -> Metrics.calc(primary face metrics)\n                    -> Metrics.apply(metric_modifiers) (font/Collection.zig:674-683)\n                    |-- Primary collection face at index 0, loaded with DesiredSize (reference)\n                    `-- [C] Metric modifiers from the cache key (reference)\n    Consumers (references): Surface.setCellSize copies cell_width/cell_height into [G];\n    renderer receives the shared grid via mailbox and releases its old grid reference.\n",
+        "position": {
+          "column": 245,
+          "row": 38
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": {
+          "diagram": "data-core",
+          "line": 11
+        },
+        "target": {
+          "diagram": "terminal-state",
+          "line": 1
+        },
+        "label": "Expands terminal state consumed by the snapshot"
+      },
+      {
+        "source": {
+          "diagram": "data-core",
+          "line": 73
+        },
+        "target": {
+          "diagram": "child-io",
+          "line": 1
+        },
+        "label": "Expands child-bound bytes and session decisions"
+      },
+      {
+        "source": {
+          "diagram": "data-core",
+          "line": 18
+        },
+        "target": {
+          "diagram": "font-grid",
+          "line": 1
+        },
+        "label": "Shared font grid supplies shaping and glyph resources"
+      },
+      {
+        "source": {
+          "diagram": "data-core",
+          "line": 40
+        },
+        "target": {
+          "diagram": "terminal-geometry",
+          "line": 1
+        },
+        "label": "Shared geometry supplies frame layout"
+      },
+      {
+        "source": {
+          "diagram": "data-core",
+          "line": 57
+        },
+        "target": {
+          "diagram": "terminal-state",
+          "line": 15
+        },
+        "label": "Decoded requests supply host-facing payloads"
+      },
+      {
+        "source": {
+          "diagram": "data-core",
+          "line": 15
+        },
+        "target": {
+          "diagram": "child-io",
+          "line": 9
+        },
+        "label": "Binding resolution supplies selection actions"
+      },
+      {
+        "source": {
+          "diagram": "terminal-state",
+          "line": 40
+        },
+        "target": {
+          "diagram": "data-core",
+          "line": 12
+        },
+        "label": "Selection gestures update active-screen selection"
+      },
+      {
+        "source": {
+          "diagram": "terminal-state",
+          "line": 40
+        },
+        "target": {
+          "diagram": "data-core",
+          "line": 21
+        },
+        "label": "Search navigation can move the viewport"
+      },
+      {
+        "source": {
+          "diagram": "terminal-state",
+          "line": 39
+        },
+        "target": {
+          "diagram": "child-io",
+          "line": 9
+        },
+        "label": "Resolved local actions mutate terminal state"
+      },
+      {
+        "source": {
+          "diagram": "terminal-state",
+          "line": 41
+        },
+        "target": {
+          "diagram": "child-io",
+          "line": 56
+        },
+        "label": "Exit fallback writes a terminal message"
+      },
+      {
+        "source": {
+          "diagram": "terminal-state",
+          "line": 19
+        },
+        "target": {
+          "diagram": "child-io",
+          "line": 38
+        },
+        "label": "Backend stream belongs to the spawned session"
+      },
+      {
+        "source": {
+          "diagram": "child-io",
+          "line": 31
+        },
+        "target": {
+          "diagram": "terminal-state",
+          "line": 15
+        },
+        "label": "Decoded protocol queries determine replies"
+      },
+      {
+        "source": {
+          "diagram": "child-io",
+          "line": 32
+        },
+        "target": {
+          "diagram": "terminal-state",
+          "line": 1
+        },
+        "label": "Retained terminal state supplies response data"
+      },
+      {
+        "source": {
+          "diagram": "child-io",
+          "line": 44
+        },
+        "target": {
+          "diagram": "terminal-geometry",
+          "line": 1
+        },
+        "label": "Geometry initializes the PTY and supplies size reports"
+      },
+      {
+        "source": {
+          "diagram": "child-io",
+          "line": 13
+        },
+        "target": {
+          "diagram": "terminal-state",
+          "line": 7
+        },
+        "label": "Shared effective configuration supplies bindings and policies"
+      },
+      {
+        "source": {
+          "diagram": "terminal-state",
+          "line": 28
+        },
+        "target": {
+          "diagram": "terminal-geometry",
+          "line": 1
+        },
+        "label": "Expands geometry consumed by locked resize"
+      },
+      {
+        "source": {
+          "diagram": "terminal-state",
+          "line": 6
+        },
+        "target": {
+          "diagram": "terminal-geometry",
+          "line": 1
+        },
+        "label": "Initialization uses the same geometry derivation"
+      },
+      {
+        "source": {
+          "diagram": "terminal-state",
+          "line": 29
+        },
+        "target": {
+          "diagram": "font-grid",
+          "line": 1
+        },
+        "label": "Expands the font resources underlying cell geometry"
+      },
+      {
+        "source": {
+          "diagram": "terminal-geometry",
+          "line": 6
+        },
+        "target": {
+          "diagram": "font-grid",
+          "line": 26
+        },
+        "label": "Grid dimensions depend on primary-face-derived cell metrics"
+      },
+      {
+        "source": {
+          "diagram": "terminal-geometry",
+          "line": 18
+        },
+        "target": {
+          "diagram": "terminal-state",
+          "line": 7
+        },
+        "label": "Effective configuration supplies per-side padding"
+      },
+      {
+        "source": {
+          "diagram": "terminal-geometry",
+          "line": 21
+        },
+        "target": {
+          "diagram": "terminal-state",
+          "line": 7
+        },
+        "label": "Effective configuration selects padding balance mode"
+      },
+      {
+        "source": {
+          "diagram": "font-grid",
+          "line": 7
+        },
+        "target": {
+          "diagram": "terminal-state",
+          "line": 7
+        },
+        "label": "Effective font configuration determines shared-grid identity"
+      },
+      {
+        "source": {
+          "diagram": "font-grid",
+          "line": 13
+        },
+        "target": {
+          "diagram": "child-io",
+          "line": 9
+        },
+        "label": "Resolved font-size actions change DesiredSize"
+      },
+      {
+        "source": {
+          "diagram": "font-grid",
+          "line": 16
+        },
+        "target": {
+          "diagram": "terminal-geometry",
+          "line": 19
+        },
+        "label": "Shared runtime scale feeds rounded font DPI and unrounded padding DPI"
+      }
+    ]
+  },
+  "usage": {
+    "input": 34142,
+    "output": 11832,
+    "cacheRead": 197888,
+    "cacheWrite": 0,
+    "reasoning": 1432,
+    "totalTokens": 243862
+  },
+  "execution": {
+    "runtime": "pi-agent-context",
+    "sessionId": "01a1f992-ccf0-7f75-bf59-93c2d4aef7f2",
+    "contextHash": "8b5281debb36c57b46bdf91170dc0086629683a319c856c05c1518f9ed64374b",
+    "cacheKey": "eval-0632b613b788050aabe7e53bd56bd734002dd28037521d03757ba3f78e3cce31",
+    "modelContextHash": "a52316298014cb636df2a5388cab8aabd770bc4c07b4ed2bf168547c13c3a113",
+    "repositories": [
+      {
+        "repository": "repo-1",
+        "repositoryPath": "/home/john/softwarez/ghostty",
+        "commit": "ea8b12a8a9894b5259c441eadd8f6f0c65e215af",
+        "exclusions": [
+          "**/*-LICENSE",
+          "**/*.md",
+          "**/*.mdx",
+          "**/*.spec.*",
+          "**/*.test.*",
+          "**/AGENTS.md",
+          "**/CODEX-LICENSE",
+          "**/LICENSE*",
+          "**/Tests/**",
+          "**/__fixtures__/**",
+          "**/__tests__/**",
+          "**/benchmark/**",
+          "**/benchmarks/**",
+          "**/build/**",
+          "**/dist/**",
+          "**/docs/**",
+          "**/examples/**",
+          "**/fixtures/**",
+          "**/node_modules/**",
+          "**/scripts/**",
+          "**/test/**",
+          "**/tests/**",
+          ".agents/**",
+          ".github/**",
+          ".husky/**",
+          ".pi/**",
+          "deps/**",
+          "example/**",
+          "flake.lock",
+          "flatpak/**",
+          "images/**",
+          "nix/**",
+          "package-lock.json",
+          "po/**",
+          "scripts/**",
+          "snap/**",
+          "vendor/**"
+        ],
+        "checkout": "/tmp/agent-repository-L2lyam/checkout",
+        "inspectionSource": "session-transcript"
+      }
+    ]
+  }
+}

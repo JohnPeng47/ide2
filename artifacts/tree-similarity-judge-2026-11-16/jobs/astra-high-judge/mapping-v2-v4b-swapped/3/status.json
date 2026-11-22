@@ -1,0 +1,7 @@
+{
+  "status": "failed",
+  "phase": "generation",
+  "key": "astra-high-judge/mapping-v2-v4b-swapped/3",
+  "runId": "2177b95e-0de6-48d5-9777-36f3c4a86560",
+  "error": "Command failed: git --no-replace-objects -C /tmp/agent-repository-zUbmya/checkout -c core.hooksPath=/dev/null -c core.autocrlf=false checkout --quiet --detach 8ca143700ca4d2c870f1101b8cd4601ab68abd41\nerror: unable to write file investigations/silksong/docs/recon-001/raw/native/D3D12__D3D12Core.dll.objdump.txt\nerror: unable to write file investigations/silksong/docs/recon-001/raw/native/MonoBleedingEdge__EmbedRuntime__MonoPosixHelper.dll.objdump.txt\nerror: unable to write file investigations/silksong/docs/recon-001/raw/native/MonoBleedingEdge__EmbedRuntime__mono-2.0-bdwgc.dll.objdump.txt\nerror: unable to write file investigations/silksong/docs/recon-001/raw/native/UnityCrashHandler64.exe.objdump.txt\nerror: unable to write file investigations/silksong/docs/recon-001/raw/native/UnityPlayer.dll.objdump.txt\nerror: unable to write file investigations/silksong/docs/recon-001/raw/pe-metadata.json\nerror: unable to write file package-lock.json\nerror: unable to write file package.json\nfatal: cannot create directory at 'packages': No space left on device\n"
+}

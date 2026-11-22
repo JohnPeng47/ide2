@@ -1,0 +1,225 @@
+@ g src/renderer/generic.zig
+@ t src/renderer/Thread.zig
+@ st src/renderer/State.zig
+@ r src/renderer.zig
+@ s src/Surface.zig
+@ a src/App.zig
+@ o src/renderer/OpenGL.zig
+@ m src/renderer/Metal.zig
+@ tf src/terminal/render.zig
+@ ti src/termio/Termio.zig
+@ sh src/termio/stream_handler.zig
+@ im src/renderer/image.zig
+@ sg src/font/SharedGrid.zig
+@ fs src/font/SharedGridSet.zig
+@ gtk src/apprt/gtk/class/surface.zig
+@ ga src/apprt/gtk/class/application.zig
+@ widget src/apprt/gtk/class/render_surface.zig
+@ em src/apprt/embedded.zig
+@ dl src/renderer/DisplayLink.zig
+@ ml src/renderer/metal/IOSurfaceLayer.zig
+@ mf src/renderer/metal/Frame.zig
+@ of src/renderer/opengl/Frame.zig
+@ kt src/terminal/kitty/graphics_storage.zig
+@ ki src/terminal/kitty/graphics_image.zig
+@ pl src/terminal/PageList.zig
+@ ex src/termio/Exec.zig
+n3 g 274-281:D 841:D 847:U 1381-1392:I 1484-1487,1564-1567:U
+n3 src/terminal/main.zig 51:D
+n3 tf 289-400:D 885-899,920-1484,2666-2900:DI
+n4 g 172-228,250-275:D 302-484:DI 712-875:DIU 914-943,1244-1256:DIU 1645-1706:U 1771-1783,1811-1824,1868-1905:IU 2046-2067,2072-2168:DIU
+n4 src/renderer/cell.zig 42-154,168-216:DI
+n4 im 18-103,572-614,698-750,778-811:DI
+n4 src/font/main.zig 21-25:D
+n4 src/font/shape.zig 19-36:DI
+n5 a 53-55:D 121-131,136-146:I
+n5 s 528-534,580-588,627-631,870-871,2543-2572:IU
+n5 src/renderer/Options.zig 14-15:D
+n5 src/renderer/message.zig 29-43:D
+n5 t 290,397-400:IU
+n5 g 204-207:D 731-741,818-821,1317-1358:I 1889-1905,3477-3537,3677-3691:IU
+n5 fs 88-154,411-431:DI
+n5 sg 41-64,83-128,377-464:DI
+n5 src/font/Atlas.zig 27-51:D 253-275,314-364:DI
+n6 a 57-58:D 126-133,136-150:I
+n6 r 39-45:DI
+n6 s 564-589:IU
+n6 src/renderer/Options.zig 7-9:D
+n6 g 227-228:D 712-721,823-829,841,870-874:IU
+n6 m 44-48:D 56-71,131-146,179-197,219-234,245-256:IU
+n6 o 47-96,198-214:IU
+n6 src/renderer/metal/Device.zig 18-66:DI
+n6 src/renderer/opengl/Device.zig 18-74,102-105:DI
+n6 em 1253-1257:DI
+n6 src/apprt/gtk/Surface.zig 107-109:DIU
+n6 gtk 1782-1805:DIU
+n7 r 15-19:D 35-45:DI
+n7 src/renderer/backend.zig 4-17:DI
+n7 g 51-61,90-109:D
+n7 m 15-35,56-64,78-89:DU
+n7 o 13-30,52-74:DU
+n9 g 1371-1375:D 1408-1427,1484-1500,1561-1567:IU
+n9 s 592-604,631-637:I
+n9 st 13-20:D 36-80:DI
+n9 tf 941-1040,1136-1283,1399-1414:DI
+n9 pl 7353-7383:DI
+n10 g 1371-1375:D 155-159,286-296:D 1408-1409,1420-1477:IU
+n10 src/terminal/Terminal.zig 3521-3530:DI
+n10 src/terminal/Screen.zig 1718-1737:DI
+n10 pl 3347-3366,7388-7397:DI
+n10 kt 1148-1155,1227-1365:DI
+n11 g 1371-1375,1399-1409:D 1420-1421,1479-1562:IU
+n11 st 26-34,107-140:DI
+n11 s 1609-1629,2669-2738:I
+n11 tf 920-1414,2666-2900:DI 749-826,2114-2216:DI
+n11 im 253-390,397-486,669-695:DI
+n11 ki 869-879:DI
+n12 g 1371-1375:D 1408-1409,1420-1421,1479-1487,1555-1567,1645-1659:IU
+n12 st 74-80:DI
+n12 tf 920-940,1416-1484,1544-1567:DI
+n13 g 1371-1375:D 1484-1487,1508-1526,1564-1705,1868-1905,1950-2009:IU 2630-3691:DIU
+n13 tf 289-325:D 1029-1069,1173-1198,1290-1414,1423-1484,1576-1656,749-826:I
+n13 im 76-191,253-486,669-695,778-811:DIU
+n13 ki 869-879:DI
+n13 src/renderer/cell.zig 42-154,168-216:DI
+n13 src/renderer/cursor.zig 7-68:DI
+n13 src/font/main.zig 21-28,43-51:D
+n13 src/font/shape.zig 19-58:DI
+n13 src/font/shaper/run.zig 42-383:DI
+n13 src/font/shaper/Cache.zig 47-87:DI
+n13 src/font/shaper/harfbuzz.zig 114-260:DI
+n13 src/font/shaper/coretext.zig 271-544:DI
+n13 src/font/shaper/noop.zig 69-118:DI
+n13 src/font/shaper/web_canvas.zig 63-203:DI
+n13 sg 41-64:D 224-250,377-464:DI
+n13 src/font/CodepointResolver.zig 327-349:DI
+n13 src/font/face.zig 10-24:DI
+n13 src/font/face/freetype.zig 426-437,562-584,758-778:I
+n13 src/font/face/coretext.zig 289-305,537-567:I
+n13 src/font/face/web_canvas.zig 187-238:DI
+n13 src/font/sprite/Face.zig 174-260:DI
+n13 src/font/sprite/canvas.zig 125-162:DI
+n13 src/font/Atlas.zig 27-51,253-275,314-364:DI
+n13 m 326-375:DI
+n13 o 386-436:DI
+n14 g 114-131:D 876-901,1016-1072,1712-2067:DIU
+n14 m 56-137,162-177,179-243,378-387:DIU
+n14 mf 29-131:DIU
+n14 ml 50-123:DIU
+n14 src/renderer/metal/Target.zig 44-108:DI
+n14 src/renderer/metal/RenderPass.zig 58-229:DI
+n14 src/renderer/metal/shaders.zig 13-46,120-171:DI
+n14 o 198-250,252-324,439-449:DIU
+n14 of 25-90:DIU
+n14 src/renderer/opengl/RenderPass.zig 51-144:DI
+n14 src/renderer/opengl/Target.zig 148-242:DIU
+n14 src/renderer/opengl/shaders.zig 10-43,103-141:DI
+n14 src/apprt/surface.zig 186-207:IU
+n14 a 161-167,273-274,293,532-550,596-613:IU
+n14 s 961-969,1017,1154,1779-1787:IU
+n14 t 290,402:IU
+n14 src/apprt/gtk/App.zig 61-68:IU
+n14 ga 569-576,692-698,772,2877-2882:IU
+n14 gtk 835-838,3627-3629:IU
+n14 widget 149-205,301-436,446-454:DIU
+n14 im 76-191,778-811:I
+n8 s 92-102,592-604,631-637:DIU
+n8 t 537-586:IU
+n8 g 1370-1710:DIU 2559-2628:DI
+n16 t 27-65,69-101:D 116-173,220-257,289-444,460-688,733-747:DIU
+n16 g 41-47:D 946-956,1074-1086,1136-1190,1273-1312,1708-1710,1724-1731:DIU
+n16 dl 93-111,148-174,190-256:DIU
+n16 src/renderer/message.zig 9-74:D
+n16 s 2574-2579:IU
+n17 s 2577-2579,2600-2649:DIU
+n17 ti 524,561-564:IU
+n17 src/renderer/message.zig 45-46:D
+n17 t 290,301-303,404,474-494:IU
+n17 g 471-483,1740-1764,1785-1787,1843-1866,2248-2304:DIU
+n17 src/renderer/size.zig 20-44:DI
+n17 m 199-234:DIU
+n17 o 216-236,264-271:DIU
+n17 gtk 3497-3551,3975:IU
+n17 widget 125-147,217-226:DIU
+n17 src/apprt/gtk/ui/1.0/surface.blp 23-33:I
+n17 em 1026-1043,1994-1998:IU
+n18 s 592-604,631-637,711-721:IU
+n18 sh 34-42,114-119:DIU
+n18 ti 43-53,314-322,335-341,702-762:DIU
+n18 t 37-40:D 231-237,474-494,537,567-586:IU
+n18 g 1371-1375:D 1408-1409,1420-1427,1479-1506,1555-1567:IU
+n18 st 13-20,36-105:DI
+n18 ex 1493-1518,1806-1811:U
+n19 s 922-929:DIU
+n19 em 1001-1006,1988-1992:IU
+n19 include/ghostty.h 1214:D
+n19 g 114-116,1712-1731,1733-1743,1789-1807,1907-1909:DIU
+n19 m 97-137,148-160,236-243:IU
+n19 mf 67-91,105-131:DIU
+n19 ml 84-89,125-166:IU
+n19 o 198-205:I
+n19 of 51-90:I
+n19 widget 149-205:I
+n20 s 829-855:DIU
+n20 t 175-189,220-234,253-257,722-731:DIU
+n20 g 332-339,460-469,841-874,911-974,1074-1086,1244-1256:DIU
+n20 dl 113-146,205-218:DIU
+n20 o 92-96,208-214:I
+n20 m 139-160:I
+n20 ml 42-48:I
+n20 im 60-68:I
+n15 s 92-102,597-605,631-639,753-759:DIU
+n15 t 1-3,27-111:D 113-257:DIU
+n15 r 22-23:D
+n2 r 15-19,35-45:DI
+n2 g 51-63,90-170:DI 486-710,876-909,976-1014,1089-1127,1195-1240,1360-1368,2170-2246,2306-2341:DIU
+n2 s 92-96,564-590,631-636:IU
+n2 src/renderer/Options.zig 7-28:D
+n1 r 1-13:D
+n1 s 92-102,528-605,627-637,711-721,751-759,829-855,870-875,922-929:DIU
+n1 a 53-58,136-150:I
+n1 src/apprt.zig 39-53:DI
+n2 s 44-45:DU
+n2 g 51-109:DI 2340-2430,2435-2458,2532-2555:I
+n4 g 486-583,2171-2191:DIU
+n4 src/renderer/metal/Texture.zig 40-117:DI
+n4 src/renderer/opengl/Texture.zig 42-104:DI
+n4 src/renderer/metal/buffer.zig 36-67:DI
+n4 src/renderer/opengl/buffer.zig 32-68:DI
+n4 src/renderer/metal/Target.zig 44-108:DI
+n4 src/renderer/opengl/Target.zig 55-146:DI
+n6 src/renderer/metal/Device.zig 106-136:DI
+n6 m 326-375:IU
+n6 o 168-196:I
+n8 src/renderer/link.zig 71-144:DI
+n8 g 2340-2430:DI
+n9 tf 2623-2634:DI
+n11 tf 1741-1814,2218-2620:DI
+n11 g 1569-1579:U
+n13 tf 2114-2620,2666-2900:DI
+n13 src/font/Atlas.zig 132-177,280-306:DI
+n13 src/renderer/metal/Texture.zig 40-117:DI
+n13 src/renderer/opengl/Texture.zig 42-104:DI
+n14 ml 21-40:DI
+n14 src/renderer/opengl/Target.zig 55-146:DI
+n14 src/renderer/shaders/shaders.metal 191-217,224-233,240-444,451-505,556-761,767-852:DI
+n14 src/renderer/shaders/glsl/full_screen.v.glsl 3-24:DI
+n14 src/renderer/shaders/glsl/bg_color.f.glsl 4-13:DI
+n14 src/renderer/shaders/glsl/bg_image.v.glsl 3-145:DI
+n14 src/renderer/shaders/glsl/bg_image.f.glsl 5-63:DI
+n14 src/renderer/shaders/glsl/cell_bg.f.glsl 4-61:DI
+n14 src/renderer/shaders/glsl/cell_text.v.glsl 3-146:DI
+n14 src/renderer/shaders/glsl/cell_text.f.glsl 3-100:DI
+n14 src/renderer/shaders/glsl/image.v.glsl 3-47:DI
+n14 src/renderer/shaders/glsl/image.f.glsl 3-21:DI
+n14 g 2435-2458,2532-2555:DI
+n15 t 446-458,749-857:DI
+n17 src/renderer/size.zig 46-78,210-229,308-316:DI
+n17 s 2651-2658:DIU
+n17 src/termio/Thread.zig 326,389-406,427-451:IU
+n17 ti 524-564:IU
+n18 tf 941-947,1136-1164,1241-1282:DIU
+n19 ml 105-122:I
+n11 s 1642-1647,1712-1734,4678-4685,4709-4718,4723-4742,4775:IU
+n11 s 2574-2579:IU
+n14 src/apprt.zig 39-53:DI

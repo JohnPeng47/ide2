@@ -1,0 +1,76 @@
+Isolated Change Proposals
+|-- Capture -> freeze the evidence and canvas baselines (ChangeSessionService)
+|   |-- Resolve repositoryId + commits + head + optional comparisonBase
+|   |   `-- Capture Git hunks into the proposal's DiffTree
+|   |-- Load settled canvases from the representation catalog
+|   |   `-- Overlay captured live drafts; require canvasId if multiple workspaces exist
+|   |-- Each captured document
+|   |   |-- baseline + savedRevisionId + optional capturedVersion
+|   |   `-- proposed = cloned baseline; fork an independent controller history
+|   `-- Recapture from baselineChangeSessionId
+|       `-- Reuse original baselines and pinned hunks, not the prior proposal's edits
+|-- Create and edit -> isolated proposal (ChangeSessionService + DiagramChangeSession)
+|   |-- create(requestId) -> draft, version 0
+|   |   `-- Stable project/request identity + signature receipt -> replay or conflict
+|   |-- apply(documentVersion, operations) -> MappingDocumentController
+|   |   |-- Update proposed document, canvas state, node origins and history
+|   |   |-- Undo / redo / reset operate on this proposal's history
+|   |   `-- Refresh generated changes; return status to draft
+|   |-- createDocument -> new canvas with baseline = null
+|   |-- Annotate generated changes -> titles, reasons, dependencies and migrations
+|   |   `-- Every generated change must be annotated exactly once; targets stay fixed
+|   `-- Mutation boundary
+|       |-- Serialize per session; check versions; increment session version
+|       |-- Matching request receipt -> replay result; different signature -> conflict
+|       `-- Accepted or archived sessions reject new edits
+|-- DiffTree -> navigable evidence (diffTree.ts)
+|   |-- Stored tree revision + stable node identities + captured hunks
+|   |-- Node mappings -> hunk IDs and optional diagram destinations
+|   |   `-- Default tree groups captured hunks by commit
+|   |-- Replacement requires expectedRevisionId
+|   |   `-- Tree and complete mapping replacement are atomic; no label guessing
+|   `-- Validate identities, targets and repository/commit context
+|       `-- Read selected hunks with pagination and optional patches
+|-- Automated entry -> ready for review, without accepting
+|   |-- DiffSessionWorkflowService: capture -> analyze -> materialize -> validate
+|   |   |-- Requires pinned context and nonempty captured hunks
+|   |   |-- Analyze: read-only tools over frozen diagrams, hunks and pinned source
+|   |   |-- Materialize: create one proposal from that same capture
+|   |   |   `-- Scoped agent tools edit only this run's proposal
+|   |   |-- Complete: own proposal is ready, has changes and maps every captured hunk
+|   |   `-- Persist context, prompts, step results, conversation and metrics
+|   |       `-- Completed / failed / cancelled; orphaned running run -> interrupted
+|   `-- PushIntegrationService -> start the same workflow
+|       |-- Deduplicate by connectionId + eventId; changed event payload -> conflict
+|       |-- New generation requires enabled connection and --pi
+|       |-- Non-branch, deleted, unchanged or no net content change -> skipped
+|       `-- Changed branch -> resolve commits; head = after, comparisonBase = before
+|           `-- Store run/proposal IDs; refresh running generation from workflow status
+|-- Review gate -> ready -> accept (ChangeSessionService)
+|   |-- validateReady
+|   |   |-- Nonempty changes; valid DiffTree, repository ownership and migrations
+|   |   |-- Dependencies exist and are acyclic; connection anchors are valid
+|   |   `-- Added diagram has an incoming edge from a diagram present in baseline
+|   |-- accept(requestId, expectedVersion)
+|   |   |-- Require ready status and exact session version; validate again
+|   |   |-- Select only documents referenced by generated changes
+|   |   |-- Compare affected live documents and names against captured baselines
+|   |   |   `-- Drift -> VERSION_CONFLICT; create a new proposal
+|   |   `-- Call projectCatalogs.acceptCanvasChanges
+|   |       `-- Supply savedRevisionId as expectedRevisionId for published-baseline check
+|   |           `-- Publish affected proposed documents with exported controller histories
+|   `-- Durable catalog acceptance receipt -> finishAcceptance
+|       |-- Record accepted status, receipt and sessionVersion + 1
+|       |-- Same request/version -> replay; different acceptance request -> conflict
+|       `-- Interrupted session write -> catalog receipt remains authoritative
+|           `-- Lists project accepted status; get/accept repairs the full session record
+`-- Persist and inspect (ChangeSessionRecords)
+    |-- Per-session manifest -> summary + immutable document, receipt and DiffTree refs
+    |   `-- Documents split into baseline, proposed state and history checkpoints
+    |-- Serialized writes + optional expected manifest token -> detect conflicting writes
+    |   `-- Store changed records, retain unchanged references, then publish manifest
+    |-- Summary reads avoid document/history hydration
+    |-- Preview reads restore one baseline/proposed pair without history or receipts
+    |-- Full reads restore documents, histories, receipts and validated DiffTree
+    `-- Treemap review uses stored evidence and version-checked previews
+        `-- Mixed generations -> VERSION_CONFLICT; retry

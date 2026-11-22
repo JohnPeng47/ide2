@@ -1,0 +1,49 @@
+{
+  "attachRequestId": "7a9db85d-f1bc-484a-83fd-e584781a4d13",
+  "repositories": {
+    "pi": {
+      "contextRequestId": "95080401-a752-48a0-968f-41ef4d94eab2",
+      "attachRequestId": "a8b0374e-4fad-4af7-8013-e7c14c5ec79e",
+      "coverageAttachRequestId": "fdcb2a1d-8d09-40f1-8217-e62078721792",
+      "cases": [
+        {
+          "number": 1,
+          "runId": "3f123c60-c475-4fbc-958f-c66dbb757de2",
+          "sampleId": "6c3c72a7-0379-414d-ac76-f6197bde958f"
+        },
+        {
+          "number": 2,
+          "runId": "c5923f60-da9e-4740-ab82-74fad423bda1",
+          "sampleId": "724ad104-7c52-4848-a8ed-f14362c9ce73"
+        },
+        {
+          "number": 3,
+          "runId": "0fc465ae-961d-4c0a-a0c6-f60338bbe689",
+          "sampleId": "4cd79b45-a595-4605-a9be-3d18ef23cf6e"
+        }
+      ]
+    },
+    "opencode": {
+      "contextRequestId": "3d034491-1ea2-4157-acc5-98ead2c12d98",
+      "attachRequestId": "83dcaef3-356d-4f15-8b9b-29092de0369e",
+      "coverageAttachRequestId": "88368415-f329-4cbf-969e-f0856cf3e768",
+      "cases": [
+        {
+          "number": 1,
+          "runId": "450850af-6c9b-4950-a4d8-31f5724302e6",
+          "sampleId": "b9167bf8-112d-44e1-9e24-d256b6c26322"
+        },
+        {
+          "number": 2,
+          "runId": "c896fde7-00ef-4b9f-a62f-7cfc94310a5b",
+          "sampleId": "eeb1c152-6d8a-485e-b3ee-a0523b153844"
+        },
+        {
+          "number": 3,
+          "runId": "e5dfe7ec-d1a8-45b9-bf7c-04ea78edf8da",
+          "sampleId": "64edfc44-d923-4848-b288-f14d8fd4aeca"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "status": "finished",
+  "sample": 1,
+  "runId": "450850af-6c9b-4950-a4d8-31f5724302e6",
+  "characters": 8560,
+  "lines": 121,
+  "nodes": 99,
+  "usage": {
+    "input": 51959,
+    "output": 3454,
+    "cacheRead": 237952,
+    "cacheWrite": 0,
+    "reasoning": 292,
+    "totalTokens": 293365
+  },
+  "execution": {
+    "runtime": "pi-agent-context",
+    "sessionId": "01a1dc24-13ec-7a63-8599-443a5ab40af7",
+    "contextHash": "99e7bdfbe45e3d3f5b21dde5a7a01b1c4cf40207ff22928867821476b8010d29",
+    "cacheKey": "eval-54301799f1e523bd8d5f72e9ddf0af6384cdffab1f72c5e25a728c92377cead0",
+    "modelContextHash": "81a3b0354380296a32f7449b488749404d71c35aaeba2496b7ace7561fb3f260",
+    "repositories": [
+      {
+        "repository": "repo-1",
+        "repositoryPath": "/home/john/softwarez/opencode",
+        "commit": "fe3552441192ccbea91d117668e7f3a9eb097baf",
+        "exclusions": [
+          "**/*-LICENSE",
+          "**/*.md",
+          "**/*.mdx",
+          "**/*.spec.*",
+          "**/*.test.*",
+          "**/AGENTS.md",
+          "**/CODEX-LICENSE",
+          "**/LICENSE*",
+          "**/__fixtures__/**",
+          "**/__snapshots__/**",
+          "**/__tests__/**",
+          "**/benchmarks/**",
+          "**/build/**",
+          "**/dist/**",
+          "**/docs/**",
+          "**/e2e/**",
+          "**/examples/**",
+          "**/fixtures/**",
+          "**/node_modules/**",
+          "**/scripts/**",
+          "**/test/**",
+          "**/tests/**",
+          ".github/**",
+          ".husky/**",
+          ".opencode/**",
+          ".pi/**",
+          ".vscode/**",
+          ".zed/**",
+          "bun.lock",
+          "flake.lock",
+          "nix/**",
+          "package-lock.json",
+          "patches/**",
+          "salesforce/**",
+          "script/**",
+          "scripts/**",
+          "specs/**"
+        ],
+        "checkout": "/tmp/agent-repository-vYyabm/checkout",
+        "inspectionSource": "session-transcript"
+      }
+    ]
+  },
+  "outputUrl": "http://localhost:5191/evals?run=450850af-6c9b-4950-a4d8-31f5724302e6&output=0b3af2dd-ba89-4032-936a-40070a3e167e%3A1%3Aalternative"
+}

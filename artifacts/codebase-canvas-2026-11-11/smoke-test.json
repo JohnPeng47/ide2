@@ -1,0 +1,25 @@
+{
+  "status": "passed",
+  "jobs": 114,
+  "pointsPerVariant": 2,
+  "judgeEvaluations": 18,
+  "selectedVariants": 2,
+  "roundsPerTargetPhase": 3,
+  "modelCalls": 0,
+  "maxActiveJobs": 4,
+  "checks": [
+    "all four phases",
+    "three independent improvement branches",
+    "whole-phase judges receive every point and final canvas",
+    "exactly 18 phase critiques",
+    "all regenerated points depend on the shared critique",
+    "judge inputs exclude source",
+    "downstream critique isolation",
+    "save/reopen/output on every artifact",
+    "completed-run replay",
+    "failed response retained as attempt 1; new attempt 2 succeeds",
+    "independent calls overlap within limit",
+    "failed job drains in-flight work before recovery"
+  ],
+  "at": "2026-11-11T14:34:08.096Z"
+}

@@ -1,0 +1,10 @@
+[D] Search response
+|-- page of matches
+|   |-- ranked matches
+|   |   |-- matching document IDs [shared A]
+|   |   |   `-- query terms + inverted index
+|   |   `-- scoring weights + document statistics
+|   `-- offset + page size
+`-- total matches
+    `-- count([shared A])
+        `-- same IDs; no second matching pass

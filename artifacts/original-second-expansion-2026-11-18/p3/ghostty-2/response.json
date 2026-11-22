@@ -1,0 +1,447 @@
+{
+  "output": {
+    "explanation": "Expanded io-terminal because Screen-owned PageLists hide substantial composition. Its central tree retains Terminal -> ScreenSet -> Screen -> PageList ownership, with peripherals detailing PageList nodes, pools and tracked pins, and page-local row/cell storage. Left core, io, render and io-exec unchanged. Checked the pinned checkout's ownership declarations, teardown paths, parsing/resize synchronization and renderer snapshot boundary. Clarified that compressed nodes retain complete Page metadata and the virtual mapping, cells are column-ordered within row-selected spans rather than globally row-ordered, and backing-memory release follows the node's pool/heap ownership tag. Preserved all existing edges, updating moved terminal endpoints.",
+    "diagrams": [
+      {
+        "id": "core",
+        "ascii": "Ghostty: Surface-centered session system\n|\n|-- Core App (src/App.zig)\n|   |-- surfaces: registered *apprt.Surface; focused_surface: checked reference\n|   |-- mailbox: worker-to-main-thread messages\n|   |   `-- tick -> drainMailbox -> hasSurface -> Surface.handleMessage\n|   |-- font_grid_set: shared, reference-counted font grids\n|   |-- device: optional app-owned GPU device, borrowed by renderers\n|   `-- deinit: runtime surface cleanup before shared fonts and device\n|\n`-- Runtime-managed surface hosts (apprt.Surface; src/apprt.zig)\n    |-- Runtime chooses window/tab/split/pane; delivers events\n    `-- Core Surface (src/Surface.zig): owns one terminal session\n        |-- app / rt_app / rt_surface: borrowed references, not owned hosts\n        |-- config: owned DerivedConfig\n        |   `-- updateConfig -> derived settings to I/O and renderer mailboxes\n        |-- keyboard / mouse / size / focused / visible / child_exited\n        |-- keyCallback / textCallback / mouseButtonCallback\n        |   |-- Binding action -> local operation or rt_app.performAction\n        |   |-- Encode key/mouse/paste using io.terminal protocol state\n        |   `-- queueIo -> io.queueMessage; takes ownership; readonly drops writes\n        |-- sizeCallback -> resize: pixels + cell metrics + padding\n        |   `-- -> queueIo(.resize) AND renderer mailbox .resize + wakeup\n        |-- io: termio.Termio (src/termio/Termio.zig)\n        |   |-- backend: Backend.exec -> Exec -> subprocess + PTY\n        |   |-- terminal_stream: terminal.Stream(StreamHandler)\n        |   |-- terminal: terminal.Terminal (the sole emulation state)\n        |   `-- mailbox / derived config / current size\n        |-- io_thread: termio.Thread manager; io_thr: OS thread\n        |   `-- drainMailbox -> io.queueWrite; coalesces resize requests\n        |-- renderer_state: renderer.State (src/renderer/State.zig)\n        |   |-- terminal -> &io.terminal; NOT another owned terminal\n        |   |-- mutex + preedit + renderer-facing mouse state\n        |   `-- lockDemand / unlockDemand / yieldToDemand: fairness handoff\n        |-- renderer: GenericRenderer(GraphicsAPI)\n        |   `-- Own frame state; borrow App device and shared font grid\n        |-- renderer_thread: renderer.Thread manager; renderer_thr: OS thread\n        |   `-- Wakeups/timers -> renderer.updateFrame / drawFrame\n        |-- draw() -> renderer.drawFrame(true), also from main thread\n        |-- Optional search worker and inspector\n        |-- childExited(): record exit; native UI or terminal text\n        |   |-- Abnormally short run -> report and return, keep surface open\n        |   `-- Normal exit: wait_after_command holds; otherwise close()\n        |-- close() -> rt_surface.close(needsConfirmQuit())\n        |   `-- Runtime close lifecycle -> Surface.deinit()\n        `-- deinit(): ordered release\n            |-- Stop/join search, then renderer thread, then I/O thread\n            |-- I/O thread exit -> Exec stops child and joins PTY reader\n            |-- Free renderer before renderer_thread, then I/O resources\n            `-- Release input/preedit/mutex/config; deref App font grid",
+        "position": {
+          "column": 0,
+          "row": 0
+        }
+      },
+      {
+        "id": "io",
+        "ascii": "Termio: session I/O and emulation (src/termio/Termio.zig)\n|\n|-- backend: Backend (src/termio/backend.zig)\n|   `-- exec: Exec -> owns Subprocess and its PTY [expanded]\n|-- terminal_stream: terminal.Stream(StreamHandler)\n|   |-- parser + UTF8Decoder: incremental byte interpretation\n|   `-- handler: StreamHandler (src/termio/stream_handler.zig)\n|       |-- Owned APC / DCS / clipboard transaction and grant state\n|       |-- terminal reference -> &this Termio.terminal\n|       |-- Protocol replies -> mailbox -> PTY write path\n|       |-- surface_mailbox -> App.mailbox -> checked main-thread dispatch\n|       `-- queueRender() -> renderer wakeup (no direct native UI calls)\n|-- terminal: terminal.Terminal (src/terminal/Terminal.zig)\n|   |-- Geometry + protocol/session state (modes / colors / title / pwd)\n|   `-- screens: ScreenSet -> owned Screens -> PageLists [expanded]\n|-- mailbox: input writes / protocol replies / control messages\n|   `-- Surface.io_thread drains -> queueWrite -> Backend.queueWrite\n|-- config: owned DerivedConfig; size: current renderer.Size\n|-- renderer_state: borrowed Surface.renderer_state (not another Terminal)\n|-- renderer_mailbox / renderer_wakeup / surface_mailbox: cross-thread routes\n|-- thread_enter_state: temporary owned startup config\n|-- processOutput(bytes), invoked by Exec reader\n|   |-- Lock Surface.renderer_state.mutex\n|   |-- Schedule queueRender while locked, then terminal_stream.nextSlice\n|   `-- Unlock; reader yieldToDemand lets pending renderer snapshot proceed\n|-- resize(size), invoked after io_thread coalescing\n|   |-- size.grid(): reconcile pixels, cell metrics and padding\n|   |-- Under same terminal mutex: Backend.resize then Terminal.resize\n|   |   `-- Child redraw cannot be parsed with obsolete terminal dimensions\n|   `-- -> renderer mailbox .resize + wakeup\n`-- threadEnter / threadExit -> Backend lifecycle\n    `-- Exec runtime handles live in Termio.ThreadData.backend.exec",
+        "position": {
+          "column": 120,
+          "row": 0
+        }
+      },
+      {
+        "id": "render",
+        "ascii": "Renderer: per-Surface frame preparation and presentation\n|\n|-- GenericRenderer(GraphicsAPI) (src/renderer/generic.zig)\n|   |-- terminal_state: owned terminal.RenderState snapshot\n|   |-- font_shaper / prepared cells / image and GPU resources\n|   |-- font_grid: borrowed App shared grid (glyph atlas/cache)\n|   |-- Graphics API uses borrowed App.device\n|   |   `-- Compile-time Metal or OpenGL (src/renderer.zig)\n|   |-- updateFrame(Surface.renderer_state)\n|   |   |-- lockDemand() -> shared Terminal + viewport + dirty state\n|   |   |-- May scroll viewport / advance Kitty animations while locked\n|   |   |-- terminal_state.beginUpdate + copy preedit/mouse/image data\n|   |   |-- unlockDemand() -> terminal_state.endUpdate() outside lock\n|   |   `-- Snapshot + shaping + atlas -> cells, selection, cursor, images\n|   `-- drawFrame() -> Graphics API -> runtime host surface\n|\n`-- Scheduling: sibling Surface.renderer_thread (src/renderer/Thread.zig)\n    |-- Mailbox / wakeups / timers drive updateFrame and drawFrame\n    |   `-- Incoming .resize updates display geometry\n    |-- I/O queueRender -> wakeup; frame reads shared state under mutex\n    |-- Surface.draw() -> drawFrame(true) can run on main thread\n    `-- Teardown: join renderer thread, then free renderer before its manager",
+        "position": {
+          "column": 120,
+          "row": 48
+        }
+      },
+      {
+        "id": "io-exec",
+        "ascii": "Termio backend.exec: Exec (src/termio/Exec.zig)\n|\n|-- subprocess: Subprocess (owned)\n|   |-- arena / cwd / env / args: launch configuration\n|   |-- grid_size / screen_size\n|   |-- pty: ?Pty; process: ?Process\n|   |   `-- Process = Command (fork_exec) or Flatpak host command\n|   |-- start() -> Pty.open + configured command launch\n|   |-- resize() -> PTY geometry update\n|   `-- stop() -> terminate/reap as needed; clear process\n|-- threadEnter() -> start subprocess; initialize td.backend.exec\n|   `-- Runtime state is held by I/O-thread Termio.ThreadData, not Exec\n|       |-- write_stream + write_queue + pooled 64-byte write requests\n|       |-- process watcher / start time / exited flag\n|       |   `-- processExitCommon -> Surface mailbox .child_exited\n|       |-- termios timer (POSIX) -> terminal password-input state\n|       `-- read_thread handle + quit pipe + PTY read fd\n|           |-- POSIX io-reader owns Pipeline and spawns/joins io-gather\n|           |   |-- Pipeline: four 64-KiB rotating buffers\n|           |   |-- Ring metadata mutex + batch_ready / slot_free conditions\n|           |   |-- io-gather: PTY reads -> publish batches; bounded backpressure\n|           |   `-- io-reader: batches -> Termio.processOutput -> terminal stream\n|           |-- Windows: blocking read -> processOutput in one serial loop\n|           `-- After parsing: renderer_state.yieldToDemand (terminal unlocked)\n|-- queueWrite(data, linefeed)\n|   |-- -> td write pool/queue -> PTY -> child; skip if exited\n|   `-- Optional CR-to-CRLF conversion; completions recycle requests\n`-- threadExit(td)\n    |-- Record external exit if observed; stop subprocess first\n    |-- Signal quit pipe; Windows also cancels blocking read\n    `-- Join io-reader (which joins POSIX io-gather); td.deinit frees handles",
+        "position": {
+          "column": 245,
+          "row": 0
+        }
+      },
+      {
+        "id": "io-terminal",
+        "ascii": "Termio.terminal: Terminal (src/terminal/Terminal.zig)\n|\n|-- Geometry: rows / cols / pixel dimensions / scrolling_region / tabstops\n|-- Protocol/session state: modes / colors / title / pwd / mouse flags\n|-- Terminal-level cursor state (screen coordinates live in Screen.cursor)\n|-- screens: ScreenSet (src/terminal/ScreenSet.zig)\n|   |-- all: owned Screen pointers; primary eager, alternate lazy\n|   |   `-- Screen (src/terminal/Screen.zig)\n|   |       |-- cursor: coordinates / style / pending_wrap / hyperlink state\n|   |       |   `-- page_pin / page_row / page_cell -> current page storage\n|   |       |-- saved_cursor / selection (selection uses tracked pins)\n|   |       |-- charset / protected_mode / kitty_keyboard\n|   |       |-- kitty_images / semantic_prompt / dirty\n|   |       `-- pages: PageList [expanded: io-pages]\n|   |           |-- pages: ordered nodes, history through active screen\n|   |           |   `-- Node: links / serial / pool-or-heap ownership tag\n|   |           |       `-- data: resident Page or compressed Page [io-page]\n|   |           `-- Pools / tracked pins / viewport / limits / compression state\n|   |-- active + active_key: alias into all, not a separately owned Screen\n|   `-- generations: distinguish replaced screen storage\n|-- resize() -> Screen/PageList geometry and reflow\n|-- StreamHandler operations -> mutate this Terminal and its active Screen\n|-- Renderer -> samples viewport/cells/dirty state under Surface mutex\n`-- deinit() -> ScreenSet destroys Screens -> Screen releases PageList storage",
+        "position": {
+          "column": 245,
+          "row": 40
+        }
+      },
+      {
+        "id": "io-pages",
+        "ascii": "Screen.pages: PageList (src/terminal/PageList.zig)\n|\n|-- pages: intrusive doubly linked List\n|   `-- Node: prev / next / serial\n|       |-- owned: pool or heap; determines backing-memory release\n|       `-- data: tagged storage representation\n|           |-- resident: page.Page [expanded: io-page]\n|           `-- compressed: compress.Page\n|               |-- page: complete Page metadata + retained virtual mapping\n|               `-- encoded: owned LZ4 bytes; alloc frees encoded storage\n|-- pool: MemoryPool\n|   |-- nodes: NodePool (reuses node allocations)\n|   |-- pages: PagePool (standard-sized backing blocks)\n|   `-- pins: PinPool (allocates tracked Pin objects)\n|-- tracked_pins: set of *Pin, maintained across page mutations\n|   `-- trackPin / untrackPin -> allocate / recycle through pool.pins\n|-- viewport: active / top / pin\n|   `-- viewport_pin: preallocated tracked pin; cached row offset\n|-- page_serial / page_serial_epoch: reference validity generations\n|-- limits / total_rows / page_size / desired rows and cols\n|-- page_compression: incremental continuation state\n|-- grow_hints / recycle_node: allocation and reflow reuse state\n|-- resize / grow / pruning -> change pages and maintain tracked pins\n|   `-- Screen cursor and selection reference these maintained pins\n|-- compress() -> select cold, fully historical resident pages\n|   `-- Encode first; decommit mapping; publish compressed state on success\n|-- Node.page() -> restore compressed contents into retained mapping\n|   `-- Recommit / decode / free encoding; return resident Page\n|-- Node.pagePreservingState() -> borrow resident or allocate decoded copy\n|   `-- Caller releases copy; exclusive PageList access still required\n`-- deinit() -> release tracked-pin set, nodes and backing storage, then pools",
+        "position": {
+          "column": 365,
+          "row": 40
+        }
+      },
+      {
+        "id": "io-page",
+        "ascii": "Node's terminal Page (src/terminal/page.zig)\n|\n|-- memory: one contiguous page-aligned backing block\n|   |-- Row storage: ordered top to bottom\n|   |   `-- Row: packed metadata\n|   |       |-- cells: offset selecting this row's column-ordered span\n|   |       `-- wrap / continuation / dirty / content-presence flags\n|   |-- Cell storage: spans are NOT globally ordered by row\n|   |   `-- Cell: packed content and attributes\n|   |       |-- content_tag + content: codepoint or background color\n|   |       |-- style_id -> page-local styles; zero means default\n|   |       `-- wide / protected / hyperlink / semantic_content\n|   `-- Auxiliary storage addressed through page-local offsets\n|       |-- styles: reference-counted style set\n|       |-- grapheme_map: cell offset -> extra-codepoint allocation\n|       |-- grapheme_alloc: bitmap-managed grapheme storage\n|       |-- hyperlink_map: cell offset -> hyperlink ID\n|       |-- hyperlink_set: IDs -> reference-counted hyperlink records\n|       `-- string_alloc: shared UTF-8 storage used by hyperlink records\n|-- Page metadata: rows/cells offsets, allocator and set descriptors\n|-- size / capacity: populated dimensions versus fixed allocation capacity\n|-- dirty: whole-page invalidation; false does not imply all rows clean\n|-- init() -> allocate backing; initBuf() -> use caller-supplied backing\n|   `-- PageList node ownership tag governs release of its backing\n|-- Compressed representation retains this entire Page value\n|   `-- Raw mapping must be restored before reading its contents\n`-- Row/cell data -> renderer snapshot under Surface's terminal mutex",
+        "position": {
+          "column": 365,
+          "row": 78
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": {
+          "diagram": "core",
+          "line": 24
+        },
+        "target": {
+          "diagram": "io",
+          "line": 1
+        },
+        "label": "Expands Surface-owned session engine"
+      },
+      {
+        "source": {
+          "diagram": "core",
+          "line": 27
+        },
+        "target": {
+          "diagram": "io",
+          "line": 13
+        },
+        "label": "Expands Terminal ownership through screens and pages"
+      },
+      {
+        "source": {
+          "diagram": "core",
+          "line": 35
+        },
+        "target": {
+          "diagram": "render",
+          "line": 3
+        },
+        "label": "Expands Surface-owned renderer"
+      },
+      {
+        "source": {
+          "diagram": "core",
+          "line": 37
+        },
+        "target": {
+          "diagram": "render",
+          "line": 17
+        },
+        "label": "Sibling thread manager schedules rendering"
+      },
+      {
+        "source": {
+          "diagram": "core",
+          "line": 21
+        },
+        "target": {
+          "diagram": "io",
+          "line": 16
+        },
+        "label": "Transfers input/control messages to I/O"
+      },
+      {
+        "source": {
+          "diagram": "io",
+          "line": 14
+        },
+        "target": {
+          "diagram": "core",
+          "line": 20
+        },
+        "label": "Negotiated terminal modes determine input encoding"
+      },
+      {
+        "source": {
+          "diagram": "io",
+          "line": 11
+        },
+        "target": {
+          "diagram": "core",
+          "line": 6
+        },
+        "label": "UI effects dispatched only if Surface still exists"
+      },
+      {
+        "source": {
+          "diagram": "io",
+          "line": 12
+        },
+        "target": {
+          "diagram": "render",
+          "line": 20
+        },
+        "label": "Output interpretation requests a frame"
+      },
+      {
+        "source": {
+          "diagram": "io",
+          "line": 13
+        },
+        "target": {
+          "diagram": "render",
+          "line": 10
+        },
+        "label": "Shared Terminal sampled under Surface's mutex"
+      },
+      {
+        "source": {
+          "diagram": "io",
+          "line": 30
+        },
+        "target": {
+          "diagram": "render",
+          "line": 19
+        },
+        "label": "Display resize notification after PTY/emulator resize"
+      },
+      {
+        "source": {
+          "diagram": "core",
+          "line": 23
+        },
+        "target": {
+          "diagram": "render",
+          "line": 19
+        },
+        "label": "Additional direct display resize notification"
+      },
+      {
+        "source": {
+          "diagram": "render",
+          "line": 6
+        },
+        "target": {
+          "diagram": "core",
+          "line": 7
+        },
+        "label": "Borrows shared font grid; Surface holds its reference"
+      },
+      {
+        "source": {
+          "diagram": "render",
+          "line": 7
+        },
+        "target": {
+          "diagram": "core",
+          "line": 8
+        },
+        "label": "Borrows app-scoped GPU device"
+      },
+      {
+        "source": {
+          "diagram": "core",
+          "line": 31
+        },
+        "target": {
+          "diagram": "render",
+          "line": 9
+        },
+        "label": "Shared-state access and fairness boundary"
+      },
+      {
+        "source": {
+          "diagram": "io",
+          "line": 4
+        },
+        "target": {
+          "diagram": "io-exec",
+          "line": 1
+        },
+        "label": "Expands backend-owned subprocess and thread-lifetime machinery"
+      },
+      {
+        "source": {
+          "diagram": "io",
+          "line": 13
+        },
+        "target": {
+          "diagram": "io-terminal",
+          "line": 1
+        },
+        "label": "Expands owned emulation state through screens to page storage"
+      },
+      {
+        "source": {
+          "diagram": "io-exec",
+          "line": 22
+        },
+        "target": {
+          "diagram": "io",
+          "line": 22
+        },
+        "label": "Reader delivers gathered output to the locked parsing entry point"
+      },
+      {
+        "source": {
+          "diagram": "io-exec",
+          "line": 22
+        },
+        "target": {
+          "diagram": "io-terminal",
+          "line": 22
+        },
+        "label": "PTY bytes become Terminal mutations via Termio's stream handler"
+      },
+      {
+        "source": {
+          "diagram": "io-exec",
+          "line": 9
+        },
+        "target": {
+          "diagram": "io-terminal",
+          "line": 21
+        },
+        "label": "Termio.resize orders PTY resize before emulator resize under one mutex"
+      },
+      {
+        "source": {
+          "diagram": "io",
+          "line": 17
+        },
+        "target": {
+          "diagram": "io-exec",
+          "line": 25
+        },
+        "label": "Backend dispatch reaches Exec's queued PTY write path"
+      },
+      {
+        "source": {
+          "diagram": "io-exec",
+          "line": 15
+        },
+        "target": {
+          "diagram": "core",
+          "line": 41
+        },
+        "label": "Child-exit notification reaches Surface through checked App dispatch"
+      },
+      {
+        "source": {
+          "diagram": "io-terminal",
+          "line": 23
+        },
+        "target": {
+          "diagram": "render",
+          "line": 12
+        },
+        "label": "Live page-backed state supplies the renderer-owned snapshot"
+      },
+      {
+        "source": {
+          "diagram": "io-terminal",
+          "line": 14
+        },
+        "target": {
+          "diagram": "io-pages",
+          "line": 1
+        },
+        "label": "Expands Screen-owned page list and its allocation, pin and storage machinery"
+      },
+      {
+        "source": {
+          "diagram": "io-terminal",
+          "line": 17
+        },
+        "target": {
+          "diagram": "io-page",
+          "line": 1
+        },
+        "label": "Expands the terminal Page held by each node's storage representation"
+      },
+      {
+        "source": {
+          "diagram": "io-pages",
+          "line": 7
+        },
+        "target": {
+          "diagram": "io-page",
+          "line": 1
+        },
+        "label": "Resident node contains page metadata and backing storage"
+      },
+      {
+        "source": {
+          "diagram": "io-pages",
+          "line": 9
+        },
+        "target": {
+          "diagram": "io-page",
+          "line": 25
+        },
+        "label": "Compression retains the complete Page value and reserved mapping"
+      },
+      {
+        "source": {
+          "diagram": "io-pages",
+          "line": 27
+        },
+        "target": {
+          "diagram": "io-page",
+          "line": 3
+        },
+        "label": "Restoration reconstructs raw contents in the same backing mapping"
+      },
+      {
+        "source": {
+          "diagram": "io-terminal",
+          "line": 10
+        },
+        "target": {
+          "diagram": "io-pages",
+          "line": 15
+        },
+        "label": "Screen cursor's page pin is maintained by the PageList"
+      },
+      {
+        "source": {
+          "diagram": "io-page",
+          "line": 27
+        },
+        "target": {
+          "diagram": "render",
+          "line": 12
+        },
+        "label": "Page-local rows, cells and attributes feed the locked snapshot update"
+      }
+    ]
+  },
+  "usage": {
+    "input": 27169,
+    "output": 6678,
+    "cacheRead": 100480,
+    "cacheWrite": 0,
+    "reasoning": 510,
+    "totalTokens": 134327
+  },
+  "execution": {
+    "runtime": "pi-agent-context",
+    "sessionId": "01a1f027-69aa-775c-8761-ef9110dc865e",
+    "contextHash": "8d7b208a9448273df9528b7b3136bd6ccd8d5c173f4b48671a50156054bc729c",
+    "cacheKey": "eval-9ed1b6b85d75b68dcb958acdaa7f3c50eb7d708bb9fb0b44a02f16f7094e3146",
+    "modelContextHash": "7047045b81a6f9f549fd9e86d9b94bf86eb8a85e48dfeb98beb5f7a43a642cbc",
+    "repositories": [
+      {
+        "repository": "repo-1",
+        "repositoryPath": "/home/john/softwarez/ghostty",
+        "commit": "ea8b12a8a9894b5259c441eadd8f6f0c65e215af",
+        "exclusions": [
+          "**/*-LICENSE",
+          "**/*.md",
+          "**/*.mdx",
+          "**/*.spec.*",
+          "**/*.test.*",
+          "**/AGENTS.md",
+          "**/CODEX-LICENSE",
+          "**/LICENSE*",
+          "**/Tests/**",
+          "**/__fixtures__/**",
+          "**/__tests__/**",
+          "**/benchmark/**",
+          "**/benchmarks/**",
+          "**/build/**",
+          "**/dist/**",
+          "**/docs/**",
+          "**/examples/**",
+          "**/fixtures/**",
+          "**/node_modules/**",
+          "**/scripts/**",
+          "**/test/**",
+          "**/tests/**",
+          ".agents/**",
+          ".github/**",
+          ".husky/**",
+          ".pi/**",
+          "deps/**",
+          "example/**",
+          "flake.lock",
+          "flatpak/**",
+          "images/**",
+          "nix/**",
+          "package-lock.json",
+          "po/**",
+          "scripts/**",
+          "snap/**",
+          "vendor/**"
+        ],
+        "checkout": "/tmp/agent-repository-BO9mm3/checkout",
+        "inspectionSource": "session-transcript"
+      }
+    ]
+  }
+}

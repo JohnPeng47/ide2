@@ -1,0 +1,296 @@
+{
+  "output": {
+    "validatedCandidate": "a4ef61e8b0c2036cd077ea34de2e9545f45925f6260847a5b4b0b7cc2be719f0"
+  },
+  "usage": {
+    "input": 1223500,
+    "output": 107319,
+    "cacheRead": 11022848,
+    "cacheWrite": 0,
+    "reasoning": 11589,
+    "totalTokens": 12353667
+  },
+  "execution": {
+    "runtime": "pi-agent-context",
+    "sessionId": "01a20127-3b7f-7fd7-b25b-ce2b8acb7f87",
+    "contextHash": "f80fdfee53c9c2eecb607117514795b67267e5117b0960c2a77e390d08a58685",
+    "cacheKey": "eval-34761d47258002c2bf819707df24dc8174a80daf4de883c48ed2780336ffaf3b",
+    "modelContextHash": "331da8651e5021807a946785e2e530d01ffb33141e4ceed9fe5534cb534ab2a0",
+    "repositories": [
+      {
+        "repository": "repo-1",
+        "repositoryPath": "/home/john/softwarez/ghostty",
+        "commit": "ea8b12a8a9894b5259c441eadd8f6f0c65e215af",
+        "exclusions": [
+          "**/*-LICENSE",
+          "**/*.md",
+          "**/*.mdx",
+          "**/*.spec.*",
+          "**/*.test.*",
+          "**/AGENTS.md",
+          "**/CODEX-LICENSE",
+          "**/LICENSE*",
+          "**/Tests/**",
+          "**/__fixtures__/**",
+          "**/__tests__/**",
+          "**/benchmark/**",
+          "**/benchmarks/**",
+          "**/build/**",
+          "**/dist/**",
+          "**/docs/**",
+          "**/examples/**",
+          "**/fixtures/**",
+          "**/node_modules/**",
+          "**/scripts/**",
+          "**/test/**",
+          "**/tests/**",
+          ".agents/**",
+          ".github/**",
+          ".husky/**",
+          ".pi/**",
+          "deps/**",
+          "example/**",
+          "flake.lock",
+          "flatpak/**",
+          "images/**",
+          "nix/**",
+          "package-lock.json",
+          "po/**",
+          "scripts/**",
+          "snap/**",
+          "vendor/**"
+        ],
+        "checkout": "/home/john/.cache/mapping-phase4-gr3iob08/agent-repository-kN3gdl/checkout",
+        "inspectionSource": "session-transcript"
+      }
+    ],
+    "subagents": {
+      "model": "gpt-6.2-sol",
+      "effort": "high",
+      "concurrency": 2,
+      "sessions": [
+        {
+          "id": "child-1",
+          "name": "app",
+          "assignment": "Map d1 n1–n10 (and App/runtime parts of n43 if useful). Read relevant numbered sources. Return compact text per node with scope and precise ranges + role (D/U/I); for n1 indicate union of descendant coverage where appropriate and independent anchor. Own private /tmp via mktemp if useful.",
+          "model": "gpt-6.2-sol",
+          "effort": "high",
+          "status": "finished",
+          "queuedAt": "2026-11-22T02:48:13.476Z",
+          "usage": {
+            "input": 129024,
+            "output": 9023,
+            "cacheRead": 1162496,
+            "cacheWrite": 0,
+            "reasoning": 480,
+            "totalTokens": 1300543
+          },
+          "cost": {
+            "input": 0.258048,
+            "output": 0.09023,
+            "cacheRead": 0.2324992,
+            "cacheWrite": 0,
+            "total": 0.5807772
+          },
+          "startedAt": "2026-11-22T02:48:13.479Z",
+          "sessionId": "01a20127-77cd-71fb-979f-fd2d8a66feba",
+          "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-gr3iob08-agent-repository-kN3gdl-checkout--/2026-11-22T02-48-13-517Z_01a20127-77cd-71fb-979f-fd2d8a66feba.jsonl",
+          "completedAt": "2026-11-22T02:51:45.650Z"
+        },
+        {
+          "id": "child-2",
+          "name": "surface-input",
+          "assignment": "Map d1 n11–n21. Read relevant numbered sources and use full named callbacks as appropriate, plus path-specific evidence. Return compact text per node with scope and precise ranges + role (D/U/I); for root n11 indicate uncovered responsibilities and descendant coverage to inherit. Own private /tmp via mktemp if useful.",
+          "model": "gpt-6.2-sol",
+          "effort": "high",
+          "status": "finished",
+          "queuedAt": "2026-11-22T02:48:13.476Z",
+          "usage": {
+            "input": 159271,
+            "output": 9733,
+            "cacheRead": 1314816,
+            "cacheWrite": 0,
+            "reasoning": 2069,
+            "totalTokens": 1483820
+          },
+          "cost": {
+            "input": 0.318542,
+            "output": 0.09733,
+            "cacheRead": 0.2629632,
+            "cacheWrite": 0,
+            "total": 0.6788352
+          },
+          "startedAt": "2026-11-22T02:48:13.479Z",
+          "sessionId": "01a20127-77c8-71bd-9c8b-b736a72eb28a",
+          "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-gr3iob08-agent-repository-kN3gdl-checkout--/2026-11-22T02-48-13-512Z_01a20127-77c8-71bd-9c8b-b736a72eb28a.jsonl",
+          "completedAt": "2026-11-22T02:52:06.203Z"
+        },
+        {
+          "id": "child-3",
+          "name": "surface-lifecycle",
+          "assignment": "Map d1 n22–n48; focus on Surface wiring and lifecycle, precise mappings for each (other diagrams delegated separately). Return compact text per node with scopes and ranges + role (D/U/I). Own private /tmp via mktemp if useful.",
+          "model": "gpt-6.2-sol",
+          "effort": "high",
+          "status": "finished",
+          "queuedAt": "2026-11-22T02:48:13.476Z",
+          "usage": {
+            "input": 191139,
+            "output": 16430,
+            "cacheRead": 1868800,
+            "cacheWrite": 0,
+            "reasoning": 1324,
+            "totalTokens": 2076369
+          },
+          "cost": {
+            "input": 0.382278,
+            "output": 0.16430000000000003,
+            "cacheRead": 0.37376,
+            "cacheWrite": 0,
+            "total": 0.9203380000000001
+          },
+          "startedAt": "2026-11-22T02:51:45.651Z",
+          "sessionId": "01a2012a-b47e-76a7-b0a2-2c2c93874504",
+          "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-gr3iob08-agent-repository-kN3gdl-checkout--/2026-11-22T02-51-45-662Z_01a2012a-b47e-76a7-b0a2-2c2c93874504.jsonl",
+          "completedAt": "2026-11-22T02:57:51.065Z"
+        },
+        {
+          "id": "child-4",
+          "name": "termio",
+          "assignment": "Map complete diagram d2 top-down then leaves upward. Read numbered sources and return compact node lines with scope and precise ranges + role (D/U/I); for parents you may specify relevant descendant ranges to inherit in addition to own anchors. Own private /tmp via mktemp if useful.",
+          "model": "gpt-6.2-sol",
+          "effort": "high",
+          "status": "finished",
+          "queuedAt": "2026-11-22T02:48:13.476Z",
+          "usage": {
+            "input": 200361,
+            "output": 15925,
+            "cacheRead": 1878016,
+            "cacheWrite": 0,
+            "reasoning": 1583,
+            "totalTokens": 2094302
+          },
+          "cost": {
+            "input": 0.4007219999999999,
+            "output": 0.15925,
+            "cacheRead": 0.3756032,
+            "cacheWrite": 0,
+            "total": 0.9355751999999999
+          },
+          "startedAt": "2026-11-22T02:52:06.203Z",
+          "sessionId": "01a2012b-04cb-78a2-9e47-d25fd6a680fe",
+          "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-gr3iob08-agent-repository-kN3gdl-checkout--/2026-11-22T02-52-06-219Z_01a2012b-04cb-78a2-9e47-d25fd6a680fe.jsonl",
+          "completedAt": "2026-11-22T02:58:16.450Z"
+        },
+        {
+          "id": "child-5",
+          "name": "render",
+          "assignment": "Map complete diagram d3 top-down then leaves upward. Read numbered sources and return compact node lines with scope and precise ranges + role (D/U/I); for parents you may specify descendant ranges to inherit in addition to own anchors. Own private /tmp via mktemp if useful.",
+          "model": "gpt-6.2-sol",
+          "effort": "high",
+          "status": "finished",
+          "queuedAt": "2026-11-22T02:48:13.476Z",
+          "usage": {
+            "input": 192395,
+            "output": 14473,
+            "cacheRead": 1786624,
+            "cacheWrite": 0,
+            "reasoning": 1717,
+            "totalTokens": 1993492
+          },
+          "cost": {
+            "input": 0.38478999999999997,
+            "output": 0.14473,
+            "cacheRead": 0.35732480000000005,
+            "cacheWrite": 0,
+            "total": 0.8868448000000001
+          },
+          "startedAt": "2026-11-22T02:57:51.066Z",
+          "sessionId": "01a20130-47e2-7941-9539-ae143e92ac18",
+          "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-gr3iob08-agent-repository-kN3gdl-checkout--/2026-11-22T02-57-51-074Z_01a20130-47e2-7941-9539-ae143e92ac18.jsonl",
+          "completedAt": "2026-11-22T03:04:28.117Z"
+        },
+        {
+          "id": "child-6",
+          "name": "exec",
+          "assignment": "Map complete diagram d4 top-down then leaves upward. Read numbered sources and return compact node lines with scope and precise ranges + role (D/U/I); for parents you may specify descendant ranges to inherit in addition to own anchors. Own private /tmp via mktemp if useful.",
+          "model": "gpt-6.2-sol",
+          "effort": "high",
+          "status": "finished",
+          "queuedAt": "2026-11-22T02:48:13.476Z",
+          "usage": {
+            "input": 99618,
+            "output": 10425,
+            "cacheRead": 769536,
+            "cacheWrite": 0,
+            "reasoning": 2310,
+            "totalTokens": 879579
+          },
+          "cost": {
+            "input": 0.199236,
+            "output": 0.10425000000000001,
+            "cacheRead": 0.1539072,
+            "cacheWrite": 0,
+            "total": 0.4573932
+          },
+          "startedAt": "2026-11-22T02:58:16.450Z",
+          "sessionId": "01a20130-ab0c-712c-8741-8fb6622a7c30",
+          "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-gr3iob08-agent-repository-kN3gdl-checkout--/2026-11-22T02-58-16-460Z_01a20130-ab0c-712c-8741-8fb6622a7c30.jsonl",
+          "completedAt": "2026-11-22T03:02:28.006Z"
+        },
+        {
+          "id": "child-7",
+          "name": "terminal",
+          "assignment": "Map complete diagram d5 top-down then leaves upward. Read numbered sources and return compact node lines with scope and precise ranges + role (D/U/I); for parents you may specify descendant ranges to inherit in addition to own anchors. Own private /tmp via mktemp if useful.",
+          "model": "gpt-6.2-sol",
+          "effort": "high",
+          "status": "finished",
+          "queuedAt": "2026-11-22T02:48:13.476Z",
+          "usage": {
+            "input": 145710,
+            "output": 8196,
+            "cacheRead": 838656,
+            "cacheWrite": 0,
+            "reasoning": 1165,
+            "totalTokens": 992562
+          },
+          "cost": {
+            "input": 0.29142,
+            "output": 0.08196,
+            "cacheRead": 0.1677312,
+            "cacheWrite": 0,
+            "total": 0.5411111999999999
+          },
+          "startedAt": "2026-11-22T03:02:28.007Z",
+          "sessionId": "01a20134-81b0-7c61-abc9-3bf71b3982cd",
+          "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-gr3iob08-agent-repository-kN3gdl-checkout--/2026-11-22T03-02-28-016Z_01a20134-81b0-7c61-abc9-3bf71b3982cd.jsonl",
+          "completedAt": "2026-11-22T03:05:49.475Z"
+        }
+      ]
+    }
+  },
+  "accounting": {
+    "mainUsage": {
+      "input": 105982,
+      "output": 23114,
+      "cacheRead": 1403904,
+      "cacheWrite": 0,
+      "reasoning": 941,
+      "totalTokens": 1533000
+    },
+    "mainCost": {
+      "input": 0.211964,
+      "output": 0.23114000000000004,
+      "cacheRead": 0.2807808,
+      "cacheWrite": 0,
+      "total": 0.7238848
+    },
+    "totalCost": {
+      "input": 2.447,
+      "output": 1.07319,
+      "cacheRead": 2.2045696,
+      "cacheWrite": 0,
+      "total": 5.7247596000000005
+    },
+    "children": 7
+  }
+}

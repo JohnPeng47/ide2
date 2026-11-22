@@ -1,0 +1,18 @@
+{
+  "text": "{\"diagrams\":[{\"diagramId\":\"d1\",\"mappings\":[{\"node\":\"n83\",\"path\":\"src/Surface.zig\",\"startLine\":2600,\"endLine\":2649},{\"node\":\"n83\",\"path\":\"src/Surface.zig\",\"startLine\":1804,\"endLine\":1906},{\"node\":\"n84\",\"path\":\"src/Surface.zig\",\"startLine\":2600,\"endLine\":2649},{\"node\":\"n85\",\"path\":\"src/renderer/size.zig\",\"startLine\":20,\"endLine\":44},{\"node\":\"n85\",\"path\":\"src/Surface.zig\",\"startLine\":2618,\"endLine\":2635},{\"node\":\"n86\",\"path\":\"src/Surface.zig\",\"startLine\":2637,\"endLine\":2649},{\"node\":\"n87\",\"path\":\"src/termio/Termio.zig\",\"startLine\":523,\"endLine\":564},{\"node\":\"n88\",\"path\":\"src/termio/Termio.zig\",\"startLine\":532,\"endLine\":559},{\"node\":\"n89\",\"path\":\"src/termio/Termio.zig\",\"startLine\":532,\"endLine\":553},{\"node\":\"n90\",\"path\":\"src/termio/Termio.zig\",\"startLine\":561,\"endLine\":564},{\"node\":\"n91\",\"path\":\"src/App.zig\",\"startLine\":169,\"endLine\":197},{\"node\":\"n91\",\"path\":\"src/Surface.zig\",\"startLine\":1015,\"endLine\":1020},{\"node\":\"n91\",\"path\":\"src/Surface.zig\",\"startLine\":1801,\"endLine\":1906},{\"node\":\"n92\",\"path\":\"src/Surface.zig\",\"startLine\":1822,\"endLine\":1831},{\"node\":\"n92\",\"path\":\"src/Surface.zig\",\"startLine\":1870,\"endLine\":1889},{\"node\":\"n92\",\"path\":\"src/termio/Termio.zig\",\"startLine\":465,\"endLine\":521},{\"node\":\"n92\",\"path\":\"src/renderer/Thread.zig\",\"startLine\":404,\"endLine\":415},{\"node\":\"n93\",\"path\":\"src/Surface.zig\",\"startLine\":829,\"endLine\":885},{\"node\":\"n94\",\"path\":\"src/Surface.zig\",\"startLine\":881,\"endLine\":885},{\"node\":\"n94\",\"path\":\"src/Surface.zig\",\"startLine\":993,\"endLine\":1013},{\"node\":\"n95\",\"path\":\"src/Surface.zig\",\"startLine\":829,\"endLine\":845},{\"node\":\"n96\",\"path\":\"src/termio/Exec.zig\",\"startLine\":196,\"endLine\":230},{\"node\":\"n97\",\"path\":\"src/Surface.zig\",\"startLine\":840,\"endLine\":859},{\"node\":\"n98\",\"path\":\"src/Surface.zig\",\"startLine\":847,\"endLine\":855},{\"node\":\"n99\",\"path\":\"src/Surface.zig\",\"startLine\":857,\"endLine\":876},{\"node\":\"n100\",\"path\":\"src/App.zig\",\"startLine\":136,\"endLine\":151},{\"node\":\"n101\",\"path\":\"src/App.zig\",\"startLine\":136,\"endLine\":151}]}],\"notes\":\"Partial mappings for assigned nodes n83–n101 only.\"}",
+  "usage": {
+    "input": 16954,
+    "output": 1453,
+    "cacheRead": 58496,
+    "cacheWrite": 0,
+    "reasoning": 136,
+    "totalTokens": 76903
+  },
+  "cost": {
+    "input": 0.033908,
+    "output": 0.014530000000000001,
+    "cacheRead": 0.0116992,
+    "cacheWrite": 0,
+    "total": 0.0601372
+  }
+}

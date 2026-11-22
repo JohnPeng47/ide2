@@ -4,6 +4,7 @@ import { documentFromHistory } from '../../core/diagrams/canvasHistory';
 import { z } from 'zod';
 import { compareRangesSchema, compareSourceSchema, type CompareCanvasCopy } from './comparePageSession';
 import { flattenGrid, resolveScene } from '../../core/diagrams/lineGrid';
+import { compareTreeSpecSchema, treeSourceSchema, validateTreeComparison } from './treeComparison';
 
 export const comparisonReportPromptVersion = 4;
 
@@ -19,10 +20,18 @@ export type CompareDiagramsSpec = z.infer<typeof compareDiagramsSpecSchema>;
 export const reportBlockSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('text'), text: z.string().min(1).max(30000) }).strict(),
   z.object({ kind: z.literal('compare-canvas'), spec: compareCanvasSpecSchema }).strict(),
-  z.object({ kind: z.literal('compare-diagrams'), spec: compareDiagramsSpecSchema }).strict()
+  z.object({ kind: z.literal('compare-diagrams'), spec: compareDiagramsSpecSchema }).strict(),
+  z.object({ kind: z.literal('compare-tree'), spec: compareTreeSpecSchema }).strict()
 ]);
 /** Serializable specification only. Viewer interaction state never enters this record. */
-export const comparisonReportSchema = z.object({ scale: opinionScaleSchema.optional(), pages: z.array(z.object({ id, title: z.string().min(1), blocks: z.array(reportBlockSchema).min(1).max(50) }).strict()).min(1).max(20) }).strict();
+export const comparisonReportSchema = z.object({ scale: opinionScaleSchema.optional(),
+  /** Immutable ASCII copies referenced by compare-tree blocks as S1, S2, ... */
+  treeSources: z.array(treeSourceSchema).max(10).optional(),
+  pages: z.array(z.object({ id, title: z.string().min(1), blocks: z.array(reportBlockSchema).min(1).max(50) }).strict()).min(1).max(20) }).strict()
+  .superRefine((report, context) => {
+    for (const page of report.pages) for (const block of page.blocks) if (block.kind === 'compare-tree')
+      for (const message of validateTreeComparison(block.spec, report.treeSources ?? [])) context.addIssue({ code: 'custom', message });
+  });
 export type ComparisonReport = z.infer<typeof comparisonReportSchema>;
 export const promptExperimentSchema = z.object({
   conditions: z.array(z.object({ label: z.string().trim().min(1).max(100).refine(label => label.toLowerCase() !== 'baseline', 'Baseline is a reserved condition label'), sources: z.array(compareSourceSchema).min(1), promptDifference: z.string().min(1).max(50000) }).strict()).min(2).max(4).optional(),

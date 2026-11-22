@@ -1,0 +1,100 @@
+{
+  "output": {
+    "explanation": "The central tree retains the 3+1 model while shrinking from 104 to 68 lines (34.6%) and from 8,048 to 5,224 characters (35.1%). Four peripheral trees expand compiler lifetime, incremental reuse, derivation, and persistence, attached to their corresponding concept lines. Modular structure combines boundaries, visibility and dependencies conceptually; the stored schema still separates containment and lexical views. Data dependency remains the graph of computational requirements.\n\nSource-grounded corrections: context.ts clears previousProgram before runs selecting more than 100 paths, but first checker access can assign a new semantic program; releaseCompiler clears that shared reference when it matches the large run's active program. Thus the seed's claim that large runs disable retention throughout the run was too broad. derive.ts excludes an explicit list of entity kinds, not all structurally identified entities; the universe description now preserves this distinction.\n\nPeripheral details absent from the seed include BOM-preserving compiler reads and identity collisions (context.ts), metric settings being absent from fragment keys and Node16/NodeNext fallback (incremental.ts), iterative Kosaraju and directory comparison selection (derive.ts), and canonical propertyPath ordering plus separate stream verification (persistence.ts). Per-file publication, rather than a transaction across all three outputs, follows from the sequential renames in scripts/analysis/analyze.ts.\n\nEvidence is limited to the supplied point definition and eight pinned source texts. Imported extractor, metric, finding, report and incremental-helper implementations were not supplied; their internal behavior is not inferred beyond visible calls and contracts. Static call evidence does not establish runtime activation history, and no browser generation stage is established. The layout uses measured text bounds: 12 blank columns between the central tree and peripherals, and five blank rows between peripheral trees.",
+    "diagrams": [
+      {
+        "id": "central",
+        "ascii": "Static Architecture Analysis -- CLI-driven TypeScript analysis subsystem\n|-- [M] Modular structure -- components, boundaries, visibility and dependencies\n|   |-- Analysis contract: StaticAnalyzer.analyze(request) -> Promise<result>\n|   |   |-- Request: repository, tsconfig, selected paths, views, frameworks, metrics\n|   |   |-- Selection limits emitted facts; imports can support symbol resolution\n|   |   `-- Result: artifact + measurements + optional semantic-resolution flag\n|   |-- Extraction engine implements StaticAnalyzer\n|   |   |-- Coordinates declarations, lexical references, resources, calls and dataflow\n|   |   `-- Uses AnalysisContext for compiler access, identities, facts and provenance\n|   |-- IncrementalAnalyzer wraps an injectable extractor\n|   |   `-- Public analyze/exportCheckpoint/restoreCheckpoint; private cache and guard\n|   |-- Domain contract + derivation + persistence\n|   |   `-- Shared schema; partitions, metrics, SCCs, findings, tree; validated serialization\n|   |-- CLI composes extraction, persistence and reporting\n|   |   `-- Independent subsystem; supplied evidence establishes no browser stage\n|   `-- Modular evidence combines containment and lexical scope conceptually\n|       |-- Imports/reexports, exported metadata, declarations, references and captures\n|       |-- Layer, feature and composition-root metadata support semantic grouping\n|       `-- Stored contract still separates containment and lexical views\n|-- [C] Invocation flow -- analyzer execution and static call evidence\n|   |-- CLI reads tsconfig -> selects TS/TSX paths -> awaits staticAnalyzer.analyze()\n|   |   `-- Requests all views and React, Zustand, tldraw, controller frameworks\n|   |-- Create AnalysisContext + Declarations\n|   |   `-- index() -> imports() -> composition()\n|   |-- Any view beyond containment? -> extractLexical()\n|   |-- Calls, ownership or dependencies requested?\n|   |   |-- Resources.initialize() -> extractCalls() -> extractFrameworks()\n|   |   `-- Ownership or dependencies? -> prepareDataflow() -> releaseCompiler()\n|   |       `-- extractDataflow() -> connectCallbackCandidates()\n|   |-- finish() -> release working state -> deriveAnalysis() -> return result\n|   |-- CLI serializes artifact -> writes report -> writes run manifest\n|   `-- Analyzed calls are static evidence, not activation-to-activation history\n|       |-- Contract includes construction, callback registration and scheduling\n|       `-- Runtime identities reserved; observed facts require runtime-probe provenance\n|-- [O] Ownership -- working memory, cached fragments and publication\n|   |-- AnalysisContext owns per-run compiler and fact-building state\n|   |   |-- Syntax program first; semantic program built on first checker access\n|   |   |-- releaseCompiler() pins inputs, then drops active program/checker\n|   |   `-- finish() materializes arrays; artifact survives working-state cleanup\n|   |-- Module-level previousProgram supports reuse across small selections\n|   |   `-- Large runs clear prior reuse; any new semantic program is cleared on release\n|   |-- IncrementalAnalyzer owns a session checkpoint\n|   |   |-- Busy guard rejects concurrent updates/restores; finally resets the guard\n|   |   |-- Export clones; restore validates then clones; cache miss invokes extractor\n|   |   `-- Publish replacement checkpoint only after assembly and derivation succeed\n|   |-- CLI owns temporary outputs and final renames\n|   |   `-- Artifact temporary file is removed in finally; report/manifest renamed separately\n|   `-- Analyzed-code ownership is a separate fact model\n|       `-- Creation, retention, aliasing, mutation capability, subscription and disposal\n`-- [D] Data dependency -- inputs required to compute results, before grouping\n    |-- Reproducible artifact: entities + relations + uncertainties + snapshot\n    |   |-- Source/configuration hashes, compiler/analyzer versions, scope, Git when available\n    |   |-- Fact provenance: evidence status/method + pinned UTF-16 source ranges\n    |   `-- Coverage derived from relations and uncertainties; partial/not-run retained\n    |-- Derived architecture needs facts + partition and shuffle settings\n    |   |-- Universe: selected source entities minus explicitly excluded entity kinds\n    |   |-- Partitions: directory, source layer or a single group\n    |   |-- Active graph layers: calls, data, state and reactive; resolved/inferred evidence\n    |   |-- Partitions + layers -> metrics; participating endpoints -> SCC condensation\n    |   `-- Findings for investigation; contains relations -> canonical tree projection\n    |-- Incremental reuse needs current dependency evidence\n    |   |-- Fresh inventory + cached dependency edges -> component groups\n    |   |-- Environment + selected members + component hashes/resolutions -> cache key\n    |   |-- Uncertain global effects broaden invalidation to all inventoried local files\n    |   `-- Reused/new facts + fresh header -> merged artifact; always recompute derivations\n    `-- Published outputs share the same artifact\n        |-- Validated canonical JSON -> gzip artifact; artifact -> architecture report\n        `-- Hashes, sizes, coverage, measurements and timestamp -> separate run manifest",
+        "position": {
+          "column": 0,
+          "row": 0
+        }
+      },
+      {
+        "id": "compiler",
+        "ascii": "AnalysisContext -- compiler lifetime and evidence [O+D]\n|-- Construct a syntax-only program\n|   |-- noLib=true, noResolve=true, types=[]; include configured declaration roots\n|   |-- Host reads raw UTF-8 text, preserving BOM and original line endings\n|   `-- Host directory is repository root, constraining implicit type discovery\n|-- First checker access builds a semantic program\n|   |-- Restore original compiler options; reuse syntax source files\n|   |-- Pass previousProgram as oldProgram; retain new program as previousProgram\n|   `-- Reuse prior source files only when current text matches exactly\n|-- Selection size controls shared retention\n|   |-- More than 100 selected paths -> clear previousProgram before construction\n|   `-- releaseCompiler() clears shared program for large runs if it is the active one\n|-- Pin compiler inputs before releasing active program/checker\n|   |-- In-repository inputs become hashed resolution-only snapshot files\n|   |-- Out-of-repository inputs contribute basename/hash pairs to configuration hash\n|   `-- Pinning is guarded; a later finish() need not access a released compiler\n|-- Identity and source correspondence\n|   |-- Named identity hashes repository/path/owner/kind/name/role\n|   |-- Structural identity uses AST fingerprint; trivia ignored, literal/JSX text retained\n|   |-- Collisions mark ambiguous identity and record occurrence ordinals + uncertainty\n|   `-- Ranges pin file hash and snapshot; UTF-16, one-based lines/columns, exclusive end\n`-- Finish and release have distinct responsibilities\n    |-- finish(): materialize arrays, pin Git metadata, hash snapshot, update ranges\n    |-- Coverage counts unique source sites; uncertainty takes precedence at a site\n    `-- release(): clear working collections; materialized artifact remains available",
+        "position": {
+          "column": 106,
+          "row": 0
+        }
+      },
+      {
+        "id": "reuse",
+        "ascii": "IncrementalAnalyzer -- cache validity and publication [D+O]\n|-- inventory() runs before cache lookup\n|   |-- Re-read selected files, imported local files and current import resolutions\n|   |-- Hash declarations, external compiler inputs and nested package manifests\n|   `-- Environment key includes compiler/analyzer, repository, views, frameworks, options\n|-- Current imports + still-local cached dependency edges -> component groups\n|   |-- Key hashes environment, selected members, all component hashes/resolutions\n|   |-- Match -> retain fragment; miss -> extractor.analyze(selected component paths)\n|   `-- Metric settings are absent from fragment key; derivations are rebuilt\n|-- Conservative fallback -> one group of all inventoried local files\n|   |-- Selected declaration file or declarations depending on ordinary local source\n|   |-- Global scripts, module declarations or global augmentations\n|   |-- Nonliteral import()/require() resolution\n|   `-- Node16 or NodeNext module resolution mode\n|-- Assemble a current artifact even when every fragment hits\n|   |-- Fresh AnalysisContext pins current configuration, commit and selection\n|   |-- Any semantic fragment -> request checker to reproduce semantic input pinning\n|   |-- Preserve nested configuration files discovered during fragment extraction\n|   `-- Merge facts -> finish/release -> deriveAnalysis -> publish next checkpoint\n|-- Checkpoint boundary protects session-owned state\n|   |-- Restore requires version 1, unique SHA-256 keys and boolean semantic flags\n|   |-- Validate fragment artifacts; fragment paths must match snapshot scope roots\n|   `-- Export/restore clone; failed update does not replace published checkpoint\n`-- Update report distinguishes selected-file changes from actual reanalysis\n    |-- changedFiles compares selected content hashes; removedFiles compares selection\n    `-- Dependency/environment changes can reanalyze an unchanged selected file",
+        "position": {
+          "column": 106,
+          "row": 30
+        }
+      },
+      {
+        "id": "derive",
+        "ascii": "deriveAnalysis -- facts transformed into architecture [D+M]\n|-- Partition universe\n|   |-- Source-origin entity with at least one location in an analyzed file\n|   |-- Exclude repository, directory, package, module, scope, interface, type\n|   `-- Also exclude external and unknown-target; structural identity alone is allowed\n|-- Requested partitions assign one primary group to every universe member\n|   |-- Directory uses first provenance location; layer uses metadata or \"other\"\n|   `-- single-group uses \"All source entities\", stored with basis \"custom\"\n|-- Enable layers only when the underlying view is not \"not-run\"\n|   |-- Calls: calls, constructs\n|   |-- Data: value-flow, argument, return, reads, writes\n|   |-- State: reads, writes\n|   |-- Reactive: reactive, selects, prop-flow, context-read, effect-dependency\n|   `-- All declare resolved/inferred status, unit weights and self-edge exclusion\n|-- evaluateAllPartitions consumes artifact + shuffle settings\n|   |-- Directory partition is the comparison when present\n|   `-- Contract carries coverage, edge mass, cohesion, VI and shuffled baseline\n|-- Strongly connected components use selected relation endpoints in the universe\n|   |-- Iterative Kosaraju avoids recursive traversal of deep graphs\n|   |-- Isolated entities with no qualifying relation are absent from SCC universe\n|   `-- Condensation omits intra-component edges and retains original relation IDs\n`-- Other derived products\n    |-- deriveFindings() is invoked; schema labels every finding \"investigate\"\n    `-- contains edges define one occurrence per entity; liftedEdges starts empty",
+        "position": {
+          "column": 106,
+          "row": 61
+        }
+      },
+      {
+        "id": "publish",
+        "ascii": "Persistence and CLI publication -- artifact to outputs [M+C+O+D]\n|-- validateAnalysisArtifact() checks records individually\n|   |-- Unique identities, valid references and ranges pinned to snapshot/file hash\n|   |-- Optional source texts verify exact UTF-16 coordinates\n|   |-- contains graph: one repository root, no orphan, cycle or multiple parent\n|   |-- SCC coverage, endpoint evidence and acyclic condensation\n|   |-- Partition memberships, metric ratios, conserved edge mass and coverage counts\n|   `-- Observed facts require runtime-probe; runtime events also require sequence\n|-- analysisArtifactChunks() validates before canonical streaming\n|   |-- Sort object keys and set-like arrays; preserve ordered propertyPath arrays\n|   `-- Canonicalize one record at a time instead of copying the entire graph\n|-- Separate verification API: verifyCanonicalAnalysisStream()\n|   |-- Parse/schema-check/re-encode each record and check ordering/completeness\n|   `-- Cross-record invariants belong to artifact validation before emission\n|-- CLI emits artifact, report, then run manifest\n|   |-- Batch canonical chunks near 256 KiB -> gzip level 6 -> temporary file\n|   |-- Hash JSON and compressed bytes independently; rename artifact on success\n|   |-- finally removes artifact temporary file after pipeline/rename attempt\n|   `-- Report and manifest each use their own temporary file and rename\n`-- Publication is per file, not an atomic three-output transaction\n    |-- A later failure can leave an already-published artifact or report\n    `-- Measurements/timestamp live in run manifest outside deterministic facts",
+        "position": {
+          "column": 106,
+          "row": 90
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": {
+          "diagram": "central",
+          "line": 36
+        },
+        "target": {
+          "diagram": "compiler",
+          "line": 1
+        },
+        "label": "Compiler state, identity and provenance"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 61
+        },
+        "target": {
+          "diagram": "reuse",
+          "line": 1
+        },
+        "label": "Invalidation inputs and checkpoint ownership"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 55
+        },
+        "target": {
+          "diagram": "derive",
+          "line": 1
+        },
+        "label": "Universe, graph layers and derived results"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 66
+        },
+        "target": {
+          "diagram": "publish",
+          "line": 1
+        },
+        "label": "Validation and output lifetimes"
+      }
+    ]
+  },
+  "usage": {
+    "input_tokens": 236681,
+    "cached_input_tokens": 190592,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 7458,
+    "reasoning_output_tokens": 353
+  }
+}

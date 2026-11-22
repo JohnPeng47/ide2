@@ -1,0 +1,25 @@
+{
+  "inputHash": "0a1aae98661c9d88222798c8ff37a68809fd28eb1fd1ab977904709158215021",
+  "modelCalls": 0,
+  "checks": [
+    "materialize",
+    "save",
+    "restore",
+    "reopen-for-editing",
+    "edit",
+    "save again",
+    "load output"
+  ],
+  "at": "2026-11-19T15:34:16.013Z",
+  "model": {
+    "provider": "openai-codex",
+    "model": "gpt-6-astra"
+  },
+  "commit": "ea8b12a8a9894b5259c441eadd8f6f0c65e215af",
+  "contextHash": "c26f9e1d07185d26d78fd7cf31b447b58604b2cae4a040b1dc623aaaf9e7848a",
+  "promptSha256": "e15886ad7e125bfafb600398ed2f517c1e1fba42b4fda4ea4644087e9dff4091",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

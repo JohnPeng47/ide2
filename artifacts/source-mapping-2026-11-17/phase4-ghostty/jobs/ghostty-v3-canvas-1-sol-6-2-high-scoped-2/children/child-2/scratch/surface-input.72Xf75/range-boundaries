@@ -1,0 +1,663 @@
+n11 macos/Sources/Ghostty/Ghostty.App.swift 768:             case GHOSTTY_ACTION_SHOW_CHILD_EXITED: 769:                 return showChildExited(app, target: target, v: action.action.child_exited)
+n11 macos/Sources/Ghostty/Ghostty.App.swift 1854:         private static func showChildExited( 1872:         }
+n11 macos/Sources/Ghostty/Ghostty.ChildExitedMessage.swift 6:     struct ChildExitedMessage { 40:     }
+n11 macos/Sources/Ghostty/Surface View/OSSurfaceView.swift 99:         func setChildExitedMessage(_ message: ChildExitedMessage) { 101:         }
+n11 macos/Sources/Ghostty/Surface View/SurfaceView.swift 106:                     // Show a bar to indicate a child process has exited. 110:                     }
+n11 src/App.zig 164: pub fn tick(self: *App, rt_app: *apprt.App) !void { 167: }
+n11 src/App.zig 172: pub fn updateConfig(self: *App, rt_app: *apprt.App, config: *const Config) !void { 176:     }
+n11 src/App.zig 273: fn drainMailbox(self: *App, rt_app: *apprt.App) !void { 281:         switch (message) {
+n11 src/App.zig 293:             .surface_message => |msg| try self.surfaceMessage(msg.surface, msg.message), 293:             .surface_message => |msg| try self.surfaceMessage(msg.surface, msg.message),
+n11 src/App.zig 319: pub fn newWindow(self: *App, rt_app: *apprt.App, msg: Message.NewWindow) !void { 331: }
+n11 src/App.zig 444: pub fn performAction( 529: }
+n11 src/App.zig 532: fn surfaceMessage(self: *App, surface: *Surface, msg: apprt.surface.Message) !void { 550: }
+n11 src/App.zig 601:     rt_app: *apprt.App, 612:     }
+n11 src/Surface.zig 1: //! Surface represents a single terminal "surface". A terminal surface is 12: const Surface = @This();
+n11 src/Surface.zig 64: /// Unique ID used to identify this surface for IPC purposes. It is 188: last_bell_time: ?std.Io.Timestamp = null,
+n11 src/Surface.zig 194: pub const InputEffect = enum { 207: };
+n11 src/Surface.zig 209: /// The search state for the surface. 227: };
+n11 src/Surface.zig 229: /// Mouse state for the surface. 299: };
+n11 src/Surface.zig 301: /// The configuration that a surface has, this is copied from the main 445:     }
+n11 src/Surface.zig 447:     fn scaledPadding(self: *const DerivedConfig, x_dpi: f32, y_dpi: f32) rendererpkg.Padding { 471:     }
+n11 src/Surface.zig 477: pub fn init( 827: }
+n11 src/Surface.zig 829: pub fn deinit(self: *Surface) void { 879: }
+n11 src/Surface.zig 881: /// Close this surface. This will trigger the runtime to start the 893: }
+n11 src/Surface.zig 895: /// Queue a message for the IO thread, taking ownership of `msg`. 920: }
+n11 src/Surface.zig 925: pub fn draw(self: *Surface) !void { 929: }
+n11 src/Surface.zig 934: pub fn activateInspector(self: *Surface) !void { 956: }
+n11 src/Surface.zig 972: pub fn deactivateInspector(self: *Surface) void { 991: }
+n11 src/Surface.zig 995: pub fn needsConfirmQuit(self: *Surface) bool { 1241: }
+n11 src/Surface.zig 1297: fn childExited(self: *Surface, info: apprt.surface.Message.ChildExited) void { 1454: }
+n11 src/Surface.zig 1485: fn searchCallback(event: terminal.search.Thread.Event, ud: ?*anyopaque) void { 1600: }
+n11 src/Surface.zig 1804: pub fn updateConfig( 1906: }
+n11 src/Surface.zig 2451: fn setSelection(self: *Surface, sel_: ?terminal.Selection) !void { 2506: }
+n11 src/Surface.zig 2510: fn setCellSize(self: *Surface, size: rendererpkg.CellSize) !void { 2531: }
+n11 src/Surface.zig 2536: pub fn setFontSize(self: *Surface, size: font.face.DesiredSize) !void { 2579: }
+n11 src/Surface.zig 2600: pub fn sizeCallback(self: *Surface, size: apprt.SurfaceSize) !void { 2658: }
+n11 src/Surface.zig 2660: /// Called to set the preedit state for character input. Preedit is used 2738: }
+n11 src/Surface.zig 2792: pub fn keyCallback( 2982: }
+n11 src/Surface.zig 2987: fn maybeHandleBinding( 3219: }
+n11 src/Surface.zig 3221: fn deactivateAllKeyTables(self: *Surface) !bool { 3243: }
+n11 src/Surface.zig 3247: fn catchAllIsIgnore(self: *Surface) bool { 3322: }
+n11 src/Surface.zig 3326: fn encodeKey( 3432: }
+n11 src/Surface.zig 3434: /// Callback for when the surface is fully visible or not, regardless 3552: }
+n11 src/Surface.zig 3584: pub fn scrollCallback( 3589: ) !void {
+n11 src/Surface.zig 3681:         self.renderer_state.mutex.lockUncancelable(global.io()); 3750:         }
+n11 src/Surface.zig 3752:         if (y.delta != 0) { 3761: }
+n11 src/Surface.zig 3765: pub fn contentScaleCallback(self: *Surface, content_scale: apprt.ContentScale) !void { 3798: }
+n11 src/Surface.zig 3802: fn isMouseReporting(self: *const Surface) bool { 3905: }
+n11 src/Surface.zig 3915: /// Called for mouse button press/release events. This will return true 4297: }
+n11 src/Surface.zig 4678: pub fn cursorPosCallback( 4682: ) !void {
+n11 src/Surface.zig 4735:     // We are reading/writing state for the remainder 4755:     }
+n11 src/Surface.zig 4778:     // Do a mouse report 4801:     }
+n11 src/Surface.zig 4803:     // Handle cursor position for text selection 4867: }
+n11 src/Surface.zig 4902: fn scrollToBottom(self: *Surface) !void { 4905: }
+n11 src/Surface.zig 4941: pub fn performBindingAction(self: *Surface, action: input.Binding.Action) !bool { 4999:         },
+n11 src/Surface.zig 5029:         .cursor_key => |ck| { 5051:         },
+n11 src/Surface.zig 5053:         .reset => { 5057:         },
+n11 src/Surface.zig 5059:         .start_search => { 5159:         },
+n11 src/Surface.zig 5240:         .paste_from_clipboard => return (try self.startClipboardRequest( 5248:         )) == .started,
+n11 src/Surface.zig 5450:         .new_tab => return try self.rt_app.performAction( 5464:         ),
+n11 src/Surface.zig 5494:         .new_split => |direction| return try self.rt_app.performAction( 5507:         ),
+n11 src/Surface.zig 5555:         .toggle_readonly => { 5563:         },
+n11 src/Surface.zig 5635:         .select_all => { 5657:         .close_surface => self.close(),
+n11 src/Surface.zig 5818:     return true; 5833: }
+n11 src/Surface.zig 6017: pub fn completeClipboardRequest( 6033:         },
+n11 src/Surface.zig 6219: fn startClipboardRequest( 6398: }
+n11 src/apprt/embedded.zig 202:     pub fn keyEvent( 228:     }
+n11 src/apprt/embedded.zig 303:     pub fn performAction( 323:     }
+n11 src/apprt/embedded.zig 447: pub const Surface = struct { 455:     inspector: ?*Inspector = null,
+n11 src/apprt/embedded.zig 610:         // Wait after command 613:         }
+n11 src/apprt/embedded.zig 615:         // Initialize our surface right away. We're given a view that is 624:         errdefer self.core_surface.deinit();
+n11 src/apprt/embedded.zig 634:     pub fn deinit(self: *Surface) void { 646:     }
+n11 src/apprt/embedded.zig 648:     /// Initialize the inspector instance. A surface can only have one 668:     }
+n11 src/apprt/embedded.zig 1026:     pub fn updateSize(self: *Surface, width: u32, height: u32) void { 1043:     }
+n11 src/apprt/embedded.zig 1052:     pub fn mouseButtonCallback( 1062:     }
+n11 src/apprt/embedded.zig 1131:     pub fn textCallback(self: *Surface, text: []const u8) void { 1136:     }
+n11 src/apprt/embedded.zig 1283:     pub fn init(surface: *Surface) !Inspector { 1307:     }
+n11 src/apprt/embedded.zig 1996:     export fn ghostty_surface_set_size(surface: *Surface, w: u32, h: u32) void { 1998:     }
+n11 src/apprt/embedded.zig 2073:     export fn ghostty_surface_key( 2084:     }
+n11 src/apprt/embedded.zig 2110:     export fn ghostty_surface_text( 2116:     }
+n11 src/apprt/embedded.zig 2150:     export fn ghostty_surface_mouse_button( 2164:     }
+n11 src/apprt/gtk/App.zig 61: pub fn performAction( 68: }
+n11 src/apprt/gtk/class/application.zig 692:     pub fn performAction( 700:             .close_window => return Action.closeWindow(target),
+n11 src/apprt/gtk/class/application.zig 739:             .new_split => return Action.newSplit(target, value), 750:             ),
+n11 src/apprt/gtk/class/application.zig 789:             .show_child_exited => return Action.showChildExited(target, value), 789:             .show_child_exited => return Action.showChildExited(target, value),
+n11 src/apprt/gtk/class/application.zig 2535:     pub fn newSplit( 2585:     }
+n11 src/apprt/gtk/class/application.zig 3052:     pub fn showChildExited( 3060:     }
+n11 src/apprt/gtk/class/inspector_widget.zig 124:     pub fn setSurface(self: *Self, surface_: ?*Surface) void { 172:     }
+n11 src/apprt/gtk/class/inspector_widget.zig 177:     fn surfaceWeakNotify( 203:     }
+n11 src/apprt/gtk/class/surface.zig 1445:         // Invoke the core Ghostty logic to handle this input. 1472: 
+n11 src/apprt/gtk/class/surface.zig 1526:     pub fn childExited( 1539:     }
+n11 src/apprt/gtk/class/surface.zig 1963:     fn finalize(self: *Self) callconv(.c) void { 1981:         }
+n11 src/apprt/gtk/class/surface.zig 2956:         if (button == .middle and 2986: 
+n11 src/apprt/gtk/class/surface.zig 3026:         const mods = gtk_key.translateMods(gtk_mods); 3041:         if (!consumed and button == .left and !surface.hasSelection()) {
+n11 src/apprt/gtk/class/surface.zig 3407:             // Send the text to the core surface, associated with no key (an 3418:             };
+n11 src/apprt/gtk/class/surface.zig 3497:     fn renderSurfaceResize( 3538:             }
+n11 src/apprt/gtk/class/surface.zig 3610:         // Initialize the surface 3625:         priv.desktop_notifications = .init(surface.id);
+n11 src/apprt/gtk/class/surface_child_exited.zig 69:     pub fn setData( 110:     }
+n11 src/apprt/structs.zig 13: /// The size of the surface in pixels. 21: };
+n11 src/apprt/surface.zig 104:     /// The child process running in the surface has exited. This may trigger 107:     child_exited: ChildExited,
+n11 src/apprt/surface.zig 154:     /// Search progress update 158:     search_selected: ?usize,
+n11 src/apprt/surface.zig 169:     pub const ChildExited = extern struct { 183:     };
+n11 src/apprt/surface.zig 186: /// A surface mailbox. 207: };
+n11 src/config/Config.zig 1348: /// If true, keep the terminal open after the command exits. Normally, the 1354: @"wait-after-command": bool = false,
+n11 src/config/Config.zig 1356: /// The number of milliseconds of runtime below which we consider a process exit 1363: @"abnormal-command-exit-runtime": u32 = 250,
+n11 src/datastruct/message_data.zig 12:         pub const Small = struct { 36:         alloc: Alloc,
+n11 src/datastruct/message_data.zig 76:         pub fn deinit(self: Self) void { 81:         }
+n11 src/font/SharedGrid.zig 122: pub fn deinit(self: *SharedGrid, alloc: Allocator) void { 128: }
+n11 src/font/SharedGridSet.zig 411: /// Decrement the ref count for the given key. If the ref count is zero, 431: }
+n11 src/input/Binding.zig 2722:     pub fn getEvent(self: *const Set, event: KeyEvent) ?Entry { 2760:     }
+n11 src/input/key_encode.zig 14: pub const Options = struct { 73: };
+n11 src/input/key_encode.zig 82: pub fn encode( 319: }
+n11 src/input/key_encode.zig 327: fn legacy( 550: }
+n11 src/input/key_encode.zig 552: fn legacyAltPrefix( 618: }
+n11 src/input/key_encode.zig 631: fn pcStyleFunctionKey( 699: }
+n11 src/input/key_encode.zig 1010: const KittySequence = struct { 1117: };
+n11 src/input/mouse_encode.zig 13: pub const Options = struct { 76: };
+n11 src/input/mouse_encode.zig 81: pub fn encode( 280: }
+n11 src/input/paste.zig 4: /// The bracketed paste (mode 2004) frame written around the data. 22: };
+n11 src/input/paste.zig 42: pub fn encode( 119: }
+n11 src/input/paste.zig 140: pub fn encodeWriter( 161: }
+n11 src/input/paste.zig 180: pub fn isSafe(data: []const u8) bool { 199: }
+n11 src/inspector/Inspector.zig 1: //! The Inspector is a development tool to debug the terminal. This is 4: const Inspector = @This();
+n11 src/inspector/Inspector.zig 17: /// Mouse state that we track in addition to normal mouse states that 22: gui: widgets.surface.Inspector,
+n11 src/inspector/Inspector.zig 58: pub fn init(alloc: Allocator) !Inspector { 110: }
+n11 src/pty.zig 19: pub const Pty = switch (builtin.target.os.tag) { 23: };
+n11 src/pty.zig 189:     pub fn deinit(self: *Pty) void { 192:     }
+n11 src/pty.zig 457:     pub fn deinit(self: *Pty) void { 464:     }
+n11 src/renderer/DisplayLink.zig 122: /// The link is stopped before this returns, so the output callback is 146: }
+n11 src/renderer/DisplayLink.zig 205: fn syncCallback(ud: ?*anyopaque) callconv(.c) void { 219: }
+n11 src/renderer/Metal.zig 139: pub fn deinit(self: *Metal) void { 146: }
+n11 src/renderer/OpenGL.zig 92: pub fn deinit(self: *OpenGL) void { 96: }
+n11 src/renderer/State.zig 1: //! This is the render state that is given to a renderer. 45: handoff_gen: std.atomic.Value(u32) = .init(0),
+n11 src/renderer/Thread.zig 103: pub const DerivedConfig = struct { 111: };
+n11 src/renderer/Thread.zig 177: pub fn deinit(self: *Thread) void { 189: }
+n11 src/renderer/Thread.zig 200: fn threadMain_(self: *Thread) !void { 200: fn threadMain_(self: *Thread) !void {
+n11 src/renderer/Thread.zig 220:     // Run our loop start/end callbacks if the renderer cares. 234:     self.draw_now.wait(&self.loop, &self.draw_now_c, Thread, self, drawNowCallback);
+n11 src/renderer/Thread.zig 253:     // Run 257: }
+n11 src/renderer/Thread.zig 290: fn drainMailbox(self: *Thread) !void { 304:             .crash => @panic("crash request, crashing intentionally"),
+n11 src/renderer/Thread.zig 397:             .font_grid => |grid| { 400:             },
+n11 src/renderer/Thread.zig 404:             .resize => |v| self.renderer.setScreenSize(v), 404:             .resize => |v| self.renderer.setScreenSize(v),
+n11 src/renderer/Thread.zig 406:             .change_config => |config| { 415:             },
+n11 src/renderer/Thread.zig 417:             .search_viewport_matches => |v| { 435:             },
+n11 src/renderer/Thread.zig 446: fn changeConfig(self: *Thread, config: *const DerivedConfig) !void { 458: }
+n11 src/renderer/Thread.zig 474: fn wakeupCallback( 493:     _ = renderCallback(t, undefined, undefined, {});
+n11 src/renderer/Thread.zig 722: fn stopCallback( 731: }
+n11 src/renderer/generic.zig 44: const DisplayLink = switch (builtin.target.os.tag) { 47: };
+n11 src/renderer/generic.zig 841:         pub fn deinit(self: *Self) void { 874:         }
+n11 src/renderer/generic.zig 914:         pub fn threadExit(self: *Self) void { 974:         }
+n11 src/renderer/generic.zig 1078:         fn displayLinkCallback( 1086:         }
+n11 src/renderer/generic.zig 1244:         pub fn releaseGpuResources(self: *Self) void { 1256:         }
+n11 src/renderer/generic.zig 1273:         fn syncDisplayLink( 1299:             };
+n11 src/renderer/generic.zig 1317:         pub fn setFontGrid(self: *Self, grid: *font.SharedGrid) void { 1358:         }
+n11 src/renderer/generic.zig 1547:                 const overlay_features: []const Overlay.Feature = overlay: { 1561:                 };
+n11 src/renderer/generic.zig 2171:         pub fn changeConfig(self: *Self, config: *DerivedConfig) !void { 2246:         }
+n11 src/renderer/generic.zig 2249:         pub fn setScreenSize( 2304:         }
+n11 src/renderer/message.zig 45:     /// Changes the size. The screen size might change, padding, grid, etc. 46:     resize: renderer.Size,
+n11 src/renderer/message.zig 48:     /// The derived configuration to update the renderer with. 53:     },
+n11 src/renderer/message.zig 86:     /// Initialize a change_config message. 116:     }
+n11 src/renderer/size.zig 20: /// All relevant sizes for a rendered terminal. These are all the sizes that 79: };
+n11 src/renderer/size.zig 184: /// The units for the width and height are in world space. They have to 204:     }
+n11 src/renderer/size.zig 231:     /// Returns true if two sizes are equal. 262:     }
+n11 src/renderer/size.zig 270: /// The padding to add to a screen. 306:     }
+n11 src/terminal/SelectionGesture.zig 172: pub fn deinit(self: *SelectionGesture, t: *Terminal) void { 179: }
+n11 src/terminal/Terminal.zig 395: pub fn deinit(self: *Terminal, alloc: Allocator) void { 404: }
+n11 src/terminal/Terminal.zig 4912: pub fn resize( 5074: }
+n11 src/terminal/paste.zig 167: pub fn paste(ctx: Context, req: Request) Error!bool { 242: }
+n11 src/terminal/search/Thread.zig 1: //! Search thread that handles searching a terminal for a string match. 9: pub const Thread = @This();
+n11 src/terminal/search/Thread.zig 45: /// Allocator used for some state 79: opts: Options,
+n11 src/terminal/search/Thread.zig 84: pub fn init(alloc: Allocator, opts: Options) !Thread { 131: }
+n11 src/terminal/search/Thread.zig 134: pub fn threadMain(self: *Thread) void { 329: }
+n11 src/terminal/search/Thread.zig 441: fn wakeupCallback( 471: }
+n11 src/termio/Exec.zig 49: pub fn init( 57: }
+n11 src/termio/Exec.zig 59: pub fn deinit(self: *Exec) void { 61: }
+n11 src/termio/Exec.zig 67: pub fn initTerminal(self: *Exec, term: *terminal.Terminal) void { 84: }
+n11 src/termio/Exec.zig 86: pub fn threadEnter( 104:     errdefer self.subprocess.stop();
+n11 src/termio/Exec.zig 120:     // Track our process start time for abnormal exits 121:     const process_start: std.Io.Timestamp = .now(global.io(), .awake);
+n11 src/termio/Exec.zig 123:     // Create our pipe that we'll use to kill our read thread. 127:     errdefer _ = posix.system.close(pipe[1]);
+n11 src/termio/Exec.zig 139:     // Start our read thread 179:     }
+n11 src/termio/Exec.zig 196: pub fn threadExit(self: *Exec, td: *termio.Termio.ThreadData) void { 230: }
+n11 src/termio/Exec.zig 266: pub fn resize( 272: }
+n11 src/termio/Exec.zig 274: fn processExitCommon(td: *termio.Termio.ThreadData, exit_code: u32) void { 315: }
+n11 src/termio/Exec.zig 403: pub fn queueWrite( 469: }
+n11 src/termio/Exec.zig 549:     pub fn deinit(self: *ThreadData, alloc: Allocator) void { 565:     }
+n11 src/termio/Exec.zig 887:     pub fn deinit(self: *Subprocess) void { 893:     }
+n11 src/termio/Exec.zig 1105:     /// Called to notify that we exited externally so we can unset our 1133:     }
+n11 src/termio/Exec.zig 1135:     /// Resize the pty subprocess. This is safe to call anytime. 1156:     }
+n11 src/termio/Exec.zig 1161:     fn killCommand(command: *Command) !void { 1258:     }
+n11 src/termio/Exec.zig 1412:     fn threadMainPosix(fd: posix.fd_t, io: *termio.Termio, quit: posix.fd_t) void { 1414:         defer _ = posix.system.close(quit);
+n11 src/termio/Exec.zig 1462:         const gather_thread = std.Thread.spawn( 1476:         }
+n11 src/termio/Exec.zig 1481:         while (true) { 1487:                     pipeline.batch_ready.waitUncancelable(global.io(), &pipeline.mutex);
+n11 src/termio/Exec.zig 1526:     fn gatherMainPosix(fd: posix.fd_t, quit: posix.fd_t, pipeline: *Pipeline) void { 1549:         };
+n11 src/termio/Exec.zig 1635:                         // On a quit signal we deliver what we have 1641:                         }
+n11 src/termio/Exec.zig 1696:             // Publish the batch (if any) to the parse stage and rotate 1724:             }
+n11 src/termio/Exec.zig 1778:     fn threadMainWindows(fd: posix.fd_t, io: *termio.Termio, quit: posix.fd_t) void { 1826:     }
+n11 src/termio/Termio.zig 29: pub const MutexState = enum { locked, unlocked }; 66: terminal_stream: StreamHandler.Stream,
+n11 src/termio/Termio.zig 182: pub const DerivedConfig = struct { 248: };
+n11 src/termio/Termio.zig 254: pub fn init(self: *Termio, alloc: Allocator, opts: termio.Options) !void { 352: }
+n11 src/termio/Termio.zig 354: pub fn deinit(self: *Termio) void { 365: }
+n11 src/termio/Termio.zig 367: pub fn threadEnter( 429: }
+n11 src/termio/Termio.zig 437: pub fn queueMessage( 447: }
+n11 src/termio/Termio.zig 456: pub inline fn queueWrite( 463: }
+n11 src/termio/Termio.zig 466: pub fn changeConfig(self: *Termio, td: *ThreadData, config: *DerivedConfig) !void { 521: }
+n11 src/termio/Termio.zig 524: pub fn resize( 564: }
+n11 src/termio/Termio.zig 705: pub fn processOutput(self: *Termio, buf: []const u8) void { 762: }
+n11 src/termio/Termio.zig 848:     pub fn deinit(self: *ThreadData) void { 851:     }
+n11 src/termio/Thread.zig 127: pub fn deinit(self: *Thread) void { 133: }
+n11 src/termio/Thread.zig 236: fn threadMain_(self: *Thread, io: *termio.Termio) !void { 236: fn threadMain_(self: *Thread, io: *termio.Termio) !void {
+n11 src/termio/Thread.zig 259:     // This is the data sent to xev callbacks. We want a pointer to both 279: }
+n11 src/termio/Thread.zig 289: fn drainMailbox( 313:         switch (message) {
+n11 src/termio/Thread.zig 321:             .change_config => |config| { 326:             .resize => |v| self.handleResize(cb, v),
+n11 src/termio/Thread.zig 347:             .linefeed_mode => |v| self.flags.linefeed_mode = v, 367:         }
+n11 src/termio/Thread.zig 389: fn handleResize(self: *Thread, cb: *CallbackData, resize: renderer.Size) void { 406: }
+n11 src/termio/Thread.zig 427: fn coalesceCallback( 471: }
+n11 src/termio/Thread.zig 473: fn stopCallback( 482: }
+n11 src/termio/backend.zig 27:     pub fn deinit(self: *Backend) void { 31:     }
+n11 src/termio/backend.zig 50:     pub fn threadExit(self: *Backend, td: *termio.Termio.ThreadData) void { 54:     }
+n11 src/termio/backend.zig 66:     pub fn resize( 74:     }
+n11 src/termio/backend.zig 76:     pub fn queueWrite( 86:     }
+n11 src/termio/backend.zig 119:     pub fn deinit(self: *ThreadData, alloc: Allocator) void { 123:     }
+n11 src/termio/mailbox.zig 47:     pub fn deinit(self: *Mailbox, alloc: Allocator) void { 108:     }
+n11 src/termio/message.zig 14:     /// Represents a write request. Magic number comes from the largest 17:     pub const WriteReq = MessageData(u8, 38);
+n11 src/termio/message.zig 38:     /// The derived configuration to update the implementation with. This 43:     },
+n11 src/termio/message.zig 48:     /// Resize the window. 49:     resize: renderer.Size,
+n11 src/termio/message.zig 91:     /// Write where the data fits in the union. 98:     write_alloc: WriteReq.Alloc,
+n11 src/termio/message.zig 107:     /// Return a write request for the given data. This will use 116:     }
+n11 src/termio/message.zig 118:     /// Free resources owned by a message that will not be processed. 132:     }
+n11 src/termio/stream_handler.zig 122:     pub fn changeConfig(self: *StreamHandler, config: *termio.DerivedConfig) void { 136:     }
+n12 src/Surface.zig 74: /// The app that this surface is attached to. 79: rt_surface: *apprt.runtime.Surface,
+n12 src/Surface.zig 477: pub fn init( 484: ) !void {
+n12 src/Surface.zig 623:         .alloc = alloc, 626:         .rt_surface = rt_surface,
+n12 src/Surface.zig 829: pub fn deinit(self: *Surface) void { 879: }
+n12 src/apprt/embedded.zig 447: pub const Surface = struct { 455:     inspector: ?*Inspector = null,
+n12 src/apprt/embedded.zig 615:         // Initialize our surface right away. We're given a view that is 624:         errdefer self.core_surface.deinit();
+n12 src/apprt/embedded.zig 634:     pub fn deinit(self: *Surface) void { 646:     }
+n12 src/apprt/gtk/class/surface.zig 1963:     fn finalize(self: *Self) callconv(.c) void { 1981:         }
+n12 src/apprt/gtk/class/surface.zig 3610:         // Initialize the surface 3625:         priv.desktop_notifications = .init(surface.id);
+n13 src/Surface.zig 144: /// The configuration derived from the main config. We "derive" it so that 147: config: DerivedConfig,
+n13 src/Surface.zig 301: /// The configuration that a surface has, this is copied from the main 445:     }
+n13 src/Surface.zig 505:     // Get our configuration 507:     errdefer derived_config.deinit();
+n13 src/Surface.zig 643:         .size = size, 644:         .config = derived_config,
+n13 src/Surface.zig 876:     self.config.deinit(); 876:     self.config.deinit();
+n13 src/Surface.zig 1822:     // Update our new derived config immediately 1831:     self.config = derived;
+n14 src/App.zig 172: pub fn updateConfig(self: *App, rt_app: *apprt.App, config: *const Config) !void { 176:     }
+n14 src/Surface.zig 899: fn queueIo( 920: }
+n14 src/Surface.zig 1017: pub fn handleMessage(self: *Surface, msg: Message) !void { 1019:         .change_config => |config| try self.updateConfig(config),
+n14 src/Surface.zig 1804: pub fn updateConfig( 1906: }
+n14 src/Surface.zig 2510: fn setCellSize(self: *Surface, size: rendererpkg.CellSize) !void { 2531: }
+n14 src/Surface.zig 2536: pub fn setFontSize(self: *Surface, size: font.face.DesiredSize) !void { 2579: }
+n14 src/Surface.zig 3221: fn deactivateAllKeyTables(self: *Surface) !bool { 3243: }
+n14 src/Surface.zig 3280: fn endKeySequence( 3322: }
+n14 src/renderer/Thread.zig 103: pub const DerivedConfig = struct { 111: };
+n14 src/renderer/Thread.zig 290: fn drainMailbox(self: *Thread) !void { 303:         switch (message) {
+n14 src/renderer/Thread.zig 397:             .font_grid => |grid| { 400:             },
+n14 src/renderer/Thread.zig 406:             .change_config => |config| { 415:             },
+n14 src/renderer/Thread.zig 446: fn changeConfig(self: *Thread, config: *const DerivedConfig) !void { 458: }
+n14 src/renderer/Thread.zig 474: fn wakeupCallback( 493:     _ = renderCallback(t, undefined, undefined, {});
+n14 src/renderer/generic.zig 1317:         pub fn setFontGrid(self: *Self, grid: *font.SharedGrid) void { 1358:         }
+n14 src/renderer/generic.zig 2171:         pub fn changeConfig(self: *Self, config: *DerivedConfig) !void { 2246:         }
+n14 src/renderer/message.zig 48:     /// The derived configuration to update the renderer with. 53:     },
+n14 src/renderer/message.zig 86:     /// Initialize a change_config message. 116:     }
+n14 src/termio/Termio.zig 182: pub const DerivedConfig = struct { 248: };
+n14 src/termio/Termio.zig 437: pub fn queueMessage( 447: }
+n14 src/termio/Termio.zig 466: pub fn changeConfig(self: *Termio, td: *ThreadData, config: *DerivedConfig) !void { 521: }
+n14 src/termio/Thread.zig 289: fn drainMailbox( 313:         switch (message) {
+n14 src/termio/Thread.zig 321:             .change_config => |config| { 324:             },
+n14 src/termio/Thread.zig 453: fn wakeupCallback( 471: }
+n14 src/termio/mailbox.zig 63:     pub fn send( 108:     }
+n14 src/termio/message.zig 38:     /// The derived configuration to update the implementation with. This 43:     },
+n14 src/termio/message.zig 120:     pub fn deinit(self: *const Message) void { 125:             },
+n14 src/termio/stream_handler.zig 122:     pub fn changeConfig(self: *StreamHandler, config: *termio.DerivedConfig) void { 136:     }
+n15 src/Surface.zig 104: /// Mouse state. 108: keyboard: Keyboard,
+n15 src/Surface.zig 110: /// A currently pressed key. This is used so that we can send a keyboard 131: last_binding_trigger: u64 = 0,
+n15 src/Surface.zig 141: /// All our sizing information. 142: size: rendererpkg.Size,
+n15 src/Surface.zig 155: /// This is set to true if our IO thread notifies us our child exited. 166: visible: bool = true,
+n15 src/Surface.zig 229: /// Mouse state for the surface. 299: };
+n15 src/renderer/size.zig 28: pub const Size = struct { 31:     padding: Padding,
+n16 src/Surface.zig 194: pub const InputEffect = enum { 207: };
+n16 src/Surface.zig 899: fn queueIo( 920: }
+n16 src/Surface.zig 2451: fn setSelection(self: *Surface, sel_: ?terminal.Selection) !void { 2506: }
+n16 src/Surface.zig 2792: pub fn keyCallback( 2982: }
+n16 src/Surface.zig 2987: fn maybeHandleBinding( 3219: }
+n16 src/Surface.zig 3326: fn encodeKey( 3419: }
+n16 src/Surface.zig 3421: /// Sends text as-is to the terminal without triggering any keyboard 3432: }
+n16 src/Surface.zig 3802: fn isMouseReporting(self: *const Surface) bool { 3905: }
+n16 src/Surface.zig 3915: /// Called for mouse button press/release events. This will return true 4297: }
+n16 src/Surface.zig 4678: pub fn cursorPosCallback( 4678: pub fn cursorPosCallback(
+n16 src/Surface.zig 4803:     // Handle cursor position for text selection 4867: }
+n16 src/Surface.zig 6264: fn completeClipboardPaste( 6341: }
+n16 src/apprt/embedded.zig 202:     pub fn keyEvent( 228:     }
+n16 src/apprt/embedded.zig 1052:     pub fn mouseButtonCallback( 1062:     }
+n16 src/apprt/embedded.zig 1131:     pub fn textCallback(self: *Surface, text: []const u8) void { 1136:     }
+n16 src/apprt/embedded.zig 2073:     export fn ghostty_surface_key( 2084:     }
+n16 src/apprt/embedded.zig 2110:     export fn ghostty_surface_text( 2116:     }
+n16 src/apprt/embedded.zig 2150:     export fn ghostty_surface_mouse_button( 2164:     }
+n16 src/apprt/gtk/class/surface.zig 1445:         // Invoke the core Ghostty logic to handle this input. 1472: 
+n16 src/apprt/gtk/class/surface.zig 2956:         if (button == .middle and 2986: 
+n16 src/apprt/gtk/class/surface.zig 3026:         const mods = gtk_key.translateMods(gtk_mods); 3041:         if (!consumed and button == .left and !surface.hasSelection()) {
+n16 src/apprt/gtk/class/surface.zig 3407:             // Send the text to the core surface, associated with no key (an 3418:             };
+n17 src/App.zig 319: pub fn newWindow(self: *App, rt_app: *apprt.App, msg: Message.NewWindow) !void { 331: }
+n17 src/App.zig 444: pub fn performAction( 529: }
+n17 src/Surface.zig 2451: fn setSelection(self: *Surface, sel_: ?terminal.Selection) !void { 2473: }
+n17 src/Surface.zig 2792: pub fn keyCallback( 2795: ) !InputEffect {
+n17 src/Surface.zig 2834:     // Handle keybindings first. We need to handle this on all events 2846:     }
+n17 src/Surface.zig 2938:     // Encode and send our key. If we didn't encode anything, then we 2961:     }
+n17 src/Surface.zig 2987: fn maybeHandleBinding( 3219: }
+n17 src/Surface.zig 3247: fn catchAllIsIgnore(self: *Surface) bool { 3322: }
+n17 src/Surface.zig 4941: pub fn performBindingAction(self: *Surface, action: input.Binding.Action) !bool { 4999:         },
+n17 src/Surface.zig 5053:         .reset => { 5057:         },
+n17 src/Surface.zig 5450:         .new_tab => return try self.rt_app.performAction( 5464:         ),
+n17 src/Surface.zig 5494:         .new_split => |direction| return try self.rt_app.performAction( 5507:         ),
+n17 src/Surface.zig 5635:         .select_all => { 5657:         .close_surface => self.close(),
+n17 src/Surface.zig 5818:     return true; 5833: }
+n17 src/apprt/embedded.zig 303:     pub fn performAction( 323:     }
+n17 src/apprt/gtk/App.zig 61: pub fn performAction( 68: }
+n17 src/apprt/gtk/class/application.zig 692:     pub fn performAction( 700:             .close_window => return Action.closeWindow(target),
+n17 src/apprt/gtk/class/application.zig 739:             .new_split => return Action.newSplit(target, value), 750:             ),
+n17 src/apprt/gtk/class/application.zig 2535:     pub fn newSplit( 2585:     }
+n17 src/input/Binding.zig 2722:     pub fn getEvent(self: *const Set, event: KeyEvent) ?Entry { 2760:     }
+n18 src/Surface.zig 2792: pub fn keyCallback( 2795: ) !InputEffect {
+n18 src/Surface.zig 2834:     // Handle keybindings first. We need to handle this on all events 2846:     }
+n18 src/Surface.zig 2938:     // Encode and send our key. If we didn't encode anything, then we 2961:     }
+n18 src/Surface.zig 3067:     // Determine if this entry has an action or if its a leader key. 3081:             self.keyboard.sequence_set = set;
+n18 src/Surface.zig 3189:     // If we consume this event, then we are done. If we don't consume 3219: }
+n18 src/Surface.zig 3280: fn endKeySequence( 3322: }
+n18 src/Surface.zig 3326: fn encodeKey( 3432: }
+n18 src/Surface.zig 3584: pub fn scrollCallback( 3589: ) !void {
+n18 src/Surface.zig 3681:         self.renderer_state.mutex.lockUncancelable(global.io()); 3750:         }
+n18 src/Surface.zig 3802: fn isMouseReporting(self: *const Surface) bool { 3905: }
+n18 src/Surface.zig 3918: pub fn mouseButtonCallback( 3923: ) !bool {
+n18 src/Surface.zig 4057:     // Report mouse events if enabled 4094:     }
+n18 src/Surface.zig 4180:     // Middle-click action, either ignore, or paste from clipboard or paste from the selection clipboard if supported. 4191:     };
+n18 src/Surface.zig 4678: pub fn cursorPosCallback( 4682: ) !void {
+n18 src/Surface.zig 4778:     // Do a mouse report 4801:     }
+n18 src/Surface.zig 4902: fn scrollToBottom(self: *Surface) !void { 4905: }
+n18 src/Surface.zig 4941: pub fn performBindingAction(self: *Surface, action: input.Binding.Action) !bool { 4941: pub fn performBindingAction(self: *Surface, action: input.Binding.Action) !bool {
+n18 src/Surface.zig 5029:         .cursor_key => |ck| { 5051:         },
+n18 src/Surface.zig 5240:         .paste_from_clipboard => return (try self.startClipboardRequest( 5248:         )) == .started,
+n18 src/Surface.zig 6017: pub fn completeClipboardRequest( 6033:         },
+n18 src/Surface.zig 6219: fn startClipboardRequest( 6398: }
+n18 src/input/key_encode.zig 14: pub const Options = struct { 73: };
+n18 src/input/key_encode.zig 82: pub fn encode( 319: }
+n18 src/input/key_encode.zig 327: fn legacy( 550: }
+n18 src/input/key_encode.zig 552: fn legacyAltPrefix( 618: }
+n18 src/input/key_encode.zig 631: fn pcStyleFunctionKey( 699: }
+n18 src/input/key_encode.zig 1010: const KittySequence = struct { 1117: };
+n18 src/input/mouse_encode.zig 13: pub const Options = struct { 76: };
+n18 src/input/mouse_encode.zig 81: pub fn encode( 280: }
+n18 src/input/paste.zig 4: /// The bracketed paste (mode 2004) frame written around the data. 22: };
+n18 src/input/paste.zig 42: pub fn encode( 119: }
+n18 src/input/paste.zig 140: pub fn encodeWriter( 161: }
+n18 src/input/paste.zig 180: pub fn isSafe(data: []const u8) bool { 199: }
+n18 src/terminal/paste.zig 167: pub fn paste(ctx: Context, req: Request) Error!bool { 242: }
+n18 src/termio/message.zig 107:     /// Return a write request for the given data. This will use 116:     }
+n19 src/Surface.zig 171: /// True if the surface is in read-only mode. When read-only, no input 175: readonly: bool = false,
+n19 src/Surface.zig 895: /// Queue a message for the IO thread, taking ownership of `msg`. 920: }
+n19 src/Surface.zig 2451: fn setSelection(self: *Surface, sel_: ?terminal.Selection) !void { 2473: }
+n19 src/Surface.zig 2953:         self.queueIo(switch (write_req) { 2957:         }, .unlocked);
+n19 src/Surface.zig 3584: pub fn scrollCallback( 3589: ) !void {
+n19 src/Surface.zig 3752:         if (y.delta != 0) { 3761: }
+n19 src/Surface.zig 3871:     self.queueIo(.{ .write_small = .{ 3875: }
+n19 src/Surface.zig 4166:         // Use `setSelection` (not `setSelectionAndCopy`) here to avoid 4177:         }
+n19 src/Surface.zig 4678: pub fn cursorPosCallback( 4682: ) !void {
+n19 src/Surface.zig 4803:     // Handle cursor position for text selection 4867: }
+n19 src/Surface.zig 5555:         .toggle_readonly => { 5563:         },
+n19 src/Surface.zig 5635:         .select_all => { 5644:         },
+n19 src/Surface.zig 6335:     for (vecs) |vec| if (vec.len > 0) { 6340:     };
+n19 src/datastruct/message_data.zig 12:         pub const Small = struct { 36:         alloc: Alloc,
+n19 src/datastruct/message_data.zig 76:         pub fn deinit(self: Self) void { 81:         }
+n19 src/termio/Exec.zig 403: pub fn queueWrite( 469: }
+n19 src/termio/Termio.zig 437: pub fn queueMessage( 447: }
+n19 src/termio/Termio.zig 456: pub inline fn queueWrite( 463: }
+n19 src/termio/Thread.zig 289: fn drainMailbox( 313:         switch (message) {
+n19 src/termio/Thread.zig 347:             .linefeed_mode => |v| self.flags.linefeed_mode = v, 367:         }
+n19 src/termio/Thread.zig 453: fn wakeupCallback( 471: }
+n19 src/termio/backend.zig 76:     pub fn queueWrite( 86:     }
+n19 src/termio/mailbox.zig 47:     pub fn deinit(self: *Mailbox, alloc: Allocator) void { 108:     }
+n19 src/termio/message.zig 14:     /// Represents a write request. Magic number comes from the largest 17:     pub const WriteReq = MessageData(u8, 38);
+n19 src/termio/message.zig 91:     /// Write where the data fits in the union. 98:     write_alloc: WriteReq.Alloc,
+n19 src/termio/message.zig 118:     /// Free resources owned by a message that will not be processed. 132:     }
+n20 src/Surface.zig 141: /// All our sizing information. 142: size: rendererpkg.Size,
+n20 src/Surface.zig 447:     fn scaledPadding(self: *const DerivedConfig, x_dpi: f32, y_dpi: f32) rendererpkg.Padding { 471:     }
+n20 src/Surface.zig 536:     // Build our size struct which has all the sizes we need. 562:     };
+n20 src/Surface.zig 2510: fn setCellSize(self: *Surface, size: rendererpkg.CellSize) !void { 2516:     self.queueIo(.{ .resize = self.size }, .unlocked);
+n20 src/Surface.zig 2600: pub fn sizeCallback(self: *Surface, size: apprt.SurfaceSize) !void { 2658: }
+n20 src/Surface.zig 3765: pub fn contentScaleCallback(self: *Surface, content_scale: apprt.ContentScale) !void { 3798: }
+n20 src/apprt/embedded.zig 1026:     pub fn updateSize(self: *Surface, width: u32, height: u32) void { 1043:     }
+n20 src/apprt/embedded.zig 1996:     export fn ghostty_surface_set_size(surface: *Surface, w: u32, h: u32) void { 1998:     }
+n20 src/apprt/gtk/class/surface.zig 3497:     fn renderSurfaceResize( 3538:             }
+n20 src/apprt/structs.zig 13: /// The size of the surface in pixels. 21: };
+n20 src/renderer/size.zig 20: /// All relevant sizes for a rendered terminal. These are all the sizes that 79: };
+n20 src/renderer/size.zig 184: /// The units for the width and height are in world space. They have to 204:     }
+n20 src/renderer/size.zig 231:     /// Returns true if two sizes are equal. 262:     }
+n20 src/renderer/size.zig 270: /// The padding to add to a screen. 306:     }
+n21 src/Surface.zig 899: fn queueIo( 920: }
+n21 src/Surface.zig 2577: fn queueRender(self: *Surface) !void { 2579: }
+n21 src/Surface.zig 2618: fn resize(self: *Surface, size: rendererpkg.ScreenSize) !void { 2621:     self.balancePaddingIfNeeded();
+n21 src/Surface.zig 2637:     // Mail the IO thread 2649: }
+n21 src/renderer/Thread.zig 231:     // Start the async handlers 234:     self.draw_now.wait(&self.loop, &self.draw_now_c, Thread, self, drawNowCallback);
+n21 src/renderer/Thread.zig 290: fn drainMailbox(self: *Thread) !void { 290: fn drainMailbox(self: *Thread) !void {
+n21 src/renderer/Thread.zig 301:     while (self.mailbox.pop(global.io())) |message| { 304:             .crash => @panic("crash request, crashing intentionally"),
+n21 src/renderer/Thread.zig 404:             .resize => |v| self.renderer.setScreenSize(v), 404:             .resize => |v| self.renderer.setScreenSize(v),
+n21 src/renderer/Thread.zig 474: fn wakeupCallback( 493:     _ = renderCallback(t, undefined, undefined, {});
+n21 src/renderer/generic.zig 2249:         pub fn setScreenSize( 2304:         }
+n21 src/renderer/message.zig 45:     /// Changes the size. The screen size might change, padding, grid, etc. 46:     resize: renderer.Size,
+n21 src/terminal/Terminal.zig 4912: pub fn resize( 5074: }
+n21 src/termio/Exec.zig 266: pub fn resize( 272: }
+n21 src/termio/Exec.zig 1135:     /// Resize the pty subprocess. This is safe to call anytime. 1156:     }
+n21 src/termio/Termio.zig 437: pub fn queueMessage( 447: }
+n21 src/termio/Termio.zig 524: pub fn resize( 564: }
+n21 src/termio/Thread.zig 271:     // Start the async handlers. 273:     self.stop.wait(&self.loop, &self.stop_c, CallbackData, &cb, stopCallback);
+n21 src/termio/Thread.zig 289: fn drainMailbox( 294:     const mailbox = cb.io.mailbox.spsc.queue;
+n21 src/termio/Thread.zig 326:             .resize => |v| self.handleResize(cb, v), 326:             .resize => |v| self.handleResize(cb, v),
+n21 src/termio/Thread.zig 389: fn handleResize(self: *Thread, cb: *CallbackData, resize: renderer.Size) void { 406: }
+n21 src/termio/Thread.zig 427: fn coalesceCallback( 471: }
+n21 src/termio/backend.zig 66:     pub fn resize( 74:     }
+n21 src/termio/mailbox.zig 63:     pub fn send( 108:     }
+n21 src/termio/message.zig 48:     /// Resize the window. 49:     resize: renderer.Size,
+n38 src/App.zig 293:             .surface_message => |msg| try self.surfaceMessage(msg.surface, msg.message), 293:             .surface_message => |msg| try self.surfaceMessage(msg.surface, msg.message),
+n38 src/App.zig 532: fn surfaceMessage(self: *App, surface: *Surface, msg: apprt.surface.Message) !void { 550: }
+n38 src/Surface.zig 138: /// Terminal inspector 139: inspector: ?*inspectorpkg.Inspector = null,
+n38 src/Surface.zig 184: /// Search state 185: search: ?Search = null,
+n38 src/Surface.zig 209: /// The search state for the surface. 227: };
+n38 src/Surface.zig 829: pub fn deinit(self: *Surface) void { 831:     if (self.search) |*s| s.deinit();
+n38 src/Surface.zig 860:     if (self.inspector) |v| { 863:     }
+n38 src/Surface.zig 934: pub fn activateInspector(self: *Surface) !void { 956: }
+n38 src/Surface.zig 972: pub fn deactivateInspector(self: *Surface) void { 991: }
+n38 src/Surface.zig 1017: pub fn handleMessage(self: *Surface, msg: Message) !void { 1018:     switch (msg) {
+n38 src/Surface.zig 1225:         .search_total => |v| { 1239:         },
+n38 src/Surface.zig 1485: fn searchCallback(event: terminal.search.Thread.Event, ud: ?*anyopaque) void { 1600: }
+n38 src/Surface.zig 2792: pub fn keyCallback( 2795: ) !InputEffect {
+n38 src/Surface.zig 2809:     // Setup our inspector event if we have an inspector. 2832:     };
+n38 src/Surface.zig 3326: fn encodeKey( 3330: ) !?termio.Message.WriteReq {
+n38 src/Surface.zig 3382:     // Copy the encoded data into the inspector event if we have one. 3397: }
+n38 src/Surface.zig 3918: pub fn mouseButtonCallback( 3923: ) !bool {
+n38 src/Surface.zig 3930:     // If we have an inspector, we always queue a render 3933:     }
+n38 src/Surface.zig 4678: pub fn cursorPosCallback( 4682: ) !void {
+n38 src/Surface.zig 4735:     // We are reading/writing state for the remainder 4755:     }
+n38 src/Surface.zig 4941: pub fn performBindingAction(self: *Surface, action: input.Binding.Action) !bool { 4941: pub fn performBindingAction(self: *Surface, action: input.Binding.Action) !bool {
+n38 src/Surface.zig 5059:         .start_search => { 5159:         },
+n38 src/Surface.zig 5646:         .inspector => |mode| return try self.rt_app.performAction( 5655:         ),
+n38 src/apprt/embedded.zig 648:     /// Initialize the inspector instance. A surface can only have one 668:     }
+n38 src/apprt/embedded.zig 1283:     pub fn init(surface: *Surface) !Inspector { 1307:     }
+n38 src/apprt/gtk/class/inspector_widget.zig 124:     pub fn setSurface(self: *Self, surface_: ?*Surface) void { 172:     }
+n38 src/apprt/gtk/class/inspector_widget.zig 177:     fn surfaceWeakNotify( 203:     }
+n38 src/apprt/surface.zig 154:     /// Search progress update 158:     search_selected: ?usize,
+n38 src/apprt/surface.zig 186: /// A surface mailbox. 207: };
+n38 src/inspector/Inspector.zig 1: //! The Inspector is a development tool to debug the terminal. This is 4: const Inspector = @This();
+n38 src/inspector/Inspector.zig 17: /// Mouse state that we track in addition to normal mouse states that 22: gui: widgets.surface.Inspector,
+n38 src/inspector/Inspector.zig 58: pub fn init(alloc: Allocator) !Inspector { 110: }
+n38 src/renderer/State.zig 22: /// The terminal inspector, if any. This will be null while the inspector 24: inspector: ?*Inspector = null,
+n38 src/renderer/Thread.zig 290: fn drainMailbox(self: *Thread) !void { 290: fn drainMailbox(self: *Thread) !void {
+n38 src/renderer/Thread.zig 417:             .search_viewport_matches => |v| { 435:             },
+n38 src/renderer/generic.zig 1547:                 const overlay_features: []const Overlay.Feature = overlay: { 1561:                 };
+n38 src/terminal/search/Thread.zig 1: //! Search thread that handles searching a terminal for a string match. 9: pub const Thread = @This();
+n38 src/terminal/search/Thread.zig 45: /// Allocator used for some state 79: opts: Options,
+n38 src/terminal/search/Thread.zig 84: pub fn init(alloc: Allocator, opts: Options) !Thread { 131: }
+n38 src/terminal/search/Thread.zig 134: pub fn threadMain(self: *Thread) void { 329: }
+n38 src/terminal/search/Thread.zig 441: fn wakeupCallback( 471: }
+n38 src/termio/Termio.zig 705: pub fn processOutput(self: *Termio, buf: []const u8) void { 711: }
+n38 src/termio/Termio.zig 714: fn processOutputLocked(self: *Termio, buf: []const u8) void { 714: fn processOutputLocked(self: *Termio, buf: []const u8) void {
+n38 src/termio/Termio.zig 736:     // If we have an inspector, we enter SLOW MODE because we need to 754:     }
+n38 src/termio/Thread.zig 289: fn drainMailbox( 292: ) !void {
+n38 src/termio/Thread.zig 325:             .inspector => |v| self.flags.has_inspector = v, 325:             .inspector => |v| self.flags.has_inspector = v,
+n39 macos/Sources/Ghostty/Ghostty.App.swift 768:             case GHOSTTY_ACTION_SHOW_CHILD_EXITED: 769:                 return showChildExited(app, target: target, v: action.action.child_exited)
+n39 macos/Sources/Ghostty/Ghostty.App.swift 1854:         private static func showChildExited( 1872:         }
+n39 macos/Sources/Ghostty/Ghostty.ChildExitedMessage.swift 6:     struct ChildExitedMessage { 40:     }
+n39 macos/Sources/Ghostty/Surface View/OSSurfaceView.swift 99:         func setChildExitedMessage(_ message: ChildExitedMessage) { 101:         }
+n39 macos/Sources/Ghostty/Surface View/SurfaceView.swift 106:                     // Show a bar to indicate a child process has exited. 110:                     }
+n39 src/App.zig 164: pub fn tick(self: *App, rt_app: *apprt.App) !void { 167: }
+n39 src/App.zig 273: fn drainMailbox(self: *App, rt_app: *apprt.App) !void { 281:         switch (message) {
+n39 src/App.zig 293:             .surface_message => |msg| try self.surfaceMessage(msg.surface, msg.message), 293:             .surface_message => |msg| try self.surfaceMessage(msg.surface, msg.message),
+n39 src/App.zig 532: fn surfaceMessage(self: *App, surface: *Surface, msg: apprt.surface.Message) !void { 550: }
+n39 src/App.zig 601:     rt_app: *apprt.App, 612:     }
+n39 src/Surface.zig 155: /// This is set to true if our IO thread notifies us our child exited. 157: child_exited: bool = false,
+n39 src/Surface.zig 1017: pub fn handleMessage(self: *Surface, msg: Message) !void { 1018:     switch (msg) {
+n39 src/Surface.zig 1141:         .child_exited => |v| self.childExited(v), 1141:         .child_exited => |v| self.childExited(v),
+n39 src/Surface.zig 1297: fn childExited(self: *Surface, info: apprt.surface.Message.ChildExited) void { 1454: }
+n39 src/apprt/embedded.zig 303:     pub fn performAction( 323:     }
+n39 src/apprt/gtk/App.zig 61: pub fn performAction( 68: }
+n39 src/apprt/gtk/class/application.zig 692:     pub fn performAction( 698:         switch (action) {
+n39 src/apprt/gtk/class/application.zig 789:             .show_child_exited => return Action.showChildExited(target, value), 789:             .show_child_exited => return Action.showChildExited(target, value),
+n39 src/apprt/gtk/class/application.zig 3052:     pub fn showChildExited( 3060:     }
+n39 src/apprt/gtk/class/surface.zig 1526:     pub fn childExited( 1539:     }
+n39 src/apprt/gtk/class/surface_child_exited.zig 69:     pub fn setData( 110:     }
+n39 src/apprt/surface.zig 104:     /// The child process running in the surface has exited. This may trigger 107:     child_exited: ChildExited,
+n39 src/apprt/surface.zig 169:     pub const ChildExited = extern struct { 183:     };
+n39 src/apprt/surface.zig 186: /// A surface mailbox. 207: };
+n39 src/termio/Exec.zig 120:     // Track our process start time for abnormal exits 121:     const process_start: std.Io.Timestamp = .now(global.io(), .awake);
+n39 src/termio/Exec.zig 147:     // Setup our threadata backend state to be our own 179:     }
+n39 src/termio/Exec.zig 274: fn processExitCommon(td: *termio.Termio.ThreadData, exit_code: u32) void { 315: }
+n40 macos/Sources/Ghostty/Ghostty.App.swift 768:             case GHOSTTY_ACTION_SHOW_CHILD_EXITED: 769:                 return showChildExited(app, target: target, v: action.action.child_exited)
+n40 macos/Sources/Ghostty/Ghostty.App.swift 1854:         private static func showChildExited( 1872:         }
+n40 macos/Sources/Ghostty/Ghostty.ChildExitedMessage.swift 6:     struct ChildExitedMessage { 40:     }
+n40 macos/Sources/Ghostty/Surface View/OSSurfaceView.swift 99:         func setChildExitedMessage(_ message: ChildExitedMessage) { 101:         }
+n40 macos/Sources/Ghostty/Surface View/SurfaceView.swift 106:                     // Show a bar to indicate a child process has exited. 110:                     }
+n40 src/Surface.zig 303: const DerivedConfig = struct { 309:     abnormal_command_exit_runtime_ms: u32,
+n40 src/Surface.zig 361:     pub fn init(alloc_gpa: Allocator, config: *const configpkg.Config) !DerivedConfig { 361:     pub fn init(alloc_gpa: Allocator, config: *const configpkg.Config) !DerivedConfig {
+n40 src/Surface.zig 387:         return .{ 390:             .abnormal_command_exit_runtime_ms = config.@"abnormal-command-exit-runtime",
+n40 src/Surface.zig 1297: fn childExited(self: *Surface, info: apprt.surface.Message.ChildExited) void { 1331:     }
+n40 src/Surface.zig 1378: fn childExitedAbnormally( 1454: }
+n40 src/Surface.zig 2792: pub fn keyCallback( 2795: ) !InputEffect {
+n40 src/Surface.zig 2938:     // Encode and send our key. If we didn't encode anything, then we 2951:         }
+n40 src/apprt/embedded.zig 303:     pub fn performAction( 323:     }
+n40 src/apprt/gtk/App.zig 61: pub fn performAction( 68: }
+n40 src/apprt/gtk/class/application.zig 789:             .show_child_exited => return Action.showChildExited(target, value), 789:             .show_child_exited => return Action.showChildExited(target, value),
+n40 src/apprt/gtk/class/application.zig 3052:     pub fn showChildExited( 3060:     }
+n40 src/apprt/gtk/class/surface.zig 1526:     pub fn childExited( 1539:     }
+n40 src/apprt/gtk/class/surface_child_exited.zig 69:     pub fn setData( 110:     }
+n40 src/config/Config.zig 1356: /// The number of milliseconds of runtime below which we consider a process exit 1363: @"abnormal-command-exit-runtime": u32 = 250,
+n41 src/Surface.zig 335:     wait_after_command: bool, 335:     wait_after_command: bool,
+n41 src/Surface.zig 361:     pub fn init(alloc_gpa: Allocator, config: *const configpkg.Config) !DerivedConfig { 361:     pub fn init(alloc_gpa: Allocator, config: *const configpkg.Config) !DerivedConfig {
+n41 src/Surface.zig 416:             .wait_after_command = config.@"wait-after-command", 416:             .wait_after_command = config.@"wait-after-command",
+n41 src/Surface.zig 883: pub fn close(self: *Surface) void { 885: }
+n41 src/Surface.zig 995: pub fn needsConfirmQuit(self: *Surface) bool { 1013: }
+n41 src/Surface.zig 1297: fn childExited(self: *Surface, info: apprt.surface.Message.ChildExited) void { 1309:         }
+n41 src/Surface.zig 1333:     // We output a message so that the user knows what's going on and 1375: }
+n41 src/Surface.zig 2792: pub fn keyCallback( 2795: ) !InputEffect {
+n41 src/Surface.zig 2938:     // Encode and send our key. If we didn't encode anything, then we 2951:         }
+n41 src/apprt/embedded.zig 610:         // Wait after command 613:         }
+n41 src/config/Config.zig 1348: /// If true, keep the terminal open after the command exits. Normally, the 1354: @"wait-after-command": bool = false,
+n44 src/Surface.zig 82: font_grid_key: font.SharedGridSet.Key, 82: font_grid_key: font.SharedGridSet.Key,
+n44 src/Surface.zig 209: /// The search state for the surface. 227: };
+n44 src/Surface.zig 442:     pub fn deinit(self: *DerivedConfig) void { 445:     }
+n44 src/Surface.zig 528:     // Setup our font group. This will reuse an existing font group if 534:     errdefer app.font_grid_set.deref(font_grid_key);
+n44 src/Surface.zig 592:     // The mutex used to protect our renderer state. 595:     errdefer alloc.destroy(mutex);
+n44 src/Surface.zig 829: pub fn deinit(self: *Surface) void { 879: }
+n44 src/Surface.zig 2669: pub fn preeditCallback(self: *Surface, preedit_: ?[]const u8) !void { 2669: pub fn preeditCallback(self: *Surface, preedit_: ?[]const u8) !void {
+n44 src/Surface.zig 2676:     self.renderer_state.mutex.lockUncancelable(global.io()); 2677:     defer self.renderer_state.mutex.unlock(global.io());
+n44 src/Surface.zig 2690:     // We always clear our prior preedit 2694:     }
+n44 src/Surface.zig 2734:     self.renderer_state.preedit = .{ 2738: }
+n44 src/datastruct/message_data.zig 76:         pub fn deinit(self: Self) void { 81:         }
+n44 src/font/SharedGrid.zig 122: pub fn deinit(self: *SharedGrid, alloc: Allocator) void { 128: }
+n44 src/font/SharedGridSet.zig 411: /// Decrement the ref count for the given key. If the ref count is zero, 431: }
+n44 src/inspector/Inspector.zig 64: pub fn deinit(self: *Inspector, alloc: Allocator) void { 66: }
+n44 src/pty.zig 19: pub const Pty = switch (builtin.target.os.tag) { 23: };
+n44 src/pty.zig 189:     pub fn deinit(self: *Pty) void { 192:     }
+n44 src/pty.zig 457:     pub fn deinit(self: *Pty) void { 464:     }
+n44 src/renderer/DisplayLink.zig 122: /// The link is stopped before this returns, so the output callback is 146: }
+n44 src/renderer/DisplayLink.zig 205: fn syncCallback(ud: ?*anyopaque) callconv(.c) void { 219: }
+n44 src/renderer/Metal.zig 139: pub fn deinit(self: *Metal) void { 146: }
+n44 src/renderer/OpenGL.zig 92: pub fn deinit(self: *OpenGL) void { 96: }
+n44 src/renderer/Thread.zig 177: pub fn deinit(self: *Thread) void { 189: }
+n44 src/renderer/Thread.zig 200: fn threadMain_(self: *Thread) !void { 200: fn threadMain_(self: *Thread) !void {
+n44 src/renderer/Thread.zig 220:     // Run our loop start/end callbacks if the renderer cares. 234:     self.draw_now.wait(&self.loop, &self.draw_now_c, Thread, self, drawNowCallback);
+n44 src/renderer/Thread.zig 253:     // Run 257: }
+n44 src/renderer/Thread.zig 722: fn stopCallback( 731: }
+n44 src/renderer/generic.zig 44: const DisplayLink = switch (builtin.target.os.tag) { 47: };
+n44 src/renderer/generic.zig 841:         pub fn deinit(self: *Self) void { 874:         }
+n44 src/renderer/generic.zig 914:         pub fn threadExit(self: *Self) void { 974:         }
+n44 src/renderer/generic.zig 1078:         fn displayLinkCallback( 1086:         }
+n44 src/renderer/generic.zig 1244:         pub fn releaseGpuResources(self: *Self) void { 1256:         }
+n44 src/renderer/generic.zig 1273:         fn syncDisplayLink( 1299:             };
+n44 src/terminal/SelectionGesture.zig 172: pub fn deinit(self: *SelectionGesture, t: *Terminal) void { 179: }
+n44 src/terminal/Terminal.zig 395: pub fn deinit(self: *Terminal, alloc: Allocator) void { 404: }
+n44 src/terminal/search/Thread.zig 118: pub fn deinit(self: *Thread) void { 131: }
+n44 src/terminal/search/Thread.zig 142: fn threadMain_(self: *Thread) !void { 142: fn threadMain_(self: *Thread) !void {
+n44 src/terminal/search/Thread.zig 160:     // Start the async handlers 179:     }
+n44 src/terminal/search/Thread.zig 184:     while (true) { 192:         }
+n44 src/terminal/search/Thread.zig 462: fn stopCallback( 471: }
+n44 src/termio/Exec.zig 59: pub fn deinit(self: *Exec) void { 61: }
+n44 src/termio/Exec.zig 123:     // Create our pipe that we'll use to kill our read thread. 127:     errdefer _ = posix.system.close(pipe[1]);
+n44 src/termio/Exec.zig 139:     // Start our read thread 156:     } };
+n44 src/termio/Exec.zig 196: pub fn threadExit(self: *Exec, td: *termio.Termio.ThreadData) void { 230: }
+n44 src/termio/Exec.zig 549:     pub fn deinit(self: *ThreadData, alloc: Allocator) void { 565:     }
+n44 src/termio/Exec.zig 887:     pub fn deinit(self: *Subprocess) void { 893:     }
+n44 src/termio/Exec.zig 1105:     /// Called to notify that we exited externally so we can unset our 1133:     }
+n44 src/termio/Exec.zig 1161:     fn killCommand(command: *Command) !void { 1258:     }
+n44 src/termio/Exec.zig 1412:     fn threadMainPosix(fd: posix.fd_t, io: *termio.Termio, quit: posix.fd_t) void { 1414:         defer _ = posix.system.close(quit);
+n44 src/termio/Exec.zig 1462:         const gather_thread = std.Thread.spawn( 1476:         }
+n44 src/termio/Exec.zig 1481:         while (true) { 1487:                     pipeline.batch_ready.waitUncancelable(global.io(), &pipeline.mutex);
+n44 src/termio/Exec.zig 1526:     fn gatherMainPosix(fd: posix.fd_t, quit: posix.fd_t, pipeline: *Pipeline) void { 1549:         };
+n44 src/termio/Exec.zig 1635:                         // On a quit signal we deliver what we have 1641:                         }
+n44 src/termio/Exec.zig 1696:             // Publish the batch (if any) to the parse stage and rotate 1724:             }
+n44 src/termio/Exec.zig 1778:     fn threadMainWindows(fd: posix.fd_t, io: *termio.Termio, quit: posix.fd_t) void { 1826:     }
+n44 src/termio/Termio.zig 354: pub fn deinit(self: *Termio) void { 365: }
+n44 src/termio/Termio.zig 427: pub fn threadExit(self: *Termio, data: *ThreadData) void { 429: }
+n44 src/termio/Termio.zig 848:     pub fn deinit(self: *ThreadData) void { 851:     }
+n44 src/termio/Thread.zig 127: pub fn deinit(self: *Thread) void { 133: }
+n44 src/termio/Thread.zig 236: fn threadMain_(self: *Thread, io: *termio.Termio) !void { 236: fn threadMain_(self: *Thread, io: *termio.Termio) !void {
+n44 src/termio/Thread.zig 259:     // This is the data sent to xev callbacks. We want a pointer to both 279: }
+n44 src/termio/Thread.zig 473: fn stopCallback( 482: }
+n44 src/termio/backend.zig 27:     pub fn deinit(self: *Backend) void { 31:     }
+n44 src/termio/backend.zig 50:     pub fn threadExit(self: *Backend, td: *termio.Termio.ThreadData) void { 54:     }
+n44 src/termio/backend.zig 119:     pub fn deinit(self: *ThreadData, alloc: Allocator) void { 123:     }
+n44 src/termio/mailbox.zig 47:     pub fn deinit(self: *Mailbox, alloc: Allocator) void { 55:     }
+n45 src/Surface.zig 209: /// The search state for the surface. 227: };
+n45 src/Surface.zig 829: pub fn deinit(self: *Surface) void { 845:     }
+n45 src/renderer/Thread.zig 200: fn threadMain_(self: *Thread) !void { 200: fn threadMain_(self: *Thread) !void {
+n45 src/renderer/Thread.zig 220:     // Run our loop start/end callbacks if the renderer cares. 234:     self.draw_now.wait(&self.loop, &self.draw_now_c, Thread, self, drawNowCallback);
+n45 src/renderer/Thread.zig 253:     // Run 257: }
+n45 src/renderer/Thread.zig 722: fn stopCallback( 731: }
+n45 src/terminal/search/Thread.zig 118: pub fn deinit(self: *Thread) void { 131: }
+n45 src/terminal/search/Thread.zig 142: fn threadMain_(self: *Thread) !void { 142: fn threadMain_(self: *Thread) !void {
+n45 src/terminal/search/Thread.zig 160:     // Start the async handlers 179:     }
+n45 src/terminal/search/Thread.zig 184:     while (true) { 192:         }
+n45 src/terminal/search/Thread.zig 462: fn stopCallback( 471: }
+n45 src/termio/Thread.zig 236: fn threadMain_(self: *Thread, io: *termio.Termio) !void { 236: fn threadMain_(self: *Thread, io: *termio.Termio) !void {
+n45 src/termio/Thread.zig 259:     // This is the data sent to xev callbacks. We want a pointer to both 279: }
+n45 src/termio/Thread.zig 473: fn stopCallback( 482: }
+n46 src/Surface.zig 829: pub fn deinit(self: *Surface) void { 829: pub fn deinit(self: *Surface) void {
+n46 src/Surface.zig 840:     // Stop our IO thread 845:     }
+n46 src/termio/Exec.zig 123:     // Create our pipe that we'll use to kill our read thread. 127:     errdefer _ = posix.system.close(pipe[1]);
+n46 src/termio/Exec.zig 139:     // Start our read thread 156:     } };
+n46 src/termio/Exec.zig 196: pub fn threadExit(self: *Exec, td: *termio.Termio.ThreadData) void { 230: }
+n46 src/termio/Exec.zig 1105:     /// Called to notify that we exited externally so we can unset our 1133:     }
+n46 src/termio/Exec.zig 1161:     fn killCommand(command: *Command) !void { 1258:     }
+n46 src/termio/Exec.zig 1412:     fn threadMainPosix(fd: posix.fd_t, io: *termio.Termio, quit: posix.fd_t) void { 1414:         defer _ = posix.system.close(quit);
+n46 src/termio/Exec.zig 1462:         const gather_thread = std.Thread.spawn( 1476:         }
+n46 src/termio/Exec.zig 1481:         while (true) { 1487:                     pipeline.batch_ready.waitUncancelable(global.io(), &pipeline.mutex);
+n46 src/termio/Exec.zig 1526:     fn gatherMainPosix(fd: posix.fd_t, quit: posix.fd_t, pipeline: *Pipeline) void { 1549:         };
+n46 src/termio/Exec.zig 1635:                         // On a quit signal we deliver what we have 1641:                         }
+n46 src/termio/Exec.zig 1696:             // Publish the batch (if any) to the parse stage and rotate 1724:             }
+n46 src/termio/Exec.zig 1778:     fn threadMainWindows(fd: posix.fd_t, io: *termio.Termio, quit: posix.fd_t) void { 1826:     }
+n46 src/termio/Termio.zig 427: pub fn threadExit(self: *Termio, data: *ThreadData) void { 429: }
+n46 src/termio/Thread.zig 236: fn threadMain_(self: *Thread, io: *termio.Termio) !void { 236: fn threadMain_(self: *Thread, io: *termio.Termio) !void {
+n46 src/termio/Thread.zig 259:     // This is the data sent to xev callbacks. We want a pointer to both 279: }
+n46 src/termio/Thread.zig 473: fn stopCallback( 482: }
+n46 src/termio/backend.zig 50:     pub fn threadExit(self: *Backend, td: *termio.Termio.ThreadData) void { 54:     }
+n47 src/Surface.zig 829: pub fn deinit(self: *Surface) void { 829: pub fn deinit(self: *Surface) void {
+n47 src/Surface.zig 847:     // We need to deinit AFTER everything is stopped, since there are 858:     self.io.deinit();
+n47 src/pty.zig 19: pub const Pty = switch (builtin.target.os.tag) { 23: };
+n47 src/pty.zig 189:     pub fn deinit(self: *Pty) void { 192:     }
+n47 src/pty.zig 457:     pub fn deinit(self: *Pty) void { 464:     }
+n47 src/renderer/DisplayLink.zig 122: /// The link is stopped before this returns, so the output callback is 146: }
+n47 src/renderer/DisplayLink.zig 205: fn syncCallback(ud: ?*anyopaque) callconv(.c) void { 219: }
+n47 src/renderer/Metal.zig 139: pub fn deinit(self: *Metal) void { 146: }
+n47 src/renderer/OpenGL.zig 92: pub fn deinit(self: *OpenGL) void { 96: }
+n47 src/renderer/Thread.zig 177: pub fn deinit(self: *Thread) void { 189: }
+n47 src/renderer/Thread.zig 200: fn threadMain_(self: *Thread) !void { 200: fn threadMain_(self: *Thread) !void {
+n47 src/renderer/Thread.zig 220:     // Run our loop start/end callbacks if the renderer cares. 234:     self.draw_now.wait(&self.loop, &self.draw_now_c, Thread, self, drawNowCallback);
+n47 src/renderer/generic.zig 44: const DisplayLink = switch (builtin.target.os.tag) { 47: };
+n47 src/renderer/generic.zig 841:         pub fn deinit(self: *Self) void { 874:         }
+n47 src/renderer/generic.zig 914:         pub fn threadExit(self: *Self) void { 974:         }
+n47 src/renderer/generic.zig 1078:         fn displayLinkCallback( 1086:         }
+n47 src/renderer/generic.zig 1244:         pub fn releaseGpuResources(self: *Self) void { 1256:         }
+n47 src/renderer/generic.zig 1273:         fn syncDisplayLink( 1299:             };
+n47 src/terminal/Terminal.zig 395: pub fn deinit(self: *Terminal, alloc: Allocator) void { 404: }
+n47 src/termio/Exec.zig 59: pub fn deinit(self: *Exec) void { 61: }
+n47 src/termio/Exec.zig 549:     pub fn deinit(self: *ThreadData, alloc: Allocator) void { 565:     }
+n47 src/termio/Exec.zig 887:     pub fn deinit(self: *Subprocess) void { 893:     }
+n47 src/termio/Termio.zig 354: pub fn deinit(self: *Termio) void { 365: }
+n47 src/termio/Termio.zig 848:     pub fn deinit(self: *ThreadData) void { 851:     }
+n47 src/termio/Thread.zig 127: pub fn deinit(self: *Thread) void { 133: }
+n47 src/termio/Thread.zig 236: fn threadMain_(self: *Thread, io: *termio.Termio) !void { 236: fn threadMain_(self: *Thread, io: *termio.Termio) !void {
+n47 src/termio/Thread.zig 259:     // This is the data sent to xev callbacks. We want a pointer to both 269:     defer io.threadExit(&cb.data);
+n47 src/termio/backend.zig 27:     pub fn deinit(self: *Backend) void { 31:     }
+n47 src/termio/backend.zig 119:     pub fn deinit(self: *ThreadData, alloc: Allocator) void { 123:     }
+n47 src/termio/mailbox.zig 47:     pub fn deinit(self: *Mailbox, alloc: Allocator) void { 55:     }
+n48 src/Surface.zig 82: font_grid_key: font.SharedGridSet.Key, 82: font_grid_key: font.SharedGridSet.Key,
+n48 src/Surface.zig 442:     pub fn deinit(self: *DerivedConfig) void { 445:     }
+n48 src/Surface.zig 528:     // Setup our font group. This will reuse an existing font group if 534:     errdefer app.font_grid_set.deref(font_grid_key);
+n48 src/Surface.zig 592:     // The mutex used to protect our renderer state. 595:     errdefer alloc.destroy(mutex);
+n48 src/Surface.zig 829: pub fn deinit(self: *Surface) void { 829: pub fn deinit(self: *Surface) void {
+n48 src/Surface.zig 857:     self.mouse.selection_gesture.deinit(&self.io.terminal); 858:     self.io.deinit();
+n48 src/Surface.zig 865:     // Clean up our keyboard state 876:     self.config.deinit();
+n48 src/Surface.zig 2669: pub fn preeditCallback(self: *Surface, preedit_: ?[]const u8) !void { 2669: pub fn preeditCallback(self: *Surface, preedit_: ?[]const u8) !void {
+n48 src/Surface.zig 2676:     self.renderer_state.mutex.lockUncancelable(global.io()); 2677:     defer self.renderer_state.mutex.unlock(global.io());
+n48 src/Surface.zig 2690:     // We always clear our prior preedit 2694:     }
+n48 src/Surface.zig 2734:     self.renderer_state.preedit = .{ 2738: }
+n48 src/datastruct/message_data.zig 76:         pub fn deinit(self: Self) void { 81:         }
+n48 src/font/SharedGrid.zig 122: pub fn deinit(self: *SharedGrid, alloc: Allocator) void { 128: }
+n48 src/font/SharedGridSet.zig 411: /// Decrement the ref count for the given key. If the ref count is zero, 431: }
+n48 src/terminal/SelectionGesture.zig 172: pub fn deinit(self: *SelectionGesture, t: *Terminal) void { 179: }

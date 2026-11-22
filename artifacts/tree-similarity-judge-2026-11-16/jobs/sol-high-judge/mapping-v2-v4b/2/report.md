@@ -1,0 +1,88 @@
+### Anchor tree
+- A 3–14, 16–28 ↔ B 3–14 · grouped · offset 0 · s = 0.852 · workspace entry and sessions
+  - A 5–6 ↔ B 4–5 · same · offset 0 · s = 1 · application entry
+    - A 6 ↔ B 5 · same · offset 0 · s = 1 · mapping page
+  - A 9–14 ↔ B 6–8, 13–14 · grouped · offset 0 · s = 0.975 · CanvasWorkspace
+    - A 12 ↔ B 7 · same · offset 0 · s = 1 · draft metadata
+    - A 14 ↔ B 13–14 · summarized · offset 0 · s = 0.9 · disposal
+  - A 16–28 ↔ B 9–12 · same · offset 0 · s = 0.838 · CanvasSession
+    - A 21–24 ↔ B 10 · summarized · offset 0 · s = 0.9 · stores
+    - A 25–26 ↔ B 11 · summarized · offset 0 · s = 0.9 · notifications
+    - A 27–28 ↔ B 12 · summarized · offset 0 · s = 0.9 · dirty baseline
+    - unmatched: A 18–20 (session facade and cursor copy)
+  - unmatched: A 7–8 (mapping services context)
+- A 30–55 ↔ B 16–30 · same · offset 0 · s = 0.804 · canvas model
+  - A 31–37 ↔ B 23–29 · same · offset 0 · s = 0.725 · document and scene
+    - A 33–35 ↔ B 24 · summarized · offset 0 · s = 0.9 · scene
+    - A 36–37 ↔ B 25 · summarized · offset 0 · s = 0.9 · connections and extras
+    - unmatched: B 26 (revision binding), B 27–29 (resolved document)
+  - A 39–46 ↔ B 17–22 · same · offset 0 · s = 0.735 · Diagram
+    - A 40–42 ↔ B 17–19 · same · offset 0 · s = 1 · identity and content
+      - A 41–42 ↔ B 18–19 · same · offset 0 · s = 1 · ASCII and nodes
+        - A 42 ↔ B 19 · same · offset 0 · s = 1 · content nodes
+    - A 43–46 ↔ B 62–65 · relocated · offset 0 · s = 0.408 · source evidence
+      - A 44 ↔ B 63 · same · offset 0 · s = 1 · evidence ranges
+      - A 45–46 ↔ B 64 · summarized · offset 0 · s = 0.9 · source join
+      - unmatched: B 65 (binding identity)
+    - unmatched: B 20–21 (revision construction)
+  - A 48–55 ↔ B 60–61 · relocated · offset 0 · s = 0.363 · presentation state
+    - A 49–50 ↔ B 61 · summarized · offset 0 · s = 0.9 · selection/display
+    - unmatched: A 51–55 (folding/projection)
+- A 57–75, 77–95 ↔ B 32–51 · grouped · offset 0 · s = 0.980 · controller and history
+  - A 57–75 ↔ B 32–39 · same · offset 0 · s = 0.954 · MappingDocumentController
+    - A 61–67 ↔ B 33–37 · same · offset 0 · s = 0.963 · versioned operations
+      - A 62–63 ↔ B 34 · summarized · offset 0 · s = 0.9 · settlement/conflict
+      - A 64–67 ↔ B 35–36 · same · offset 0 · s = 0.95 · staging
+        - A 65–67 ↔ B 36 · summarized · offset 0 · s = 0.9 · operation families
+    - A 68–72 ↔ B 37, 38–39 · grouped · offset 0 · s = 0.95 · recorded commit
+      - A 69–70 ↔ B 37 · summarized · offset 0 · s = 0.9 · reconciliation
+      - A 71–72 ↔ B 39 · summarized · offset 0 · s = 0.9 · append/publication
+    - A 73–75 ↔ B 44 · summarized · offset 1 · s = 0.81 · persistence boundary
+  - A 77–95 ↔ B 40–44, 45–47, 48–49 · grouped · offset 0 · s = 0.966 · CanvasHistoryService
+    - A 79–80 ↔ B 40–41 · same · offset 0 · s = 1 · contexts
+      - A 80 ↔ B 41 · same · offset 0 · s = 1 · WeakMap
+    - A 81–87 ↔ B 42 · summarized · offset 0 · s = 0.9 · checkpoints
+    - A 88 ↔ B 45–47 · summarized · offset 1 · s = 0.81 · canvas views
+    - A 92 ↔ B 43 · same · offset 0 · s = 1 · navigation
+    - A 93–95 ↔ B 48–49 · same · offset 0 · s = 0.95 · transfer
+      - A 94–95 ↔ B 49 · summarized · offset 0 · s = 0.9 · coordinated undo
+- A 97–109 ↔ B 53–69 · same · offset 0 · s = 0.741 · editor and inspection surface
+  - A 97–109 ↔ B 54–59 · same · offset 0 · s = 0.963 · MappingEditorRuntime
+    - A 100–101 ↔ B 55 · summarized · offset 0 · s = 0.9 · shape projection
+    - A 102–105 ↔ B 56–58 · same · offset 0 · s = 0.975 · native gestures
+      - A 103 ↔ B 57 · same · offset 0 · s = 1 · live geometry
+      - A 104–105 ↔ B 58 · summarized · offset 0 · s = 0.9 · gesture commit
+    - A 106–109 ↔ B 59 · summarized · offset 0 · s = 0.9 · checkpoint restore
+  - unmatched: B 66–67 (source panes/code service); B 60–65 is matched under A’s model above
+- A 111–128 ↔ B 71–87 · same · offset 0 · s = 0.921 · agent-assisted editing
+  - A 112–116 ↔ B 72–75 · same · offset 0 · s = 0.833 · prompt composer
+    - A 114 ↔ B 73, 75 · grouped · offset 0 · s = 1 · pinned request
+    - A 115 ↔ B 74 · same · offset 0 · s = 1 · generation start
+    - unmatched: A 116 (composer lifetime)
+  - A 117–120 ↔ B 76–79 · same · offset 0 · s = 0.833 · DiagramEditService
+    - A 118 ↔ B 77 · same · offset 0 · s = 1 · deduplication
+    - A 120 ↔ B 79 · same · offset 0 · s = 1 · installation
+    - unmatched: B 78 (cancellation)
+  - A 121–123 ↔ B 80–82 · same · offset 0 · s = 0.725 · browser bridge
+    - A 122–123 ↔ B 81 · summarized · offset 0 · s = 0.9 · registration/polling
+    - unmatched: B 82 (LiveCanvasService)
+  - A 124–128 ↔ B 83–85 · same · offset 0 · s = 0.975 · revision receiver
+    - A 126 ↔ B 84 · same · offset 0 · s = 1 · versioned application
+    - A 127–128 ↔ B 85 · summarized · offset 0 · s = 0.9 · retry safety
+- A 130–149 ↔ B 89–104 · same · offset 0 · s = 0.876 · persistence
+  - A 131–133 ↔ B 101 · summarized · offset 0 · s = 0.9 · reload
+  - A 134–138 ↔ B 90–92 · same · offset 0 · s = 0.975 · WorkspacePersistence
+    - A 136 ↔ B 91 · same · offset 0 · s = 1 · cursor
+    - A 137–138 ↔ B 92 · summarized · offset 0 · s = 0.9 · record batch
+  - A 139–144 ↔ B 93 · summarized · offset 0 · s = 0.9 · worker transport
+  - A 145–149 ↔ B 94–97 · same · offset 0 · s = 0.983 · WorkspaceRecordStore
+    - A 146 ↔ B 95 · same · offset 0 · s = 1 · validation
+    - A 147 ↔ B 96 · same · offset 0 · s = 1 · retry/stale-writer checks
+    - A 148–149 ↔ B 97 · summarized · offset 0 · s = 0.9 · manifest publication
+  - unmatched: B 98–100 (explicit project publication)
+
+### Score
+Six top-level anchors and no unmatched top-level nodes: **J = (0.851563 + 0.803704 + 0.979938 + 0.740625 + 0.920833 + 0.875833) / 6 = 0.862082**.
+
+### Verdict
+Both trees identify the workspace, revision-backed model, semantic controller and history, native editor, agent edit path, and persistence. B uses a workspace parent for A’s separate entry/session branches and a controller parent for A’s separate history branch. B places source inspection and canvas presentation under its presentation surface where A places their state and evidence under the model; these are relocated matches, not missing components. Most other differences are summarized detail. B additionally identifies source-pane components, LiveCanvasService, and explicit project publication.

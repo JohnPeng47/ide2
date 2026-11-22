@@ -1,0 +1,19 @@
+{
+  "id": "child-2",
+  "name": "input",
+  "assignment": "Map n19-n31 input subtree. Full named declarations; numbered reads. Return partial schema JSON.",
+  "model": "gpt-6-sol",
+  "effort": "medium",
+  "status": "generating",
+  "queuedAt": "2026-11-19T04:10:27.548Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-19T04:10:27.558Z",
+  "sessionId": "01a1f1ff-ad8f-7840-b7d2-1bd7c6c82326",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-cmnd_qql-agent-repository-MGh7jV-checkout--/2026-11-19T04-10-27-599Z_01a1f1ff-ad8f-7840-b7d2-1bd7c6c82326.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase3-cmnd_qql/agent-repository-MGh7jV/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

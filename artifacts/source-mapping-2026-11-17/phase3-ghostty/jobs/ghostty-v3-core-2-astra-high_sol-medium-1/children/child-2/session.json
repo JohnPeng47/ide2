@@ -1,0 +1,19 @@
+{
+  "id": "child-2",
+  "name": "io-model",
+  "assignment": "Map n38-n68 inclusive (child output, terminal model) following prompt. Return JSON partial; numbered reads and complete named declarations.",
+  "model": "gpt-6-sol",
+  "effort": "medium",
+  "status": "generating",
+  "queuedAt": "2026-11-19T03:47:37.643Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-19T03:47:37.649Z",
+  "sessionId": "01a1f1ea-c661-7c63-bed3-32b7b229e33d",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-n9wevnax-agent-repository-qnhQ37-checkout--/2026-11-19T03-47-37-697Z_01a1f1ea-c661-7c63-bed3-32b7b229e33d.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase3-n9wevnax/agent-repository-qnhQ37/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

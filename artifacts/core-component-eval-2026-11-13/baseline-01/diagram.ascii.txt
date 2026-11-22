@@ -1,0 +1,203 @@
+Mapping workspace -- edit, explore and preserve source-backed ASCII diagrams
+|
+|-- [M] Application boundary: one workspace, shared domain rules
+|   |-- App -> MappingPocPage (src/app/App.tsx)
+|   |   `-- All entry paths open the Mapping workspace
+|   |-- createMappingServices() supplies DiagramService, CanvasHistoryService,
+|   |   CodeRepoService and WorkspaceStorage to browser features
+|   |-- createBackend() connects application services to concrete adapters
+|   |   `-- DiagramStore / corpusAccess / CanvasSessionBridge / agent runtimes
+|   `-- Dependency direction: UI and application services -> domain contracts
+|       `-- Repository, corpus and runtime ports keep storage/model choices outside editing rules
+|
+|-- [M] DiagramService -- authoritative boundary for diagram content
+|   |   (domain/core/diagrams/diagramService.ts)
+|   |-- Exposes create / getRevision / listRevisions / revise / generate
+|   |   `-- RevisionedDiagramService delegates construction and edits to DiagramRevisionEditor
+|   |
+|   |-- Diagram -- immutable content together with its source meaning
+|   |   |-- diagramId + revisionId -> service identity and exact revision
+|   |   |-- id + revision -> local canvas content key and revision number
+|   |   |-- content: DiagramContent
+|   |   |   |-- ascii + asciiSha256 + content revisionId
+|   |   |   `-- structure: plain diagram, or parsed tree with nodes / parents / foldRanges
+|   |   |       `-- [D] ASCII + parserVersion -> canonical tree structure and node coordinates
+|   |   |-- sourceContext: DiagramSourceContext
+|   |   |   |-- binding?: sourceId / repositoryIdentity / corpus / domainProfileId
+|   |   |   |-- mappings[] -> diagram character spans linked to evidence ranges
+|   |   |   `-- evidence[id].sourceRanges[] -> path, line interval and originalLines
+|   |   `-- jumps[] -> revision-sensitive navigation from diagram spans
+|   |
+|   |-- [C] revise(baseRevisionId, edit) -> prepared edit -> issue(revision)
+|   |   |-- Patch, replace, mapping and jump changes produce validated content
+|   |   |-- [D] old/new node correspondence -> retained logical nodeRefs
+|   |   `-- DiagramRevision records parentId and preserves diagramId across edits
+|   |       `-- Existing revisions remain addressable for history, comparisons and restoration
+|   |
+|   |-- [O] internal/revisionRegistry.ts retains runtime revision records
+|   |   |-- register() validates, clones and deep-freezes issued records
+|   |   |-- Reusing a revision ID with different data is rejected
+|   |   `-- assert(diagram) prevents canvas history from accepting unissued content changes
+|   `-- validateDiagram() enforces the content/source contract
+|       `-- [D] canonical parsing + ASCII hash + evidence references -> valid revision
+|
+|-- [O] MappingDocumentController -- one editable canvas context
+|   |   (domain/mapping/workspace/mappingDocumentController.ts)
+|   |-- ControllerSnapshot publishes document / canvas / version / undo state / geometry
+|   |   |-- document: MappingGridDocument
+|   |   |   |-- scene.root: GridBox hierarchy of containers and diagram instances
+|   |   |   |-- scene.contents[id]: Diagram -- resolved revisions used by renderers
+|   |   |   `-- edges / jumps / sections -> relationships and annotations around diagrams
+|   |   `-- canvas: MappingCanvasState
+|   |       |-- selection.items -> whole diagrams or captured regions
+|   |       |-- diagramViews -> per-instance folding and content presentation
+|   |       |-- display: DisplayState -> owned selection, projection, conversation and detail panes
+|   |       `-- controls -> active box/thread, selection focus and per-selection action surfaces
+|   |
+|   |-- [C] applyUpdate(expectedVersion, operations) / transact(...)
+|   |   |-- Check version; stage the operation batch against a cloned snapshot
+|   |   |-- Content operations -> DiagramService.create() / revise() / received revision
+|   |   |-- Composition operations -> insert, move, group, remove, connect and collapse
+|   |   |-- Reconcile connections, jump anchors, selections and diagram views
+|   |   `-- Validate -> append one history checkpoint -> publish the completed snapshot
+|   |       `-- A failed batch does not advance the live canvas head
+|   |
+|   |-- [D] LineGridScene + ASCII dimensions -> resolveScene() -> visible bounds
+|   |   |-- layoutScene() settles sibling collisions by pushing right
+|   |   |-- diagramViews + content -> visible lines and selection coordinates
+|   |   `-- canvasDisplayNodes() + endpoint measurements -> panels and routed connections
+|   |
+|   `-- [O] CanvasHistory, accessed through CanvasHistoryService
+|       |   (domain/core/diagrams/canvasHistory.ts)
+|       |-- CanvasHistoryRecord: contextId / baselineId / headId / past / future
+|       |-- snapshots[id]: StoredCanvasSnapshot
+|       |   |-- document -> composition, edges, sections and jumps
+|       |   |-- diagramBindings[localId] -> exact DiagramRevision ID
+|       |   `-- view / nodeOrigins / unresolvedAnchors -> restoration and correspondence
+|       |-- diagramRevisions[id] -> retained immutable revision graph
+|       |   `-- [D] checkpoint bindings + revision table -> documentFromHistory()
+|       |       `-- Expanded scene is a rendering/transport projection of canonical history
+|       |-- append() validates before changing head; navigate() restores undo/redo checkpoints
+|       |-- fork() opens independent history; adopt() installs reviewed state as one checkpoint
+|       `-- Composition and recorded selection changes enter history
+|           `-- Transient layout updates and pointer previews have separate lifetimes
+|
+|-- [O] CanvasWorkspace -> CanvasSession -> controller -- browser state ownership
+|   |   (src/features/mapping/workspace/canvasWorkspace.ts, canvasSession.ts)
+|   |-- CanvasWorkspace retains drafts and stable controller handles by document ID
+|   |   |-- Draft metadata: name, saved representation/revision, baseline, viewport and busy state
+|   |   |-- Creates sessions when documents open; disposes subscriptions when replaced/removed
+|   |   `-- copyDocument() forks history and clears active selection/request state
+|   |
+|   |-- CanvasSession publishes read-only Zustand stores
+|   |   |-- document / presentation / selection / controls / geometry / status
+|   |   |-- Controller remains the editable owner; stores expose getState and subscribe
+|   |   `-- [D] current scene/edges/name + captured saved baseline -> dirty status
+|   |       `-- Save acknowledgements update the captured baseline even if newer edits exist
+|   |
+|   |-- [C] MappingPocSelectionCanvas consumes session stores
+|   |   |-- Selection, paste, drag, grouping, folding and edge actions -> controller commands
+|   |   |-- DiagramText + DiagramConnections + DisplayPane render derived canvas state
+|   |   `-- SourcePaneViewState retains source scroll and camera state independently
+|   |
+|   |-- [C] MappingPocPage coordinates documents, search, save and transfers
+|   |   |-- DiagramSearchService indexes open/saved/proposed documents in a worker
+|   |   `-- Search results and DiagramJump targets open/focus the matching diagram region
+|   `-- Cross-canvas copy/move -> prepareCanvasTransfer()
+|       |-- Source/destination histories + selected instances -> proposed workspace + CanvasTransfer
+|       |-- Persist the prepared workspace before installing it in the UI
+|       `-- Linked checkpoints require workspace undo/redo across both canvases
+|
+|-- [D] Source exploration -- diagram coordinates lead to pinned evidence
+|   |-- diagramSource(diagram) exposes forSelection / entries / search
+|   |   (domain/core/diagrams/diagram.ts)
+|   |   `-- Selected rectangle -> mappings -> evidence entity -> source range + binding
+|   |       `-- diagramSelectionNodes() and code panels derive annotations on demand
+|   |
+|   |-- resolveDiagramSource() establishes which corpus a request may read
+|   |   (application/core/source/diagramSource.ts)
+|   |   |-- Resolve selected representation/revision/content, or an unambiguous sourceId
+|   |   |-- Check project identity, diagram validity and source ownership
+|   |   `-- DiagramSourceBinding -> CorpusAccess.provider(binding.corpus)
+|   |       `-- Supports source-code repositories and document corpora; source identity is explicit
+|   |
+|   |-- [C] ProjectSourceService -> corpus reads -> SourceCodePane / SourceCodeView
+|   |   |-- Returns file lines and sourceSha256 for live source display
+|   |   `-- Optional LanguageService uses corpus + position + source hash for definition lookup
+|   |
+|   |-- projectSelection(projection, targetRevision, selectedEvidenceIds)
+|   |   |-- [D] pinned source/target revisions + evidence-to-node links -> matched subtrees
+|   |   `-- Include ancestor paths; retain original target rows for navigation and coverage
+|   |
+|   `-- FileCompactionService creates a source-reading aid
+|       |-- Capture exact bytes/hash -> runAgentWorkflow(compact, refine) -> validated snapshots
+|       |-- [O] Owns active AbortControllers; disposes agent sessions after completion/failure
+|       `-- Re-read source hash to mark staleness; active catalog compactions require matching lines
+|
+|-- [C] Agent-assisted work -- enters the same diagram and canvas boundaries
+|   |-- SelectionService.prepare() / run() -> MappingAgentRuntime
+|   |   |-- [D] selected ASCII region + mappings/evidence + instruction -> proposed patch
+|   |   `-- MappingPocSelectionCanvas applies patchDiagram with the captured canvas version
+|   |-- LocalChatService.prepare() / reply() -> LocalChatRuntime
+|   |   |-- [D] captured selection + source ranges + conversation -> streamed reply
+|   |   `-- ConversationPane retains thread context; historical source selections remain valid
+|   |
+|   |-- AgentDiagrammingSessionService exposes validated agent tools and exec()
+|   |   (application/mapping/agent/sessionService.ts)
+|   |   |-- [O] Retains attached sessions, request results, execution runs and pending saves
+|   |   |-- QuickJsAgentRuntime invokes the supplied canvas API
+|   |   `-- Live edits -> CanvasSessionBridge.dispatch() -> browser handleAgentCommand()
+|   |       |-- useAgentCanvasBridge polls commands and returns results
+|   |       |-- Browser routes mutations to MappingDocumentController.applyUpdate()
+|   |       `-- [O] Bridge owns registration, queues, waiters and timeouts
+|   |           `-- Expiry/unregister rejects pending commands; timeout can leave outcome unknown
+|   |
+|   |-- DiagramEditService owns whole-diagram generation and installation
+|   |   (application/mapping/agent/diagramEditService.ts)
+|   |   |-- Capture canvas -> check expectedVersion/baseRevisionId -> DiagramService.generate()
+|   |   |-- DiagramGenerator returns content; service issues the resulting immutable revision
+|   |   `-- Apply -> DiagramRevisionReceiver -> controller -> workspace flush -> acknowledgement
+|   |       |-- Version and base-revision checks run again at the mutation boundary
+|   |       `-- Request receipts retain generated/applied results so retries avoid duplicate edits
+|   |
+|   `-- ChangeSessionService owns separately persisted proposals
+|       (application/mapping/changes/changeSessionService.ts)
+|       |-- create() captures saved canvases/live drafts and forks their histories
+|       |-- apply() edits proposed documents through MappingDocumentController
+|       |-- [D] baseline + proposed state + node origins -> changes and review previews
+|       |-- ready validation checks dependencies and connection anchors
+|       `-- accept() checks proposal version and unchanged live/saved baselines
+|           `-- ProjectCatalogRepository.acceptCanvasChanges() publishes reviewed canvases
+|               `-- Acceptance receipt recovers an interrupted final proposal-status write
+|
+`-- [O] Persistence -- preserve workspace progress and publish named canvases
+    |-- WorkspacePersistence translates live owners into incremental records
+    |   (src/features/mapping/workspace/workspacePersistence.ts)
+    |   |-- onPersist / view subscriptions -> metadata, baseline, canvas and viewport records
+    |   |-- controller.persistenceChanges(cursor) -> new checkpoints and diagram revisions
+    |   `-- RecordStorage.batch() coalesces writes; flush() waits for captured progress
+    |       `-- Worker encodes/transports batches with requestId + expectedRevision
+    |           `-- Uncertain writes retry the identical request before later writes proceed
+    |
+    |-- WorkspaceRecordStore.apply() publishes draft workspace records
+    |   (infrastructure/mapping/persistence/workspace/workspaceRecordStore.ts)
+    |   |-- Serialize writes -> check receipt/version -> validate changed records
+    |   |-- Write immutable content-addressed record files
+    |   `-- Atomically replace manifest containing record references, revision and receipts
+    |       `-- [D] request signature + durable receipt -> idempotent retry result
+    |
+    |-- MappingDiagramService.save() -> CanvasCatalogStore.saveMappingDiagram()
+    |   |-- catalogRules validate history and expected saved revision
+    |   |-- projectCanvasSnapshot() derives composed ASCII and exported source mappings
+    |   |   `-- [D] diagram-local evidence + GridBox offsets -> canvas-wide evidence coordinates
+    |   |-- Catalog retains representations, revisions, projections and publication heads
+    |   `-- archiveRepresentation() removes a canvas from active use while retaining records
+    |
+    |-- DiagramPersistence -> DiagramRecordStore / DiagramRevisionStore
+    |   |-- Persist diagram, revision and history data as content-addressed references
+    |   `-- Restore -> validate history -> register exact revision identities for editing
+    |
+    `-- CanvasCatalogStore.acceptCanvasChanges() serializes proposal publication
+        |-- Check every target's expected revision; adopt proposed histories
+        |-- Flush referenced diagram data before publishing the catalog
+        `-- One atomic catalog replacement exposes all new heads and the acceptance receipt

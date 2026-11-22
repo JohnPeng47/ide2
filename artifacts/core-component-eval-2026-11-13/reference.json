@@ -1,0 +1,1929 @@
+{
+  "status": "candidate-reference-not-yet-a-validated-gold-standard",
+  "url": "http://localhost:5191/?diagram=draft-f25ec0f2-9caa-42ab-9a0a-abf89e38482e",
+  "documentId": "draft-f25ec0f2-9caa-42ab-9a0a-abf89e38482e",
+  "documentVersion": 0,
+  "title": "Mapping application - architecture (baseline 03f2168)",
+  "sourceBinding": {
+    "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+    "repositoryIdentity": "/home/john/drone-interception/scripts/new-diagram/.git",
+    "corpus": {
+      "kind": "git-worktree",
+      "root": "/home/john/.herdr/worktrees/new-diagram/worktree-perf-debug",
+      "revision": "03f2168deba364103c2450ca9b8168cd1fc9ddc5"
+    }
+  },
+  "asciiSha256": "6441be7bbb273fb89e92bcb2a99ac6fd6db6ff64251936ad5a6f56a817728c6c",
+  "ascii": "Mapping application                                      baseline 03f2168\n|\n|-- [M] MappingPage composes the editing workspace\n|   |-- Injected services\n|   |   |-- DiagramService\n|   |   |   |-- [M] Exposes create / revise / resolve / generate\n|   |   |   |-- [O] Sole writer of immutable diagram content revisions\n|   |   |   `-- [D] content + source evidence + base revision\n|   |   |       `-- new revision + proven node correspondence\n|   |   `-- CanvasHistoryService\n|   |       |-- [M] Exposes context, checkpoint and navigation operations\n|   |       |-- [O] Owns editing contexts and their histories\n|   |       |   |-- retained checkpoints and diagram revision bindings\n|   |       |   `-- baseline / current head / undo and redo paths\n|   |       `-- [D] document + view + correspondence\n|   |           `-- checkpoint binding layout to exact diagram revisions\n|   |\n|   `-- [O] CanvasWorkspace manages open documents\n|       |-- [M] Exposes document lifecycle and persistence notifications\n|       |-- [O] Creates, subscribes to and disposes CanvasSessions\n|       |   `-- drafts[documentId]: CanvasDraft\n|       |       |-- Document identity and save baseline\n|       |       |   |-- representationId / name / revisionId\n|       |       |   `-- savedName / savedScene / savedEdges\n|       |       |-- Workspace presentation\n|       |       |   `-- busy / hidden / viewport / focusBox\n|       |       `-- session: CanvasSession\n|       |           |-- [O] Retains MappingDocumentController\n|       |           |-- [M] Exposes coordinated session stores\n|       |           |   |-- document\n|       |           |   |-- presentation / selection\n|       |           |   `-- controls / geometry / status\n|       |           `-- [C] onCommit()\n|       |               `-- notify workspace persistence\n|       `-- controllers[documentId]\n|           `-- [D] indexes the controllers retained by sessions\n|\n|-- [M] MappingDocumentController coordinates one document\n|   |-- [O] Retains the current editing state\n|   |   |-- Semantic document: MappingGridDocument\n|   |   |   |-- scene: LineGridScene\n|   |   |   |   |-- root: GridBox\n|   |   |   |   |   |-- diagram instance -> contentId\n|   |   |   |   |   `-- container -> nested GridBoxes\n|   |   |   |   `-- contents[id]: Diagram\n|   |   |   |       |-- ASCII + parsed content structure\n|   |   |   |       `-- source context -> mappings and captured evidence\n|   |   |   `-- edges / jumps / sections\n|   |   |\n|   |   |-- Interaction state: MappingCanvasState\n|   |   |   |-- selection.items[]\n|   |   |   |   `-- unified diagram and region membership\n|   |   |   |-- diagramViews\n|   |   |   |   `-- per-diagram folding\n|   |   |   |-- display: DisplayState\n|   |   |   |   `-- floating selections, projections, conversations, details\n|   |   |   `-- controls: MappingControls\n|   |   |       |-- activeBoxId / selectionFocusId / activeThreadId\n|   |   |       `-- surfaces[ownerId]: SelectionSurfaceState\n|   |   |\n|   |   `-- History attachment\n|   |       `-- retains CanvasEditingContext\n|   |           `-- [O] context lifetime belongs to CanvasHistoryService\n|   |\n|   |-- [M] Exposes editing operations\n|   |   |-- applyUpdate(expectedVersion, operations)\n|   |   |   |-- [C] Invoked by UI or agent bridge\n|   |   |   `-- [C] Apply a document change\n|   |   |       |-- Validate and stage\n|   |   |       |   |-- [D] expected + current version -> conflict check\n|   |   |       |   `-- [D] document + interaction state -> staged state\n|   |   |       |\n|   |   |       |-- Apply operations\n|   |   |       |   |-- Content changes\n|   |   |       |   |   `-- [C] DiagramService.create / revise\n|   |   |       |   |       `-- [D] new revision + node correspondence\n|   |   |       |   `-- Instance and view changes\n|   |   |       |       `-- update boxes / edges / sections / views\n|   |   |       |\n|   |   |       |-- Derive consistent layout and presentation\n|   |   |       |   |-- Grid layout and validation\n|   |   |       |   |   |-- [D] ASCII dimensions + box hierarchy\n|   |   |       |   |   |   `-- final cell bounds\n|   |   |       |   |   `-- anchor changed box; push colliding siblings\n|   |   |       |   |-- Connection reconciliation\n|   |   |       |   |   `-- [D] content changes + correspondence\n|   |   |       |   |       `-- retained, reanchored or stale endpoints\n|   |   |       |   `-- Floating geometry\n|   |   |       |       |-- [D] grid bounds + placement policies\n|   |   |       |       |   `-- pixel positions and dimensions\n|   |   |       |       `-- floating bounds never displace GridBoxes\n|   |   |       |\n|   |   |       `-- Commit and publish\n|   |   |           |-- [C] CanvasHistoryService.append\n|   |   |           |   `-- [D] document + view + correspondence\n|   |   |           |       `-- checkpoint and advanced version\n|   |   |           `-- [C] Notify subscribers with updated snapshot\n|   |   |               `-- session -> workspace persistence\n|   |   |\n|   |   |-- commitDocument(...)\n|   |   |   `-- [C] Commit document and layout edits\n|   |   `-- updateCanvas(...) / select(...)\n|   |       `-- [C] Update pane, control and selection state\n|   |           `-- ordinary controls and measurements add no checkpoint\n|   |\n|   |-- [M] Exposes history navigation\n|   |   |-- undo / redo / reset\n|   |   |   `-- [C] Delegate navigation to CanvasHistoryService\n|   |   |       `-- [D] context + target checkpoint -> restored state\n|   |   `-- exportHistory / forkHistory\n|   |       `-- [C] Delegate to exportContext / forkContext\n|   |           `-- [O] fork gets a distinct context retaining revision IDs\n|   |\n|   `-- [M] Exposes read models\n|       |-- getSnapshot(): ControllerSnapshot\n|       |   |-- [D] current context -> contextId / canvasRevisionId / version\n|       |   |-- [C] historyService.state(context) -> canUndo / canRedo\n|       |   `-- document + canvas interaction state\n|       |-- getCanvasSnapshot(): CanvasDocument\n|       |   `-- semantic canvas snapshot\n|       |-- resolveDiagram(diagramId): DiagramView\n|       |   `-- [D] diagram identity + current revision binding -> view\n|       `-- nodes(): DisplayNode[]\n|           |-- [D] document + presentation + geometry -> public registry\n|           |   `-- derived nodes; not a second authoritative document\n|           |-- Common identity and hierarchy\n|           |   `-- id / read-time version / childIds / expansion\n|           |-- Grid nodes\n|           |   |-- diagram or group; authoritative boxId\n|           |   |-- [D] GridBox layout -> cell bounds\n|           |   |   `-- column / row / columns / rows\n|           |   `-- diagram instance -> DiagramContent\n|           `-- Floating nodes\n|               |-- [D] placement + geometry policy -> pixel bounds\n|               |   `-- position / size / canvas or viewport coordinates\n|               `-- FloatingBox\n|                   |-- SelectionRegion -> selected grid rectangle\n|                   |-- ProjectedPane -> parent projection owner\n|                   |-- ConversationPane -> anchor and presentation\n|                   `-- DetailPane -> retained placement\n|\n|-- [M] Agent access adapts external requests to document operations\n|   `-- [C] MCP -> HTTP backend -> AgentDiagrammingSessionService.exec\n|       |-- synchronous canvas / nodes / edges API\n|       `-- Live document request\n|           `-- [C] CanvasSessionBridge -> useAgentCanvasBridge\n|               `-- attached session's MappingDocumentController\n|                   |-- reads -> exposed read models\n|                   `-- edits -> applyUpdate(expectedVersion, operations)\n|\n`-- [M] Persistence retains and restores workspace state\n    |-- Incremental autosave: WorkspacePersistence\n    |   |-- [C] Triggered by workspace.onPersist(documentIds)\n    |   |   `-- session commits identify changed documents\n    |   |-- [C] Also observes SourcePaneViewState changes\n    |   `-- [C] controller.persistenceChanges(cursor)\n    |       |-- [D] retained records + cursor -> incremental changes\n    |       `-- [C] RecordStorage.batch(changes)\n    |\n    |-- WorkspaceStorage\n    |   |-- [O] Owns RecordStorage\n    |   |   `-- cached records + pending writes\n    |   `-- [O] Owns workspaceStorage.worker\n    |       `-- [C] Encode, transport and restore records\n    |\n    `-- Explicit export: capture(): MappingWorkspaceSnapshot\n        |-- [D] workspace identity + active document + transfers\n        |   `-- schemaVersion / projectId / activeDocumentId / transfers\n        `-- [D] each open document -> MappingDocumentSnapshot\n            |-- identity / name / saved baselines / revisionId / hidden\n            |-- document / interaction state / viewport\n            `-- [C] controller.exportHistory()\n                `-- portable history with revision tables and bindings\n\n[M] modular boundary | [O] ownership | [C] call flow | [D] data dependency",
+  "nodes": [
+    {
+      "nodeRef": "node-b49bbbf6-955a-4df4-8150-abca2b093819",
+      "line": 1,
+      "label": "Mapping application                                      baseline 03f2168",
+      "sourceRanges": [
+        {
+          "path": "src/features/mapping/MappingPage.tsx",
+          "startLine": 70,
+          "endLine": 98
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-68e9fd92-c48b-4bf7-9b31-7c131593ca6c",
+      "line": 3,
+      "label": "[M] MappingPage composes the editing workspace",
+      "sourceRanges": [
+        {
+          "path": "src/features/mapping/MappingPage.tsx",
+          "startLine": 70,
+          "endLine": 98
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-32e8ecd7-f2d8-4152-90c5-26b10931ffc2",
+      "line": 4,
+      "label": "Injected services",
+      "sourceRanges": [
+        {
+          "path": "src/features/mapping/MappingPage.tsx",
+          "startLine": 70,
+          "endLine": 98
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-4b62717a-7dad-4ef7-8758-ab3973342a7f",
+      "line": 5,
+      "label": "DiagramService",
+      "sourceRanges": [
+        {
+          "path": "domain/core/diagrams/diagramService.ts",
+          "startLine": 27,
+          "endLine": 34
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-2443a5c1-be85-401b-853a-393fbf60418c",
+      "line": 6,
+      "label": "[M] Exposes create / revise / resolve / generate",
+      "sourceRanges": [
+        {
+          "path": "domain/core/diagrams/diagramService.ts",
+          "startLine": 27,
+          "endLine": 34
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-daeedc5b-d16a-421f-bd9f-89a9883afc10",
+      "line": 7,
+      "label": "[O] Sole writer of immutable diagram content revisions",
+      "sourceRanges": [
+        {
+          "path": "domain/core/diagrams/diagramService.ts",
+          "startLine": 36,
+          "endLine": 61
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-469c9de5-b40e-4295-9f62-74f6cc56d061",
+      "line": 8,
+      "label": "[D] content + source evidence + base revision",
+      "sourceRanges": [
+        {
+          "path": "domain/core/diagrams/diagramService.ts",
+          "startLine": 36,
+          "endLine": 61
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-95e3c93b-143c-486e-a6b4-034d47dc6a5d",
+      "line": 9,
+      "label": "new revision + proven node correspondence",
+      "sourceRanges": [
+        {
+          "path": "domain/core/diagrams/diagramService.ts",
+          "startLine": 36,
+          "endLine": 61
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-60837877-3957-41df-a3c6-f0352e87678b",
+      "line": 10,
+      "label": "CanvasHistoryService",
+      "sourceRanges": [
+        {
+          "path": "domain/core/diagrams/canvasHistoryService.ts",
+          "startLine": 16,
+          "endLine": 34
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-744afdf6-06c8-4a7c-8fcb-d584f9de04ae",
+      "line": 11,
+      "label": "[M] Exposes context, checkpoint and navigation operations",
+      "sourceRanges": [
+        {
+          "path": "domain/core/diagrams/canvasHistoryService.ts",
+          "startLine": 16,
+          "endLine": 34
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-3a7291c7-c840-49ed-be99-bd812ee60281",
+      "line": 12,
+      "label": "[O] Owns editing contexts and their histories",
+      "sourceRanges": [
+        {
+          "path": "domain/core/diagrams/canvasHistoryService.ts",
+          "startLine": 36,
+          "endLine": 50
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-7d19bee5-ec9f-47b5-b6ad-bea550d78920",
+      "line": 13,
+      "label": "retained checkpoints and diagram revision bindings",
+      "sourceRanges": [
+        {
+          "path": "domain/core/diagrams/canvasHistory.ts",
+          "startLine": 25,
+          "endLine": 52
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-0c8c9856-8629-491b-8ea6-9ede7397de8e",
+      "line": 14,
+      "label": "baseline / current head / undo and redo paths",
+      "sourceRanges": [
+        {
+          "path": "domain/core/diagrams/canvasHistory.ts",
+          "startLine": 25,
+          "endLine": 52
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-17c808c9-864b-4395-871f-9b2078fb907b",
+      "line": 15,
+      "label": "[D] document + view + correspondence",
+      "sourceRanges": [
+        {
+          "path": "domain/core/diagrams/canvasHistory.ts",
+          "startLine": 124,
+          "endLine": 164
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-c72979f9-83c0-4ee2-9acc-f2ce4211604b",
+      "line": 16,
+      "label": "checkpoint binding layout to exact diagram revisions",
+      "sourceRanges": [
+        {
+          "path": "domain/core/diagrams/canvasHistory.ts",
+          "startLine": 124,
+          "endLine": 164
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-405d7805-107b-4acc-8770-11823c56b4fc",
+      "line": 18,
+      "label": "[O] CanvasWorkspace manages open documents",
+      "sourceRanges": [
+        {
+          "path": "src/features/mapping/workspace/canvasWorkspace.ts",
+          "startLine": 58,
+          "endLine": 95
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-420ba335-2234-439a-8980-bbea38aaaa10",
+      "line": 19,
+      "label": "[M] Exposes document lifecycle and persistence notifications",
+      "sourceRanges": [
+        {
+          "path": "src/features/mapping/workspace/canvasWorkspace.ts",
+          "startLine": 58,
+          "endLine": 95
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-c34295a3-0305-4be5-87c1-e7e370d54a01",
+      "line": 20,
+      "label": "[O] Creates, subscribes to and disposes CanvasSessions",
+      "sourceRanges": [
+        {
+          "path": "src/features/mapping/workspace/canvasWorkspace.ts",
+          "startLine": 58,
+          "endLine": 95
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-c8c2ef62-65ed-4881-ad6c-fa3f1cb1e099",
+      "line": 21,
+      "label": "drafts[documentId]: CanvasDraft",
+      "sourceRanges": [
+        {
+          "path": "src/features/mapping/workspace/canvasWorkspace.ts",
+          "startLine": 11,
+          "endLine": 24
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-2368eb82-59dd-4716-b2c2-590280f185f8",
+      "line": 22,
+      "label": "Document identity and save baseline",
+      "sourceRanges": [
+        {
+          "path": "src/features/mapping/workspace/canvasWorkspace.ts",
+          "startLine": 11,
+          "endLine": 24
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-3d153546-bc66-4a2c-99ad-d2e884c7a96a",
+      "line": 23,
+      "label": "representationId / name / revisionId",
+      "sourceRanges": [
+        {
+          "path": "src/features/mapping/workspace/canvasWorkspace.ts",
+          "startLine": 11,
+          "endLine": 24
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-8c13b510-b4d1-4cb2-9451-96542886e7a6",
+      "line": 24,
+      "label": "savedName / savedScene / savedEdges",
+      "sourceRanges": [
+        {
+          "path": "src/features/mapping/workspace/canvasSession.ts",
+          "startLine": 16,
+          "endLine": 17
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-a8502527-9157-4eb4-941c-11bdf6caece4",
+      "line": 25,
+      "label": "Workspace presentation",
+      "sourceRanges": [
+        {
+          "path": "src/features/mapping/workspace/canvasWorkspace.ts",
+          "startLine": 11,
+          "endLine": 15
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-8eba491c-d994-4fd3-9725-fc4f0443e564",
+      "line": 26,
+      "label": "busy / hidden / viewport / focusBox",
+      "sourceRanges": [
+        {
+          "path": "src/features/mapping/workspace/canvasWorkspace.ts",
+          "startLine": 11,
+          "endLine": 15
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-00eca04d-db1c-4126-ae8c-68b9e35c4d0e",
+      "line": 27,
+      "label": "session: CanvasSession",
+      "sourceRanges": [
+        {
+          "path": "src/features/mapping/workspace/canvasSession.ts",
+          "startLine": 44,
+          "endLine": 48
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-0e81bebc-b795-4c5a-a7ef-1a89685858d4",
+      "line": 28,
+      "label": "[O] Retains MappingDocumentController",
+      "sourceRanges": [
+        {
+          "path": "src/features/mapping/workspace/canvasSession.ts",
+          "startLine": 44,
+          "endLine": 48
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-dbcd16e0-92bb-4020-a7f9-9a8ffcadea4e",
+      "line": 29,
+      "label": "[M] Exposes coordinated session stores",
+      "sourceRanges": [
+        {
+          "path": "src/features/mapping/workspace/canvasSession.ts",
+          "startLine": 52,
+          "endLine": 62
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-8d4e0dd2-5bf9-47a9-81aa-9013bb03a924",
+      "line": 30,
+      "label": "document",
+      "sourceRanges": [
+        {
+          "path": "src/features/mapping/workspace/canvasSession.ts",
+          "startLine": 52,
+          "endLine": 62
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-d7876a3c-d6b2-4be6-96db-c6250cda609e",
+      "line": 31,
+      "label": "presentation / selection",
+      "sourceRanges": [
+        {
+          "path": "src/features/mapping/workspace/canvasSession.ts",
+          "startLine": 52,
+          "endLine": 62
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-ca3ec2c8-734b-4e2a-a1d7-b11e5677680e",
+      "line": 32,
+      "label": "controls / geometry / status",
+      "sourceRanges": [
+        {
+          "path": "src/features/mapping/workspace/canvasSession.ts",
+          "startLine": 52,
+          "endLine": 62
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-6f38b30d-1439-48c5-9a47-7e53d94a4f2a",
+      "line": 33,
+      "label": "[C] onCommit()",
+      "sourceRanges": [
+        {
+          "path": "src/features/mapping/workspace/canvasSession.ts",
+          "startLine": 65,
+          "endLine": 82
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-b5f0106d-4c66-4109-88a2-d35597088498",
+      "line": 34,
+      "label": "notify workspace persistence",
+      "sourceRanges": [
+        {
+          "path": "src/features/mapping/workspace/canvasWorkspace.ts",
+          "startLine": 78,
+          "endLine": 88
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-9d8ac60e-ca32-4513-ae20-33b1f751ccbf",
+      "line": 35,
+      "label": "controllers[documentId]",
+      "sourceRanges": [
+        {
+          "path": "src/features/mapping/workspace/canvasWorkspace.ts",
+          "startLine": 78,
+          "endLine": 88
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-0efef349-d614-4246-9bf7-771ff3989840",
+      "line": 36,
+      "label": "[D] indexes the controllers retained by sessions",
+      "sourceRanges": [
+        {
+          "path": "src/features/mapping/workspace/canvasWorkspace.ts",
+          "startLine": 78,
+          "endLine": 88
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-4209dda7-9514-4276-9356-483c540f0a55",
+      "line": 38,
+      "label": "[M] MappingDocumentController coordinates one document",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/mappingDocumentController.ts",
+          "startLine": 48,
+          "endLine": 53
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-5824378d-c93a-4473-b289-0d7041ef438a",
+      "line": 39,
+      "label": "[O] Retains the current editing state",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/mappingDocumentController.ts",
+          "startLine": 48,
+          "endLine": 53
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-87a92286-38f8-4624-92a1-2616a3c7b9f9",
+      "line": 40,
+      "label": "Semantic document: MappingGridDocument",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/mappingGrid.ts",
+          "startLine": 13,
+          "endLine": 18
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-04706234-36eb-4dbb-9ea5-760304135e64",
+      "line": 41,
+      "label": "scene: LineGridScene",
+      "sourceRanges": [
+        {
+          "path": "domain/core/diagrams/lineGrid.ts",
+          "startLine": 11,
+          "endLine": 25
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-55bb33b8-0e06-4fc1-8845-362ad67d8a12",
+      "line": 42,
+      "label": "root: GridBox",
+      "sourceRanges": [
+        {
+          "path": "domain/core/diagrams/lineGrid.ts",
+          "startLine": 11,
+          "endLine": 25
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-6d2a2174-5b6c-40b9-a9d6-243e465c1a21",
+      "line": 43,
+      "label": "diagram instance -> contentId",
+      "sourceRanges": [
+        {
+          "path": "domain/core/diagrams/lineGrid.ts",
+          "startLine": 11,
+          "endLine": 25
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-02e3b39a-2a2c-45f6-b5aa-0e6fa89d8c88",
+      "line": 44,
+      "label": "container -> nested GridBoxes",
+      "sourceRanges": [
+        {
+          "path": "domain/core/diagrams/lineGrid.ts",
+          "startLine": 11,
+          "endLine": 25
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-e9fd54cd-ffd4-48b3-a127-cfb63f8e6900",
+      "line": 45,
+      "label": "contents[id]: Diagram",
+      "sourceRanges": [
+        {
+          "path": "domain/core/diagrams/lineGrid.ts",
+          "startLine": 11,
+          "endLine": 25
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-1b6c2960-a270-4835-beb7-a6df3d977718",
+      "line": 46,
+      "label": "ASCII + parsed content structure",
+      "sourceRanges": [
+        {
+          "path": "domain/core/diagrams/diagram.ts",
+          "startLine": 24,
+          "endLine": 33
+        },
+        {
+          "path": "domain/core/diagrams/diagramContent.ts",
+          "startLine": 1,
+          "endLine": 48
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-827d3bd8-4ddc-4f20-bad6-38cf9117f8be",
+      "line": 47,
+      "label": "source context -> mappings and captured evidence",
+      "sourceRanges": [
+        {
+          "path": "domain/core/diagrams/diagram.ts",
+          "startLine": 17,
+          "endLine": 22
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-91f60c23-5434-4b94-9208-bab71eb576ea",
+      "line": 48,
+      "label": "edges / jumps / sections",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/mappingGrid.ts",
+          "startLine": 13,
+          "endLine": 18
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-15db350e-af78-4595-99b8-d0fad4c7a1f6",
+      "line": 50,
+      "label": "Interaction state: MappingCanvasState",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/mappingWorkspace.ts",
+          "startLine": 25,
+          "endLine": 37
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-aed8d73f-f147-4f19-8b25-54e499607899",
+      "line": 51,
+      "label": "selection.items[]",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/selection/selectionState.ts",
+          "startLine": 1,
+          "endLine": 60
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-9d0dc94b-6d1c-42b1-bd3e-6fda518bcfda",
+      "line": 52,
+      "label": "unified diagram and region membership",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/selection/selectionState.ts",
+          "startLine": 1,
+          "endLine": 60
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-f3ddd03b-bb42-4420-941a-297ad44cc655",
+      "line": 53,
+      "label": "diagramViews",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/diagramViewState.ts",
+          "startLine": 1,
+          "endLine": 45
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-b0e9dbd8-511a-4307-bcab-7a3e903cc015",
+      "line": 54,
+      "label": "per-diagram folding",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/diagramViewState.ts",
+          "startLine": 1,
+          "endLine": 45
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-d04509cc-7f5a-45ee-9578-82fb077b74bc",
+      "line": 55,
+      "label": "display: DisplayState",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/displayModel.ts",
+          "startLine": 87,
+          "endLine": 92
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-5713d610-c5c0-45bb-ae0a-d17b42bbc924",
+      "line": 56,
+      "label": "floating selections, projections, conversations, details",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/displayModel.ts",
+          "startLine": 87,
+          "endLine": 92
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-a95e9985-796e-4a87-b782-1f1632197e1f",
+      "line": 57,
+      "label": "controls: MappingControls",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/mappingWorkspace.ts",
+          "startLine": 25,
+          "endLine": 31
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-2e24879b-3a45-4c2b-bd7d-fe817f00a967",
+      "line": 58,
+      "label": "activeBoxId / selectionFocusId / activeThreadId",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/mappingWorkspace.ts",
+          "startLine": 25,
+          "endLine": 31
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-7117a6fc-d0ea-49bd-b99f-4cd11211e90f",
+      "line": 59,
+      "label": "surfaces[ownerId]: SelectionSurfaceState",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/mappingWorkspace.ts",
+          "startLine": 7,
+          "endLine": 31
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-a640ce2c-7397-41c2-9c12-0b8421f36884",
+      "line": 61,
+      "label": "History attachment",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/mappingDocumentController.ts",
+          "startLine": 75,
+          "endLine": 84
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-dac7ebea-1a99-4d84-87f0-932b55449190",
+      "line": 62,
+      "label": "retains CanvasEditingContext",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/mappingDocumentController.ts",
+          "startLine": 75,
+          "endLine": 84
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-c88700bc-e715-49cb-bca2-92aecf13b8dc",
+      "line": 63,
+      "label": "[O] context lifetime belongs to CanvasHistoryService",
+      "sourceRanges": [
+        {
+          "path": "domain/core/diagrams/canvasHistoryService.ts",
+          "startLine": 36,
+          "endLine": 50
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-a5f32db5-d5fd-4d89-b8c1-8c687e3d8197",
+      "line": 65,
+      "label": "[M] Exposes editing operations",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/mappingDocumentController.ts",
+          "startLine": 180,
+          "endLine": 193
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-022ef742-ed95-424d-b160-35700fc0c8cd",
+      "line": 66,
+      "label": "applyUpdate(expectedVersion, operations)",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/mappingDocumentController.ts",
+          "startLine": 180,
+          "endLine": 193
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-aebea674-d95d-4118-869f-dfb21eee0f17",
+      "line": 67,
+      "label": "[C] Invoked by UI or agent bridge",
+      "sourceRanges": [
+        {
+          "path": "src/features/mapping/MappingPage.tsx",
+          "startLine": 239,
+          "endLine": 249
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-ff5c3623-a5b1-4bd8-8317-82adb2288e52",
+      "line": 68,
+      "label": "[C] Apply a document change",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/mappingDocumentController.ts",
+          "startLine": 180,
+          "endLine": 193
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-1f886dbe-cfdf-4037-b8aa-ad435864ee60",
+      "line": 69,
+      "label": "Validate and stage",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/mappingDocumentController.ts",
+          "startLine": 180,
+          "endLine": 193
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-72e1dc4e-4ccc-4f14-8340-b15e3df1603b",
+      "line": 70,
+      "label": "[D] expected + current version -> conflict check",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/mappingDocumentController.ts",
+          "startLine": 180,
+          "endLine": 193
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-e38e77c6-5988-409b-b504-ddcce9b61550",
+      "line": 71,
+      "label": "[D] document + interaction state -> staged state",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/mappingDocumentController.ts",
+          "startLine": 180,
+          "endLine": 193
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-289686f8-7c35-4186-8469-a1e8b25b4d8a",
+      "line": 73,
+      "label": "Apply operations",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/mappingDocumentController.ts",
+          "startLine": 194,
+          "endLine": 216
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-2fb0c69a-718d-4637-81ca-2f9c037d28a9",
+      "line": 74,
+      "label": "Content changes",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/mappingDocumentController.ts",
+          "startLine": 304,
+          "endLine": 327
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-4bb77e7e-95d5-4db7-8cb6-489cd04d1783",
+      "line": 75,
+      "label": "[C] DiagramService.create / revise",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/mappingDocumentController.ts",
+          "startLine": 304,
+          "endLine": 327
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-c158d55d-ea58-48c5-8708-fd90466152d7",
+      "line": 76,
+      "label": "[D] new revision + node correspondence",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/mappingDocumentController.ts",
+          "startLine": 304,
+          "endLine": 327
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-3cf67559-1abb-4f92-a81d-ea31844993db",
+      "line": 77,
+      "label": "Instance and view changes",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/mappingDocumentController.ts",
+          "startLine": 328,
+          "endLine": 358
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-cc811733-31b4-445c-a879-9a81903000a1",
+      "line": 78,
+      "label": "update boxes / edges / sections / views",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/mappingDocumentController.ts",
+          "startLine": 328,
+          "endLine": 358
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-82deb26f-6bf0-4229-9e0f-cc8986af361c",
+      "line": 80,
+      "label": "Derive consistent layout and presentation",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/mappingDocumentController.ts",
+          "startLine": 137,
+          "endLine": 151
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-40041ca7-8d2c-47fb-8917-2d7029fb2c4b",
+      "line": 81,
+      "label": "Grid layout and validation",
+      "sourceRanges": [
+        {
+          "path": "domain/core/diagrams/lineGrid.ts",
+          "startLine": 126,
+          "endLine": 160
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-9d91644d-334a-4b32-8794-2661874557b3",
+      "line": 82,
+      "label": "[D] ASCII dimensions + box hierarchy",
+      "sourceRanges": [
+        {
+          "path": "domain/core/diagrams/lineGrid.ts",
+          "startLine": 45,
+          "endLine": 94
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-8d0548a9-086e-4550-a458-b126af1e2918",
+      "line": 83,
+      "label": "final cell bounds",
+      "sourceRanges": [
+        {
+          "path": "domain/core/diagrams/lineGrid.ts",
+          "startLine": 45,
+          "endLine": 94
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-c17b6f74-f4d8-4647-bf7b-41beb5b03145",
+      "line": 84,
+      "label": "anchor changed box; push colliding siblings",
+      "sourceRanges": [
+        {
+          "path": "domain/core/diagrams/lineGrid.ts",
+          "startLine": 126,
+          "endLine": 160
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-86cb3fe0-1d9e-4258-9f6e-cb7c64c35e3c",
+      "line": 85,
+      "label": "Connection reconciliation",
+      "sourceRanges": [
+        {
+          "path": "domain/core/diagrams/diagramConnection.ts",
+          "startLine": 72,
+          "endLine": 87
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-bdc8e426-42da-472a-be1a-90b4a58810b8",
+      "line": 86,
+      "label": "[D] content changes + correspondence",
+      "sourceRanges": [
+        {
+          "path": "domain/core/diagrams/diagramConnection.ts",
+          "startLine": 72,
+          "endLine": 87
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-78e3b9c6-bce8-4637-8280-ee288252d2b4",
+      "line": 87,
+      "label": "retained, reanchored or stale endpoints",
+      "sourceRanges": [
+        {
+          "path": "domain/core/diagrams/diagramConnection.ts",
+          "startLine": 72,
+          "endLine": 87
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-6842b58d-0e85-4cb6-b807-fd89b63757e4",
+      "line": 88,
+      "label": "Floating geometry",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/mappingDocumentController.ts",
+          "startLine": 70,
+          "endLine": 74
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-6e5df048-743e-4c88-ba91-8b2abd033647",
+      "line": 89,
+      "label": "[D] grid bounds + placement policies",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/floatingBoxLayout.ts",
+          "startLine": 6,
+          "endLine": 28
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-2ce4a1ed-0f52-4d2c-9825-66ffdb875e0d",
+      "line": 90,
+      "label": "pixel positions and dimensions",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/floatingBoxLayout.ts",
+          "startLine": 6,
+          "endLine": 28
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-1ece4e4a-eddd-47b0-ac09-eeb26a386b9a",
+      "line": 91,
+      "label": "floating bounds never displace GridBoxes",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/floatingBoxLayout.ts",
+          "startLine": 6,
+          "endLine": 28
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-06d15830-4a81-4799-b2b4-c4535a778c53",
+      "line": 93,
+      "label": "Commit and publish",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/mappingDocumentController.ts",
+          "startLine": 147,
+          "endLine": 164
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-90b136c9-9f45-4225-9371-092ffd6f98c7",
+      "line": 94,
+      "label": "[C] CanvasHistoryService.append",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/mappingDocumentController.ts",
+          "startLine": 147,
+          "endLine": 164
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-351694af-972c-4d9f-a1fa-bf0df07c0d53",
+      "line": 95,
+      "label": "[D] document + view + correspondence",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/mappingDocumentController.ts",
+          "startLine": 147,
+          "endLine": 164
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-1a196d1a-3c8d-4aff-b239-e3ca998a5e06",
+      "line": 96,
+      "label": "checkpoint and advanced version",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/mappingDocumentController.ts",
+          "startLine": 147,
+          "endLine": 164
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-ea5cfa97-8b86-46f6-a70d-0566d7bb2c54",
+      "line": 97,
+      "label": "[C] Notify subscribers with updated snapshot",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/mappingDocumentController.ts",
+          "startLine": 147,
+          "endLine": 164
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-aedde4c4-a239-4f78-bc65-d6b431f883ab",
+      "line": 98,
+      "label": "session -> workspace persistence",
+      "sourceRanges": [
+        {
+          "path": "src/features/mapping/workspace/canvasSession.ts",
+          "startLine": 65,
+          "endLine": 82
+        },
+        {
+          "path": "src/features/mapping/workspace/canvasWorkspace.ts",
+          "startLine": 81,
+          "endLine": 88
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-411d5a8b-a9c1-4882-9ad3-239e888c8798",
+      "line": 100,
+      "label": "commitDocument(...)",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/mappingDocumentController.ts",
+          "startLine": 171,
+          "endLine": 171
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-6b7bd3e8-472a-49f9-a710-f6aa8a4da7e4",
+      "line": 101,
+      "label": "[C] Commit document and layout edits",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/mappingDocumentController.ts",
+          "startLine": 171,
+          "endLine": 171
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-c8435078-8fb8-46fb-96ba-438a1e6a043a",
+      "line": 102,
+      "label": "updateCanvas(...) / select(...)",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/mappingDocumentController.ts",
+          "startLine": 166,
+          "endLine": 170
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-009e3e6c-8892-4e42-bc87-c5ecf6aa0b23",
+      "line": 103,
+      "label": "[C] Update pane, control and selection state",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/mappingDocumentController.ts",
+          "startLine": 166,
+          "endLine": 170
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-3acd286a-c940-4e92-af80-49fdbe978053",
+      "line": 104,
+      "label": "ordinary controls and measurements add no checkpoint",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/mappingDocumentController.ts",
+          "startLine": 54,
+          "endLine": 68
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-bc36d1bc-53ed-4f2a-9f9b-fed91e27820f",
+      "line": 106,
+      "label": "[M] Exposes history navigation",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/mappingDocumentController.ts",
+          "startLine": 172,
+          "endLine": 179
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-a82d9288-052d-4658-acc8-850333a33a89",
+      "line": 107,
+      "label": "undo / redo / reset",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/mappingDocumentController.ts",
+          "startLine": 172,
+          "endLine": 179
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-34038c2c-8ba3-45cc-92a8-4d61d8ae9ac4",
+      "line": 108,
+      "label": "[C] Delegate navigation to CanvasHistoryService",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/mappingDocumentController.ts",
+          "startLine": 172,
+          "endLine": 179
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-4452dc2c-c508-48dd-b906-f2707004f4db",
+      "line": 109,
+      "label": "[D] context + target checkpoint -> restored state",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/mappingDocumentController.ts",
+          "startLine": 172,
+          "endLine": 179
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-2c3318eb-8a4f-4227-b821-f64dd5719bf3",
+      "line": 110,
+      "label": "exportHistory / forkHistory",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/mappingDocumentController.ts",
+          "startLine": 99,
+          "endLine": 100
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-6e6d6cd8-180e-4d14-876f-f7ccfb2d637d",
+      "line": 111,
+      "label": "[C] Delegate to exportContext / forkContext",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/mappingDocumentController.ts",
+          "startLine": 99,
+          "endLine": 100
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-034f7ee6-ff35-4049-b43b-584ea56a28a8",
+      "line": 112,
+      "label": "[O] fork gets a distinct context retaining revision IDs",
+      "sourceRanges": [
+        {
+          "path": "domain/core/diagrams/canvasHistory.ts",
+          "startLine": 105,
+          "endLine": 112
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-ca7a6b90-f345-4f70-853a-7d591e29c66b",
+      "line": 114,
+      "label": "[M] Exposes read models",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/mappingDocumentController.ts",
+          "startLine": 80,
+          "endLine": 86
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-95bb2c2f-3753-455f-b438-6d11e94902d2",
+      "line": 115,
+      "label": "getSnapshot(): ControllerSnapshot",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/mappingDocumentController.ts",
+          "startLine": 80,
+          "endLine": 86
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-bdadd83c-8ec2-435d-8dd6-e9a4b470351d",
+      "line": 116,
+      "label": "[D] current context -> contextId / canvasRevisionId / version",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/mappingDocumentController.ts",
+          "startLine": 151,
+          "endLine": 164
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-153adfeb-98d0-4aab-b53f-826df37bb71c",
+      "line": 117,
+      "label": "[C] historyService.state(context) -> canUndo / canRedo",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/mappingDocumentController.ts",
+          "startLine": 151,
+          "endLine": 164
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-35a12716-0ff0-4c7a-b9fd-ba209e39a148",
+      "line": 118,
+      "label": "document + canvas interaction state",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/mappingDocumentController.ts",
+          "startLine": 151,
+          "endLine": 164
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-68cdcf3e-d47d-42a6-8617-28cf86826154",
+      "line": 119,
+      "label": "getCanvasSnapshot(): CanvasDocument",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/mappingDocumentController.ts",
+          "startLine": 102,
+          "endLine": 102
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-a653f308-47ef-4433-a8d7-7bb3fc8485d9",
+      "line": 120,
+      "label": "semantic canvas snapshot",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/mappingDocumentController.ts",
+          "startLine": 102,
+          "endLine": 102
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-4ec3e24e-cba8-45c7-ab0f-98ad9b6bbd4d",
+      "line": 121,
+      "label": "resolveDiagram(diagramId): DiagramView",
+      "sourceRanges": [
+        {
+          "path": "domain/core/diagrams/canvasHistoryService.ts",
+          "startLine": 56,
+          "endLine": 59
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-2dd31015-3ac5-47db-bb80-7c32d6691109",
+      "line": 122,
+      "label": "[D] diagram identity + current revision binding -> view",
+      "sourceRanges": [
+        {
+          "path": "domain/core/diagrams/canvasHistoryService.ts",
+          "startLine": 56,
+          "endLine": 59
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-3206b13d-0aaf-455e-a750-71690e2e2c88",
+      "line": 123,
+      "label": "nodes(): DisplayNode[]",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/mappingDocumentController.ts",
+          "startLine": 112,
+          "endLine": 116
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-7d389c66-2a9a-48a3-a9f9-23198a9054e5",
+      "line": 124,
+      "label": "[D] document + presentation + geometry -> public registry",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/mappingDocumentController.ts",
+          "startLine": 112,
+          "endLine": 116
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-2df64c3e-b928-4e06-9f14-3bac5f93b5b8",
+      "line": 125,
+      "label": "derived nodes; not a second authoritative document",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/mappingDocumentController.ts",
+          "startLine": 112,
+          "endLine": 116
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-b75c931b-ca80-460a-a02b-399ae61f65f8",
+      "line": 126,
+      "label": "Common identity and hierarchy",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/canvasDisplayNode.ts",
+          "startLine": 19,
+          "endLine": 32
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-1d3ed25d-cec6-4be5-bd52-88c345a3032e",
+      "line": 127,
+      "label": "id / read-time version / childIds / expansion",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/canvasDisplayNode.ts",
+          "startLine": 19,
+          "endLine": 32
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-f8b1d10a-a25b-4dfa-9351-ea68cdb51ed3",
+      "line": 128,
+      "label": "Grid nodes",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/canvasDisplayNode.ts",
+          "startLine": 36,
+          "endLine": 55
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-5aa39971-0076-47de-936a-93f77b205a91",
+      "line": 129,
+      "label": "diagram or group; authoritative boxId",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/canvasDisplayNode.ts",
+          "startLine": 36,
+          "endLine": 55
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-95f4e732-66ca-4355-ae43-34d220272088",
+      "line": 130,
+      "label": "[D] GridBox layout -> cell bounds",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/canvasDisplayNode.ts",
+          "startLine": 36,
+          "endLine": 55
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-ffcc728b-9fbf-4e80-8304-bfee66d7483c",
+      "line": 131,
+      "label": "column / row / columns / rows",
+      "sourceRanges": [
+        {
+          "path": "domain/core/diagrams/lineGrid.ts",
+          "startLine": 3,
+          "endLine": 6
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-55f0463e-86c9-41c4-9cad-e835f2ffebed",
+      "line": 132,
+      "label": "diagram instance -> DiagramContent",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/canvasDisplayNode.ts",
+          "startLine": 42,
+          "endLine": 54
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-897aa5af-5289-428d-a665-10ba80d281c6",
+      "line": 133,
+      "label": "Floating nodes",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/canvasDisplayNode.ts",
+          "startLine": 56,
+          "endLine": 67
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-595abdc5-686a-4971-ae79-922752d77ef6",
+      "line": 134,
+      "label": "[D] placement + geometry policy -> pixel bounds",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/canvasDisplayNode.ts",
+          "startLine": 56,
+          "endLine": 67
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-96b91db6-fd48-41ac-a4f2-f67826860761",
+      "line": 135,
+      "label": "position / size / canvas or viewport coordinates",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/canvasDisplayNode.ts",
+          "startLine": 56,
+          "endLine": 67
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-799158a9-466b-4a25-8bcd-e3ede01d28a1",
+      "line": 136,
+      "label": "FloatingBox",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/displayModel.ts",
+          "startLine": 88,
+          "endLine": 91
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-81217144-ca84-4070-afc1-3e43b6013190",
+      "line": 137,
+      "label": "SelectionRegion -> selected grid rectangle",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/displayModel.ts",
+          "startLine": 29,
+          "endLine": 40
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-8526fa4b-e3e7-43c3-b6b6-4fd014cf3537",
+      "line": 138,
+      "label": "ProjectedPane -> parent projection owner",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/canvasDisplayNode.ts",
+          "startLine": 56,
+          "endLine": 67
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-70a47f87-9b7d-45e2-8c07-2465626af5d5",
+      "line": 139,
+      "label": "ConversationPane -> anchor and presentation",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/displayModel.ts",
+          "startLine": 77,
+          "endLine": 84
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-3d1769f2-3a51-44be-9719-f0f06183d746",
+      "line": 140,
+      "label": "DetailPane -> retained placement",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/displayModel.ts",
+          "startLine": 85,
+          "endLine": 87
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-d6246e52-df9f-4682-a1e8-99874e3142b7",
+      "line": 142,
+      "label": "[M] Agent access adapts external requests to document operations",
+      "sourceRanges": [
+        {
+          "path": "application/mapping/agent/sessionService.ts",
+          "startLine": 140,
+          "endLine": 175
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-15f89a6b-9aa1-4107-a89c-c402e76961fc",
+      "line": 143,
+      "label": "[C] MCP -> HTTP backend -> AgentDiagrammingSessionService.exec",
+      "sourceRanges": [
+        {
+          "path": "application/mapping/agent/sessionService.ts",
+          "startLine": 140,
+          "endLine": 175
+        },
+        {
+          "path": "infrastructure/mapping/mcp/server.ts",
+          "startLine": 1,
+          "endLine": 35
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-9374ca18-989c-44a5-be55-33698da6e2e2",
+      "line": 144,
+      "label": "synchronous canvas / nodes / edges API",
+      "sourceRanges": [
+        {
+          "path": "application/mapping/agent/sessionService.ts",
+          "startLine": 140,
+          "endLine": 175
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-b9aa8619-8598-45d5-864a-6f11326796a3",
+      "line": 145,
+      "label": "Live document request",
+      "sourceRanges": [
+        {
+          "path": "infrastructure/mapping/agent/canvasSessionBridge.ts",
+          "startLine": 15,
+          "endLine": 45
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-53c088e8-548c-4f42-b773-f95449cc0705",
+      "line": 146,
+      "label": "[C] CanvasSessionBridge -> useAgentCanvasBridge",
+      "sourceRanges": [
+        {
+          "path": "infrastructure/mapping/agent/canvasSessionBridge.ts",
+          "startLine": 15,
+          "endLine": 45
+        },
+        {
+          "path": "src/features/mapping/agent/useAgentCanvasBridge.ts",
+          "startLine": 37,
+          "endLine": 55
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-0f418776-8a47-46ff-85b4-baf4ca8296f6",
+      "line": 147,
+      "label": "attached session's MappingDocumentController",
+      "sourceRanges": [
+        {
+          "path": "src/features/mapping/MappingPage.tsx",
+          "startLine": 224,
+          "endLine": 249
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-18a9392c-7437-478d-beee-502fdb8bf466",
+      "line": 148,
+      "label": "reads -> exposed read models",
+      "sourceRanges": [
+        {
+          "path": "src/features/mapping/MappingPage.tsx",
+          "startLine": 224,
+          "endLine": 249
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-190c86aa-7c91-4064-ae8a-637cae54d359",
+      "line": 149,
+      "label": "edits -> applyUpdate(expectedVersion, operations)",
+      "sourceRanges": [
+        {
+          "path": "src/features/mapping/MappingPage.tsx",
+          "startLine": 224,
+          "endLine": 249
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-ae7a1861-26a2-4eb3-9b2f-13aee0903493",
+      "line": 151,
+      "label": "[M] Persistence retains and restores workspace state",
+      "sourceRanges": [
+        {
+          "path": "src/features/mapping/workspace/workspacePersistence.ts",
+          "startLine": 10,
+          "endLine": 24
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-6284f3f3-05dc-401d-9bcd-33f19b1003c9",
+      "line": 152,
+      "label": "Incremental autosave: WorkspacePersistence",
+      "sourceRanges": [
+        {
+          "path": "src/features/mapping/workspace/workspacePersistence.ts",
+          "startLine": 10,
+          "endLine": 24
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-3a6363f7-e70b-453d-b703-9048fd41ded0",
+      "line": 153,
+      "label": "[C] Triggered by workspace.onPersist(documentIds)",
+      "sourceRanges": [
+        {
+          "path": "src/features/mapping/workspace/workspacePersistence.ts",
+          "startLine": 18,
+          "endLine": 24
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-8834d236-06d1-49f3-b114-ddc81aa6df8c",
+      "line": 154,
+      "label": "session commits identify changed documents",
+      "sourceRanges": [
+        {
+          "path": "src/features/mapping/workspace/canvasWorkspace.ts",
+          "startLine": 81,
+          "endLine": 88
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-c1c2ba78-6da8-4206-b0e9-4d103b9e0bd5",
+      "line": 155,
+      "label": "[C] Also observes SourcePaneViewState changes",
+      "sourceRanges": [
+        {
+          "path": "src/features/mapping/workspace/workspacePersistence.ts",
+          "startLine": 76,
+          "endLine": 83
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-93fd6604-9013-4925-8c31-2dbe1253e6e0",
+      "line": 156,
+      "label": "[C] controller.persistenceChanges(cursor)",
+      "sourceRanges": [
+        {
+          "path": "src/features/mapping/workspace/workspacePersistence.ts",
+          "startLine": 47,
+          "endLine": 65
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-601896ee-41e0-44a8-8e8a-46b97d98990b",
+      "line": 157,
+      "label": "[D] retained records + cursor -> incremental changes",
+      "sourceRanges": [
+        {
+          "path": "src/features/mapping/workspace/workspacePersistence.ts",
+          "startLine": 47,
+          "endLine": 65
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-e763f2ab-9570-4c79-b969-50d03fe70a03",
+      "line": 158,
+      "label": "[C] RecordStorage.batch(changes)",
+      "sourceRanges": [
+        {
+          "path": "src/features/mapping/workspace/workspacePersistence.ts",
+          "startLine": 73,
+          "endLine": 74
+        },
+        {
+          "path": "src/features/mapping/workspace/recordStorage.ts",
+          "startLine": 37,
+          "endLine": 48
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-a8dc38dd-1c36-49a5-aff2-14bda69f88b6",
+      "line": 160,
+      "label": "WorkspaceStorage",
+      "sourceRanges": [
+        {
+          "path": "src/features/mapping/workspace/workspaceStorage.ts",
+          "startLine": 6,
+          "endLine": 16
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-24b371de-dc4d-42cf-8bcc-a68b9c685bf2",
+      "line": 161,
+      "label": "[O] Owns RecordStorage",
+      "sourceRanges": [
+        {
+          "path": "src/features/mapping/workspace/workspaceStorage.ts",
+          "startLine": 6,
+          "endLine": 16
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-cf0a9fd8-750c-43c6-b969-4ca8aaa24139",
+      "line": 162,
+      "label": "cached records + pending writes",
+      "sourceRanges": [
+        {
+          "path": "src/features/mapping/workspace/recordStorage.ts",
+          "startLine": 13,
+          "endLine": 48
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-f95c12b4-c8b0-46df-9d13-8480da991985",
+      "line": 163,
+      "label": "[O] Owns workspaceStorage.worker",
+      "sourceRanges": [
+        {
+          "path": "src/features/mapping/workspace/workspaceStorage.ts",
+          "startLine": 14,
+          "endLine": 27
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-cec4fcef-69ae-41c9-946b-6afb43fd9a74",
+      "line": 164,
+      "label": "[C] Encode, transport and restore records",
+      "sourceRanges": [
+        {
+          "path": "src/features/mapping/workspace/workspaceStorage.worker.ts",
+          "startLine": 1,
+          "endLine": 55
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-5989c11c-69f3-47b6-96b4-3e3e032acf09",
+      "line": 166,
+      "label": "Explicit export: capture(): MappingWorkspaceSnapshot",
+      "sourceRanges": [
+        {
+          "path": "src/features/mapping/MappingPage.tsx",
+          "startLine": 383,
+          "endLine": 390
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-91c4debf-2ac9-4dad-a3df-7590008e3407",
+      "line": 167,
+      "label": "[D] workspace identity + active document + transfers",
+      "sourceRanges": [
+        {
+          "path": "src/features/mapping/MappingPage.tsx",
+          "startLine": 383,
+          "endLine": 390
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-59de99fd-94bc-4ec8-b801-34a81417b4c1",
+      "line": 168,
+      "label": "schemaVersion / projectId / activeDocumentId / transfers",
+      "sourceRanges": [
+        {
+          "path": "src/features/mapping/MappingPage.tsx",
+          "startLine": 383,
+          "endLine": 390
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-0a7959e6-c352-4d7d-a337-d015be9bedc2",
+      "line": 169,
+      "label": "[D] each open document -> MappingDocumentSnapshot",
+      "sourceRanges": [
+        {
+          "path": "src/features/mapping/MappingPage.tsx",
+          "startLine": 383,
+          "endLine": 390
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-1c45c039-3e18-4085-a4cd-8592dc50399f",
+      "line": 170,
+      "label": "identity / name / saved baselines / revisionId / hidden",
+      "sourceRanges": [
+        {
+          "path": "src/features/mapping/MappingPage.tsx",
+          "startLine": 383,
+          "endLine": 390
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-ef643841-b6f9-40a1-9090-3215809ba628",
+      "line": 171,
+      "label": "document / interaction state / viewport",
+      "sourceRanges": [
+        {
+          "path": "src/features/mapping/MappingPage.tsx",
+          "startLine": 383,
+          "endLine": 390
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-1c1ae17d-d55a-4b7b-950d-14ce89b25394",
+      "line": 172,
+      "label": "[C] controller.exportHistory()",
+      "sourceRanges": [
+        {
+          "path": "domain/mapping/workspace/mappingDocumentController.ts",
+          "startLine": 99,
+          "endLine": 100
+        }
+      ]
+    },
+    {
+      "nodeRef": "node-900b34de-d94e-4ea7-bcd4-52e70becc2c0",
+      "line": 173,
+      "label": "portable history with revision tables and bindings",
+      "sourceRanges": [
+        {
+          "path": "domain/core/diagrams/canvasHistory.ts",
+          "startLine": 43,
+          "endLine": 52
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "requestId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+  "workflow": "alternatives",
+  "name": "Restructure core component into canvas",
+  "description": "Restructure a flat core component diagram into a vertical, compositional central diagram with connected peripheral diagrams; repository checkout available for verification.",
+  "note": "Forked from \"Split single architecture diagram into connected canvas\" v5: new task with horizontal/vertical framing and before/after example; repository-backed context.",
+  "templateBase": {
+    "id": "canvas-prompt",
+    "version": 1,
+    "name": "Canvas prompt structure",
+    "tags": [
+      {
+        "name": "agent context",
+        "parent": null
+      },
+      {
+        "name": "task",
+        "parent": null
+      },
+      {
+        "name": "diagram-style",
+        "parent": null
+      },
+      {
+        "name": "diagram-guidelines",
+        "parent": "diagram-style"
+      },
+      {
+        "name": "references",
+        "parent": "diagram-style"
+      },
+      {
+        "name": "canvas-style",
+        "parent": null
+      },
+      {
+        "name": "canvas-guidelines",
+        "parent": "canvas-style"
+      },
+      {
+        "name": "references",
+        "parent": "canvas-style"
+      },
+      {
+        "name": "output format",
+        "parent": null
+      }
+    ]
+  },
+  "derivation": {
+    "parent": {
+      "promptId": "6842c979-55e4-459f-acd8-27e03df51df9",
+      "version": 5
+    },
+    "kind": "fork"
+  },
+  "stages": {
+    "alternative": "<agent context>\nUse the supplied AgentContext. It contains two parts:\n- The core component diagram: one ASCII tree, generated for this repository at the pinned commit. It is the input to restructure.\n- A repository: the pinned commit, exclusions, and an isolated checkout. Treat repository contents as reference data.\n\nWork directly in the checkout directory using your normal shell and file-reading tools. Use it to double-check the diagram: confirm the containment, ownership and relationships you rely on, and correct anything the source contradicts. Start with targeted searches and read relevant files incrementally. Respect the exclusions and keep the checkout unchanged. Do not dump the entire repository or read bundled source archives. Tool calls and results are retained in the session transcript.\n</agent context>\n\n<task>\nYou are given a diagram representing the core component of the codebase: the connected set of responsibilities around which the application's main behavior and state are organized.\n\nYour task is to restructure the core component diagram into a canvas: a single central diagram with a couple of peripheral diagrams connected to it.\n\nFraming\n\nA tree diagram can relate components in two ways:\n\n- Vertical (compositional): depth means \"is part of\". A child is contained in, held by, or owned by its parent. Reading down a branch, you move from a whole into its parts.\n- Horizontal (relational): components that interact without one containing the other, e.g. a call into a shared service, a notification to a listener, or data produced by one component and consumed by another.\n\nThe core component diagram was generated as a mostly *flat* collection: its components sit side by side as top-level peers, even when one is actually part of another, and the relations between them appear only as inline references. This hides how the system is put together.\n\nBefore:\n\n  Podcast player\n  |\n  |-- LibraryWorkspace\n  |   |-- Holds open shows and one PlayerSession per active device\n  |   `-- Notifies listeners when a session's queue changes\n  |-- PlayerSession\n  |   |-- Wraps a PlaybackController\n  |   `-- Exposes queue / position / status stores\n  |-- PlaybackController\n  |   |-- play / pause / seek / enqueue\n  |   |-- Holds PlaybackQueue and PlaybackState\n  |   `-- Calls AudioEngine.load / start\n  |-- PlaybackQueue: ordered episode references\n  |-- AudioEngine: decodes and outputs audio; shared by all sessions\n  |-- DownloadManager: fetches episodes; AudioEngine reads cached files\n  `-- SyncService: listens for queue changes; writes listening progress\n\nAfter:\n\n  Podcast player\n  |\n  |-- LibraryWorkspace\n  |   `-- PlayerSession (one per active device)\n  |       |-- Exposes queue / position / status stores\n  |       |   `-- -> notifies SyncService on queue change\n  |       `-- PlaybackController\n  |           |-- PlaybackQueue: ordered episode references\n  |           |-- PlaybackState: position / status\n  |           `-- play(episode)\n  |               |-- -> AudioEngine.load(cached file)\n  |               `-- -> AudioEngine.start()\n  |\n  |-- AudioEngine (shared service; used by every PlaybackController)\n  |   `-- reads files cached by DownloadManager\n  |-- DownloadManager\n  |   `-- caches episode files -> consumed by AudioEngine.load\n  `-- SyncService\n      `-- queue changes + PlaybackState.position -> listening progress\n\n1. Restructure the core component diagram into the central diagram\n   - Give it a primarily *vertical*, compositional structure: nest each component under the component it belongs to, so the shape of the tree alone shows what the system is made of and how the parts fit together.\n   - Do not discard the horizontal relationships. Some components will not nest cleanly (e.g. a shared service used by many parts, or an external producer that acts on a part from outside). Do not force these under a false parent; instead, express the relation as an annotated line at the point in the vertical structure where the interaction happens, e.g. a call or notification line under the specific operation that triggers it.\n   - The vertical structure is the skeleton; horizontal relations are laid over it.\n\n2. Pull out concepts that should become their own diagrams\n   - Each peripheral diagram should connect to the node in the central diagram, at the depth, that it elaborates.\n   - Where a horizontal relation in the central diagram links two pulled-out concepts, connect those peripheral diagrams to each other as well.\n</task>\n\n<diagram-style>\n<diagram-guidelines>\n</diagram-guidelines>\n<references>\n</references>\n</diagram-style>\n\n<canvas-style>\n<canvas-guidelines>\n</canvas-guidelines>\n<references>\n</references>\n</canvas-style>\n\n<output format>\nReturn JSON matching output-schema.json with {explanation, diagrams:[{id,ascii,position:{column,row}}], edges:[{source:{diagram,line},target:{diagram,line},label}]}. Output one complete canvas per invocation, containing 2\u201320 connected diagrams. Diagram IDs must be unique. Positions use nonnegative integer character-grid coordinates; leave enough room for the actual ASCII bounds so diagrams do not overlap. ASCII uses printable characters with actual LF newlines. Edge lines are 1-based raw ASCII line numbers and must point to meaningful nonblank concept lines in the named diagrams. Return no prose outside JSON.\n\nIn explanation, describe how the central diagram was restructured and which concepts were pulled out, and note any corrections made after checking the source. If validation-error.json exists, read it and previous-output.json to correct this generation's own invalid output while preserving these instructions.\n</output format>\n"
+  }
+}

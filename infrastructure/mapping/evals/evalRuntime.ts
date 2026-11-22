@@ -1,4 +1,7 @@
+import { runtimeUsageRecorder } from '../../core/usage/runtimeUsage';
+import { EVAL_GENERATION_TIMEOUT_MS } from '../../../domain/mapping/evals/evalLimits';
 import { spawn } from 'node:child_process';
+import { createInterface } from 'node:readline';
 import { mkdtemp, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -22,7 +25,7 @@ export class CodexEvalRuntime implements EvalRuntime {
           '--sandbox', 'read-only', '-c', 'approval_policy="never"', '-c', `model_reasoning_effort=${JSON.stringify(input.effort)}`,
           '--ephemeral', '--skip-git-repo-check', '--json', '--color', 'never', '--output-schema', schema, '--cd', directory, '-'],
         { cwd: directory, stdio: ['pipe', 'pipe', 'pipe'] });
-        let buffer = '', reply = '', failure = '', bytes = 0, settled = false, usage: Record<string, number> | undefined;
+        let reply = '', failure = '', settled = false, usage: Record<string, number> | undefined;
         let forceKill: ReturnType<typeof setTimeout> | undefined;
         const stop = () => { child.kill('SIGTERM'); forceKill ??= setTimeout(() => child.kill('SIGKILL'), 2000); forceKill.unref(); };
         const finish = (error?: Error) => {
@@ -31,25 +34,23 @@ export class CodexEvalRuntime implements EvalRuntime {
           else { try { resolve({ output: JSON.parse(reply), usage }); } catch { reject(Error('Eval agent returned invalid JSON.')); } }
         };
         const abort = () => finish(Error('Generation cancelled.'));
-        const timeout = setTimeout(() => finish(Error('Generation timed out.')), 15 * 60_000);
+        const timeout = setTimeout(() => finish(Error('Generation timed out.')), EVAL_GENERATION_TIMEOUT_MS);
         input.signal.addEventListener('abort', abort, { once: true });
+        const recordUsage = runtimeUsageRecorder(input.model, input.effort);
         const consume = (line: string) => {
           try {
             const event = JSON.parse(line);
+            recordUsage(event);
             if (event.type === 'item.completed' && event.item?.type === 'agent_message') reply = event.item.text;
             if (event.type === 'turn.completed') usage = event.usage;
             if (event.type === 'turn.failed') failure = event.error?.message || 'Generation failed.';
           } catch { /* Ignore non-JSON diagnostics. */ }
         };
-        child.stdout.setEncoding('utf8'); child.stderr.resume();
-        child.stdout.on('data', (chunk: string) => {
-          bytes += Buffer.byteLength(chunk);
-          if (bytes > 16 * 1024 * 1024) return finish(Error('Generation output exceeded its limit.'));
-          buffer += chunk; const lines = buffer.split('\n'); buffer = lines.pop() ?? ''; lines.forEach(consume);
-        });
+        child.stderr.resume();
+        createInterface({ input: child.stdout, crlfDelay: Infinity }).on('line', consume);
         child.stdin.on('error', error => finish(error)); child.on('error', error => finish(error));
         child.on('close', code => {
-          clearTimeout(forceKill); consume(buffer);
+          clearTimeout(forceKill);
           finish(failure || code !== 0 || !reply.trim() ? Error(failure || `Eval agent exited ${code} without a result. Check model access and authentication.`) : undefined);
         });
         if (input.signal.aborted) abort(); else child.stdin.end(input.prompt);
@@ -62,6 +63,16 @@ export class CodexEvalRuntime implements EvalRuntime {
 export class FakeEvalRuntime implements EvalRuntime {
   async generate(input: Parameters<EvalRuntime['generate']>[0]): ReturnType<EvalRuntime['generate']> {
     input.signal.throwIfAborted();
+    if (input.stage === 'layout') return { output: {
+      canvases: [{ id: 'session', title: 'Session', diagrams: [
+        { id: 'input', title: 'Input', position: { column: 0, row: 0 }, size: { columns: 24, lines: 8 },
+          nodes: [{ id: 'event', line: 3, label: 'Key event' }] },
+        { id: 'terminal', title: 'Terminal', position: { column: 34, row: 2 }, size: { columns: 30, lines: 12 },
+          nodes: [{ id: 'write', line: 6, label: 'Queued write' }] }
+      ] }],
+      edges: [{ source: { canvas: 'session', diagram: 'input', node: 'event' },
+        target: { canvas: 'session', diagram: 'terminal', node: 'write' }, label: 'encodes' }]
+    } };
     if (input.stage === 'linked') {
       const sources = input.files['canvases.json'] as { id: string; diagrams: { id: string; ascii: string }[] }[];
       const fresh = (id: string, name: string) => ({ kind: 'new' as const, id, name, diagrams: [{ id: 'overview', ascii: name + '\n`-- Supporting evidence', position: { column: 0, row: 0 } }], edges: [] });

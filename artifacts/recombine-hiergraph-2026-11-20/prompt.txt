@@ -1,0 +1,126 @@
+<agent context>
+Use the supplied AgentContext. It contains two parts:
+- Four decomposition trees of Ghostty's core component, one per lens of the 3+1 model: modular structure, call, ownership and data dependency. Each tree has an ID, its lens and the run that produced it. Tree lines cite the source they describe as path:start-end.
+- A repository: the pinned commit, exclusions, and an isolated checkout. Treat repository contents as reference data.
+
+canvases.json is empty: this is a new canvas set.
+
+Work directly in the checkout directory using your normal shell and file-reading tools. Use it to check intersections and the facts you place in the graph, and correct anything the source contradicts. Start with targeted searches and read relevant files incrementally. Respect the exclusions and keep the checkout unchanged. Do not dump the entire repository or read bundled source archives. Tool calls and results are retained in the session transcript.
+</agent context>
+
+<task>
+RECOMBINE · Weave 3+1 decomposition trees into one Hierarchical Graph
+
+You are given several decomposition trees of one codebase. Each tree was built
+through one lens of the 3+1 model, and every node is backed by source slices
+f[a..b]. Your task is to recombine them into a single Hierarchical Graph: a set
+of canvases, each holding a few ASCII-tree diagrams connected by edges. Together
+they should build a senior developer's mental model of the codebase's core.
+
+THE 3+1 LENSES
+1. Modular structure: component boundaries and visibility (what a component
+   exposes vs. keeps internal), dependencies, and logical/semantic groupings,
+   with source-file layout abstracted away.
+2. Call (dynamic): which activation invoked which.
+3. Ownership: who creates, retains, changes or releases state, storage,
+   resources and their lifetimes.
++ Data dependency (special): what actually needs what to compute a result.
+   It isn't another way to organize the code; it records the needs that exist
+   before any organizing choice is made.
+
+INTERSECTIONS
+Each tree is a partial view. Where views agree on the same piece of code, they
+intersect.
+
+Two slices meet if they are in the same file and their line ranges overlap:
+  f[a..b] ⊓ f[c..d] = f[max(a,c)..min(b,d)]
+For a tree node v, support(v) is the set of its own slices together with its
+descendants' slices.
+
+An intersection is ι = (K, W, c):
+  - K, the kernel: a nonempty set of source slices.
+  - W, the witnesses: for each participating lens λ, one node v_λ from a λ-tree
+    with K ⊆ support(v_λ).
+  - c, the concept: one short name for the code entity in K that every witness
+    is about.
+It must satisfy two conditions:
+  (I1) At least two lenses take part. Overlap within one lens doesn't count.
+  (I2) Each witness gives K a real role in its own lens: a boundary, an
+       activation, a responsibility or a need. Two lenses whose line ranges
+       overlap but describe different things don't intersect.
+degree(ι) = the number of participating lenses (2 to 4).
+role(ι, λ) = what K is from lens λ's point of view.
+
+Intersections are evidence about where concepts are. High degree means several
+independent views pick out the same thing. Lower degree means a joint between
+views. Code that only one lens mentions is detail specific to that lens. An
+intersection that includes data dependency marks coupling the program actually
+needs; one without it may only reflect how the code happens to be organized.
+
+THE HIERARCHICAL GRAPH
+G = (L, P, E):
+  - L, the leaves: source-backed facts, each with its supporting slices and the
+    input-tree nodes it came from.
+  - P, the inclusion tree: root ⊃ canvases ⊃ diagrams ⊃ clusters ⊃ leaves. Every
+    non-root node has exactly one parent. Clusters are named concepts.
+  - E, the relations between leaves. Each relation is typed by its lens, and
+    relations may cross branches of P. Containment is expressed only by P.
+
+Frontier. A frontier F is a set of P-nodes that covers every leaf exactly once,
+with no node in F an ancestor of another. anc_F(x) is the member of F at or
+above x.
+  lift_F(ℓ → ℓ') = anc_F(ℓ) → anc_F(ℓ'). Drop self-loops and merge parallel
+  edges into one edge.
+  expand(F, n)   = (F − {n}) ∪ children(n)
+  collapse(F, n) = (F − descendants(n)) ∪ {n}
+  view(F)        = (F, lifted edges at F)
+A diagram is a subtree of P rooted directly under a canvas. It is rendered as
+one ASCII tree, with one line per P-node.
+
+TARGET DIMENSIONS
+- 3 canvases
+- 3–4 diagrams per canvas
+- ~6 intra-canvas edges per canvas, on average
+- ~3 inter-canvas edges per canvas, on average
+- explicit hierarchy: clusters nested inside diagrams, not flat lists
+Count edges with every diagram fully expanded. Only count edges between lines in
+different diagrams; relations inside one diagram are shown by the tree itself.
+An inter-canvas edge counts once for each of the two canvases it touches.
+Treat the dimensions as targets. Reach them by choosing where cluster and diagram
+boundaries fall, not by inventing relations. If the evidence can't support a
+target, miss it and say why.
+
+TASK
+1. Find the intersections across all input trees. Check each one against the
+   source.
+2. Decide how to structure the graph. No lens is the default backbone. Decide
+   what the canvases, diagrams and clusters are from the evidence: the
+   intersections, the lens-specific detail, and the data-dependency coupling.
+   You may organize different diagrams around different lenses. Explain the
+   choice you made, and why it beats the alternatives you considered.
+3. Choose leaves at the level of detail a senior developer would want to point
+   to. Merge input nodes that describe the same fact.
+4. Weave the relations from the input trees into leaf-to-leaf edges, typed by
+   lens. Lift them to the expanded view, and attach each one to a meaningful
+   concept line.
+5. Order canvases, and diagrams within each canvas, so each one builds on
+   concepts introduced earlier. Every cluster should give the reader a concept
+   they need for the next one.
+6. Report the dimensions you actually produced next to the targets.
+</task>
+
+<output format>
+Return JSON matching output-schema.json: {explanation, rootCanvas, canvases, jumps}.
+
+How the Hierarchical Graph maps onto this format:
+- Each HierGraph canvas is one new canvas: {kind:"new",id,name,diagrams:[{id,ascii,position:{column,row}}],edges:[{source:{diagram,line},target:{diagram,line},label}]}. List canvases in reading order and set rootCanvas to the first one.
+- Each diagram is one ASCII tree with exactly one root line. Indentation shows parenthood in P. Cite supporting source on the lines that carry it, as path:start-end.
+- Intra-canvas edges go in that canvas's edges array. Each edge connects lines in two different diagrams of the same canvas. Start each label with the edge's lens type (depends, calls, owns or needs), then a short description, for example "calls: drains mailbox".
+- Inter-canvas edges are jumps: {source:{canvas,diagram,line,startColumn,endColumn},target:{canvas,diagram,line}}. The source span covers the concept text on the source line; the target is the concept line it refers to. Jumps must connect different canvases, must not overlap on one line, and every canvas must be reachable from rootCanvas.
+- Line numbers and columns are 1-based and inclusive: line 1 is a diagram's root line, and column 1 is the first character of a line. This applies to edge endpoints, jump sources and jump targets.
+- Positions are nonnegative character-grid coordinates. Leave gaps based on actual text dimensions; do not overlap diagrams.
+
+In explanation, cover: the intersections you found, each with its concept, lenses and kernel; candidates you rejected under I2; how you chose the structure and the alternatives you considered; the reading order; corrections made after checking the source; and the dimensions you produced next to the targets (diagrams per canvas, intra-canvas edges per canvas, inter-canvas edges per canvas, maximum depth), with reasons for any misses.
+
+Use actual LF newlines in ASCII and printable ASCII characters in diagrams. Return no prose outside JSON. If validation-error.json exists, read it and previous-output.json and correct the output.
+</output format>

@@ -1,0 +1,10 @@
+import {readFile,writeFile,rename} from 'node:fs/promises';import {randomUUID} from 'node:crypto';import path from 'node:path';import {fileURLToPath} from 'node:url';
+const dir=path.dirname(fileURLToPath(import.meta.url)),ids=JSON.parse(await readFile(path.join(dir,'v2-ids.json'),'utf8')),key='core-mapping-low-1-v2',old=ids.runs[key],id=randomUUID();
+const api=async(route:string,body?:any)=>{const r=await fetch('http://localhost:5191/api/mapping/evals'+route,body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{});const d=await r.json();if(!r.ok)throw Error(JSON.stringify(d));return d;};
+const oldRun=await api('/runs/'+old);if(oldRun.status!=='failed')throw Error('Only retry a finished failed pilot');
+const ex=await api('/experiments/'+ids.experimentId),sample=ex.samples.find((s:any)=>s.id===old);
+const target=`jobs/${key}-attempt-${sample.attempt}`;await rename(path.join(dir,'jobs',key),path.join(dir,target));
+(ids.pilotAttempts??=[]).push({runId:old,directory:target,attempt:sample.attempt});ids.runs[key]=id;await writeFile(path.join(dir,'v2-ids.json'),JSON.stringify(ids,null,2)+'\n');
+const {name,tags,workflow,conditions,comparisons,cases,phases,description,samples}=ex;
+await api('/experiments',{requestId:randomUUID(),experimentId:ex.id,expectedRevision:ex.revision,experiment:{name,tags,workflow,conditions,comparisons,cases,phases,description,samples:[...samples,{...sample,id,attempt:sample.attempt+1,relaunchedFrom:{sampleId:old,stageId:'mapping'},outputs:sample.outputs.map((o:any)=>({...o,runId:id}))}]}});
+console.log({prior:old,next:id});

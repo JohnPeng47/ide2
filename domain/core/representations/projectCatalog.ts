@@ -113,6 +113,7 @@ export interface ProjectRepresentationRevisionRecord {
 
 export interface ProjectRepresentationRecord {
   canvasProjectId?: string;
+  agentContextId?: string;
   generated?: import('../diagrams/generatedCanvas').GeneratedCanvas;
   type?: import('../diagrams/canvasType').CanvasType;
   repositoryId?: string;

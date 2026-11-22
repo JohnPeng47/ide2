@@ -1,0 +1,19 @@
+{
+  "id": "child-3",
+  "name": "process",
+  "assignment": "Map nodes n38-n54 (Termio/Exec/output/parser/stream handler). Return partial JSON mappings only for assigned nodes, notes.",
+  "model": "gpt-6-sol",
+  "effort": "medium",
+  "status": "generating",
+  "queuedAt": "2026-11-19T04:19:17.160Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-19T04:19:17.166Z",
+  "sessionId": "01a1f207-c24b-719e-8700-c3e4767e2b2f",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-jwcn3zwe-agent-repository-AiLY88-checkout--/2026-11-19T04-19-17-195Z_01a1f207-c24b-719e-8700-c3e4767e2b2f.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase3-jwcn3zwe/agent-repository-AiLY88/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

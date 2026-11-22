@@ -1,0 +1,176 @@
+[
+  {
+    "id": "child-1",
+    "name": "surface",
+    "assignment": "Map nodes n1-n23 (Surface/App integration and init). Read numbered relevant code. Return JSON mappings; full named function declarations, coverage favored.",
+    "model": "gpt-6-sol",
+    "effort": "medium",
+    "status": "finished",
+    "queuedAt": "2026-11-19T04:44:37.210Z",
+    "usage": {
+      "input": 29178,
+      "output": 2411,
+      "cacheRead": 194432,
+      "cacheWrite": 0,
+      "reasoning": 236,
+      "totalTokens": 226021
+    },
+    "cost": {
+      "input": 0.058356,
+      "output": 0.02411,
+      "cacheRead": 0.03888640000000001,
+      "cacheWrite": 0,
+      "total": 0.12135239999999999
+    },
+    "startedAt": "2026-11-19T04:44:37.216Z",
+    "sessionId": "01a1f21e-f3fe-78a7-ab99-00b08a160159",
+    "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-c0ipkc8z-agent-repository-AbmJRr-checkout--/2026-11-19T04-44-37-246Z_01a1f21e-f3fe-78a7-ab99-00b08a160159.jsonl",
+    "text": "{\"diagrams\":[{\"diagramId\":\"d1\",\"mappings\":[{\"node\":\"n1\",\"path\":\"src/Surface.zig\",\"startLine\":1,\"endLine\":12},{\"node\":\"n2\",\"path\":\"src/Surface.zig\",\"startLine\":1,\"endLine\":16},{\"node\":\"n3\",\"path\":\"src/Surface.zig\",\"startLine\":477,\"endLine\":827},{\"node\":\"n3\",\"path\":\"src/Surface.zig\",\"startLine\":925,\"endLine\":929},{\"node\":\"n3\",\"path\":\"src/Surface.zig\",\"startLine\":2600,\"endLine\":2616},{\"node\":\"n3\",\"path\":\"src/Surface.zig\",\"startLine\":2792,\"endLine\":2982},{\"node\":\"n3\",\"path\":\"src/Surface.zig\",\"startLine\":3918,\"endLine\":4298},{\"node\":\"n4\",\"path\":\"src/Surface.zig\",\"startLine\":1,\"endLine\":12},{\"node\":\"n5\",\"path\":\"src/apprt.zig\",\"startLine\":1,\"endLine\":10},{\"node\":\"n5\",\"path\":\"src/apprt.zig\",\"startLine\":39,\"endLine\":53},{\"node\":\"n6\",\"path\":\"src/apprt.zig\",\"startLine\":39,\"endLine\":50},{\"node\":\"n7\",\"path\":\"src/Surface.zig\",\"startLine\":1017,\"endLine\":1136},{\"node\":\"n7\",\"path\":\"src/Surface.zig\",\"startLine\":5450,\"endLine\":5665},{\"node\":\"n8\",\"path\":\"src/App.zig\",\"startLine\":1,\"endLine\":28},{\"node\":\"n8\",\"path\":\"src/App.zig\",\"startLine\":199,\"endLine\":218},{\"node\":\"n9\",\"path\":\"src/App.zig\",\"startLine\":22,\"endLine\":28},{\"node\":\"n9\",\"path\":\"src/App.zig\",\"startLine\":45,\"endLine\":47},{\"node\":\"n9\",\"path\":\"src/App.zig\",\"startLine\":308,\"endLine\":316},{\"node\":\"n10\",\"path\":\"src/App.zig\",\"startLine\":53,\"endLine\":58},{\"node\":\"n11\",\"path\":\"src/Surface.zig\",\"startLine\":528,\"endLine\":590},{\"node\":\"n11\",\"path\":\"src/App.zig\",\"startLine\":136,\"endLine\":151},{\"node\":\"n12\",\"path\":\"src/App.zig\",\"startLine\":161,\"endLine\":167},{\"node\":\"n12\",\"path\":\"src/App.zig\",\"startLine\":272,\"endLine\":306},{\"node\":\"n12\",\"path\":\"src/App.zig\",\"startLine\":531,\"endLine\":542},{\"node\":\"n13\",\"path\":\"src/App.zig\",\"startLine\":596,\"endLine\":613},{\"node\":\"n13\",\"path\":\"src/App.zig\",\"startLine\":161,\"endLine\":167},{\"node\":\"n13\",\"path\":\"src/App.zig\",\"startLine\":272,\"endLine\":306},{\"node\":\"n13\",\"path\":\"src/App.zig\",\"startLine\":531,\"endLine\":542},{\"node\":\"n14\",\"path\":\"src/Surface.zig\",\"startLine\":474,\"endLine\":827},{\"node\":\"n15\",\"path\":\"src/Surface.zig\",\"startLine\":133,\"endLine\":136},{\"node\":\"n15\",\"path\":\"src/Surface.zig\",\"startLine\":607,\"endLine\":609},{\"node\":\"n15\",\"path\":\"src/Surface.zig\",\"startLine\":711,\"endLine\":767},{\"node\":\"n16\",\"path\":\"src/Surface.zig\",\"startLine\":92,\"endLine\":102},{\"node\":\"n16\",\"path\":\"src/Surface.zig\",\"startLine\":573,\"endLine\":605},{\"node\":\"n16\",\"path\":\"src/Surface.zig\",\"startLine\":753,\"endLine\":759},{\"node\":\"n17\",\"path\":\"src/Surface.zig\",\"startLine\":92,\"endLine\":102},{\"node\":\"n17\",\"path\":\"src/renderer/State.zig\",\"startLine\":1,\"endLine\":34},{\"node\":\"n18\",\"path\":\"src/Surface.zig\",\"startLine\":631,\"endLine\":640},{\"node\":\"n18\",\"path\":\"src/renderer/State.zig\",\"startLine\":13,\"endLine\":20},{\"node\":\"n19\",\"path\":\"src/renderer/State.zig\",\"startLine\":13,\"endLine\":34},{\"node\":\"n19\",\"path\":\"src/Surface.zig\",\"startLine\":592,\"endLine\":595},{\"node\":\"n19\",\"path\":\"src/Surface.zig\",\"startLine\":631,\"endLine\":636},{\"node\":\"n20\",\"path\":\"src/Surface.zig\",\"startLine\":104,\"endLine\":125},{\"node\":\"n20\",\"path\":\"src/Surface.zig\",\"startLine\":159,\"endLine\":175},{\"node\":\"n21\",\"path\":\"src/Surface.zig\",\"startLine\":1,\"endLine\":11},{\"node\":\"n21\",\"path\":\"src/Surface.zig\",\"startLine\":104,\"endLine\":125},{\"node\":\"n21\",\"path\":\"src/Surface.zig\",\"startLine\":159,\"endLine\":175},{\"node\":\"n22\",\"path\":\"src/Surface.zig\",\"startLine\":81,\"endLine\":84},{\"node\":\"n22\",\"path\":\"src/Surface.zig\",\"startLine\":141,\"endLine\":147},{\"node\":\"n22\",\"path\":\"src/Surface.zig\",\"startLine\":301,\"endLine\":354},{\"node\":\"n23\",\"path\":\"src/Surface.zig\",\"startLine\":144,\"endLine\":147},{\"node\":\"n23\",\"path\":\"src/Surface.zig\",\"startLine\":301,\"endLine\":303},{\"node\":\"n23\",\"path\":\"src/Surface.zig\",\"startLine\":361,\"endLine\":444},{\"node\":\"n23\",\"path\":\"src/Surface.zig\",\"startLine\":485,\"endLine\":507}]}],\"notes\":\"\"}",
+    "completedAt": "2026-11-19T04:45:43.863Z"
+  },
+  {
+    "id": "child-2",
+    "name": "input",
+    "assignment": "Map nodes n24-n37 input branch. Read numbered relevant source, include full named declarations. Return partial JSON.",
+    "model": "gpt-6-sol",
+    "effort": "medium",
+    "status": "finished",
+    "queuedAt": "2026-11-19T04:44:37.210Z",
+    "usage": {
+      "input": 38732,
+      "output": 1668,
+      "cacheRead": 97024,
+      "cacheWrite": 0,
+      "reasoning": 93,
+      "totalTokens": 137424
+    },
+    "cost": {
+      "input": 0.077464,
+      "output": 0.01668,
+      "cacheRead": 0.0194048,
+      "cacheWrite": 0,
+      "total": 0.11354879999999999
+    },
+    "startedAt": "2026-11-19T04:44:37.215Z",
+    "sessionId": "01a1f21e-f3fb-7fd3-9fd7-f1b162a8c829",
+    "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-c0ipkc8z-agent-repository-AbmJRr-checkout--/2026-11-19T04-44-37-243Z_01a1f21e-f3fb-7fd3-9fd7-f1b162a8c829.jsonl",
+    "text": "{\"diagrams\":[{\"diagramId\":\"d1\",\"mappings\":[{\"node\":\"n24\",\"path\":\"src/Surface.zig\",\"startLine\":2790,\"endLine\":2982},{\"node\":\"n24\",\"path\":\"src/Surface.zig\",\"startLine\":3813,\"endLine\":3875},{\"node\":\"n24\",\"path\":\"src/Surface.zig\",\"startLine\":6264,\"endLine\":6341},{\"node\":\"n25\",\"path\":\"src/Surface.zig\",\"startLine\":2790,\"endLine\":2840},{\"node\":\"n25\",\"path\":\"src/Surface.zig\",\"startLine\":2984,\"endLine\":3219},{\"node\":\"n26\",\"path\":\"src/Surface.zig\",\"startLine\":3101,\"endLine\":3219},{\"node\":\"n27\",\"path\":\"src/Surface.zig\",\"startLine\":2938,\"endLine\":2961},{\"node\":\"n27\",\"path\":\"src/Surface.zig\",\"startLine\":3324,\"endLine\":3397},{\"node\":\"n27\",\"path\":\"src/input/key_encode.zig\",\"startLine\":75,\"endLine\":97},{\"node\":\"n28\",\"path\":\"src/input/key.zig\",\"startLine\":8,\"endLine\":78},{\"node\":\"n28\",\"path\":\"src/input/key_encode.zig\",\"startLine\":12,\"endLine\":97},{\"node\":\"n29\",\"path\":\"src/input/key_encode.zig\",\"startLine\":14,\"endLine\":73},{\"node\":\"n29\",\"path\":\"src/Surface.zig\",\"startLine\":3399,\"endLine\":3419},{\"node\":\"n30\",\"path\":\"src/Surface.zig\",\"startLine\":3813,\"endLine\":3875},{\"node\":\"n30\",\"path\":\"src/Surface.zig\",\"startLine\":3915,\"endLine\":4299},{\"node\":\"n30\",\"path\":\"src/Surface.zig\",\"startLine\":2445,\"endLine\":2473},{\"node\":\"n30\",\"path\":\"src/Surface.zig\",\"startLine\":6264,\"endLine\":6341},{\"node\":\"n31\",\"path\":\"src/Surface.zig\",\"startLine\":3813,\"endLine\":3875},{\"node\":\"n31\",\"path\":\"src/input/mouse_encode.zig\",\"startLine\":12,\"endLine\":172},{\"node\":\"n32\",\"path\":\"src/terminal/Screen.zig\",\"startLine\":3053,\"endLine\":3106},{\"node\":\"n32\",\"path\":\"src/Surface.zig\",\"startLine\":2445,\"endLine\":2473},{\"node\":\"n33\",\"path\":\"src/input/paste.zig\",\"startLine\":4,\"endLine\":119},{\"node\":\"n33\",\"path\":\"src/Surface.zig\",\"startLine\":6264,\"endLine\":6341},{\"node\":\"n34\",\"path\":\"src/termio/message.zig\",\"startLine\":91,\"endLine\":98},{\"node\":\"n34\",\"path\":\"src/Surface.zig\",\"startLine\":895,\"endLine\":920},{\"node\":\"n35\",\"path\":\"src/Surface.zig\",\"startLine\":895,\"endLine\":920},{\"node\":\"n35\",\"path\":\"src/Surface.zig\",\"startLine\":2445,\"endLine\":2473},{\"node\":\"n36\",\"path\":\"src/termio/Termio.zig\",\"startLine\":431,\"endLine\":463},{\"node\":\"n36\",\"path\":\"src/termio/Thread.zig\",\"startLine\":289,\"endLine\":375},{\"node\":\"n37\",\"path\":\"src/termio/Exec.zig\",\"startLine\":403,\"endLine\":469}]}],\"notes\":\"\"}",
+    "completedAt": "2026-11-19T04:45:21.224Z"
+  },
+  {
+    "id": "child-3",
+    "name": "io",
+    "assignment": "Map nodes n38-n54 process output/Exec/stream handler branch. Include full named declarations; numbered reads. Return partial JSON.",
+    "model": "gpt-6-sol",
+    "effort": "medium",
+    "status": "finished",
+    "queuedAt": "2026-11-19T04:44:37.210Z",
+    "usage": {
+      "input": 38611,
+      "output": 1945,
+      "cacheRead": 150656,
+      "cacheWrite": 0,
+      "reasoning": 77,
+      "totalTokens": 191212
+    },
+    "cost": {
+      "input": 0.077222,
+      "output": 0.019450000000000002,
+      "cacheRead": 0.030131200000000004,
+      "cacheWrite": 0,
+      "total": 0.1268032
+    },
+    "startedAt": "2026-11-19T04:44:37.232Z",
+    "sessionId": "01a1f21e-f3ff-7b7b-9361-6613bc15df5f",
+    "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-c0ipkc8z-agent-repository-AbmJRr-checkout--/2026-11-19T04-44-37-247Z_01a1f21e-f3ff-7b7b-9361-6613bc15df5f.jsonl",
+    "text": "{\"diagrams\":[{\"diagramId\":\"d1\",\"mappings\":[{\"node\":\"n38\",\"path\":\"src/termio/Termio.zig\",\"startLine\":1,\"endLine\":66},{\"node\":\"n39\",\"path\":\"src/Surface.zig\",\"startLine\":687,\"endLine\":720},{\"node\":\"n39\",\"path\":\"src/termio/Exec.zig\",\"startLine\":44,\"endLine\":57},{\"node\":\"n39\",\"path\":\"src/termio/Exec.zig\",\"startLine\":587,\"endLine\":609},{\"node\":\"n40\",\"path\":\"src/Surface.zig\",\"startLine\":651,\"endLine\":720},{\"node\":\"n40\",\"path\":\"src/termio/Exec.zig\",\"startLine\":568,\"endLine\":585},{\"node\":\"n41\",\"path\":\"src/termio/Exec.zig\",\"startLine\":86,\"endLine\":194},{\"node\":\"n41\",\"path\":\"src/termio/Exec.zig\",\"startLine\":895,\"endLine\":1093},{\"node\":\"n42\",\"path\":\"src/termio/Exec.zig\",\"startLine\":106,\"endLine\":118},{\"node\":\"n42\",\"path\":\"src/termio/Exec.zig\",\"startLine\":158,\"endLine\":179},{\"node\":\"n43\",\"path\":\"src/termio/Exec.zig\",\"startLine\":139,\"endLine\":145},{\"node\":\"n43\",\"path\":\"src/termio/Exec.zig\",\"startLine\":1478,\"endLine\":1519},{\"node\":\"n43\",\"path\":\"src/termio/Exec.zig\",\"startLine\":1778,\"endLine\":1827},{\"node\":\"n44\",\"path\":\"src/termio/Exec.zig\",\"startLine\":1269,\"endLine\":1305},{\"node\":\"n44\",\"path\":\"src/termio/Exec.zig\",\"startLine\":1412,\"endLine\":1519},{\"node\":\"n44\",\"path\":\"src/termio/Exec.zig\",\"startLine\":1522,\"endLine\":1724},{\"node\":\"n45\",\"path\":\"src/termio/Exec.zig\",\"startLine\":1778,\"endLine\":1827},{\"node\":\"n46\",\"path\":\"src/termio/Termio.zig\",\"startLine\":702,\"endLine\":711},{\"node\":\"n47\",\"path\":\"src/termio/Termio.zig\",\"startLine\":713,\"endLine\":762},{\"node\":\"n48\",\"path\":\"src/termio/Termio.zig\",\"startLine\":64,\"endLine\":66},{\"node\":\"n48\",\"path\":\"src/termio/Termio.zig\",\"startLine\":312,\"endLine\":350},{\"node\":\"n48\",\"path\":\"src/termio/stream_handler.zig\",\"startLine\":19,\"endLine\":23},{\"node\":\"n48\",\"path\":\"src/termio/stream_handler.zig\",\"startLine\":96,\"endLine\":96},{\"node\":\"n48\",\"path\":\"src/terminal/stream.zig\",\"startLine\":580,\"endLine\":604},{\"node\":\"n49\",\"path\":\"src/termio/stream_handler.zig\",\"startLine\":188,\"endLine\":199},{\"node\":\"n49\",\"path\":\"src/termio/stream_handler.zig\",\"startLine\":208,\"endLine\":394},{\"node\":\"n50\",\"path\":\"src/termio/stream_handler.zig\",\"startLine\":208,\"endLine\":394},{\"node\":\"n51\",\"path\":\"src/termio/stream_handler.zig\",\"startLine\":19,\"endLine\":42},{\"node\":\"n51\",\"path\":\"src/termio/stream_handler.zig\",\"startLine\":138,\"endLine\":186},{\"node\":\"n52\",\"path\":\"src/termio/stream_handler.zig\",\"startLine\":151,\"endLine\":154},{\"node\":\"n52\",\"path\":\"src/termio/stream_handler.zig\",\"startLine\":829,\"endLine\":852},{\"node\":\"n52\",\"path\":\"src/termio/stream_handler.zig\",\"startLine\":866,\"endLine\":911},{\"node\":\"n52\",\"path\":\"src/termio/Termio.zig\",\"startLine\":756,\"endLine\":761},{\"node\":\"n53\",\"path\":\"src/termio/stream_handler.zig\",\"startLine\":138,\"endLine\":149},{\"node\":\"n53\",\"path\":\"src/termio/stream_handler.zig\",\"startLine\":555,\"endLine\":557},{\"node\":\"n53\",\"path\":\"src/termio/stream_handler.zig\",\"startLine\":1000,\"endLine\":1035},{\"node\":\"n53\",\"path\":\"src/termio/stream_handler.zig\",\"startLine\":1049,\"endLine\":1077},{\"node\":\"n54\",\"path\":\"src/termio/stream_handler.zig\",\"startLine\":114,\"endLine\":119},{\"node\":\"n54\",\"path\":\"src/termio/stream_handler.zig\",\"startLine\":156,\"endLine\":186},{\"node\":\"n54\",\"path\":\"src/termio/Termio.zig\",\"startLine\":713,\"endLine\":734}]}],\"notes\":\"\"}",
+    "completedAt": "2026-11-19T04:45:27.527Z"
+  },
+  {
+    "id": "child-4",
+    "name": "terminal",
+    "assignment": "Map nodes n55-n68 terminal model branch. Include full named declarations with coverage favored; numbered reads. Return partial JSON.",
+    "model": "gpt-6-sol",
+    "effort": "medium",
+    "status": "finished",
+    "queuedAt": "2026-11-19T04:44:37.210Z",
+    "usage": {
+      "input": 39414,
+      "output": 1929,
+      "cacheRead": 136064,
+      "cacheWrite": 0,
+      "reasoning": 178,
+      "totalTokens": 177407
+    },
+    "cost": {
+      "input": 0.07882800000000001,
+      "output": 0.01929,
+      "cacheRead": 0.027212800000000002,
+      "cacheWrite": 0,
+      "total": 0.1253308
+    },
+    "startedAt": "2026-11-19T04:44:37.215Z",
+    "sessionId": "01a1f21e-f3fd-77b0-8e90-38d55c1f9d72",
+    "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-c0ipkc8z-agent-repository-AbmJRr-checkout--/2026-11-19T04-44-37-245Z_01a1f21e-f3fd-77b0-8e90-38d55c1f9d72.jsonl",
+    "text": "{\"diagrams\":[{\"diagramId\":\"d1\",\"mappings\":[{\"node\":\"n55\",\"path\":\"src/termio/Termio.zig\",\"startLine\":43,\"endLine\":43},{\"node\":\"n55\",\"path\":\"src/terminal/Terminal.zig\",\"startLine\":1,\"endLine\":84},{\"node\":\"n56\",\"path\":\"src/terminal/Terminal.zig\",\"startLine\":1893,\"endLine\":2267},{\"node\":\"n56\",\"path\":\"src/terminal/Terminal.zig\",\"startLine\":2540,\"endLine\":2572},{\"node\":\"n56\",\"path\":\"src/terminal/Terminal.zig\",\"startLine\":3521,\"endLine\":3530},{\"node\":\"n56\",\"path\":\"src/terminal/Terminal.zig\",\"startLine\":4894,\"endLine\":5074},{\"node\":\"n56\",\"path\":\"src/terminal/Terminal.zig\",\"startLine\":4718,\"endLine\":4725},{\"node\":\"n57\",\"path\":\"src/terminal/Terminal.zig\",\"startLine\":1,\"endLine\":84},{\"node\":\"n58\",\"path\":\"src/terminal/Terminal.zig\",\"startLine\":36,\"endLine\":49},{\"node\":\"n58\",\"path\":\"src/terminal/ScreenSet.zig\",\"startLine\":1,\"endLine\":36},{\"node\":\"n59\",\"path\":\"src/terminal/ScreenSet.zig\",\"startLine\":1,\"endLine\":7},{\"node\":\"n59\",\"path\":\"src/terminal/ScreenSet.zig\",\"startLine\":38,\"endLine\":53},{\"node\":\"n59\",\"path\":\"src/terminal/ScreenSet.zig\",\"startLine\":64,\"endLine\":88},{\"node\":\"n60\",\"path\":\"src/terminal/ScreenSet.zig\",\"startLine\":23,\"endLine\":31},{\"node\":\"n60\",\"path\":\"src/terminal/ScreenSet.zig\",\"startLine\":104,\"endLine\":109},{\"node\":\"n61\",\"path\":\"src/terminal/Screen.zig\",\"startLine\":52,\"endLine\":75},{\"node\":\"n62\",\"path\":\"src/terminal/Screen.zig\",\"startLine\":74,\"endLine\":84},{\"node\":\"n63\",\"path\":\"src/terminal/Screen.zig\",\"startLine\":15,\"endLine\":45},{\"node\":\"n63\",\"path\":\"src/terminal/PageList.zig\",\"startLine\":1,\"endLine\":54},{\"node\":\"n63\",\"path\":\"src/terminal/PageList.zig\",\"startLine\":401,\"endLine\":405},{\"node\":\"n64\",\"path\":\"src/terminal/PageList.zig\",\"startLine\":51,\"endLine\":54},{\"node\":\"n65\",\"path\":\"src/terminal/page.zig\",\"startLine\":155,\"endLine\":195},{\"node\":\"n65\",\"path\":\"src/terminal/page.zig\",\"startLine\":2215,\"endLine\":2259},{\"node\":\"n65\",\"path\":\"src/terminal/page.zig\",\"startLine\":2392,\"endLine\":2442},{\"node\":\"n66\",\"path\":\"src/terminal/Screen.zig\",\"startLine\":52,\"endLine\":62},{\"node\":\"n66\",\"path\":\"src/terminal/PageList.zig\",\"startLine\":472,\"endLine\":487},{\"node\":\"n66\",\"path\":\"src/terminal/PageList.zig\",\"startLine\":6288,\"endLine\":6334},{\"node\":\"n66\",\"path\":\"src/terminal/PageList.zig\",\"startLine\":7790,\"endLine\":7818},{\"node\":\"n67\",\"path\":\"src/terminal/Terminal.zig\",\"startLine\":56,\"endLine\":84},{\"node\":\"n68\",\"path\":\"src/terminal/Terminal.zig\",\"startLine\":48,\"endLine\":84},{\"node\":\"n68\",\"path\":\"src/terminal/Terminal.zig\",\"startLine\":1893,\"endLine\":1933},{\"node\":\"n68\",\"path\":\"src/input/key_encode.zig\",\"startLine\":55,\"endLine\":72}]}],\"notes\":\"\"}",
+    "completedAt": "2026-11-19T04:45:30.967Z"
+  },
+  {
+    "id": "child-5",
+    "name": "renderer",
+    "assignment": "Map nodes n69-n82 renderer branch. Read numbered code; full named declarations coverage favored. Return partial JSON.",
+    "model": "gpt-6-sol",
+    "effort": "medium",
+    "status": "finished",
+    "queuedAt": "2026-11-19T04:44:37.210Z",
+    "usage": {
+      "input": 25687,
+      "output": 1390,
+      "cacheRead": 87680,
+      "cacheWrite": 0,
+      "reasoning": 76,
+      "totalTokens": 114757
+    },
+    "cost": {
+      "input": 0.05137399999999999,
+      "output": 0.0139,
+      "cacheRead": 0.017536000000000003,
+      "cacheWrite": 0,
+      "total": 0.08281
+    },
+    "startedAt": "2026-11-19T04:45:21.225Z",
+    "sessionId": "01a1f21f-9fd5-7e04-8ca2-cb87033e1511",
+    "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-c0ipkc8z-agent-repository-AbmJRr-checkout--/2026-11-19T04-45-21-237Z_01a1f21f-9fd5-7e04-8ca2-cb87033e1511.jsonl",
+    "text": "{\"diagrams\":[{\"diagramId\":\"d1\",\"mappings\":[{\"node\":\"n69\",\"path\":\"src/renderer/Thread.zig\",\"startLine\":474,\"endLine\":585},{\"node\":\"n70\",\"path\":\"src/renderer/Thread.zig\",\"startLine\":290,\"endLine\":444},{\"node\":\"n70\",\"path\":\"src/renderer/Thread.zig\",\"startLine\":474,\"endLine\":585},{\"node\":\"n71\",\"path\":\"src/renderer.zig\",\"startLine\":16,\"endLine\":42},{\"node\":\"n71\",\"path\":\"src/renderer/generic.zig\",\"startLine\":90,\"endLine\":108},{\"node\":\"n72\",\"path\":\"src/renderer.zig\",\"startLine\":35,\"endLine\":42},{\"node\":\"n73\",\"path\":\"src/renderer/generic.zig\",\"startLine\":1371,\"endLine\":1710},{\"node\":\"n73\",\"path\":\"src/renderer/State.zig\",\"startLine\":54,\"endLine\":80},{\"node\":\"n74\",\"path\":\"src/renderer/generic.zig\",\"startLine\":271,\"endLine\":281},{\"node\":\"n74\",\"path\":\"src/terminal/render.zig\",\"startLine\":289,\"endLine\":399},{\"node\":\"n75\",\"path\":\"src/terminal/render.zig\",\"startLine\":289,\"endLine\":374},{\"node\":\"n75\",\"path\":\"src/renderer/generic.zig\",\"startLine\":1479,\"endLine\":1526},{\"node\":\"n76\",\"path\":\"src/renderer/State.zig\",\"startLine\":26,\"endLine\":34},{\"node\":\"n76\",\"path\":\"src/renderer/generic.zig\",\"startLine\":1399,\"endLine\":1406},{\"node\":\"n76\",\"path\":\"src/renderer/generic.zig\",\"startLine\":1502,\"endLine\":1506},{\"node\":\"n76\",\"path\":\"src/renderer/generic.zig\",\"startLine\":1645,\"endLine\":1681},{\"node\":\"n77\",\"path\":\"src/renderer/generic.zig\",\"startLine\":1420,\"endLine\":1427},{\"node\":\"n78\",\"path\":\"src/renderer/generic.zig\",\"startLine\":204,\"endLine\":207},{\"node\":\"n78\",\"path\":\"src/renderer/generic.zig\",\"startLine\":2973,\"endLine\":2989},{\"node\":\"n78\",\"path\":\"src/renderer/generic.zig\",\"startLine\":3022,\"endLine\":3048},{\"node\":\"n79\",\"path\":\"src/renderer/generic.zig\",\"startLine\":1371,\"endLine\":1710},{\"node\":\"n79\",\"path\":\"src/renderer/generic.zig\",\"startLine\":2925,\"endLine\":3038},{\"node\":\"n80\",\"path\":\"src/renderer/generic.zig\",\"startLine\":1712,\"endLine\":1731},{\"node\":\"n80\",\"path\":\"src/renderer/generic.zig\",\"startLine\":1740,\"endLine\":1757},{\"node\":\"n80\",\"path\":\"src/renderer/generic.zig\",\"startLine\":1868,\"endLine\":1908},{\"node\":\"n80\",\"path\":\"src/renderer/generic.zig\",\"startLine\":1975,\"endLine\":2042},{\"node\":\"n81\",\"path\":\"src/renderer/Thread.zig\",\"startLine\":460,\"endLine\":472},{\"node\":\"n81\",\"path\":\"src/renderer/Thread.zig\",\"startLine\":556,\"endLine\":585},{\"node\":\"n82\",\"path\":\"src/Surface.zig\",\"startLine\":922,\"endLine\":929}]}],\"notes\":\"\"}",
+    "completedAt": "2026-11-19T04:45:58.659Z"
+  },
+  {
+    "id": "child-6",
+    "name": "lifecycle",
+    "assignment": "Map nodes n83-n101 resize/config/teardown. Read numbered code; full named declarations coverage favored. Return partial JSON.",
+    "model": "gpt-6-sol",
+    "effort": "medium",
+    "status": "finished",
+    "queuedAt": "2026-11-19T04:44:37.210Z",
+    "usage": {
+      "input": 16954,
+      "output": 1453,
+      "cacheRead": 58496,
+      "cacheWrite": 0,
+      "reasoning": 136,
+      "totalTokens": 76903
+    },
+    "cost": {
+      "input": 0.033908,
+      "output": 0.014530000000000001,
+      "cacheRead": 0.0116992,
+      "cacheWrite": 0,
+      "total": 0.0601372
+    },
+    "startedAt": "2026-11-19T04:45:27.528Z",
+    "sessionId": "01a1f21f-b869-7a82-a28c-f7b15856cfc0",
+    "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-c0ipkc8z-agent-repository-AbmJRr-checkout--/2026-11-19T04-45-27-529Z_01a1f21f-b869-7a82-a28c-f7b15856cfc0.jsonl",
+    "text": "{\"diagrams\":[{\"diagramId\":\"d1\",\"mappings\":[{\"node\":\"n83\",\"path\":\"src/Surface.zig\",\"startLine\":2600,\"endLine\":2649},{\"node\":\"n83\",\"path\":\"src/Surface.zig\",\"startLine\":1804,\"endLine\":1906},{\"node\":\"n84\",\"path\":\"src/Surface.zig\",\"startLine\":2600,\"endLine\":2649},{\"node\":\"n85\",\"path\":\"src/renderer/size.zig\",\"startLine\":20,\"endLine\":44},{\"node\":\"n85\",\"path\":\"src/Surface.zig\",\"startLine\":2618,\"endLine\":2635},{\"node\":\"n86\",\"path\":\"src/Surface.zig\",\"startLine\":2637,\"endLine\":2649},{\"node\":\"n87\",\"path\":\"src/termio/Termio.zig\",\"startLine\":523,\"endLine\":564},{\"node\":\"n88\",\"path\":\"src/termio/Termio.zig\",\"startLine\":532,\"endLine\":559},{\"node\":\"n89\",\"path\":\"src/termio/Termio.zig\",\"startLine\":532,\"endLine\":553},{\"node\":\"n90\",\"path\":\"src/termio/Termio.zig\",\"startLine\":561,\"endLine\":564},{\"node\":\"n91\",\"path\":\"src/App.zig\",\"startLine\":169,\"endLine\":197},{\"node\":\"n91\",\"path\":\"src/Surface.zig\",\"startLine\":1015,\"endLine\":1020},{\"node\":\"n91\",\"path\":\"src/Surface.zig\",\"startLine\":1801,\"endLine\":1906},{\"node\":\"n92\",\"path\":\"src/Surface.zig\",\"startLine\":1822,\"endLine\":1831},{\"node\":\"n92\",\"path\":\"src/Surface.zig\",\"startLine\":1870,\"endLine\":1889},{\"node\":\"n92\",\"path\":\"src/termio/Termio.zig\",\"startLine\":465,\"endLine\":521},{\"node\":\"n92\",\"path\":\"src/renderer/Thread.zig\",\"startLine\":404,\"endLine\":415},{\"node\":\"n93\",\"path\":\"src/Surface.zig\",\"startLine\":829,\"endLine\":885},{\"node\":\"n94\",\"path\":\"src/Surface.zig\",\"startLine\":881,\"endLine\":885},{\"node\":\"n94\",\"path\":\"src/Surface.zig\",\"startLine\":993,\"endLine\":1013},{\"node\":\"n95\",\"path\":\"src/Surface.zig\",\"startLine\":829,\"endLine\":845},{\"node\":\"n96\",\"path\":\"src/termio/Exec.zig\",\"startLine\":196,\"endLine\":230},{\"node\":\"n97\",\"path\":\"src/Surface.zig\",\"startLine\":840,\"endLine\":859},{\"node\":\"n98\",\"path\":\"src/Surface.zig\",\"startLine\":847,\"endLine\":855},{\"node\":\"n99\",\"path\":\"src/Surface.zig\",\"startLine\":857,\"endLine\":876},{\"node\":\"n100\",\"path\":\"src/App.zig\",\"startLine\":136,\"endLine\":151},{\"node\":\"n101\",\"path\":\"src/App.zig\",\"startLine\":136,\"endLine\":151}]}],\"notes\":\"Partial mappings for assigned nodes n83–n101 only.\"}",
+    "completedAt": "2026-11-19T04:46:04.033Z"
+  }
+]

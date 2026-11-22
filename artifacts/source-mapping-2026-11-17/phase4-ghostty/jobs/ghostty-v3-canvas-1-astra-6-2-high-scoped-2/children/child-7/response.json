@@ -1,0 +1,18 @@
+{
+  "text": "d5 verified at `ea8b12a8a9894b5259c441eadd8f6f0c65e215af`. Paths and ranges below are repository-relative and inclusive.\n\n**Paths:** `T=src/terminal/Terminal.zig`, `K=src/terminal/ScreenSet.zig`, `S=src/terminal/Screen.zig`, `L=src/terminal/PageList.zig`, `P=src/terminal/page.zig`, `Q=src/terminal/Selection.zig`, `C=src/terminal/compress/Page.zig`, `G=src/terminal/c/grid_ref_tracked.zig`, `I=src/termio/Termio.zig`.\n\n**Scopes:** `s=structure e=entity b=behavior r=relationship g=guarantee y=subsystem`. **Roles:** `D=declaration U=use I=implementation`. Within a role group, every range has the indicated role(s). `+n` means include that node’s ranges recursively, unioning overlaps per path. Explicitly listed handoffs are sufficient where the dependency’s internals concern a different layer.\n\n```text\nn1 [esry] D T:1-4 I:40-43; UI I:272-298,335-337,354-356; I T:344-404,5868-5911; +n2 +n3 +n4 +n5\n\nn2 [s] D T:56-68,253-266; I T:366-376; UI I:304-306\nn3 [s] D T:70-77,83-84,153-174,229-251; I T:377-383\nn4 [srg] D T:86-87,268-279 S:143-152; UI T:384-387,459-478\n\nn5 [esr] D T:48-49 K:1-8,15-21; UI T:356-369,395-397; DI K:38-109; +n6 +n7 +n8\nn6 [srg] D K:23-31; I K:43-52,104-109; U T:5680-5683,5740-5747\nn7 [sbg] D K:33-36 G:16-21; I K:47-52,69-72,90-102; UI G:23-31,94-98\nn8 [srbg] D K:1-8,17-21,30-31; I K:38-67,74-102; UI T:5680-5683,5689-5715 S:315-367\n\nn9 [esy] D S:1-1,37-87; I S:315-367; UI K:43-52,55-62,82-87; +n10 +n11 +n12 +n13 +n14 +n15\nn10 [sr] D S:52-56,143-175,209-218; UI T:2703-2713,2719-2754\nn11 [sr] D S:195-199 L:7800-7810; I S:329-345,936-953,974-979 L:7812-7818 P:1121-1133\nn12 [srbg] D S:58-62 Q:42-52 L:354-356,472-473; UI S:3063-3106; I Q:70-82,122-149 L:6313-6334\nn13 [s] D S:64-75,220-225\nn14 [s] D S:77-100,119-129; I S:348-356,361-364\n\nn15 [esry] D S:44-45 L:1-4; UI S:315-337,361-367; I L:648-719,727-742,751-774,783-800,978-988; +n16 +n17 +n19\nn16 [s] D L:361-365,401-402,465-470,507-511,7601-7616; I L:677-680,691-700\nn17 [sr] D L:354-356,472-487,518-533; I L:681-688,701-705,713-719; +n18\nn18 [brg] UI S:329-345,3063-3071 Q:131-149; I L:681-688,713-719,6313-6326,3844-3856 S:936-953,974-979; D L:3790-3793,7800-7810\nn19 [srg] D L:14-14,51-63,404-405,4061-4061; I L:783-800,4225-4236; +n20\nn20 [sr] D L:56-77,93-93; I L:751-774,785-799,5660-5682,5693-5724; +n21\nn21 [sr] D L:62-62,79-91; I L:103-108,239-245,785-789; +n22; D P:147-186\nn22 [srgb] D L:79-91 C:39-57; DI L:262-299; D L:5553-5558; UI L:5590-5604,5608-5632; I C:99-107,118-141,143-163\n\nn23 [esy] D P:147-232; I P:245-258,268-331,1907-1943; U L:783-790; +n24 +n25 +n26 +n27 +n28 +n29\nn24 [sg] D P:157-176; I P:34-82,245-258,289-292,1907-1924; UI L:751-773,783-789\nn25 [sr] D P:178-186,2215-2217; I P:268-287,1121-1133\nn26 [srg] D P:182-186,2392-2402; I P:274-287,1108-1133\nn27 [sr] D P:202-213; I P:302-309,1603-1639,1710-1715\nn28 [sr] D P:197-200,215-223; I P:293-301,310-318,1410-1429,1467-1485\nn29 [s] D P:188-195,225-232,2045-2049,2060-2084; I P:319-323\n```\n\nFor parent coverage, also include `n9` in `n8` and `n23` in `n21` when expanding the complete owned-storage subtree. No unresolved d5 claim.",
+  "usage": {
+    "input": 54750,
+    "output": 3348,
+    "cacheRead": 288896,
+    "cacheWrite": 0,
+    "reasoning": 95,
+    "totalTokens": 346994
+  },
+  "cost": {
+    "input": 0.5475,
+    "output": 0.1674,
+    "cacheRead": 0.28889600000000004,
+    "cacheWrite": 0,
+    "total": 1.003796
+  }
+}

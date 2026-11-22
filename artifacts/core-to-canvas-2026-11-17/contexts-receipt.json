@@ -1,0 +1,74 @@
+[
+  {
+    "key": "mapping",
+    "name": "Mapping · core → canvas seed",
+    "parent": "saved-agent-context-2ba25014-3a84-42e9-b5f8-1e10c32fa2cd",
+    "runId": "df362edd-3c37-49aa-932d-84181ef9d0c2",
+    "commit": "8ca143700ca4d2c870f1101b8cd4601ab68abd41",
+    "agentContextId": "saved-agent-context-cb132185-b1cc-4e45-94b8-4fa9a457c75a",
+    "description": "Core component diagram from Core component discovery run df362edd-3c37-49aa-932d-84181ef9d0c2 (Astra/high), plus the same pinned checkout as saved-agent-context-2ba25014-3a84-42e9-b5f8-1e10c32fa2cd at 8ca143700ca4d2c870f1101b8cd4601ab68abd41, with a verification task.",
+    "createdAt": "2026-11-17T17:49:30.313Z",
+    "group": "Core component → canvas",
+    "contentHash": "c8c45f05d3c6c1ee2c04bd67e562652eb5c876357481caf324cf0f83fc880ea6",
+    "messageCount": 1,
+    "source": {
+      "agentType": "saved-context",
+      "sourceSessionId": "cb132185-b1cc-4e45-94b8-4fa9a457c75a",
+      "format": "messages-v1"
+    }
+  },
+  {
+    "key": "pi",
+    "name": "Pi · core → canvas seed",
+    "parent": "saved-agent-context-2b31f263-f81f-4df1-a146-8946dc709b5c",
+    "runId": "0fc465ae-961d-4c0a-a0c6-f60338bbe689",
+    "commit": "682c7b93ce3e0a52b579c2b65b4c06bb392e7180",
+    "agentContextId": "saved-agent-context-9727bbfb-9336-4405-a60b-977291ebd2bd",
+    "description": "Core component diagram from Core component discovery run 0fc465ae-961d-4c0a-a0c6-f60338bbe689 (Astra/high), plus the same pinned checkout as saved-agent-context-2b31f263-f81f-4df1-a146-8946dc709b5c at 682c7b93ce3e0a52b579c2b65b4c06bb392e7180, with a verification task.",
+    "createdAt": "2026-11-17T17:49:30.332Z",
+    "group": "Core component → canvas",
+    "contentHash": "b59617f2e3f378e525b3683c1e9d6416577eae14c53d3f16aaf152b740506b0e",
+    "messageCount": 1,
+    "source": {
+      "agentType": "saved-context",
+      "sourceSessionId": "9727bbfb-9336-4405-a60b-977291ebd2bd",
+      "format": "messages-v1"
+    }
+  },
+  {
+    "key": "opencode",
+    "name": "OpenCode · core → canvas seed",
+    "parent": "saved-agent-context-3d034491-1ea2-4157-acc5-98ead2c12d98",
+    "runId": "c896fde7-00ef-4b9f-a62f-7cfc94310a5b",
+    "commit": "fe3552441192ccbea91d117668e7f3a9eb097baf",
+    "agentContextId": "saved-agent-context-73c58ea6-1d34-49b5-b2a2-d0ef709ba559",
+    "description": "Core component diagram from Core component discovery run c896fde7-00ef-4b9f-a62f-7cfc94310a5b (Astra/high), plus the same pinned checkout as saved-agent-context-3d034491-1ea2-4157-acc5-98ead2c12d98 at fe3552441192ccbea91d117668e7f3a9eb097baf, with a verification task.",
+    "createdAt": "2026-11-17T17:49:30.344Z",
+    "group": "Core component → canvas",
+    "contentHash": "d8b7018ae8804532ef08d895844514d91456f99eca159faa0c5805e5efbe43d6",
+    "messageCount": 1,
+    "source": {
+      "agentType": "saved-context",
+      "sourceSessionId": "73c58ea6-1d34-49b5-b2a2-d0ef709ba559",
+      "format": "messages-v1"
+    }
+  },
+  {
+    "key": "ghostty",
+    "name": "Ghostty · core → canvas seed",
+    "parent": "saved-agent-context-29fbdd95-72d4-4dc1-ad7c-a1b0f8cd7da6",
+    "runId": "d8ddfcb7-6be0-4a68-9277-c40a1254248f",
+    "commit": "ea8b12a8a9894b5259c441eadd8f6f0c65e215af",
+    "agentContextId": "saved-agent-context-13a17154-1868-4cfb-9f01-ed80ffc6437c",
+    "description": "Core component diagram from Core component discovery run d8ddfcb7-6be0-4a68-9277-c40a1254248f (Astra/high), plus the same pinned checkout as saved-agent-context-29fbdd95-72d4-4dc1-ad7c-a1b0f8cd7da6 at ea8b12a8a9894b5259c441eadd8f6f0c65e215af, with a verification task.",
+    "createdAt": "2026-11-17T17:49:30.355Z",
+    "group": "Core component → canvas",
+    "contentHash": "01e7e4d0029ade1d3e381029ea7b4337068e41ddc06e0fdd14dd1af5a858760d",
+    "messageCount": 1,
+    "source": {
+      "agentType": "saved-context",
+      "sourceSessionId": "13a17154-1868-4cfb-9f01-ed80ffc6437c",
+      "format": "messages-v1"
+    }
+  }
+]

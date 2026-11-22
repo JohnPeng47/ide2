@@ -1,3 +1,4 @@
+import { runtimeUsageRecorder } from '../../core/usage/runtimeUsage';
 import { comparisonManifest, generatedReportSchema, sourceKey } from '../../../domain/mapping/compare/comparisonReport';
 import { spawn } from 'node:child_process';
 import { mkdtemp, writeFile, rm } from 'node:fs/promises';
@@ -47,9 +48,11 @@ export class CodexComparisonRuntime implements ComparisonRuntime {
         const abort = () => finish(Error('Comparison generation cancelled.'));
         const timeout = setTimeout(() => finish(Error('Comparison generation timed out.')), 15 * 60_000);
         input.signal.addEventListener('abort', abort, { once: true });
+        const recordUsage = runtimeUsageRecorder(input.model, input.effort);
         const consume = (line: string) => {
           try {
             const event = JSON.parse(line);
+            recordUsage(event);
             if (event.type === 'item.completed' && event.item?.type === 'agent_message') reply = event.item.text;
             if (event.type === 'turn.completed') usage = event.usage;
             if (event.type === 'turn.failed') failure = event.error?.message || 'Comparison generation failed.';

@@ -1,0 +1,78 @@
+[
+  {
+    "key": "mapping",
+    "name": "Mapping · canvas → expanded canvas",
+    "parent": "saved-agent-context-2ba25014-3a84-42e9-b5f8-1e10c32fa2cd",
+    "runId": "df362edd-3c37-49aa-932d-84181ef9d0c2",
+    "commit": "8ca143700ca4d2c870f1101b8cd4601ab68abd41",
+    "agentContextId": "saved-agent-context-1a8abc4f-9ad7-4bbb-acf2-c100a9f7521d",
+    "description": "Phase 1 canvas from run 06d4f008-e3c4-4f8d-ac2d-e076490838af (checkpoint canvas-revision-7b2bdb61-8d60-48fa-874c-913f008e0860) in the prompt's output format, plus the pinned checkout at 8ca143700ca4d2c870f1101b8cd4601ab68abd41.",
+    "createdAt": "2026-11-17T20:35:46.068Z",
+    "group": "Core component → canvas",
+    "contentHash": "ba3a9e7ede2783372c463d743fa68b6d8c2f6a37a5129e9dc0e0374243502af4",
+    "messageCount": 1,
+    "source": {
+      "runId": "06d4f008-e3c4-4f8d-ac2d-e076490838af",
+      "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative",
+      "canvasId": "representation-9ad64c08-074a-45b2-8e5c-d23e89efaec8",
+      "checkpointId": "canvas-revision-7b2bdb61-8d60-48fa-874c-913f008e0860"
+    }
+  },
+  {
+    "key": "pi",
+    "name": "Pi · canvas → expanded canvas",
+    "parent": "saved-agent-context-2b31f263-f81f-4df1-a146-8946dc709b5c",
+    "runId": "0fc465ae-961d-4c0a-a0c6-f60338bbe689",
+    "commit": "682c7b93ce3e0a52b579c2b65b4c06bb392e7180",
+    "agentContextId": "saved-agent-context-34c5044f-8359-49c4-b811-fa1be729a946",
+    "description": "Phase 1 canvas from run bcd72f13-5770-4244-9cd7-68810e37dd2b (checkpoint canvas-revision-5f9de723-859a-443e-acaa-ddb1ea07153c) in the prompt's output format, plus the pinned checkout at 682c7b93ce3e0a52b579c2b65b4c06bb392e7180.",
+    "createdAt": "2026-11-17T20:35:46.087Z",
+    "group": "Core component → canvas",
+    "contentHash": "3dc92c096e6dea2567c4f1f7f8b7cd5d72674cfee3d50de895dd81580c1d623d",
+    "messageCount": 1,
+    "source": {
+      "runId": "bcd72f13-5770-4244-9cd7-68810e37dd2b",
+      "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative",
+      "canvasId": "representation-555ffde7-15d9-4dd2-9e46-0d1a8a4fbff9",
+      "checkpointId": "canvas-revision-5f9de723-859a-443e-acaa-ddb1ea07153c"
+    }
+  },
+  {
+    "key": "opencode",
+    "name": "OpenCode · canvas → expanded canvas",
+    "parent": "saved-agent-context-3d034491-1ea2-4157-acc5-98ead2c12d98",
+    "runId": "c896fde7-00ef-4b9f-a62f-7cfc94310a5b",
+    "commit": "fe3552441192ccbea91d117668e7f3a9eb097baf",
+    "agentContextId": "saved-agent-context-83ef4ef3-65bc-4535-ba8c-af42034ecca8",
+    "description": "Phase 1 canvas from run 4d1d388a-78a5-4198-9c56-9fa04b4fbddf (checkpoint canvas-revision-073a34ea-2a4b-4c85-96be-e48f190afa77) in the prompt's output format, plus the pinned checkout at fe3552441192ccbea91d117668e7f3a9eb097baf.",
+    "createdAt": "2026-11-17T20:35:46.105Z",
+    "group": "Core component → canvas",
+    "contentHash": "e8121ce1197e4b7a688ee9dbcb9bc68a98b587375245ca87fc0ab1ff7566b480",
+    "messageCount": 1,
+    "source": {
+      "runId": "4d1d388a-78a5-4198-9c56-9fa04b4fbddf",
+      "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative",
+      "canvasId": "representation-44561909-c6cd-4b5f-990f-da7cccdf073c",
+      "checkpointId": "canvas-revision-073a34ea-2a4b-4c85-96be-e48f190afa77"
+    }
+  },
+  {
+    "key": "ghostty",
+    "name": "Ghostty · canvas → expanded canvas",
+    "parent": "saved-agent-context-29fbdd95-72d4-4dc1-ad7c-a1b0f8cd7da6",
+    "runId": "d8ddfcb7-6be0-4a68-9277-c40a1254248f",
+    "commit": "ea8b12a8a9894b5259c441eadd8f6f0c65e215af",
+    "agentContextId": "saved-agent-context-9066b6b2-98d9-4aab-9e3a-a4db3cdcc79a",
+    "description": "Phase 1 canvas from run 9f582f37-2a7a-4159-9b8e-5b6b30a20365 (checkpoint canvas-revision-8ad5db1c-96c8-4985-bbde-173c368ce3b2) in the prompt's output format, plus the pinned checkout at ea8b12a8a9894b5259c441eadd8f6f0c65e215af.",
+    "createdAt": "2026-11-17T20:35:46.129Z",
+    "group": "Core component → canvas",
+    "contentHash": "bad325f5f39ebc4e20fb02e275b3ea132d8f35e0793b90d4518139010e48b6db",
+    "messageCount": 1,
+    "source": {
+      "runId": "9f582f37-2a7a-4159-9b8e-5b6b30a20365",
+      "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative",
+      "canvasId": "representation-bcbacaa0-9e8b-4361-8fb3-eb6fd411c893",
+      "checkpointId": "canvas-revision-8ad5db1c-96c8-4985-bbde-173c368ce3b2"
+    }
+  }
+]

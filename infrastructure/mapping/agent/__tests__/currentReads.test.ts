@@ -1,3 +1,5 @@
+import { diagramContentNodes } from '../../../../domain/core/diagrams/diagramContentNodes';
+import { projectCheckpoint } from '../../../../domain/mapping/projections/savedCanvasProjection';
 import { revisionFixture } from '../../../../tests/support/diagramRevisions';
 import { canvasMutationResult, type CanvasMutationResult } from '../../../../domain/mapping/agent/mutationReceipt';
 import { parseHighlightReference } from '../../../../domain/mapping/agent-chat/highlightReference';
@@ -278,4 +280,35 @@ it('rebases group members together and marks the whole saved highlight stale whe
   const stale = await f.exec('return canvas.read({});');
   expect(stale.value.nodes[0].diagram.highlights[0]).toMatchObject({ status: 'stale' });
   expect(f.controller.getSnapshot().document.diagramPresentations?.overview.highlights![0]).toMatchObject({ id, contentNodeIds: expect.any(Array) });
+});
+
+it('returns the same graph through bound MCP and a pinned checkpoint, including parallel placements and labeled edges', async () => {
+  const { agent, controller, commands } = liveFixture();
+  const state = controller.getSnapshot();
+  const root = state.document.scene.root;
+  if (root.kind !== 'container') throw Error('Expected a group');
+  const diagram = state.document.scene.contents.overview;
+  const anchor = diagramContentNodes(diagram.content).find(node => node.line === 2)!;
+  const source = { kind: 'content-node' as const, displayNodeId: 'grid:overview', revisionId: diagram.content.revisionId, contentNodeId: anchor.id, side: 'auto' as const };
+  controller.commitDocument({ ...state.document, scene: { ...state.document.scene, root: { ...root,
+    children: [...root.children, { ...root.children[0], id: 'copy', position: { column: 100, row: 5 } }] } },
+    edges: [{ id: 'connection', source, target: { ...source, displayNodeId: 'grid:copy' },
+      appearance: { color: '#000000', lineStyle: 'solid', label: { text: 'calls', position: { x: 120, y: 50 } } } }] });
+  const token = agent.chatBindings.create();
+  agent.chatBindings.bind(token, { workspaceInstanceId: 'browser', documentId: 'doc' }, true);
+  const history = controller.exportHistory(true);
+  for (const type of ['graph', 'layout', 'detail'] as const) {
+    const read = await agent.callBound(token, 'exec', { requestId: type, code: `return canvas.read({projectionType:"${type}"});` }) as { value: Record<string, unknown> };
+    const { version, documentId, projectionType, ...canvas } = read.value;
+    expect(projectionType).toBe(type);
+    expect(version).toBe(controller.getSnapshot().version);
+    expect(canvas).toEqual(projectCheckpoint(history, type).canvas);
+    if (type === 'graph') expect(canvas).toEqual({
+      nodes: ['grid:overview', 'grid:copy'].map(id => ({ id, ascii: diagram.content.ascii })),
+      edges: [{ source: { node: 'grid:overview', line: 2, column: anchor.startColumn }, target: { node: 'grid:copy', line: 2, column: anchor.startColumn }, label: 'calls' }]
+    });
+    if (type === 'layout') expect(canvas.nodes).toMatchObject([{}, { parentId: 'grid:root', bounds: { column: 100, row: 5 } }]);
+    if (type === 'detail') expect(canvas.nodes).toMatchObject([{ revisionId: diagram.revisionId, anchors: expect.any(Array) }, {}]);
+  }
+  expect(commands).not.toContain('snapshot');
 });

@@ -1,0 +1,27 @@
+{
+  "inputHash": "a8a35de655ee325a5bf20428f1af56fe9ca43996819ad35df3674d6950e55b10",
+  "modelCalls": 0,
+  "checks": [
+    "materialize",
+    "save",
+    "restore",
+    "reopen-for-editing",
+    "edit",
+    "save again",
+    "load output"
+  ],
+  "at": "2026-11-14T22:18:28.737Z",
+  "model": {
+    "provider": "openai-codex",
+    "model": "gpt-6-astra"
+  },
+  "contextHash": "642eff5f7c0caf04881c5a7a06cc6f80a6acefc263656940751d03a1c1360017",
+  "promptSha256": "bb56ca114ae2e4c7f08ff6402992adb95a09d4a760f76e92ee83ae1a4edd1b28",
+  "sourceCommit": "682c7b93ce3e0a52b579c2b65b4c06bb392e7180",
+  "tools": [
+    "read",
+    "bash"
+  ],
+  "sourcePath": ".gitattributes",
+  "sourceLineHash": "e4f3bbc76c45a50504b3ca1080066358707d13d11a6daa838d9c8270ef0fb1ca"
+}

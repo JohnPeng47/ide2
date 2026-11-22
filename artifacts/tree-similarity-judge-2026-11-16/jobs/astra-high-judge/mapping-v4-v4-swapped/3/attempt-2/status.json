@@ -1,0 +1,31 @@
+{
+  "status": "finished",
+  "key": "astra-high-judge/mapping-v4-v4-swapped/3#2",
+  "runId": "d3cd62b7-efe6-4208-b733-1dc85a8fc68f",
+  "model": "gpt-6-astra",
+  "caseId": "mapping-v4-v4-swapped",
+  "number": 3,
+  "reportedScore": 0.9036111111,
+  "score": 0.9036111111111111,
+  "rescore": {
+    "score": 0.9036111111111111,
+    "reportedScore": 0.9036111111,
+    "J": 0.9036111111111111,
+    "reportedJ": 0.9036111111,
+    "pairs": 6,
+    "unmatchedA": 0,
+    "unmatchedB": 0,
+    "depth": 3,
+    "maxPairError": 3.333344711364816e-11,
+    "rangeIssues": []
+  },
+  "usage": {
+    "input": 13202,
+    "output": 14829,
+    "cacheRead": 42368,
+    "cacheWrite": 0,
+    "reasoning": 5485,
+    "totalTokens": 70399
+  },
+  "outputUrl": "http://localhost:5191/evals?run=d3cd62b7-efe6-4208-b733-1dc85a8fc68f&output=450c8f11-3b30-485c-a282-7fc0e4dc74c0%3A1%3Aalternative"
+}

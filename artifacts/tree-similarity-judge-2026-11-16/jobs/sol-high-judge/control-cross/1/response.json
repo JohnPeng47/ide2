@@ -1,0 +1,175 @@
+{
+  "output": {
+    "score": 0,
+    "anchors": {
+      "pairs": [],
+      "unmatchedA": [
+        {
+          "lines": [
+            3,
+            12
+          ],
+          "label": "runtime boundary and App"
+        },
+        {
+          "lines": [
+            13,
+            20
+          ],
+          "label": "Surface session and workers"
+        },
+        {
+          "lines": [
+            22,
+            34
+          ],
+          "label": "terminal input"
+        },
+        {
+          "lines": [
+            36,
+            47
+          ],
+          "label": "child output and protocol handling"
+        },
+        {
+          "lines": [
+            49,
+            62
+          ],
+          "label": "terminal and screen model"
+        },
+        {
+          "lines": [
+            64,
+            76
+          ],
+          "label": "renderer"
+        },
+        {
+          "lines": [
+            78,
+            87
+          ],
+          "label": "geometry and configuration"
+        },
+        {
+          "lines": [
+            89,
+            97
+          ],
+          "label": "session shutdown"
+        }
+      ],
+      "unmatchedB": [
+        {
+          "lines": [
+            3,
+            17
+          ],
+          "label": "CanvasWorkspace and CanvasSession"
+        },
+        {
+          "lines": [
+            19,
+            42
+          ],
+          "label": "CanvasHistoryService and diagrams"
+        },
+        {
+          "lines": [
+            44,
+            63
+          ],
+          "label": "MappingDocumentController and editor"
+        },
+        {
+          "lines": [
+            65,
+            83
+          ],
+          "label": "selection and source exploration"
+        },
+        {
+          "lines": [
+            85,
+            106
+          ],
+          "label": "AI and agent operations"
+        },
+        {
+          "lines": [
+            108,
+            129
+          ],
+          "label": "workspace persistence and publication"
+        }
+      ],
+      "J": 0
+    },
+    "markdown": "### Anchor tree\n- No shared code anchors.\n- Unmatched A: 3–12 (runtime boundary and App); 13–20 (Surface session and workers); 22–34 (terminal input); 36–47 (child output); 49–62 (terminal model); 64–76 (renderer); 78–87 (geometry and configuration); 89–97 (shutdown).\n- Unmatched B: 3–17 (CanvasWorkspace and CanvasSession); 19–42 (history and diagrams); 44–63 (controller and editor); 65–83 (selection and sources); 85–106 (AI and agents); 108–129 (persistence and publication).\n\n### Score\nNo top-level anchors contribute an s value. J = 0 / (0 + 8 + 6) = **0**.\n\n### Verdict\nThe trees identify different code: A describes Ghostty’s Zig terminal session, while B describes a TypeScript mapping-canvas workspace. Similar generic terms such as “App” do not name the same component. There is no shared breakdown to compare, nor an implied shared parent."
+  },
+  "usage": {
+    "input": 7219,
+    "output": 992,
+    "cacheRead": 6656,
+    "cacheWrite": 0,
+    "reasoning": 298,
+    "totalTokens": 14867
+  },
+  "execution": {
+    "runtime": "pi-agent-context",
+    "sessionId": "01a1e5d2-eaa9-756c-8db4-4d7b99e95170",
+    "contextHash": "1dc9a6db075802bba143ceb49f7c1480f26c3262f72ba2ed677299d93249b017",
+    "cacheKey": "eval-dea0bc17ba82b7fb1f839924483c3d5a300f64ea27902f0cd337e6907736fd0e",
+    "modelContextHash": "644949264aab741467858367f62c7acb614b24dac6d22338475c4562790c28cb",
+    "repositories": [
+      {
+        "repository": "repo-1",
+        "repositoryPath": "/home/john/softwarez/ghostty",
+        "commit": "ea8b12a8a9894b5259c441eadd8f6f0c65e215af",
+        "exclusions": [
+          "**/*-LICENSE",
+          "**/*.md",
+          "**/*.mdx",
+          "**/*.spec.*",
+          "**/*.test.*",
+          "**/AGENTS.md",
+          "**/CODEX-LICENSE",
+          "**/LICENSE*",
+          "**/Tests/**",
+          "**/__fixtures__/**",
+          "**/__tests__/**",
+          "**/benchmark/**",
+          "**/benchmarks/**",
+          "**/build/**",
+          "**/dist/**",
+          "**/docs/**",
+          "**/examples/**",
+          "**/fixtures/**",
+          "**/node_modules/**",
+          "**/scripts/**",
+          "**/test/**",
+          "**/tests/**",
+          ".agents/**",
+          ".github/**",
+          ".husky/**",
+          ".pi/**",
+          "deps/**",
+          "example/**",
+          "flake.lock",
+          "flatpak/**",
+          "images/**",
+          "nix/**",
+          "package-lock.json",
+          "po/**",
+          "scripts/**",
+          "snap/**",
+          "vendor/**"
+        ],
+        "checkout": "/tmp/agent-repository-RQzpTR/checkout",
+        "inspectionSource": "session-transcript"
+      }
+    ]
+  }
+}

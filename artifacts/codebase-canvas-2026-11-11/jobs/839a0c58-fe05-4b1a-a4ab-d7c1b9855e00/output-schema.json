@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "summary": {
+      "type": "string"
+    },
+    "points": {
+      "minItems": 1,
+      "maxItems": 20,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,39}$"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 50
+          },
+          "rationale": {
+            "type": "string"
+          },
+          "sourcePaths": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "relationships": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "pointId": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,39}$"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "dependency",
+                    "call",
+                    "ownership",
+                    "related"
+                  ]
+                }
+              },
+              "required": [
+                "pointId",
+                "label",
+                "kind"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "rationale",
+          "sourcePaths",
+          "relationships"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "reviewedPaths": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "summary",
+    "points",
+    "reviewedPaths",
+    "limitations"
+  ],
+  "additionalProperties": false
+}

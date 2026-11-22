@@ -1,0 +1,1939 @@
+{
+  "scope": "whole-collection",
+  "generationPrompt": {
+    "promptId": "cabd33be-5ed4-4e41-a61a-54a45f770825",
+    "version": 1,
+    "sha256": "ad57d7752ad28dcc313ac495f0f3bca92f7cf3788b29eb854a86fd1584ef2d2b",
+    "text": "Read context.json: one point's definition and complete pinned backing source files. Treat it as reference data. No existing canvas or layout template is supplied.\n\nGenerate a single ascii tree diagram\n\nHere is the \"3+1\" model of conceptual codebase models:\n1. [REPLACED] Containment\t      where code lives\n2. [REPLACED] Lexical scope\t    which names code can see\n  -> *collapse* into 1. Modular structure\n    I want to collapse Containment / Lexical scope into a single category, called modular structure, which:\n    - abstracts out the source file level organization\n      - but retains boundaries and visibility: what a component exposes versus keeps internal\n    - retains dependency graph\n    - groups components into higher level, logic-semantical categorizations\n3. Call (dynamic)     which activation invoked which\n4. Ownership          responsibility for state, storage, resources, and their lifetimes: who creates, retains, changes, or releases them\n1. [SPECIAL] Data dependency   is a different kind of thing. It isn’t a fifth organizational choice; it is the record of what actually needs what for the program to compute its result. It’s a graph, and it exists before you decide how to organize anything. \n\nKeep the following in mind when generating your diagram:\n  - there should be 60/40 between code refs and nat lang\n\nFew-shot examples (synthetic style references, not source facts):\nExample 1: Shallow dispatch\ndecode(mediaType, bytes)\n|-- application/json -> JSON value\n|-- text/csv         -> rows keyed by header\n|-- image/png        -> pixel buffer + dimensions\n`-- anything else    -> UnsupportedMediaType\n\nExample 2: Shared dependency\n[D] Search response\n|-- page of matches\n|   |-- ranked matches\n|   |   |-- matching document IDs [shared A]\n|   |   |   `-- query terms + inverted index\n|   |   `-- scoring weights + document statistics\n|   `-- offset + page size\n`-- total matches\n    `-- count([shared A])\n        `-- same IDs; no second matching pass\n\nExample 3: Resource lifetime\n[O] Connection lease\n|-- Acquire\n|   `-- pool lends one connection to one request\n|       `-- pool retains ownership; request gets exclusive use\n|-- While borrowed\n|   |-- [C] begin -> execute statements -> commit\n|   `-- statement or commit fails -> attempt rollback\n`-- Release on every exit\n    |-- healthy connection -> return to idle pool\n    `-- broken connection -> close and remove from pool\n        `-- later acquisition may create a replacement\n\nExample 4: Bounded retry\n[C] Deliver webhook                         at most 3 attempts\n`-- POST event with stable delivery ID\n    |-- 2xx -> mark delivered\n    |-- permanent rejection -> mark failed\n    `-- timeout / temporary rejection\n        |-- attempts remain\n        |   `-- wait with backoff -> retry POST above\n        |       `-- receiver deduplicates by delivery ID\n        `-- exhausted -> dead-letter queue\n\nExample 5: Module boundary\n[M] Template engine\n|-- Public contract\n|   |-- compile(text): Template\n|   `-- render(template, bindings): text\n|-- Internal machinery\n|   |-- parser -> syntax tree\n|   |-- compiler -> rendering instructions\n|   `-- interpreter\n|       `-- [D] instructions + bindings -> output text\n`-- Extension boundary\n    `-- registered formatters: value -> text\n        `-- interpreter calls them; parser stays private\n\nExample 6: Event fan-out\nDocumentSaved(documentId, revision)\n|-- Search subscriber -> enqueue reindex\n|-- Preview subscriber -> invalidate cached thumbnail\n`-- Audit subscriber -> append revision record\n\nSubscribers run independently; branch order is not execution order.\nEach subscriber handles its own retry.\n\nUse the examples as a varied pool of representational choices. Let the supplied evidence determine depth, branching, density, and relationship types; do not copy their domain facts, exact shapes, counts, or require every tag.\n\nReturn JSON matching output-schema.json: {ascii}. Return exactly one ASCII tree with one root, printable ASCII characters, spaces and LF newlines. No Markdown fences or surrounding prose. The complete tree must fit within 20000 characters. Do not add separate side diagrams."
+  },
+  "outputs": [
+    {
+      "caseId": "workspace",
+      "title": "Browser Workspace Ownership",
+      "runId": "e32e3200-ea50-45c8-aa43-60e370208408",
+      "cellKey": "cabd33be-5ed4-4e41-a61a-54a45f770825:1:alternative",
+      "ascii": "[O] Browser Workspace Ownership -- many CanvasSession lifetimes, one shared persistence pipeline\n|-- [O] MappingWorkspacePage composes and releases the live workspace\n|   |-- new CanvasWorkspace(canvasHistory)\n|   |   |-- store.drafts[id]: CanvasDraft = metadata + stable session handle\n|   |   |-- setDrafts(seed) -> new CanvasSession(...) -> new MappingDocumentController(...)\n|   |   |   `-- controllers.set(id, session.controller): commands can address inactive canvases\n|   |   |-- Existing session retained -> updateBaseline(draft)\n|   |   |   `-- Metadata changes need not recreate the editing context\n|   |   `-- Session replaced or draft removed\n|   |       `-- Unsubscribe -> controllers.delete(id) -> old.session.dispose()\n|   |           `-- cursorCopy.clear(); unsubscribe from controller; clear commitListeners\n|   |-- mountedDocuments remembers canvases that have become active\n|   |   `-- MappingEditorCanvas(session={draft.session}) stays mounted when another canvas opens\n|   |       |-- hidden / enabled select the visible, interactive editor\n|   |       `-- Native Editor owns live geometry and undo navigation\n|   |           `-- Pointer/camera samples do not publish CanvasSession application state\n|   |-- injectedStorage ?? new WorkspaceStorage()\n|   |   |-- WorkspaceStorage owns records: RecordStorage and one lazily created Worker\n|   |   |-- requests[id] retains resolve/reject callbacks until the worker replies\n|   |   `-- WorkspacePersistence(workspace, records, projectId, viewState)\n|   |       `-- Owns workspace.onPersist and view.subscribe subscriptions\n|   `-- Page cleanup\n|       |-- workspace.dispose() -> unsubscribe and dispose every retained session\n|       |-- WorkspacePersistence.dispose() -> detach persistence subscriptions\n|       |-- viewState.flush() -> viewState.dispose()\n|       `-- Locally created storage: attempt flush(), then dispose() even if flush fails\n|           |-- RecordStorage.dispose(): cancel timer and clear listeners\n|           |-- WorkspaceStorage.dispose(): terminate worker and reject outstanding requests\n|           `-- Injected storage is not disposed by the page; abrupt tab exit cannot guarantee flush\n|-- [M] Semantic boundaries -- public contracts and internal machinery\n|   |-- Editing registry: CanvasWorkspace -> CanvasSession -> MappingDocumentController\n|   |   |-- CanvasWorkspace exposes setDrafts(), copyDocument(), controllers, onPersist()\n|   |   |-- store / changes / dirtyScenes expose readable subscriptions\n|   |   `-- Internal subscriptions bind each registered ID to its session lifetime\n|   |-- Session read boundary: readable(store)\n|   |   |-- Public getState(), getInitialState(), subscribe(); internal stores retain setState()\n|   |   |-- document     -> document consumers, including search and explorer\n|   |   |-- presentation -> display + diagramViews\n|   |   |-- selection    -> selected items\n|   |   |-- controls     -> interaction controls\n|   |   |-- geometry     -> endpointBounds + cell + version\n|   |   `-- status       -> isDirty + sceneDirty + canUndo + canRedo\n|   |       `-- Mutations use session.controller; consumers subscribe to the slice they need\n|   |-- Persistence translation: WorkspacePersistence -> RecordStorage\n|   |   |-- Public sync(), update(), setPaused(), dispose()\n|   |   `-- Private cursors / known / syncView() / submit(): translate live owners into records\n|   `-- Storage transport: RecordStorage -> RecordTransport.write(WorkspaceBatch)\n|       |-- RecordStorage owns cache, pending changes, flight, revision and scheduling\n|       |-- WorkspaceStorage supplies write: batch => request({ type: 'write', batch })\n|       `-- Worker owns normalization, JSON encoding and fetch()\n|           `-- HTTP boundary: /api/mapping/workspace/records\n|-- [C] A committed edit reaches persistence without broadcasting every gesture\n|   |-- MappingDocumentController subscription -> CanvasSession reads next snapshot\n|   |   |-- Publish changed presentation / selection / controls / geometry slices\n|   |   |-- publishStatus(next); publish document only when its reference changes\n|   |   |   `-- session.document subscription refreshes the registry entry for document consumers\n|   |   `-- next.canvasRevisionId != previous.canvasRevisionId -> commitListeners\n|   |       `-- CanvasWorkspace: changed() -> persist([id])\n|   |           `-- WorkspacePersistence.sync([id]) -> submit(changes) -> storage.batch(changes)\n|   |-- Other persistence triggers join the same RecordStorage\n|   |   |-- setDrafts(): changed persisted metadata, added/replaced session, or removed draft\n|   |   |-- view.subscribe(id) -> syncView(id): captured display and camera records\n|   |   `-- update(activeDocumentId, transfers): workspace index record\n|   |-- RecordStorage.batch(changes)\n|   |   |-- same(cached, incoming) -> skip unchanged values\n|   |   |-- cache updates immediately; pending.set(key, change) keeps the latest change per key\n|   |   `-- schedule(): default 150 ms debounce, capped by 1000 ms since first pending change\n|   |-- timer or flush() -> pump()\n|   |   |-- running exists -> reuse its Promise; writes remain serialized\n|   |   `-- No flight -> freeze pending into WorkspaceBatch\n|   |       |-- requestId = crypto.randomUUID(); expectedRevision = current revision\n|   |       |-- changes = pending.values(); flight.sequence = current sequence\n|   |       `-- Clear pending; later edits accumulate separately from this flight\n|   `-- transport.write(flight.batch) -> worker message -> POST records endpoint\n|       |-- Worker bodies[requestId] caches the normalized JSON request body\n|       |-- Acknowledged success\n|       |   |-- Worker updates known records and removes the cached body\n|       |   `-- RecordStorage updates revision / persisted; clears flight / error / failures\n|       |       `-- Schedule any pending changes accumulated during the write\n|       |-- Network failure or uncertain server response\n|       |   |-- Retain flight: same requestId, expectedRevision and changes on retry\n|       |   |-- Worker retains cached body when the outcome is uncertain\n|       |   `-- Automatic retry uses exponential backoff capped at 30 seconds\n|       `-- REJECTED:, VERSION_CONFLICT or REQUEST_ID_CONFLICT\n|           `-- schedule() stops automatic retries; storage.status exposes the error\n|-- [C] Explicit workspace transactions publish UI state after acknowledgement\n|   |-- transfer() -> persistence.setPaused(true) -> prepare candidate workspace\n|   |   `-- publishTransfer(candidate) -> await storage.save(candidate)\n|   |       |-- load() -> records.flush() -> project(candidate) -> records.commit(changes)\n|   |       `-- Success -> installWorkspace(candidate): replace sessions and advance workspaceEpoch\n|   |-- projectDiagrams() -> await storage.saveDocument(child, index, true)\n|   |   `-- Success -> setDrafts(...current, child): retain existing sessions and editors\n|   |-- RecordStorage.commit(changes)\n|   |   |-- Flush earlier writes -> capture cache baseline -> batch(changes) -> flush()\n|   |   |-- REJECTED: -> restore cache baseline; clear pending/flight; throw\n|   |   |   `-- A definitively rejected operation must not be published later\n|   |   `-- Other failures -> wait 500 ms -> retry flush() with the same flight\n|   |       `-- Do not allow a new write to overtake an ambiguous transaction\n|   `-- workspaceBusy becomes false -> update(activeId, transfers) -> sync()\n|       `-- Resume incremental persistence against the installed live workspace\n`-- [D] What the persisted result and status actually need -- dependency edges, not ownership\n    |-- workspace record <- projectId + draft IDs + activeDocumentId + transfers\n    |   `-- index() falls back to the first draft ID when activeDocumentId is absent or invalid\n    |-- Per-document metadata / baseline <- CanvasDraft + controller.getSnapshot().version\n    |   `-- name, type, repositoryId, hidden, savedName, savedScene, savedEdges, revisionId\n    |-- historyChanges(id, delta) <- controller.persistenceChanges(cursors.get(session))\n    |   |-- cursors: WeakMap<CanvasSession, sequence>; progress belongs to a runtime session\n    |   |-- First sync removes obsolete revision/checkpoint keys under documentPrefix(id)\n    |   |-- Existing immutable revisions and identical checkpoint deltas can be skipped\n    |   `-- Removed draft -> delete every stored key under documentPrefix(id)\n    |-- canvasViewChanges(id, canvas) <- controller canvas + view.captureDisplay(id, display)\n    |   |-- viewport <- view.captureCamera(id, draft.viewport)\n    |   `-- submit(): deduplicate keys and omit already cached content-addressed /item/ records\n    |       `-- History and view records can reuse the same immutable items\n    |-- RecordStorage.status.pending <- sequence > persisted\n    |   `-- Transport acknowledgement advances persisted; an updated cache alone does not\n    `-- CanvasSession.statusOf(snapshot)\n        |-- sceneDirty <- stateKey(current scene) != stateKey(savedScene)\n        |-- isDirty <- sceneDirty OR changed edges OR name != savedName\n        |-- canUndo / canRedo <- controller snapshot\n        `-- updateBaseline() uses the captured save acknowledgement\n            `-- Later edits can remain dirty even after an earlier save succeeds",
+      "numberedLines": [
+        {
+          "line": 1,
+          "text": "[O] Browser Workspace Ownership -- many CanvasSession lifetimes, one shared persistence pipeline"
+        },
+        {
+          "line": 2,
+          "text": "|-- [O] MappingWorkspacePage composes and releases the live workspace"
+        },
+        {
+          "line": 3,
+          "text": "|   |-- new CanvasWorkspace(canvasHistory)"
+        },
+        {
+          "line": 4,
+          "text": "|   |   |-- store.drafts[id]: CanvasDraft = metadata + stable session handle"
+        },
+        {
+          "line": 5,
+          "text": "|   |   |-- setDrafts(seed) -> new CanvasSession(...) -> new MappingDocumentController(...)"
+        },
+        {
+          "line": 6,
+          "text": "|   |   |   `-- controllers.set(id, session.controller): commands can address inactive canvases"
+        },
+        {
+          "line": 7,
+          "text": "|   |   |-- Existing session retained -> updateBaseline(draft)"
+        },
+        {
+          "line": 8,
+          "text": "|   |   |   `-- Metadata changes need not recreate the editing context"
+        },
+        {
+          "line": 9,
+          "text": "|   |   `-- Session replaced or draft removed"
+        },
+        {
+          "line": 10,
+          "text": "|   |       `-- Unsubscribe -> controllers.delete(id) -> old.session.dispose()"
+        },
+        {
+          "line": 11,
+          "text": "|   |           `-- cursorCopy.clear(); unsubscribe from controller; clear commitListeners"
+        },
+        {
+          "line": 12,
+          "text": "|   |-- mountedDocuments remembers canvases that have become active"
+        },
+        {
+          "line": 13,
+          "text": "|   |   `-- MappingEditorCanvas(session={draft.session}) stays mounted when another canvas opens"
+        },
+        {
+          "line": 14,
+          "text": "|   |       |-- hidden / enabled select the visible, interactive editor"
+        },
+        {
+          "line": 15,
+          "text": "|   |       `-- Native Editor owns live geometry and undo navigation"
+        },
+        {
+          "line": 16,
+          "text": "|   |           `-- Pointer/camera samples do not publish CanvasSession application state"
+        },
+        {
+          "line": 17,
+          "text": "|   |-- injectedStorage ?? new WorkspaceStorage()"
+        },
+        {
+          "line": 18,
+          "text": "|   |   |-- WorkspaceStorage owns records: RecordStorage and one lazily created Worker"
+        },
+        {
+          "line": 19,
+          "text": "|   |   |-- requests[id] retains resolve/reject callbacks until the worker replies"
+        },
+        {
+          "line": 20,
+          "text": "|   |   `-- WorkspacePersistence(workspace, records, projectId, viewState)"
+        },
+        {
+          "line": 21,
+          "text": "|   |       `-- Owns workspace.onPersist and view.subscribe subscriptions"
+        },
+        {
+          "line": 22,
+          "text": "|   `-- Page cleanup"
+        },
+        {
+          "line": 23,
+          "text": "|       |-- workspace.dispose() -> unsubscribe and dispose every retained session"
+        },
+        {
+          "line": 24,
+          "text": "|       |-- WorkspacePersistence.dispose() -> detach persistence subscriptions"
+        },
+        {
+          "line": 25,
+          "text": "|       |-- viewState.flush() -> viewState.dispose()"
+        },
+        {
+          "line": 26,
+          "text": "|       `-- Locally created storage: attempt flush(), then dispose() even if flush fails"
+        },
+        {
+          "line": 27,
+          "text": "|           |-- RecordStorage.dispose(): cancel timer and clear listeners"
+        },
+        {
+          "line": 28,
+          "text": "|           |-- WorkspaceStorage.dispose(): terminate worker and reject outstanding requests"
+        },
+        {
+          "line": 29,
+          "text": "|           `-- Injected storage is not disposed by the page; abrupt tab exit cannot guarantee flush"
+        },
+        {
+          "line": 30,
+          "text": "|-- [M] Semantic boundaries -- public contracts and internal machinery"
+        },
+        {
+          "line": 31,
+          "text": "|   |-- Editing registry: CanvasWorkspace -> CanvasSession -> MappingDocumentController"
+        },
+        {
+          "line": 32,
+          "text": "|   |   |-- CanvasWorkspace exposes setDrafts(), copyDocument(), controllers, onPersist()"
+        },
+        {
+          "line": 33,
+          "text": "|   |   |-- store / changes / dirtyScenes expose readable subscriptions"
+        },
+        {
+          "line": 34,
+          "text": "|   |   `-- Internal subscriptions bind each registered ID to its session lifetime"
+        },
+        {
+          "line": 35,
+          "text": "|   |-- Session read boundary: readable(store)"
+        },
+        {
+          "line": 36,
+          "text": "|   |   |-- Public getState(), getInitialState(), subscribe(); internal stores retain setState()"
+        },
+        {
+          "line": 37,
+          "text": "|   |   |-- document     -> document consumers, including search and explorer"
+        },
+        {
+          "line": 38,
+          "text": "|   |   |-- presentation -> display + diagramViews"
+        },
+        {
+          "line": 39,
+          "text": "|   |   |-- selection    -> selected items"
+        },
+        {
+          "line": 40,
+          "text": "|   |   |-- controls     -> interaction controls"
+        },
+        {
+          "line": 41,
+          "text": "|   |   |-- geometry     -> endpointBounds + cell + version"
+        },
+        {
+          "line": 42,
+          "text": "|   |   `-- status       -> isDirty + sceneDirty + canUndo + canRedo"
+        },
+        {
+          "line": 43,
+          "text": "|   |       `-- Mutations use session.controller; consumers subscribe to the slice they need"
+        },
+        {
+          "line": 44,
+          "text": "|   |-- Persistence translation: WorkspacePersistence -> RecordStorage"
+        },
+        {
+          "line": 45,
+          "text": "|   |   |-- Public sync(), update(), setPaused(), dispose()"
+        },
+        {
+          "line": 46,
+          "text": "|   |   `-- Private cursors / known / syncView() / submit(): translate live owners into records"
+        },
+        {
+          "line": 47,
+          "text": "|   `-- Storage transport: RecordStorage -> RecordTransport.write(WorkspaceBatch)"
+        },
+        {
+          "line": 48,
+          "text": "|       |-- RecordStorage owns cache, pending changes, flight, revision and scheduling"
+        },
+        {
+          "line": 49,
+          "text": "|       |-- WorkspaceStorage supplies write: batch => request({ type: 'write', batch })"
+        },
+        {
+          "line": 50,
+          "text": "|       `-- Worker owns normalization, JSON encoding and fetch()"
+        },
+        {
+          "line": 51,
+          "text": "|           `-- HTTP boundary: /api/mapping/workspace/records"
+        },
+        {
+          "line": 52,
+          "text": "|-- [C] A committed edit reaches persistence without broadcasting every gesture"
+        },
+        {
+          "line": 53,
+          "text": "|   |-- MappingDocumentController subscription -> CanvasSession reads next snapshot"
+        },
+        {
+          "line": 54,
+          "text": "|   |   |-- Publish changed presentation / selection / controls / geometry slices"
+        },
+        {
+          "line": 55,
+          "text": "|   |   |-- publishStatus(next); publish document only when its reference changes"
+        },
+        {
+          "line": 56,
+          "text": "|   |   |   `-- session.document subscription refreshes the registry entry for document consumers"
+        },
+        {
+          "line": 57,
+          "text": "|   |   `-- next.canvasRevisionId != previous.canvasRevisionId -> commitListeners"
+        },
+        {
+          "line": 58,
+          "text": "|   |       `-- CanvasWorkspace: changed() -> persist([id])"
+        },
+        {
+          "line": 59,
+          "text": "|   |           `-- WorkspacePersistence.sync([id]) -> submit(changes) -> storage.batch(changes)"
+        },
+        {
+          "line": 60,
+          "text": "|   |-- Other persistence triggers join the same RecordStorage"
+        },
+        {
+          "line": 61,
+          "text": "|   |   |-- setDrafts(): changed persisted metadata, added/replaced session, or removed draft"
+        },
+        {
+          "line": 62,
+          "text": "|   |   |-- view.subscribe(id) -> syncView(id): captured display and camera records"
+        },
+        {
+          "line": 63,
+          "text": "|   |   `-- update(activeDocumentId, transfers): workspace index record"
+        },
+        {
+          "line": 64,
+          "text": "|   |-- RecordStorage.batch(changes)"
+        },
+        {
+          "line": 65,
+          "text": "|   |   |-- same(cached, incoming) -> skip unchanged values"
+        },
+        {
+          "line": 66,
+          "text": "|   |   |-- cache updates immediately; pending.set(key, change) keeps the latest change per key"
+        },
+        {
+          "line": 67,
+          "text": "|   |   `-- schedule(): default 150 ms debounce, capped by 1000 ms since first pending change"
+        },
+        {
+          "line": 68,
+          "text": "|   |-- timer or flush() -> pump()"
+        },
+        {
+          "line": 69,
+          "text": "|   |   |-- running exists -> reuse its Promise; writes remain serialized"
+        },
+        {
+          "line": 70,
+          "text": "|   |   `-- No flight -> freeze pending into WorkspaceBatch"
+        },
+        {
+          "line": 71,
+          "text": "|   |       |-- requestId = crypto.randomUUID(); expectedRevision = current revision"
+        },
+        {
+          "line": 72,
+          "text": "|   |       |-- changes = pending.values(); flight.sequence = current sequence"
+        },
+        {
+          "line": 73,
+          "text": "|   |       `-- Clear pending; later edits accumulate separately from this flight"
+        },
+        {
+          "line": 74,
+          "text": "|   `-- transport.write(flight.batch) -> worker message -> POST records endpoint"
+        },
+        {
+          "line": 75,
+          "text": "|       |-- Worker bodies[requestId] caches the normalized JSON request body"
+        },
+        {
+          "line": 76,
+          "text": "|       |-- Acknowledged success"
+        },
+        {
+          "line": 77,
+          "text": "|       |   |-- Worker updates known records and removes the cached body"
+        },
+        {
+          "line": 78,
+          "text": "|       |   `-- RecordStorage updates revision / persisted; clears flight / error / failures"
+        },
+        {
+          "line": 79,
+          "text": "|       |       `-- Schedule any pending changes accumulated during the write"
+        },
+        {
+          "line": 80,
+          "text": "|       |-- Network failure or uncertain server response"
+        },
+        {
+          "line": 81,
+          "text": "|       |   |-- Retain flight: same requestId, expectedRevision and changes on retry"
+        },
+        {
+          "line": 82,
+          "text": "|       |   |-- Worker retains cached body when the outcome is uncertain"
+        },
+        {
+          "line": 83,
+          "text": "|       |   `-- Automatic retry uses exponential backoff capped at 30 seconds"
+        },
+        {
+          "line": 84,
+          "text": "|       `-- REJECTED:, VERSION_CONFLICT or REQUEST_ID_CONFLICT"
+        },
+        {
+          "line": 85,
+          "text": "|           `-- schedule() stops automatic retries; storage.status exposes the error"
+        },
+        {
+          "line": 86,
+          "text": "|-- [C] Explicit workspace transactions publish UI state after acknowledgement"
+        },
+        {
+          "line": 87,
+          "text": "|   |-- transfer() -> persistence.setPaused(true) -> prepare candidate workspace"
+        },
+        {
+          "line": 88,
+          "text": "|   |   `-- publishTransfer(candidate) -> await storage.save(candidate)"
+        },
+        {
+          "line": 89,
+          "text": "|   |       |-- load() -> records.flush() -> project(candidate) -> records.commit(changes)"
+        },
+        {
+          "line": 90,
+          "text": "|   |       `-- Success -> installWorkspace(candidate): replace sessions and advance workspaceEpoch"
+        },
+        {
+          "line": 91,
+          "text": "|   |-- projectDiagrams() -> await storage.saveDocument(child, index, true)"
+        },
+        {
+          "line": 92,
+          "text": "|   |   `-- Success -> setDrafts(...current, child): retain existing sessions and editors"
+        },
+        {
+          "line": 93,
+          "text": "|   |-- RecordStorage.commit(changes)"
+        },
+        {
+          "line": 94,
+          "text": "|   |   |-- Flush earlier writes -> capture cache baseline -> batch(changes) -> flush()"
+        },
+        {
+          "line": 95,
+          "text": "|   |   |-- REJECTED: -> restore cache baseline; clear pending/flight; throw"
+        },
+        {
+          "line": 96,
+          "text": "|   |   |   `-- A definitively rejected operation must not be published later"
+        },
+        {
+          "line": 97,
+          "text": "|   |   `-- Other failures -> wait 500 ms -> retry flush() with the same flight"
+        },
+        {
+          "line": 98,
+          "text": "|   |       `-- Do not allow a new write to overtake an ambiguous transaction"
+        },
+        {
+          "line": 99,
+          "text": "|   `-- workspaceBusy becomes false -> update(activeId, transfers) -> sync()"
+        },
+        {
+          "line": 100,
+          "text": "|       `-- Resume incremental persistence against the installed live workspace"
+        },
+        {
+          "line": 101,
+          "text": "`-- [D] What the persisted result and status actually need -- dependency edges, not ownership"
+        },
+        {
+          "line": 102,
+          "text": "    |-- workspace record <- projectId + draft IDs + activeDocumentId + transfers"
+        },
+        {
+          "line": 103,
+          "text": "    |   `-- index() falls back to the first draft ID when activeDocumentId is absent or invalid"
+        },
+        {
+          "line": 104,
+          "text": "    |-- Per-document metadata / baseline <- CanvasDraft + controller.getSnapshot().version"
+        },
+        {
+          "line": 105,
+          "text": "    |   `-- name, type, repositoryId, hidden, savedName, savedScene, savedEdges, revisionId"
+        },
+        {
+          "line": 106,
+          "text": "    |-- historyChanges(id, delta) <- controller.persistenceChanges(cursors.get(session))"
+        },
+        {
+          "line": 107,
+          "text": "    |   |-- cursors: WeakMap<CanvasSession, sequence>; progress belongs to a runtime session"
+        },
+        {
+          "line": 108,
+          "text": "    |   |-- First sync removes obsolete revision/checkpoint keys under documentPrefix(id)"
+        },
+        {
+          "line": 109,
+          "text": "    |   |-- Existing immutable revisions and identical checkpoint deltas can be skipped"
+        },
+        {
+          "line": 110,
+          "text": "    |   `-- Removed draft -> delete every stored key under documentPrefix(id)"
+        },
+        {
+          "line": 111,
+          "text": "    |-- canvasViewChanges(id, canvas) <- controller canvas + view.captureDisplay(id, display)"
+        },
+        {
+          "line": 112,
+          "text": "    |   |-- viewport <- view.captureCamera(id, draft.viewport)"
+        },
+        {
+          "line": 113,
+          "text": "    |   `-- submit(): deduplicate keys and omit already cached content-addressed /item/ records"
+        },
+        {
+          "line": 114,
+          "text": "    |       `-- History and view records can reuse the same immutable items"
+        },
+        {
+          "line": 115,
+          "text": "    |-- RecordStorage.status.pending <- sequence > persisted"
+        },
+        {
+          "line": 116,
+          "text": "    |   `-- Transport acknowledgement advances persisted; an updated cache alone does not"
+        },
+        {
+          "line": 117,
+          "text": "    `-- CanvasSession.statusOf(snapshot)"
+        },
+        {
+          "line": 118,
+          "text": "        |-- sceneDirty <- stateKey(current scene) != stateKey(savedScene)"
+        },
+        {
+          "line": 119,
+          "text": "        |-- isDirty <- sceneDirty OR changed edges OR name != savedName"
+        },
+        {
+          "line": 120,
+          "text": "        |-- canUndo / canRedo <- controller snapshot"
+        },
+        {
+          "line": 121,
+          "text": "        `-- updateBaseline() uses the captured save acknowledgement"
+        },
+        {
+          "line": 122,
+          "text": "            `-- Later edits can remain dirty even after an earlier save succeeds"
+        }
+      ]
+    },
+    {
+      "caseId": "diagrams",
+      "title": "Immutable Diagram Revisions",
+      "runId": "eb0744a1-b41e-41fd-a89d-81c94e056d57",
+      "cellKey": "cabd33be-5ed4-4e41-a61a-54a45f770825:1:alternative",
+      "ascii": "Immutable Diagram Revisions -- shared content boundary for canvas, persistence, and agents\n|-- [M] Modular structure -- contracts, internals, and dependencies\n|   |-- Diagram + DiagramRevision: content travels as one revision\n|   |   |-- Diagram.diagramId = stable service identity; Diagram.id = local content key\n|   |   |-- Diagram.revisionId = immutable revision identity; revision = numeric content revision\n|   |   |-- content + sourceContext + highlights? + jumps?\n|   |   `-- DiagramRevision = { id, diagramId, parentId?, diagram, nodeRefs }\n|   |-- Domain operations: createDiagram / reviseDiagram / deriveDiagram\n|   |   |-- Return DiagramRevisionResult; persistence and publication are explicit\n|   |   `-- Depend on DiagramRevisionEditor -> constructDiagram / patchDiagramRanges\n|   |-- DiagramRevisionEditor: context-sensitive editing and reading\n|   |   |-- resolve / prepareCreate / prepareEdit / merge\n|   |   |-- private revision(): bindings(contextId)[diagramId] -> revisions[id]\n|   |   `-- private correspondence(): validates explicit logical-node continuity\n|   |-- Storage API: get / list / import / retain DiagramRevision\n|   |   |-- createStoredDiagram / reviseStoredDiagram / deriveStoredDiagram\n|   |   |-- submitStoredDiagramEdit -> submitDiagramEdit -> domain operations\n|   |   `-- Internal diagramRevisions: RevisionRegistry owns runtime records\n|   |-- Parsing boundary: buildDiagramContent + diagramContentNodes\n|   |   `-- constructDiagram builds content; validateDiagram rebuilds it for comparison\n|   `-- Canvas boundary: history supplies context bindings\n|       `-- Placement stays outside Diagram; merge handles revision bindings only\n|-- [C] Calls -- issuing and editing a revision\n|   |-- createDiagram(input)\n|   |   `-- prepareCreate(input) -> constructDiagram(input) -> issueDiagramRevision(prepared)\n|   |       |-- constructDiagram: buildDiagramContent -> clone attached data -> validateDiagram\n|   |       `-- issueDiagramRevision: assign nodeRefs -> deepFreeze(record) -> validateDiagram\n|   |-- reviseDiagram(base, edit)\n|   |   `-- prepareEdit('edit', base.diagram.id, edit)\n|   |       |-- source-mappings\n|   |       |   `-- Check expectedContentHash -> clone mappings/evidence -> validateDiagram\n|   |       |-- patch / patches\n|   |       |   |-- patchDiagramRanges -> optional correspondence + highlight rebasing\n|   |       |   `-- patches.retainMappings -> retainSourceMappings; otherwise use supplied mappings\n|   |       |-- replace\n|   |       |   |-- constructDiagram(..., revision: before.revision + 1)\n|   |       |   `-- correspondence -> rebase jumps/highlights -> optionally retain mappings\n|   |       |-- jumps / highlights -> validate supplied annotations\n|   |       `-- Return prepared edit\n|   |           |-- prepared.diagram === base.diagram -> return base revision\n|   |           `-- Otherwise preserve diagramId, mint revisionId -> issueDiagramRevision(..., base)\n|   |-- submitDiagramEdit(request, raw, base, correspondence?)\n|   |   |-- Reject mismatched base revision or diagram; new diagrams cannot supply replacementRanges\n|   |   |-- context = base.diagram || request.context.diagram || '[New diagram]' placeholder\n|   |   |-- validateGeneratedDiagramEdit(context, raw, base?.nodeRefs, request.sourceMappings)\n|   |   |-- base + requested edit ranges -> scopedReplacements\n|   |   |   |-- Reject structureKind change; produce patches + outputRanges\n|   |   |   |-- Shift mappings outside replaced ranges; filter generated mappings into outputRanges\n|   |   |   `-- reviseDiagram(kind: 'patches', retainMappings: !request.sourceMappings)\n|   |   |-- Otherwise request.baseRevisionId -> reviseDiagram(kind: 'replace')\n|   |   `-- Otherwise -> createDiagram(..., revision: 0)\n|   `-- merge(baseline, current, proposed)\n|       |-- Any baseline/current binding differs -> MERGE_REQUIRED\n|       `-- Otherwise return copy of proposed; automatic three-way merge is absent\n|-- [O] Ownership -- creation, retention, exposure, and lifetime\n|   |-- issueDiagramRevision owns issuance of immutable records\n|   |   |-- deepFreeze({ id, diagramId, parentId?, diagram, nodeRefs })\n|   |   `-- Edits produce successor records; parentId points to base.id\n|   |-- retainDiagramRevision(result)\n|   |   `-- importDiagramRevision(result.revision) -> diagramRevisions.register -> get\n|   |       |-- Import requires a nonempty, unique logical ref for each parsed node\n|   |       `-- Return result with the registry's retained diagram and revision\n|   |-- RevisionRegistry.install(record, deferred)\n|   |   |-- Require record.id === diagram.revisionId and matching diagramId\n|   |   |-- Existing id\n|   |   |   |-- Same JSON.stringify(record) signature -> reuse prior record\n|   |   |   `-- Different signature -> 'Diagram revision is immutable'\n|   |   `-- New id -> deepFreeze(structuredClone(record))\n|   |       `-- Private records + signatures retain the snapshot independently of caller input\n|   |-- restore(record) -> install(record, true)\n|   |   |-- pendingValidation retains id; older records remain addressable before parsing\n|   |   `-- First get(id) validates diagram + nodeRefs, then removes pending marker\n|   |-- resolve(contextId, diagramId) -> structuredClone(DiagramView)\n|   |   |-- Remap node id/parentId/childIds through nodeRefs\n|   |   `-- Return active jumps with logical source refs; immutable payload is not exposed here\n|   |-- getDiagramRevision -> frozen record; listDiagramRevisions -> frozen identity summaries\n|   `-- Durable adapters must flush retained revisions before publishing bindings\n|       `-- No removal or eviction operation appears in the supplied registry\n`-- [D] Data dependency -- what each result needs, across the boundaries above\n    |-- Valid Diagram.content\n    |   |-- content.ascii + id:revision + structure.kind + contentParserVersion(structure)\n    |   |   `-- buildDiagramContent(...) -> canonical content\n    |   `-- JSON.stringify(content) must equal JSON.stringify(canonical)\n    |-- Source evidence attached to the same ASCII\n    |   |-- sourceContext.contentHash must equal asciiSha256(content.ascii)\n    |   |-- mapping.entityId -> evidence[entityId]\n    |   |   `-- mapping.sourceRangeIndex -> sourceRanges[index]\n    |   |       |-- Optional mapping.sourceRangeId must match range.id\n    |   |       `-- Relative path + valid line bounds + matching originalLines count\n    |   |-- Optional binding: sourceId + repositoryIdentity + corpus + domainProfileId\n    |   |   `-- Validate corpus/profile pairing; evidence sourceId must agree when both are present\n    |   `-- diagramSource -> queryDiagramSourceContext\n    |       `-- entries / forSelection / search join mapping + entity + range + binding\n    |-- Successor nodeRefs: parsed node id -> persistent logical ref\n    |   |-- correspondingNodes(before, after)\n    |   |   |-- Requires identical ASCII and structure kind\n    |   |   `-- Match exact line + columns + label; heuristic similarity establishes no identity\n    |   |-- nodeCorrespondence[logicalRef] = output line\n    |   |   |-- Requires an old ref and exactly one output node on an integer line\n    |   |   `-- Reject conflicts with inferred continuity or multiple refs claiming one node\n    |   `-- issueDiagramRevision uses reverse(prepared.nodeIds)\n    |       `-- Explicit identity override || inherited base.nodeRefs[old] || fresh node UUID\n    |-- deriveDiagram(base, input, refs, sources)\n    |   |-- sources must share base.diagramId; their nodeRefs form the allowed ref set\n    |   |-- Each refs[ref] must select exactly one output node with no duplicate target\n    |   `-- Validated identities override issuance defaults; parent remains base.id\n    `-- Reading a context-selected view\n        `-- bindings(contextId)[diagramId] + revisions + diagram.content + nodeRefs\n            `-- Selected revision supplies ASCII, sourceContext, nodes, and active jumps",
+      "numberedLines": [
+        {
+          "line": 1,
+          "text": "Immutable Diagram Revisions -- shared content boundary for canvas, persistence, and agents"
+        },
+        {
+          "line": 2,
+          "text": "|-- [M] Modular structure -- contracts, internals, and dependencies"
+        },
+        {
+          "line": 3,
+          "text": "|   |-- Diagram + DiagramRevision: content travels as one revision"
+        },
+        {
+          "line": 4,
+          "text": "|   |   |-- Diagram.diagramId = stable service identity; Diagram.id = local content key"
+        },
+        {
+          "line": 5,
+          "text": "|   |   |-- Diagram.revisionId = immutable revision identity; revision = numeric content revision"
+        },
+        {
+          "line": 6,
+          "text": "|   |   |-- content + sourceContext + highlights? + jumps?"
+        },
+        {
+          "line": 7,
+          "text": "|   |   `-- DiagramRevision = { id, diagramId, parentId?, diagram, nodeRefs }"
+        },
+        {
+          "line": 8,
+          "text": "|   |-- Domain operations: createDiagram / reviseDiagram / deriveDiagram"
+        },
+        {
+          "line": 9,
+          "text": "|   |   |-- Return DiagramRevisionResult; persistence and publication are explicit"
+        },
+        {
+          "line": 10,
+          "text": "|   |   `-- Depend on DiagramRevisionEditor -> constructDiagram / patchDiagramRanges"
+        },
+        {
+          "line": 11,
+          "text": "|   |-- DiagramRevisionEditor: context-sensitive editing and reading"
+        },
+        {
+          "line": 12,
+          "text": "|   |   |-- resolve / prepareCreate / prepareEdit / merge"
+        },
+        {
+          "line": 13,
+          "text": "|   |   |-- private revision(): bindings(contextId)[diagramId] -> revisions[id]"
+        },
+        {
+          "line": 14,
+          "text": "|   |   `-- private correspondence(): validates explicit logical-node continuity"
+        },
+        {
+          "line": 15,
+          "text": "|   |-- Storage API: get / list / import / retain DiagramRevision"
+        },
+        {
+          "line": 16,
+          "text": "|   |   |-- createStoredDiagram / reviseStoredDiagram / deriveStoredDiagram"
+        },
+        {
+          "line": 17,
+          "text": "|   |   |-- submitStoredDiagramEdit -> submitDiagramEdit -> domain operations"
+        },
+        {
+          "line": 18,
+          "text": "|   |   `-- Internal diagramRevisions: RevisionRegistry owns runtime records"
+        },
+        {
+          "line": 19,
+          "text": "|   |-- Parsing boundary: buildDiagramContent + diagramContentNodes"
+        },
+        {
+          "line": 20,
+          "text": "|   |   `-- constructDiagram builds content; validateDiagram rebuilds it for comparison"
+        },
+        {
+          "line": 21,
+          "text": "|   `-- Canvas boundary: history supplies context bindings"
+        },
+        {
+          "line": 22,
+          "text": "|       `-- Placement stays outside Diagram; merge handles revision bindings only"
+        },
+        {
+          "line": 23,
+          "text": "|-- [C] Calls -- issuing and editing a revision"
+        },
+        {
+          "line": 24,
+          "text": "|   |-- createDiagram(input)"
+        },
+        {
+          "line": 25,
+          "text": "|   |   `-- prepareCreate(input) -> constructDiagram(input) -> issueDiagramRevision(prepared)"
+        },
+        {
+          "line": 26,
+          "text": "|   |       |-- constructDiagram: buildDiagramContent -> clone attached data -> validateDiagram"
+        },
+        {
+          "line": 27,
+          "text": "|   |       `-- issueDiagramRevision: assign nodeRefs -> deepFreeze(record) -> validateDiagram"
+        },
+        {
+          "line": 28,
+          "text": "|   |-- reviseDiagram(base, edit)"
+        },
+        {
+          "line": 29,
+          "text": "|   |   `-- prepareEdit('edit', base.diagram.id, edit)"
+        },
+        {
+          "line": 30,
+          "text": "|   |       |-- source-mappings"
+        },
+        {
+          "line": 31,
+          "text": "|   |       |   `-- Check expectedContentHash -> clone mappings/evidence -> validateDiagram"
+        },
+        {
+          "line": 32,
+          "text": "|   |       |-- patch / patches"
+        },
+        {
+          "line": 33,
+          "text": "|   |       |   |-- patchDiagramRanges -> optional correspondence + highlight rebasing"
+        },
+        {
+          "line": 34,
+          "text": "|   |       |   `-- patches.retainMappings -> retainSourceMappings; otherwise use supplied mappings"
+        },
+        {
+          "line": 35,
+          "text": "|   |       |-- replace"
+        },
+        {
+          "line": 36,
+          "text": "|   |       |   |-- constructDiagram(..., revision: before.revision + 1)"
+        },
+        {
+          "line": 37,
+          "text": "|   |       |   `-- correspondence -> rebase jumps/highlights -> optionally retain mappings"
+        },
+        {
+          "line": 38,
+          "text": "|   |       |-- jumps / highlights -> validate supplied annotations"
+        },
+        {
+          "line": 39,
+          "text": "|   |       `-- Return prepared edit"
+        },
+        {
+          "line": 40,
+          "text": "|   |           |-- prepared.diagram === base.diagram -> return base revision"
+        },
+        {
+          "line": 41,
+          "text": "|   |           `-- Otherwise preserve diagramId, mint revisionId -> issueDiagramRevision(..., base)"
+        },
+        {
+          "line": 42,
+          "text": "|   |-- submitDiagramEdit(request, raw, base, correspondence?)"
+        },
+        {
+          "line": 43,
+          "text": "|   |   |-- Reject mismatched base revision or diagram; new diagrams cannot supply replacementRanges"
+        },
+        {
+          "line": 44,
+          "text": "|   |   |-- context = base.diagram || request.context.diagram || '[New diagram]' placeholder"
+        },
+        {
+          "line": 45,
+          "text": "|   |   |-- validateGeneratedDiagramEdit(context, raw, base?.nodeRefs, request.sourceMappings)"
+        },
+        {
+          "line": 46,
+          "text": "|   |   |-- base + requested edit ranges -> scopedReplacements"
+        },
+        {
+          "line": 47,
+          "text": "|   |   |   |-- Reject structureKind change; produce patches + outputRanges"
+        },
+        {
+          "line": 48,
+          "text": "|   |   |   |-- Shift mappings outside replaced ranges; filter generated mappings into outputRanges"
+        },
+        {
+          "line": 49,
+          "text": "|   |   |   `-- reviseDiagram(kind: 'patches', retainMappings: !request.sourceMappings)"
+        },
+        {
+          "line": 50,
+          "text": "|   |   |-- Otherwise request.baseRevisionId -> reviseDiagram(kind: 'replace')"
+        },
+        {
+          "line": 51,
+          "text": "|   |   `-- Otherwise -> createDiagram(..., revision: 0)"
+        },
+        {
+          "line": 52,
+          "text": "|   `-- merge(baseline, current, proposed)"
+        },
+        {
+          "line": 53,
+          "text": "|       |-- Any baseline/current binding differs -> MERGE_REQUIRED"
+        },
+        {
+          "line": 54,
+          "text": "|       `-- Otherwise return copy of proposed; automatic three-way merge is absent"
+        },
+        {
+          "line": 55,
+          "text": "|-- [O] Ownership -- creation, retention, exposure, and lifetime"
+        },
+        {
+          "line": 56,
+          "text": "|   |-- issueDiagramRevision owns issuance of immutable records"
+        },
+        {
+          "line": 57,
+          "text": "|   |   |-- deepFreeze({ id, diagramId, parentId?, diagram, nodeRefs })"
+        },
+        {
+          "line": 58,
+          "text": "|   |   `-- Edits produce successor records; parentId points to base.id"
+        },
+        {
+          "line": 59,
+          "text": "|   |-- retainDiagramRevision(result)"
+        },
+        {
+          "line": 60,
+          "text": "|   |   `-- importDiagramRevision(result.revision) -> diagramRevisions.register -> get"
+        },
+        {
+          "line": 61,
+          "text": "|   |       |-- Import requires a nonempty, unique logical ref for each parsed node"
+        },
+        {
+          "line": 62,
+          "text": "|   |       `-- Return result with the registry's retained diagram and revision"
+        },
+        {
+          "line": 63,
+          "text": "|   |-- RevisionRegistry.install(record, deferred)"
+        },
+        {
+          "line": 64,
+          "text": "|   |   |-- Require record.id === diagram.revisionId and matching diagramId"
+        },
+        {
+          "line": 65,
+          "text": "|   |   |-- Existing id"
+        },
+        {
+          "line": 66,
+          "text": "|   |   |   |-- Same JSON.stringify(record) signature -> reuse prior record"
+        },
+        {
+          "line": 67,
+          "text": "|   |   |   `-- Different signature -> 'Diagram revision is immutable'"
+        },
+        {
+          "line": 68,
+          "text": "|   |   `-- New id -> deepFreeze(structuredClone(record))"
+        },
+        {
+          "line": 69,
+          "text": "|   |       `-- Private records + signatures retain the snapshot independently of caller input"
+        },
+        {
+          "line": 70,
+          "text": "|   |-- restore(record) -> install(record, true)"
+        },
+        {
+          "line": 71,
+          "text": "|   |   |-- pendingValidation retains id; older records remain addressable before parsing"
+        },
+        {
+          "line": 72,
+          "text": "|   |   `-- First get(id) validates diagram + nodeRefs, then removes pending marker"
+        },
+        {
+          "line": 73,
+          "text": "|   |-- resolve(contextId, diagramId) -> structuredClone(DiagramView)"
+        },
+        {
+          "line": 74,
+          "text": "|   |   |-- Remap node id/parentId/childIds through nodeRefs"
+        },
+        {
+          "line": 75,
+          "text": "|   |   `-- Return active jumps with logical source refs; immutable payload is not exposed here"
+        },
+        {
+          "line": 76,
+          "text": "|   |-- getDiagramRevision -> frozen record; listDiagramRevisions -> frozen identity summaries"
+        },
+        {
+          "line": 77,
+          "text": "|   `-- Durable adapters must flush retained revisions before publishing bindings"
+        },
+        {
+          "line": 78,
+          "text": "|       `-- No removal or eviction operation appears in the supplied registry"
+        },
+        {
+          "line": 79,
+          "text": "`-- [D] Data dependency -- what each result needs, across the boundaries above"
+        },
+        {
+          "line": 80,
+          "text": "    |-- Valid Diagram.content"
+        },
+        {
+          "line": 81,
+          "text": "    |   |-- content.ascii + id:revision + structure.kind + contentParserVersion(structure)"
+        },
+        {
+          "line": 82,
+          "text": "    |   |   `-- buildDiagramContent(...) -> canonical content"
+        },
+        {
+          "line": 83,
+          "text": "    |   `-- JSON.stringify(content) must equal JSON.stringify(canonical)"
+        },
+        {
+          "line": 84,
+          "text": "    |-- Source evidence attached to the same ASCII"
+        },
+        {
+          "line": 85,
+          "text": "    |   |-- sourceContext.contentHash must equal asciiSha256(content.ascii)"
+        },
+        {
+          "line": 86,
+          "text": "    |   |-- mapping.entityId -> evidence[entityId]"
+        },
+        {
+          "line": 87,
+          "text": "    |   |   `-- mapping.sourceRangeIndex -> sourceRanges[index]"
+        },
+        {
+          "line": 88,
+          "text": "    |   |       |-- Optional mapping.sourceRangeId must match range.id"
+        },
+        {
+          "line": 89,
+          "text": "    |   |       `-- Relative path + valid line bounds + matching originalLines count"
+        },
+        {
+          "line": 90,
+          "text": "    |   |-- Optional binding: sourceId + repositoryIdentity + corpus + domainProfileId"
+        },
+        {
+          "line": 91,
+          "text": "    |   |   `-- Validate corpus/profile pairing; evidence sourceId must agree when both are present"
+        },
+        {
+          "line": 92,
+          "text": "    |   `-- diagramSource -> queryDiagramSourceContext"
+        },
+        {
+          "line": 93,
+          "text": "    |       `-- entries / forSelection / search join mapping + entity + range + binding"
+        },
+        {
+          "line": 94,
+          "text": "    |-- Successor nodeRefs: parsed node id -> persistent logical ref"
+        },
+        {
+          "line": 95,
+          "text": "    |   |-- correspondingNodes(before, after)"
+        },
+        {
+          "line": 96,
+          "text": "    |   |   |-- Requires identical ASCII and structure kind"
+        },
+        {
+          "line": 97,
+          "text": "    |   |   `-- Match exact line + columns + label; heuristic similarity establishes no identity"
+        },
+        {
+          "line": 98,
+          "text": "    |   |-- nodeCorrespondence[logicalRef] = output line"
+        },
+        {
+          "line": 99,
+          "text": "    |   |   |-- Requires an old ref and exactly one output node on an integer line"
+        },
+        {
+          "line": 100,
+          "text": "    |   |   `-- Reject conflicts with inferred continuity or multiple refs claiming one node"
+        },
+        {
+          "line": 101,
+          "text": "    |   `-- issueDiagramRevision uses reverse(prepared.nodeIds)"
+        },
+        {
+          "line": 102,
+          "text": "    |       `-- Explicit identity override || inherited base.nodeRefs[old] || fresh node UUID"
+        },
+        {
+          "line": 103,
+          "text": "    |-- deriveDiagram(base, input, refs, sources)"
+        },
+        {
+          "line": 104,
+          "text": "    |   |-- sources must share base.diagramId; their nodeRefs form the allowed ref set"
+        },
+        {
+          "line": 105,
+          "text": "    |   |-- Each refs[ref] must select exactly one output node with no duplicate target"
+        },
+        {
+          "line": 106,
+          "text": "    |   `-- Validated identities override issuance defaults; parent remains base.id"
+        },
+        {
+          "line": 107,
+          "text": "    `-- Reading a context-selected view"
+        },
+        {
+          "line": 108,
+          "text": "        `-- bindings(contextId)[diagramId] + revisions + diagram.content + nodeRefs"
+        },
+        {
+          "line": 109,
+          "text": "            `-- Selected revision supplies ASCII, sourceContext, nodes, and active jumps"
+        }
+      ]
+    },
+    {
+      "caseId": "agent_access",
+      "title": "Agent Canvas Access",
+      "runId": "bf6e0de6-90ae-4d98-af36-e5c2fa643b95",
+      "cellKey": "cabd33be-5ed4-4e41-a61a-54a45f770825:1:alternative",
+      "ascii": "Agent Canvas Access - bind operations to a document and reach its owning browser\n|-- [M] Modular structure - contracts, visibility, and component dependencies\n|   |-- Tool boundary: agentToolSchemas + canvasMethods\n|   |   |-- AgentToolName -> validated tool arguments; canvasApiSpec(query) exposes method schemas\n|   |   |-- CanvasDescriptor -> canvasId + documents[]; CanvasCommand -> id + method + payload\n|   |   `-- createMappingMcpServer() -> POST /api/mapping/agent/tools/{name}\n|   |       `-- binding header or target attachment supplies the connection's canvas scope\n|   |-- Application boundary: AgentDiagrammingSessionService\n|   |   |-- Public: callBound(), call(), submitDirect(), resolveDiagramArguments(), dispose()\n|   |   |-- Private: session(), binding(), snapshot(), apply(), exec(), search(), save()\n|   |   |   `-- Callers use scoped operations; attachment maps and retry bookkeeping stay internal\n|   |   |-- Depends on CanvasSessionPort + AgentExecRuntime.run(code, invoke)\n|   |   |   `-- CanvasSessionBridge implements the port; browser commands cross this boundary\n|   |   `-- Delegates specialized work\n|   |       |-- ChangeSessionService -> proposal snapshots, edits, review, and acceptance\n|   |       |-- DiagramEditService / DiagramBatchService -> generation and application\n|   |       `-- MappingDiagramService / DiagramRepository / AgentContextService -> saved material\n|   |-- Live connection boundary: LiveCanvasService\n|   |   |-- Public: publish(), update(), attach(), read(), context(), copy(), paste()\n|   |   |-- Private: publisher(), invalidate(), loadCanvasContext(), notifyAgents()\n|   |   |-- Depends on listCanvases(), loadContext(), AgentContextService, CanvasApiProjection\n|   |   `-- attachLiveCanvasSockets(), readLiveSelection(), readShortContext() expose this service\n|   `-- Representation boundary: CanvasApiProjection\n|       |-- node(), content(), edge(), jump() -> compact external representation\n|       |-- resolveAnchorId(), resolveEdge(), resolveJump() -> full domain IDs\n|       `-- Private shortIds / fullIds / scopes; grid projection omits rendering internals\n|-- [C] Call model - requests take distinct execution paths\n|   |-- Tool attachment and access\n|   |   |-- Unbound exec: canvas.list() -> canvas.attach({canvasId, documentId})\n|   |   |   `-- attach() -> attachDocument() -> identity command -> sessionId + version\n|   |   |-- Chat call: callBound(token, name, raw) -> chatBindings.capture(token, ...)\n|   |   |   `-- Reuse binding.attachment; reject another target with CHAT_BINDING_MISMATCH\n|   |   `-- call() -> agentToolSchemas[name].parse(raw) -> operation-specific handling\n|   |       |-- readOnly -> tool allowlist; exec additionally checks each invoked canvas method\n|   |       `-- canvas-view / diagram-agent-context -> inspect operation before allowing changes\n|   |-- Live exec: execute('exec') -> exec() -> runtime.run(code, invoke)\n|   |   |-- invoke(method, args) -> aliases.resolve() -> canvasMethods[method].schema.parse()\n|   |   |-- canvas.read -> bridge.dispatch('read') -> aliases.project(read, binding)\n|   |   |-- Mutation -> check expectedVersion -> construct DiagramOperation\n|   |   |   |-- mode='batched' -> queue operations; flush at read boundaries and script completion\n|   |   |   |   `-- applyBatch() -> one apply command per flushed batch -> CanvasMutationResult\n|   |   |   `-- mode='immediate' -> apply() per operation -> projected result\n|   |   `-- Browser round trip: CanvasSessionBridge.dispatch(canvasId, command)\n|   |       `-- Queue command + wake poll() -> useAgentCanvasBridge receives commands\n|   |           `-- latest.current.handle(command) -> canvasReply() -> POST .../{canvasId}/reply\n|   |               `-- CanvasSessionBridge.reply() -> resolve value or reject error\n|   |-- Proposal routing: sessionId + changeSessionId must identify the same attachment\n|   |   |-- snapshot() -> changes.snapshot(); apply() / applyBatch() -> changes.apply()\n|   |   |-- diagram-search -> captured baseline or proposed document\n|   |   `-- save_diagram -> CHANGE_SESSION_SAVE_FORBIDDEN; acceptance has a separate tool\n|   |-- Diagram generation and context\n|   |   |-- call(edit/create/extend) -> resolveDiagramArguments() -> validate live session\n|   |   |   |-- Single request -> agentContexts.resolve(...) when supplied -> edits.start()\n|   |   |   `-- operations[] -> batches.start(); status/cancel -> owning run service\n|   |   |-- submitDirect() -> batches.start(..., true) -> batches.wait(runId)\n|   |   |-- Application callbacks -> apply-diagram-revision / create-diagrams / apply-diagram-batch\n|   |   `-- diagram-agent-context prepare -> snapshot -> version/revision checks\n|   |       `-- compileDiagramAgentContext() -> storeDiagramAgentContext() -> apply-diagram-context\n|   `-- Live socket: attachLiveCanvasSockets() dispatches the first frame by role\n|       |-- publish -> service.publish(ws, workspaceInstanceId, send, capabilities)\n|       |   `-- Selection frames -> update() -> selectionDelta(previous, selection)\n|       |       `-- selection.delta fan-out to active bindings for that workspace/document\n|       |-- attach -> optional contextForCanvas() -> attach() -> attached snapshot + connectionId\n|       |   |-- context.get -> context(connectionId) -> loadContext() -> projected snapshot\n|       |   `-- readLiveSelection(connectionId) -> read(); matching ETag -> HTTP 304\n|       `-- diagram.paste / diagram.copy -> service -> publisher.notify(command) -> browser\n|           `-- Publisher reply -> pasteReply() / copyReply() -> settle waiting reader request\n|-- [O] Ownership - who retains state and retires resources\n|   |-- Browser hook: useAgentCanvasBridge()\n|   |   |-- Creates ephemeral canvasId; browserStableWorkspaceId() supplies stable workspace identity\n|   |   |-- Owns AbortController, reconnect timer, and results Map keyed by command.id\n|   |   |   `-- Retains mutation replies only; evicts oldest entry above 200\n|   |   `-- pagehide / effect cleanup -> unregister ephemeral instance\n|   |       `-- Cleanup also aborts polling, clears timer, and removes pagehide listener\n|   |-- CanvasSessionBridge owns canvases, command queues, and pending promises\n|   |   |-- register() clones descriptor; poll() refreshes touched and drains queued commands\n|   |   |-- dispatch() creates command UUID + 25-second timer; at most 100 pending commands\n|   |   |-- reply() requires matching canvasId, then clears timer and removes pending entry\n|   |   `-- unregister() wakes pollers and rejects pending work; dispose() unregisters all\n|   |       `-- list() retires registrations untouched for more than 35 seconds\n|   |-- AgentDiagrammingSessionService owns attachment and retry state\n|   |   |-- sessions: sessionId -> {canvasId, documentId, changeSessionId?}; failed attach removes entry\n|   |   |-- requests: scoped requestId -> signature + promise\n|   |   |   |-- Same key + same signature -> reuse promise; changed arguments -> REQUEST_ID_CONFLICT\n|   |   |   `-- Transport uncertainty removes request cache entry so identical retry can proceed\n|   |   |-- execRuns: retained steps, operation IDs, expected versions, and batch receipts\n|   |   |   |-- Retry replays completed outcomes and resends only unacknowledged work\n|   |   |   `-- Success or definitive failure removes run; canvasTimeout() preserves retry state\n|   |   |-- saves: promise chain per canvas/document; remove settled tail\n|   |   `-- dispose() delegates to edits.dispose() and batches.dispose()\n|   |-- LiveCanvasService owns publishers, reader bindings, and copy/paste receipts\n|   |   |-- Publisher owner is the socket object; publisher() rejects another owner\n|   |   |-- attach() creates connectionId pinned to workspaceInstanceId + documentId + canvasEpoch\n|   |   |-- remove / disconnect / epoch replacement -> invalidate() readers and reject pending work\n|   |   |   `-- Bindings remain unavailable until detach(); a replacement cannot silently inherit them\n|   |   |-- copies / pastes retain commands and results without eviction; 2000 receipts per kind\n|   |   |   `-- Timeout clears pending waiter, retaining command identity for an identical retry\n|   |   `-- Socket close -> detach() or disconnect(); heartbeat terminates unresponsive sockets\n|   `-- CanvasApiProjection owns backend-lifetime anchor handles\n|       |-- anchorId(fullId) allocates once; never evicts or reassigns a handle\n|       `-- Unknown compact handle -> STALE_CONTENT_NODE; restart requires rereading anchors\n`-- +1 [D] Data dependency - prerequisite graph underlying the three views above\n    |-- A correctly targeted operation needs [target]\n    |   |-- sessions[sessionId] -> canvasId + documentId + optional changeSessionId\n    |   |-- session() -> matching proposal scope and, for live sessions, bridge.list() membership\n    |   `-- binding() -> serialized [canvasId, documentId, changeSessionId] for alias resolution\n    |-- A decoded mutation needs [target] + current identifiers + version\n    |   |-- CanvasReadAliases.resolve(raw, binding) -> IDs from the corresponding scoped read\n    |   |-- CanvasApiProjection.fullIds[handle] -> revision-scoped content-node ID\n    |   |-- expectedVersion == ExecRun.initialVersion -> permission to begin mutation sequence\n    |   `-- nodes.setSourceMappings -> snapshot.version + diagram.content.asciiSha256\n    |       `-- mappingHash() supplies expectedContentHash without requiring the caller to compute it\n    |-- A compact node result needs [snapshot]\n    |   |-- document + canvas + version + optional cell / endpointBounds\n    |   |   `-- canvasDisplayNodes(...) -> CanvasApiProjection.node() / nodes()\n    |   `-- Content tree IDs, parent/child IDs, highlights, edges, and jumps need anchor translation\n    |       `-- The same full anchor must map consistently wherever it appears\n    |-- An authoritative live selection needs [selection]\n    |   |-- publishers[workspaceInstanceId].selections[documentId] + reader's canvasEpoch\n    |   |-- Delta input needs previous.sequence == baseSequence and matching canvasEpoch\n    |   |   `-- Previous regions - removed + upserted -> next selection -> selectionDelta()\n    |   `-- BoundSelection adds connectionId, workspaceInstanceId, protocolVersion, receivedAt\n    |-- A live context response needs [selection] + asynchronously loaded [snapshot]\n    |   |-- loadCanvasContext() rechecks publisher identity and canvasEpoch after loadContext()\n    |   `-- context(connectionId) checks the reader again after awaiting the context\n    |       `-- Closure or replacement makes the response invalid even if loading succeeded\n    `-- A successful paste acknowledgement needs [selection] + retained command + validated reply\n        |-- Receipt key = [workspaceInstanceId, documentId, canvasEpoch, requestId]\n        |-- Signature = JSON.stringify(input); changed retry arguments -> REQUEST_ID_REUSED\n        `-- pasteReply(): result.nodeId == command.nodeId AND version == expectedVersion + 1\n            `-- Receipt supplies the result; read(connectionId) confirms the binding still exists",
+      "numberedLines": [
+        {
+          "line": 1,
+          "text": "Agent Canvas Access - bind operations to a document and reach its owning browser"
+        },
+        {
+          "line": 2,
+          "text": "|-- [M] Modular structure - contracts, visibility, and component dependencies"
+        },
+        {
+          "line": 3,
+          "text": "|   |-- Tool boundary: agentToolSchemas + canvasMethods"
+        },
+        {
+          "line": 4,
+          "text": "|   |   |-- AgentToolName -> validated tool arguments; canvasApiSpec(query) exposes method schemas"
+        },
+        {
+          "line": 5,
+          "text": "|   |   |-- CanvasDescriptor -> canvasId + documents[]; CanvasCommand -> id + method + payload"
+        },
+        {
+          "line": 6,
+          "text": "|   |   `-- createMappingMcpServer() -> POST /api/mapping/agent/tools/{name}"
+        },
+        {
+          "line": 7,
+          "text": "|   |       `-- binding header or target attachment supplies the connection's canvas scope"
+        },
+        {
+          "line": 8,
+          "text": "|   |-- Application boundary: AgentDiagrammingSessionService"
+        },
+        {
+          "line": 9,
+          "text": "|   |   |-- Public: callBound(), call(), submitDirect(), resolveDiagramArguments(), dispose()"
+        },
+        {
+          "line": 10,
+          "text": "|   |   |-- Private: session(), binding(), snapshot(), apply(), exec(), search(), save()"
+        },
+        {
+          "line": 11,
+          "text": "|   |   |   `-- Callers use scoped operations; attachment maps and retry bookkeeping stay internal"
+        },
+        {
+          "line": 12,
+          "text": "|   |   |-- Depends on CanvasSessionPort + AgentExecRuntime.run(code, invoke)"
+        },
+        {
+          "line": 13,
+          "text": "|   |   |   `-- CanvasSessionBridge implements the port; browser commands cross this boundary"
+        },
+        {
+          "line": 14,
+          "text": "|   |   `-- Delegates specialized work"
+        },
+        {
+          "line": 15,
+          "text": "|   |       |-- ChangeSessionService -> proposal snapshots, edits, review, and acceptance"
+        },
+        {
+          "line": 16,
+          "text": "|   |       |-- DiagramEditService / DiagramBatchService -> generation and application"
+        },
+        {
+          "line": 17,
+          "text": "|   |       `-- MappingDiagramService / DiagramRepository / AgentContextService -> saved material"
+        },
+        {
+          "line": 18,
+          "text": "|   |-- Live connection boundary: LiveCanvasService"
+        },
+        {
+          "line": 19,
+          "text": "|   |   |-- Public: publish(), update(), attach(), read(), context(), copy(), paste()"
+        },
+        {
+          "line": 20,
+          "text": "|   |   |-- Private: publisher(), invalidate(), loadCanvasContext(), notifyAgents()"
+        },
+        {
+          "line": 21,
+          "text": "|   |   |-- Depends on listCanvases(), loadContext(), AgentContextService, CanvasApiProjection"
+        },
+        {
+          "line": 22,
+          "text": "|   |   `-- attachLiveCanvasSockets(), readLiveSelection(), readShortContext() expose this service"
+        },
+        {
+          "line": 23,
+          "text": "|   `-- Representation boundary: CanvasApiProjection"
+        },
+        {
+          "line": 24,
+          "text": "|       |-- node(), content(), edge(), jump() -> compact external representation"
+        },
+        {
+          "line": 25,
+          "text": "|       |-- resolveAnchorId(), resolveEdge(), resolveJump() -> full domain IDs"
+        },
+        {
+          "line": 26,
+          "text": "|       `-- Private shortIds / fullIds / scopes; grid projection omits rendering internals"
+        },
+        {
+          "line": 27,
+          "text": "|-- [C] Call model - requests take distinct execution paths"
+        },
+        {
+          "line": 28,
+          "text": "|   |-- Tool attachment and access"
+        },
+        {
+          "line": 29,
+          "text": "|   |   |-- Unbound exec: canvas.list() -> canvas.attach({canvasId, documentId})"
+        },
+        {
+          "line": 30,
+          "text": "|   |   |   `-- attach() -> attachDocument() -> identity command -> sessionId + version"
+        },
+        {
+          "line": 31,
+          "text": "|   |   |-- Chat call: callBound(token, name, raw) -> chatBindings.capture(token, ...)"
+        },
+        {
+          "line": 32,
+          "text": "|   |   |   `-- Reuse binding.attachment; reject another target with CHAT_BINDING_MISMATCH"
+        },
+        {
+          "line": 33,
+          "text": "|   |   `-- call() -> agentToolSchemas[name].parse(raw) -> operation-specific handling"
+        },
+        {
+          "line": 34,
+          "text": "|   |       |-- readOnly -> tool allowlist; exec additionally checks each invoked canvas method"
+        },
+        {
+          "line": 35,
+          "text": "|   |       `-- canvas-view / diagram-agent-context -> inspect operation before allowing changes"
+        },
+        {
+          "line": 36,
+          "text": "|   |-- Live exec: execute('exec') -> exec() -> runtime.run(code, invoke)"
+        },
+        {
+          "line": 37,
+          "text": "|   |   |-- invoke(method, args) -> aliases.resolve() -> canvasMethods[method].schema.parse()"
+        },
+        {
+          "line": 38,
+          "text": "|   |   |-- canvas.read -> bridge.dispatch('read') -> aliases.project(read, binding)"
+        },
+        {
+          "line": 39,
+          "text": "|   |   |-- Mutation -> check expectedVersion -> construct DiagramOperation"
+        },
+        {
+          "line": 40,
+          "text": "|   |   |   |-- mode='batched' -> queue operations; flush at read boundaries and script completion"
+        },
+        {
+          "line": 41,
+          "text": "|   |   |   |   `-- applyBatch() -> one apply command per flushed batch -> CanvasMutationResult"
+        },
+        {
+          "line": 42,
+          "text": "|   |   |   `-- mode='immediate' -> apply() per operation -> projected result"
+        },
+        {
+          "line": 43,
+          "text": "|   |   `-- Browser round trip: CanvasSessionBridge.dispatch(canvasId, command)"
+        },
+        {
+          "line": 44,
+          "text": "|   |       `-- Queue command + wake poll() -> useAgentCanvasBridge receives commands"
+        },
+        {
+          "line": 45,
+          "text": "|   |           `-- latest.current.handle(command) -> canvasReply() -> POST .../{canvasId}/reply"
+        },
+        {
+          "line": 46,
+          "text": "|   |               `-- CanvasSessionBridge.reply() -> resolve value or reject error"
+        },
+        {
+          "line": 47,
+          "text": "|   |-- Proposal routing: sessionId + changeSessionId must identify the same attachment"
+        },
+        {
+          "line": 48,
+          "text": "|   |   |-- snapshot() -> changes.snapshot(); apply() / applyBatch() -> changes.apply()"
+        },
+        {
+          "line": 49,
+          "text": "|   |   |-- diagram-search -> captured baseline or proposed document"
+        },
+        {
+          "line": 50,
+          "text": "|   |   `-- save_diagram -> CHANGE_SESSION_SAVE_FORBIDDEN; acceptance has a separate tool"
+        },
+        {
+          "line": 51,
+          "text": "|   |-- Diagram generation and context"
+        },
+        {
+          "line": 52,
+          "text": "|   |   |-- call(edit/create/extend) -> resolveDiagramArguments() -> validate live session"
+        },
+        {
+          "line": 53,
+          "text": "|   |   |   |-- Single request -> agentContexts.resolve(...) when supplied -> edits.start()"
+        },
+        {
+          "line": 54,
+          "text": "|   |   |   `-- operations[] -> batches.start(); status/cancel -> owning run service"
+        },
+        {
+          "line": 55,
+          "text": "|   |   |-- submitDirect() -> batches.start(..., true) -> batches.wait(runId)"
+        },
+        {
+          "line": 56,
+          "text": "|   |   |-- Application callbacks -> apply-diagram-revision / create-diagrams / apply-diagram-batch"
+        },
+        {
+          "line": 57,
+          "text": "|   |   `-- diagram-agent-context prepare -> snapshot -> version/revision checks"
+        },
+        {
+          "line": 58,
+          "text": "|   |       `-- compileDiagramAgentContext() -> storeDiagramAgentContext() -> apply-diagram-context"
+        },
+        {
+          "line": 59,
+          "text": "|   `-- Live socket: attachLiveCanvasSockets() dispatches the first frame by role"
+        },
+        {
+          "line": 60,
+          "text": "|       |-- publish -> service.publish(ws, workspaceInstanceId, send, capabilities)"
+        },
+        {
+          "line": 61,
+          "text": "|       |   `-- Selection frames -> update() -> selectionDelta(previous, selection)"
+        },
+        {
+          "line": 62,
+          "text": "|       |       `-- selection.delta fan-out to active bindings for that workspace/document"
+        },
+        {
+          "line": 63,
+          "text": "|       |-- attach -> optional contextForCanvas() -> attach() -> attached snapshot + connectionId"
+        },
+        {
+          "line": 64,
+          "text": "|       |   |-- context.get -> context(connectionId) -> loadContext() -> projected snapshot"
+        },
+        {
+          "line": 65,
+          "text": "|       |   `-- readLiveSelection(connectionId) -> read(); matching ETag -> HTTP 304"
+        },
+        {
+          "line": 66,
+          "text": "|       `-- diagram.paste / diagram.copy -> service -> publisher.notify(command) -> browser"
+        },
+        {
+          "line": 67,
+          "text": "|           `-- Publisher reply -> pasteReply() / copyReply() -> settle waiting reader request"
+        },
+        {
+          "line": 68,
+          "text": "|-- [O] Ownership - who retains state and retires resources"
+        },
+        {
+          "line": 69,
+          "text": "|   |-- Browser hook: useAgentCanvasBridge()"
+        },
+        {
+          "line": 70,
+          "text": "|   |   |-- Creates ephemeral canvasId; browserStableWorkspaceId() supplies stable workspace identity"
+        },
+        {
+          "line": 71,
+          "text": "|   |   |-- Owns AbortController, reconnect timer, and results Map keyed by command.id"
+        },
+        {
+          "line": 72,
+          "text": "|   |   |   `-- Retains mutation replies only; evicts oldest entry above 200"
+        },
+        {
+          "line": 73,
+          "text": "|   |   `-- pagehide / effect cleanup -> unregister ephemeral instance"
+        },
+        {
+          "line": 74,
+          "text": "|   |       `-- Cleanup also aborts polling, clears timer, and removes pagehide listener"
+        },
+        {
+          "line": 75,
+          "text": "|   |-- CanvasSessionBridge owns canvases, command queues, and pending promises"
+        },
+        {
+          "line": 76,
+          "text": "|   |   |-- register() clones descriptor; poll() refreshes touched and drains queued commands"
+        },
+        {
+          "line": 77,
+          "text": "|   |   |-- dispatch() creates command UUID + 25-second timer; at most 100 pending commands"
+        },
+        {
+          "line": 78,
+          "text": "|   |   |-- reply() requires matching canvasId, then clears timer and removes pending entry"
+        },
+        {
+          "line": 79,
+          "text": "|   |   `-- unregister() wakes pollers and rejects pending work; dispose() unregisters all"
+        },
+        {
+          "line": 80,
+          "text": "|   |       `-- list() retires registrations untouched for more than 35 seconds"
+        },
+        {
+          "line": 81,
+          "text": "|   |-- AgentDiagrammingSessionService owns attachment and retry state"
+        },
+        {
+          "line": 82,
+          "text": "|   |   |-- sessions: sessionId -> {canvasId, documentId, changeSessionId?}; failed attach removes entry"
+        },
+        {
+          "line": 83,
+          "text": "|   |   |-- requests: scoped requestId -> signature + promise"
+        },
+        {
+          "line": 84,
+          "text": "|   |   |   |-- Same key + same signature -> reuse promise; changed arguments -> REQUEST_ID_CONFLICT"
+        },
+        {
+          "line": 85,
+          "text": "|   |   |   `-- Transport uncertainty removes request cache entry so identical retry can proceed"
+        },
+        {
+          "line": 86,
+          "text": "|   |   |-- execRuns: retained steps, operation IDs, expected versions, and batch receipts"
+        },
+        {
+          "line": 87,
+          "text": "|   |   |   |-- Retry replays completed outcomes and resends only unacknowledged work"
+        },
+        {
+          "line": 88,
+          "text": "|   |   |   `-- Success or definitive failure removes run; canvasTimeout() preserves retry state"
+        },
+        {
+          "line": 89,
+          "text": "|   |   |-- saves: promise chain per canvas/document; remove settled tail"
+        },
+        {
+          "line": 90,
+          "text": "|   |   `-- dispose() delegates to edits.dispose() and batches.dispose()"
+        },
+        {
+          "line": 91,
+          "text": "|   |-- LiveCanvasService owns publishers, reader bindings, and copy/paste receipts"
+        },
+        {
+          "line": 92,
+          "text": "|   |   |-- Publisher owner is the socket object; publisher() rejects another owner"
+        },
+        {
+          "line": 93,
+          "text": "|   |   |-- attach() creates connectionId pinned to workspaceInstanceId + documentId + canvasEpoch"
+        },
+        {
+          "line": 94,
+          "text": "|   |   |-- remove / disconnect / epoch replacement -> invalidate() readers and reject pending work"
+        },
+        {
+          "line": 95,
+          "text": "|   |   |   `-- Bindings remain unavailable until detach(); a replacement cannot silently inherit them"
+        },
+        {
+          "line": 96,
+          "text": "|   |   |-- copies / pastes retain commands and results without eviction; 2000 receipts per kind"
+        },
+        {
+          "line": 97,
+          "text": "|   |   |   `-- Timeout clears pending waiter, retaining command identity for an identical retry"
+        },
+        {
+          "line": 98,
+          "text": "|   |   `-- Socket close -> detach() or disconnect(); heartbeat terminates unresponsive sockets"
+        },
+        {
+          "line": 99,
+          "text": "|   `-- CanvasApiProjection owns backend-lifetime anchor handles"
+        },
+        {
+          "line": 100,
+          "text": "|       |-- anchorId(fullId) allocates once; never evicts or reassigns a handle"
+        },
+        {
+          "line": 101,
+          "text": "|       `-- Unknown compact handle -> STALE_CONTENT_NODE; restart requires rereading anchors"
+        },
+        {
+          "line": 102,
+          "text": "`-- +1 [D] Data dependency - prerequisite graph underlying the three views above"
+        },
+        {
+          "line": 103,
+          "text": "    |-- A correctly targeted operation needs [target]"
+        },
+        {
+          "line": 104,
+          "text": "    |   |-- sessions[sessionId] -> canvasId + documentId + optional changeSessionId"
+        },
+        {
+          "line": 105,
+          "text": "    |   |-- session() -> matching proposal scope and, for live sessions, bridge.list() membership"
+        },
+        {
+          "line": 106,
+          "text": "    |   `-- binding() -> serialized [canvasId, documentId, changeSessionId] for alias resolution"
+        },
+        {
+          "line": 107,
+          "text": "    |-- A decoded mutation needs [target] + current identifiers + version"
+        },
+        {
+          "line": 108,
+          "text": "    |   |-- CanvasReadAliases.resolve(raw, binding) -> IDs from the corresponding scoped read"
+        },
+        {
+          "line": 109,
+          "text": "    |   |-- CanvasApiProjection.fullIds[handle] -> revision-scoped content-node ID"
+        },
+        {
+          "line": 110,
+          "text": "    |   |-- expectedVersion == ExecRun.initialVersion -> permission to begin mutation sequence"
+        },
+        {
+          "line": 111,
+          "text": "    |   `-- nodes.setSourceMappings -> snapshot.version + diagram.content.asciiSha256"
+        },
+        {
+          "line": 112,
+          "text": "    |       `-- mappingHash() supplies expectedContentHash without requiring the caller to compute it"
+        },
+        {
+          "line": 113,
+          "text": "    |-- A compact node result needs [snapshot]"
+        },
+        {
+          "line": 114,
+          "text": "    |   |-- document + canvas + version + optional cell / endpointBounds"
+        },
+        {
+          "line": 115,
+          "text": "    |   |   `-- canvasDisplayNodes(...) -> CanvasApiProjection.node() / nodes()"
+        },
+        {
+          "line": 116,
+          "text": "    |   `-- Content tree IDs, parent/child IDs, highlights, edges, and jumps need anchor translation"
+        },
+        {
+          "line": 117,
+          "text": "    |       `-- The same full anchor must map consistently wherever it appears"
+        },
+        {
+          "line": 118,
+          "text": "    |-- An authoritative live selection needs [selection]"
+        },
+        {
+          "line": 119,
+          "text": "    |   |-- publishers[workspaceInstanceId].selections[documentId] + reader's canvasEpoch"
+        },
+        {
+          "line": 120,
+          "text": "    |   |-- Delta input needs previous.sequence == baseSequence and matching canvasEpoch"
+        },
+        {
+          "line": 121,
+          "text": "    |   |   `-- Previous regions - removed + upserted -> next selection -> selectionDelta()"
+        },
+        {
+          "line": 122,
+          "text": "    |   `-- BoundSelection adds connectionId, workspaceInstanceId, protocolVersion, receivedAt"
+        },
+        {
+          "line": 123,
+          "text": "    |-- A live context response needs [selection] + asynchronously loaded [snapshot]"
+        },
+        {
+          "line": 124,
+          "text": "    |   |-- loadCanvasContext() rechecks publisher identity and canvasEpoch after loadContext()"
+        },
+        {
+          "line": 125,
+          "text": "    |   `-- context(connectionId) checks the reader again after awaiting the context"
+        },
+        {
+          "line": 126,
+          "text": "    |       `-- Closure or replacement makes the response invalid even if loading succeeded"
+        },
+        {
+          "line": 127,
+          "text": "    `-- A successful paste acknowledgement needs [selection] + retained command + validated reply"
+        },
+        {
+          "line": 128,
+          "text": "        |-- Receipt key = [workspaceInstanceId, documentId, canvasEpoch, requestId]"
+        },
+        {
+          "line": 129,
+          "text": "        |-- Signature = JSON.stringify(input); changed retry arguments -> REQUEST_ID_REUSED"
+        },
+        {
+          "line": 130,
+          "text": "        `-- pasteReply(): result.nodeId == command.nodeId AND version == expectedVersion + 1"
+        },
+        {
+          "line": 131,
+          "text": "            `-- Receipt supplies the result; read(connectionId) confirms the binding still exists"
+        }
+      ]
+    },
+    {
+      "caseId": "changes",
+      "title": "Isolated Change Proposals",
+      "runId": "73c92440-ce3e-49db-ab11-af389dc00c73",
+      "cellKey": "cabd33be-5ed4-4e41-a61a-54a45f770825:1:alternative",
+      "ascii": "Isolated Change Proposals -- pinned source 8ca143700ca4\n|-- [M] Modular structure -- semantic boundaries, exposed contracts, dependencies\n|   |-- Proposal review: ChangeSessionService\n|   |   |-- Public: capture(), create(), apply(), update(), accept()\n|   |   |-- Read views: list(), get(), preview(), snapshot(), readDiffTree(), readTreemaps()\n|   |   |-- Private: serialize(), mutate(), controller(), record(), validateReady()\n|   |   |   `-- Keep replay, history mutation and readiness rules behind the service\n|   |   `-- Depends on DiagramChangeSessionRepository + DiagramRepository + CanvasSessionPort\n|   |       |-- repositories: resolve pinned Git context and capture hunks\n|   |       |-- projectCatalogs: read published baselines and acceptCanvasChanges()\n|   |       `-- bridge: inspect live canvases; MappingDocumentController handles proposal edits\n|   |-- Automated preparation: DiffSessionWorkflowService + DiffSessionTools\n|   |   |-- Public workflow: start(), get(), cancel(), dispose()\n|   |   |-- Depends on ChangeSessionService, agent, runtime and DiffSessionRunStore\n|   |   `-- DiffSessionTools.tools(step) exposes capabilities by stage\n|   |       |-- analyze: API discovery, frozen diagram search, captured hunks, source reader\n|   |       |-- materialize: add create, exec, draw, mappings, update, DiffTree read, complete\n|   |       `-- Private bound(): require this run's changeSessionId; reject another proposal\n|   |-- Evidence and validity: DiagramChangeSession + ChangeSessionDiffTree\n|   |   |-- validateChangeSession(): repository context, document states, history, acceptance\n|   |   |-- writeDiffTree(): tree revision and full mapping replacement together\n|   |   `-- validateDiffTree(): stable node identities and valid, unique hunk targets\n|   |-- Durable records: ChangeSessionRecords\n|   |   |-- Public: readSummary(), readPreview(), readDiffTree(), read(), write()\n|   |   `-- Private manifest/blob machinery depends on ImmutableRecords + DiagramPersistence\n|   `-- Push entry: PushIntegrationService\n|       `-- Depends on PushIntegrationStore + PushSource + PushWorkflow; exports receive()\n|-- [C] Call model -- invocations that prepare, edit and publish a proposal\n|   |-- Optional entry: PushIntegrationService.receive(connectionId, event)\n|   |   |-- Validate event; reuse matching pending/stored generation or reject ID conflict\n|   |   |-- Non-branch, deleted, unchanged or no net changes -> skipped\n|   |   `-- source.resolve() -> workflow.start({commits, head: after, comparisonBase: before})\n|   |-- DiffSessionWorkflowService.start() -> begin() -> background execute()\n|   |   |-- changes.capture() -> store context/prompts -> runtime.openSession()\n|   |   |-- runAgentWorkflow(createDiffSessionWorkflow(...)) -> session.runStep(request)\n|   |   |   |-- analyze: read frozen baselines and captured repository evidence\n|   |   |   `-- materialize: tool callbacks operate on the run's isolated proposal\n|   |   |       |-- create_diagram_change_session -> changes.create(input, capture)\n|   |   |       |-- exec / draw_diagram / set_diagram_source_mappings -> agent.call(bound(input))\n|   |   |       |-- update_diagram_change_session -> annotate changes and mark ready\n|   |   |       `-- complete_diff_session -> require ready, nonempty changes, all hunks mapped\n|   |   `-- changes.get(result.changeSessionId) -> verify own ready proposal -> completed\n|   |       `-- Completion means ready for review; acceptance is a separate service call\n|   |-- ChangeSessionService.apply(id, documentId, version, operations, requestId)\n|   |   `-- mutate() -> controller(doc).applyUpdate(version, operations)\n|   |       `-- record() -> refreshChanges() -> status = draft -> repository.write()\n|   |-- ChangeSessionService.update({status: 'ready', expectedVersion, ...})\n|   |   `-- mutate() -> validateReady() -> save versioned ready proposal\n|   |       |-- Validate DiffTree, repository ownership, migrations and connection anchors\n|   |       |-- Require changes; reject missing or cyclic DiagramChange.dependsOn references\n|   |       `-- Added diagram requires an incoming edge from a diagram present in baseline\n|   `-- ChangeSessionService.accept({changeSessionId, requestId, expectedVersion})\n|       `-- serialize() -> get()\n|           |-- Existing acceptance: matching request/version -> replay; mismatch -> conflict\n|           `-- New acceptance: require expectedVersion + ready + validateReady()\n|               |-- bridge.dispatch('document-state') for affected live documents\n|               |   `-- Compare document stateKey and name with capture; changed -> conflict\n|               |-- projectCatalogs.acceptCanvasChanges(affected proposed documents + history)\n|               |   `-- Pass savedRevisionId as expectedRevisionId for published-baseline check\n|               `-- finishAcceptance(receipt) -> accepted, version + 1 -> repository.write()\n|-- [O] Ownership -- who retains state and releases runtime resources\n|   |-- ChangeSessionService.capture() owns the frozen inputs supplied to create()\n|   |   |-- Published settled representations provide initial baselines\n|   |   |-- Selected live snapshots replace matching baselines; multiple workspaces need canvasId\n|   |   `-- baselineChangeSessionId reuses original baselines and pinned context/hunks\n|   |       `-- structuredClone() + forkHistory(): fresh proposal state from the captured originals\n|   |-- ChangeSessionDocument retains baseline, proposed, version and history\n|   |   |-- create() clones captured documents; createDocument() starts with baseline = null\n|   |   |-- controller() borrows proposal state; record() retains its snapshot and exported history\n|   |   |-- Canonical history owns undo/redo; record() clears legacy past/future arrays\n|   |   `-- mutate() rejects accepted/archived edits; ready edits can return to draft\n|   |-- DiagramChangeSession.receipts retains signatures and prior mutation results\n|   |   |-- create / request:<requestId> / api:<requestId> support replay\n|   |   `-- Matching signature returns saved result before stale-version checks; mismatch conflicts\n|   |-- ChangeSessionRecords retains immutable blobs behind a mutable manifest\n|   |   |-- StoredDocument references baseline/proposed states and history header/checkpoints\n|   |   |-- write(): retain unchanged references, store replacements, publishJson(manifest)\n|   |   |-- Optional expected token prevents replacing a newer manifest generation\n|   |   `-- validated/previews caches hold at most 16 entries each; reads return document clones\n|   |-- projectCatalogs retains the authoritative ChangeSessionAcceptance receipt\n|   |   `-- If session write fails after publishing: list() projects accepted; get() repairs record\n|   `-- Runtime owners release transient work\n|       |-- ChangeSessionService.queues / ChangeSessionRecords queues serialize writes, then remove entries\n|       |-- PushIntegrationService.pending shares delivery execution; finally deletes its entry\n|       `-- DiffSessionWorkflowService owns starts, active AbortControllers, live runs and agent session\n|           |-- cancel() aborts; dispose() aborts active runs and disposes runtime\n|           `-- execute() finally saves artifacts, disposes session, saves run; completion clears active/live\n`-- [+D] Data dependency -- required inputs to results, independent of organizational boundaries\n    |-- ChangeSessionCapture [shared capture]\n    |   |-- context <- repositoryId + resolved commits/head + optional comparisonBase\n    |   |-- hunks <- repositories.captureHunks(context)\n    |   `-- documents <- published revisions + selected live snapshots, or original session baselines\n    |       `-- Same capture feeds workflow analysis and changes.create(); materialization reuses it\n    |-- DiagramChange[] <- refreshChanges(baseline, proposed, previous annotations)\n    |   |-- baseline = null -> type 3 canvas change\n    |   |-- revisionReviews/revisionSelections differ -> subtree-variant change\n    |   `-- Display-node or incident-edge difference -> diagram change; preserve matching annotations\n    |-- DiffTree hunk selection <- revision.nodeRefs + mappings + captured hunks\n    |   |-- writeDiffTree(): source line/nodeId -> stable nodeId -> hunkId targets\n    |   |-- resolveDiffTreeHunks(nodeIds): resolve node resources -> deduplicated hunkIds\n    |   `-- complete_diff_session(): captured hunk IDs minus mapped hunk IDs must be empty\n    |-- Acceptance payload <- changes + proposed documents + exported history + savedRevisionId\n    |   |-- changes.documentId selects affected documents; unrelated captured documents stay unpublished\n    |   |-- Live conflict decision <- current.document/name + captured baseline.document/name\n    |   `-- Replay/repair decision <- catalog receipt.requestId/sessionVersion + stored session.version\n    `-- Read projections require different subsets of the same stored generation\n        |-- readSummary() <- Manifest.summary\n        |-- readPreview() <- metadata + baseline/proposed blobs; omits histories and receipts\n        |-- read() <- documents + histories + receipts + DiffTree; returns manifest token\n        `-- readTreemaps() <- stored DiffTree + document previews + matching effective versions\n            `-- Version mismatch during assembly -> VERSION_CONFLICT; caller must retry",
+      "numberedLines": [
+        {
+          "line": 1,
+          "text": "Isolated Change Proposals -- pinned source 8ca143700ca4"
+        },
+        {
+          "line": 2,
+          "text": "|-- [M] Modular structure -- semantic boundaries, exposed contracts, dependencies"
+        },
+        {
+          "line": 3,
+          "text": "|   |-- Proposal review: ChangeSessionService"
+        },
+        {
+          "line": 4,
+          "text": "|   |   |-- Public: capture(), create(), apply(), update(), accept()"
+        },
+        {
+          "line": 5,
+          "text": "|   |   |-- Read views: list(), get(), preview(), snapshot(), readDiffTree(), readTreemaps()"
+        },
+        {
+          "line": 6,
+          "text": "|   |   |-- Private: serialize(), mutate(), controller(), record(), validateReady()"
+        },
+        {
+          "line": 7,
+          "text": "|   |   |   `-- Keep replay, history mutation and readiness rules behind the service"
+        },
+        {
+          "line": 8,
+          "text": "|   |   `-- Depends on DiagramChangeSessionRepository + DiagramRepository + CanvasSessionPort"
+        },
+        {
+          "line": 9,
+          "text": "|   |       |-- repositories: resolve pinned Git context and capture hunks"
+        },
+        {
+          "line": 10,
+          "text": "|   |       |-- projectCatalogs: read published baselines and acceptCanvasChanges()"
+        },
+        {
+          "line": 11,
+          "text": "|   |       `-- bridge: inspect live canvases; MappingDocumentController handles proposal edits"
+        },
+        {
+          "line": 12,
+          "text": "|   |-- Automated preparation: DiffSessionWorkflowService + DiffSessionTools"
+        },
+        {
+          "line": 13,
+          "text": "|   |   |-- Public workflow: start(), get(), cancel(), dispose()"
+        },
+        {
+          "line": 14,
+          "text": "|   |   |-- Depends on ChangeSessionService, agent, runtime and DiffSessionRunStore"
+        },
+        {
+          "line": 15,
+          "text": "|   |   `-- DiffSessionTools.tools(step) exposes capabilities by stage"
+        },
+        {
+          "line": 16,
+          "text": "|   |       |-- analyze: API discovery, frozen diagram search, captured hunks, source reader"
+        },
+        {
+          "line": 17,
+          "text": "|   |       |-- materialize: add create, exec, draw, mappings, update, DiffTree read, complete"
+        },
+        {
+          "line": 18,
+          "text": "|   |       `-- Private bound(): require this run's changeSessionId; reject another proposal"
+        },
+        {
+          "line": 19,
+          "text": "|   |-- Evidence and validity: DiagramChangeSession + ChangeSessionDiffTree"
+        },
+        {
+          "line": 20,
+          "text": "|   |   |-- validateChangeSession(): repository context, document states, history, acceptance"
+        },
+        {
+          "line": 21,
+          "text": "|   |   |-- writeDiffTree(): tree revision and full mapping replacement together"
+        },
+        {
+          "line": 22,
+          "text": "|   |   `-- validateDiffTree(): stable node identities and valid, unique hunk targets"
+        },
+        {
+          "line": 23,
+          "text": "|   |-- Durable records: ChangeSessionRecords"
+        },
+        {
+          "line": 24,
+          "text": "|   |   |-- Public: readSummary(), readPreview(), readDiffTree(), read(), write()"
+        },
+        {
+          "line": 25,
+          "text": "|   |   `-- Private manifest/blob machinery depends on ImmutableRecords + DiagramPersistence"
+        },
+        {
+          "line": 26,
+          "text": "|   `-- Push entry: PushIntegrationService"
+        },
+        {
+          "line": 27,
+          "text": "|       `-- Depends on PushIntegrationStore + PushSource + PushWorkflow; exports receive()"
+        },
+        {
+          "line": 28,
+          "text": "|-- [C] Call model -- invocations that prepare, edit and publish a proposal"
+        },
+        {
+          "line": 29,
+          "text": "|   |-- Optional entry: PushIntegrationService.receive(connectionId, event)"
+        },
+        {
+          "line": 30,
+          "text": "|   |   |-- Validate event; reuse matching pending/stored generation or reject ID conflict"
+        },
+        {
+          "line": 31,
+          "text": "|   |   |-- Non-branch, deleted, unchanged or no net changes -> skipped"
+        },
+        {
+          "line": 32,
+          "text": "|   |   `-- source.resolve() -> workflow.start({commits, head: after, comparisonBase: before})"
+        },
+        {
+          "line": 33,
+          "text": "|   |-- DiffSessionWorkflowService.start() -> begin() -> background execute()"
+        },
+        {
+          "line": 34,
+          "text": "|   |   |-- changes.capture() -> store context/prompts -> runtime.openSession()"
+        },
+        {
+          "line": 35,
+          "text": "|   |   |-- runAgentWorkflow(createDiffSessionWorkflow(...)) -> session.runStep(request)"
+        },
+        {
+          "line": 36,
+          "text": "|   |   |   |-- analyze: read frozen baselines and captured repository evidence"
+        },
+        {
+          "line": 37,
+          "text": "|   |   |   `-- materialize: tool callbacks operate on the run's isolated proposal"
+        },
+        {
+          "line": 38,
+          "text": "|   |   |       |-- create_diagram_change_session -> changes.create(input, capture)"
+        },
+        {
+          "line": 39,
+          "text": "|   |   |       |-- exec / draw_diagram / set_diagram_source_mappings -> agent.call(bound(input))"
+        },
+        {
+          "line": 40,
+          "text": "|   |   |       |-- update_diagram_change_session -> annotate changes and mark ready"
+        },
+        {
+          "line": 41,
+          "text": "|   |   |       `-- complete_diff_session -> require ready, nonempty changes, all hunks mapped"
+        },
+        {
+          "line": 42,
+          "text": "|   |   `-- changes.get(result.changeSessionId) -> verify own ready proposal -> completed"
+        },
+        {
+          "line": 43,
+          "text": "|   |       `-- Completion means ready for review; acceptance is a separate service call"
+        },
+        {
+          "line": 44,
+          "text": "|   |-- ChangeSessionService.apply(id, documentId, version, operations, requestId)"
+        },
+        {
+          "line": 45,
+          "text": "|   |   `-- mutate() -> controller(doc).applyUpdate(version, operations)"
+        },
+        {
+          "line": 46,
+          "text": "|   |       `-- record() -> refreshChanges() -> status = draft -> repository.write()"
+        },
+        {
+          "line": 47,
+          "text": "|   |-- ChangeSessionService.update({status: 'ready', expectedVersion, ...})"
+        },
+        {
+          "line": 48,
+          "text": "|   |   `-- mutate() -> validateReady() -> save versioned ready proposal"
+        },
+        {
+          "line": 49,
+          "text": "|   |       |-- Validate DiffTree, repository ownership, migrations and connection anchors"
+        },
+        {
+          "line": 50,
+          "text": "|   |       |-- Require changes; reject missing or cyclic DiagramChange.dependsOn references"
+        },
+        {
+          "line": 51,
+          "text": "|   |       `-- Added diagram requires an incoming edge from a diagram present in baseline"
+        },
+        {
+          "line": 52,
+          "text": "|   `-- ChangeSessionService.accept({changeSessionId, requestId, expectedVersion})"
+        },
+        {
+          "line": 53,
+          "text": "|       `-- serialize() -> get()"
+        },
+        {
+          "line": 54,
+          "text": "|           |-- Existing acceptance: matching request/version -> replay; mismatch -> conflict"
+        },
+        {
+          "line": 55,
+          "text": "|           `-- New acceptance: require expectedVersion + ready + validateReady()"
+        },
+        {
+          "line": 56,
+          "text": "|               |-- bridge.dispatch('document-state') for affected live documents"
+        },
+        {
+          "line": 57,
+          "text": "|               |   `-- Compare document stateKey and name with capture; changed -> conflict"
+        },
+        {
+          "line": 58,
+          "text": "|               |-- projectCatalogs.acceptCanvasChanges(affected proposed documents + history)"
+        },
+        {
+          "line": 59,
+          "text": "|               |   `-- Pass savedRevisionId as expectedRevisionId for published-baseline check"
+        },
+        {
+          "line": 60,
+          "text": "|               `-- finishAcceptance(receipt) -> accepted, version + 1 -> repository.write()"
+        },
+        {
+          "line": 61,
+          "text": "|-- [O] Ownership -- who retains state and releases runtime resources"
+        },
+        {
+          "line": 62,
+          "text": "|   |-- ChangeSessionService.capture() owns the frozen inputs supplied to create()"
+        },
+        {
+          "line": 63,
+          "text": "|   |   |-- Published settled representations provide initial baselines"
+        },
+        {
+          "line": 64,
+          "text": "|   |   |-- Selected live snapshots replace matching baselines; multiple workspaces need canvasId"
+        },
+        {
+          "line": 65,
+          "text": "|   |   `-- baselineChangeSessionId reuses original baselines and pinned context/hunks"
+        },
+        {
+          "line": 66,
+          "text": "|   |       `-- structuredClone() + forkHistory(): fresh proposal state from the captured originals"
+        },
+        {
+          "line": 67,
+          "text": "|   |-- ChangeSessionDocument retains baseline, proposed, version and history"
+        },
+        {
+          "line": 68,
+          "text": "|   |   |-- create() clones captured documents; createDocument() starts with baseline = null"
+        },
+        {
+          "line": 69,
+          "text": "|   |   |-- controller() borrows proposal state; record() retains its snapshot and exported history"
+        },
+        {
+          "line": 70,
+          "text": "|   |   |-- Canonical history owns undo/redo; record() clears legacy past/future arrays"
+        },
+        {
+          "line": 71,
+          "text": "|   |   `-- mutate() rejects accepted/archived edits; ready edits can return to draft"
+        },
+        {
+          "line": 72,
+          "text": "|   |-- DiagramChangeSession.receipts retains signatures and prior mutation results"
+        },
+        {
+          "line": 73,
+          "text": "|   |   |-- create / request:<requestId> / api:<requestId> support replay"
+        },
+        {
+          "line": 74,
+          "text": "|   |   `-- Matching signature returns saved result before stale-version checks; mismatch conflicts"
+        },
+        {
+          "line": 75,
+          "text": "|   |-- ChangeSessionRecords retains immutable blobs behind a mutable manifest"
+        },
+        {
+          "line": 76,
+          "text": "|   |   |-- StoredDocument references baseline/proposed states and history header/checkpoints"
+        },
+        {
+          "line": 77,
+          "text": "|   |   |-- write(): retain unchanged references, store replacements, publishJson(manifest)"
+        },
+        {
+          "line": 78,
+          "text": "|   |   |-- Optional expected token prevents replacing a newer manifest generation"
+        },
+        {
+          "line": 79,
+          "text": "|   |   `-- validated/previews caches hold at most 16 entries each; reads return document clones"
+        },
+        {
+          "line": 80,
+          "text": "|   |-- projectCatalogs retains the authoritative ChangeSessionAcceptance receipt"
+        },
+        {
+          "line": 81,
+          "text": "|   |   `-- If session write fails after publishing: list() projects accepted; get() repairs record"
+        },
+        {
+          "line": 82,
+          "text": "|   `-- Runtime owners release transient work"
+        },
+        {
+          "line": 83,
+          "text": "|       |-- ChangeSessionService.queues / ChangeSessionRecords queues serialize writes, then remove entries"
+        },
+        {
+          "line": 84,
+          "text": "|       |-- PushIntegrationService.pending shares delivery execution; finally deletes its entry"
+        },
+        {
+          "line": 85,
+          "text": "|       `-- DiffSessionWorkflowService owns starts, active AbortControllers, live runs and agent session"
+        },
+        {
+          "line": 86,
+          "text": "|           |-- cancel() aborts; dispose() aborts active runs and disposes runtime"
+        },
+        {
+          "line": 87,
+          "text": "|           `-- execute() finally saves artifacts, disposes session, saves run; completion clears active/live"
+        },
+        {
+          "line": 88,
+          "text": "`-- [+D] Data dependency -- required inputs to results, independent of organizational boundaries"
+        },
+        {
+          "line": 89,
+          "text": "    |-- ChangeSessionCapture [shared capture]"
+        },
+        {
+          "line": 90,
+          "text": "    |   |-- context <- repositoryId + resolved commits/head + optional comparisonBase"
+        },
+        {
+          "line": 91,
+          "text": "    |   |-- hunks <- repositories.captureHunks(context)"
+        },
+        {
+          "line": 92,
+          "text": "    |   `-- documents <- published revisions + selected live snapshots, or original session baselines"
+        },
+        {
+          "line": 93,
+          "text": "    |       `-- Same capture feeds workflow analysis and changes.create(); materialization reuses it"
+        },
+        {
+          "line": 94,
+          "text": "    |-- DiagramChange[] <- refreshChanges(baseline, proposed, previous annotations)"
+        },
+        {
+          "line": 95,
+          "text": "    |   |-- baseline = null -> type 3 canvas change"
+        },
+        {
+          "line": 96,
+          "text": "    |   |-- revisionReviews/revisionSelections differ -> subtree-variant change"
+        },
+        {
+          "line": 97,
+          "text": "    |   `-- Display-node or incident-edge difference -> diagram change; preserve matching annotations"
+        },
+        {
+          "line": 98,
+          "text": "    |-- DiffTree hunk selection <- revision.nodeRefs + mappings + captured hunks"
+        },
+        {
+          "line": 99,
+          "text": "    |   |-- writeDiffTree(): source line/nodeId -> stable nodeId -> hunkId targets"
+        },
+        {
+          "line": 100,
+          "text": "    |   |-- resolveDiffTreeHunks(nodeIds): resolve node resources -> deduplicated hunkIds"
+        },
+        {
+          "line": 101,
+          "text": "    |   `-- complete_diff_session(): captured hunk IDs minus mapped hunk IDs must be empty"
+        },
+        {
+          "line": 102,
+          "text": "    |-- Acceptance payload <- changes + proposed documents + exported history + savedRevisionId"
+        },
+        {
+          "line": 103,
+          "text": "    |   |-- changes.documentId selects affected documents; unrelated captured documents stay unpublished"
+        },
+        {
+          "line": 104,
+          "text": "    |   |-- Live conflict decision <- current.document/name + captured baseline.document/name"
+        },
+        {
+          "line": 105,
+          "text": "    |   `-- Replay/repair decision <- catalog receipt.requestId/sessionVersion + stored session.version"
+        },
+        {
+          "line": 106,
+          "text": "    `-- Read projections require different subsets of the same stored generation"
+        },
+        {
+          "line": 107,
+          "text": "        |-- readSummary() <- Manifest.summary"
+        },
+        {
+          "line": 108,
+          "text": "        |-- readPreview() <- metadata + baseline/proposed blobs; omits histories and receipts"
+        },
+        {
+          "line": 109,
+          "text": "        |-- read() <- documents + histories + receipts + DiffTree; returns manifest token"
+        },
+        {
+          "line": 110,
+          "text": "        `-- readTreemaps() <- stored DiffTree + document previews + matching effective versions"
+        },
+        {
+          "line": 111,
+          "text": "            `-- Version mismatch during assembly -> VERSION_CONFLICT; caller must retry"
+        }
+      ]
+    }
+  ]
+}

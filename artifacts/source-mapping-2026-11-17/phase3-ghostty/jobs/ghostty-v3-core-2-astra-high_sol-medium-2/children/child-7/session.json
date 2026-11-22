@@ -1,0 +1,19 @@
+{
+  "id": "child-7",
+  "name": "terminal-fix",
+  "assignment": "Audit n55-n68 with emphasis complete declarations per user (prior mapping partial is unacceptable). Return full mappings. Specifically print at Terminal.zig:1893 extends far beyond 1925, resize at 4912 extends beyond 4980; cursorLeft beyond 2597. Read full named functions incrementally. Types ScreenSet, Screen, PageList may be module-level types; cover fields/operations explaining labels rather than all embedded tests. Return JSON.",
+  "model": "gpt-6-sol",
+  "effort": "medium",
+  "status": "generating",
+  "queuedAt": "2026-11-19T04:18:56.789Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-19T04:18:56.794Z",
+  "sessionId": "01a1f207-729e-74aa-a961-c2b8af8ecfc5",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-koe4smto-agent-repository-QOMjtw-checkout--/2026-11-19T04-18-56-798Z_01a1f207-729e-74aa-a961-c2b8af8ecfc5.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase3-koe4smto/agent-repository-QOMjtw/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

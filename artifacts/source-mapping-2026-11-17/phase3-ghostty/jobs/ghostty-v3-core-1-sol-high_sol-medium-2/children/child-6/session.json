@@ -1,0 +1,19 @@
+{
+  "id": "child-6",
+  "name": "geometry-shutdown",
+  "assignment": "Map nodes n71-n89 ONLY, geometry/config lifecycle and shutdown. Return partial JSON mappings checked with nl -ba.",
+  "model": "gpt-6-sol",
+  "effort": "medium",
+  "status": "generating",
+  "queuedAt": "2026-11-19T04:14:26.456Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-19T04:15:05.500Z",
+  "sessionId": "01a1f203-eb1f-725f-b260-a3e3740ddec8",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-l6ueouwg-agent-repository-KYeQyW-checkout--/2026-11-19T04-15-05-503Z_01a1f203-eb1f-725f-b260-a3e3740ddec8.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase3-l6ueouwg/agent-repository-KYeQyW/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "inputHash": "42572fb63d18f7316fba7a0c06e53037403e823067ca1a49c67a3865dbb1be6e",
+  "modelCalls": 0,
+  "checks": [
+    "materialize",
+    "save",
+    "restore",
+    "reopen-for-editing",
+    "edit",
+    "save again",
+    "load output"
+  ],
+  "at": "2026-11-14T18:58:49.839Z",
+  "model": {
+    "provider": "openai-codex",
+    "model": "gpt-6-sol"
+  },
+  "contextHash": "00b9ed11b05d12f61ea9897c890dca21baf63782b67254a23c6fb80d94ae0fc2",
+  "promptSha256": "9efae5ac4de1a1934c3e9bd4c5a6640155db583c920edbd94a7cd0c9a40517ea",
+  "sourceCommit": "03f2168deba364103c2450ca9b8168cd1fc9ddc5",
+  "tools": [
+    "read",
+    "bash"
+  ],
+  "sourcePath": "application/core/agents/agentWorkflow.ts",
+  "sourceLineHash": "f48846f63e3a569dd2c8bc91e69381ecf9885df0f42d6240cc1677e8b40665c7"
+}

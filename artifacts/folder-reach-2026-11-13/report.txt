@@ -1,0 +1,127 @@
+FOLDER REACH — RECORDED STATIC GRAPH
+
+Source commit: 9620266136dd6316259b8af65b52469e5903a8f8
+Snapshot: snapshot:1afdca54913a42658f88f9af94125567522ca8b22b5326f348c596a9b6beaeda
+Input SHA256: 3a9ed08bc8c3b14bbf1e496644682fa36cb7cc0b90a15f7ff109c6d3956b8d0e
+Scope: 508 production source files, 105 immediate directories, 128 classes.
+
+RULES
+Use the saved graph, not the current working tree. Production roots are src, domain, application, infrastructure.
+Exclude test-layer entities, test/spec/integration filenames, test/fixture/benchmark directories and .d.ts files.
+Only analyzed files and source/synthetic endpoints are eligible. External and unknown targets are excluded.
+Aggregate containment descendants under the outermost class. Otherwise aggregate under the outermost interface, type, function or binding.
+This leaves the analyzer implementation in the corpus; it is not manually excluded.
+One vote per outside folder per concept and relationship type; exclude the provider's own folder.
+Calls includes calls and constructs. Reads and writes use dependency edges. Reactive includes reactive/selects/context-read/effect-dependency.
+Lifecycle includes creates/retains/subscribes/unsubscribes/disposes. No alias inference or implementation matching is added.
+Include resolved and inferred relations. No composite score or manual concept memberships.
+Outgoing counts reverse the question: distinct outside provider folders used by each concept.
+Fine grouping is the full immediate parent directory.
+Coarse grouping caps folders at 4 segments for src/features and src/server, otherwise 3; shallower folders remain unchanged.
+
+TOP CLASSES BY INCOMING CALLER FOLDERS
+11  MappingDocumentController  [coarse: 11]  domain/mapping/workspace/mappingDocumentController.ts
+ 9  ApplicationError  [coarse: 9]  application/core/errors.ts
+ 7  DefaultCanvasHistoryService  [coarse: 7]  domain/core/diagrams/canvasHistoryService.ts
+ 5  AgentContext  [coarse: 5]  domain/core/agents/agentContext.ts
+ 5  PiAgentRuntime  [coarse: 2]  infrastructure/core/agents/agentRuntime.ts
+ 4  AgentDiagrammingSessionService  [coarse: 4]  application/mapping/agent/sessionService.ts
+ 4  MappingWorkspaceService  [coarse: 4]  application/mapping/workspace/workspaceService.ts
+ 3  AgentContextLibrary  [coarse: 3]  application/mapping/agent/agentContextLibrary.ts
+ 3  CanvasApiProjection  [coarse: 3]  application/mapping/agent/apiProjection.ts
+ 3  ChangeSessionService  [coarse: 3]  application/mapping/changes/changeSessionService.ts
+ 3  CompareSessionService  [coarse: 3]  application/mapping/compare/compareSessionService.ts
+ 3  MappingDiagramService  [coarse: 3]  application/mapping/diagrams/diagramService.ts
+ 3  DiagramPersistence  [coarse: 3]  domain/core/diagrams/diagramPersistence.ts
+ 3  CanvasCursorCopy  [coarse: 3]  src/features/mapping/canvas/cursorCopy.ts
+ 3  SourcePaneViewState  [coarse: 3]  src/features/mapping/source-pane/sourcePaneViewState.ts
+
+TOP CONCEPTS: CALLS
+18  diagramContentNodes (function)  [coarse: 17]  domain/core/diagrams/diagramContentNodes.ts
+11  sha256 (function)  [coarse: 11]  domain/core/sha256.ts
+11  MappingDocumentController (class)  [coarse: 11]  domain/mapping/workspace/mappingDocumentController.ts
+10  DiagramRepository (interface)  [coarse: 10]  application/core/ports/diagramRepository.ts
+10  sendJson (function)  [coarse: 3]  src/server/http/http.ts
+ 9  ApplicationError (class)  [coarse: 9]  application/core/errors.ts
+ 9  documentFromHistory (function)  [coarse: 9]  domain/core/diagrams/canvasHistory.ts
+ 9  flattenGrid (function)  [coarse: 9]  domain/core/diagrams/lineGrid.ts
+ 9  readBody (function)  [coarse: 2]  src/server/http/http.ts
+ 8  ProjectCatalogRepository (interface)  [coarse: 8]  application/core/ports/projectCatalogRepository.ts
+ 8  queryDiagramSourceContext (function)  [coarse: 8]  domain/core/diagrams/diagram.ts
+ 8  resolveScene (function)  [coarse: 8]  domain/core/diagrams/lineGrid.ts
+
+TOP CONCEPTS: READS
+ 8  Diagram (interface)  [coarse: 8]  domain/core/diagrams/diagram.ts
+ 6  ControllerSnapshot (interface)  [coarse: 6]  domain/mapping/workspace/mappingDocumentController.ts
+ 6  MappingCanvasState (interface)  [coarse: 6]  domain/mapping/workspace/mappingWorkspace.ts
+ 5  DiagramRevision (interface)  [coarse: 5]  domain/core/diagrams/diagramRevisionEditor.ts
+ 5  CanvasDisplayNode (type)  [coarse: 5]  domain/mapping/workspace/canvasDisplayNode.ts
+ 5  MappingGridDocument (interface)  [coarse: 5]  domain/mapping/workspace/mappingGrid.ts
+ 5  useTheme (binding)  [coarse: 5]  src/shared/theme/theme.ts
+ 4  generatedWorkflow (binding)  [coarse: 4]  domain/core/diagrams/generatedCanvas.ts
+ 4  agentToolSchemas (binding)  [coarse: 4]  domain/mapping/agent/contracts.ts
+ 4  PiAgentRuntime (class)  [coarse: 1]  infrastructure/core/agents/agentRuntime.ts
+ 3  DiagramContent (type)  [coarse: 3]  domain/core/diagrams/diagramContent.ts
+ 3  selectedDiagramIds (binding)  [coarse: 3]  domain/mapping/selection/selectionState.ts
+
+TOP CONCEPTS: WRITES
+ 4  PiAgentRuntime (class)  [coarse: 1]  infrastructure/core/agents/agentRuntime.ts
+ 2  CanvasRuntime (class)  [coarse: 2]  src/features/mapping/tldraw/CanvasRuntimeContext.tsx
+ 1  ChatGeneration (interface)  [coarse: 1]  domain/mapping/agent-chat/agentChat.ts
+ 1  SelectionGestureController (class)  [coarse: 1]  domain/mapping/selection/selectionGesture.ts
+ 1  DisplayState (interface)  [coarse: 1]  domain/mapping/workspace/displayModel.ts
+
+TOP CONCEPTS: REACTIVE
+ 6  CanvasSession (class)  [coarse: 6]  src/features/mapping/workspace/canvasSession.ts
+ 3  MappingCanvasState (interface)  [coarse: 3]  domain/mapping/workspace/mappingWorkspace.ts
+ 2  chatCanvasTargetSchema (binding)  [coarse: 2]  domain/mapping/agent-chat/agentChat.ts
+ 2  ControllerSnapshot (interface)  [coarse: 2]  domain/mapping/workspace/mappingDocumentController.ts
+ 2  MappingGridDocument (interface)  [coarse: 2]  domain/mapping/workspace/mappingGrid.ts
+ 1  GridSize (interface)  [coarse: 1]  domain/core/diagrams/lineGrid.ts
+ 1  LineGridScene (interface)  [coarse: 1]  domain/core/diagrams/lineGrid.ts
+ 1  gitDiffHunkSchema (binding)  [coarse: 1]  domain/core/diffs/gitDiffHunk.ts
+ 1  ContentPresentation (interface)  [coarse: 1]  domain/core/profiles/domainProfile.ts
+ 1  ProjectRecord (interface)  [coarse: 1]  domain/core/records/domain.ts
+ 1  SourceRange (interface)  [coarse: 1]  domain/core/records/domain.ts
+ 1  CodeRepoService (interface)  [coarse: 1]  domain/core/source/codeRepoService.ts
+
+TOP CONCEPTS: LIFECYCLE
+ 2  CanvasSession (class)  [coarse: 2]  src/features/mapping/workspace/canvasSession.ts
+ 1  PiAgentRuntime (class)  [coarse: 1]  infrastructure/core/agents/agentRuntime.ts
+ 1  observeCanvasSelection (function)  [coarse: 1]  src/features/mapping/agent/liveCanvasPublisher.ts
+ 1  MappingEditorCanvas (function)  [coarse: 1]  src/features/mapping/tldraw/MappingEditorCanvas.tsx
+
+CONTROLLER CALLER FOLDERS
+application/mapping/agent-chat
+application/mapping/changes
+application/mapping/rollup
+src/features/mapping
+src/features/mapping/agent
+src/features/mapping/canvas
+src/features/mapping/canvas-views
+src/features/mapping/evals
+src/features/mapping/source-pane
+src/features/mapping/tldraw
+src/features/mapping/workspace
+
+INTERPRETATION AND LIMITS
+The controller leads classes in caller-folder reach (11); CanvasSession leads reactive reach (6); Diagram leads reads (8).
+DefaultCanvasHistoryService is third among classes by caller reach (7), behind ApplicationError (9).
+These core results retain the same counts under the coarse grouping. This is a limited sensitivity check, not proof under every grouping.
+diagramContentNodes leads all concepts in call reach (18, coarse 17). sha256 and HTTP helpers also rank highly.
+This supports a canvas-centered cluster, not a unique center or architectural importance inferred from degree alone.
+Some strong class call edges are inferred dispatch candidates. Recorded graph gaps and framework approximations remain.
+Fields declared on interfaces belong to those interfaces, not to the class that returns them; controller reads being zero does not mean its state is unused.
+State and lifecycle edges often stay local, and allocation ownership is not runtime instance identity.
+The previous 56-user controller finding counted users of a local controller binding; this analysis counts outside folders against declarations instead.
+Folder boundaries are only mechanical proxies for subsystems; architecture layers are not merged by shared feature names.
+No HTTP/RPC stitching, runtime frequency, PageRank, betweenness, or matched source-join score against the hand diagram was computed.
+Comparison with the hand-authored canvas model is a qualitative comparison of named concepts from its saved export.
+
+ARTIFACTS
+results.json: exact snapshot, per-concept incoming/outgoing folder lists, scores, and up to two evidence edges per folder/channel.
+*-concepts.csv: complete fine/coarse rankings and outgoing counts.
+*-edges.csv: directed consumer-folder to provider-folder graph per channel, with relation counts.
+validation.json: independent range-based checks for three leading results and repeat-output hashes.
+Reproduce: python3 artifacts/folder-reach-2026-11-13/analyze.py
+No application code was changed.

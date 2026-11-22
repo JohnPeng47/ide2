@@ -1,0 +1,19 @@
+{
+  "id": "child-4",
+  "name": "render",
+  "assignment": "Map n66–n77 renderer branch. Use mktemp -d /tmp/render-map.XXXXXX if needed. Return compact node scope and path/ranges/roles (short codes and parent union refs OK), plus notes. Trace both graphics backends.",
+  "model": "gpt-6.2-sol",
+  "effort": "high",
+  "status": "generating",
+  "queuedAt": "2026-11-22T03:29:48.732Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-22T03:35:10.241Z",
+  "sessionId": "01a20152-72af-7565-9fd8-42ce20e8bf85",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-1kmg0f14-agent-repository-DG1M8J-checkout--/2026-11-22T03-35-10-255Z_01a20152-72af-7565-9fd8-42ce20e8bf85.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase4-1kmg0f14/agent-repository-DG1M8J/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

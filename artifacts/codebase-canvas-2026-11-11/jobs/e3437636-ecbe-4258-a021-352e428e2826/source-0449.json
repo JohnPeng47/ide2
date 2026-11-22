@@ -1,0 +1,1 @@
+{"path":"infrastructure/core/persistence/context.ts","text":"import type { DiagramRepository } from '../../../application/core/ports/diagramRepository';\nexport type PersistenceContext = Pick<DiagramRepository, 'checkoutRoot' | 'storeRoot' | 'projectCatalogs'>;\n"}

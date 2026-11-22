@@ -1,0 +1,19 @@
+{
+  "id": "child-3",
+  "name": "d1teardown",
+  "assignment": "Map d1 n29-n48. Return compact verified lines + scopes/roles; especially runtime close path.",
+  "model": "gpt-6.2-sol",
+  "effort": "high",
+  "status": "generating",
+  "queuedAt": "2026-11-22T15:27:50.288Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-22T15:31:58.782Z",
+  "sessionId": "01a203e2-b4c8-7612-a545-3855545571d7",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase5-kerh8ebv-agent-repository-tUNAhF-checkout--/2026-11-22T15-31-58-792Z_01a203e2-b4c8-7612-a545-3855545571d7.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase5-kerh8ebv/agent-repository-tUNAhF/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

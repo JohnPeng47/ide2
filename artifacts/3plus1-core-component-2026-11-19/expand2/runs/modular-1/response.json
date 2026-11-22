@@ -1,0 +1,310 @@
+{
+  "output": {
+    "explanation": "Expanded modular-core by pulling its terminal and font branches downward into two detailed peripheral diagrams. The central diagram retains application coordination, Surface-owned execution and policy boundaries; the peripherals distinguish public types from owned instances and private implementation details. session-io and session-rendering remain unchanged because they are already focused. Checked the pinned checkout's exports, ownership, synchronization and dependencies. Clarifications include fresh caller-owned vtStream parser state, Ghostty-only search.Thread, public screen/font types despite nested ownership, and SharedGrid locking limitations. Preserved all existing edges, retargeting moved concepts, and connected font shaping directly to terminal snapshots.",
+    "diagrams": [
+      {
+        "id": "modular-core",
+        "ascii": "Ghostty's surface-centered core\n|  Nesting shows module contents or explicitly owned instances; -> means uses.\n|\n|-- App - application-wide coordination (src/App.zig)\n|   |-- Public: create/destroy, tick, addSurface/deleteSurface, updateConfig\n|   |-- Registry: runtime-surface pointers, focus and application actions\n|   |-- Mailbox: public queue contract; tick drains requests on the app thread\n|   |-- Owned shared instances: font.SharedGridSet and optional renderer.Device\n|   |-- -> apprt actions; Surface config dispatch; input application bindings\n|   `-- Source: src/App.zig:22-198,563-613\n|\n|-- apprt - native UI boundary, not a Surface implementation detail\n|   |-- Public: runtime App/Surface, Action/Target, clipboard types, surface.Mailbox\n|   |-- Compile-time adapters: executable GTK/none, library embedded, WASM browser\n|   |-- Runtime owns window/tab/split interpretation; core receives surface events\n|   `-- Source: src/apprt.zig:1-53; src/Surface.zig:1-16\n|\n|-- Surface - one interactive terminal session (src/Surface.zig)\n|   |-- Public: init/deinit/close, draw, handleMessage, updateConfig\n|   |   |-- key/text/mouseButton/scroll/preedit callbacks; size/focus callbacks\n|   |   `-- completeClipboardRequest, performBindingAction; Mailbox/Message aliases\n|   |-- Event policy and retained state\n|   |   |-- Keyboard (public type): sequences and key-table stack\n|   |   |-- Private Mouse/Search types; pressed-key state and optional Inspector\n|   |   |-- Private maybeHandleBinding precedes private encodeKey\n|   |   `-- Selection, links, clipboard permissions and search orchestration\n|   |-- Owned execution instances\n|   |   |-- Process/IO: termio.Termio + termio.Thread + OS thread [expanded]\n|   |   |   `-- -> renderer.State mutex, renderer wakeup and mailbox\n|   |   |-- Rendering: Renderer + renderer.Thread + OS thread [expanded]\n|   |   |   `-- -> IO-owned Terminal through shared State; app font grid/device\n|   |   `-- Shared State: terminal pointer, allocated mutex, preedit and mouse data\n|   |-- Lifecycle: stop search, join render/IO workers, then release shared state\n|   |-- Policy: owned DerivedConfig, conditional state and shared-font grid key\n|   |-- -> apprt callbacks/actions; input codecs; terminal selection/text/search\n|   |-- -> Config-derived settings; font.SharedGridSet.ref/deref\n|   `-- Source: src/Surface.zig:69-153,210-303,477-765,829-875,2987,3326\n|\n|-- terminal - reusable semantics and state [expanded]\n|   |-- Public Terminal, Stream/Parser and read interfaces\n|   |-- Termio owns Terminal; renderer owns its RenderState snapshot\n|   `-- Semantic model is independent of Surface, PTY and graphics backends\n|\n|-- font - shared resources and text shaping [expanded]\n|   |-- Public SharedGridSet/SharedGrid; Shaper/ShaperCache\n|   |-- App owns the set; Surface holds a grid key, renderer uses the grid\n|   `-- -> terminal.RenderState cells; Config policy; renderer.CellSize\n|\n|-- input - public vocabulary and byte codecs; Surface retains event policy\n|   |-- Public: KeyEvent, Mods, MouseButton, Keymap, Binding.Trigger/Action/Parser\n|   |   `-- Binding grammar: flags, multi-key sequences and chained actions\n|   |-- Public: key_encode.encode, mouse_encode.encode, paste.encode/encodeWriter\n|   |   |-- Legacy/Kitty keyboard and mouse protocols; paste framing/filtering\n|   |   `-- paste.isSafe is separate: encoding does not check paste safety\n|   |-- -> terminal modes via Options.fromTerminal; codecs do not queue writes\n|   `-- Source: src/input.zig:1-55; input/Binding.zig:1-100;\n|       src/input/key_encode.zig:12-96; mouse_encode.zig:13-81; paste.zig:1-47,140-196\n|\n`-- config - typed policy and conditional reconfiguration\n    |-- Public Config: load/default, loadFile/loadCliArgs, finalize, clone\n    |   `-- changeConditionalState; ConditionalState and typed settings\n    |-- Implementation: file/CLI loading, recursive includes, themes, diagnostics\n    |   `-- Arena-backed values and replay steps rebuild conditional settings\n    |-- -> input bindings/remaps; font/terminal/renderer setting value types\n    |-- App distributes changes; Surface/IO/renderer retain derived settings\n    `-- Source: src/config/Config.zig:13-55,4056-4110,4247-4552,4751,5192-5205;\n        src/App.zig:169-198; src/Surface.zig:144-153",
+        "position": {
+          "column": 0,
+          "row": 0
+        }
+      },
+      {
+        "id": "session-io",
+        "ascii": "termio - Surface-owned execution, module exported by src/termio.zig\n|\n|-- Public Termio: init/deinit, processOutput, queueMessage, resize, getProcessInfo\n|   |-- Owns Terminal, Backend, DerivedConfig and persistent StreamHandler.Stream\n|   |-- Borrows renderer.State and renderer/surface mailboxes\n|   `-- processOutput: acquire State.mutex, parse bytes, schedule repaint\n|       `-- Private processOutputLocked: inspector tracing or bulk nextSlice\n|\n|-- Backend - public tagged union; only exec is implemented at this commit\n|   `-- Exec - PTY/command transport\n|       |-- Private Subprocess: command, PTY and shell-integration lifecycle\n|       |-- Public ReadThread: platform-specific read pipeline\n|       |   |-- POSIX io-gather: read/poll into bounded rotating buffers\n|       |   |-- POSIX io-reader: consume batches -> Termio.processOutput\n|       |   |   `-- yieldToDemand between batches lets renderer acquire the lock\n|       |   `-- Windows: serial blocking read/process loop, no gather stage\n|       `-- threadExit stops subprocess and joins the reader pipeline\n|\n|-- Public Thread + Message/Mailbox - asynchronous write/control plane\n|   |-- threadMain runs the writer event loop; backend performs PTY writes\n|   |-- Private timers: coalesced resize, selection scroll, sync-output timeout\n|   `-- Surface writes and VT replies enter the same control path\n|\n|-- Public StreamHandler - application-aware VT adapter\n|   |-- Stream = terminal.Stream(StreamHandler); state survives across reads\n|   |-- Retains APC/DCS handlers, clipboard transactions/grants, optional tmux viewer\n|   |-- -> terminal edits/protocol types; termio mailbox for replies/control\n|   `-- -> Surface mailbox for title, clipboard and resize requests\n|\n|-- -> Rendering: shared State mutex, repaint wakeup and renderer mailbox\n|-- -> Surface: child-status messages; -> Config: derived settings/Exec options\n`-- Source: src/termio.zig:20-33; termio/Termio.zig:29-74,705-763,857;\n    src/termio/backend.zig:13-25; Exec.zig:86-165,196-229,587,1269-1524;\n    src/termio/Thread.zig:1-96; stream_handler.zig:19-108",
+        "position": {
+          "column": 100,
+          "row": 0
+        }
+      },
+      {
+        "id": "session-rendering",
+        "ascii": "renderer - Surface-owned display, module exported by src/renderer.zig\n|\n|-- Public Renderer = GenericRenderer(GraphicsAPI)\n|   |-- Public: updateFrame/drawFrame, setFontGrid, setScreenSize, changeConfig\n|   |-- Snapshot phase in updateFrame\n|   |   |-- State.lockDemand/unlockDemand encloses RenderState.beginUpdate\n|   |   |-- Also updates viewport/image state and captures overlays under the lock\n|   |   `-- RenderState.endUpdate runs after unlock, before consuming the snapshot\n|   |-- Frame assembly: cell/image buffers, shaping cache, uniforms and swap chain\n|   |   `-- draw_mutex protects state shared with drawFrame\n|   `-- Presentation: GPU draw, custom shaders and backend-dependent exported frames\n|\n|-- Public Thread + Message - render scheduling\n|   |-- Mailbox and wakeups; immediate draw handle\n|   |-- Cursor blink, shader/Kitty animation timers, scrollback compression\n|   `-- Borrows Renderer, State and runtime surface; Surface owns worker lifetimes\n|\n|-- Public State - shared access contract, NOT terminal-state ownership\n|   |-- Terminal pointer, mutex pointer, inspector, preedit and mouse overlay data\n|   |-- lockDemand/unlockDemand/yieldToDemand coordinate fairer access with IO\n|   `-- Mutex protects referenced member data, not the State container itself\n|\n|-- Graphics implementation\n|   |-- Private GraphicsAPI selection: Metal or OpenGL at compile time\n|   |-- Public Device alias; App owns the optional shared device instance\n|   `-- Public Metal/OpenGL and GenericRenderer exports allow backend-specific use\n|\n|-- -> terminal.RenderState: snapshots, dirty state, selections and image data\n|-- -> font: shared grid, shaping, glyph rasterization, metrics and atlases\n|-- -> apprt/Surface: presentation and status messages; -> Config: derived policy\n`-- Source: src/renderer.zig:15-45; renderer/State.zig:13-104;\n    src/renderer/Thread.zig:1-87; generic.zig:90-155,1317,1371-1567,1716,2171,2249",
+        "position": {
+          "column": 100,
+          "row": 40
+        }
+      },
+      {
+        "id": "terminal-model",
+        "ascii": "terminal - reusable semantic model (src/terminal/main.zig)\n|  Nested state branches show owned instances; types are also public exports.\n|\n|-- Public Terminal - mutation API and retained state\n|   |-- init/deinit, print/printSlice, resize, vtStream/vtHandler\n|   |-- Modes, colors, dimensions, tabstops, title/pwd and cursor policy\n|   `-- Owned ScreenSet: active key/pointer, screen map and generations\n|       |-- Public get/getInit/switchTo; alternate screen initialized lazily\n|       `-- Owned Screens: cursor, tracked selection, charset and dirty flags\n|           |-- Per-screen Kitty keyboard/images and semantic prompt state\n|           `-- Owned PageList: viewport, tracked Pins and allocation pools\n|               `-- Private Node: resident Page or compressed representation\n|                   `-- Page storage: rows/cells, styles and text metadata\n|\n|-- Public decoding and semantic adapter interfaces\n|   |-- Stream(Handler): init/deinit, next/nextSlice; dispatches StreamAction\n|   |   |-- Owns handler, Parser, UTF8Decoder and optional continuation tracker\n|   |   `-- Parser: incremental VT state and OSC parsing; APC/DCS events to handler\n|   |-- TerminalStream = Stream(stream_terminal.Handler)\n|   |   |-- Handler borrows Terminal; owns APC/DCS protocol state\n|   |   `-- Optional effects callbacks for replies, bells, title and clipboard\n|   `-- Terminal.vtStream creates fresh parser state, not a retained Terminal field\n|       `-- Caller must reuse/deinit stream; default effects do not emit replies\n|\n|-- Public read/inspection interfaces - not children of a Terminal instance\n|   |-- Selection: Pin-based ranges; Screen.select maintains tracking\n|   |-- search: Terminal/Screen/PageList/Viewport/Active search APIs\n|   |   `-- Thread: Ghostty-only xev worker; exported as void for library builds\n|   |-- formatter: Terminal/Screen/PageList/Page formatters; plain/VT/HTML\n|   `-- RenderState: renderer-independent, caller-owned incremental snapshot\n|       |-- beginUpdate: requires exclusive Terminal access; copies dirty state\n|       |-- endUpdate: completes deferred work using snapshot-owned memory\n|       `-- Rows/cells, styles, selection and image placements for consumers\n|\n|-- -> Used by Termio for mutation, Surface for interaction, renderer for snapshots\n|-- Boundary: semantic model needs no Surface, PTY or graphics backend\n`-- Source: src/terminal/main.zig:34-73; Terminal.zig:48-105,405-428;\n    ScreenSet.zig:17-110; Screen.zig:37-88; PageList.zig:51-106;\n    stream.zig:588-671; stream_terminal.zig:31-90; render.zig:24-130;\n    search.zig:5-16; formatter.zig:24-28,251,583,909,1035",
+        "position": {
+          "column": 0,
+          "row": 80
+        }
+      },
+      {
+        "id": "font-resources",
+        "ascii": "font - shared grid resources and shaping (src/font/main.zig)\n|  Nesting shows module contents or explicitly owned instances, not consumers.\n|\n|-- Public SharedGridSet - App-owned resource registry\n|   |-- ref(DerivedConfig, size) -> Key + grid; deref(Key) releases a reference\n|   |-- Owns keyed/ref-counted grid map, Library and optional Discover\n|   |-- Private collection(): constructs configured/deferred font collection\n|   `-- Map has a mutex; ref is nevertheless documented NOT thread-safe\n|\n|-- Public SharedGrid - instances owned by the set, shared across surfaces\n|   |-- getIndex: cached resolution; loads deferred faces under the grid lock\n|   |-- renderGlyph/renderCodepoint: cached rasterization into owned atlases\n|   |-- Owns codepoint/glyph caches, grayscale/color Atlas and Metrics\n|   |-- Owned CodepointResolver (also a public font type)\n|   |   |-- getIndex: style/presentation, overrides, sprite and fallback policy\n|   |   |-- Owns Collection and descriptor cache; borrows Discover/codepoint map\n|   |   `-- Owned Collection (also public): priority-ordered faces by style\n|   |       `-- Loaded Face and DeferredFace entries; deferred loading options\n|   |-- RwLock: methods lock caches; direct atlas access requires caller locking\n|   `-- cellSize -> renderer.CellSize (not thread-safe); change grid, not its size\n|\n|-- Public shape module - independent of SharedGrid instance ownership\n|   |-- Shaper alias: compile-time HarfBuzz/CoreText/noop/web_canvas selection\n|   |-- RunOptions -> terminal.RenderState.Cell rows and a borrowed SharedGrid\n|   |-- RunIterator/TextRun: single-row runs, font index and position-independent hash\n|   |   `-- -> SharedGrid resolution; selection/cursor boundaries split runs\n|   |-- Shaper produces glyph-index cells and offsets, not GPU draw calls\n|   `-- Cache (ShaperCache alias): get/put; owns copies of shaped cells by run hash\n|\n|-- Other public building blocks: Face, DeferredFace, Atlas, Metrics, sprite\n|-- -> Config font policy; renderer owns its shaper/cache and uses shared atlases\n|-- -> terminal snapshots supply shaping input; terminal does not depend on font\n`-- Source: src/font/main.zig:7-31; SharedGridSet.zig:35-105,156-178,413;\n    SharedGrid.zig:41-65,143-197,379; CodepointResolver.zig:33-63,124;\n    Collection.zig:1-15,35-83; shape.zig:8-36,42-85;\n    shaper/run.zig:10-52,89-100; shaper/Cache.zig:20-77",
+        "position": {
+          "column": 100,
+          "row": 80
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": {
+          "diagram": "modular-core",
+          "line": 28
+        },
+        "target": {
+          "diagram": "session-io",
+          "line": 1
+        },
+        "label": "Expands Surface-owned IO instances"
+      },
+      {
+        "source": {
+          "diagram": "modular-core",
+          "line": 30
+        },
+        "target": {
+          "diagram": "session-rendering",
+          "line": 1
+        },
+        "label": "Expands Surface-owned rendering instances"
+      },
+      {
+        "source": {
+          "diagram": "session-io",
+          "line": 30
+        },
+        "target": {
+          "diagram": "session-rendering",
+          "line": 18
+        },
+        "label": "Shared terminal-access mutex"
+      },
+      {
+        "source": {
+          "diagram": "session-io",
+          "line": 30
+        },
+        "target": {
+          "diagram": "session-rendering",
+          "line": 14
+        },
+        "label": "Repaint wakeups and renderer messages"
+      },
+      {
+        "source": {
+          "diagram": "session-io",
+          "line": 4
+        },
+        "target": {
+          "diagram": "modular-core",
+          "line": 39
+        },
+        "label": "Owns an instance of reusable Terminal"
+      },
+      {
+        "source": {
+          "diagram": "session-io",
+          "line": 28
+        },
+        "target": {
+          "diagram": "modular-core",
+          "line": 21
+        },
+        "label": "Host requests through Surface mailbox"
+      },
+      {
+        "source": {
+          "diagram": "session-rendering",
+          "line": 28
+        },
+        "target": {
+          "diagram": "terminal-model",
+          "line": 30
+        },
+        "label": "Consumes two-phase terminal snapshots"
+      },
+      {
+        "source": {
+          "diagram": "session-rendering",
+          "line": 29
+        },
+        "target": {
+          "diagram": "modular-core",
+          "line": 44
+        },
+        "label": "Uses shared font resources and shaping"
+      },
+      {
+        "source": {
+          "diagram": "session-rendering",
+          "line": 25
+        },
+        "target": {
+          "diagram": "modular-core",
+          "line": 8
+        },
+        "label": "Borrows app-scoped device"
+      },
+      {
+        "source": {
+          "diagram": "session-rendering",
+          "line": 30
+        },
+        "target": {
+          "diagram": "modular-core",
+          "line": 13
+        },
+        "label": "Runtime presentation and status boundary"
+      },
+      {
+        "source": {
+          "diagram": "session-io",
+          "line": 31
+        },
+        "target": {
+          "diagram": "modular-core",
+          "line": 59
+        },
+        "label": "Derives IO and subprocess policy"
+      },
+      {
+        "source": {
+          "diagram": "session-rendering",
+          "line": 30
+        },
+        "target": {
+          "diagram": "modular-core",
+          "line": 59
+        },
+        "label": "Derives rendering policy"
+      },
+      {
+        "source": {
+          "diagram": "modular-core",
+          "line": 39
+        },
+        "target": {
+          "diagram": "terminal-model",
+          "line": 1
+        },
+        "label": "Expands terminal state, decoding and read interfaces"
+      },
+      {
+        "source": {
+          "diagram": "modular-core",
+          "line": 44
+        },
+        "target": {
+          "diagram": "font-resources",
+          "line": 1
+        },
+        "label": "Expands font resource ownership and shaping"
+      },
+      {
+        "source": {
+          "diagram": "font-resources",
+          "line": 24
+        },
+        "target": {
+          "diagram": "terminal-model",
+          "line": 33
+        },
+        "label": "Shapes terminal snapshot cells; no reverse ownership"
+      },
+      {
+        "source": {
+          "diagram": "modular-core",
+          "line": 8
+        },
+        "target": {
+          "diagram": "font-resources",
+          "line": 4
+        },
+        "label": "App owns shared grid registry"
+      },
+      {
+        "source": {
+          "diagram": "modular-core",
+          "line": 36
+        },
+        "target": {
+          "diagram": "font-resources",
+          "line": 5
+        },
+        "label": "Surface acquires and releases grid references"
+      },
+      {
+        "source": {
+          "diagram": "session-io",
+          "line": 25
+        },
+        "target": {
+          "diagram": "terminal-model",
+          "line": 16
+        },
+        "label": "Instantiates generic Stream with application-aware handler"
+      }
+    ]
+  },
+  "usage": {
+    "input": 46025,
+    "output": 9221,
+    "cacheRead": 253184,
+    "cacheWrite": 0,
+    "reasoning": 1771,
+    "totalTokens": 308430
+  },
+  "execution": {
+    "runtime": "pi-agent-context",
+    "sessionId": "01a1f992-cc6c-70b6-a790-20646b3a58a2",
+    "contextHash": "51a0ff11a235d89c97f5c52514a0e38f08b86bd2937938c1638bc393778370d1",
+    "cacheKey": "eval-ba7bcaccfdf3d23f64d82c97c88cab451bc066d797830ecc936cef44936d840c",
+    "modelContextHash": "0f737931902e04b2e34c8e240a2cde5a441b0789effeccd5e5894e12213e4582",
+    "repositories": [
+      {
+        "repository": "repo-1",
+        "repositoryPath": "/home/john/softwarez/ghostty",
+        "commit": "ea8b12a8a9894b5259c441eadd8f6f0c65e215af",
+        "exclusions": [
+          "**/*-LICENSE",
+          "**/*.md",
+          "**/*.mdx",
+          "**/*.spec.*",
+          "**/*.test.*",
+          "**/AGENTS.md",
+          "**/CODEX-LICENSE",
+          "**/LICENSE*",
+          "**/Tests/**",
+          "**/__fixtures__/**",
+          "**/__tests__/**",
+          "**/benchmark/**",
+          "**/benchmarks/**",
+          "**/build/**",
+          "**/dist/**",
+          "**/docs/**",
+          "**/examples/**",
+          "**/fixtures/**",
+          "**/node_modules/**",
+          "**/scripts/**",
+          "**/test/**",
+          "**/tests/**",
+          ".agents/**",
+          ".github/**",
+          ".husky/**",
+          ".pi/**",
+          "deps/**",
+          "example/**",
+          "flake.lock",
+          "flatpak/**",
+          "images/**",
+          "nix/**",
+          "package-lock.json",
+          "po/**",
+          "scripts/**",
+          "snap/**",
+          "vendor/**"
+        ],
+        "checkout": "/tmp/agent-repository-DqDLuc/checkout",
+        "inspectionSource": "session-transcript"
+      }
+    ]
+  }
+}

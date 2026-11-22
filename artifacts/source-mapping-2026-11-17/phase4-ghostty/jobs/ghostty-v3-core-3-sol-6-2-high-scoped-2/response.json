@@ -1,0 +1,268 @@
+{
+  "output": {
+    "validatedCandidate": "4f1153c837d321e0c7f3f523cbcec2397ea392604b26c264b1e25732feedf794"
+  },
+  "usage": {
+    "input": 1143252,
+    "output": 107059,
+    "cacheRead": 11524352,
+    "cacheWrite": 0,
+    "reasoning": 12228,
+    "totalTokens": 12774663
+  },
+  "execution": {
+    "runtime": "pi-agent-context",
+    "sessionId": "01a2016f-e4d8-7822-b6aa-0ce158ffab35",
+    "contextHash": "4c24cea2f1585e10a1390c92e4a7b19033ed3832e1a4861db77a71686f70f897",
+    "cacheKey": "eval-15109b74214de2f5d632f23d22e685e5564b574039f2953806f825deda8428b2",
+    "modelContextHash": "5ee31dc5934046a12c5d5ba938241c36fe16caa77a8ced1f851acf92e437e3aa",
+    "repositories": [
+      {
+        "repository": "repo-1",
+        "repositoryPath": "/home/john/softwarez/ghostty",
+        "commit": "ea8b12a8a9894b5259c441eadd8f6f0c65e215af",
+        "exclusions": [
+          "**/*-LICENSE",
+          "**/*.md",
+          "**/*.mdx",
+          "**/*.spec.*",
+          "**/*.test.*",
+          "**/AGENTS.md",
+          "**/CODEX-LICENSE",
+          "**/LICENSE*",
+          "**/Tests/**",
+          "**/__fixtures__/**",
+          "**/__tests__/**",
+          "**/benchmark/**",
+          "**/benchmarks/**",
+          "**/build/**",
+          "**/dist/**",
+          "**/docs/**",
+          "**/examples/**",
+          "**/fixtures/**",
+          "**/node_modules/**",
+          "**/scripts/**",
+          "**/test/**",
+          "**/tests/**",
+          ".agents/**",
+          ".github/**",
+          ".husky/**",
+          ".pi/**",
+          "deps/**",
+          "example/**",
+          "flake.lock",
+          "flatpak/**",
+          "images/**",
+          "nix/**",
+          "package-lock.json",
+          "po/**",
+          "scripts/**",
+          "snap/**",
+          "vendor/**"
+        ],
+        "checkout": "/home/john/.cache/mapping-phase4-sicjwt9e/agent-repository-XwfxvL/checkout",
+        "inspectionSource": "session-transcript"
+      }
+    ],
+    "subagents": {
+      "model": "gpt-6.2-sol",
+      "effort": "high",
+      "concurrency": 2,
+      "sessions": [
+        {
+          "id": "child-1",
+          "name": "host-session",
+          "assignment": "Map d1 n2–n23 using enclosing diagram. Use private scratch mktemp -d if needed. Read line-numbered ranges. Return compact lines `node scopeCodes | relative/path:start-end:roleCodes ...` plus notes. Codes scope s structure,e entity,b behavior,r relationship,g guarantee,u subsystem, role d declaration,i implementation,v use. Include parent coverage via explicit 'inherit nX ...' if useful. Do not touch checkout.",
+          "model": "gpt-6.2-sol",
+          "effort": "high",
+          "status": "finished",
+          "queuedAt": "2026-11-22T04:07:34.517Z",
+          "usage": {
+            "input": 190751,
+            "output": 13464,
+            "cacheRead": 1468160,
+            "cacheWrite": 0,
+            "reasoning": 1230,
+            "totalTokens": 1672375
+          },
+          "cost": {
+            "input": 0.38150199999999995,
+            "output": 0.13464,
+            "cacheRead": 0.29363200000000006,
+            "cacheWrite": 0,
+            "total": 0.8097740000000002
+          },
+          "startedAt": "2026-11-22T04:07:34.519Z",
+          "sessionId": "01a20170-1d95-7bbb-bff5-f7c4343bcd2b",
+          "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-sicjwt9e-agent-repository-XwfxvL-checkout--/2026-11-22T04-07-34-549Z_01a20170-1d95-7bbb-bff5-f7c4343bcd2b.jsonl",
+          "completedAt": "2026-11-22T04:12:39.779Z"
+        },
+        {
+          "id": "child-2",
+          "name": "input",
+          "assignment": "Map d1 n24–n35 from diagram; private scratch mktemp -d if needed. Return compact `node scopeCodes | path:start-end:roleCodes ...` when line-number verified, plus notes. Codes scope s structure,e entity,b behavior,r relationship,g guarantee,u subsystem, role d declaration,i implementation,v use. Can use explicit `inherit nX ...` for parent coverage. Do not touch checkout.",
+          "model": "gpt-6.2-sol",
+          "effort": "high",
+          "status": "finished",
+          "queuedAt": "2026-11-22T04:07:34.517Z",
+          "usage": {
+            "input": 180615,
+            "output": 15677,
+            "cacheRead": 1638912,
+            "cacheWrite": 0,
+            "reasoning": 2420,
+            "totalTokens": 1835204
+          },
+          "cost": {
+            "input": 0.36123000000000005,
+            "output": 0.15677000000000002,
+            "cacheRead": 0.3277824,
+            "cacheWrite": 0,
+            "total": 0.8457824
+          },
+          "startedAt": "2026-11-22T04:07:34.536Z",
+          "sessionId": "01a20170-1d9a-72c5-877e-a79378f0ec2c",
+          "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-sicjwt9e-agent-repository-XwfxvL-checkout--/2026-11-22T04-07-34-554Z_01a20170-1d9a-72c5-877e-a79378f0ec2c.jsonl",
+          "completedAt": "2026-11-22T04:13:26.132Z"
+        },
+        {
+          "id": "child-3",
+          "name": "output",
+          "assignment": "Map d1 n36–n51 from diagram; private scratch mktemp -d if needed. Return compact `node scopeCodes | path:start-end:roleCodes ...` plus notes after line-number verification. Codes scope s structure,e entity,b behavior,r relationship,g guarantee,u subsystem, role d declaration,i implementation,v use. Can use explicit `inherit nX ...` for parent coverage. Do not touch checkout.",
+          "model": "gpt-6.2-sol",
+          "effort": "high",
+          "status": "finished",
+          "queuedAt": "2026-11-22T04:07:34.517Z",
+          "usage": {
+            "input": 179125,
+            "output": 15251,
+            "cacheRead": 1909760,
+            "cacheWrite": 0,
+            "reasoning": 1437,
+            "totalTokens": 2104136
+          },
+          "cost": {
+            "input": 0.35824999999999996,
+            "output": 0.15251000000000003,
+            "cacheRead": 0.381952,
+            "cacheWrite": 0,
+            "total": 0.8927120000000001
+          },
+          "startedAt": "2026-11-22T04:12:39.779Z",
+          "sessionId": "01a20174-c5ec-7efb-b2c6-ee8fd5178e69",
+          "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-sicjwt9e-agent-repository-XwfxvL-checkout--/2026-11-22T04-12-39-788Z_01a20174-c5ec-7efb-b2c6-ee8fd5178e69.jsonl",
+          "completedAt": "2026-11-22T04:18:31.716Z"
+        },
+        {
+          "id": "child-4",
+          "name": "terminal",
+          "assignment": "Map d1 n52–n65 from diagram; private scratch mktemp -d if needed. Return compact `node scopeCodes | path:start-end:roleCodes ...` plus notes after line-number verification. Codes scope s structure,e entity,b behavior,r relationship,g guarantee,u subsystem, role d declaration,i implementation,v use. Can use explicit `inherit nX ...` for parent coverage. Do not touch checkout.",
+          "model": "gpt-6.2-sol",
+          "effort": "high",
+          "status": "finished",
+          "queuedAt": "2026-11-22T04:07:34.517Z",
+          "usage": {
+            "input": 139763,
+            "output": 10263,
+            "cacheRead": 967680,
+            "cacheWrite": 0,
+            "reasoning": 1728,
+            "totalTokens": 1117706
+          },
+          "cost": {
+            "input": 0.27952600000000005,
+            "output": 0.10263,
+            "cacheRead": 0.19353600000000004,
+            "cacheWrite": 0,
+            "total": 0.575692
+          },
+          "startedAt": "2026-11-22T04:13:26.132Z",
+          "sessionId": "01a20175-7afa-7f21-be01-763c09056ce2",
+          "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-sicjwt9e-agent-repository-XwfxvL-checkout--/2026-11-22T04-13-26-138Z_01a20175-7afa-7f21-be01-763c09056ce2.jsonl",
+          "completedAt": "2026-11-22T04:17:23.306Z"
+        },
+        {
+          "id": "child-5",
+          "name": "rendering",
+          "assignment": "Map d1 n66–n77 from diagram; private scratch mktemp -d if needed. Return compact `node scopeCodes | path:start-end:roleCodes ...` plus notes after line-number verification. Codes scope s structure,e entity,b behavior,r relationship,g guarantee,u subsystem, role d declaration,i implementation,v use. Can use explicit `inherit nX ...` for parent coverage. Do not touch checkout.",
+          "model": "gpt-6.2-sol",
+          "effort": "high",
+          "status": "finished",
+          "queuedAt": "2026-11-22T04:07:34.517Z",
+          "usage": {
+            "input": 212704,
+            "output": 17116,
+            "cacheRead": 2236416,
+            "cacheWrite": 0,
+            "reasoning": 2063,
+            "totalTokens": 2466236
+          },
+          "cost": {
+            "input": 0.42540799999999995,
+            "output": 0.17116000000000003,
+            "cacheRead": 0.44728320000000005,
+            "cacheWrite": 0,
+            "total": 1.0438512000000002
+          },
+          "startedAt": "2026-11-22T04:17:23.307Z",
+          "sessionId": "01a20179-1975-79bc-8211-0d903ff930e5",
+          "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-sicjwt9e-agent-repository-XwfxvL-checkout--/2026-11-22T04-17-23-317Z_01a20179-1975-79bc-8211-0d903ff930e5.jsonl",
+          "completedAt": "2026-11-22T04:23:54.914Z"
+        },
+        {
+          "id": "child-6",
+          "name": "geometry-exit",
+          "assignment": "Map d1 n78–n95 from diagram; private scratch mktemp -d if needed. Return compact `node scopeCodes | path:start-end:roleCodes ...` plus notes after line-number verification. Codes scope s structure,e entity,b behavior,r relationship,g guarantee,u subsystem, role d declaration,i implementation,v use. Can use explicit `inherit nX ...` for parent coverage. Do not touch checkout.",
+          "model": "gpt-6.2-sol",
+          "effort": "high",
+          "status": "finished",
+          "queuedAt": "2026-11-22T04:07:34.517Z",
+          "usage": {
+            "input": 139516,
+            "output": 16564,
+            "cacheRead": 1777664,
+            "cacheWrite": 0,
+            "reasoning": 1492,
+            "totalTokens": 1933744
+          },
+          "cost": {
+            "input": 0.279032,
+            "output": 0.16564,
+            "cacheRead": 0.35553280000000004,
+            "cacheWrite": 0,
+            "total": 0.8002048000000002
+          },
+          "startedAt": "2026-11-22T04:18:31.717Z",
+          "sessionId": "01a2017a-24b1-75d8-a66c-7bfd98cdde0d",
+          "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-sicjwt9e-agent-repository-XwfxvL-checkout--/2026-11-22T04-18-31-729Z_01a2017a-24b1-75d8-a66c-7bfd98cdde0d.jsonl",
+          "completedAt": "2026-11-22T04:24:52.356Z"
+        }
+      ]
+    }
+  },
+  "accounting": {
+    "mainUsage": {
+      "input": 100778,
+      "output": 18724,
+      "cacheRead": 1525760,
+      "cacheWrite": 0,
+      "reasoning": 1858,
+      "totalTokens": 1645262
+    },
+    "mainCost": {
+      "input": 0.20155599999999993,
+      "output": 0.18724,
+      "cacheRead": 0.305152,
+      "cacheWrite": 0,
+      "total": 0.6939480000000001
+    },
+    "totalCost": {
+      "input": 2.286504,
+      "output": 1.0705900000000002,
+      "cacheRead": 2.3048704,
+      "cacheWrite": 0,
+      "total": 5.661964400000001
+    },
+    "children": 6
+  }
+}

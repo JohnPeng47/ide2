@@ -1,0 +1,110 @@
+Agent Canvas Access
+|-- Tool entry: MCP -> HTTP -> AgentDiagrammingSessionService
+|   |-- contracts.ts supplies tool schemas and canvas method definitions
+|   |   `-- MCP posts arguments to /api/mapping/agent/tools/{name}
+|   |-- Unbound connection
+|   |   `-- canvas.list() -> canvas.attach(canvasId, documentId) -> sessionId
+|   |-- Explicit MCP target -> lazy attachment; inject sessionId
+|   |   `-- Conflicting supplied sessionId -> BINDING_MISMATCH
+|   `-- Chat binding -> capture target for the turn -> callBound()
+|       |-- Reuse attachment to captured workspaceInstanceId + documentId
+|       |-- Conflicting canvas binding -> CHAT_BINDING_MISMATCH
+|       `-- Carry binding.readOnly into tool execution
+|-- Session service: scope, validate, execute, recover
+|   |-- sessionId -> {canvasId, documentId, changeSessionId?}
+|   |   |-- Attachment verifies document membership and reads identity
+|   |   |-- Live session requires a registered browser canvas
+|   |   `-- Proposal attachment requires matching changeSessionId
+|   |       `-- Mismatch -> CHANGE_SESSION_MISMATCH
+|   |-- Access checks
+|   |   |-- Validate tool arguments and each exec method's arguments
+|   |   |-- Read-only mode allows selected reads; checks exec methods individually
+|   |   |-- CanvasView/context mutations require Workspace access
+|   |   `-- Mutations require current expectedVersion; some also pin a revision
+|   |-- Read and mutation routing
+|   |   |-- Live attachment -> CanvasSessionPort.dispatch() [browser path below]
+|   |   |-- Proposal attachment -> ChangeSessionService
+|   |   |   |-- Snapshot/apply operate on isolated proposal documents
+|   |   |   |-- Search can select baseline or proposed content
+|   |   |   `-- save_diagram rejects proposals; acceptance is a separate operation
+|   |   |-- Saved diagram search -> representation catalog and pinned revisions
+|   |   |-- edit/create/extend -> DiagramEditService or DiagramBatchService
+|   |   |   |-- Require a live attachment; resolve optional agentContextId
+|   |   |   |-- Async runs expose status/cancel; direct submissions wait for batch
+|   |   |   `-- Apply revision/create diagrams/atomic batch -> owning browser
+|   |   `-- Context operations
+|   |       |-- Saved context tools -> AgentContextService.library
+|   |       |-- Generation resolves context for workspace + document
+|   |       `-- Diagram context read -> absent/ready/stale
+|   |           `-- Prepare/delete pin version + revision -> browser applies binding
+|   |-- exec(code) -> AgentExecRuntime invokes validated canvas/nodes/edges methods
+|   |   |-- Default batched mode queues consecutive mutations
+|   |   |   `-- Read/boundary or script completion -> flush -> compact receipts
+|   |   |-- Immediate mode -> apply each edit -> projected result
+|   |   `-- Concurrent version change -> VERSION_CONFLICT
+|   `-- Retry uncertain outcomes with identical arguments + requestId
+|       |-- Request cache keys include access mode, scope, tool and session
+|       |   |-- Same signature -> reuse promise; changed signature -> conflict
+|       |   `-- Timeout/oversized/rejected reply -> release cache entry for retry
+|       |-- exec retains completed steps and unacknowledged operations
+|       |   `-- Replay results; resend pending work with original IDs and version
+|       `-- Retry state is in memory and bounded; capacity errors stop new work
+|-- Browser command path: CanvasSessionBridge <-> useAgentCanvasBridge
+|   |-- Browser registers descriptor: ephemeral canvasId + stableWorkspaceId + documents
+|   |-- dispatch(canvasId, method, documentId, payload)
+|   |   `-- Allocate command ID -> queue for that canvas -> wake long poll
+|   |       `-- Browser polls -> handle(command) -> POST value/error reply
+|   |           |-- Cache mutation results by command ID, up to 200 entries
+|   |           `-- Bridge resolves only matching canvasId + commandId
+|   |-- Timing and bounds
+|   |   |-- Empty poll waits up to 15 seconds; at most 100 pending commands
+|   |   |-- No reply within 25 seconds -> CANVAS_TIMEOUT; outcome may be unknown
+|   |   `-- list() retires registrations untouched for more than 35 seconds
+|   `-- Lifetime
+|       |-- Browser loop failure -> retry registration/polling after 1 second
+|       |-- pagehide/cleanup -> unregister ephemeral instance
+|       `-- Unregister/dispose -> wake poller and reject pending commands
+|-- Live reader path: /api/mapping/live WebSocket -> LiveCanvasService
+|   |-- First frame chooses one role; socket cannot attach again
+|   |   |-- publish(workspaceInstanceId) -> browser publisher
+|   |   |   `-- Must name a registered canvas; one publisher owner per instance
+|   |   `-- attach(workspaceInstanceId, documentId) -> external reader
+|   |       |-- Requires an existing selection snapshot
+|   |       `-- connectionId binds workspace + document + canvasEpoch
+|   |-- Publisher selection -> validated mirror -> reader notifications
+|   |   |-- Full snapshot establishes state
+|   |   |-- Delta requires matching epoch and exact baseSequence
+|   |   |   `-- Invalid base -> SELECTION_OUT_OF_SYNC; publish fresh snapshot
+|   |   |-- Ignore non-increasing sequence within the same epoch
+|   |   `-- Same-epoch updates -> selection.delta to matching active readers
+|   |-- Reader operations
+|   |   |-- HTTP selection GET -> snapshot + epoch/version/sequence headers
+|   |   |   `-- ETag(connectionId, sequence) matches -> 304
+|   |   |-- context.get / optional attach context -> load browser context
+|   |   |   `-- Recheck identity after loading; replacement invalidates response
+|   |   |-- HTTP short-context GET -> compact context + epoch/version headers
+|   |   |-- agent-context.upload -> AgentContextService with reader binding
+|   |   `-- diagram.paste / diagram.copy -> command to publisher owner
+|   |       |-- Require enabled write transport; copy also checks capability
+|   |       |-- Receipt key: workspace + document + epoch + requestId
+|   |       |-- Changed arguments -> REQUEST_ID_REUSED
+|   |       `-- 25-second timeout -> retain command/receipt for identical retry
+|   |-- Identity and lifetime
+|   |   |-- New epoch -> canvas.replaced; remove -> canvas.closed
+|   |   |-- Publisher disconnect -> canvas.disconnected
+|   |   |   `-- Invalidate readers and reject pending copy/paste waits
+|   |   `-- Reader attach/detach/invalidation -> agents.changed count to browser
+|   `-- Transport controls
+|       |-- Publisher/reader role checks; context uploads have a separate enable flag
+|       |-- Supplied Origin must match request host
+|       `-- Slow reader -> close and reconnect for snapshot; heartbeat detects loss
+`-- Compact identities on reads and writes
+    |-- CanvasReadAliases
+    |   |-- canvas.read() projects immutable read-scoped aliases
+    |   `-- Resolve later arguments against canvas + document + proposal binding
+    `-- CanvasApiProjection: anchor handles shared by API and live context
+        |-- Compact nodes/content, edges, jumps and migration endpoints
+        |-- Opaque handles identify full revision-scoped content-node IDs
+        |-- Decode incoming handles before domain mutations; full IDs still accepted
+        `-- Never evict/reassign handles; unknown handle -> STALE_CONTENT_NODE
+            `-- Backend restart changes handle generation; reread anchors

@@ -1,0 +1,138 @@
+{
+  "output": {
+    "explanation": "The central tree is reduced from 9,113 to 6,110 characters (33.0%) and from 131 to 86 lines (34.4%). Six peripheral trees expand projection, checkpoint history, gesture settlement, renderer models, routing, and camera/UI interactions. [M] means modular structure, [C] call flow, [O] ownership, and [D] data dependency; these perspectives are mixed where useful. Connections attach to the corresponding concept lines, and positions leave gaps based on measured text dimensions.\n\nEvidence is limited to the point definition, seed, and seven source texts embedded in context.json. MappingEditorRuntime.ts grounds history and settlement; shapeProjection.ts grounds shape eligibility and positioning; CanvasRuntimeContext.tsx and LocalAnchorStore.ts ground models, focus, and measurements; NativeRoutingStore.ts and connectionRouter.ts ground routing; MappingEditorCanvas.tsx grounds camera and UI handling.\n\nSource-grounded qualifications correct overly broad readings of the seed: only the root container is locked, and parent lookup excludes the scene root; missing edges clear edge focus, while revision or selection-reference changes clear node focus. ConnectionRouter maintains mutable route and lane caches, so its boundary is described without implying statelessness. Routing disposal clears worker activity and results but does not clear owner measurements or router caches. Camera ticks call captureViewCamera; they are separate from semantic gesture commits, not free of controller calls.\n\nDetails absent from the seed include projection exclusions, exact clone rejection conditions, asymmetric source/target anchor resolution, retained model atoms, worker identity/job-ID guards, and input interception rules. Imported helper implementations, the worker body, controller internals, and application callback installation are not supplied; diagrams show their visible contracts and call sites without asserting their internal behavior.",
+    "diagrams": [
+      {
+        "id": "central",
+        "ascii": "Native Canvas Interaction: live editor state <-> semantic checkpoints\n|-- [M] Integration boundary and visible services\n|   |-- MappingEditorCanvas consumes CanvasSession; mounts tldraw and overlays\n|   |   `-- Provides CanvasRuntime through context to renderer components\n|   |-- MappingEditorRuntime bridges Editor <-> session.controller\n|   |   |-- Exposes settle(), undo(redo), dispose(); attaches editor-driver callbacks\n|   |   `-- Keeps projection baseline, checkpoint tracking and sync guards private\n|   |-- CanvasRuntime exposes models, anchors, routing, focus and gesture services\n|   |   `-- CanvasActions is the callback contract for application commands\n|   `-- NativeRoutingStore depends on Editor transforms and ConnectionRouter\n|       `-- ConnectionRouter caches routes and lane spacing without Editor access\n|\n|-- [O] State and resource responsibility\n|   |-- Editor owns live shape geometry, camera and native history navigation\n|   |-- Controller supplies semantic snapshots, commands and checkpoint history\n|   |-- MappingEditorRuntime owns subscriptions and the projected shape baseline\n|   |-- CanvasRuntime is created per session; owns anchor and routing stores\n|   |   `-- Shares gesture selection ownership with MappingEditorRuntime\n|   `-- Cleanup completes and settles native work before runtime unsubscription\n|       |-- Canvas releases controller/camera/font/pointer listeners and tool binding\n|       `-- Clearing CanvasRuntime.editor disposes worker jobs and settled arrows\n|\n|-- [C] Semantic state -> native shape projection\n|   |-- Startup hydrate(): replay checkpoint IDs into native history\n|   |   `-- Undo future entries; materialize current shapes, not all past geometry\n|   |-- Relevant controller snapshot changes call publish()\n|   |   |-- Application selection changes claim ownership outside settle/navigation\n|   |   |-- Same checkpoint + pointer held -> defer until an idle tick\n|   |   `-- New recorded command -> history stop unless settling or navigating\n|   |-- [D] projectMappingShapes(snapshot) reads scene, views, display and cell size\n|   |   |-- Grid positions are relative to a non-root parent; root container locks\n|   |   |-- Floating panes obey visibility; collapsed/docked chats use 36 x 36 bubbles\n|   |   `-- Edges and alternative side panels become locked mapping shapes\n|   `-- writeShapes() removes obsolete shapes, creates missing ones, updates changes\n|       |-- Brings arrows and side panels to front; retains projection baseline\n|       |-- Native selection combines semantic diagrams and drag-only diagram IDs\n|       `-- publish() writes shape changes and document.meta.mappingCheckpoint together\n|\n|-- [C] Native gesture -> settled semantic change\n|   |-- Editor store marks shape or native-selection changes dirty unless syncing\n|   |-- Tick skips work while pointing, dragging or pinching\n|   `-- Idle tick settles dirty geometry before publishing a deferred projection\n|       |-- Compare native shapes against projected baseline\n|       |   |-- Grid moves -> page bounds / cell -> rounded, nonnegative row/column\n|       |   |-- Supported diagram clones -> duplicate-instance with new IDs\n|       |   `-- Pane move/resize -> display geometry, manual placement and sizing\n|       |-- Native selection supplies drag IDs; application gestures select content\n|       |   `-- Pending projection suppresses capture of native selection\n|       `-- Moves or changed display -> controller.commitEditorGesture(moves, canvas)\n|           `-- Sync/settle/navigation guards separate projection from gesture work\n|\n|-- [C] Undo / redo restores semantic checkpoints\n|   |-- undo(redo): complete -> settle -> inspect controller history\n|   |   |-- Transfer transaction -> throw; workspace undo/redo is required\n|   |   `-- Otherwise invoke editor.undo() or editor.redo()\n|   `-- Document checkpoint observer runs synchronously on native history change\n|       `-- restoreEditorCheckpoint(id) -> publish(false), without new history\n|\n|-- [D] Renderer models + live geometry -> connection output\n|   |-- CanvasRuntime.sync() reads document, display, views, selection and cell\n|   |   |-- Publishes grids, panes, panels and edges in a reactive transaction\n|   |   `-- shareEqual preserves equal branches; retain owners against current layouts\n|   |-- Anchor resolution: scene + views + anchor -> endpoint local to owning grid\n|   |   |-- Layout key includes revision, ASCII hash, view, cell, collapse, alternative\n|   |   `-- LocalAnchorStore accepts matching keys; rounds measurements to 0.01\n|   |-- Focus uses display ID + content ID + current content revision\n|   |   `-- Missing edge clears edge focus; revision/selection changes clear node focus\n|   `-- routedEdges: edge IDs/models -> nativeEdgeInput(...) -> routing.drawAll(...)\n|       |-- Obstacles: current-layout measurements or diagram-derived local geometry\n|       |   `-- Editor page transforms produce world rectangles; camera is not read\n|       |-- Dragging -> previews, using prior settled routes when available\n|       `-- Settled routing -> synchronous cache or asynchronous worker\n|           |-- One in-flight job; newest pending request; reject stale completions\n|           |-- Worker failure disables worker; later evaluation routes synchronously\n|           `-- ConnectionRouter reuses routes by inputs/nearby obstacles, then spaces lanes\n|\n`-- [C] Camera and application UI interaction paths\n    |-- Initialize camera from content bounds, saved transform or default position\n    |-- Camera reactor changes overlay CSS without setting application React state\n    |-- Camera tick captures changed view and calls optional transform callback\n    |   `-- captureViewCamera is separate from semantic gesture commits\n    |-- A changed checkpoint with a viewport restores the Editor camera\n    |-- Buttons, inputs and pane bodies retain application pointer handling\n    |-- Delete/Backspace invokes the controller's delete-diagrams command\n    `-- Focus requests use rendered label/search bounds, falling back to shape bounds\n        `-- Center target with room for visible tools",
+        "position": {
+          "column": 0,
+          "row": 0
+        }
+      },
+      {
+        "id": "projection",
+        "ascii": "Shape projection [M/D]: snapshot -> mapping-box records\n|-- Stable mapping ID = createShapeId(\"mapping:\" + nodeId)\n|-- Cell size = snapshot.cell when width is truthy, else 8.4 x 18\n|-- Grid boxes = flattenGrid(resolveDiagramView(presentationScene(document), views))\n|   |-- Parent lookup excludes the scene root; otherwise parent is a native shape\n|   |-- Position subtracts parent grid origin, then multiplies by cell dimensions\n|   |-- Width/height clamp to at least 1; only the root container is locked\n|   `-- Shape revisionId comes from scene.contents[contentId].revisionId\n|-- Floating eligibility is computed before shape creation\n|   |-- Detail and conversation nodes enter the visible set directly\n|   |-- Selection with collapsed source is skipped\n|   |   `-- Otherwise include selected/parent selections and visibleProjectionIds(...)\n|   |-- Skip viewport-space nodes except conversations\n|   |-- Skip code-panel and source-code projection nodes\n|   |-- Selection panes lock; collapsed OR docked chats use canvasAnchor and 36 x 36\n|   `-- Other eligible panes use node.position and bounds clamped to at least 1\n|-- Edges -> locked 1 x 1 arrow records at (0,0)\n|   `-- Actual route output is supplied separately through CanvasRuntime.routedEdges\n|-- Side panels -> locked shapes at cell-scaled panel bounds\n|   `-- Revision comes from the alternative part's source.revisionId\n`-- MappingEditorRuntime.writeShapes() reconciles these records with Editor\n    |-- Missing parentId becomes current page ID; delete only obsolete mapping-boxes\n    |-- Compare parent, x/y, lock and serialized props before updating\n    `-- Internal projected map is keyed by props.nodeId for gesture comparison",
+        "position": {
+          "column": 106,
+          "row": 0
+        }
+      },
+      {
+        "id": "history",
+        "ascii": "Checkpoint bridge [C/O]: history stores semantic references\n|-- hydrate(): controller.editorHistory()\n|   |-- Sequence = past + headId + reversed future\n|   |-- Set first reference ignoring history, then clear native history\n|   |-- Mark a stopping point and store each remaining reference\n|   `-- Undo future.length times; write only current shapes ignoring history\n|-- setCheckpoint(id) writes document.meta.mappingCheckpoint through store.put\n|   `-- Source comment: updateDocumentSettings ignores SDK history\n|-- publish(record): shape reconciliation and checkpoint share editor.run\n|   |-- Record only when checkpoint changed, record=true and not navigating\n|   `-- Command stopping point additionally requires not settling\n|-- Native document after-change handler\n|   |-- Ignore syncing, non-string ID or ID already current in controller\n|   `-- Set navigating -> restoreEditorCheckpoint(id) -> publish(false) -> clear guard\n|-- Driver callbacks registered on controller\n|   |-- settle callback: unless settling, complete() -> settle(true, false)\n|   `-- undo callback forwards redo flag to runtime.undo(redo)\n|-- undo(redo): complete -> settle -> inspect transaction ID for that direction\n|   |-- Transfer present -> throw \"Use workspace undo/redo for a canvas transfer.\"\n|   `-- Otherwise native undo/redo triggers checkpoint restoration\n`-- dispose(): complete -> settle -> mark disposed -> reverse unsubscribe order\n    |-- Releases tick, store, checkpoint observer, controller subscription and driver\n    `-- Canvas separately removes listeners/tool binding and clears runtime.editor",
+        "position": {
+          "column": 106,
+          "row": 32
+        }
+      },
+      {
+        "id": "gestures",
+        "ascii": "Gesture settlement [C/O]: native edits become semantic operations\n|-- settle() returns during syncing, settling, navigating or after disposal\n|   `-- Unless forced, pointing also blocks settlement\n|-- Snapshot + DEFAULT_CELL fallback + flattened resolved scene + native shapes\n|-- Clone detection: mapping-box ID differs from mappingShapeId(props.nodeId)\n|   |-- Any clone not a diagram or lacking a parent in resolved boxes\n|   |   `-- Delete the entire detected clone set; clear captured selection\n|   `-- Supported diagram clone with a projection baseline\n|       |-- New ID = \"copy-\" + crypto.randomUUID()\n|       |-- duplicate-instance uses source node ID and rounded/clamped page position\n|       `-- If clone selected, remap captured source ID to the copy's grid ID\n|-- Existing grid shape with changed x/y\n|   |-- Require a parent, or kind=diagram\n|   `-- Page bounds / cell dimensions -> move operation\n|-- Existing floating pane with changed x/y/w/h\n|   |-- updateDisplayGeometry -> placement becomes manual\n|   |-- Changed dimensions -> fixed sizing; otherwise preserve sizing policy\n|   `-- Collapsed conversation also updates canvasAnchor\n|       `-- Docked alone does not enter this canvasAnchor update branch\n|-- Selection capture is independent of content membership\n|   |-- Capture allowed -> dragDiagramIds exclude already-semantic diagram IDs\n|   |-- Capture denied -> restore combined selected IDs with history ignored\n|   `-- Idle tick allows capture only without pending projection AND ownership permits\n`-- Commit only if move operations exist or display state changed\n    `-- controller.commitEditorGesture(moves, canvas); finally clear settling",
+        "position": {
+          "column": 106,
+          "row": 64
+        }
+      },
+      {
+        "id": "models",
+        "ascii": "Renderer state [M/D/O]: CanvasRuntime retains local read models\n|-- sync() skips equal document/display/views/selection/cell references\n|   `-- Registry rebuild only on document, view or cell changes\n|-- Models<T> keeps private ID -> atom entries\n|   |-- Missing values publish undefined; entries are not deleted here\n|   `-- shareEqual recursively reuses equal objects and arrays\n|-- Grid models carry frame, content, view, selected content, jumps and layoutKey\n|   |-- Selected regions contribute nodes only when sourceAscii matches current ASCII\n|   `-- Jumps filter by sourceDisplayNodeId; collapsed boxes omit the view\n|-- Float models resolve parent and selection-region ancestor\n|   |-- Parent walk tracks visited IDs to stop cycles\n|   |-- stale = source ASCII differs; missing = source box absent in visible boxes\n|   |-- Hidden ancestor, collapsed box or projected selection can suppress visibility\n|   `-- Conversation with a parent additionally requires parent.expansion=expanded\n|-- transact(): publish panels/alternatives/grids/floats; sync routing; retain anchors\n|   `-- Publish edge models + stable edge-ID list; validate focus\n|-- resolveAnchor(anchor, diagramRoot=false)\n|   |-- Source endpoint uses default false; target endpoint passes true\n|   |-- resolveEndpoint(...) plus owning grid are both required\n|   `-- Attach owner's layoutKey; subtract grid origin to make rect shape-local\n|-- LocalAnchorStore owns a separate atom per endpointKey\n|   |-- set(): round rect fields to 0.01; equal key/rect suppresses writes\n|   |-- get(): mismatched layoutKey -> undefined\n|   |-- Font loading -> invalidate all values; layout changes clear stale values\n|   `-- Removed owner deletes map record; camera/culling do not invalidate it\n`-- Focus is renderer-local and revision-scoped\n    |-- focusNode() first clears edge focus, then checks revision and node membership\n    |-- nodeConnections matches displayNodeId + contentNodeId + revisionId\n    |-- sync() clears edge focus only when that edge is absent\n    |-- sync() clears node focus on revision mismatch or selection reference change\n    `-- clearDragSelection() claims application ownership and resets native selection",
+        "position": {
+          "column": 212,
+          "row": 0
+        }
+      },
+      {
+        "id": "routing",
+        "ascii": "Connection routing [D/C/O]: live geometry, bounded worker queue, caches\n|-- CanvasRuntime edge models -> nativeEdgeInput(...) -> drawAll(inputs)\n|-- Obstacle owners contain layoutKey and computed world rectangles\n|   |-- sync() reuses owners with equal keys; removes measurements for absent grids\n|   |-- Matching measured layout wins; otherwise use diagramRoutingObstacles(...)\n|   `-- Missing native shape -> []; otherwise transform all four rect corners\n|       `-- Axis-aligned world bounds use min/max corners; no camera dependency\n|-- drawAll() reads reactive dragging flag\n|   |-- Dragging -> previewEdge(..., prior settled arrow, geometrySource)\n|   `-- Not dragging -> read obstacles and choose routing path\n|       |-- Worker factory absent -> synchronous ConnectionRouter.drawAll\n|       |-- Completed key matches JSON([inputs, obstacles]) -> settled = result\n|       `-- New key -> overwrite pending job, dispatch if idle, return previews\n|-- dispatch(): lazily create worker; at most one job in flight\n|   |-- postMessage carries job ID, inputs and obstacles\n|   |-- Reply must match current worker AND in-flight job ID\n|   |-- Publish only when job key still equals requested key\n|   `-- Clear in-flight job, then dispatch newest pending request\n|-- Worker error / construction or postMessage failure\n|   |-- Terminate worker; disable factory; clear jobs and requested key\n|   `-- Microtask publishes failure marker to invalidate computed readers safely\n|-- ConnectionRouter: internal route map plus lane cache\n|   |-- retain() drops routes for absent edges\n|   |-- Per-edge key = edge + source rect + target rect + geometrySource\n|   |-- Filter obstacles using endpoint identities\n|   |-- Reuse if key and nearby obstacle geometry/kinds match\n|   |   `-- Nearby = overlapsRoute(previous region); no region means all obstacles\n|   |-- Cache drawResolvedEdge result and path region\n|   `-- drawAll() adds endpoint rects to obstacles used for lane spacing\n|       |-- Lane key includes arrows, endpoint rects/identities and all obstacles\n|       `-- spaceEdgeArrows result reuses prior equal arrow objects\n`-- dispose(): terminate worker; clear jobs, requested/completed and settled results\n    `-- Owner measurements, router cache and worker factory are not cleared here",
+        "position": {
+          "column": 212,
+          "row": 42
+        }
+      },
+      {
+        "id": "ui",
+        "ascii": "Canvas interaction paths [C/O]: camera, input and view focus\n|-- Camera setup: zoom steps = 0.25, 0.5, 1, 2, 4\n|   |-- centerContent with bounds -> zoom 1; center or use 48px leading margin\n|   |-- Otherwise restore initial transform when supplied\n|   `-- Fallback camera = { x: 360, y: 100, z: 1 }\n|-- Overlay reactor reads camera -> CSS scale(z) translate(x,y)\n|-- Camera tick updates tool state, then compares x:y:z key\n|   `-- Changed key -> saveMappingCamera -> captureViewCamera -> optional callback\n|-- Pointer capture reserves application controls and pane bodies\n|   |-- Non-mouse diagram-jump label and move handle bypass that reservation\n|   `-- Other canvas pointer paths focus Editor\n|-- Wheel on canvas focuses SDK without focusing its container\n|   `-- Skip inputs and native projection/conversation/detail panes\n|-- Paste outside text editors stops propagation; drop also prevents default\n|-- Key handling outside editable controls\n|   |-- Escape + idle Editor + semantic selection -> mark event handled for app\n|   |-- Ctrl/Meta Z or Y returns without interception\n|   `-- Delete/Backspace collects non-region selection display IDs -> delete-diagrams\n|-- Focus request waits two animation frames for rendered geometry\n|   |-- Mark matching content labels; prefer matching search element if present\n|   |-- Union nonempty DOM rects -> screenToPage(center); else shape bounds center\n|   `-- centerOnPoint adjusts for visible tools/explorer or default offset 170\n`-- Disabled canvas blurs Editor; effect cleanup cancels pending focus frames",
+        "position": {
+          "column": 0,
+          "row": 98
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": {
+          "diagram": "central",
+          "line": 30
+        },
+        "target": {
+          "diagram": "projection",
+          "line": 1
+        },
+        "label": "snapshot fields become native records"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 52
+        },
+        "target": {
+          "diagram": "history",
+          "line": 1
+        },
+        "label": "checkpoint replay, recording and restoration"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 39
+        },
+        "target": {
+          "diagram": "gestures",
+          "line": 1
+        },
+        "label": "settlement conditions and semantic conversion"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 60
+        },
+        "target": {
+          "diagram": "models",
+          "line": 1
+        },
+        "label": "read-model publication, anchors and focus"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 68
+        },
+        "target": {
+          "diagram": "routing",
+          "line": 1
+        },
+        "label": "live geometry feeds previews and settled routes"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 77
+        },
+        "target": {
+          "diagram": "ui",
+          "line": 1
+        },
+        "label": "camera updates and input arbitration"
+      }
+    ]
+  },
+  "usage": {
+    "input_tokens": 219450,
+    "cached_input_tokens": 194432,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 11188,
+    "reasoning_output_tokens": 1391
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "status": "finished",
+  "repository": "Data dependency · No few-shot examples · 2",
+  "runId": "13013882-4a91-4a8e-8d45-bd6f8017aa43",
+  "characters": 13389,
+  "lines": 178,
+  "nodes": 171,
+  "usage": {
+    "input": 47818,
+    "output": 5417,
+    "cacheRead": 107264,
+    "cacheWrite": 0,
+    "reasoning": 842,
+    "totalTokens": 160499
+  },
+  "execution": {
+    "runtime": "pi-agent-context",
+    "sessionId": "01a1f471-f40a-7ebc-bcaa-1e56cbeb5dda",
+    "contextHash": "c26f9e1d07185d26d78fd7cf31b447b58604b2cae4a040b1dc623aaaf9e7848a",
+    "cacheKey": "eval-5b7617df44ec6da57b7544485363cf1f06c9a8be105f11e262834c7dd5c8484e",
+    "modelContextHash": "1cc3724d24d743e3b71bf059f2115cfb0dd092deedaa58aef868378360559e8e",
+    "repositories": [
+      {
+        "repository": "repo-1",
+        "repositoryPath": "/home/john/softwarez/ghostty",
+        "commit": "ea8b12a8a9894b5259c441eadd8f6f0c65e215af",
+        "exclusions": [
+          "**/*-LICENSE",
+          "**/*.md",
+          "**/*.mdx",
+          "**/*.spec.*",
+          "**/*.test.*",
+          "**/AGENTS.md",
+          "**/CODEX-LICENSE",
+          "**/LICENSE*",
+          "**/Tests/**",
+          "**/__fixtures__/**",
+          "**/__tests__/**",
+          "**/benchmark/**",
+          "**/benchmarks/**",
+          "**/build/**",
+          "**/dist/**",
+          "**/docs/**",
+          "**/examples/**",
+          "**/fixtures/**",
+          "**/node_modules/**",
+          "**/scripts/**",
+          "**/test/**",
+          "**/tests/**",
+          ".agents/**",
+          ".github/**",
+          ".husky/**",
+          ".pi/**",
+          "deps/**",
+          "example/**",
+          "flake.lock",
+          "flatpak/**",
+          "images/**",
+          "nix/**",
+          "package-lock.json",
+          "po/**",
+          "scripts/**",
+          "snap/**",
+          "vendor/**"
+        ],
+        "checkout": "/tmp/agent-repository-EUQrmp/checkout",
+        "inspectionSource": "session-transcript"
+      }
+    ]
+  },
+  "outputUrl": "http://127.0.0.1:5191/evals?run=13013882-4a91-4a8e-8d45-bd6f8017aa43&output=87566833-2609-40ec-9495-493674f555e3%3A1%3Aalternative"
+}

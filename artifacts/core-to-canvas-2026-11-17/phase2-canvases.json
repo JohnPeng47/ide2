@@ -1,0 +1,704 @@
+{
+  "mapping": {
+    "source": {
+      "runId": "06d4f008-e3c4-4f8d-ac2d-e076490838af",
+      "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative",
+      "canvasId": "representation-9ad64c08-074a-45b2-8e5c-d23e89efaec8",
+      "checkpointId": "canvas-revision-7b2bdb61-8d60-48fa-874c-913f008e0860"
+    },
+    "diagrams": [
+      {
+        "id": "core",
+        "ascii": "Mapping application - ownership and semantic command boundary\n|\n|-- App services (createMappingServices; shared through context)\n|   |-- canvasHistory: DefaultCanvasHistoryService -> [archive]\n|   |-- workspaceStorage: WorkspaceStorage -> [archive]\n|   `-- diagramGenerator / codeRepo (HTTP service adapters)\n|\n`-- MappingPocPage / MappingServicesContext.Provider\n    `-- MappingWorkspacePage (page lifetime; /evals is a separate consumer)\n        |-- CanvasWorkspace\n        |   |-- controllers: Map<documentId, controller> (session references)\n        |   |-- drafts[documentId]: CanvasDraft\n        |   |   |-- DraftMetadata: name, repository, saved baseline, viewport\n        |   |   `-- CanvasSession (one per document)\n        |   |       |-- CanvasCursorCopy\n        |   |       |-- Read-only observable stores\n        |   |       |   |-- document / presentation / selection / controls\n        |   |       |   `-- geometry (includes version) / status (dirty, undo)\n        |   |       |-- Saved baseline + cached scene/edge keys\n        |   |       |   `-- updateBaseline(acknowledged save); sceneDirty = scene only\n        |   |       `-- MappingDocumentController\n        |   |           |-- CanvasEditingContext handle -> shared history service\n        |   |           |-- ControllerSnapshot (current resolved state)\n        |   |           |   |-- MappingGridDocument\n        |   |           |   |   |-- scene: LineGridScene\n        |   |           |   |   |   |-- root: GridBox (nested containers/instances)\n        |   |           |   |   |   |   `-- diagram instance.contentId -> contents\n        |   |           |   |   |   `-- contents[contentId]: immutable Diagram\n        |   |           |   |   |       |-- id: local key; diagramId: stable identity\n        |   |           |   |   |       |-- revisionId: exact stored version\n        |   |           |   |   |       |-- content: ASCII, hash, parsed structure\n        |   |           |   |   |       `-- sourceContext: binding, mappings, evidence\n        |   |           |   |   |           `-- diagramSource() joins regions to ranges\n        |   |           |   |   |-- edges / jumps / sections\n        |   |           |   |   `-- alternatives / diagramPresentations / diagramContexts\n        |   |           |   |       revisionSelections / revisionReviews\n        |   |           |   `-- MappingCanvasState\n        |   |           |       |-- selection.items / controls / viewport / projectionLayout\n        |   |           |       |-- display: projection panes and conversations\n        |   |           |       `-- diagramViews: instance folding / diff choices\n        |   |           |           |-- Derivation: presentationScene -> resolveDiagramView\n        |   |           |           `-- Visible rows map to raw lines; ASCII unchanged\n        |   |           |-- applyUpdate(expectedVersion, operations) / transact\n        |   |           |   |-- Call: attached editor driver.settle(); reject stale version\n        |   |           |   |-- Stage edits, revisions, layout, edges, variants on clones\n        |   |           |   `-- updateSnapshot(record=true)\n        |   |           |       |-- Reconcile/validate links; normalize views/selection\n        |   |           |       |-- Call: history.append(context, document, canvas, node IDs)\n        |   |           |       `-- Publish -> session stores synchronously\n        |   |           |           `-- Changed checkpoint -> workspace.onPersist(ids)\n        |   |           |-- updateCanvas(record=false): transient; no history append\n        |   |           |-- undo(): editor driver, or history.navigate when headless\n        |   |           `-- persistenceChanges(cursor) -> history delta\n        |   `-- setDrafts(): create sessions; replacement/removal unsubscribes + disposes\n        |\n        |-- MappingEditorCanvas (mounted per rendered draft; not session-owned)\n        |   |-- tldraw Editor: live geometry, camera, native undo navigation\n        |   `-- MappingEditorRuntime (holds editor/controller references)\n        |       |-- publish(): snapshot -> mapping-box shapes + checkpoint metadata\n        |       |-- settle(): completed gesture -> controller.commitEditorGesture()\n        |       |-- Native checkpoint change -> controller.restoreEditorCheckpoint()\n        |       `-- dispose(): settle, remove listeners and detach editor driver\n        |           (pointer/camera frames do not commit semantic document state)\n        |\n        |-- SourcePaneViewState: personal camera/pane state -> persistence\n        |-- WorkspacePersistence adapter -> [archive]\n        |-- PromptComposerCoordinator -> [agents]\n        |-- useAgentCanvasBridge + DiagramRevisionReceiver -> [agents]\n        `-- Startup: representations + storage.load() -> reconcile -> setDrafts()",
+        "position": {
+          "column": 0,
+          "row": 0
+        }
+      },
+      {
+        "id": "archive",
+        "ascii": "Archive and durable records - collaborating owners\n|\n|-- DefaultCanvasHistoryService (App-shared; not owned by a controller)\n|   `-- contexts: WeakMap<CanvasEditingContext, CanvasHistory>\n|       `-- CanvasHistory (isolated per handle)\n|           |-- CanvasHistoryRecord\n|           |   |-- headId / baselineId / past / future\n|           |   |-- snapshots[id]: StoredCanvasSnapshot\n|           |   |   |-- CanvasDocument: composition without embedded contents\n|           |   |   |-- diagramBindings: local content key -> revision ID\n|           |   |   `-- view / nodeOrigins / optional linked transactionId\n|           |   |-- diagramRevisions: retained exact revision records\n|           |   `-- canvasViews: named recordings outside undo-restored state\n|           |-- document(): composition + bindings + revisions -> resolved document\n|           |-- append / navigate / fork / adopt; persistenceChanges(cursor)\n|           `-- Transfer preparation: linked source/destination checkpoints\n|               `-- Ordinary undo rejects linked boundaries; use workspace undo\n|\n|-- diagramRevisionStore (module API; shared, not a session-owned table)\n|   |-- createStoredDiagram / reviseStoredDiagram / resolve by revision ID\n|   `-- internal revisionRegistry retains revisions\n|\n|-- WorkspacePersistence (page-owned translation adapter)\n|   |-- Per-session cursors / known drafts / subscriptions\n|   |-- workspace.onPersist(ids) + SourcePaneViewState changes\n|   |   `-- Read: controller.persistenceChanges(cursor) + metadata/baseline/view\n|   `-- Record batches -> WorkspaceStorage.records.batch()\n|       (share content-addressed items; do not resend unchanged history)\n|\n|-- WorkspaceStorage (App service; owns transport resources)\n|   |-- records: RecordStorage\n|   |   |-- Cache + coalesced pending keys + one in-flight batch\n|   |   `-- requestId + expectedRevision; retries keep batch identity\n|   |-- workspaceStorage.worker: encode records and POST workspace/records\n|   |   `-- HTTP: /api/mapping/workspace/records -> WorkspaceRecordStore.apply()\n|   `-- flush(): await acknowledgement; dispose() alone is not a flush\n|\n`-- WorkspaceRecordStore (server-side durable owner)\n    |-- Serialized apply(): receipt check before expected workspace revision\n    |-- Validate records; reject mutation of immutable revisions/items\n    |-- Content-addressed JSON record files\n    `-- Atomic manifest replacement publishes references, revision and receipt",
+        "position": {
+          "column": 120,
+          "row": 0
+        }
+      },
+      {
+        "id": "agents",
+        "ascii": "Agent-assisted editing - producers outside session ownership\n|\n|-- Page-owned PromptComposerCoordinator\n|   |-- Entries, drafts, exact captured requests, polling timers\n|   |-- submit() -> client.capture(): pin version and baseRevisionId\n|   |   `-- Call: client.start() -> DiagramEditService.start()\n|   `-- status / cancel / retry exact request; independent of selection and undo\n|\n|-- DiagramEditService (backend application service)\n|   |-- runs + request-ID deduplication; abort/pending state\n|   |-- Generate from canvas snapshot, pinned references and AgentContext\n|   |   `-- Call: DiagramGenerator + stored revision APIs -> exact revisions\n|   `-- DiagramEditCanvasPort.snapshot / apply / create\n|       `-- Live canvas command transport; no ownership of the controller\n|\n`-- Page-owned live command ingress\n    |-- useAgentCanvasBridge\n    |   |-- Register ephemeral canvas; poll commands -> page handler -> replies\n    |   `-- Cleanup aborts polling and unregisters this instance\n    `-- DiagramRevisionReceiver.apply() / batch()\n        |-- Expected canvas version + expected base revision\n        |   `-- Call: controller.applyUpdate() (same semantic boundary as UI)\n        |-- Retain request receipt before persistence; retries do not edit twice\n        `-- Page persistence callback: sync affected document + storage.flush()\n            `-- Acknowledge only after flush; failure = PERSISTENCE_PENDING",
+        "position": {
+          "column": 120,
+          "row": 49
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": {
+          "diagram": "core",
+          "line": 4
+        },
+        "target": {
+          "diagram": "archive",
+          "line": 3
+        },
+        "label": "Shared history service expanded"
+      },
+      {
+        "source": {
+          "diagram": "core",
+          "line": 5
+        },
+        "target": {
+          "diagram": "archive",
+          "line": 30
+        },
+        "label": "Storage ownership expanded"
+      },
+      {
+        "source": {
+          "diagram": "core",
+          "line": 66
+        },
+        "target": {
+          "diagram": "archive",
+          "line": 23
+        },
+        "label": "Page-owned persistence adapter expanded"
+      },
+      {
+        "source": {
+          "diagram": "core",
+          "line": 48
+        },
+        "target": {
+          "diagram": "archive",
+          "line": 15
+        },
+        "label": "Append semantic checkpoint through service"
+      },
+      {
+        "source": {
+          "diagram": "archive",
+          "line": 14
+        },
+        "target": {
+          "diagram": "core",
+          "line": 24
+        },
+        "label": "Materialize exact bound revisions"
+      },
+      {
+        "source": {
+          "diagram": "archive",
+          "line": 26
+        },
+        "target": {
+          "diagram": "core",
+          "line": 53
+        },
+        "label": "Read incremental history through controller"
+      },
+      {
+        "source": {
+          "diagram": "core",
+          "line": 67
+        },
+        "target": {
+          "diagram": "agents",
+          "line": 3
+        },
+        "label": "Composer lifetime expanded"
+      },
+      {
+        "source": {
+          "diagram": "core",
+          "line": 68
+        },
+        "target": {
+          "diagram": "agents",
+          "line": 16
+        },
+        "label": "Live command ingress expanded"
+      },
+      {
+        "source": {
+          "diagram": "agents",
+          "line": 22
+        },
+        "target": {
+          "diagram": "core",
+          "line": 43
+        },
+        "label": "Install generated edits through shared mutation boundary"
+      },
+      {
+        "source": {
+          "diagram": "agents",
+          "line": 24
+        },
+        "target": {
+          "diagram": "archive",
+          "line": 36
+        },
+        "label": "Await durable acknowledgement before replying"
+      },
+      {
+        "source": {
+          "diagram": "agents",
+          "line": 12
+        },
+        "target": {
+          "diagram": "archive",
+          "line": 19
+        },
+        "label": "Generation uses stored revision APIs"
+      }
+    ]
+  },
+  "pi": {
+    "source": {
+      "runId": "bcd72f13-5770-4244-9cd7-68810e37dd2b",
+      "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative",
+      "canvasId": "representation-555ffde7-15d9-4dd2-9e46-0d1a8a4fbff9",
+      "checkpointId": "canvas-revision-5f9de723-859a-443e-acaa-ddb1ea07153c"
+    },
+    "diagrams": [
+      {
+        "id": "core",
+        "ascii": "Pi coding-agent core: ownership and retained references\n|\n|-- CLI hosts: InteractiveMode / runPrintMode / runRpcMode\n|   `-- -> consume AgentSessionRuntime; subscribe to session events\n|\n|-- SDK factory: createAgentSession()\n|   |-- Restored branch + settings + options -> model/thinking/tools\n|   `-- -> constructs Agent and AgentSession; runtime wrapper optional\n|\n`-- AgentSessionRuntime [agent-session-runtime.ts]\n    |-- Current AgentSession [agent-session.ts]\n    |   |-- API: prompt / steer / followUp / abort / compact / navigateTree\n    |   |   `-- state/messages/model getters; subscribe(listener)\n    |   |-- Agent [retained execution engine; agent.ts]\n    |   |   |-- _state: messages, model, thinking, tools, streaming/error state\n    |   |   |-- steeringQueue / followUpQueue; activeRun + abort controller\n    |   |   `-- prompt()/continue() -> agent-loop functions\n    |   |-- SessionManager [retained canonical history; session-manager.ts]\n    |   |   `-- Owns entry tree and selected leaf; Agent messages are a projection\n    |   |-- ExtensionRunner [created and bound by _buildRuntime()]\n    |   |   `-- -> ResourceLoader extensions; session context and hook dispatch\n    |   |-- Tool registries: definitions + wrapped callable implementations\n    |   |   `-- _refreshToolRegistry() -> installs Agent tool loadout\n    |   |-- Run bookkeeping and recovery controllers\n    |   |   |-- prompt preflight, pending messages, retry and settlement state\n    |   |   |-- Compaction / branch-summary / retry / bash cancellation\n    |   |   `-- compact()/recovery -> history entries; refresh Agent context\n    |   |-- Agent subscription and public listener collection\n    |   |   `-- Events -> extension hooks -> listeners; message_end -> history\n    |   |-- CacheWarmer [retained optional helper]\n    |   |-- Service references -> runtime services below\n    |   `-- dispose()\n    |       `-- Abort; invalidate extension contexts; detach; cancel/clean resources\n    |\n    |-- AgentSessionServices [cwd-bound infrastructure bundle]\n    |   |-- cwd / agentDir / diagnostics\n    |   |-- SettingsManager [created or supplied]\n    |   |-- ResourceLoader [extensions, skills, templates]\n    |   `-- ModelRuntime [created or supplied; provider/model/auth boundary]\n    |\n    `-- Replacement operations: newSession / switchSession / fork\n        |-- Before-switch/fork hooks may cancel\n        |-- teardownCurrent() -> await session.abort() and idle settlement\n        |-- -> session_shutdown hooks -> host UI invalidation -> dispose()\n        `-- -> factory -> apply new session/services -> rebindSession()",
+        "position": {
+          "column": 0,
+          "row": 0
+        }
+      },
+      {
+        "id": "execution",
+        "ascii": "AgentSession run orchestration [agent-session.ts]\n|\n|-- prompt(text, options)\n|   |-- Extension command may handle input before _preparePrompt()\n|   |-- Input hooks -> skill/template expansion\n|   |-- Streaming: explicit steer/followUp policy queues; otherwise throws\n|   `-- Idle: validate model/auth -> _startRun()\n|-- _prepareRun()\n|   |-- Check compaction -> before_agent_start hooks -> normalize images\n|   `-- Prompt options + tool loadout -> starting messages/system patch\n|-- Agent.prompt(messages) / Agent.continue()\n|   `-- -> runAgentLoop()/runAgentLoopContinue() [agent-loop.ts]\n|       |-- prepareRequest hook -> canonical projection and model routing\n|       |-- streamAssistantResponse()\n|       |   `-- transformContext -> convertToLlm -> configured stream function\n|       |-- Assistant tool calls -> executeToolCalls()\n|       |   `-- Validate -> beforeToolCall -> execute(signal, update) -> afterToolCall\n|       |-- Tool results + steering -> another assistant turn\n|       |-- Follow-ups drain when the loop would otherwise stop\n|       `-- Events -> Agent state + AgentSession event handler\n|-- _handlePostAgentRun()\n|   |-- Retryable error / overflow compaction -> Agent.continue()\n|   `-- Queues added by agent_end handlers may restart execution\n|-- Before-settle boundary handlers may request continuation\n|   `-- Queues and recovery finish -> agent_settled (later than agent_end)\n`-- abort()\n    `-- Cancel Agent and recovery work -> await waitForIdle()",
+        "position": {
+          "column": 110,
+          "row": 0
+        }
+      },
+      {
+        "id": "history",
+        "ascii": "SessionManager: canonical history [session-manager.ts]\n|\n|-- Retained storage\n|   |-- fileEntries + byId + leafId\n|   `-- Entry id/parentId tree: messages, settings, summaries, context edits\n|-- appendMessage() / appendCustomMessageEntry()\n|   |-- <- AgentSession message_end; deltas are not separate entries\n|   `-- _persist() -> JSONL when enabled\n|       `-- First write waits for a user or assistant message\n|-- buildSessionProjection(entries, leafId, byId)\n|   |-- Root-to-leaf path -> latest compaction + retained context entries\n|   |-- Context edits replace/omit model-visible content, not stored originals\n|   `-- Messages + model/thinking metadata + source-entry provenance\n|-- buildSessionContext() -> restored/finalized Agent messages\n|-- branch(entryId) -> move leaf without rewriting old history\n|   `-- <- navigateTree(); createBranchedSession() copies a selected path\n`-- appendCompaction(summary, firstKeptEntryId, ...)\n    |-- <- Session.compact()/auto recovery: prepareCompaction()\n    |-- Extension can cancel/supply summary; otherwise default summarizer\n    `-- Refresh projection -> smaller model context; retain underlying tree",
+        "position": {
+          "column": 0,
+          "row": 53
+        }
+      },
+      {
+        "id": "boundary",
+        "ascii": "Request collaborators (cross-component detail, not one owner)\n|\n|-- AgentSession-held request machinery\n|   |-- _installAgentRequestProjection() installs Agent.prepareRequest\n|   |   |-- -> SessionManager.buildSessionProjection(): canonical messages\n|   |   `-- Virtual selection + branch routing state -> ModelRuntime.resolveModel()\n|   |       `-- Physical request model may differ from retained selection\n|   |-- ExtensionRunner [extensions/runner.ts]\n|   |   |-- <- ResourceLoader supplies extensions; session binds context\n|   |   `-- Input/context/tool/provider/boundary hooks; contexts invalidated on dispose\n|   `-- _toolDefinitions / _toolRegistry\n|       |-- createAllToolDefinitions(cwd, options) -> built-ins\n|       |-- Defaults: read / bash / edit / write\n|       |-- Additional: powershell / grep / find / ls\n|       |-- Custom + extension + built-in definitions -> wrapRegisteredTools()\n|       `-- Messages declare visibility; Agent context.tools holds execution\n|\n|-- SDK-installed Agent request callbacks [sdk.ts]\n|   |-- transformContext -> ExtensionRunner.emitContext()\n|   |-- convertToLlm -> provider messages (including image filtering)\n|   `-- streamFn -> ModelRuntime.streamSimple(model, context, options)\n|       |-- Settings -> transport/retry/timeout options\n|       `-- Extension hooks transform headers/payload and observe responses\n|\n`-- ModelRuntime [held by services; referenced by session and SDK callbacks]\n    |-- pi-ai Models instance: providers + model storage\n    |-- RuntimeCredentials -> supplied credentials or default AuthStorage\n    `-- resolveModel()/streamSimple() -> routed, authenticated provider request",
+        "position": {
+          "column": 110,
+          "row": 36
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": {
+          "diagram": "core",
+          "line": 12
+        },
+        "target": {
+          "diagram": "execution",
+          "line": 1
+        },
+        "label": "expands the session's run API"
+      },
+      {
+        "source": {
+          "diagram": "core",
+          "line": 17
+        },
+        "target": {
+          "diagram": "execution",
+          "line": 12
+        },
+        "label": "calls loop functions; does not own a loop object"
+      },
+      {
+        "source": {
+          "diagram": "core",
+          "line": 18
+        },
+        "target": {
+          "diagram": "history",
+          "line": 1
+        },
+        "label": "expands the retained history manager"
+      },
+      {
+        "source": {
+          "diagram": "core",
+          "line": 20
+        },
+        "target": {
+          "diagram": "boundary",
+          "line": 8
+        },
+        "label": "expands session-bound extension hooks"
+      },
+      {
+        "source": {
+          "diagram": "core",
+          "line": 22
+        },
+        "target": {
+          "diagram": "boundary",
+          "line": 11
+        },
+        "label": "expands tool ownership and loadout"
+      },
+      {
+        "source": {
+          "diagram": "core",
+          "line": 39
+        },
+        "target": {
+          "diagram": "boundary",
+          "line": 25
+        },
+        "label": "expands service-held model boundary"
+      },
+      {
+        "source": {
+          "diagram": "execution",
+          "line": 13
+        },
+        "target": {
+          "diagram": "boundary",
+          "line": 4
+        },
+        "label": "invokes session-installed request projection"
+      },
+      {
+        "source": {
+          "diagram": "boundary",
+          "line": 5
+        },
+        "target": {
+          "diagram": "history",
+          "line": 10
+        },
+        "label": "reads canonical context before each request"
+      },
+      {
+        "source": {
+          "diagram": "execution",
+          "line": 15
+        },
+        "target": {
+          "diagram": "boundary",
+          "line": 18
+        },
+        "label": "uses SDK conversion and streaming callbacks"
+      },
+      {
+        "source": {
+          "diagram": "execution",
+          "line": 17
+        },
+        "target": {
+          "diagram": "boundary",
+          "line": 16
+        },
+        "label": "executes callable tools, not transcript declarations"
+      },
+      {
+        "source": {
+          "diagram": "execution",
+          "line": 20
+        },
+        "target": {
+          "diagram": "history",
+          "line": 6
+        },
+        "label": "message_end events append completed messages"
+      },
+      {
+        "source": {
+          "diagram": "execution",
+          "line": 22
+        },
+        "target": {
+          "diagram": "history",
+          "line": 17
+        },
+        "label": "overflow recovery records compaction"
+      },
+      {
+        "source": {
+          "diagram": "core",
+          "line": 43
+        },
+        "target": {
+          "diagram": "execution",
+          "line": 26
+        },
+        "label": "settles outgoing execution before replacement"
+      }
+    ]
+  },
+  "opencode": {
+    "source": {
+      "runId": "4d1d388a-78a5-4198-9c56-9fa04b4fbddf",
+      "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative",
+      "canvasId": "representation-44561909-c6cd-4b5f-990f-da7cccdf073c",
+      "checkpointId": "canvas-revision-073a34ea-2a4b-4c85-96be-e48f190afa77"
+    },
+    "diagrams": [
+      {
+        "id": "engine",
+        "ascii": "OpenCode session engine\n|\n|-- Server adapters (outside core session ownership)\n|   |-- SessionHandler -> Session.Service\n|   `-- EventFeed: bounded SSE subscriber queues\n|       `-- <- Bus live events; disconnect releases only subscriber\n|\n|-- Host-scoped session services\n|   |-- Session.Service (public API)\n|   |   |-- create / fork / remove\n|   |   |   |-- Children inherit location and default metadata/permissions\n|   |   |   `-- remove -> stop, awaitIdle, cancel jobs, close transport, delete family\n|   |   `-- Session.make(): shared handle factory\n|   |       |-- forSession(id): reload state; no private conversation object\n|   |       |-- get / messages / inbox -> shared projected state\n|   |       |-- prompt: reconcile ID -> prepare -> admit durable inbox item\n|   |       |   |-- Preparation succeeds before committing staged revert\n|   |       |   `-- -> execution.wake unless resume === false\n|   |       |-- revert / compact / move / permissions / agent / model controls\n|   |       `-- resume / interrupt / wait -> SessionExecution\n|   |\n|   |-- SessionExecution\n|   |   |-- SessionRunCoordinator\n|   |   |   |-- executions: Map<sessionID, Execution>\n|   |   |   |   `-- owner fiber, done Deferred, pendingWake, stop/reason state\n|   |   |   |-- wake coalesces; run starts or joins; one owner per session\n|   |   |   `-- interrupt acknowledges early; awaitIdle includes settlement\n|   |   |-- Lifecycle hooks\n|   |   |   |-- started -> Bus publication + Store.claim in one transaction\n|   |   |   |-- drain -> Instance.provide(session) -> selected runner\n|   |   |   |   `-- Moved / Reloaded -> reacquire graph and continue\n|   |   |   `-- settled -> terminal commit; shutdown preserves claim\n|   |   `-- SubagentReport coordinator\n|   |       |-- -> Job generations; terminal commit retains owed report\n|   |       `-- -> parent inbox synthetic item -> wake parent execution\n|   |-- SessionRestart\n|   |   |-- Startup sweep -> orphaned claims, retry budgets, owed reports\n|   |   `-- At-least-once recovery; external effects can repeat\n|   `-- Shared state services -> durable SQL\n|\n`-- LocationServiceMap\n    |-- Cached service graphs keyed by canonical Location.Ref\n    |-- Instance.provide(session) selects by session.location\n    `-- Reload detaches routing; active steps retain borrowed graph\n        `-- Borrow release permits scope finalization",
+        "position": {
+          "column": 0,
+          "row": 0
+        }
+      },
+      {
+        "id": "state",
+        "ascii": "Durable state and shared projection services\n|\n|-- SQL storage (outlives requests and active executions)\n|   |-- Per-session aggregate rows\n|   |   |-- SessionTable: identity, location, parent/fork links, configuration\n|   |   |   |-- Metadata, revert, tokens, cost and lifecycle timestamps\n|   |   |   `-- time_suspended = execution claim; resume_attempts = retry budget\n|   |   |-- SessionMessageTable: messages ordered by sequence\n|   |   |   `-- SessionPartTable: ordered assistant text/reasoning/tool content\n|   |   |-- SessionInboxTable: admitted work not yet delivered into history\n|   |   |   |-- steer: eligible during continuation; queue: next-turn boundary\n|   |   |   `-- compaction / move: control items\n|   |   `-- InstructionStateTable + InstructionEntryTable: baselines/entries\n|   `-- EventTable: optional retained payloads, not the projection store\n|\n|-- Bus: shared event publication and subscriptions\n|   |-- Durable publication transaction\n|   |   |-- Invoke registered projectors + optional operational commit hook\n|   |   `-- Advance aggregate sequence; retain payload only when persist=true\n|   `-- After commit -> volatile live subscribers\n|-- SessionProjector: registers callbacks with Bus\n|   |-- SessionMessageUpdater: folds step/text/reasoning/tool events\n|   `-- -> SQL projections for session, history, inbox and instructions\n|-- SessionInbox: shared admission/lifecycle service\n|   |-- reconcile -> ID lifecycle checks; admit -> Bus publication\n|   `-- Delivery -> projected history; pending items survive request exit\n`-- SessionStore: shared projected-state access\n    |-- get / messages / context -> SQL and SessionHistory\n    |-- claim / release -> durable execution intent, distinct from busy status\n    `-- Same projected state serves API readers and runner context\n\nSession.log -> ordered aggregate history; replay needs retained event payloads",
+        "position": {
+          "column": 96,
+          "row": 0
+        }
+      },
+      {
+        "id": "location",
+        "ascii": "One cached location service graph (shared by sessions at this location)\n|\n|-- Capabilities: Config / Agent / Model / Plugin / Permission\n|-- Environment: FileSystem / Shell / Snapshot\n|-- Tool registry: built-ins, plugins, MCP and code-mode capabilities\n|   `-- snapshot(permissions) -> definitions + execute capability\n|-- SessionContext\n|   |-- select -> session + agent + permissions + Tool snapshot + instructions\n|   |   `-- Built-ins, discovery, skills, MCP, references and stored entries\n|   `-- load -> resolved model + SessionHistory -> initial/active messages\n|-- SessionCompaction\n|   `-- estimate / compact / precompute: automatic, explicit and overflow paths\n`-- SessionRunnerLLM (implements SessionRunner.Service)\n    |-- drain: one continuation with local step/boundary state\n    |   |-- await plugin activation; settle stale compactions/tool calls\n    |   |-- advanceToStep -> inspect/deliver durable inbox work\n    |   |   |-- -> SessionContext.select/load and instruction preparation\n    |   |   `-- No work -> idle hook may admit input; otherwise Complete\n    |   `-- runStep: logical step policy\n    |       |-- -> SessionCompaction; compaction can replace active history\n    |       |-- baseTranscript -> context.request.primary\n    |       |   |-- History + instructions + agent/model + tools -> request\n    |       |   |-- Plugin hooks shape request; session transport binds options\n    |       |   `-- Step limit: disable calls but retain tool definitions\n    |       `-- -> attempt outcome: retry / recover / continue / finish\n    |           `-- Retry reloads context without promoting more input\n    `-- SessionStep helper (constructed by runner; captures shared services)\n        `-- attempt: scoped streaming/tool work and durable settlement\n            |-- Attempt-local event publisher and tool-run records\n            |-- Filesystem start/end captures -> step snapshots and file changes\n            |-- -> LLMClient.stream; consume through stream end\n            |   `-- Text/reasoning/tool/usage/step events -> Bus projections\n            |-- Local Tool.Called committed before forking tool execution\n            |   |-- prepared.executeTool -> selected Tool snapshot.execute\n            |   |-- Registry execution hooks and permission checks\n            |   |-- Declines/cancelled questions -> control failures\n            |   `-- ToolOutput.truncate -> publisher -> next-step history\n            `-- Wait for tool settlement before final step events\n                `-- User stop: cooperative cancellation, then interrupt remainder",
+        "position": {
+          "column": 96,
+          "row": 38
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": {
+          "diagram": "engine",
+          "line": 39
+        },
+        "target": {
+          "diagram": "state",
+          "line": 1
+        },
+        "label": "Shared state services and durable storage expanded"
+      },
+      {
+        "source": {
+          "diagram": "engine",
+          "line": 42
+        },
+        "target": {
+          "diagram": "location",
+          "line": 1
+        },
+        "label": "Each cached graph contains these location-scoped services"
+      },
+      {
+        "source": {
+          "diagram": "engine",
+          "line": 30
+        },
+        "target": {
+          "diagram": "location",
+          "line": 14
+        },
+        "label": "Borrow selected graph and invoke runner.drain"
+      },
+      {
+        "source": {
+          "diagram": "engine",
+          "line": 16
+        },
+        "target": {
+          "diagram": "state",
+          "line": 24
+        },
+        "label": "Record admitted work before scheduling execution"
+      },
+      {
+        "source": {
+          "diagram": "engine",
+          "line": 29
+        },
+        "target": {
+          "diagram": "state",
+          "line": 17
+        },
+        "label": "Started projection and execution claim commit atomically"
+      },
+      {
+        "source": {
+          "diagram": "engine",
+          "line": 37
+        },
+        "target": {
+          "diagram": "state",
+          "line": 7
+        },
+        "label": "Recovery scans durable claims and charges retry budgets"
+      },
+      {
+        "source": {
+          "diagram": "engine",
+          "line": 35
+        },
+        "target": {
+          "diagram": "state",
+          "line": 24
+        },
+        "label": "Child completion is admitted as parent work"
+      },
+      {
+        "source": {
+          "diagram": "state",
+          "line": 20
+        },
+        "target": {
+          "diagram": "engine",
+          "line": 5
+        },
+        "label": "Live events feed bounded SSE queues; overflow fails subscriber"
+      },
+      {
+        "source": {
+          "diagram": "engine",
+          "line": 15
+        },
+        "target": {
+          "diagram": "state",
+          "line": 27
+        },
+        "label": "Public readers use projected state"
+      },
+      {
+        "source": {
+          "diagram": "location",
+          "line": 16
+        },
+        "target": {
+          "diagram": "state",
+          "line": 10
+        },
+        "label": "Drain promotes eligible inputs or delivers controls"
+      },
+      {
+        "source": {
+          "diagram": "location",
+          "line": 10
+        },
+        "target": {
+          "diagram": "state",
+          "line": 28
+        },
+        "label": "Model context reads durable history"
+      },
+      {
+        "source": {
+          "diagram": "location",
+          "line": 32
+        },
+        "target": {
+          "diagram": "state",
+          "line": 16
+        },
+        "label": "Streaming attempt events update shared projections"
+      }
+    ]
+  },
+  "ghostty": {
+    "source": {
+      "runId": "9f582f37-2a7a-4159-9b8e-5b6b30a20365",
+      "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative",
+      "canvasId": "representation-bcbacaa0-9e8b-4361-8fb3-eb6fd411c893",
+      "checkpointId": "canvas-revision-8ad5db1c-96c8-4985-bbde-173c368ce3b2"
+    },
+    "diagrams": [
+      {
+        "id": "core",
+        "ascii": "Ghostty: Surface-centered session system\n|\n|-- Core App (src/App.zig)\n|   |-- surfaces: registered *apprt.Surface; focused_surface: checked reference\n|   |-- mailbox: worker-to-main-thread messages\n|   |   `-- tick -> drainMailbox -> hasSurface -> Surface.handleMessage\n|   |-- font_grid_set: shared, reference-counted font grids\n|   |-- device: optional app-owned GPU device, borrowed by renderers\n|   `-- deinit: runtime surface cleanup before shared fonts and device\n|\n`-- Runtime-managed surface hosts (apprt.Surface; src/apprt.zig)\n    |-- Runtime chooses window/tab/split/pane; delivers events\n    `-- Core Surface (src/Surface.zig): owns one terminal session\n        |-- app / rt_app / rt_surface: borrowed references, not owned hosts\n        |-- config: owned DerivedConfig\n        |   `-- updateConfig -> derived settings to I/O and renderer mailboxes\n        |-- keyboard / mouse / size / focused / visible / child_exited\n        |-- keyCallback / textCallback / mouseButtonCallback\n        |   |-- Binding action -> local operation or rt_app.performAction\n        |   |-- Encode key/mouse/paste using io.terminal protocol state\n        |   `-- queueIo -> io.queueMessage; takes ownership; readonly drops writes\n        |-- sizeCallback -> resize: pixels + cell metrics + padding\n        |   `-- -> queueIo(.resize) AND renderer mailbox .resize + wakeup\n        |-- io: termio.Termio (src/termio/Termio.zig)\n        |   |-- backend: Backend.exec -> Exec -> subprocess + PTY\n        |   |-- terminal_stream: terminal.Stream(StreamHandler)\n        |   |-- terminal: terminal.Terminal (the sole emulation state)\n        |   `-- mailbox / derived config / current size\n        |-- io_thread: termio.Thread manager; io_thr: OS thread\n        |   `-- drainMailbox -> io.queueWrite; coalesces resize requests\n        |-- renderer_state: renderer.State (src/renderer/State.zig)\n        |   |-- terminal -> &io.terminal; NOT another owned terminal\n        |   |-- mutex + preedit + renderer-facing mouse state\n        |   `-- lockDemand / unlockDemand / yieldToDemand: fairness handoff\n        |-- renderer: GenericRenderer(GraphicsAPI)\n        |   `-- Own frame state; borrow App device and shared font grid\n        |-- renderer_thread: renderer.Thread manager; renderer_thr: OS thread\n        |   `-- Wakeups/timers -> renderer.updateFrame / drawFrame\n        |-- draw() -> renderer.drawFrame(true), also from main thread\n        |-- Optional search worker and inspector\n        |-- childExited(): record exit; native UI or terminal text\n        |   |-- Abnormally short run -> report and return, keep surface open\n        |   `-- Normal exit: wait_after_command holds; otherwise close()\n        |-- close() -> rt_surface.close(needsConfirmQuit())\n        |   `-- Runtime close lifecycle -> Surface.deinit()\n        `-- deinit(): ordered release\n            |-- Stop/join search, then renderer thread, then I/O thread\n            |-- I/O thread exit -> Exec stops child and joins PTY reader\n            |-- Free renderer before renderer_thread, then I/O resources\n            `-- Release input/preedit/mutex/config; deref App font grid",
+        "position": {
+          "column": 0,
+          "row": 0
+        }
+      },
+      {
+        "id": "io",
+        "ascii": "Termio: session I/O and emulation (src/termio/Termio.zig)\n|\n|-- backend.exec: Exec (src/termio/Exec.zig)\n|   |-- Subprocess: owns PTY and launched shell/command\n|   |   `-- start() -> Pty.open + launch configured command\n|   |-- Read pipeline managed by Exec threadEnter/threadExit\n|   |   |-- POSIX: io-gather -> bounded rotating buffers -> io-reader\n|   |   `-- Windows: blocking read and processing in one serial loop\n|   `-- queueWrite() -> PTY -> child input\n|-- terminal_stream: terminal.Stream(StreamHandler)\n|   |-- VT parser -> handler operations\n|   `-- StreamHandler (src/termio/stream_handler.zig)\n|       |-- Owns multipart APC/DCS/clipboard protocol state\n|       |-- terminal reference -> mutate this Termio's Terminal\n|       |-- Protocol replies -> Termio mailbox -> PTY write path\n|       |-- surface_mailbox -> App.mailbox -> checked main-thread dispatch\n|       `-- queueRender() -> renderer wakeup (no direct native UI calls)\n|-- terminal: terminal.Terminal (src/terminal/Terminal.zig)\n|   |-- Geometry: rows / cols / scrolling_region / tabstops\n|   |-- Protocol/session state: modes / cursor / colors / title / pwd\n|   `-- screens: ScreenSet (src/terminal/ScreenSet.zig)\n|       |-- all: owned Screens; primary eager, alternate lazy\n|       |   `-- Each Screen (src/terminal/Screen.zig)\n|       |       |-- cursor / saved_cursor / selection / charset / kitty_keyboard\n|       |       |-- kitty_images / semantic_prompt / dirty\n|       |       `-- pages: PageList (src/terminal/PageList.zig)\n|       |           |-- Ordered pages: history through active screen\n|       |           |   `-- Rows + cells (src/terminal/page.zig)\n|       |           `-- Tracked pins: viewport / cursor / selection locations\n|       `-- active: reference into all, not a separate Screen\n|-- mailbox: input writes / protocol replies / control messages\n|   `-- Surface's io_thread drains -> queueWrite -> Backend.queueWrite\n|-- processOutput(bytes), invoked by Exec reader\n|   |-- Lock Surface.renderer_state.mutex\n|   |-- Schedule queueRender while locked, then terminal_stream.nextSlice\n|   `-- Unlock; reader yieldToDemand lets pending renderer snapshot proceed\n`-- resize(size), invoked after io_thread coalescing\n    |-- size.grid(): reconcile pixels, cell metrics and padding\n    |-- Under same terminal mutex: Backend.resize then Terminal.resize\n    |   `-- Child redraw cannot be parsed with obsolete terminal dimensions\n    `-- -> renderer mailbox .resize + wakeup",
+        "position": {
+          "column": 100,
+          "row": 0
+        }
+      },
+      {
+        "id": "render",
+        "ascii": "Renderer: per-Surface frame preparation and presentation\n|\n|-- GenericRenderer(GraphicsAPI) (src/renderer/generic.zig)\n|   |-- terminal_state: owned terminal.RenderState snapshot\n|   |-- font_shaper / prepared cells / image and GPU resources\n|   |-- font_grid: borrowed App shared grid (glyph atlas/cache)\n|   |-- Graphics API uses borrowed App.device\n|   |   `-- Compile-time Metal or OpenGL (src/renderer.zig)\n|   |-- updateFrame(Surface.renderer_state)\n|   |   |-- lockDemand() -> shared Terminal + viewport + dirty state\n|   |   |-- May scroll viewport / advance Kitty animations while locked\n|   |   |-- terminal_state.beginUpdate + copy preedit/mouse/image data\n|   |   |-- unlockDemand() -> terminal_state.endUpdate() outside lock\n|   |   `-- Snapshot + shaping + atlas -> cells, selection, cursor, images\n|   `-- drawFrame() -> Graphics API -> runtime host surface\n|\n`-- Scheduling: sibling Surface.renderer_thread (src/renderer/Thread.zig)\n    |-- Mailbox / wakeups / timers drive updateFrame and drawFrame\n    |   `-- Incoming .resize updates display geometry\n    |-- I/O queueRender -> wakeup; frame reads shared state under mutex\n    |-- Surface.draw() -> drawFrame(true) can run on main thread\n    `-- Teardown: join renderer thread, then free renderer before its manager",
+        "position": {
+          "column": 100,
+          "row": 48
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": {
+          "diagram": "core",
+          "line": 24
+        },
+        "target": {
+          "diagram": "io",
+          "line": 1
+        },
+        "label": "Expands Surface-owned session engine"
+      },
+      {
+        "source": {
+          "diagram": "core",
+          "line": 27
+        },
+        "target": {
+          "diagram": "io",
+          "line": 18
+        },
+        "label": "Expands Terminal ownership through screens and pages"
+      },
+      {
+        "source": {
+          "diagram": "core",
+          "line": 35
+        },
+        "target": {
+          "diagram": "render",
+          "line": 3
+        },
+        "label": "Expands Surface-owned renderer"
+      },
+      {
+        "source": {
+          "diagram": "core",
+          "line": 37
+        },
+        "target": {
+          "diagram": "render",
+          "line": 17
+        },
+        "label": "Sibling thread manager schedules rendering"
+      },
+      {
+        "source": {
+          "diagram": "core",
+          "line": 21
+        },
+        "target": {
+          "diagram": "io",
+          "line": 31
+        },
+        "label": "Transfers input/control messages to I/O"
+      },
+      {
+        "source": {
+          "diagram": "io",
+          "line": 20
+        },
+        "target": {
+          "diagram": "core",
+          "line": 20
+        },
+        "label": "Negotiated terminal modes determine input encoding"
+      },
+      {
+        "source": {
+          "diagram": "io",
+          "line": 16
+        },
+        "target": {
+          "diagram": "core",
+          "line": 6
+        },
+        "label": "UI effects dispatched only if Surface still exists"
+      },
+      {
+        "source": {
+          "diagram": "io",
+          "line": 17
+        },
+        "target": {
+          "diagram": "render",
+          "line": 20
+        },
+        "label": "Output interpretation requests a frame"
+      },
+      {
+        "source": {
+          "diagram": "io",
+          "line": 18
+        },
+        "target": {
+          "diagram": "render",
+          "line": 10
+        },
+        "label": "Shared Terminal sampled under Surface's mutex"
+      },
+      {
+        "source": {
+          "diagram": "io",
+          "line": 41
+        },
+        "target": {
+          "diagram": "render",
+          "line": 19
+        },
+        "label": "Display resize notification after PTY/emulator resize"
+      },
+      {
+        "source": {
+          "diagram": "core",
+          "line": 23
+        },
+        "target": {
+          "diagram": "render",
+          "line": 19
+        },
+        "label": "Additional direct display resize notification"
+      },
+      {
+        "source": {
+          "diagram": "render",
+          "line": 6
+        },
+        "target": {
+          "diagram": "core",
+          "line": 7
+        },
+        "label": "Borrows shared font grid; Surface holds its reference"
+      },
+      {
+        "source": {
+          "diagram": "render",
+          "line": 7
+        },
+        "target": {
+          "diagram": "core",
+          "line": 8
+        },
+        "label": "Borrows app-scoped GPU device"
+      },
+      {
+        "source": {
+          "diagram": "core",
+          "line": 31
+        },
+        "target": {
+          "diagram": "render",
+          "line": 9
+        },
+        "label": "Shared-state access and fairness boundary"
+      }
+    ]
+  }
+}

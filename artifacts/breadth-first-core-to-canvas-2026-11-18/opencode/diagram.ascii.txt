@@ -1,0 +1,137 @@
+OpenCode session-centered agent runtime (paths relative to packages/core/src unless qualified)
+|
+|-- Session service boundary -- session.ts; session/session.ts
+|   |-- Session.Service / Session.make().forSession(id)
+|   |   |-- Exposes create, fork, list, messages, prompt, command, shell, compact, interrupt and log
+|   |   `-- Handles reload current state -> SessionStore; execution requests -> SessionExecution
+|   |-- Session identity and lifecycle: create, rename, archive, permissions, model/agent selection
+|   |   |-- create -> Project.resolve + Bus.publish(SessionEvent.Created)
+|   |   `-- Children inherit parent location, metadata and permissions unless overridden
+|   |-- remove(sessionID) -- coordinates resource teardown
+|   |   `-- -> SessionExecution.interrupt/awaitIdle; Job.cancelSession; transport.close; delete children
+|   `-- HTTP adapter: packages/server/src/handlers/session.ts::SessionHandler
+|       `-- Protocol requests -> Session.Service; log exposes replayable session progress
+|
+|-- Durable session state -- session/store.ts; session/projector.ts; bus.ts
+|   |-- SessionStore -- indexed reads, message pagination, active context and execution claims
+|   |   `-- SessionSchema.Info + SessionMessage.Info -> session/sql.ts tables and session/blob.ts media
+|   |-- SessionProjector -- registered event handlers materialize session state
+|   |   |-- SessionMessageUpdater, SessionStored, SessionPartTable: messages and streamed parts
+|   |   `-- Projects inbox delivery, forks, lifecycle, compaction, costs and token usage
+|   |-- Bus -- publish/publishAll, project, replay, subscribe and log
+|   |   |-- Durable publication -> Database transaction: sequence + event + projectors + commit hook
+|   |   `-- log(after, follow): historical events, Synced watermark, then live; subscribe is volatile
+|   `-- Database.Service -- database/database.ts; event/sql.ts; session/sql.ts
+|       `-- SQLite retains event sequences, session/message/part/inbox rows and resumable claims
+|
+|-- Input admission -- session/prompt.ts; session/inbox.ts
+|   |-- SessionPrompt.prepare -- text, attachments, agent mentions and skill materialization
+|   |   |-- -> Plugin.awaitActivation + PluginHooks session.prompt
+|   |   `-- Prepared input -> SessionInbox.admit; successful preparation precedes staged-revert commit
+|   |-- SessionInbox -- durable pending user/synthetic input and compaction/move barriers
+|   |   |-- reconcile/admit, cancel/steer/queue, nextPromotable/promote; serialized per session
+|   |   |-- steer: eligible between steps; queue: eligible at the next idle/input boundary
+|   |   `-- Admission -> Bus events; Session.prompt and steerInbox -> SessionExecution.wake
+|   |-- SessionCommand / SessionSkill / SessionShell -- session/{command,skill,shell}.ts
+|   |   `-- Alternate entry preparation and shell completion recording -> session input/events
+|   `-- Schedule -- schedule.ts; schedule/check.ts; schedule/sql.ts
+|       |-- Owns persisted schedules, due checks and a database-leased scheduler loop
+|       `-- Due work -> Session.prompt; permission checks support unattended execution
+|
+|-- Execution engine -- session/execution.ts; session/runner/
+|   |-- SessionExecution -- process-local execution ownership and instance routing
+|   |   |-- resume/wake/interrupt/awaitIdle -> SessionRunCoordinator
+|   |   |-- drain -> Instance.provide(session) -> SessionRunner.drain
+|   |   `-- Started event claims durable work; terminal settlement releases it except on shutdown
+|   |-- SessionRunCoordinator -- session/run-coordinator.ts
+|   |   |-- Owns execution fibers, completion waiters and coalesced pending wakeups
+|   |   `-- One active execution per session; different sessions may run concurrently
+|   |-- SessionRunnerLLM -- session/runner/llm.ts
+|   |   |-- drain/runStep, context preparation, retries, max-step policy and stale-call settlement
+|   |   |-- -> SessionInbox promotion; SessionContext loading; SessionCompaction; SessionStep.attempt
+|   |   `-- Location closure/move returns Reloaded/Moved -> SessionExecution reacquires the instance
+|   |-- SessionStep -- session/runner/step.ts; publish-llm-event.ts; retry.ts
+|   |   |-- Owns one provider attempt and scoped tool fibers; joins or cancels tools before settlement
+|   |   |-- -> LLMClient.stream; advertised tool calls -> prepared.executeTool
+|   |   `-- createLLMEventPublisher -> Bus: text, reasoning, tool progress/results, step usage and errors
+|   `-- Background work and restart -- job.ts; session/subagent-job.ts; session/execution/
+|       |-- Job owns running/background work, cancellation, recovery records and report outbox
+|       |-- SubagentJob.start -> SessionExecution.resume(child); jobs outlive launching plugins
+|       |-- SubagentReport -> parent SessionInbox; terminal/report bookkeeping commits together
+|       `-- restart.ts reads suspended claims and pending jobs -> resume work or deliver completion notices
+|
+|-- Context and conversation maintenance -- session/context.ts; session/history.ts
+|   |-- SessionContext.select/load -- fixes one request's agent, tools, instructions, model and history
+|   |   |-- -> SessionStore + Agent selection; agent/session permissions -> Tool.snapshot
+|   |   `-- -> SessionRunnerModel; SessionHistory supplies the active transcript
+|   |-- Agent, Skill, Reference and instruction services -- agent.ts; skill.ts; reference.ts
+|   |   |-- InstructionDiscovery, InstructionBuiltIns, SkillInstructions, ReferenceInstructions
+|   |   `-- SessionInstructions / InstructionEntry / InstructionState track session guidance
+|   |-- SessionHistory -- decoding, active-history boundaries and instruction/model updates
+|   |   `-- -> Durable message rows; excludes history outside the current conversation context
+|   |-- SessionCompaction -- session/compaction.ts
+|   |   |-- Owns summary preparation/precompute; manual, automatic and overflow-triggered compaction
+|   |   `-- Context size + retained history -> summary/model request -> Bus compaction events
+|   |-- SessionTitle / SessionGenerate -- session/{title,generate}.ts
+|   |   `-- Auxiliary generation -> context/model request; generate does not admit input or mutate history
+|   `-- SessionRevert / SessionDiff / SessionTransfer / SessionStats
+|       |-- session/{revert,diff,transfer,stats}.ts: rewind, file review, import/export and usage queries
+|       `-- Revert stages/clears/commits a history boundary -> Snapshot restore + Bus events
+|
+|-- Model request and provider integration -- session/model-request.ts; model-resolver.ts
+|   |-- Model / Provider / Credential / AISDK -- catalogs, credentials and provider adapters
+|   |   `-- model.ts; provider.ts; credential.ts; aisdk.ts; aisdk-native.ts
+|   |-- SessionRunnerModel.resolve -- session/runner/model.ts
+|   |   `-- Session selection, then agent preference, then fallback -> ModelResolver + plugin resolve hook
+|   |-- SessionModelRequest -- baseTranscript and prepared request construction
+|   |   |-- SessionSystemPrompt + toLLMMessages + tool definitions + model limits -> LLM request
+|   |   |-- Hooks, media compatibility and output-token budgeting shape the request
+|   |   `-- Prepared.executeTool retains the advertised Tool.Snapshot, not a later registry version
+|   |-- LLMClient -- @opencode/ai/effect
+|   |   `-- Provider-independent streaming consumed by SessionStep and auxiliary generation
+|   `-- SessionModelTransport / SessionAffinity -- session/{model-transport,affinity}.ts
+|       |-- Owns per-session WebSocket connections, exchange continuity and close/closeAll
+|       `-- Stateful transport is reserved for the durable runner; removal/move closes its connection
+|
+|-- Tool capabilities and interaction policy -- tool.ts; tool/runtime.ts
+|   |-- Tool.Service -- transformable registry, permission-filtered snapshots and Code Mode checks
+|   |   |-- Snapshot holds definitions and executors together for a request
+|   |   `-- Execution -> PluginHooks before/after; content normalization -> ToolOutput truncation
+|   |-- Built-in tool plugins -- tool/plugin/
+|   |   |-- read/write/edit/patch/glob/grep; shell; webfetch/websearch; image-generate
+|   |   |-- skill/todo/question/artifact; schedule; subagent; opencode; MCP resources/events
+|   |   |-- File and shell tools -> project Environment, FileSystem, FileWrite and Shell
+|   |   `-- SubagentTool -> Session.create/prompt + SubagentJob; ScheduleTools -> Schedule
+|   |-- Mcp / McpTool -- mcp/{index,client,connection,pool,oauth}.ts; tool/mcp.ts
+|   |   `-- External server connections, discovery and remote tools -> Tool registry/context instructions
+|   |-- CodeMode -- codemode/{catalog,execution,tool,instructions}.ts
+|   |   `-- Tool inventory -> sandboxed program execution over permitted registered capabilities
+|   `-- Permission / Form -- permission.ts; permission/saved.ts; form.ts
+|       |-- Rules, saved project approvals, pending requests and interactive answers
+|       |-- Permission.assert -> agent/session policy + user reply; events -> Bus
+|       `-- Permission.close rejects pending waiters; location teardown ends outstanding interaction
+|
+|-- Project environment and resource lifetime -- instance.ts; location-services.ts
+|   |-- LocationServiceMap / Instance / LocationLifecycle
+|   |   |-- Caches location-scoped service graphs by canonical Location.Ref
+|   |   |-- Instance.provide(session) lends the selected graph to session operations
+|   |   `-- Invalidation detaches routing; borrowed graphs survive until running steps release them
+|   |-- Project / Location / Workspace / Worktree -- project.ts; location.ts; workspace/; worktree/
+|   |   `-- Location.directory + optional workspaceID -> Environment's local or workspace driver
+|   |-- Environment / FileSystem / FileAccess / FileMutation / FileWrite / Formatter
+|   |   `-- environment/; filesystem/; file-{access,mutation,write}.ts; formatter/: files, search and edits
+|   |-- Shell / Pty / PersistentPty -- shell.ts; pty/; persistent-pty/
+|   |   `-- Process spawning, interactive terminals and daemon-backed process lifetime
+|   `-- Snapshot / Vcs -- snapshot.ts; vcs.ts; vcs/patch.ts
+|       `-- capture/files/diff/restore: step file-change tracking and reversible workspace changes
+|
+`-- Configuration and extension host -- config.ts; plugin.ts; plugin/
+    |-- Config -- config/{discovery,managed,normalize,variable,watch}.ts
+    |   `-- Discovered and managed settings -> config plugins that transform runtime services
+    |-- Plugin service / host / supervisor / module loader
+    |   |-- plugin/{service,host,supervisor,module}.ts: generations, activation, updates and close
+    |   `-- awaitActivation gates prompt preparation and each runner step against unsettled catalogs
+    |-- PluginInternal -- plugin/internal.ts
+    |   `-- Installs built-in providers, agents, tools and config adapters -> their service registries
+    `-- PluginHooks -- plugin/hooks.ts
+        `-- Extension points for session prompts/context/model requests, tools, permissions and idle behavior

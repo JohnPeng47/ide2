@@ -1,0 +1,138 @@
+{
+  "output": {
+    "explanation": "The central tree is reduced from 83 to 56 lines (32.5%) and from 5,998 to 3,826 characters (36.2%). Six peripherals expand validation, evidence lifetime, request receipts/lineage, record ownership, model conversion and diagram identity. The center groups responsibilities rather than files; public operations and private state show modular boundaries, call sequences show control flow, and hashes/references show data dependencies. Calls describe supplied code, not observed runtime traces. Edges attach to relevant concept lines. Measured diagram bounds do not overlap.\n\nCorrections: the seed's 'bytes exactly match HEAD' is too strong. fileAgentContextSources.ts:28-31,60-67 splits CRLF/LF before comparing sourceFileHash values, so reuse compares parsed content. The seed's version rules describe newly generated contexts; agentContext.ts:131-148 also accepts version 2/3 without ranges or sections when other validation succeeds. Branch cycle/missing-entry checks stop at fromEntryId rather than checking all ancestry (agentContext.ts:99-121). Diagram fingerprint generation is present, but automatic freshness comparison is not shown (diagramAgentContext.ts:28-30,63-85). The source adapter's '2 MiB' error/comment conflicts with its imported 16 MiB constant; diagrams follow the executable check.\n\nDetails beyond the seed include receipt checks before recapture/parent lookup, cache eviction and lifetime, code-unit chunking, per-occurrence expanded byte accounting, sourceId fallback, and full-record reads behind summaries. Evidence is limited to context.json's six pinned sources and point definition plus seed.json. Imported source-range/hash helpers, ImmutableRecords internals, store wiring and session launch callers were not supplied, so their implementations and end-to-end behavior are not asserted.",
+    "diagrams": [
+      {
+        "id": "central",
+        "ascii": "Reusable Agent Contexts\n|-- AgentContext: validated conversation and pinned evidence\n|   |-- Capture one trajectory branch, then reverse into conversation order\n|   |   `-- Reject duplicate IDs, broken paths and incomplete tool exchanges\n|   |-- Descriptor = version + source identity + selected range + messages\n|   |   |-- User, assistant/tool calls and toolResult messages\n|   |   `-- Text, source ranges and one level of named sections\n|   |-- SHA-256 of canonical descriptor; attachments excluded\n|   |   `-- Restore validates hash, tool sequencing and supplied attachments\n|   `-- Private snapshot; callers receive clones; raw input limit is 16 MiB\n|-- Source capture and transport\n|   |-- Registered sourceId + path + line range + optional revision\n|   |   `-- FileAgentContextSources resolves the source binding\n|   |-- Revision available -> resolve commit -> read regular Git file\n|   |-- Otherwise read document; Git worktrees compare parsed content with HEAD\n|   |   `-- Matching content uses Git; otherwise retain immutable snapshot\n|   |-- persist(): store attachments, check references, strip attachments\n|   |   `-- Snapshot blobs live under agent-context-sources\n|   `-- portable(): attach selected lines, rewrite references, rehash descriptor\n|-- Durable library: AgentContextLibrary\n|   |-- Depends on repository and optional source adapter\n|   |-- create(): text, constituents/sections or validated snapshot\n|   |   |-- Capture source constituents; text/constituents become one user message\n|   |   `-- Persist via adapter when present -> saved-agent-context-<requestId>\n|   |-- Request receipt: identical retry returns record; mismatch fails\n|   |-- list(): search name/description, newest first, paginated summaries\n|   |-- read(): compact snapshot plus separately resolved snapshot when requested\n|   |-- update(group) and addComment(): metadata preserves snapshot hash\n|   |   `-- New comment checks current hash and records hash/time\n|   |-- fork(): verify parent hash, copy snapshot, create new saved ID\n|   |   |-- Record parent ID/hash; inherit description/group unless overridden\n|   |   `-- Comments stay on parent; identical retry returns existing fork\n|   `-- lineage(): root-to-selected summaries and parent hash comparisons\n|       `-- Missing ancestors or cycles fail explicitly\n|-- File-backed durability: FileAgentContextRepository\n|   |-- Owns <store>/agent-contexts/<saved ID>.json across canvases/chats\n|   |-- Read validates record, matching ID and AgentContext snapshot\n|   |-- Create: write/sync temp -> exclusive hard link -> directory sync\n|   |   `-- Existing record accepted only when requestHash matches\n|   `-- Metadata: acquire directory lock -> mutate -> write/sync -> rename\n|       `-- Lock timeout is 5 seconds; finally removes temp and acquired lock\n|-- Model input reuse\n|   |-- resolveSources(): attached evidence first, otherwise injected reader\n|   |   |-- Replace ranges with text; retain sections and tool calls\n|   |   `-- Expanded sources capped at 16 MiB; return newly hashed context\n|   |-- toPiMessages(): section labels and synthetic assistant provenance\n|   |   `-- Unresolved ranges fail; provenance does not select runtime model\n|   `-- Library reads do not launch a model or change the current conversation\n`-- Diagram-bound reuse\n    |-- compileDiagramAgentContext(): capture original evidence as attachments\n    |   |-- One user message contains binding/evidence metadata and references\n    |   `-- Retain diagramId, compiledFromRevisionId and sourceFingerprint\n    |-- Fingerprint depends on binding/evidence; comparison is a caller concern\n    |-- Captured evidence is background; later requests supply current diagram\n    |-- Inline snapshot or stored backingRecordId + contentHash\n    `-- Load validates snapshot hash, agent type and diagram identity",
+        "position": {
+          "column": 100,
+          "row": 32
+        }
+      },
+      {
+        "id": "checks",
+        "ascii": "Conversation validity [agentContext.ts]\n|-- fromTrajectory(): select a bounded branch\n|   |-- Duplicate entry IDs rejected across the input\n|   |-- Follow parents from throughEntryId; stop at fromEntryId\n|   `-- Cycle/missing-entry checks cover the traversed path\n|-- Tool exchange state: private pending map + seen-ID set\n|   |-- Assistant calls add unique IDs and expected tool names\n|   |-- Results consume matching IDs; orphan/duplicate/mismatch fails\n|   `-- Pending results must clear before user/assistant or slice end\n|-- Version selection differs from restoration acceptance\n|   |-- New contexts: sections -> 3; otherwise ranges -> 2; else -> 1\n|   `-- Restore: ranges require >=2; sections require 3\n|       `-- Version 2/3 without ranges or sections can still pass\n|-- Descriptor hash depends on source, range, version and messages\n|   |-- Recursive object-key sorting; array order retained\n|   `-- Attachment hashes/referenced use checked separately\n`-- fromMessages(): builds a linear diagram-composer trajectory\n    `-- Retains supplied session ID; assigns message-0, message-1, ...",
+        "position": {
+          "column": 0,
+          "row": 0
+        }
+      },
+      {
+        "id": "evidence",
+        "ascii": "Evidence lifetime [fileAgentContextSources.ts]\n|-- Public capture/read/persist/portable; private blobs and pinned cache\n|-- capture(): registry binding determines available storage\n|   |-- Requested revision wins over bound Git revision\n|   |-- With revision: resolve commit; ls-tree check; git show\n|   |   `-- Accept only regular blobs with modes 100644 or 100755\n|   `-- Without revision: readDocumentText() -> parsed source file\n|       |-- Split on CRLF/LF; reject NUL; enforce 16 MiB constant\n|       |-- Git HEAD reuse compares sourceFileHash of parsed files\n|       `-- Otherwise blobs.put(file); return snapshot-hash reference\n|-- Pinned cache is per adapter instance\n|   |-- Key = root + commit + path; retain at most 16 promises\n|   `-- Evict oldest insertion; remove failed promise for retry\n|-- persist(): validate -> put attachments -> load distinct references\n|   `-- Return descriptor without attachments; same contentHash\n`-- portable(): load each distinct range and slice selected lines\n    |-- Preserve startLine; attach selected file under its hash\n    `-- Rewrite references, including section children; recompute hash",
+        "position": {
+          "column": 200,
+          "row": 0
+        }
+      },
+      {
+        "id": "receipts",
+        "ascii": "Retry and lineage [agentContextLibrary.ts + savedAgentContext.ts]\n|-- Public library delegates storage; receipt hash is separate from contentHash\n|-- create() with constituents/sections\n|   |-- Hash name, description, raw constituents and optional group\n|   `-- Check existing request ID BEFORE capturing source again\n|-- create() with text or snapshot\n|   |-- Construct/validate context first; receipt includes contentHash\n|   `-- Check existing ID before source persistence\n|-- Group absent: omit from receipt input to preserve legacy hashes\n|   `-- Later group/comment metadata edits leave creation receipt intact\n|-- fork(): receipt = hash of ['fork', parsed request]\n|   |-- Existing matching receipt returns BEFORE parent lookup\n|   |   `-- Retry survives later changes to fork or parent\n|   `-- New fork requires current parent hash\n|       `-- group omitted inherits; group:null clears; comments omitted\n|-- lineage(): repository reads every ancestor; reverse summaries\n|   `-- parentMatches compares pinned parent hash with parent's current hash\n`-- Discovery defaults: query='', offset=0, limit=20 (maximum 100)\n    `-- Case-insensitive search; equal dates sort by saved ID",
+        "position": {
+          "column": 200,
+          "row": 32
+        }
+      },
+      {
+        "id": "disk",
+        "ascii": "Record ownership [fileAgentContextRepository.ts]\n|-- Public read/create/updateGroup/addComment/summaries\n|   `-- Private directory, ID-to-path helper and metadata mutation\n|-- create(): own unique temporary file opened wx, mode 0600\n|   |-- Write -> file sync -> close -> hard-link final path\n|   |-- Existing destination is not replaced\n|   |-- Directory sync -> read/validate saved record -> compare receipt\n|   `-- finally: remove temporary file\n|-- Metadata mutation serializes writers across processes\n|   |-- mkdir(<record>.lock); retry EEXIST every 10 ms for up to 5 s\n|   |-- Read latest record under lock -> mutate -> schema validation\n|   |-- Write/sync/close temp -> rename final -> directory sync\n|   `-- finally: remove temp, then lock even if temp removal fails\n|-- addComment(): requestId becomes commentId\n|   |-- Existing ID: compare text and expected hash; identical is a no-op\n|   `-- New ID: require current hash, append timestamp and hash\n`-- summaries(): enumerate saved JSON files and call read() on each\n    `-- Returns metadata summaries but reads and validates full snapshots",
+        "position": {
+          "column": 200,
+          "row": 64
+        }
+      },
+      {
+        "id": "model",
+        "ascii": "Model conversion [agentContext.ts]\n|-- resolveSources(): new cache owned by each invocation\n|   |-- Canonical full reference is the cache key\n|   |-- Attached snapshot wins; otherwise call supplied reader\n|   `-- Missing both -> AGENT_CONTEXT_SOURCE_UNAVAILABLE\n|-- Expansion retains message order, sections and tool calls\n|   |-- Repeated ranges share reads but each occurrence counts bytes\n|   |-- Split text into blocks of at most 1,000,000 JS code units\n|   `-- Choose version 3 with sections, else 1; rehash and validate\n|-- toPiMessages() calls agentContextModelContent()\n|   |-- Sections become opening/closing text labels\n|   |-- Any remaining sourceRange throws\n|   `-- Non-assistant content is filtered to text\n`-- Assistant history gets synthetic provenance and zero usage/cost\n    |-- api=openai-responses; provider=agent-context\n    |-- model=source.agentType; runtime model choice is elsewhere\n    `-- stopReason=toolUse when calls exist, otherwise stop",
+        "position": {
+          "column": 0,
+          "row": 64
+        }
+      },
+      {
+        "id": "diagram",
+        "ascii": "Diagram evidence identity [diagramAgentContext.ts]\n|-- compileDiagramAgentContext(): no store required\n|   |-- Copy originalLines with startLine -> attachment hash\n|   |-- sourceId fallback: evidence entry -> binding -> diagramId\n|   |-- Metadata replaces originalLines with source references\n|   `-- Build one diagram-context user message at timestamp 0\n|-- sourceFingerprint = SHA-256(JSON.stringify({binding, evidence}))\n|   |-- Missing binding becomes null; no canonical key sorting here\n|   `-- No freshness comparison or automatic refresh in this file\n|-- storeDiagramAgentContext(): validate before publication\n|   |-- Already stored -> return reference unchanged\n|   `-- Inline -> store.put(snapshot) -> require 64-hex backingRecordId\n|-- loadDiagramAgentContext(): inline snapshot or store.get(recordId)\n|   |-- Missing backing data -> AGENT_CONTEXT_STORAGE_UNAVAILABLE\n|   `-- Validate descriptor hash, agentType and sourceSessionId\n`-- validateDiagramAgentContext(): exactly one backing form\n    |-- Check ID prefixes and hash shapes; inline contentHash is optional\n    `-- Revision/fingerprint formats checked, not compared with live diagram",
+        "position": {
+          "column": 100,
+          "row": 96
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": {
+          "diagram": "central",
+          "line": 2
+        },
+        "target": {
+          "diagram": "checks",
+          "line": 1
+        },
+        "label": "Validates conversation and descriptor"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 11
+        },
+        "target": {
+          "diagram": "evidence",
+          "line": 1
+        },
+        "label": "Captures, retains and transports evidence"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 25
+        },
+        "target": {
+          "diagram": "receipts",
+          "line": 1
+        },
+        "label": "Separates request identity from content identity"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 35
+        },
+        "target": {
+          "diagram": "disk",
+          "line": 1
+        },
+        "label": "Owns record publication and metadata mutation"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 43
+        },
+        "target": {
+          "diagram": "model",
+          "line": 1
+        },
+        "label": "Resolves evidence before model conversion"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 49
+        },
+        "target": {
+          "diagram": "diagram",
+          "line": 1
+        },
+        "label": "Binds captured context to diagram identity"
+      }
+    ]
+  },
+  "usage": {
+    "input_tokens": 221846,
+    "cached_input_tokens": 179712,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 7953,
+    "reasoning_output_tokens": 671
+  }
+}

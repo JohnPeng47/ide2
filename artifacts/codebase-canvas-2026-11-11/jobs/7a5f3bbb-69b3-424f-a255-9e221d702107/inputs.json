@@ -1,0 +1,42 @@
+{
+  "fingerprint": "05f04e260d3f6e9309fa10120213f58add65d93ad5a61ebab026587b1d6b382a",
+  "files": {
+    "judge-input.json": {
+      "sha256": "6cbba7f7dbc7e13f6a486eafa1226745c0381e5ef9f8faea96b51ff96fdccdbc",
+      "bytes": 344154
+    }
+  },
+  "dependencies": [
+    "initial/C1/tree/composition",
+    "initial/C1/expand/composition",
+    "initial/C1/tree/diagrams",
+    "initial/C1/expand/diagrams",
+    "initial/C1/tree/parsing",
+    "initial/C1/expand/parsing",
+    "initial/C1/tree/canvas_commands",
+    "initial/C1/expand/canvas_commands",
+    "initial/C1/tree/workspace",
+    "initial/C1/expand/workspace",
+    "initial/C1/tree/rendering",
+    "initial/C1/expand/rendering",
+    "initial/C1/tree/persistence",
+    "initial/C1/expand/persistence",
+    "initial/C1/tree/source_evidence",
+    "initial/C1/expand/source_evidence",
+    "initial/C1/tree/agent_access",
+    "initial/C1/expand/agent_access",
+    "initial/C1/tree/contexts",
+    "initial/C1/expand/contexts",
+    "initial/C1/tree/diagram_generation",
+    "initial/C1/expand/diagram_generation",
+    "initial/C1/tree/chat",
+    "initial/C1/expand/chat",
+    "initial/C1/tree/changes",
+    "initial/C1/expand/changes",
+    "initial/C1/tree/evals",
+    "initial/C1/expand/evals",
+    "initial/C1/tree/static_analysis",
+    "initial/C1/expand/static_analysis"
+  ],
+  "round": 1
+}

@@ -1,0 +1,19 @@
+{
+  "id": "child-4",
+  "name": "exec",
+  "assignment": "Map all d4 nodes only. Numbered ranges full named functions/declarations, return JSON partial.",
+  "model": "gpt-6-sol",
+  "effort": "medium",
+  "status": "generating",
+  "queuedAt": "2026-11-19T04:31:43.014Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-19T04:31:43.017Z",
+  "sessionId": "01a1f213-23c4-7d5e-8fd2-c88b3f093292",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-5t7gs81j-agent-repository-5t5idq-checkout--/2026-11-19T04-31-43-044Z_01a1f213-23c4-7d5e-8fd2-c88b3f093292.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase3-5t7gs81j/agent-repository-5t5idq/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

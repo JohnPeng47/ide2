@@ -1,0 +1,18 @@
+nodes(): DisplayNode[]
+|-- [D] document + presentation + geometry -> public registry
+|   `-- derived nodes; not a second authoritative document
+|-- Common identity and hierarchy
+|   `-- id / read-time version / childIds / expansion
+|-- Grid nodes
+|   |-- diagram or group; authoritative boxId
+|   |-- [D] GridBox layout -> cell bounds
+|   |   `-- column / row / columns / rows
+|   `-- diagram instance -> DiagramContent
+`-- Floating nodes
+    |-- [D] placement + geometry policy -> pixel bounds
+    |   `-- position / size / canvas or viewport coordinates
+    `-- FloatingBox
+        |-- SelectionRegion -> selected grid rectangle
+        |-- ProjectedPane -> parent projection owner
+        |-- ConversationPane -> anchor and presentation
+        `-- DetailPane -> retained placement

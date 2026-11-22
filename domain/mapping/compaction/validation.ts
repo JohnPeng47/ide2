@@ -13,9 +13,9 @@ export type FileCompactionPrompts = Record<FileCompactionStage, { name: string; 
 
 export function validateFileCompactionDraft(value: unknown, source: FileCompactionSource): asserts value is FileCompactionDraft {
   const draft = value as FileCompactionDraft | null;
-  if (!draft || typeof draft.ascii !== "string" || !draft.ascii.trim() || draft.ascii.length > 200000
+  if (!draft || typeof draft.ascii !== "string" || !draft.ascii.trim()
     || /[^\x0a\x20-\x7e]/.test(draft.ascii) || !Array.isArray(draft.mappings)) {
-    throw new Error("Expected printable ASCII and source mappings (maximum 200,000 characters)");
+    throw new Error("Expected printable ASCII and source mappings");
   }
   const lines = draft.ascii.split("\n");
   const root = lines.findIndex((line) => line.trim());

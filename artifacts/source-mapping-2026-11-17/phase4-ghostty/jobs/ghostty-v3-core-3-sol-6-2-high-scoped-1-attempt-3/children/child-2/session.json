@@ -1,0 +1,19 @@
+{
+  "id": "child-2",
+  "name": "output",
+  "assignment": "Map n36–n51 output/parser/mailbox branch. Use mktemp -d /tmp/output-map.XXXXXX if needed. Return compact node scope and path/ranges/roles (short codes and parent union refs OK), plus notes. Include cross-file handoffs.",
+  "model": "gpt-6.2-sol",
+  "effort": "high",
+  "status": "generating",
+  "queuedAt": "2026-11-22T03:29:48.732Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-22T03:29:48.735Z",
+  "sessionId": "01a2014d-8ae0-7cdc-b03e-781efe592c8e",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-1kmg0f14-agent-repository-DG1M8J-checkout--/2026-11-22T03-29-48-768Z_01a2014d-8ae0-7cdc-b03e-781efe592c8e.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase4-1kmg0f14/agent-repository-DG1M8J/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

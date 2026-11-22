@@ -1,0 +1,41 @@
+{
+  "output": {
+    "summary": "Phase 2 supplied useful architectural boundaries and strong expansion topics, but its seed often reads like an already expanded implementation inventory. The final canvas preserves those strengths while inheriting a large central tree, ambiguous shared-state references, and fragmented publication semantics. Some seed claims required later qualification; the supplied outputs establish those presentation inconsistencies, not source-level errors.",
+    "strengths": [
+      "The seed distinguishes module responsibilities, resource lifetimes, runtime calls and computation dependencies (lines 2, 21, 40 and 76). The final central diagram retains these complementary views, while session, gesture, project, route and boundary provide natural expansion destinations.",
+      "Ownership distinctions carry explanatory value: seed lines 28–39 separate visibility from session lifetime, native geometry from semantic history, and owned storage from injected storage. These distinctions survive in central lines 22–30 and boundary's “UI visibility and resource lifetime are separate” branch.",
+      "The dependency branch explains mechanisms rather than merely listing components. Seed lines 90–103 identify geometry inputs, measurement overrides, stale-result rejection and fallback; route develops these into a coherent account of routing behavior.",
+      "Seed lines 64–65 and 95–96 distinguish camera activity from semantic checkpoints and routing dependencies. These selective exclusions help readers understand which changes propagate and which do not."
+    ],
+    "issues": [
+      {
+        "evidence": "Seed lines 44–57 enumerate gesture conversion and publication details; lines 97–103 enumerate routing queue behavior; lines 104–106 specify dirty-state predicates. The final central diagram still occupies 72 lines, while gesture repeats and extends settlement, route repeats queue behavior, and session's “Dirty status depends on saved baseline” repeats the predicates retained at central lines 70–72.",
+        "impact": "The seed gives implementation leaves nearly the same prominence as architectural boundaries. Expansion consequently adds substantial detail around an already dense overview, with repeated mechanisms competing for attention. Later pruning and placement determine the final size, but Phase 2 supplied little guidance about which details were essential to retain centrally.",
+        "recommendation": "Regenerate around responsibilities, important state boundaries and a few decisive behavioral invariants. Compress algorithm steps and cleanup inventories into expandable concepts. Retain detailed leaves where they explain a consequential distinction, and make their intended role as supporting detail apparent rather than reproducing them across views."
+      },
+      {
+        "evidence": "The seed attaches “[shared S]” to “semantic snapshots and checkpoint history” at line 11, controller creation at line 23, the semantic document and checkpoint archive at line 31, committed-state publication at line 54, and projection inputs at lines 77 and 85. These references remain in central lines 9, 19, 24, 40, 56 and 61. The final explanation must clarify that snapshots feed rendering while history supports navigation.",
+        "impact": "The shared marker usefully connects branches, but its referent shifts between a controller, current state and historical state. Readers can mistake these as one interchangeable dependency. The final explanation repairs some ambiguity outside the diagram, while the seed's overloaded notation persists inside it.",
+        "recommendation": "Define the shared referent explicitly in the seed and distinguish current semantic snapshots from checkpoint history where their consumers differ. Use concrete relationship wording at each reference, such as publishes snapshots, retains history or projects current state, without imposing a universal relationship scheme."
+      },
+      {
+        "evidence": "Seed lines 54–57 place subscriber publication, read-store updates, persistence notification and native reconciliation beneath “Semantic geometry changed -> controller.commitEditorGesture.” The sibling application-command path at lines 58–60 goes directly from controller update to native publication. In the final canvas, central line 40 retains the gesture-scoped publication node, while session lines 14–18 explain general controller publication and commit notification. The session expansion is linked from central line 18, “CanvasWorkspace owns document sessions.”",
+        "impact": "A cross-cutting publication mechanism appears subordinate to one input path. Expansion distributes its pieces between ownership and gesture views, leaving readers to reconstruct how controller changes reach stores, persistence and rendering. The exact expansion link is a later choice, but the seed's nesting creates the underlying scope ambiguity.",
+        "recommendation": "Give controller publication a clear shared conceptual location. Distinguish gesture settlement and application commands as entry paths, then indicate their relationship to publication without asserting identical behavior beyond the supplied evidence. Keep revision-triggered persistence conditions attached to that publication account."
+      },
+      {
+        "evidence": "Seed line 72 says the bridge registers “visible drafts”; final central line 54 and boundary line 12 instead say “non-hidden drafts,” explicitly including inactive ones. Seed line 68 says “sync captured document,” whereas central line 51 and boundary line 4 show capture followed by sync([id]). Seed line 75 broadly associates persistence-backed methods with flushing; boundary lines 15–17 distinguish method-specific retry behavior and generic apply's lack of an explicit flush. The final explanation explicitly identifies these as corrections or qualifications.",
+        "impact": "Compressed labels turn operational distinctions into apparent general guarantees. Later expansion must repair terminology and narrow claims instead of simply elaborating them. These are documented differences between the supplied outputs; repository correctness cannot be independently established here.",
+        "recommendation": "Use narrower boundary descriptions in the regenerated seed: distinguish visibility from registration eligibility, captured save state from synchronization arguments, and method-specific receipt/flush behavior from general command dispatch. Preserve uncertainty or scope explicitly when the available evidence does not support a universal claim."
+      }
+    ],
+    "regenerationInstructions": "Preserve the useful responsibility, lifetime and dependency distinctions, but reduce implementation inventory in the overview. Establish clear referents for shared state and history, give publication semantics a scope independent of gesture settlement, and qualify external-boundary claims using the distinctions documented in the final output. Select detail according to explanatory value and expansion needs; do not force equal branch sizes or a fixed taxonomy. Treat final positioning, peripheral-only additions and connector selection as later-stage choices."
+  },
+  "usage": {
+    "input_tokens": 63439,
+    "cached_input_tokens": 38656,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 1551,
+    "reasoning_output_tokens": 169
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "output": {
+    "ascii": "Pi coding-session runtime -- AgentSession coordinates prompts, tools, models and conversation history\n|   Core: packages/coding-agent/src/core/agent-session.ts:409\n|   [M] module boundary  [C] invocation  [O] state/lifetime  [D] data dependency\n|\n|-- [M] One session API, several hosts\n|   |-- main.ts -> InteractiveMode / runPrintMode / runRpcMode\n|   |   `-- Hosts submit prompts and consume session.subscribe(AgentSessionEvent)\n|   |       Source: packages/coding-agent/src/main.ts:1010\n|   |-- createAgentSession(options) -> { session, extensionsResult, modelFallbackMessage }\n|   |   |-- Restores messages, model selection and thinking level from SessionManager\n|   |   |-- Creates Agent; injects ModelRuntime, SettingsManager and ResourceLoader\n|   |   `-- Constructs AgentSession and installs its request, tool and turn hooks\n|   |       Source: packages/coding-agent/src/core/sdk.ts:191\n|   `-- AgentSession exposes prompt / steer / followUp / abort / compact / navigateTree\n|       `-- Private orchestration: _startRun, _handleAgentEvent, _buildRuntime\n|           Hosts need not implement persistence, retry or context preparation\n|\n|-- [C] Prompt-to-result execution -- AgentSession.prompt(text, options)\n|   |   Source: packages/coding-agent/src/core/agent-session.ts:1943,2162\n|   |-- _tryExecuteExtensionCommand() may handle slash commands without an LLM request\n|   |-- _preparePrompt()\n|   |   |-- input hooks -> skill/template expansion -> model/auth validation\n|   |   `-- Already streaming -> _queueSteer() or _queueFollowUp()\n|   |       |-- steer: deliver after current turn's tool calls, before next request\n|   |       `-- followUp: deliver when tool calls and steering would otherwise stop\n|   |-- _prepareRun() -> before_agent_start -> prompt/tool loadout + starting messages\n|   |   `-- [D] Extension-selected model limits -> image normalization for request/history\n|   `-- _startRun() -> Agent.prompt(messages) -> runAgentLoop() -> runLoop()\n|       |   Sources: packages/agent/src/agent.ts; packages/agent/src/agent-loop.ts:172\n|       |-- [O] Agent retains live state and execution resources\n|       |   |-- state: messages, model, thinkingLevel, tools, streaming progress\n|       |   |-- steeringQueue / followUpQueue: pending AgentMessage objects\n|       |   `-- activeRun: AbortController + completion promise\n|       |       Listeners are awaited; agent_end alone does not mean settled\n|       |-- prepareRequest() installed by AgentSession\n|       |   |-- [D] SessionManager.buildSessionProjection() -> canonical request messages\n|       |   |-- agent.state.tools -> executable implementations, not just declarations\n|       |   `-- Virtual selection -> ModelRuntime.resolveModel(messages, reason, state)\n|       |       Selected model stays in Agent state; routed model applies to this request\n|       |       Source: packages/coding-agent/src/core/agent-session.ts:848\n|       |-- streamAssistantResponse()\n|       |   |-- transformContext() -> convertToLlm() -> streamFunction(model, context)\n|       |   `-- [M] ModelRuntime.streamSimple() -> prepared.provider.streamSimple()\n|       |       |-- Catalog/config + RuntimeCredentials -> model and request authentication\n|       |       |-- Built-in, extension and virtual providers share this boundary\n|       |       `-- Streaming provider output -> assistant message events\n|       |           Source: packages/coding-agent/src/core/model-runtime.ts:174,744\n|       |-- Assistant tool calls -> executeToolCalls() -> ToolResultMessage[]\n|       |   `-- [D] Tool results enter context -> next assistant response can use them\n|       `-- finishTurn() / prepareNextTurnWithContext() control continuation\n|           |-- Refresh compaction, system prompt and active tool loadout between turns\n|           |-- More tool calls or steering -> another assistant turn\n|           `-- Otherwise drain follow-ups, honor explicit continuation, or emit agent_end\n|\n|-- [M] Tool and extension boundary -- capabilities are assembled per session\n|   |   Source: packages/coding-agent/src/core/agent-session.ts:3761\n|   |-- _buildRuntime() -> createAllToolDefinitions(cwd) + new ExtensionRunner(...)\n|   |   |-- Built-ins: read / bash / powershell / edit / write / grep / find / ls\n|   |   |-- Default active set: read / bash / edit / write\n|   |   `-- Custom/extension tools join _toolRegistry and _toolDefinitions\n|   |       Source: packages/coding-agent/src/core/tools/index.ts\n|   |-- [D] Registered definitions + active names + allow/exclude rules -> executable loadout\n|   |   `-- Transcript system messages declare toolsAdded/toolsRemoved to the model\n|   |       Implementations remain in context.tools; prepareLoadout may hide declarations\n|   |-- [C] prepareToolCall() -> executePreparedToolCall() -> finalizeExecutedToolCall()\n|   |   |-- Validate arguments; beforeToolCall can block execution\n|   |   |-- tool.execute(id, args, signal, onUpdate) performs the capability\n|   |   `-- afterToolCall may transform results; tool failures become isError results\n|   |       Source: packages/agent/src/agent-loop.ts:821\n|   `-- ExtensionRunner participates in input, context, tools and lifecycle boundaries\n|       |-- before_agent_start can change prompt options and inject messages\n|       |-- turn_end / agent_before_settle can commit context edits and request continuation\n|       `-- Provider request/response hooks are wired through createAgentSession()\n|           Sources: packages/coding-agent/src/core/agent-session.ts:947,2087;\n|                    packages/coding-agent/src/core/sdk.ts:351\n|\n|-- [O] SessionManager owns durable conversation structure, not the live stream\n|   |   Source: packages/coding-agent/src/core/session-manager.ts:985\n|   |-- fileEntries[] + byId + leafId -> append-only session tree in JSONL\n|   |   |-- SessionEntry.id / parentId connect history; append creates a child of leafId\n|   |   |-- Entries include messages, model/thinking changes, summaries and context edits\n|   |   `-- branch() moves the active leaf without deleting earlier branches\n|   |       SessionManager.inMemory() provides a non-persisted alternative\n|   |-- [C] AgentSession._handleAgentEvent(message_end) -> appendMessage()\n|   |   |-- Custom messages use appendCustomMessageEntry()\n|   |   |-- _entryIdsByMessage connects runtime objects to durable entries\n|   |   `-- Extensions and public listeners receive events before this persistence step\n|   |       Source: packages/coding-agent/src/core/agent-session.ts:1164\n|   |-- [D] Active root-to-leaf path + latest compaction + context edits\n|   |   `-- buildSessionProjection() -> provenance-bearing entries + finalized messages\n|   |       |-- Latest compaction summary + retained range replace older request context\n|   |       |-- Context edits replace/hide projected content without rewriting source entries\n|   |       `-- buildSessionContext() restores messages, model and thinking level\n|   |           Source: packages/coding-agent/src/core/session-manager.ts:476\n|   `-- [C] AgentSession.navigateTree(targetId)\n|       |-- Optionally summarize the departing branch up to its common ancestor\n|       `-- branchWithSummary() / branch() / resetLeaf() -> rebuild current context\n|           Navigation is rejected during prompting, streaming or compaction\n|           Source: packages/coding-agent/src/core/agent-session.ts:4126\n|\n|-- [C] Context maintenance and recovery keep long-running sessions usable\n|   |   Source: packages/coding-agent/src/core/agent-session.ts:2054,2910,3106\n|   |-- _handlePostAgentRun()\n|   |   |-- Retryable response + retry settings -> _prepareRetry() -> Agent.continue()\n|   |   `-- _checkCompaction() handles threshold/overflow recovery when appropriate\n|   |-- compact() / _runAutoCompaction()\n|   |   |-- [D] Branch entries + model context limits + compaction settings\n|   |   |   `-- prepareCompaction() -> summary input and firstKeptEntryId\n|   |   |-- session_before_compact can cancel or supply an alternate summary\n|   |   `-- Default summarizer -> appendCompaction() -> _refreshFinalizedContext()\n|   |       History remains stored; subsequent requests use the compacted projection\n|   |-- Manual compact() first aborts the run; it does not resume the interrupted turn\n|   `-- [O] AgentSession retains retry counters, failed response and abort controllers\n|       `-- Compaction, branch summaries, retry waits and bash have separate cancellation state\n|\n`-- [O] AgentSessionRuntime owns the current session and cwd-bound services\n    |   Sources: packages/coding-agent/src/core/agent-session-runtime.ts:66;\n    |            packages/coding-agent/src/core/agent-session-services.ts:73,135\n    |-- services: cwd / agentDir / ModelRuntime / SettingsManager / ResourceLoader\n    |   `-- createAgentSessionServices() -> resource reload and provider registration\n    |       createAgentSessionFromServices() -> createAgentSession()\n    |-- newSession() / switchSession() / fork()\n    |   |-- Before-switch/fork extension hooks may cancel replacement\n    |   |-- teardownCurrent(): await session.abort() -> session_shutdown -> dispose()\n    |   |   `-- Settle and persist the outgoing turn before invalidating its context\n    |   `-- createRuntime(target cwd, SessionManager) -> apply() -> rebindSession()\n    |       Replacement creates a new session rather than mutating captured extension contexts\n    `-- AgentSession.dispose()\n        |-- Abort work; invalidate ExtensionRunner; disconnect Agent subscription/listeners\n        `-- Cancel CacheWarmer and cleanupSessionResources(sessionId)\n            Durable SessionManager history remains available for later resume\n            Source: packages/coding-agent/src/core/agent-session.ts:1477"
+  },
+  "usage": {
+    "input": 40340,
+    "output": 3778,
+    "cacheRead": 130048,
+    "cacheWrite": 0,
+    "reasoning": 198,
+    "totalTokens": 174166
+  },
+  "execution": {
+    "runtime": "pi-agent-context",
+    "sessionId": "01a1dc11-9d8e-79e7-b2ef-ea46c81ede1c",
+    "contextHash": "642eff5f7c0caf04881c5a7a06cc6f80a6acefc263656940751d03a1c1360017",
+    "cacheKey": "eval-f4bd5ff7a6bae2e8f80a522f52f6bd698032cf1f8fb22cea7aed6d9c6c58a30a",
+    "modelContextHash": "21f9ed459e71a815126a98cb916aedfa405e001a684f145a2afac3d1e4484a85",
+    "repositories": [
+      {
+        "repository": "repo-1",
+        "repositoryPath": "/home/john/softwarez/pi",
+        "commit": "682c7b93ce3e0a52b579c2b65b4c06bb392e7180",
+        "exclusions": [
+          "**/*-LICENSE",
+          "**/*.md",
+          "**/*.mdx",
+          "**/*.spec.*",
+          "**/*.test.*",
+          "**/AGENTS.md",
+          "**/CODEX-LICENSE",
+          "**/LICENSE*",
+          "**/__fixtures__/**",
+          "**/__tests__/**",
+          "**/benchmarks/**",
+          "**/build/**",
+          "**/dist/**",
+          "**/docs/**",
+          "**/examples/**",
+          "**/fixtures/**",
+          "**/node_modules/**",
+          "**/scripts/**",
+          "**/test/**",
+          "**/tests/**",
+          ".github/**",
+          ".husky/**",
+          ".pi/**",
+          "flake.lock",
+          "nix/**",
+          "package-lock.json",
+          "scripts/**"
+        ],
+        "checkout": "/tmp/agent-repository-CtEGCn/checkout",
+        "inspectionSource": "session-transcript"
+      }
+    ]
+  }
+}

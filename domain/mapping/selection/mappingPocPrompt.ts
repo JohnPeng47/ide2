@@ -181,7 +181,7 @@ export function generatedMappingPocResult(
   lines: string[], mappings: DiagramElementMapping[], allowed: readonly DiagramElementMapping[]
 ): MappingPocPromptResult {
   validateReplacementLines(lines);
-  if (!lines.join("\n").trim() || lines.join("\n").length > 20000) throw new Error("Generated diagram must contain 1–20000 characters");
+  if (!lines.join("\n").trim()) throw new Error("Generated diagram must contain non-whitespace text");
   if (!mappings.length) throw new Error("Generated diagrams require source mappings");
   validateMappingPocMappings(lines.join("\n"), mappings);
   for (const mapping of mappings) {

@@ -1,0 +1,169 @@
+{
+  "modelCalls": 0,
+  "model": {
+    "provider": "openai-codex",
+    "model": "gpt-6-sol"
+  },
+  "checks": [
+    {
+      "caseId": "core-mapping",
+      "commit": "8ca143700ca4d2c870f1101b8cd4601ab68abd41",
+      "metrics": {
+        "nodes": 129,
+        "mappedNodes": 1,
+        "ranges": 1,
+        "sourceLines": 1,
+        "files": 1,
+        "diagrams": 1
+      },
+      "checks": [
+        "restore pinned input",
+        "register mappings",
+        "preserve ASCII/layout/edges",
+        "save",
+        "reopen for editing",
+        "load output"
+      ]
+    },
+    {
+      "caseId": "core-pi",
+      "commit": "682c7b93ce3e0a52b579c2b65b4c06bb392e7180",
+      "metrics": {
+        "nodes": 100,
+        "mappedNodes": 1,
+        "ranges": 1,
+        "sourceLines": 1,
+        "files": 1,
+        "diagrams": 1
+      },
+      "checks": [
+        "restore pinned input",
+        "register mappings",
+        "preserve ASCII/layout/edges",
+        "save",
+        "reopen for editing",
+        "load output"
+      ]
+    },
+    {
+      "caseId": "core-opencode",
+      "commit": "fe3552441192ccbea91d117668e7f3a9eb097baf",
+      "metrics": {
+        "nodes": 96,
+        "mappedNodes": 1,
+        "ranges": 1,
+        "sourceLines": 1,
+        "files": 1,
+        "diagrams": 1
+      },
+      "checks": [
+        "restore pinned input",
+        "register mappings",
+        "preserve ASCII/layout/edges",
+        "save",
+        "reopen for editing",
+        "load output"
+      ]
+    },
+    {
+      "caseId": "core-ghostty",
+      "commit": "ea8b12a8a9894b5259c441eadd8f6f0c65e215af",
+      "metrics": {
+        "nodes": 95,
+        "mappedNodes": 1,
+        "ranges": 1,
+        "sourceLines": 1,
+        "files": 1,
+        "diagrams": 1
+      },
+      "checks": [
+        "restore pinned input",
+        "register mappings",
+        "preserve ASCII/layout/edges",
+        "save",
+        "reopen for editing",
+        "load output"
+      ]
+    },
+    {
+      "caseId": "canvas-mapping",
+      "commit": "8ca143700ca4d2c870f1101b8cd4601ab68abd41",
+      "metrics": {
+        "nodes": 121,
+        "mappedNodes": 3,
+        "ranges": 3,
+        "sourceLines": 3,
+        "files": 1,
+        "diagrams": 3
+      },
+      "checks": [
+        "restore pinned input",
+        "register mappings",
+        "preserve ASCII/layout/edges",
+        "save",
+        "reopen for editing",
+        "load output"
+      ]
+    },
+    {
+      "caseId": "canvas-pi",
+      "commit": "682c7b93ce3e0a52b579c2b65b4c06bb392e7180",
+      "metrics": {
+        "nodes": 110,
+        "mappedNodes": 4,
+        "ranges": 4,
+        "sourceLines": 4,
+        "files": 1,
+        "diagrams": 4
+      },
+      "checks": [
+        "restore pinned input",
+        "register mappings",
+        "preserve ASCII/layout/edges",
+        "save",
+        "reopen for editing",
+        "load output"
+      ]
+    },
+    {
+      "caseId": "canvas-opencode",
+      "commit": "fe3552441192ccbea91d117668e7f3a9eb097baf",
+      "metrics": {
+        "nodes": 108,
+        "mappedNodes": 3,
+        "ranges": 3,
+        "sourceLines": 3,
+        "files": 1,
+        "diagrams": 3
+      },
+      "checks": [
+        "restore pinned input",
+        "register mappings",
+        "preserve ASCII/layout/edges",
+        "save",
+        "reopen for editing",
+        "load output"
+      ]
+    },
+    {
+      "caseId": "canvas-ghostty",
+      "commit": "ea8b12a8a9894b5259c441eadd8f6f0c65e215af",
+      "metrics": {
+        "nodes": 108,
+        "mappedNodes": 3,
+        "ranges": 3,
+        "sourceLines": 3,
+        "files": 1,
+        "diagrams": 3
+      },
+      "checks": [
+        "restore pinned input",
+        "register mappings",
+        "preserve ASCII/layout/edges",
+        "save",
+        "reopen for editing",
+        "load output"
+      ]
+    }
+  ]
+}

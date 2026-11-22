@@ -1,0 +1,100 @@
+### Anchor tree
+- A 3–17 ↔ B 3–14, 16–28 · grouped · offset 0 · s = 0.958958 · application workspace and sessions
+  - A 4–6 ↔ B 5–6, 7–8 · grouped · s = 1 · entry and services
+    - A 5–6 ↔ B 6, 7–8 · grouped · s = 1 · default page and injection
+      - A 6 ↔ B 8 · s = 1 · service dependencies
+  - A 7–11 ↔ B 9–14 · s = 1 · CanvasWorkspace
+    - A 8 ↔ B 11, 12 · grouped · s = 1 · drafts and metadata
+    - A 9 ↔ B 14 · s = 1 · controller/session lifecycle
+    - A 10 ↔ B 13 · s = 1 · persistence notification
+  - A 12–17 ↔ B 16–28 · offset 1 · s = 0.75375 · CanvasSession
+    - A 13 ↔ B 19, 20–24 · grouped, summarized · s = 0.9 · readable stores
+    - A 14 ↔ B 25–26 · summarized · s = 0.9 · publication
+    - A 15 ↔ B 27–28 · summarized · s = 0.9 · baseline
+    - unmatched: A 16 (disposal)
+- A 19–42 ↔ B 77–95 · s = 0.867266 · history and revisions
+  - A 20–23 ↔ B 79–80, 92–95 · grouped · s = 0.9875 · service and navigation
+    - A 21 ↔ B 80 · s = 1 · contexts
+    - A 22–23 ↔ B 92, 93–95 · grouped · s = 0.95 · operations and transfer
+      - A 23 ↔ B 94–95 · summarized · s = 0.9 · coordinated transfer
+  - A 24–32 ↔ B 81–88 · s = 1 · checkpoint record
+    - A 25 ↔ B 82 · s = 1 · pointers
+    - A 26–29 ↔ B 83–86 · s = 1 · snapshot
+      - A 27–29 ↔ B 84–86 · s = 1 · composition and restoration data
+        - A 28 ↔ B 85 · s = 1 · bindings
+        - A 29 ↔ B 86 · s = 1 · view and origins
+    - A 30 ↔ B 87 · s = 1 · revision table
+    - A 31 ↔ B 88 · s = 1 · canvas views
+  - A 33–36 ↔ B 31–37 · relocated · s = 0.475 · resolved mapping document
+    - A 34 ↔ B 32–34 · summarized · s = 0.9 · scene
+    - A 35 ↔ B 35–37 · summarized · s = 0.9 · connections and reviews
+  - A 37–42 ↔ B 39–46 · relocated · s = 0.475625 · Diagram
+    - A 38 ↔ B 40 · s = 1 · identities
+    - A 39 ↔ B 41–42 · summarized · s = 0.9 · content
+    - A 40 ↔ B 43–44 · summarized · s = 0.9 · source context
+    - A 41–42 ↔ B 90–91 · summarized, offset 1 · s = 0.81 · revision store
+- A 44–63 ↔ B 57–75, 97–109 · grouped · s = 0.884172 · controller and editor
+  - A 45–50 ↔ B 61–72 · s = 0.984375 · operation application
+    - A 46 ↔ B 62 · s = 1 · gesture settlement
+    - A 47 ↔ B 63 · s = 1 · version check
+    - A 48–49 ↔ B 64–67 · s = 0.975 · staging
+      - A 48 ↔ B 64 · s = 1 · cloning
+      - A 49 ↔ B 65–67 · summarized · s = 0.9 · operations
+    - A 50 ↔ B 68–72 · summarized · s = 0.9 · snapshot update
+  - A 51–52 ↔ B 73, 74–75 · grouped · s = 0.75 · other controller boundaries
+    - A 52 ↔ B 73 · s = 1 · transient update
+    - unmatched: B 74–75 (derived reads)
+  - A 53–54 ↔ B 93–95 · relocated · s = 0.475 · transfer navigation
+    - A 54 ↔ B 94–95 · summarized · s = 0.9 · workspace coordination
+  - A 56–63 ↔ B 97–109 · offset 1 · s = 0.864 · editor runtime
+    - A 57 ↔ B 102–103 · summarized · s = 0.9 · native geometry
+    - A 58 ↔ B 100–101 · summarized · s = 0.9 · projection
+    - A 59 ↔ B 104–105 · summarized · s = 0.9 · settle
+    - A 60 ↔ B 106–108 · summarized · s = 0.9 · checkpoint undo
+    - A 62 ↔ B 109 · s = 1 · cleanup
+- A 65–83 ↔ B 30–55 · s = 0.811111 · selection, sources and presentation
+  - A 66–70, 78–83 ↔ B 48–55 · grouped · s = 0.966667 · canvas and display state
+    - A 67, 68 ↔ B 49 · grouped · s = 1 · selection and controls
+    - A 69, 70 ↔ B 51–55 · grouped, summarized · s = 0.9 · presentation
+    - A 78–83 ↔ B 50 · summarized · s = 0.9 · panes
+  - A 75–77 ↔ B 45–46 · offset 1 · s = 0.9 · source queries
+    - A 76 ↔ B 46 · s = 1 · evidence ranges
+  - unmatched: A 71–74 (revision-frozen region selection)
+- A 85–106 ↔ B 111–128 · s = 0.960417 · agent editing
+  - A 86–89 ↔ B 112–116 · s = 0.983333 · prompt coordinator
+    - A 87 ↔ B 113 · s = 1 · drafts
+    - A 88 ↔ B 114 · s = 1 · capture
+    - A 89 ↔ B 115–116 · summarized · s = 0.9 · submission
+  - A 90–96 ↔ B 117–120 · s = 0.725 · edit service
+    - A 91–92 ↔ B 119 · summarized · s = 0.9 · inputs
+    - A 94–96 ↔ B 118 · summarized · s = 0.9 · runs
+    - unmatched: A 93 (stale target), B 120 (application port)
+  - A 97–101 ↔ B 121–123 · s = 0.975 · canvas bridge
+    - A 98–99 ↔ B 122 · summarized · s = 0.9 · polling
+    - A 100 ↔ B 123 · s = 1 · cleanup
+  - A 102–106 ↔ B 124–128 · s = 1 · revision receiver
+    - A 103 ↔ B 126 · s = 1 · application
+    - A 104 ↔ B 127 · s = 1 · retry receipt
+    - A 105 ↔ B 128 · s = 1 · flush
+- A 108–129 ↔ B 130–149 · s = 0.767917 · persistence
+  - A 109–113 ↔ B 134–138 · s = 0.8625 · WorkspacePersistence
+    - A 110 ↔ B 135 · s = 1 · subscriptions
+    - A 111 ↔ B 136 · s = 1 · cursors
+    - A 112 ↔ B 137–138 · summarized · s = 0.9 · deltas
+    - unmatched: A 113 (removal cleanup)
+  - A 114–118 ↔ B 139–144 · s = 0.816667 · browser storage
+    - A 115 ↔ B 141–143 · summarized · s = 0.9 · batches
+    - A 116 ↔ B 144 · s = 1 · flush
+    - unmatched: A 117 (worker disposal)
+  - A 119–123 ↔ B 145–149 · s = 1 · record store
+    - A 120 ↔ B 146 · s = 1 · serialized writes
+    - A 121 ↔ B 147 · s = 1 · validation
+    - A 122–123 ↔ B 148–149 · s = 1 · immutable records and manifest
+      - A 123 ↔ B 149 · s = 1 · manifest
+  - unmatched: A 124–129 (explicit publication), B 131–133 (startup restoration)
+
+### Score
+Top-level J = (0.958958 + 0.867266 + 0.884172 + 0.811111 + 0.960417 + 0.767917) / 6 = **0.874973**. There are six top-level anchors and no unmatched top-level nodes.
+
+### Verdict
+Both trees identify the workspace/session lifecycle, checkpoint history, semantic controller, editor runtime, canvas state, agent editing and persistence. B gives the editor and session their own top-level nodes; A groups each under its owning controller or workspace. B places the document model under an implied **semantic document model** parent, whereas A places it with history; transfer navigation is similarly owned by different top-level branches. Most remaining differences are depth or detail. A separately identifies explicit publication and frozen region selection; B separately identifies startup restoration.

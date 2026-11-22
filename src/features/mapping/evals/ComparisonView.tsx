@@ -1,4 +1,5 @@
-import { useArrowNavigation, type BoundaryNavigation } from './evalNavigation';
+import { useEvalHistory } from './evalHistory';
+import { useArrowNavigation } from './evalNavigation';
 import { Component, useMemo, useState, type ReactNode } from 'react';
 import { compareDiagramLabels, compareSteps, type CompareCanvasCopy, type ComparePageSession } from '../../../../domain/mapping/compare/comparePageSession';
 import type { EvalPrompt } from '../../../../domain/mapping/evals/evalPrompt';
@@ -15,17 +16,19 @@ class ComparisonBoundary extends Component<{ children: ReactNode }, { error?: st
   render() { return this.state.error ? <p role="alert" className="evals-message">Unable to display this comparison: {this.state.error}</p> : this.props.children; }
 }
 
-export function ComparisonView({ session, prompts, initialEntry, hasPrevious, hasNext, onBoundary }: { session: ComparePageSession; prompts: EvalPrompt[] } & BoundaryNavigation) {
+export function ComparisonView({ session, prompts }: { session: ComparePageSession; prompts: EvalPrompt[] }) {
   const diagramLabels = useMemo(() => compareDiagramLabels(session), [session]);
   const steps = useMemo(() => compareSteps(session), [session]);
-  const [position, setPosition] = useState(() => initialEntry === 'last' ? Math.max(0, steps.length - 1) : 0);
-  const [rail, setRail] = useState(true), [notes, setNotes] = useState(true), [diff, setDiff] = useState(false);
+  const { visit, navigation } = useEvalHistory();
+  const position = visit.view.comparisonStep ?? 0;
+  const setPosition = (comparisonStep: number) => navigation.update({ comparisonStep });
+  const diff = visit.view.panel?.kind === 'prompt-diff';
+  const [rail, setRail] = useState(true), [notes, setNotes] = useState(true);
   const move = (direction: number) => {
     const next = position + direction;
-    if (next < 0 || next >= steps.length) { onBoundary?.(direction); return; }
-    setPosition(next);
+    if (next >= 0 && next < steps.length) setPosition(next);
   };
-  useArrowNavigation(move);
+  useArrowNavigation(move, true, { shift: true });
   const step = steps[position], comparison = step?.compare;
   if (!comparison) return <p className="evals-message">This session has no comparisons.</p>;
   const copyFor = (side: 'A' | 'B') => session.canvases.find(copy => copy.id === comparison[side].canvasCopyId)!;
@@ -37,11 +40,11 @@ export function ComparisonView({ session, prompts, initialEntry, hasPrevious, ha
   return <div className={`comparison-view${rail ? ' has-rail' : ''}`}>
     <header className="comparison-toolbar">
       <div className="comparison-title"><strong>{session.title}</strong><span title={step.point?.title ?? comparison.title}>{step.point?.title ?? comparison.title}</span></div>
-      {diffable && <button type="button" onClick={() => setDiff(true)}>Prompt diff A ↔ B</button>}
+      {diffable && <button type="button" onClick={() => navigation.openPanel({ kind: 'prompt-diff' })}>Prompt diff A ↔ B</button>}
       <div className="comparison-stepper">
-        <button type="button" title="Previous comparison step (←)" aria-keyshortcuts="ArrowLeft" disabled={position === 0 && !hasPrevious} onClick={() => move(-1)}>Previous</button>
+        <button type="button" title="Previous comparison step (Shift+←)" aria-keyshortcuts="Shift+ArrowLeft" disabled={position === 0} onClick={() => move(-1)}>Previous</button>
         <span aria-live="polite">{position + 1} / {steps.length}</span>
-        <button type="button" title="Next comparison step (→)" aria-keyshortcuts="ArrowRight" disabled={position === steps.length - 1 && !hasNext} onClick={() => move(1)}>Next</button>
+        <button type="button" title="Next comparison step (Shift+→)" aria-keyshortcuts="Shift+ArrowRight" disabled={position === steps.length - 1} onClick={() => move(1)}>Next</button>
       </div>
       <button type="button" aria-pressed={rail} onClick={() => setRail(value => !value)}>Steps</button>
     </header>
@@ -67,7 +70,7 @@ export function ComparisonView({ session, prompts, initialEntry, hasPrevious, ha
         </li>)}</ol>
       </nav>}
     </div>
-    {diff && <PromptDiff A={A} B={B} prompts={prompts} onClose={() => setDiff(false)} />}
+    {diff && <PromptDiff A={A} B={B} prompts={prompts} onClose={navigation.closePanel} />}
   </div>;
 }
 

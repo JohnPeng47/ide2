@@ -1,0 +1,19 @@
+{
+  "id": "child-1",
+  "name": "termio",
+  "assignment": "Map all d2, scope first, per user. Return compact numeric range specs & scope/roles in text (private /tmp/d2work if needed). Build parents from children via explicit union instructions.",
+  "model": "gpt-6.2-astra",
+  "effort": "high",
+  "status": "generating",
+  "queuedAt": "2026-11-22T03:28:44.452Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-22T03:28:44.458Z",
+  "sessionId": "01a2014c-8fc2-72ae-8e39-a9d505bd92dc",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-_nrrnqb7-agent-repository-7lspAh-checkout--/2026-11-22T03-28-44-482Z_01a2014c-8fc2-72ae-8e39-a9d505bd92dc.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase4-_nrrnqb7/agent-repository-7lspAh/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

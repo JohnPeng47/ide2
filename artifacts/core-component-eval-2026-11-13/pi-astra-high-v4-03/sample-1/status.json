@@ -1,0 +1,62 @@
+{
+  "status": "finished",
+  "sample": 1,
+  "runId": "3f123c60-c475-4fbc-958f-c66dbb757de2",
+  "characters": 8055,
+  "lines": 108,
+  "nodes": 94,
+  "usage": {
+    "input": 32420,
+    "output": 3129,
+    "cacheRead": 110208,
+    "cacheWrite": 0,
+    "reasoning": 124,
+    "totalTokens": 145757
+  },
+  "execution": {
+    "runtime": "pi-agent-context",
+    "sessionId": "01a1dc24-0684-7001-bfe6-e941920776e3",
+    "contextHash": "642eff5f7c0caf04881c5a7a06cc6f80a6acefc263656940751d03a1c1360017",
+    "cacheKey": "eval-1202ebd2c1160a8445a923f26d6b494541a1b4950abc4754a3c38cb7c2b41d89",
+    "modelContextHash": "771e12545117ae67a056380680de1a4f1b362e9cb5245fcc69d9080b9aa5b304",
+    "repositories": [
+      {
+        "repository": "repo-1",
+        "repositoryPath": "/home/john/softwarez/pi",
+        "commit": "682c7b93ce3e0a52b579c2b65b4c06bb392e7180",
+        "exclusions": [
+          "**/*-LICENSE",
+          "**/*.md",
+          "**/*.mdx",
+          "**/*.spec.*",
+          "**/*.test.*",
+          "**/AGENTS.md",
+          "**/CODEX-LICENSE",
+          "**/LICENSE*",
+          "**/__fixtures__/**",
+          "**/__tests__/**",
+          "**/benchmarks/**",
+          "**/build/**",
+          "**/dist/**",
+          "**/docs/**",
+          "**/examples/**",
+          "**/fixtures/**",
+          "**/node_modules/**",
+          "**/scripts/**",
+          "**/test/**",
+          "**/tests/**",
+          ".github/**",
+          ".husky/**",
+          ".pi/**",
+          "flake.lock",
+          "nix/**",
+          "package-lock.json",
+          "scripts/**"
+        ],
+        "checkout": "/tmp/agent-repository-JDbeum/checkout",
+        "inspectionSource": "session-transcript"
+      }
+    ]
+  },
+  "outputUrl": "http://localhost:5191/evals?run=3f123c60-c475-4fbc-958f-c66dbb757de2&output=0b3af2dd-ba89-4032-936a-40070a3e167e%3A1%3Aalternative"
+}

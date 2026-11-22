@@ -1,0 +1,193 @@
+{
+  "output": {
+    "explanation": "The central tree retains the seed's major responsibilities while shrinking from 144 to 96 lines (33.3%) and from 10,752 to 7,306 characters (32.0%). Six peripheral trees expand evidence capture, experiment approval, runtime execution, materialization, assessment, and resource lifetime. Modular boundaries follow service responsibilities rather than file containment; nested calls show execution, ownership branches identify retained state and cleanup, and data dependencies identify the evidence required by downstream operations. Edges connect specific concept lines. Diagram dimensions and edge endpoints were checked; all trees use printable ASCII and occupy nonoverlapping character-grid rectangles.\n\nCorrections and qualifications: infrastructure/mapping/evals/agentContextEvalRuntime.ts:18-20 checks that source references were already resolved; it does not itself resolve them as the seed suggests. Its finally cleanup surrounds the prompt attempt, so the peripheral scopes cleanup accordingly. application/mapping/evals/judgementService.ts:31-35 makes runId/outputKey optional, correcting the seed's unconditional linkage wording. application/mapping/evals/evalRunService.ts:654-667 retries validation failures, while runtime exceptions bypass that catch. Manual/model evaluator wording is restricted to imported comparisons; deterministic native results remain separate.\n\nSource-backed additions include revisionBoundary and self-comparison focus defaults (compareSessionService.ts:33-41,177-193), stage-only prompt hashes and metadata-only saves (evalPromptService.ts:14,156-165), internal experiment fields and recovery after partial approval launches (experimentService.ts:8-15,120-147), review-time context/template creation (evalRunService.ts:425-449), label-based edge reanchoring (rollUpMaterializer.ts:29-48), replacement of old jump lists and root-first results (linkedCanvasesMaterializer.ts:79-89), missing-session failure handling (judgementService.ts:45-51), and late-output archival (evalRunService.ts:553).\n\nEvidence is limited to context.json and seed.json. The few-shot counts and history sequencing are represented as declared workflow contracts and visible delegation boundaries; the helper implementations were not supplied. The legacy adapter, deterministic scoring internals, and catalog publication internals are likewise not expanded beyond supplied call sites. No external sources or layout examples were used.",
+    "diagrams": [
+      {
+        "id": "central",
+        "ascii": "Generation Experiments and Evaluation\n|-- Pin evidence and the generation contract\n|   |-- CompareSessionService.capture -> independent checkpoint copies\n|   |   |-- Identity: documentId + optional viewId + checkpointId; deduplicate sources\n|   |   `-- Retain selected checkpoint and rendering revisions, without undo history\n|   |-- EvalPromptService.resolve -> versioned stages, template base and references\n|   |   |-- Validate variables, sections, reference IDs and acyclic version lineage\n|   |   `-- Save explicit instructions; execution substitutes visible variables\n|   `-- EvalRunService.prepare -> queued cells and retained inputs\n|       |-- Pin request/hash, project, workflow, model, effort and selected prompts\n|       |-- Retain canvas inputs, optional canvas set, prior alternatives and layout\n|       |-- AgentContext ID/name/hash -> resolve evidence; reject changed hash\n|       |-- Canvas-only workflows create an owning context from inputs and prompts\n|       `-- Reruns reuse matching pins under the original run and owning context\n|-- ExperimentService: cases, conditions, phases, samples and comparisons\n|   |-- save(design) -> revisioned experiment and prepared run snapshots\n|   |   |-- Validate case hashes and output project/context/cell identities\n|   |   |-- Map each planned generation cell exactly once to a sample stage\n|   |   `-- prepareForReview -> awaiting-approval, without a runnable job\n|   |-- approve(expectedRevision, requestId) -> launchPrepared per unstarted run\n|   |   |-- Persist approval and starting state before launch; retain started IDs\n|   |   `-- Attach run/cell references; protect approved plans, samples and inputs\n|   `-- relaunch -> edited prompt fork and another attempt for the same sample\n|       |-- Preserve phase/case/condition/number and original layout-input contract\n|       `-- Request receipts distinguish reusable requests from conflicting edits\n|-- EvalRunService: launch and execute pinned runs\n|   |-- start / launchPrepared -> request identity checks and queued-run save\n|   |   `-- Own live run, AbortController and serialized progress snapshots\n|   |-- Scheduling: independent prompt/sample chains; default concurrency = 3\n|   |   |-- Prepared session context -> one chain at a time\n|   |   `-- Sample count does not alter prompt variables: pass = passes = 1\n|   |-- generateValidated -> compose prompt, call runtime, validate/materialize\n|   |   |-- Validation failure -> previous-output.json + validation-error.json\n|   |   |-- At most 3 attempts; retain original prompt/files and accumulate usage\n|   |   `-- Runtime failure bypasses validation retry; abort -> cancellation\n|   |-- AgentContextEvalRuntime.generate: snapshot selects execution boundary\n|   |   |-- No snapshot -> CodexEvalRuntime; snapshot -> independent Pi session\n|   |   |-- Check already-resolved sources; no tools or ambient context files\n|   |   `-- Shared prefix cache, distinct session IDs, SSE and session cleanup\n|   |-- Workflow dispatch and materialization\n|   |   |-- alternatives: AgentContext -> one canvas per prompt/sample\n|   |   |   |-- Optional pinned previous-N.json contains selected earlier alternatives\n|   |   |   `-- Layout supplied -> template materializer; otherwise alternative materializer\n|   |   |-- roll-up: pinned child + parent -> r2 -> g2\n|   |   |   |-- r2: compress child, materialize and save; failure skips g2\n|   |   |   `-- g2: validated r2.json + parent -> materializeAttachment\n|   |   |       |-- a: edges only; b: edits without merges; c: merge into parent\n|   |   |       `-- Consume r2 once; attach by an edge; preserve parent positions\n|   |   |-- linked-canvases: context.json + canvases.json -> frozen canvas-set result\n|   |   |   |-- Copy/edit existing canvases; namespace new diagrams; reanchor edges\n|   |   |   `-- Include each input once; validate jumps and directed root reachability\n|   |   |-- diagram-change-proposal: pinned context -> proposal tree -> canvas\n|   |   |   `-- Preserve tree syntax errors for deterministic assessment\n|   |   |-- few-shot-refinement: one prompt, pinned target and one titled layout slot\n|   |   |   `-- Contract: five references, three alternatives per round, three rounds\n|   |   `-- diagram-history: plan -> serial steps over preceding pinned canvas sets\n|   |       `-- External history runner owns launch/resume; ordinary prepare rejects it\n|   `-- Output storage\n|       |-- step() -> generated representation with prompt/run/context provenance\n|       |   `-- Pin checkpoint/history and placement snapshot; mark cell finished\n|       |-- Linked sets -> run.outputResults[cellKey] plus a cell summary\n|       `-- captureOutputResult -> retained change-session proposal\n|           |-- Require matching project/session/version; same captured version reusable\n|           `-- Existing different output conflicts; capture does not accept or generate\n|-- Compare and assess retained outputs\n|   |-- CompareSessionService.createPinned -> comparisons over captured copies\n|   |   |-- Validate diagram revision, ranges and subtree; retain canvas camera/focus\n|   |   `-- Later source changes do not replace the selected evidence\n|   |-- JudgementService reconciles comparison sessions and generation jobs\n|   |   |-- Diagram/canvas comparisons and reports retain data, copies and status\n|   |   `-- Manual/model comparison evaluators; subjects may link to run/cell IDs\n|   |-- Native Judgements: schema-validated few-shot progress and deterministic trees\n|   `-- ExperimentService.judge -> select phase/case/condition outputs\n|       |-- Require finished proposal cells; judge exact retained proposal text\n|       `-- Retain checkpoint subjects; attached Judgements must fit one experiment\n|-- Promote a completed output into published project work\n|   |-- promotionSource -> history artifact, pinned result, or output checkpoint\n|   |-- promoteOutput -> request signature and destination checks\n|   |   |-- Matching prior signature returns receipt; changed content conflicts\n|   |   |-- Existing target must be settled, at expected revision and without unsaved edits\n|   |   |   `-- Reject generated/projection destinations\n|   |   |-- New-project destination creates a canvas-project group\n|   |   `-- prepareOutputPromotion -> projectCatalogs.publishOutputPromotion\n|   |       `-- Publish documents with request signature and run/cell placement provenance\n|   `-- Backfill: completed run + matching original whole-canvas promotion\n|       `-- Record lineage; fill a missing pinned placement snapshot\n`-- Retain lifecycle and compatibility boundaries\n    |-- Restart -> fail interrupted ordinary cells; retain completed canvases\n    |   `-- Interrupted eval-run Judgements fail while retaining completed rounds\n    |-- Cancel -> abort active generation; history and legacy use separate paths\n    |-- Delete run -> abort, drain progress writes, archive canvases, save tombstone\n    |   |-- Deleted-run guard blocks later progress saves\n    |   `-- Single-run deletion includes reruns; batch deletion keeps unselected runs\n    |-- Delete context outputs -> workflow runs/comparisons/canvases; keep context\n    `-- Legacy boundary: recordLegacy -> adapter; replay/cancel -> chat hooks\n        `-- Migration preserves selected checkpoints and avoids archived output keys",
+        "position": {
+          "column": 120,
+          "row": 0
+        }
+      },
+      {
+        "id": "pins",
+        "ascii": "Evidence pins: independent copies and versioned contracts\n|-- CompareSessionService.capture\n|   |-- Deduplicate normalized document/view/checkpoint identities\n|   |-- Generated snapshot path can use a retained non-head checkpoint\n|   `-- Workspace path requires current head or saved view's final checkpoint\n|       `-- Missing, archived or changed view -> reject capture\n|-- copyCompareHistory\n|   |-- Copy selected checkpoint; remove parentId and transactionId\n|   |-- New contextId; baselineId = headId; empty past and future\n|   |-- Copy revisions selected by checkpointRevisionIds\n|   `-- revisionBoundary records omitted revision parents -> diagram IDs\n|       `-- validateCanvasHistory checks the resulting isolated history\n|-- Comparison presentation\n|   |-- Workspace head can inherit persisted viewport\n|   |-- createPinned clones captured copies before adding camera views\n|   `-- Self-comparison defaults to first three diagrams in spatial order\n`-- EvalPromptService\n    |-- resolve freezes cited reference name/ASCII/comment into the run\n    |   `-- Missing cited reference prevents resolution\n    |-- contentHash = SHA256 of stages sorted by stage key\n    |   `-- Template base and reference contents are separate from this hash\n    |-- save checks baseVersion before appending a changed version\n    |   |-- Stage/base changes or explicit parents can create a version\n    |   `-- Metadata-only edits can retain the version list\n    |-- Lineage: merge needs >= 2 parents; traversal rejects cycles\n    |   `-- History prompts may derive from diagram-change proposals\n    `-- Public snapshot API clones the project's prompt library\n        `-- Private write queue serializes authoring and snapshot operations",
+        "position": {
+          "column": 0,
+          "row": 0
+        }
+      },
+      {
+        "id": "review",
+        "ascii": "Reviewed generation: durable plan, resumable launch\n|-- ExperimentService owns the experiment write queue\n|   |-- Stored record retains preparedRuns, startedRunIds and request receipts\n|   `-- public() strips these internal fields and returns a clone\n|-- save -> prepareForReview for unstarted plans\n|   |-- Reuse prepared snapshots when plannedRuns and cases are unchanged\n|   |-- Validate each planned cell's sample, context and stage assignment\n|   `-- Review preparation does not store a runnable job or call the model\n|       `-- It can create an owning context or a few-shot layout template\n|-- approve -> durable approvalRequest and status = starting\n|   |-- First approval checks expectedRevision; a receipt checks ID and hash\n|   |-- For each run absent from startedRunIds: launchPrepared -> save ID\n|   |   `-- Existing run with matching requestHash is reused\n|   |-- Retry with the same receipt can continue a partial launch\n|   `-- Attach stage outputs; status = started; advance revision\n|-- Protect approved execution\n|   |-- Starting review rejects changed plans/cases\n|   |-- Started plans, samples and inputs cannot be reassigned\n|   `-- Adding phase labels to formerly unphased samples is allowed\n`-- relaunch -> another attempt, with its own receipt\n    |-- Check edited stages before recording attempt metadata\n    |-- Persist attempt number before launchEdited\n    |-- Fork prompt as attempt-<requestId>; retain source prompt lineage\n    |-- Reuse source pins; run normally uses one sample\n    |   `-- Few-shot relaunch retains three passes and matches stage/pass\n    `-- Save mapped outputs under the same phase/case/condition/number",
+        "position": {
+          "column": 0,
+          "row": 38
+        }
+      },
+      {
+        "id": "runtime",
+        "ascii": "Generation boundary: validation loop and session lifetime\n|-- EvalRunService.generateValidated\n|   |-- composePrompt renders saved sections and visible variables once\n|   |-- Call EvalRuntime.generate with schema, files and AbortSignal\n|   |-- Add usage from each returned response\n|   `-- validate(response.output)\n|       |-- Success -> materialized result and last response execution metadata\n|       `-- Failure -> retry up to 3 total calls\n|           |-- Original files + latest raw output + validation error\n|           `-- Runtime exceptions occur outside this retry catch\n|-- AgentContextEvalRuntime.generate\n|   |-- No agentContext -> delegate to CodexEvalRuntime\n|   `-- Snapshot supplied -> AgentContext.fromSnapshot\n|       |-- toPiMessages checks that collection resolved all source references\n|       |-- In-memory settings: compaction off, retry off, transport SSE\n|       |-- Loader disables extensions, skills, templates, themes, context files\n|       `-- createSession with resolved context and tools = []\n|-- Session evidence and cache identity\n|   |-- Cache key hashes provider, model ID, effort, system prompt, context hash\n|   |-- streamFunction uses cache key as sessionId; transport remains SSE\n|   |-- Returned execution metadata retains independent session.sessionId\n|   `-- Assistant message_end events accumulate usage and capture text\n|       |-- Append supplementary files as JSON to the prompt\n|       `-- Parse JSON when possible; otherwise return raw text for validation\n`-- Cleanup after the session prompt attempt\n    |-- Timeout or caller abort requests session.abort()\n    `-- finally clears timer, removes listener, unsubscribes and disposes session\n        `-- Remove session from the runtime's tracked set",
+        "position": {
+          "column": 235,
+          "row": 0
+        }
+      },
+      {
+        "id": "graphs",
+        "ascii": "Materializers: build locally, validate links, retain proposed state\n|-- materializeLinkedCanvases\n|   |-- Existing canvas -> clone history, retain baseline, apply replacements\n|   |   `-- Reject unknown/repeated edits; reanchor affected edges\n|   |-- New canvas -> materializeDiagrams with namespaced grid IDs\n|   |-- Reject duplicate canvas IDs and missing/repeated input canvases\n|   |-- Each jump connects different canvases\n|   |   |-- Source text span must contain visible text\n|   |   |-- Target line requires a diagram and an actual content node\n|   |   `-- Record source revision/hash; validate grouped diagram jumps\n|   |-- Follow directed adjacency from rootCanvas; every canvas must be reached\n|   `-- Build one EvalOutputResult, with root canvas first\n|       |-- Replace each diagram's jump list; clear document-level jumps\n|       |-- Retain baseline, proposed document/canvas, version and revisions\n|       `-- Add placementSnapshot and return a structured clone\n|-- materializeAttachment\n|   |-- Create pinned parent view -> fork attached view\n|   |-- take(r2 ID) enforces exactly one placement or merge per diagram\n|   |-- Strategy a: no edits; b: edits without merges; c: at least one merge\n|   |-- Require an attachment edge; reject moved parent bounds\n|   `-- Reanchor edits -> retain surviving r2 edges -> add attachment edges\n|       `-- Save attached view and export history\n`-- Shared connection boundary\n    |-- materializeDiagrams rejects duplicate IDs and creates fresh diagrams\n    |-- addEdges maps output IDs and raw line numbers to content-node anchors\n    |   `-- Unknown diagram or line without a content anchor -> error\n    `-- reanchorEditedEdges replaces stale revision/node handles\n        |-- Box anchors and unedited diagram anchors pass through\n        |-- Match old label, optionally mapped by caller\n        |-- Prefer unique match; otherwise match the original line\n        `-- No matching node -> reject edit instead of retaining stale anchor",
+        "position": {
+          "column": 235,
+          "row": 38
+        }
+      },
+      {
+        "id": "assess",
+        "ascii": "Judgements: derived comparison records and native results\n|-- JudgementService.list/read -> serialized reconcile\n|   |-- Load comparison summaries, generation jobs, Judgements and eval runs\n|   |-- Subjects retain captured source identity\n|   |   |-- Find owner by generated.runId or matching cell.canvasId\n|   |   `-- runId and outputKey remain optional when no match exists\n|   |-- Split diagram/canvas pairs; experiment jobs can yield reports\n|   |   `-- Pair records keep only the canvas copies their pairs use\n|   |-- Session exists -> ordinary comparison record is finished\n|   |   `-- Finished job without session -> failed: saved result unavailable\n|   |-- Report records instead use the job's own status/error\n|   `-- Skip unchanged finished imports; honor tombstones\n|       `-- Disappearing comparison sources tombstone imported Judgements\n|-- Native result APIs\n|   |-- saveProgress validates supplied data and clones it\n|   |   `-- Deleted progress record cannot be overwritten\n|   `-- saveDeterministic validates data for a new request\n|       `-- Existing matching fingerprint reuses record; deleted/different conflicts\n`-- ExperimentService.judge\n    |-- Require selected phase outputs to be finished proposal cells\n    |-- Use cell.proposalTree exactly, with canvas/checkpoint subjects\n    |-- Call judgeDiagramChangeTrees; store deterministic result\n    `-- Attach Judgement ID and advance experiment revision",
+        "position": {
+          "column": 235,
+          "row": 79
+        }
+      },
+      {
+        "id": "lifetime",
+        "ascii": "EvalRunService: state owners and release paths\n|-- Private live state\n|   |-- starts / preparedLaunches deduplicate concurrent launch work\n|   |-- running owns AbortControllers; live holds executing run objects\n|   |   `-- rename mutates the live object so progress cannot revert the name\n|   |-- saves serializes cloned progress snapshots by run\n|   `-- resultWrites serializes external result capture and placement backfill\n|-- Capture external result\n|   |-- Same session/version returns its existing summary\n|   |-- Different pinned output, active run, cancelled/skipped cell -> reject\n|   `-- After capture, recheck deletion before retaining outputResults\n|-- deleteSingleRun\n|   |-- Mark deleted; cancel legacy candidates or abort active ordinary run\n|   |-- Drain legacy adapter and queued progress saves\n|   |-- Archive known generated canvases; save deletedAt tombstone\n|   `-- step archives an output saved after deletion was observed\n|-- cancel for diagram-history\n|   `-- Mark queued/generating cells cancelled and save run status\n|       `-- This branch does not call an AbortController\n|-- dispose\n|   `-- Abort all tracked ordinary runs and call runtime.dispose if supplied\n`-- Migration ownership\n    |-- Existing chat lifecycle records win over reconstructed view metadata\n    |-- Skip active generated views; chat observer owns them\n    `-- Archived generated keys count as existing, preventing resurrection",
+        "position": {
+          "column": 0,
+          "row": 76
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": {
+          "diagram": "central",
+          "line": 3
+        },
+        "target": {
+          "diagram": "pins",
+          "line": 2
+        },
+        "label": "Checkpoint capture and isolation"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 6
+        },
+        "target": {
+          "diagram": "pins",
+          "line": 17
+        },
+        "label": "Prompt version and hash boundary"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 15
+        },
+        "target": {
+          "diagram": "review",
+          "line": 1
+        },
+        "label": "Approval state and retry ownership"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 32
+        },
+        "target": {
+          "diagram": "runtime",
+          "line": 2
+        },
+        "label": "Validation retry boundary"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 36
+        },
+        "target": {
+          "diagram": "runtime",
+          "line": 11
+        },
+        "label": "Session creation and disposal"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 49
+        },
+        "target": {
+          "diagram": "graphs",
+          "line": 2
+        },
+        "label": "Canvas-set graph invariants"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 46
+        },
+        "target": {
+          "diagram": "graphs",
+          "line": 16
+        },
+        "label": "Attachment and anchor preservation"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 69
+        },
+        "target": {
+          "diagram": "assess",
+          "line": 2
+        },
+        "label": "Reconcile comparison evidence"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 73
+        },
+        "target": {
+          "diagram": "assess",
+          "line": 19
+        },
+        "label": "Assess retained proposal text"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 28
+        },
+        "target": {
+          "diagram": "lifetime",
+          "line": 2
+        },
+        "label": "Private state responsibilities"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 91
+        },
+        "target": {
+          "diagram": "lifetime",
+          "line": 12
+        },
+        "label": "Deletion and late-output handling"
+      }
+    ]
+  },
+  "usage": {
+    "input_tokens": 763650,
+    "cached_input_tokens": 700032,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 12072,
+    "reasoning_output_tokens": 994
+  }
+}

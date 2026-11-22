@@ -20,9 +20,14 @@ export const defaultPromptTemplateBase: PromptTemplateBase = {
 };
 export interface PromptSection { name: string; start: number; contentStart: number; contentEnd: number; end: number; children: PromptSection[] }
 const tagPattern = /<\/?[a-zA-Z][^<>\n]*>/g;
+/** Generic type arguments in code examples are not prompt section delimiters. */
+function promptTags(text: string) {
+  return [...text.matchAll(tagPattern)].filter(match =>
+    !(match.index! > 0 && /[\w$]/.test(text[match.index! - 1]) && /^<[A-Z]/.test(match[0])));
+}
 export function parsePromptSections(text: string, base: PromptTemplateBase) {
   const sections: PromptSection[] = [], stack: PromptSection[] = [], issues: TemplateIssue[] = [];
-  for (const match of text.matchAll(tagPattern)) {
+  for (const match of promptTags(text)) {
     const raw = match[0], closing = raw.startsWith('</'), name = raw.slice(closing ? 2 : 1, -1).trim(), start = match.index!;
     const error = (message: string) => issues.push({ severity: 'error', message, start, end: start + raw.length });
     if (!base.tags.some(t => t.name === name)) { error(`Unsupported tag <${name}> in ${base.name}.`); continue; }
@@ -61,7 +66,7 @@ export function legacyPromptTemplateBase(stages: Record<string, string>): Prompt
   const tags = [...defaultPromptTemplateBase.tags], stack: string[] = [];
   for (const text of Object.values(stages)) {
     stack.length = 0;
-    for (const m of text.matchAll(tagPattern)) {
+    for (const m of promptTags(text)) {
       const closing = m[0].startsWith('</'), name = m[0].slice(closing ? 2 : 1, -1).trim();
       if (closing) { if (stack.at(-1) === name) stack.pop(); continue; }
       const parent = stack.at(-1) ?? null;

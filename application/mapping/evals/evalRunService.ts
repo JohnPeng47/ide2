@@ -7,18 +7,21 @@ import { initialCanvasState } from '../../../domain/mapping/workspace/mappingWor
 import { recordDocument } from '../../../domain/mapping/workspace/workspaceRecords';
 import { connectionBox } from '../../../domain/core/diagrams/diagramConnection';
 import { linkedCanvasesOutputSchema } from '../../../domain/mapping/evals/linkedCanvases';
+import { canvasLayoutSchema } from '../../../domain/mapping/evals/canvasLayout';
 import { materializeLinkedCanvases } from './linkedCanvasesMaterializer';
 import { diagramChangeProposalSchema } from '../../../domain/mapping/evals/diagramChangeTree';
-import { captureChangeSessionOutput, summarizeEvalOutput } from '../../../domain/mapping/evals/evalOutputResult';
+import { layoutOutput, captureChangeSessionOutput, captureEvalOutputSchema, summarizeEvalOutput, type EvalOutputResult } from '../../../domain/mapping/evals/evalOutputResult';
 import type { AgentContextSnapshot } from '../../../domain/core/agents/agentContext';
 import { executeFewShot, fewShotCells, firstTarget } from './fewShotRefinement';
 import { LegacyGenerationAdapter, legacyEvalRunId } from './legacyGenerationAdapter';
 import type { z } from 'zod';
 import { sha256 } from '../../../domain/core/sha256';
+import { treeComparisonRequestSchema } from '../../../domain/mapping/compare/treeComparison';
+import { comparisonReportSchema } from '../../../domain/mapping/compare/comparisonReport';
 import { documentFromHistory, type CanvasHistoryRecord } from '../../../domain/core/diagrams/canvasHistory';
 import { documentPrefix, recordHistory, type WorkspaceIndex } from '../../../domain/mapping/workspace/workspaceRecords';
 import type { MappingDocumentSnapshot } from '../../../domain/mapping/workspace/mappingWorkspace';
-import { generatedWorkflow, type GeneratedCanvas } from '../../../domain/core/diagrams/generatedCanvas';
+import { canvasAgentContextId, generatedWorkflow, type GeneratedCanvas } from '../../../domain/core/diagrams/generatedCanvas';
 import type { CompareCanvasCopy } from '../../../domain/mapping/compare/comparePageSession';
 import type { DiagramRepository } from '../../core/ports/diagramRepository';
 import type { MappingWorkspaceService } from '../workspace/workspaceService';
@@ -37,6 +40,7 @@ import { materializeAlternative, materializeTemplateAlternative } from './altern
 import type { LayoutTemplateService } from './layoutTemplateService';
 import type { LayoutPlacement } from '../../../domain/core/diagrams/layoutTemplate';
 import { templateOutputSchema } from '../../../domain/mapping/evals/layoutTemplate';
+import type { PromptVersionRef } from '../../../domain/mapping/evals/evalPrompt';
 import type { EvalPromptService } from './evalPromptService';
 import type { GeneratedCanvasSource } from './generatedCanvasCatalog';
 
@@ -49,6 +53,8 @@ export interface EvalRuntime {
 type Generation = Omit<Parameters<EvalRuntime['generate']>[0], 'prompt'> & { body: string; values: Record<string, string>; templateBase?: import('../../../domain/mapping/evals/promptTemplateBase').PromptTemplateBase };
 
 export class EvalRunService {
+  histories?: { read(id: string): Promise<import('../../../infrastructure/mapping/history/fileCanvasTimeline').CanvasTimeline>; result(id: string, step: string): Promise<import('../../../domain/mapping/evals/evalOutputResult').EvalOutputResult>;
+    canvas(id: string, ref: import('../../../domain/mapping/history/diagramHistory').HistoryCanvasRef): Promise<CanvasHistoryRecord> };
   readChangeSession?: (id: string) => Promise<import('../../../domain/mapping/changes/diagramChangeSession').DiagramChangeSession>;
   private resultWrites = new Map<string, Promise<unknown>>();
   experiments?: import('./experimentService').ExperimentService;
@@ -80,6 +86,7 @@ export class EvalRunService {
       const runs = [...saved, ...imported].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
       this.nextNumber = Math.max(0, ...runs.map(run => run.number ?? 0)) + 1;
       for (const run of runs) {
+        if (run.coordinator) continue;
         const before = [run.number, run.status, run.completedAt];
         const interrupted = run.status === 'queued' || run.status === 'generating';
         run.number ??= this.nextNumber++;
@@ -104,11 +111,15 @@ export class EvalRunService {
         .map(c => ({ id: c.id, name: c.name, canvasProjectId: c.canvasProjectId, revisionId: c.currentRevisionId })) };
   }
   async promotionSource(id: string, key: string) {
-    const run = await this.read(id), cell = run.cells.find(c => c.key === key);
+    return this.outputForPromotion(await this.read(id), key);
+  }
+  private async outputForPromotion(run: EvalRun, key: string) {
+    const id = run.id, cell = run.cells.find(c => c.key === key);
     if (!cell || cell.status !== 'finished') throw Error('Choose a completed output');
+    if (cell.historyArtifact && this.histories) return this.histories.result(cell.historyArtifact.timelineId, cell.historyArtifact.stepId);
     if (run.outputResults?.[key]) return structuredClone(run.outputResults[key]);
     if (!cell.canvasId) throw Error('Output canvas is unavailable');
-    const saved = await this.canvas(cell.canvasId, cell.checkpointId);
+    const saved = await this.canvas(cell.canvasId, cell.checkpointId, cell.checkpointId ? { runId: id, cellKey: key } : undefined);
     const history = structuredClone(saved.history);
     if (cell.checkpointId) history.headId = cell.checkpointId;
     const document = documentFromHistory(history);
@@ -123,7 +134,8 @@ export class EvalRunService {
     const catalog = await this.projects.projectCatalogs.loadRepresentationCatalog(project.id, 'current');
     const prior = catalog.outputPromotions?.[input.requestId];
     if (prior) { if (prior.signature !== signature) throw Error('REQUEST_ID_CONFLICT'); return prior.receipt; }
-    const result = await this.promotionSource(id, input.cellKey);
+    const run = await this.read(id);
+    const result = await this.outputForPromotion(run, input.cellKey);
     const target = input.destination === 'existing-canvas' ? catalog.representations[input.targetCanvasId!] : undefined;
     if (input.destination === 'existing-canvas' && (!target || target.status !== 'settled' || target.type === 'generated' || target.type === 'projection' || target.currentRevisionId !== input.expectedRevisionId))
       throw Error('Destination canvas changed. Reopen promotion to choose its latest version.');
@@ -144,7 +156,8 @@ export class EvalRunService {
       history: historyFromRevision(catalog.revisions[target.currentRevisionId]), name: target.name,
       repositoryId: target.repositoryId, canvasProjectId: target.canvasProjectId } : undefined);
     if (!this.projects.projectCatalogs.publishOutputPromotion) throw Error('Output promotion unavailable');
-    return this.projects.projectCatalogs.publishOutputPromotion(project.id, { requestId: input.requestId, signature, placementSource: { runId: id, cellKey: input.cellKey }, canvasProject: group, documents });
+    return this.projects.projectCatalogs.publishOutputPromotion(project.id, { requestId: input.requestId, signature, placementSource: { runId: id, cellKey: input.cellKey }, canvasProject: group,
+      documents: documents.map(doc => ({ ...doc, agentContextId: doc.id === target?.id ? canvasAgentContextId(target) ?? canvasAgentContextId(run) : canvasAgentContextId(run) })) });
   }
   async backfillPlacementTracking(id: string, raw: unknown) {
     const input = outputPromotionSchema.parse(raw);
@@ -175,31 +188,77 @@ export class EvalRunService {
     for (const run of await this.store.list()) {
       const output = run.outputSnapshots?.[id];
       if (output?.history.headId === checkpointId) return structuredClone(output);
+      if (this.histories && run.coordinator) {
+        const artifacts = [...run.cells.flatMap(c => c.historyArtifact ? [c.historyArtifact] : []), ...(run.historyInput ? [run.historyInput] : [])];
+        for (const artifact of artifacts) {
+          const timeline = await this.histories.read(artifact.timelineId);
+          if (timeline.projectId !== run.projectId) throw Error('History belongs to another project');
+          const ref = timeline.steps.find(s => s.id === artifact.stepId)?.canvases.find(c => c.documentId === id && c.checkpointId === checkpointId);
+          if (ref) return { id, name: ref.name, history: await this.histories.canvas(artifact.timelineId, ref),
+            generated: { key: `${run.id}:${checkpointId}`, agentContextId: run.agentContextId, contextName: run.contextName,
+              stage: 'legacy' as const, workflow: run.workflow, runId: run.id, pass: 1 } };
+        }
+      }
     }
     return null;
   }
   async outputResult(id: string, cellKey: string) {
     const run = await this.read(id);
+    const artifact = run.cells.find(cell => cell.key === cellKey)?.historyArtifact;
+    if (artifact && this.histories) return this.histories.result(artifact.timelineId, artifact.stepId);
     if (!run.cells.some(cell => cell.key === cellKey) || !Object.hasOwn(run.outputResults ?? {}, cellKey))
       throw new ApplicationError('invalid-input', 'Output result not found.');
     return structuredClone(run.outputResults![cellKey]);
   }
-  /** Attach a completed executor's proposal without accepting it or starting any generation. */
-  async captureOutputResult(id: string, input: { cellKey: string; changeSessionId: string; expectedVersion: number }) {
+  /** Save agent-authored side-by-side tree evidence as an immutable comparison report. */
+  async saveTreeComparison(raw: unknown) {
+    const input = treeComparisonRequestSchema.parse(raw);
+    if (!this.judgements) throw new ApplicationError('invalid-input', 'Judgements are unavailable.');
+    const resolved = await Promise.all(input.sources.map(async source => {
+      const run = await this.read(source.runId), cell = run.cells.find(c => c.key === source.cellKey);
+      if (!cell || cell.status !== 'finished') throw new ApplicationError('invalid-input', `${source.id}: choose a finished output.`);
+      const result = await this.outputResult(source.runId, source.cellKey);
+      const revision = result.format === 'markdown' ? undefined : result.diagramRevisions?.[source.revisionId];
+      if (!revision) throw new ApplicationError('invalid-input', `${source.id}: diagram revision not found in that output.`);
+      const canvasId = result.format === 'markdown' ? undefined : result.canvases[0]?.id;
+      return { run, cell, canvasId, tree: { id: source.id, label: source.label ?? cell.candidateName ?? run.name, runId: run.id, cellKey: cell.key,
+        revisionId: source.revisionId, ascii: revision.diagram.content.ascii } };
+    }));
+    const projects = new Set(resolved.map(item => item.run.projectId));
+    if (projects.size !== 1) throw new ApplicationError('invalid-input', 'Compared outputs must belong to one project.');
+    const report = comparisonReportSchema.parse({ treeSources: resolved.map(item => item.tree), pages: input.pages });
+    const now = new Date().toISOString();
+    return this.judgements.saveTreeComparison({ schemaVersion: 1, id: input.requestId, projectId: [...projects][0], title: input.title,
+      createdAt: now, updatedAt: now, runIds: [...new Set(resolved.map(item => item.run.id))],
+      subjects: resolved.map(item => ({ runId: item.run.id, outputKey: item.cell.key,
+        source: { documentId: item.canvasId ?? item.run.id, checkpointId: item.cell.historyArtifact?.stepId ?? item.cell.checkpointId ?? 'output' } })),
+      evaluator: { kind: 'model', ...input.evaluator }, kind: 'comparison-report', status: 'finished', canvases: [],
+      source: { kind: input.experimentId ? 'experiment' : 'eval-run', id: input.experimentId ?? input.requestId, fingerprint: sha256(JSON.stringify(input)) }, data: report });
+  }
+  /** Pin a completed executor's canvas or Markdown result without starting generation. */
+  async captureOutputResult(id: string, raw: unknown) {
+    const input = captureEvalOutputSchema.parse(raw);
     const write = (this.resultWrites.get(id) ?? Promise.resolve()).then(async () => {
       const run = await this.read(id), cell = run.cells.find(cell => cell.key === input.cellKey);
       if (!cell || ['__proto__', 'constructor', 'prototype'].includes(input.cellKey)) throw new ApplicationError('invalid-input', 'Output cell not found.');
       const existing = Object.hasOwn(run.outputResults ?? {}, cell.key) ? run.outputResults![cell.key] : undefined;
-      if (existing?.changeSession?.id === input.changeSessionId && existing.changeSession.version === input.expectedVersion)
+      if (existing && ('layout' in input ? existing.format === 'canvas-layout' && JSON.stringify(existing.layout) === JSON.stringify(input.layout)
+        : 'markdown' in input ? existing.format === 'markdown' && existing.markdown === input.markdown
+        : existing.changeSession?.id === input.changeSessionId && existing.changeSession.version === input.expectedVersion))
         return summarizeEvalOutput(existing);
-      if (existing || cell.canvasId) throw new ApplicationError('conflict', 'This output is already pinned. Create another output for a different result.');
+      if (existing || cell.canvasId || cell.historyArtifact || cell.output) throw new ApplicationError('conflict', 'This output is already pinned. Create another output for a different result.');
       if (this.live.has(id) || this.deleted.has(id) || cell.status === 'cancelled' || cell.status === 'skipped')
         throw new ApplicationError('conflict', 'This output cannot accept an external result.');
-      if (!this.readChangeSession) throw new ApplicationError('invalid-input', 'Change-session capture is unavailable.');
-      const session = await this.readChangeSession(input.changeSessionId);
-      if (session.projectId !== run.projectId || session.id !== input.changeSessionId || session.version !== input.expectedVersion)
-        throw new ApplicationError('conflict', 'Change session does not match the requested project and version.');
-      const result = captureChangeSessionOutput(session);
+      let result: EvalOutputResult;
+      if ('layout' in input) result = layoutOutput(input.layout);
+      else if ('markdown' in input) result = { schemaVersion: 1, format: 'markdown', markdown: input.markdown, canvases: [], diagramRevisions: {} };
+      else {
+        if (!this.readChangeSession) throw new ApplicationError('invalid-input', 'Change-session capture is unavailable.');
+        const session = await this.readChangeSession(input.changeSessionId);
+        if (session.projectId !== run.projectId || session.id !== input.changeSessionId || session.version !== input.expectedVersion)
+          throw new ApplicationError('conflict', 'Change session does not match the requested project and version.');
+        result = captureChangeSessionOutput(session);
+      }
       if (this.deleted.has(id)) throw new ApplicationError('conflict', 'Run was deleted.');
       (run.outputResults ??= {})[cell.key] = result;
       cell.output = summarizeEvalOutput(result); cell.status = 'finished'; cell.completedAt = new Date().toISOString();
@@ -224,7 +283,15 @@ export class EvalRunService {
     return captured.canvases[0];
   }
   listContexts(query = '', offset = 0) { return this.contexts.list({ query, offset, limit: 100 }); }
-  async canvas(id: string, checkpointId?: string) {
+  async canvas(id: string, checkpointId?: string, output?: { runId: string; cellKey: string }) {
+    // Output viewers already know the owner. Avoid scanning every run to find its immutable snapshot.
+    if (output) {
+      const run = await this.read(output.runId), cell = run.cells.find(cell => cell.key === output.cellKey);
+      if (!cell || cell.canvasId !== id || !checkpointId || cell.checkpointId !== checkpointId)
+        throw new ApplicationError('invalid-input', 'The canvas snapshot does not belong to this output.');
+      const pinned = run.outputSnapshots?.[id];
+      if (pinned?.history.headId === checkpointId) return structuredClone(pinned);
+    }
     const canvas = await this.canvases.read(id, checkpointId);
     if (!canvas) throw new ApplicationError('invalid-input', 'Generated canvas not found.');
     return canvas;
@@ -258,9 +325,10 @@ export class EvalRunService {
     return summarizeEvalRun(await this.read(await this.replayLegacy(run, requestId)));
   }
   async start(raw: unknown) { return this.startRequest(evalRunRequestSchema.parse(raw)); }
-  async editedPrompt(run: EvalRun, key: string, stages: Record<string, string>) {
+  async editedPrompt(run: EvalRun, key: string, bodies: Record<string, string>, attemptId?: string) {
     const cell = run.cells.find(c => c.key === key), source = run.prompts.find(p => p.promptId === cell?.promptId);
     if (!cell || !source || run.compatibility || run.legacy) throw new ApplicationError('invalid-input', 'This output has no replayable pinned generation prompt.');
+    const { stages, templateSources } = await this.prompts.bindTemplates(bodies, source, attemptId);
     const references = { ...source.references };
     for (const id of [...new Set(Object.values(stages).flatMap(templateReferences))]) {
       if (references[id]) continue;
@@ -273,14 +341,30 @@ export class EvalRunService {
       throw new ApplicationError('invalid-input', 'Fix the edited prompt before relaunching. All workflow stages and valid template variables are required.');
     if (run.workflow === 'alternatives' && stages.alternative.includes('layout-template.json') !== !!run.layoutTemplate)
       throw new ApplicationError('invalid-input', 'Keep the original layout-template.json input contract in the edited prompt.');
-    return { ...source, stages, references };
+    return { ...source, stages, templateSources, references };
   }
   async launchEdited(runId: string, key: string, stages: Record<string, string>, requestId: string) {
-    const source = await this.read(runId), edited = await this.editedPrompt(source, key, stages);
+    const source = await this.read(runId), edited = await this.editedPrompt(source, key, stages, requestId);
     const fork = await this.prompts.forkForAttempt(requestId, source.workflow, edited, stages);
-    const snapshot = { ...edited, promptId: fork.id, version: 1, name: fork.name, contentHash: fork.versions[0].contentHash, derivation: fork.versions[0].derivation };
+    const snapshot = { ...edited, stages: fork.versions[0].stages, templateSources: fork.versions[0].templateSources, promptId: fork.id, version: 1, name: fork.name, contentHash: fork.versions[0].contentHash, derivation: fork.versions[0].derivation };
     const request = evalRunRequestSchema.parse({ ...source.request, requestId, parentRunId: source.id, prompts: [{ promptId: fork.id, version: 1 }], passes: source.workflow === 'few-shot-refinement' ? 3 : 1 });
     return this.startRequest(request, [snapshot]);
+  }
+  async rerunWithSavedPrompt(source: EvalRun, key: string, ref: PromptVersionRef, requestId: string) {
+    if (source.coordinator || source.workflow === 'diagram-history' || source.request.task)
+      throw new ApplicationError('invalid-input', 'This run requires its original executor.');
+    const saved = await this.prompts.read(ref.promptId);
+    const version = saved.versions.find(item => item.version === ref.version);
+    if (!version || saved.workflow !== source.workflow)
+      throw new ApplicationError('invalid-input', 'Choose a saved prompt version for this workflow.');
+    const edited = await this.editedPrompt(source, key, version.stages);
+    const prompts = source.prompts.map(prompt => prompt.promptId === edited.promptId ? {
+      ...ref, name: saved.name, stages: version.stages, templateSources: version.templateSources, templateBase: version.templateBase,
+      parents: version.parents, derivation: version.derivation, contentHash: version.contentHash, references: edited.references
+    } : prompt);
+    const request = evalRunRequestSchema.parse({ ...source.request, requestId, parentRunId: source.id,
+      prompts: source.request.prompts.map(prompt => prompt.promptId === edited.promptId ? ref : prompt) });
+    return this.startRequest(request, prompts);
   }
   private async startRequest(request: EvalRun['request'], pinnedPrompts?: EvalRunPrompt[]) {
     await this.ready;
@@ -309,12 +393,18 @@ export class EvalRunService {
   }
   async cancel(id: string) {
     const run = await this.read(id);
+    if (run.coordinator) {
+      if (!['queued', 'generating'].includes(run.status)) throw new ApplicationError('invalid-input', 'This run is not running.');
+      for (const cell of run.cells) if (['queued', 'generating'].includes(cell.status)) Object.assign(cell, { status: 'cancelled', error: 'Cancelled.' });
+      run.status = 'cancelled'; await this.store.save(run); return;
+    }
     if (run.compatibility && this.cancelLegacy) { await Promise.all(run.compatibility.candidates.map(c => this.cancelLegacy!(c.chatId))); return; }
     const abort = this.running.get(id);
     if (!abort) throw new ApplicationError('invalid-input', 'This run is not running.');
     abort.abort();
   }
   private async prepare(request: ReturnType<typeof evalRunRequestSchema.parse>, requestHash: string, pinnedPrompts?: EvalRunPrompt[], reviewOnly = false) {
+    if (request.workflow === 'diagram-history') throw new ApplicationError('invalid-input', 'Launch or resume diagram histories with scripts/evals/history/run.ts, which pins the preceding canvas set for each step.');
     const workflow = evalWorkflows[request.workflow];
     // A rerun of a rerun is filed under the same original run.
     const rerun = request.parentRunId ? await this.read(request.parentRunId) : undefined;
@@ -550,27 +640,34 @@ export class EvalRunService {
     const common = { workflow: run.workflow, model: run.request.model, effort: run.request.effort, signal, values, templateBase: prompt.templateBase };
     const provenance = { prompt: { id: prompt.promptId, version: prompt.version, name: prompt.name }, promptStages: structuredClone(prompt.stages) };
     const title = `${prompt.name} v${prompt.version} · sample ${pass}`;
-    if (run.workflow === 'linked-canvases') {
-      const cell = this.cell(run, prompt, pass, 'linked');
+    if (run.workflow === 'linked-canvases' || run.workflow === 'canvas-layout') {
+      const stage = run.workflow === 'canvas-layout' ? 'layout' : 'linked';
+      const cell = this.cell(run, prompt, pass, stage);
       Object.assign(cell, { status: 'generating', startedAt: new Date().toISOString() }); await this.persist(run);
       try {
         signal.throwIfAborted();
         const context = run.contexts!.context, saved = await this.contexts.read(context.agentContextId);
         if (saved.contentHash !== context.contentHash) throw Error('The AgentContext changed after the run started.');
         const canvasInputs = run.canvasInputs ?? [];
-        const generated = await this.generateValidated({ ...common, stage: 'linked', body: prompt.stages.linked,
-          schema: linkedCanvasesOutputSchema, files: {
-            'context.json': { name: saved.name, description: saved.description, snapshot: saved.resolvedSnapshot ?? saved.snapshot },
-            'canvases.json': canvasInputs.map((copy, i) => {
-              const document = documentFromHistory(copy.history), context = canvasContext(copy, false);
-              return { id: `c${i + 1}`, ...context, jumps: [
-                ...(document.jumps ?? []), ...context.diagrams.flatMap(d => {
-                  const box = connectionBox(document.scene, d.id);
-                  return box?.kind === 'diagram' ? (document.scene.contents[box.contentId].jumps ?? []).map(jump => ({ ...jump, sourceDisplayNodeId: d.id })) : [];
-                })
-              ] };
-            })
-          } }, raw => materializeLinkedCanvases(raw, canvasInputs, `linked-${sha256(run.id + ':' + cell.key).slice(0, 16)}`));
+        const files = {
+          'context.json': { name: saved.name, description: saved.description, snapshot: saved.resolvedSnapshot ?? saved.snapshot },
+          'canvases.json': canvasInputs.map((copy, i) => {
+            const document = documentFromHistory(copy.history), context = canvasContext(copy, false);
+            return { id: `c${i + 1}`, ...context, jumps: [
+              ...(document.jumps ?? []), ...context.diagrams.flatMap(d => {
+                const box = connectionBox(document.scene, d.id);
+                return box?.kind === 'diagram' ? (document.scene.contents[box.contentId].jumps ?? []).map(jump => ({ ...jump, sourceDisplayNodeId: d.id })) : [];
+              })
+            ] };
+          })
+        };
+        const generation = { ...common, stage, body: prompt.stages[stage], files };
+        const generated = stage === 'layout'
+          ? await this.generateValidated({ ...generation, schema: canvasLayoutSchema }, raw => ({
+              result: layoutOutput(canvasLayoutSchema.parse(raw)), output: { explanation: undefined }
+            }))
+          : await this.generateValidated({ ...generation, schema: linkedCanvasesOutputSchema },
+              raw => materializeLinkedCanvases(raw, canvasInputs, `linked-${sha256(run.id + ':' + cell.key).slice(0, 16)}`));
         signal.throwIfAborted();
         (run.outputResults ??= {})[cell.key] = generated.result.result;
         Object.assign(cell, { output: summarizeEvalOutput(generated.result.result), status: 'finished',

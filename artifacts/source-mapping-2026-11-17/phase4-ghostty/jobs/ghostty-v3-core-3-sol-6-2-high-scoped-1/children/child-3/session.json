@@ -1,0 +1,19 @@
+{
+  "id": "child-3",
+  "name": "input",
+  "assignment": "Map n24–n35 input. Use private scratch /tmp/ghostty-input if needed. Scope before ranges; compact machine-readable one line per node with scopes and path:start-end:roles, plus notes.",
+  "model": "gpt-6.2-sol",
+  "effort": "high",
+  "status": "generating",
+  "queuedAt": "2026-11-22T03:14:46.728Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-22T03:19:20.828Z",
+  "sessionId": "01a20143-f60d-7483-b5b0-8eabcf10b7d7",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-2rop8tlu-agent-repository-a13C6i-checkout--/2026-11-22T03-19-20-845Z_01a20143-f60d-7483-b5b0-8eabcf10b7d7.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase4-2rop8tlu/agent-repository-a13C6i/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

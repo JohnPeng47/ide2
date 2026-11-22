@@ -1,0 +1,45 @@
+{
+  "requestId": "08ccc7fa-8ea6-4cfa-b0b7-8819b7fcbf35",
+  "experiment": {
+    "name": "Core discovery · repository browsing",
+    "description": "Draft for prompt review. One gpt-6-astra/high sample is planned at 03f2168deba364103c2450ca9b8168cd1fc9ddc5, with the same 259 eligible files as baseline. No generation has been queued or authorized. Prompt v1: http://localhost:5191/evals?prompt=0b3af2dd-ba89-4032-936a-40070a3e167e&version=1",
+    "workflow": {
+      "id": "core-discovery",
+      "name": "Core component discovery",
+      "version": 1,
+      "stages": [
+        {
+          "id": "tree",
+          "name": "Core diagram",
+          "dependsOn": []
+        }
+      ]
+    },
+    "cases": [
+      {
+        "id": "source",
+        "name": "Pinned repository",
+        "agentContextId": "saved-agent-context-769e05ed-12d9-4c29-977b-0cb340142e1a",
+        "contentHash": "b155c1145db97147fe083822c81882e24335e2dacb37ce083efd6a1728553d63"
+      }
+    ],
+    "conditions": [
+      {
+        "id": "repository-browsing",
+        "name": "3+1 · repository browsing",
+        "description": "Combined prompt v1 (0b3af2dd-ba89-4032-936a-40070a3e167e); bounded incremental browsing; no reference diagram or analysis rankings. Output: one ASCII tree in JSON {ascii}, at most 20000 characters."
+      }
+    ],
+    "samples": [
+      {
+        "id": "d4ae9c0d-3f81-4138-b25a-6266f8a7f1f8",
+        "caseId": "source",
+        "conditionId": "repository-browsing",
+        "number": 1,
+        "attempt": 1,
+        "outputs": []
+      }
+    ],
+    "comparisons": []
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "id": "child-2",
+  "name": "termio",
+  "assignment": "Map all d2 nodes n1-n29 only. Return JSON partial mappings with ranges and notes; read numbered source.",
+  "model": "gpt-6-sol",
+  "effort": "medium",
+  "status": "generating",
+  "queuedAt": "2026-11-19T04:01:45.638Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-19T04:01:45.642Z",
+  "sessionId": "01a1f1f7-b6c7-73b3-8e3a-63f0d54865df",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-lnrqytap-agent-repository-QbrbnL-checkout--/2026-11-19T04-01-45-671Z_01a1f1f7-b6c7-73b3-8e3a-63f0d54865df.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase3-lnrqytap/agent-repository-QbrbnL/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

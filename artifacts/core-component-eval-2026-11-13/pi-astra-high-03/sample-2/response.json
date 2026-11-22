@@ -1,0 +1,58 @@
+{
+  "output": {
+    "ascii": "Pi coding-agent session -- AgentSession connects conversation, model execution, tools and durable history\n|   [M] module/API boundary; [C] call flow; [O] state/lifetime; [D] data dependency\n|\n|-- [M] Session-facing API: AgentSession\n|   |   packages/coding-agent/src/core/agent-session.ts:409\n|   |-- Exposes prompt(), steer(), followUp(), abort(), subscribe(), waitForIdle()\n|   |-- Exposes setModel(), setThinkingLevel(), setActiveToolsByName(), compact(), navigateTree()\n|   |-- [O] Retains Agent, SessionManager, SettingsManager and ModelRuntime\n|   |   `-- Internally coordinates extension runner, tool registry, queued context and recovery controllers\n|   `-- Hosts share this behavior rather than implementing separate agent loops\n|       |-- main.ts -> InteractiveMode / runPrintMode / runRpcMode\n|       |   packages/coding-agent/src/main.ts:1010\n|       `-- SDK createAgentSession() -> { session, extensionsResult, modelFallbackMessage }\n|           packages/coding-agent/src/core/sdk.ts:191\n|\n|-- [C] createAgentSession() assembles a runnable conversation\n|   |   packages/coding-agent/src/core/sdk.ts:191-480\n|   |-- Resolve cwd; obtain SettingsManager, SessionManager, ModelRuntime and ResourceLoader\n|   |-- [D] buildSessionContext() + branch model selection + settings + configured auth\n|   |   `-- Restore messages/model/thinking level, or select initial defaults\n|   |-- new Agent({ initialState, convertToLlm, streamFn, transformContext, ... })\n|   |   |-- streamFn -> ModelRuntime.streamSimple()\n|   |   `-- transformContext -> ExtensionRunner.emitContext()\n|   `-- new AgentSession(...) installs persistence, request, turn-boundary and tool hooks\n|       `-- _buildRuntime() -> ExtensionRunner + built-in/custom tool registry\n|\n|-- [C] prompt(text, options) runs one session activity\n|   |   packages/coding-agent/src/core/agent-session.ts:1943-2288\n|   |-- Extension slash command? -> command.handler(ctx), without an ordinary prompt\n|   |-- _preparePrompt()\n|   |   |-- Input hooks -> skill expansion -> prompt-template expansion\n|   |   |-- Already running -> enqueue steering or follow-up input\n|   |   `-- Otherwise validate model/auth -> BeforeAgentStartTrigger\n|   |-- _prepareRun()\n|   |   |-- Check compaction -> emitBeforeAgentStart()\n|   |   `-- [D] Prompt options + active tools + normalized images + pending custom messages\n|   |       `-- Starting messages, including a system/tool-loadout patch when needed\n|   `-- _startRun() -> agent.prompt(messages)\n|       |-- _handlePostAgentRun() may retry, compact or drain newly queued input\n|       |   `-- agent.continue() re-enters execution with updated context\n|       `-- Before-settle hooks may continue; finally emit agent_settled\n|           `-- waitForIdle() covers session recovery/settlement, not only one model response\n|\n|-- [M] Agent owns transient execution; agent-loop supplies the model/tool cycle\n|   |   packages/agent/src/agent.ts:188; packages/agent/src/agent-loop.ts:180\n|   |-- [O] Agent state\n|   |   |-- messages, model, thinkingLevel, tools\n|   |   |-- isStreaming, streamingMessage, pendingToolCalls, errorMessage\n|   |   `-- steeringQueue, followUpQueue, activeRun.promise and AbortController\n|   |-- [C] runAgentLoop() / runAgentLoopContinue()\n|   |   |-- prepareNextTurn -> apply queued messages and tool declaration changes\n|   |   |-- prepareRequest -> session projection and request model selection\n|   |   |-- streamAssistantResponse()\n|   |   |   |-- [D] AgentMessage[] -> transformContext -> convertToLlm -> normalized Context\n|   |   |   `-- streamFunction(model, context, options) -> streamed assistant events\n|   |   |-- Assistant tool calls -> executeToolCalls() -> ToolResultMessage[]\n|   |   |   `-- Results enter context before the next assistant request\n|   |   `-- finishTurn() decides continuation/end\n|   |       |-- Tool calls or steering -> another inner turn\n|   |       `-- Follow-up queue -> another cycle after the agent would otherwise stop\n|   |-- [M] ModelRuntime is the provider/auth boundary\n|   |   |   packages/coding-agent/src/core/model-runtime.ts:744\n|   |   |-- resolveModel() handles virtual selections\n|   |   `-- streamSimple() prepares provider request -> provider.streamSimple()\n|   `-- [C] Agent events -> AgentSession._handleAgentEvent()\n|       |   packages/coding-agent/src/core/agent-session.ts:1163\n|       |-- Extension handlers -> public subscribe() listeners\n|       |-- message_end -> SessionManager.appendMessage() / appendCustomMessageEntry()\n|       `-- turn_end -> flush context-only custom messages after tool results\n|\n|-- [M] Tool and extension boundary -- capabilities are assembled per session\n|   |   packages/coding-agent/src/core/agent-session.ts:3650-3812\n|   |-- _buildRuntime() -> createAllToolDefinitions(cwd, options)\n|   |   |   packages/coding-agent/src/core/tools/index.ts\n|   |   |-- read / bash / edit / write are the base default active tools\n|   |   `-- powershell / grep / find / ls are also available built-ins\n|   |-- _refreshToolRegistry()\n|   |   |-- Built-in definitions + ExtensionRunner.getAllRegisteredTools() + SDK customTools\n|   |   |-- Allowed/excluded names filter registration and activation\n|   |   `-- wrapRegisteredTools() -> executable AgentTool registry\n|   |-- [D] Tool exposure + active selection -> model declarations versus callable tools\n|   |   `-- _preparePromptAndToolLoadout() and declareToolChanges() record loadout changes\n|   |       packages/coding-agent/src/core/agent-session.ts:1828; packages/agent/src/agent-loop.ts:350\n|   `-- ExtensionRunner hooks connect input, context, tools, provider traffic and session boundaries\n|       `-- Extensions participate through bound APIs; session retains coordination and persistence\n|\n|-- [O] SessionManager retains canonical history; Agent messages are its working projection\n|   |   packages/coding-agent/src/core/session-manager.ts:995\n|   |-- fileEntries[] + byId + leafId + labels + session identity/cwd\n|   |   |-- Entries link id -> parentId: one history file can contain multiple branches\n|   |   `-- Messages, model/thinking changes, compactions, context edits and summaries coexist\n|   |-- appendMessage() / appendCompaction() / other append APIs\n|   |   |-- Append child of current leaf -> advance leaf -> _persist()\n|   |   `-- JSONL persistence, or in-memory operation; initial file write waits for conversation\n|   |       packages/coding-agent/src/core/session-manager.ts:1174-1306\n|   |-- [D] buildSessionProjection(entries, leafId, byId)\n|   |   |   packages/coding-agent/src/core/session-manager.ts:468-584\n|   |   |-- Follow selected leaf path\n|   |   |-- Latest compaction -> summary/system checkpoint + retained tail + newer entries\n|   |   |-- Latest context_edit per target -> replace content or omit from model context\n|   |   `-- Return provenance-linked projected entries, messages, model and thinking level\n|   |-- _refreshFinalizedContext() -> agent.state.messages = projection.messages\n|   |   packages/coding-agent/src/core/agent-session.ts:999\n|   `-- compact(), navigateTree() and retry recovery change the selected/projected context\n|       |-- [D] Context token estimate + model limits + settings -> compaction decision\n|       |-- Summarization -> appendCompaction() -> rebuild projection\n|       `-- Failed retry attempts remain in raw history but can be durably omitted from requests\n|           packages/coding-agent/src/core/agent-session.ts:2923,3097,3948,4126\n|\n`-- [O] AgentSessionRuntime controls session replacement and teardown\n    |   packages/coding-agent/src/core/agent-session-runtime.ts:74\n    |-- Retains current session/services and a createRuntime factory\n    |-- switchSession() / newSession() / fork() / importFromJsonl()\n    |   |-- Before-switch/fork hooks may cancel supported transitions\n    |   |-- teardownCurrent(): await session.abort() -> session_shutdown -> dispose()\n    |   |   `-- Settle and persist the outgoing turn before invalidating its context\n    |   `-- Apply replacement -> rebind host -> optional withSession callback\n    `-- AgentSession.dispose()\n        |   packages/coding-agent/src/core/agent-session.ts:1477\n        |-- Abort retry, compaction, branch summary, bash and agent execution\n        |-- Invalidate extension contexts; detach agent/public listeners\n        `-- Cancel cache warming and cleanupSessionResources(sessionId)\n            `-- Durable session history survives the live runtime's lifetime"
+  },
+  "usage": {
+    "input": 34770,
+    "output": 3077,
+    "cacheRead": 101248,
+    "cacheWrite": 0,
+    "reasoning": 109,
+    "totalTokens": 139095
+  },
+  "execution": {
+    "runtime": "pi-agent-context",
+    "sessionId": "01a1dc11-9d86-7340-af23-91bd7c46657c",
+    "contextHash": "642eff5f7c0caf04881c5a7a06cc6f80a6acefc263656940751d03a1c1360017",
+    "cacheKey": "eval-c7f5c5f0bc34d85e92d0159aeefbf5541056eb8e40a61f33dc35b66a3a522eab",
+    "modelContextHash": "2b652137ef010d652cdfbf69e51cd33fd25180f61830052df52cc91ad473de30",
+    "repositories": [
+      {
+        "repository": "repo-1",
+        "repositoryPath": "/home/john/softwarez/pi",
+        "commit": "682c7b93ce3e0a52b579c2b65b4c06bb392e7180",
+        "exclusions": [
+          "**/*-LICENSE",
+          "**/*.md",
+          "**/*.mdx",
+          "**/*.spec.*",
+          "**/*.test.*",
+          "**/AGENTS.md",
+          "**/CODEX-LICENSE",
+          "**/LICENSE*",
+          "**/__fixtures__/**",
+          "**/__tests__/**",
+          "**/benchmarks/**",
+          "**/build/**",
+          "**/dist/**",
+          "**/docs/**",
+          "**/examples/**",
+          "**/fixtures/**",
+          "**/node_modules/**",
+          "**/scripts/**",
+          "**/test/**",
+          "**/tests/**",
+          ".github/**",
+          ".husky/**",
+          ".pi/**",
+          "flake.lock",
+          "nix/**",
+          "package-lock.json",
+          "scripts/**"
+        ],
+        "checkout": "/tmp/agent-repository-ngYgFs/checkout",
+        "inspectionSource": "session-transcript"
+      }
+    ]
+  }
+}

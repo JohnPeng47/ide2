@@ -1,0 +1,85 @@
+### Anchor tree
+- A 3–12 ↔ B 3–12 · same · offset 0 · s = 0.985 · runtime and App boundary
+  - A 4–5 ↔ B 4–5 · same · offset 0 · s = 1.000 · Surface host callbacks
+    - A 5 ↔ B 5 · same · offset 0 · s = 1.000 · one session and input/display callbacks
+  - A 6–7 ↔ B 6–8 · same · offset 0 · s = 1.000 · apprt runtime boundary
+    - A 7 ↔ B 8 · same · offset 0 · s = 1.000 · host UI delegation
+  - A 8–11 ↔ B 9–12 · same · offset 0 · s = 0.908 · App session coordination
+    - A 9 ↔ B 10 · same · offset 0 · s = 1.000 · surface registry, focus and mailbox
+    - A 10 ↔ B 11, 12 · grouped · offset 0 · s = 1.000 · application font and GPU resources
+    - A 11 ↔ B 54–55 · relocated · offset 0 · s = 0.450 · App.tick message dispatch
+- A 13–20 ↔ B 14–25 · same · offset 0 · s = 0.908 · Surface session assembly
+  - A 14 ↔ B 16 · same · offset 1 · s = 0.900 · Termio IO and emulation
+  - A 15 ↔ B 17 · same · offset 1 · s = 0.900 · per-surface renderer
+  - A 16–17 ↔ B 22–25 · same · offset 0 · s = 0.833 · renderer.State shared terminal and mutex
+    - A 16 ↔ B 23 · same · offset 0 · s = 1.000 · shared terminal pointer
+    - A 17 ↔ B 24 · same · offset 0 · s = 1.000 · mutex-protected state
+    - unmatched: B 25 (renderer demand-lock detail)
+  - A 18 ↔ B 18 · same · offset 0 · s = 1.000 · IO and renderer thread managers
+  - A 19–20 ↔ B 41–44 · relocated · offset 0 · s = 0.450 · Exec child session and reader
+- A 22–34 ↔ B 27–38 · same · offset 0 · s = 0.953 · input path
+  - A 23–26 ↔ B 28–31 · same · offset 0 · s = 1.000 · keys and bindings
+    - A 24 ↔ B 29 · same · offset 0 · s = 1.000 · binding action
+    - A 25–26 ↔ B 30–31 · same · offset 0 · s = 1.000 · terminal-dependent key encoding
+      - A 26 ↔ B 31 · same · offset 0 · s = 1.000 · protocol modes
+  - A 27–28 ↔ B 33 · summarized · offset 1 · s = 0.810 · mouse selection or reports
+  - A 29–30 ↔ B 34 · summarized · offset 1 · s = 0.810 · paste protocol
+  - A 31–34 ↔ B 35–38 · same · offset 0 · s = 1.000 · queued writes and PTY backend
+    - A 32 ↔ B 36 · same · offset 0 · s = 1.000 · readonly writes
+    - A 33–34 ↔ B 37–38 · same · offset 0 · s = 1.000 · IO-thread write dispatch
+      - A 34 ↔ B 38 · same · offset 0 · s = 1.000 · Exec PTY writes
+- A 36–47 ↔ B 40–55 · same · offset 0 · s = 0.989 · output and StreamHandler
+  - A 37–39 ↔ B 45–46 · same · offset 0 · s = 1.000 · Termio.processOutput parser lock
+    - A 38 ↔ B 45 · same · offset 0 · s = 1.000 · shared mutex
+    - A 39 ↔ B 46 · same · offset 0 · s = 1.000 · stream slice processing
+  - A 40–42 ↔ B 47–49 · same · offset 0 · s = 0.950 · StreamHandler VT operations
+    - A 41–42 ↔ B 49 · summarized · offset 0 · s = 0.900 · terminal mutation and persistent protocol state
+  - A 43–47 ↔ B 50–55 · same · offset 0 · s = 0.983 · StreamHandler replies, renderer and UI effects
+    - A 44 ↔ B 50 · same · offset 0 · s = 1.000 · protocol responses to child
+    - A 45 ↔ B 51 · same · offset 0 · s = 1.000 · render wakeups
+    - A 46–47 ↔ B 52–53 · summarized · offset 0 · s = 0.900 · surface UI messages
+- A 49–62 ↔ B 57–70 · same · offset 0 · s = 1.000 · terminal screen model
+  - A 50–53 ↔ B 58–60 · same · offset 0 · s = 1.000 · Terminal geometry, modes and metadata
+    - A 51 ↔ B 59 · same · offset 0 · s = 1.000 · geometry
+    - A 52, 53 ↔ B 60 · grouped · offset 0 · s = 1.000 · protocol and session state
+  - A 54–62 ↔ B 61–70 · same · offset 0 · s = 0.999 · ScreenSet and Screen contents
+    - A 55 ↔ B 62, 63 · grouped · offset 0 · s = 1.000 · primary, alternate and active screens
+    - A 56–62 ↔ B 64–70 · same · offset 0 · s = 0.996 · Screen model
+      - A 57 ↔ B 65 · same · offset 0 · s = 1.000 · per-screen editing and keyboard state
+      - A 58 ↔ B 66 · same · offset 0 · s = 1.000 · images, prompt and dirty flags
+      - A 59–62 ↔ B 67–70 · same · offset 0 · s = 0.975 · scrollback PageList
+        - A 60 ↔ B 69 · same · offset 0 · s = 1.000 · Page rows and cells
+        - A 61–62 ↔ B 70 · summarized · offset 0 · s = 0.900 · tracked positions
+- A 64–76 ↔ B 72–83 · same · offset 0 · s = 0.980 · renderer and presentation
+  - A 65–66 ↔ B 73–74 · same · offset 0 · s = 1.000 · renderer scheduling thread
+    - A 66 ↔ B 74 · same · offset 0 · s = 1.000 · render wakeups separate from parsing
+  - A 67–73 ↔ B 75–80 · same · offset 0 · s = 0.979 · generic renderer frame snapshot and glyphs
+    - A 68–70 ↔ B 76–78 · same · offset 0 · s = 0.975 · locked RenderState snapshot
+      - A 69 ↔ B 77–78 · summarized · offset 0 · s = 0.900 · brief shared-state lock
+      - A 70 ↔ B 76 · same · offset 0 · s = 1.000 · synchronized/dirty frame handling
+    - A 71–72 ↔ B 80 · summarized · offset 0 · s = 0.900 · selection, preedit and cursor
+    - A 73 ↔ B 79 · same · offset 0 · s = 1.000 · font shaping and GPU cells
+  - A 74, 75–76 ↔ B 81–83 · grouped · offset 0 · s = 0.900 · drawFrame, graphics API and host presentation
+- A 78–87 ↔ B 85–91 · same · offset 0 · s = 0.883 · geometry and configuration
+  - A 79–80 ↔ B 87 · summarized · offset 1 · s = 0.810 · cell metrics and grid size
+  - A 81–83 ↔ B 88–91 · same · offset 0 · s = 1.000 · Surface/Termio resize
+    - A 82–83 ↔ B 89–90 · same · offset 0 · s = 1.000 · coalesced locked backend/terminal resize
+      - A 83 ↔ B 90 · same · offset 0 · s = 1.000 · avoid stale dimensions
+  - A 84–87 ↔ B 20–21 · relocated · offset 0 · s = 0.487 · owned derived config propagated to workers
+    - A 85 ↔ B 20 · same · offset 0 · s = 1.000 · owned config
+    - A 86–87 ↔ B 21 · summarized · offset 0 · s = 0.900 · settings propagated to worker components
+- A 89–97 ↔ B 93–103 · same · offset 0 · s = 0.950 · session shutdown
+  - A 90 ↔ B 94–95 · summarized · offset 0 · s = 0.900 · child exit / hold policy
+  - A 91 ↔ B 96–97 · summarized · offset 0 · s = 0.900 · runtime-mediated close
+  - A 92–97 ↔ B 98–103 · same · offset 0 · s = 0.900 · Surface deinit dependency order
+    - A 93 ↔ B 99 · same · offset 0 · s = 1.000 · stop search and workers
+    - A 94 ↔ B 100 · same · offset 0 · s = 1.000 · Exec reader teardown
+    - A 95, 96 ↔ B 101 · grouped · offset 0 · s = 1.000 · release renderer, IO and mutex
+    - A 97 ↔ B 102 · same · offset 0 · s = 1.000 · free font grid, preedit, derived config
+    - unmatched: B 103 (App-wide deinit)
+
+### Score
+Top-level J = (0.984722 + 0.908334 + 0.952500 + 0.988889 + 0.999740 + 0.979861 + 0.882916 + 0.950000) / 8 = 0.955870. Each s uses 0.9^offset × (0.5 + 0.5 × inner), with a 0.5 factor for relocated pairs; grouped pairs count once.
+
+### Verdict
+Both identify the host/App boundary, Surface-owned session, input and output paths, terminal screen storage, renderer, geometry/configuration and teardown. B puts App.tick dispatch under output rather than App coordination, Exec startup under output rather than Surface assembly, and derived configuration under Surface assembly rather than geometry. B splits App font/GPU resources and screen selection where A groups them; A gives more detail on terminal storage, while B adds renderer demand-lock and App-wide deinit detail. Implied parents include B’s mouse/paste protocol and worker-initialization groupings and A’s shared App resources.

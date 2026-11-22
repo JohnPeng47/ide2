@@ -1,0 +1,18 @@
+{
+  "text": "{\"diagrams\":[{\"diagramId\":\"d1\",\"mappings\":[{\"node\":\"n83\",\"path\":\"src/Surface.zig\",\"startLine\":2600,\"endLine\":2649},{\"node\":\"n84\",\"path\":\"src/Surface.zig\",\"startLine\":2600,\"endLine\":2649},{\"node\":\"n85\",\"path\":\"src/Surface.zig\",\"startLine\":2618,\"endLine\":2635},{\"node\":\"n85\",\"path\":\"src/renderer/size.zig\",\"startLine\":20,\"endLine\":38},{\"node\":\"n86\",\"path\":\"src/Surface.zig\",\"startLine\":2637,\"endLine\":2648},{\"node\":\"n93\",\"path\":\"src/Surface.zig\",\"startLine\":829,\"endLine\":885},{\"node\":\"n94\",\"path\":\"src/Surface.zig\",\"startLine\":881,\"endLine\":885},{\"node\":\"n95\",\"path\":\"src/Surface.zig\",\"startLine\":829,\"endLine\":845},{\"node\":\"n96\",\"path\":\"src/termio/Exec.zig\",\"startLine\":196,\"endLine\":230},{\"node\":\"n97\",\"path\":\"src/Surface.zig\",\"startLine\":840,\"endLine\":858},{\"node\":\"n98\",\"path\":\"src/Surface.zig\",\"startLine\":847,\"endLine\":856},{\"node\":\"n99\",\"path\":\"src/Surface.zig\",\"startLine\":860,\"endLine\":876}]}],\"notes\":\"\"}",
+  "usage": {
+    "input": 14121,
+    "output": 653,
+    "cacheRead": 23424,
+    "cacheWrite": 0,
+    "reasoning": 49,
+    "totalTokens": 38198
+  },
+  "cost": {
+    "input": 0.028241999999999996,
+    "output": 0.006530000000000001,
+    "cacheRead": 0.0046848,
+    "cacheWrite": 0,
+    "total": 0.0394568
+  }
+}

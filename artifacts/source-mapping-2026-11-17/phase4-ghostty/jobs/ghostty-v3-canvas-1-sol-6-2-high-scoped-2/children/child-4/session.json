@@ -1,0 +1,19 @@
+{
+  "id": "child-4",
+  "name": "termio",
+  "assignment": "Map all of d2 (Termio) top-down scope / leaves then parent, follow handoffs. Return compact node scope and path/line/roles; note unresolved. Use private scratch.",
+  "model": "gpt-6.2-sol",
+  "effort": "high",
+  "status": "generating",
+  "queuedAt": "2026-11-22T03:50:17.990Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-22T03:55:08.997Z",
+  "sessionId": "01a20164-bd52-7a0e-bbf2-450bd3db539f",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-77siz4xe-agent-repository-alMhNm-checkout--/2026-11-22T03-55-09-010Z_01a20164-bd52-7a0e-bbf2-450bd3db539f.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase4-77siz4xe/agent-repository-alMhNm/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

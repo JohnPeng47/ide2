@@ -1,0 +1,19 @@
+{
+  "id": "child-3",
+  "name": "exec",
+  "assignment": "Map d4 all nodes, private /tmp/d4work. Return compact ranges/scopes/roles + unions for parents.",
+  "model": "gpt-6.2-astra",
+  "effort": "high",
+  "status": "generating",
+  "queuedAt": "2026-11-22T03:28:44.452Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-22T03:32:33.320Z",
+  "sessionId": "01a20150-0db3-7800-89e1-c473d2b59497",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-_nrrnqb7-agent-repository-7lspAh-checkout--/2026-11-22T03-32-33-331Z_01a20150-0db3-7800-89e1-c473d2b59497.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase4-_nrrnqb7/agent-repository-7lspAh/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

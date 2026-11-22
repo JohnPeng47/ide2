@@ -1,0 +1,239 @@
+{
+  "output": {
+    "explanation": "Expanded ownership-core, the sole supplied diagram, into a central ownership tree and two peripheral continuations: session IO and presentation. The central tree retains bootstrap/shared services, runtime holders, and Surface-owned session state; peripherals deepen the actual Surface-owned branches without making workers owners of the terminal or renderer. No diagrams were left unchanged and there were no existing edges. Checked the pinned checkout and corrected shutdown/reference details: App.deinit directly calls runtime-surface deinit, but GTK's adapter is a no-op; registration does not own wrapper allocation; focused_surface references a core Surface; inspector deactivation clears its borrowed pointer, whereas full teardown frees it after workers join. Explicit edges preserve shared-state, mailbox, font and device relationships.",
+    "diagrams": [
+      {
+        "id": "ownership-core",
+        "ascii": "Ghostty session ownership -- children own; -> borrows or hands off\n|\n|-- Bootstrap / embedded C API lifetime\n|   `-- CoreApp: create/init -> destroy [src/App.zig:80-155]\n|       |-- Registry storage, focus, conditional state, notification throttle,\n|       |   first-surface flag and mailbox; tick drains messages\n|       |   |-- surfaces[] -> runtime surfaces (registration, not allocation)\n|       |   `-- focused_surface -> core Surface; validate with hasSurface\n|       |-- font_grid_set: app-wide SharedGridSet\n|       |   |-- Font library, discovery state and keyed, ref-counted grids\n|       |   `-- ref creates/reuses; deref at zero destroys key/grid\n|       |       [src/font/SharedGridSet.zig:53-175,413-430]\n|       `-- device: lazy shared graphics device; outlives surface renderers\n|           [src/Surface.zig:564-570; src/App.zig:145-148]\n|\n`-- GUI host lifetime (GTK widget tree or embedding host)\n    |-- Runtime application: configuration and platform integration\n    |   |-- Embedded: cloned Config, lazy keymap, callback options;\n    |   |   terminate frees config/keymap [src/apprt/embedded.zig:139-174]\n    |   |-- GTK: config, UI/platform resources and event sources;\n    |   |   dispose/finalize release [src/apprt/gtk/class/application.zig:1554-1586]\n    |   `-- core_app -> CoreApp; no duplicate shared fonts/device\n    `-- Runtime surface holder: one widget/host handle per session\n        |-- Embedded wrapper owns title, inspector wrapper, core_surface by value;\n        |   newSurface allocates; closeSurface deinits AND frees wrapper\n        |   [src/apprt/embedded.zig:278-294,447-504,634-648]\n        |-- GTK widget owns allocated core_surface; initSurface creates it;\n        |   finalize unregisters, deinits and destroys it\n        |   [src/apprt/gtk/class/surface.zig:1963-1980,3557-3624]\n        |-- -> CoreApp registry: deleteSurface only unregisters\n        `-- Core Surface: session owner [src/Surface.zig:477-765,829-880]\n            |-- Lifecycle: init builds state/spawns workers; close asks runtime\n            |   to destroy. Stop/join search, renderer, IO before freeing state.\n            |   Renderer deinit precedes renderer_thread handle destruction.\n            |-- -> app / rt_app / rt_surface: enclosing services and host\n            |-- Main-thread state: size, focus, visibility, readonly, child exit,\n            |   conditional state and command timing [src/Surface.zig:103-187]\n            |-- config: owned DerivedConfig; derive/replace/free, no caller pointer\n            |-- keyboard: queued writes and active table stack\n            |   `-- -> Surface.config bindings; reload drops sequences/tables\n            |       [src/Surface.zig:1804-1848,863-876]\n            |-- mouse: buttons, selection gesture, scrolling and link tracking\n            |   `-- -> terminal pins; gesture deinit before io.deinit (line 855)\n            |-- Font lease: key/size/metrics; final deref after renderer deinit\n            |   `-- -> CoreApp.font_grid_set; replacement hands old-key release\n            |       to renderer mailbox [src/Surface.zig:2536-2572,871]\n            |-- io: Termio -- terminal, parser and subprocess [IO detail]\n            |-- io_thread + io_thr: execution controller/handle [IO detail]\n            |-- renderer_state: shared synchronization/presentation [Render detail]\n            |-- renderer: per-surface CPU/GPU resources [Render detail]\n            |-- renderer_thread + renderer_thr: scheduling/handle [Render detail]\n            |-- search: optional Search {state, thread}; nonempty query creates\n            |   |-- State owns loop, mailbox, refresh timer, search/match state\n            |   |   and notification progress; end/empty query stops and joins\n            |   |-- -> io.terminal + renderer_state.mutex; deinit search under lock\n            |   `-- [src/Surface.zig:210-227,5080-5146;\n            |        src/terminal/search/Thread.zig:46-79,118-132]\n            `-- inspector: optional heap Inspector with GUI/data and mouse state\n                |-- Activation allocates; deactivation clears borrowed pointer\n                |   under mutex before freeing; full teardown frees after joins\n                `-- -> renderer_state.inspector exposes it to IO/rendering\n                    [src/Surface.zig:929-955,972-991,858-861]\n\nShutdown boundary [src/App.zig:136-148; src/apprt/gtk/Surface.zig:15-17]\nApp.deinit calls runtime-surface deinit, then frees registry storage;\nGTK's adapter deinit is a no-op: widget teardown must already close sessions.\nApp asserts zero font leases, then frees fonts/device; registry != wrapper owner.\nBootstrap/API holders: src/main_ghostty.zig:102-109; src/apprt/embedded.zig:1718-1749",
+        "position": {
+          "column": 0,
+          "row": 0
+        }
+      },
+      {
+        "id": "session-io",
+        "ascii": "Core Surface / IO branch -- continuation of session ownership\n|\n|-- io: Termio [src/termio/Termio.zig:313-385]\n|   |-- terminal: authoritative mutable Terminal (not owned by workers)\n|   |   |-- screens: ScreenSet [src/terminal/ScreenSet.zig:23-112]\n|   |   |   |-- all: primary Screen immediately; alternate lazily allocated\n|   |   |   |   `-- Each Screen owns pages/scrollback, cursor/saved cursor,\n|   |   |   |       selection, charset, keyboard protocol and Kitty images;\n|   |   |   |       output/resize mutate; deinit releases storage\n|   |   |   |       [src/terminal/Screen.zig:45-87,361-367]\n|   |   |   `-- active -> initialized Screen; switchTo borrows, remove frees\n|   |   `-- Modes, palette, tab stops, title, cwd, glyph glossary, optional DnD;\n|   |       Terminal.deinit releases owned storage\n|   |       [src/terminal/Terminal.zig:49-106,395-404]\n|   |-- terminal_stream: persistent VT parser + StreamHandler state\n|   |   `-- -> terminal + renderer_state.mutex: processOutput locks while parsing\n|   |       [src/termio/Termio.zig:313-364,705-765]\n|   |-- Owned DerivedConfig, IO mailbox/queued messages, thread_enter_state;\n|   |   startup state freed on thread entry; remaining state freed on deinit\n|   |-- backend.exec.subprocess: owned launch description, PTY and process\n|   |   |-- Arguments/cwd/environment prepared at init; threadEnter starts PTY\n|   |   |   and command; successful launch drops env and parent's slave FD\n|   |   `-- threadExit stops/reaps; deinit closes PTY and frees launch data\n|   |       [src/termio/Exec.zig:196-230,594-624,887-941]\n|   |-- -> renderer_state: shared mutex, terminal/inspector references\n|   |-- -> renderer_thread mailbox/wakeup: render scheduling and notifications\n|   `-- -> surface_mailbox: borrowed route via CoreApp mailbox to this Surface\n|\n|-- io_thread: controller [src/termio/Thread.zig:44-74,92-136]\n|   |-- Event loop, stop handle, scroll/resize-coalescing/sync-output timers\n|   `-- -> io / terminal / mailbox: borrows Surface.io, no second terminal\n`-- io_thr: OS thread; Surface spawns and joins before controller deinit\n    `-- Active stack: CallbackData.data = Termio.ThreadData\n        |-- threadEnter initializes; threadExit then data.deinit on return\n        |   [src/termio/Thread.zig:259-285; src/termio/Termio.zig:832-851]\n        |-- backend.exec runtime resources [src/termio/Exec.zig:493-566]\n        |   |-- Process watcher, write stream/queue/pool, termios timer\n        |   `-- Reader thread + quit pipe; stop subprocess, signal quit, join,\n        |       then release watcher/stream/pool/timer [Exec.zig:196-230,549-566]\n        |       `-- POSIX reader stack: bounded rotating Pipeline, idle pipe,\n        |           gather thread; gather feeds batches to reader's parser stage\n        |           and is joined before reader returns [Exec.zig:1412-1495]\n        `-- -> controller loop, Termio mailbox and shared renderer_state\n\nTeardown: join IO before Termio.deinit; release mouse gesture pins first.\nSurface owns io and controller independently; worker stack exists only while running.",
+        "position": {
+          "column": 96,
+          "row": 0
+        }
+      },
+      {
+        "id": "session-render",
+        "ascii": "Core Surface / presentation branch -- continuation of session ownership\n|\n|-- renderer_state: Surface-managed shared state [src/renderer/State.zig:13-46]\n|   |-- Allocated mutex, owned preedit codepoints, mouse rendering state,\n|   |   atomic demand/handoff counters; Surface frees allocations after joins\n|   |   [src/Surface.zig:590-593,873-875]\n|   |-- -> io.terminal: one shared terminal, accessed by IO/UI/render/search\n|   `-- -> Surface.inspector: borrowed; cleared under mutex on deactivation\n|\n|-- renderer: per-surface Renderer [src/renderer/generic.zig:112-290,712-873]\n|   |-- CPU state: DerivedConfig, RenderState snapshot, cells/uniforms,\n|   |   shaper/cache, search-highlight arenas and optional overlay\n|   |   `-- Frame updates refresh copies; deinit releases CPU storage\n|   |-- Graphics API state, swap chain/frame resources, shaders, images/background\n|   |   |-- releaseGpuResources waits for in-flight frames before freeing chain;\n|   |   |   frees shaders when unrealized [generic.zig:1244-1255]\n|   |   `-- threadExit marks unrealized, releases GPU resources and images\n|   |       before API context teardown [generic.zig:914-943]\n|   |-- latest_frame: retained exported frame; replacement releases old frame\n|   |   `-- takeFrame -> runtime consumer receives ownership; deinit frees untaken\n|   |       [generic.zig:124-131,851,1058-1071]\n|   |-- Optional lazy display_link: deinit closes callbacks synchronously\n|   |   `-- -> renderer_thread.draw_now; must close before handle is freed\n|   |       [generic.zig:853-862,1272-1287; src/Surface.zig:847-853]\n|   |-- -> CoreApp.device: borrowed shared graphics resources\n|   |-- -> CoreApp.font_grid_set grid: retained by Surface font lease\n|   `-- -> surface_mailbox / runtime surface: presentation and UI route\n|\n|-- renderer_thread: scheduling controller [src/renderer/Thread.zig:30-85]\n|   |-- Event loop, owned mailbox, wake/stop/draw handles, render/cursor timers,\n|   |   compression state and thread config; deinit after join (lines 177-189)\n|   |-- -> renderer / renderer_state / runtime surface: borrowed, not owned\n|   `-- Font-grid message -> shared set: accept replacement then deref old key\n|       [src/renderer/Thread.zig:397-399; src/Surface.zig:2555-2572]\n`-- renderer_thr: OS thread; Surface spawns/stops/joins it\n    `-- -> controller; thread exit releases renderer GPU state, not Surface\n\nTeardown [src/Surface.zig:829-876]\nStop/join search, renderer, IO; then renderer.deinit closes display link,\nthen renderer_thread.deinit frees callback handles. Shared mutex/preedit and\nfinal font lease survive worker shutdown; the app device survives all renderers.",
+        "position": {
+          "column": 96,
+          "row": 50
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": {
+          "diagram": "ownership-core",
+          "line": 47
+        },
+        "target": {
+          "diagram": "session-io",
+          "line": 3
+        },
+        "label": "Expands Surface-owned Termio"
+      },
+      {
+        "source": {
+          "diagram": "ownership-core",
+          "line": 48
+        },
+        "target": {
+          "diagram": "session-io",
+          "line": 29
+        },
+        "label": "Expands IO controller and execution lifetime"
+      },
+      {
+        "source": {
+          "diagram": "ownership-core",
+          "line": 49
+        },
+        "target": {
+          "diagram": "session-render",
+          "line": 3
+        },
+        "label": "Expands Surface-managed shared state"
+      },
+      {
+        "source": {
+          "diagram": "ownership-core",
+          "line": 50
+        },
+        "target": {
+          "diagram": "session-render",
+          "line": 10
+        },
+        "label": "Expands per-surface renderer ownership"
+      },
+      {
+        "source": {
+          "diagram": "ownership-core",
+          "line": 51
+        },
+        "target": {
+          "diagram": "session-render",
+          "line": 29
+        },
+        "label": "Expands rendering controller and execution lifetime"
+      },
+      {
+        "source": {
+          "diagram": "session-io",
+          "line": 25
+        },
+        "target": {
+          "diagram": "session-render",
+          "line": 3
+        },
+        "label": "Borrows shared synchronization and inspector access"
+      },
+      {
+        "source": {
+          "diagram": "session-io",
+          "line": 26
+        },
+        "target": {
+          "diagram": "session-render",
+          "line": 29
+        },
+        "label": "Borrows mailbox/wakeup to schedule rendering"
+      },
+      {
+        "source": {
+          "diagram": "session-render",
+          "line": 7
+        },
+        "target": {
+          "diagram": "session-io",
+          "line": 4
+        },
+        "label": "Borrows authoritative terminal; mutex protects access"
+      },
+      {
+        "source": {
+          "diagram": "session-render",
+          "line": 25
+        },
+        "target": {
+          "diagram": "ownership-core",
+          "line": 13
+        },
+        "label": "Borrows app-lifetime graphics device"
+      },
+      {
+        "source": {
+          "diagram": "session-render",
+          "line": 26
+        },
+        "target": {
+          "diagram": "ownership-core",
+          "line": 9
+        },
+        "label": "Borrows shared grid retained through Surface font lease"
+      },
+      {
+        "source": {
+          "diagram": "ownership-core",
+          "line": 55
+        },
+        "target": {
+          "diagram": "session-io",
+          "line": 4
+        },
+        "label": "Search borrows terminal; releases terminal-linked state before teardown"
+      },
+      {
+        "source": {
+          "diagram": "ownership-core",
+          "line": 55
+        },
+        "target": {
+          "diagram": "session-render",
+          "line": 3
+        },
+        "label": "Search borrows shared mutex"
+      },
+      {
+        "source": {
+          "diagram": "session-render",
+          "line": 8
+        },
+        "target": {
+          "diagram": "ownership-core",
+          "line": 58
+        },
+        "label": "Borrowed inspector, owned by Surface"
+      }
+    ]
+  },
+  "usage": {
+    "input": 32917,
+    "output": 8649,
+    "cacheRead": 150656,
+    "cacheWrite": 0,
+    "reasoning": 581,
+    "totalTokens": 192222
+  },
+  "execution": {
+    "runtime": "pi-agent-context",
+    "sessionId": "01a1f4b2-60d9-7ee3-bf1b-8dfb1c53c79d",
+    "contextHash": "4ec0bd2e0be8980031776ade17009754ac2e2b301f80872a6253db33ffd4ca27",
+    "cacheKey": "eval-0d6544df0513b9e9716a6758e6777a953cf90dc1c123d7ba6be51e2fd73ba6d6",
+    "modelContextHash": "109a528800ab08f78df1fd24bdc70d840750187cf653af99ed083a29bd2dd512",
+    "repositories": [
+      {
+        "repository": "repo-1",
+        "repositoryPath": "/home/john/softwarez/ghostty",
+        "commit": "ea8b12a8a9894b5259c441eadd8f6f0c65e215af",
+        "exclusions": [
+          "**/*-LICENSE",
+          "**/*.md",
+          "**/*.mdx",
+          "**/*.spec.*",
+          "**/*.test.*",
+          "**/AGENTS.md",
+          "**/CODEX-LICENSE",
+          "**/LICENSE*",
+          "**/Tests/**",
+          "**/__fixtures__/**",
+          "**/__tests__/**",
+          "**/benchmark/**",
+          "**/benchmarks/**",
+          "**/build/**",
+          "**/dist/**",
+          "**/docs/**",
+          "**/examples/**",
+          "**/fixtures/**",
+          "**/node_modules/**",
+          "**/scripts/**",
+          "**/test/**",
+          "**/tests/**",
+          ".agents/**",
+          ".github/**",
+          ".husky/**",
+          ".pi/**",
+          "deps/**",
+          "example/**",
+          "flake.lock",
+          "flatpak/**",
+          "images/**",
+          "nix/**",
+          "package-lock.json",
+          "po/**",
+          "scripts/**",
+          "snap/**",
+          "vendor/**"
+        ],
+        "checkout": "/tmp/agent-repository-2Hw8B9/checkout",
+        "inspectionSource": "session-transcript"
+      }
+    ]
+  }
+}

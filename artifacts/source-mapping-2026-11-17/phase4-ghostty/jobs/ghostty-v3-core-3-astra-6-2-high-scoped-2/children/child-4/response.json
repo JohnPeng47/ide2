@@ -1,0 +1,18 @@
+{
+  "text": "**d1, n52–n65:** The merge-ready subset is at `/tmp/terminal/subset.json`, with child inclusions expanded and overlapping ranges merged. Paths and bounds were checked against `ea8b12a8a9894b5259c441eadd8f6f0c65e215af`. No `validate_source_mappings` tool was available to this worker.\n\nBelow, filenames denote `src/terminal/<filename>.zig`, except `Termio`, which denotes `src/termio/Termio.zig`. Roles: `d` declaration, `u` use, `i` implementation. `+n` includes that child’s mappings.\n\n```text\nn52 [structure, entity, relationship, subsystem] +n53 +n56 +n59\n  main:60-62 d\n  Termio:40-43 d; 254-255 u; 272-298 ui; 335-339 u\n  Terminal:344-404 i; 406-430 ui\n\nn53 [behavior, subsystem] +n54 +n55\n  Terminal:1-4 d; 1893-1904 u; 2207-2213 i; 2258-2267 i; 2272-2277 u;\n           2292-2314 i; 2401-2409 i; 3017-3021 u; 3065-3075 i;\n           3085-3106 ui; 4441-4461 ui\n  stream_terminal:609-620 u; 635-680 u\n\nn54 [structure, relationship]\n  Terminal:56-68 d; 253-266 d; 344-350 u; 366-376 i; 4912-4921 u;\n           5053-5058 i; 5063-5074 i\n  Tabstops:1-10 d; 42-50 d\n\nn55 [structure, relationship]\n  Terminal:70-87 d; 268-279 d; 344-348 u; 377-387 i; 5570-5583 i; 5618-5631 i\n\nn56 [structure, entity, relationship] +n57 +n58\n  Terminal:37-38 d; 48-49 d; 344-348 u; 356-370 ui; 395-397 u\n  ScreenSet:1-8 d; 17-36 d; 55-62 i\n\nn57 [behavior, guarantee]\n  ScreenSet:38-53 i; 64-67 i; 74-88 i; 90-102 i\n  Terminal:5680-5683 u; 5689-5715 ui; 5758-5762 u; 5783-5785 ui\n\nn58 [structure, relationship, behavior]\n  ScreenSet:23-31 d; 38-53 i; 104-109 i\n  Terminal:2543-2556 ui; 5680-5683 u; 5743-5747 ui\n\nn59 [entity, structure, relationship, subsystem] +n60 +n61 +n62\n  Screen:1 d; 315-367 i; 981-993 i; 1034-1039 ui; 1139-1150 i\n  ScreenSet:38-62 ui\n\nn60 [structure]\n  Screen:52-65 d; 74-75 d\n\nn61 [structure, relationship]\n  Screen:77-98 d; 100-119 d; 315-319 u; 348-356 i; 3017-3022 u;\n         3030-3051 i; 3063-3067 u; 3095-3097 i\n  kitty/graphics_storage:69-74 d; 151-155 d\n  render:941-947 u; 996-1002 u; 2114-2121 u; 2132-2146 u\n\nn62 [structure, entity, relationship] +n63 +n64 +n65\n  Screen:44-50 d; 315-327 ui; 334-345 ui; 361-367 ui\n  PageList:1-4 d; 648-708 i; 978-988 i\n\nn63 [structure, relationship, guarantee]\n  PageList:51-63 d; 404-405 d; 4054-4089 i; 4225-4250 i;\n           7352-7383 i; 7385-7413 i\n\nn64 [structure, relationship]\n  page:162 d; 173-186 d; 268-292 i; 1107-1133 i; 2215-2225 d; 2396-2427 d\n  PageList:79-91 d; 7812-7818 u\n\nn65 [structure, relationship, behavior, guarantee]\n  PageList:472-487 d; 648-651 u; 681-688 i; 700-705 i; 710-719 i;\n           3347-3348 u; 3364-3379 i; 4061-4062 u; 4146-4156 i;\n           6139-6144 u; 6216-6228 i; 6309-6334 i; 7790-7810 d\n  Screen:195-199 d; 315-319 u; 329-345 ui; 936-946 ui; 974-979 ui;\n         3063-3071 ui; 3095-3097 ui\n  Selection:129-149 ui\n```\n\n**Qualification for n65:** Tracking preserves locations while their content survives. When a page is pruned, a pin can be moved to the new top-left and marked `garbage`; it does not preserve deleted content.",
+  "usage": {
+    "input": 60424,
+    "output": 4829,
+    "cacheRead": 356224,
+    "cacheWrite": 0,
+    "reasoning": 323,
+    "totalTokens": 421477
+  },
+  "cost": {
+    "input": 0.6042399999999999,
+    "output": 0.24145,
+    "cacheRead": 0.356224,
+    "cacheWrite": 0,
+    "total": 1.201914
+  }
+}

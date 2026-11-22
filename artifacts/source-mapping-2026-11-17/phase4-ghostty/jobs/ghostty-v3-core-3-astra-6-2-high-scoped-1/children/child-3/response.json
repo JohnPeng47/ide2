@@ -1,0 +1,18 @@
+{
+  "text": "Assigned subset: **d1, n24–n35**. Expanded JSON: `/tmp/input/candidate.json`. Paths and inclusive bounds were checked against the pinned checkout. `validate_source_mappings` was not available to this worker.\n\nCompact mapping below. Paths are relative to `src/` with `.zig` omitted. `+n` includes that node’s ranges; union overlapping lines within each node. `D` = declaration, `U` = use, `I` = implementation.\n\n```text\nn35 [entity, behavior, relationship]\n  termio/Thread I:289-313,347-366\n  termio/Termio DUI:456-463\n  termio/backend DUI:76-86\n  termio/Exec D:86-91,897-900 U:92-104 UI:129-131,147-150 I:909-916,1015-1018,1084-1095 DI:403-469,471-490\n\nn34 [entity, behavior, relationship] +n35\n  termio/Thread D:236 I:253-261,271-279,453-471\n\nn33 [entity, behavior, relationship, guarantee]\n  Surface D:171-175 DI:895-920\n  termio/message D:91-98 DI:118-132\n  termio/Thread I:298-302,359-366\n  termio/mailbox I:47-55,78-82,93-96\n\nn32 [entity, behavior, relationship] +n33 +n34\n  Surface U:704-705,711-716,2953-2957,3871-3875,6335-6341\n  termio D:31-32\n  termio/Termio D:61-62 I:344-345 DUI:437-447\n  termio/mailbox D:11-18 DI:30-45,57-108\n\nn31 [entity, behavior, relationship]\n  Surface DU:3426-3432,6017-6026 DUI:6264-6341\n  input/paste D:4-6 DI:12-22,42-119,180-183\n  termio/message DI:107-116\n\nn30 [entity, behavior, relationship]\n  Surface D:3584-3589,3918-3923,4678-4682 UI:3729-3750,4057-4094,4778-4801 DI:3800-3805,3813-3875\n  input/mouse_encode DI:39-51,81-172,174-238,248-252,257-264,270-280\n\nn29 [behavior, relationship] +n30 +n31\n  Surface U:5240-5248,6028-6033 DUI:6219-6239,6261-6262,6347-6398\n  terminal/paste UI:167-177,214-242\n  terminal/kitty/clipboard_response DI:191-216\n  termio/stream_handler D:208-212,641 UI:295-304 I:681-685,775-815\n  terminal/modes D:411\n\nn28 [behavior, guarantee]\n  Surface UI:3399-3405\n  input/key_encode DI:59-72,82-97,100-319,327-445,631-699,1028-1116\n  input/function_keys I:78-86,121-137,264-294\n  termio/stream_handler D:641 U:295-296,318 I:333-352,594-600,681-682\n\nn27 [structure, behavior, relationship] +n28\n  Surface DUI:3326-3419 U:2940-2957\n  input/key D:16-48\n  input/key_encode I:447-550\n\nn26 [entity, behavior, relationship]\n  Surface U:3142-3157 DI:4941-5819\n  App DUI:319-331,444-482\n  input/Binding DI:1539-1557\n  apprt/embedded DUI:303-323\n  apprt/gtk/App DUI:61-68\n  apprt/gtk/class/application DUI:692-700,712-718,736-741\n\nn25 [entity, behavior, relationship] +n26 +n27\n  Surface DI:2792-2982,2987-3219,3280-3322\n  input/Binding DI:2722-2760\n  App DUI:486-499,504-529\n\nn24 [subsystem, behavior, relationship] +n25 +n29 +n32\n  Surface D:194-207\n  apprt/embedded DU:202-228\n  apprt/gtk/class/surface UI:1445-1458\n```\n\nNo unresolved claims in this subset. Two distinctions matter: n25’s paths are not mutually exclusive—a nonconsuming binding can run **and** allow encoding. For n29, ordinary text paste uses `input.paste.encode`, while negotiated Kitty paste events use a separate MIME-list path.",
+  "usage": {
+    "input": 75104,
+    "output": 5630,
+    "cacheRead": 690176,
+    "cacheWrite": 0,
+    "reasoning": 442,
+    "totalTokens": 770910
+  },
+  "cost": {
+    "input": 0.7510400000000002,
+    "output": 0.2815,
+    "cacheRead": 0.690176,
+    "cacheWrite": 0,
+    "total": 1.722716
+  }
+}

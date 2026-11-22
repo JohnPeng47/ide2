@@ -120,7 +120,7 @@ function previewFocusBounds(viewport: HTMLElement) {
   return { left, top, width: Math.max(0, right - left), height: Math.max(0, bounds.bottom - top) };
 }
 
-export function DiagramDiffCanvas({ onPromoteDiagram, display = 'diff', initialTransform, onTransformChange, removedDiagramIds, highlightAdded = false, treemapColors, coverage, compact, doc, focusId, focusContentNodeId, serial, onJump, diff, modifiedDiagramIds, migrations, searchFocus, searchMatches }: { onPromoteDiagram?: (id: string) => void; display?: 'regular' | 'diff'; initialTransform?: CanvasTransform; onTransformChange?: (value: CanvasTransform) => void; removedDiagramIds?: ReadonlySet<string>; highlightAdded?: boolean; treemapColors?: readonly TreemapDiagramColor[]; coverage?: DiffCoverage; compact?: boolean; doc: ChangePreviewDocument; focusId?: string; focusContentNodeId?: string; migrations: MigrationPreview; serial: number; searchFocus?: DiagramFocus;
+export function DiagramDiffCanvas({ onPromoteDiagram, display = 'diff', initialTransform, restoreFocusCamera, onTransformChange, removedDiagramIds, highlightAdded = false, treemapColors, coverage, compact, doc, focusId, focusContentNodeId, serial, onJump, diff, modifiedDiagramIds, migrations, searchFocus, searchMatches }: { onPromoteDiagram?: (id: string) => void; display?: 'regular' | 'diff'; initialTransform?: CanvasTransform; restoreFocusCamera?: boolean; onTransformChange?: (value: CanvasTransform) => void; removedDiagramIds?: ReadonlySet<string>; highlightAdded?: boolean; treemapColors?: readonly TreemapDiagramColor[]; coverage?: DiffCoverage; compact?: boolean; doc: ChangePreviewDocument; focusId?: string; focusContentNodeId?: string; migrations: MigrationPreview; serial: number; searchFocus?: DiagramFocus;
   searchMatches?: readonly DiagramLineSearchResult[];
   diff: ReturnType<typeof diffChangeDocument>; modifiedDiagramIds: ReadonlySet<string>;
   onJump: NonNullable<Parameters<typeof DiagramText>[0]['onJump']> }) {
@@ -238,7 +238,7 @@ export function DiagramDiffCanvas({ onPromoteDiagram, display = 'diff', initialT
         }} />
   );
   return <DraggableDiagramCanvas enabled resetKey={doc.id} className="mapping-poc-canvas" leftInset={compact ? 0 : 340}
-    focusBox={focusBox} getFocusBounds={previewFocusBounds} initialTransform={initialTransform} onTransformChange={onTransformChange}>
+    focusBox={focusBox} getFocusBounds={previewFocusBounds} initialTransform={initialTransform} restoreFocusCamera={restoreFocusCamera} onTransformChange={onTransformChange}>
     <div className="change-preview-stage" style={{ position: 'relative', marginLeft: coverageFor ? 175 : 0, width: resolved.bounds.columns * cell.width, height: resolved.bounds.rows * cell.height }}>
       {canvasTiles.map(({ identity, column, row, columns, rows, outline }, index) => <div ref={index === 0 ? tintRef : undefined} data-treemap-region={outline ? undefined : identity.nodeId}
         key={`${outline}:${identity.position}:${column}:${row}`} className={outline ? "treemap-canvas-hover" : "change-preview-treemap-tint"} aria-hidden="true"
@@ -283,7 +283,7 @@ export function DiagramDiffCanvas({ onPromoteDiagram, display = 'diff', initialT
           </div>}
         </div>)}
       {boxes.map(({ box, bounds }) => <div key={box.id} data-grid-box={box.id}
-        ref={element => geometry.registerEndpoint({ displayNodeId: `grid:${box.id}` }, element)}
+        ref={geometry.refForEndpoint({ displayNodeId: `grid:${box.id}` })}
         className={`change-preview-box${removedDiagramIds?.has(`grid:${box.id}`) ? ' is-removed-diagram' : ''}${display === 'diff' && box.kind === 'diagram' && !baselineDiagramIds.has(box.id) ? ' is-added-diagram' : ''}${focusId === `grid:${box.id}` ? ' is-change-target' : ''}`}
         style={{ left: bounds.column * cell.width, top: bounds.row * cell.height, width: bounds.columns * cell.width, height: bounds.rows * cell.height }} />)}
       <DiagramSubtreeControls nodes={controlNodes} visibleBoxIds={new Set(boxes.map(b => b.box.id))} cell={cell} disabled={false}

@@ -1,0 +1,119 @@
+OpenCode session engine -- durable conversation state drives agent execution
+|
+|-- [M] Session.Service is the public boundary (packages/core/src/session.ts)
+|   |-- create / get / list / messages / prompt / resume / interrupt / wait
+|   |   `-- Server SessionHandler delegates here (packages/server/src/handlers/session.ts)
+|   |-- fork / revert / compact / move / setPermissions / switchAgent / switchModel
+|   |   `-- Conversation history, execution controls and workspace identity share one sessionID
+|   `-- Internal Session.make().forSession(id) reloads current state for each operation
+|       `-- Shared host services, not a separate mutable conversation object per handle
+|           (packages/core/src/session/session.ts)
+|
+|-- [O] Durable session aggregate -- retained independently of active execution
+|   |-- SessionTable (packages/core/src/session/sql.ts)
+|   |   |-- id / project_id / directory / workspace_id / parent_id / fork_boundary
+|   |   `-- agent / model / permission / metadata / revert / tokens / cost / lifecycle times
+|   |-- SessionMessageTable + SessionPartTable
+|   |   `-- Ordered messages and assistant content, including tool calls and results
+|   |-- SessionInboxTable + InstructionStateTable + InstructionEntryTable
+|   |   `-- Pending work and instruction baselines survive beyond the submitting request
+|   |-- [C] Bus.publish(SessionEvent.*) -> SessionProjector -> SQL projections
+|   |   |-- SessionMessageUpdater folds step, text, reasoning and tool events into messages
+|   |   |   (packages/core/src/session/projector.ts; session/message-updater.ts)
+|   |   |-- Projection + aggregate sequence + optional commit callback share one transaction
+|   |   `-- EventTable payload retention is configurable, not required for durable projections
+|   |       (packages/core/src/bus.ts: configured({ persist }))
+|   `-- [M] SessionStore exposes get / messages / context over projected state
+|       |-- Runner reads these projections to compute the next request
+|       `-- API readers observe the same state (packages/core/src/session/store.ts)
+|
+|-- [C] Session.prompt(input) records work before scheduling it
+|   |-- SessionInbox.reconcile(messageID) -> SessionPrompt.prepare(...) -> admission.admit(...)
+|   |   |-- Existing IDs reconcile through inbox lifecycle checks
+|   |   `-- A staged revert commits only after prompt preparation succeeds
+|   |       (packages/core/src/session/session.ts; session/prompt.ts; session/inbox.ts)
+|   |-- [D] Inbox item + delivery mode determine when input enters model history
+|   |   |-- steer -> eligible during an ongoing continuation
+|   |   `-- queue -> waits for a next-turn boundary; compaction/move are control items
+|   `-- execution.wake(sessionID), unless resume === false
+|       `-- Admission returns without making the client request own the agent run
+|
+|-- [O] SessionExecution owns process-local busy periods
+|   |   (packages/core/src/session/execution.ts; session/run-coordinator.ts)
+|   |-- SessionRunCoordinator.executions: Map<sessionID, Execution>
+|   |   |-- owner fiber / done Deferred / pendingWake / stopping / interruptionReason
+|   |   |-- One execution per session; different sessions can execute concurrently
+|   |   `-- wake coalesces notifications; run starts or joins; awaitIdle includes settlement
+|   |-- [C] started -> Execution.Started + SessionStore.claim in one publication transaction
+|   |-- [C] drain -> Instance.provide(session) -> SessionRunner.drain(...)
+|   |   `-- Moved / Reloaded result -> reacquire the selected instance and continue
+|   |-- interrupt -> acknowledge cancellation -> fiber cleanup -> terminal publication
+|   |   `-- Ownership remains active until cleanup and settlement finish
+|   `-- [O] Restart continuity is durable, unlike the coordinator's Map
+|       |-- Normal terminals release the claim; shutdown interruption preserves it
+|       |-- SessionRestart.resumeSuspendedSessions finds orphaned claims and budgets retries
+|       `-- Recovery is at-least-once, not an exactly-once guarantee for external effects
+|           (packages/core/src/session/execution/restart.ts)
+|
+|-- [M] Location-scoped capabilities supply the execution environment
+|   |-- Instance.provide(session) selects services using session.location
+|   |   (packages/core/src/instance/service.ts; instance.ts)
+|   |-- LocationServiceMap caches graphs by canonical Location.Ref
+|   |   |-- Config / Agent / Model / Plugin / Tool / Permission / FileSystem / Shell / Snapshot
+|   |   `-- SessionContext / SessionCompaction / SessionRunnerLLM share that location graph
+|   `-- [O] Reload detaches old routing; running steps retain borrowed services until handoff
+|       `-- Scope finalization releases resources (packages/core/src/location-services.ts)
+|
+|-- [C] SessionRunnerLLM.drain -- inbox-to-model-to-tool continuation loop
+|   |   (packages/core/src/session/runner/llm.ts)
+|   |-- awaitActivation -> settle stale work -> advanceToStep
+|   |   |-- Deliver compaction/move controls, or promote eligible input into history
+|   |   `-- No eligible work -> idle hook may admit more input; otherwise Complete
+|   |-- [D] SessionContext.select + load -> coherent inputs for a model step
+|   |   |-- session + selected Agent + merged permissions -> Tool.snapshot
+|   |   |-- Built-ins + project discovery + skills + MCP + references + entries -> instructions
+|   |   `-- Resolved model + SessionHistory -> initial instructions and active messages
+|   |       (packages/core/src/session/context.ts; session/history.ts)
+|   |-- runStep -> SessionCompaction.estimatePrompt / compact / precompute
+|   |   |-- Context pressure can replace active history with a compacted continuation
+|   |   `-- Explicit compaction and provider overflow use the same compaction service
+|   |-- SessionModelRequest.baseTranscript -> context.request.primary(...)
+|   |   |-- [D] History + instructions + agent/model + tool definitions -> provider request
+|   |   |-- Plugin hooks shape requests; SessionModelTransport binds session transport
+|   |   `-- Agent step limit disables further tool calls while retaining tool definitions
+|   |       (packages/core/src/session/model-request.ts; session/model-transport.ts)
+|   `-- SessionStep.attempt -> Outcome -> retry, recover, compact, continue or finish
+|       `-- Retry reloads context without promoting additional input into that attempt
+|
+|-- [C] SessionStep.attempt owns one streaming model/tool attempt
+|   |   (packages/core/src/session/runner/step.ts)
+|   |-- LLMClient.stream(prepared.request, options) -> createLLMEventPublisher
+|   |   |-- Text / reasoning / tool / usage / step events -> Bus -> session projections
+|   |   `-- Provider stream is consumed through its end, not merely its finish event
+|   |-- Local tool-call -> publish Tool.Called -> fork tool execution
+|   |   |-- prepared.executeTool -> Tool.Snapshot.execute
+|   |   |-- Tool registry supplies plugin/MCP/code-mode capabilities and execution hooks
+|   |   |-- Permission declines and cancelled questions propagate as control failures
+|   |   `-- ToolOutput.truncate -> publisher.toolExecution -> history for the next step
+|   |       (packages/core/src/tool.ts; session/model-request.ts)
+|   `-- [O] Scoped provider/tool fibers and snapshots belong to the attempt
+|       |-- Wait for tool settlement before final step events
+|       `-- User stop allows cooperative tool cancellation, then interrupts remaining work
+|
+|-- [O] Child sessions and jobs connect delegated work back to the conversation
+|   |-- Session.create({ parentID }) inherits location and default metadata/permissions
+|   |-- Job + SubagentReport bind child execution generations to completion reporting
+|   |   |-- Terminal commit releases execution claim and retains owed report state
+|   |   `-- Delivery -> parent SessionInbox synthetic item -> wake parent execution
+|   |       (packages/core/src/session/execution/subagent-report.ts)
+|   `-- Session.remove -> interrupt -> awaitIdle -> cancel jobs -> close transport
+|       `-- Delete session and recursively remove children (packages/core/src/session.ts)
+|
+`-- [M] Observation returns the engine's state to clients
+    |-- Session.get / messages / inbox -> projected snapshots
+    |-- Bus.subscribe -> volatile live events; Session.log -> ordered aggregate history
+    |   `-- Retained event payloads are needed for historical replay
+    `-- EventFeed -> SSE frames with bounded subscriber queues
+        |-- Slow subscribers fail rather than retaining unbounded queued output
+        `-- Disconnect releases the subscriber, not session execution
+            (packages/server/src/event-feed.ts; packages/core/src/bus.ts)

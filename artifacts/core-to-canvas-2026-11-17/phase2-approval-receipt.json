@@ -1,0 +1,1902 @@
+{
+  "name": "Core component → canvas",
+  "description": "Restructure one Astra/high core component diagram per repository (from Core component discovery 08ccc7fa) into a vertical central diagram with connected peripheral diagrams. Repository checkout available to double-check the diagram. One gpt-6-astra/high canvas per repository.",
+  "tags": [
+    "core-discovery",
+    "canvas"
+  ],
+  "phases": [
+    {
+      "id": "canvas",
+      "name": "Phase 1 · Core diagram → canvas",
+      "description": "Restructure each core component diagram into a central diagram with peripherals (prompt v1). Three samples per repository."
+    },
+    {
+      "id": "expand",
+      "name": "Phase 2 · Expand canvas",
+      "description": "Apply the recursive prompt (v2) to each repository's first Phase 1 canvas; the model chooses which diagrams to expand. Three samples per input canvas."
+    }
+  ],
+  "workflow": {
+    "id": "core-to-canvas",
+    "name": "Core component to canvas",
+    "version": 1,
+    "stages": [
+      {
+        "id": "split",
+        "name": "Generate canvas",
+        "dependsOn": []
+      },
+      {
+        "id": "expand",
+        "name": "Expand canvas",
+        "dependsOn": [
+          "split"
+        ]
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "mapping",
+      "name": "Mapping · core → canvas seed",
+      "agentContextId": "saved-agent-context-cb132185-b1cc-4e45-94b8-4fa9a457c75a",
+      "contentHash": "c8c45f05d3c6c1ee2c04bd67e562652eb5c876357481caf324cf0f83fc880ea6"
+    },
+    {
+      "id": "pi",
+      "name": "Pi · core → canvas seed",
+      "agentContextId": "saved-agent-context-9727bbfb-9336-4405-a60b-977291ebd2bd",
+      "contentHash": "b59617f2e3f378e525b3683c1e9d6416577eae14c53d3f16aaf152b740506b0e"
+    },
+    {
+      "id": "opencode",
+      "name": "OpenCode · core → canvas seed",
+      "agentContextId": "saved-agent-context-73c58ea6-1d34-49b5-b2a2-d0ef709ba559",
+      "contentHash": "d8b7018ae8804532ef08d895844514d91456f99eca159faa0c5805e5efbe43d6"
+    },
+    {
+      "id": "ghostty",
+      "name": "Ghostty · core → canvas seed",
+      "agentContextId": "saved-agent-context-13a17154-1868-4cfb-9f01-ed80ffc6437c",
+      "contentHash": "01e7e4d0029ade1d3e381029ea7b4337068e41ddc06e0fdd14dd1af5a858760d"
+    },
+    {
+      "id": "mapping-canvas",
+      "name": "Mapping · Phase 1 canvas",
+      "agentContextId": "saved-agent-context-1a8abc4f-9ad7-4bbb-acf2-c100a9f7521d",
+      "contentHash": "ba3a9e7ede2783372c463d743fa68b6d8c2f6a37a5129e9dc0e0374243502af4"
+    },
+    {
+      "id": "pi-canvas",
+      "name": "Pi · Phase 1 canvas",
+      "agentContextId": "saved-agent-context-34c5044f-8359-49c4-b811-fa1be729a946",
+      "contentHash": "3dc92c096e6dea2567c4f1f7f8b7cd5d72674cfee3d50de895dd81580c1d623d"
+    },
+    {
+      "id": "opencode-canvas",
+      "name": "OpenCode · Phase 1 canvas",
+      "agentContextId": "saved-agent-context-83ef4ef3-65bc-4535-ba8c-af42034ecca8",
+      "contentHash": "e8121ce1197e4b7a688ee9dbcb9bc68a98b587375245ca87fc0ab1ff7566b480"
+    },
+    {
+      "id": "ghostty-canvas",
+      "name": "Ghostty · Phase 1 canvas",
+      "agentContextId": "saved-agent-context-9066b6b2-98d9-4aab-9e3a-a4db3cdcc79a",
+      "contentHash": "bad325f5f39ebc4e20fb02e275b3ea132d8f35e0793b90d4518139010e48b6db"
+    }
+  ],
+  "conditions": [
+    {
+      "id": "vertical-framing",
+      "name": "Vertical restructure",
+      "description": "Horizontal/vertical framing with a podcast-player before/after example; seed diagram plus pinned checkout."
+    },
+    {
+      "id": "recursive",
+      "name": "Recursive expansion",
+      "description": "Prompt v2: whole canvas in, complete canvas out; soft preference for expanding along the vertical dimension."
+    }
+  ],
+  "plannedRuns": [
+    {
+      "request": {
+        "requestId": "06d4f008-e3c4-4f8d-ac2d-e076490838af",
+        "workflow": "alternatives",
+        "prompts": [
+          {
+            "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+            "version": 1
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-cb132185-b1cc-4e45-94b8-4fa9a457c75a"
+          }
+        },
+        "passes": 1,
+        "model": "gpt-6-astra",
+        "effort": "high"
+      },
+      "outputs": [
+        {
+          "sampleId": "mapping",
+          "stageId": "split",
+          "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative"
+        }
+      ]
+    },
+    {
+      "request": {
+        "requestId": "bcd72f13-5770-4244-9cd7-68810e37dd2b",
+        "workflow": "alternatives",
+        "prompts": [
+          {
+            "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+            "version": 1
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-9727bbfb-9336-4405-a60b-977291ebd2bd"
+          }
+        },
+        "passes": 1,
+        "model": "gpt-6-astra",
+        "effort": "high"
+      },
+      "outputs": [
+        {
+          "sampleId": "pi",
+          "stageId": "split",
+          "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative"
+        }
+      ]
+    },
+    {
+      "request": {
+        "requestId": "4d1d388a-78a5-4198-9c56-9fa04b4fbddf",
+        "workflow": "alternatives",
+        "prompts": [
+          {
+            "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+            "version": 1
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-73c58ea6-1d34-49b5-b2a2-d0ef709ba559"
+          }
+        },
+        "passes": 1,
+        "model": "gpt-6-astra",
+        "effort": "high"
+      },
+      "outputs": [
+        {
+          "sampleId": "opencode",
+          "stageId": "split",
+          "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative"
+        }
+      ]
+    },
+    {
+      "request": {
+        "requestId": "9f582f37-2a7a-4159-9b8e-5b6b30a20365",
+        "workflow": "alternatives",
+        "prompts": [
+          {
+            "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+            "version": 1
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-13a17154-1868-4cfb-9f01-ed80ffc6437c"
+          }
+        },
+        "passes": 1,
+        "model": "gpt-6-astra",
+        "effort": "high"
+      },
+      "outputs": [
+        {
+          "sampleId": "ghostty",
+          "stageId": "split",
+          "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative"
+        }
+      ]
+    },
+    {
+      "request": {
+        "requestId": "17c2b655-84ad-473d-9fa1-f4f3bed299ab",
+        "workflow": "alternatives",
+        "prompts": [
+          {
+            "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+            "version": 1
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-cb132185-b1cc-4e45-94b8-4fa9a457c75a"
+          }
+        },
+        "passes": 2,
+        "model": "gpt-6-astra",
+        "effort": "high"
+      },
+      "outputs": [
+        {
+          "sampleId": "mapping-2",
+          "stageId": "split",
+          "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative"
+        },
+        {
+          "sampleId": "mapping-3",
+          "stageId": "split",
+          "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:2:alternative"
+        }
+      ]
+    },
+    {
+      "request": {
+        "requestId": "0807ddfc-08b4-41ff-9c2e-eeae17beca5b",
+        "workflow": "alternatives",
+        "prompts": [
+          {
+            "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+            "version": 1
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-9727bbfb-9336-4405-a60b-977291ebd2bd"
+          }
+        },
+        "passes": 2,
+        "model": "gpt-6-astra",
+        "effort": "high"
+      },
+      "outputs": [
+        {
+          "sampleId": "pi-2",
+          "stageId": "split",
+          "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative"
+        },
+        {
+          "sampleId": "pi-3",
+          "stageId": "split",
+          "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:2:alternative"
+        }
+      ]
+    },
+    {
+      "request": {
+        "requestId": "b0f2d4d1-5ddc-452f-96ca-5cc5b17f0c3e",
+        "workflow": "alternatives",
+        "prompts": [
+          {
+            "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+            "version": 1
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-73c58ea6-1d34-49b5-b2a2-d0ef709ba559"
+          }
+        },
+        "passes": 2,
+        "model": "gpt-6-astra",
+        "effort": "high"
+      },
+      "outputs": [
+        {
+          "sampleId": "opencode-2",
+          "stageId": "split",
+          "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative"
+        },
+        {
+          "sampleId": "opencode-3",
+          "stageId": "split",
+          "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:2:alternative"
+        }
+      ]
+    },
+    {
+      "request": {
+        "requestId": "ea82f24b-5842-4b75-a9fe-7e139b7b54b0",
+        "workflow": "alternatives",
+        "prompts": [
+          {
+            "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+            "version": 1
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-13a17154-1868-4cfb-9f01-ed80ffc6437c"
+          }
+        },
+        "passes": 2,
+        "model": "gpt-6-astra",
+        "effort": "high"
+      },
+      "outputs": [
+        {
+          "sampleId": "ghostty-2",
+          "stageId": "split",
+          "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative"
+        },
+        {
+          "sampleId": "ghostty-3",
+          "stageId": "split",
+          "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:2:alternative"
+        }
+      ]
+    },
+    {
+      "request": {
+        "requestId": "dec52c07-c782-4ff6-ba8f-90bf53083bfb",
+        "workflow": "alternatives",
+        "prompts": [
+          {
+            "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+            "version": 2
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-1a8abc4f-9ad7-4bbb-acf2-c100a9f7521d"
+          }
+        },
+        "passes": 3,
+        "model": "gpt-6-astra",
+        "effort": "high"
+      },
+      "outputs": [
+        {
+          "sampleId": "mapping-expand-1",
+          "stageId": "expand",
+          "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative"
+        },
+        {
+          "sampleId": "mapping-expand-2",
+          "stageId": "expand",
+          "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:2:alternative"
+        },
+        {
+          "sampleId": "mapping-expand-3",
+          "stageId": "expand",
+          "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:3:alternative"
+        }
+      ]
+    },
+    {
+      "request": {
+        "requestId": "f2b40c59-53b7-4615-8d31-94f5ad33bd49",
+        "workflow": "alternatives",
+        "prompts": [
+          {
+            "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+            "version": 2
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-34c5044f-8359-49c4-b811-fa1be729a946"
+          }
+        },
+        "passes": 3,
+        "model": "gpt-6-astra",
+        "effort": "high"
+      },
+      "outputs": [
+        {
+          "sampleId": "pi-expand-1",
+          "stageId": "expand",
+          "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative"
+        },
+        {
+          "sampleId": "pi-expand-2",
+          "stageId": "expand",
+          "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:2:alternative"
+        },
+        {
+          "sampleId": "pi-expand-3",
+          "stageId": "expand",
+          "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:3:alternative"
+        }
+      ]
+    },
+    {
+      "request": {
+        "requestId": "a90d36a3-4e85-4ddf-a4c3-994c3571ca51",
+        "workflow": "alternatives",
+        "prompts": [
+          {
+            "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+            "version": 2
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-83ef4ef3-65bc-4535-ba8c-af42034ecca8"
+          }
+        },
+        "passes": 3,
+        "model": "gpt-6-astra",
+        "effort": "high"
+      },
+      "outputs": [
+        {
+          "sampleId": "opencode-expand-1",
+          "stageId": "expand",
+          "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative"
+        },
+        {
+          "sampleId": "opencode-expand-2",
+          "stageId": "expand",
+          "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:2:alternative"
+        },
+        {
+          "sampleId": "opencode-expand-3",
+          "stageId": "expand",
+          "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:3:alternative"
+        }
+      ]
+    },
+    {
+      "request": {
+        "requestId": "55bf4eb7-f1e9-4f36-aab2-ead60da799d4",
+        "workflow": "alternatives",
+        "prompts": [
+          {
+            "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+            "version": 2
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-9066b6b2-98d9-4aab-9e3a-a4db3cdcc79a"
+          }
+        },
+        "passes": 3,
+        "model": "gpt-6-astra",
+        "effort": "high"
+      },
+      "outputs": [
+        {
+          "sampleId": "ghostty-expand-1",
+          "stageId": "expand",
+          "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative"
+        },
+        {
+          "sampleId": "ghostty-expand-2",
+          "stageId": "expand",
+          "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:2:alternative"
+        },
+        {
+          "sampleId": "ghostty-expand-3",
+          "stageId": "expand",
+          "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:3:alternative"
+        }
+      ]
+    }
+  ],
+  "samples": [
+    {
+      "id": "mapping",
+      "phaseId": "canvas",
+      "caseId": "mapping",
+      "conditionId": "vertical-framing",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "split",
+          "runId": "06d4f008-e3c4-4f8d-ac2d-e076490838af",
+          "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "pi",
+      "phaseId": "canvas",
+      "caseId": "pi",
+      "conditionId": "vertical-framing",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "split",
+          "runId": "bcd72f13-5770-4244-9cd7-68810e37dd2b",
+          "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "opencode",
+      "phaseId": "canvas",
+      "caseId": "opencode",
+      "conditionId": "vertical-framing",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "split",
+          "runId": "4d1d388a-78a5-4198-9c56-9fa04b4fbddf",
+          "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "ghostty",
+      "phaseId": "canvas",
+      "caseId": "ghostty",
+      "conditionId": "vertical-framing",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "split",
+          "runId": "9f582f37-2a7a-4159-9b8e-5b6b30a20365",
+          "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "mapping-2",
+      "phaseId": "canvas",
+      "caseId": "mapping",
+      "conditionId": "vertical-framing",
+      "number": 2,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "split",
+          "runId": "17c2b655-84ad-473d-9fa1-f4f3bed299ab",
+          "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "mapping-3",
+      "phaseId": "canvas",
+      "caseId": "mapping",
+      "conditionId": "vertical-framing",
+      "number": 3,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "split",
+          "runId": "17c2b655-84ad-473d-9fa1-f4f3bed299ab",
+          "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:2:alternative"
+        }
+      ]
+    },
+    {
+      "id": "pi-2",
+      "phaseId": "canvas",
+      "caseId": "pi",
+      "conditionId": "vertical-framing",
+      "number": 2,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "split",
+          "runId": "0807ddfc-08b4-41ff-9c2e-eeae17beca5b",
+          "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "pi-3",
+      "phaseId": "canvas",
+      "caseId": "pi",
+      "conditionId": "vertical-framing",
+      "number": 3,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "split",
+          "runId": "0807ddfc-08b4-41ff-9c2e-eeae17beca5b",
+          "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:2:alternative"
+        }
+      ]
+    },
+    {
+      "id": "opencode-2",
+      "phaseId": "canvas",
+      "caseId": "opencode",
+      "conditionId": "vertical-framing",
+      "number": 2,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "split",
+          "runId": "b0f2d4d1-5ddc-452f-96ca-5cc5b17f0c3e",
+          "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "opencode-3",
+      "phaseId": "canvas",
+      "caseId": "opencode",
+      "conditionId": "vertical-framing",
+      "number": 3,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "split",
+          "runId": "b0f2d4d1-5ddc-452f-96ca-5cc5b17f0c3e",
+          "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:2:alternative"
+        }
+      ]
+    },
+    {
+      "id": "ghostty-2",
+      "phaseId": "canvas",
+      "caseId": "ghostty",
+      "conditionId": "vertical-framing",
+      "number": 2,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "split",
+          "runId": "ea82f24b-5842-4b75-a9fe-7e139b7b54b0",
+          "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "ghostty-3",
+      "phaseId": "canvas",
+      "caseId": "ghostty",
+      "conditionId": "vertical-framing",
+      "number": 3,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "split",
+          "runId": "ea82f24b-5842-4b75-a9fe-7e139b7b54b0",
+          "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:2:alternative"
+        }
+      ]
+    },
+    {
+      "id": "mapping-expand-1",
+      "phaseId": "expand",
+      "caseId": "mapping-canvas",
+      "conditionId": "recursive",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "dec52c07-c782-4ff6-ba8f-90bf53083bfb",
+          "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "mapping-expand-2",
+      "phaseId": "expand",
+      "caseId": "mapping-canvas",
+      "conditionId": "recursive",
+      "number": 2,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "dec52c07-c782-4ff6-ba8f-90bf53083bfb",
+          "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:2:alternative"
+        }
+      ]
+    },
+    {
+      "id": "mapping-expand-3",
+      "phaseId": "expand",
+      "caseId": "mapping-canvas",
+      "conditionId": "recursive",
+      "number": 3,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "dec52c07-c782-4ff6-ba8f-90bf53083bfb",
+          "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:3:alternative"
+        }
+      ]
+    },
+    {
+      "id": "pi-expand-1",
+      "phaseId": "expand",
+      "caseId": "pi-canvas",
+      "conditionId": "recursive",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "f2b40c59-53b7-4615-8d31-94f5ad33bd49",
+          "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "pi-expand-2",
+      "phaseId": "expand",
+      "caseId": "pi-canvas",
+      "conditionId": "recursive",
+      "number": 2,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "f2b40c59-53b7-4615-8d31-94f5ad33bd49",
+          "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:2:alternative"
+        }
+      ]
+    },
+    {
+      "id": "pi-expand-3",
+      "phaseId": "expand",
+      "caseId": "pi-canvas",
+      "conditionId": "recursive",
+      "number": 3,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "f2b40c59-53b7-4615-8d31-94f5ad33bd49",
+          "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:3:alternative"
+        }
+      ]
+    },
+    {
+      "id": "opencode-expand-1",
+      "phaseId": "expand",
+      "caseId": "opencode-canvas",
+      "conditionId": "recursive",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "a90d36a3-4e85-4ddf-a4c3-994c3571ca51",
+          "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "opencode-expand-2",
+      "phaseId": "expand",
+      "caseId": "opencode-canvas",
+      "conditionId": "recursive",
+      "number": 2,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "a90d36a3-4e85-4ddf-a4c3-994c3571ca51",
+          "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:2:alternative"
+        }
+      ]
+    },
+    {
+      "id": "opencode-expand-3",
+      "phaseId": "expand",
+      "caseId": "opencode-canvas",
+      "conditionId": "recursive",
+      "number": 3,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "a90d36a3-4e85-4ddf-a4c3-994c3571ca51",
+          "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:3:alternative"
+        }
+      ]
+    },
+    {
+      "id": "ghostty-expand-1",
+      "phaseId": "expand",
+      "caseId": "ghostty-canvas",
+      "conditionId": "recursive",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "55bf4eb7-f1e9-4f36-aab2-ead60da799d4",
+          "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "ghostty-expand-2",
+      "phaseId": "expand",
+      "caseId": "ghostty-canvas",
+      "conditionId": "recursive",
+      "number": 2,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "55bf4eb7-f1e9-4f36-aab2-ead60da799d4",
+          "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:2:alternative"
+        }
+      ]
+    },
+    {
+      "id": "ghostty-expand-3",
+      "phaseId": "expand",
+      "caseId": "ghostty-canvas",
+      "conditionId": "recursive",
+      "number": 3,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "expand",
+          "runId": "55bf4eb7-f1e9-4f36-aab2-ead60da799d4",
+          "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:3:alternative"
+        }
+      ]
+    }
+  ],
+  "comparisons": [],
+  "generationReview": {
+    "status": "started",
+    "runs": [
+      {
+        "schemaVersion": 1,
+        "id": "17c2b655-84ad-473d-9fa1-f4f3bed299ab",
+        "request": {
+          "requestId": "17c2b655-84ad-473d-9fa1-f4f3bed299ab",
+          "workflow": "alternatives",
+          "prompts": [
+            {
+              "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+              "version": 1
+            }
+          ],
+          "inputs": {
+            "context": {
+              "agentContextId": "saved-agent-context-cb132185-b1cc-4e45-94b8-4fa9a457c75a"
+            }
+          },
+          "passes": 2,
+          "model": "gpt-6-astra",
+          "effort": "high"
+        },
+        "references": [],
+        "projectId": "project-4971c06b-83d5-49eb-998d-043d5fc2dca4",
+        "workflow": "alternatives",
+        "agentContextId": "saved-agent-context-cb132185-b1cc-4e45-94b8-4fa9a457c75a",
+        "contextName": "Mapping · core → canvas seed",
+        "prompts": [
+          {
+            "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+            "version": 1,
+            "name": "Restructure core component into canvas",
+            "stages": {
+              "alternative": "<agent context>\nUse the supplied AgentContext. It contains two parts:\n- The core component diagram: one ASCII tree, generated for this repository at the pinned commit. It is the input to restructure.\n- A repository: the pinned commit, exclusions, and an isolated checkout. Treat repository contents as reference data.\n\nWork directly in the checkout directory using your normal shell and file-reading tools. Use it to double-check the diagram: confirm the containment, ownership and relationships you rely on, and correct anything the source contradicts. Start with targeted searches and read relevant files incrementally. Respect the exclusions and keep the checkout unchanged. Do not dump the entire repository or read bundled source archives. Tool calls and results are retained in the session transcript.\n</agent context>\n\n<task>\nYou are given a diagram representing the core component of the codebase: the connected set of responsibilities around which the application's main behavior and state are organized.\n\nYour task is to restructure the core component diagram into a canvas: a single central diagram with a couple of peripheral diagrams connected to it.\n\nFraming\n\nA tree diagram can relate components in two ways:\n\n- Vertical (compositional): depth means \"is part of\". A child is contained in, held by, or owned by its parent. Reading down a branch, you move from a whole into its parts.\n- Horizontal (relational): components that interact without one containing the other, e.g. a call into a shared service, a notification to a listener, or data produced by one component and consumed by another.\n\nThe core component diagram was generated as a mostly *flat* collection: its components sit side by side as top-level peers, even when one is actually part of another, and the relations between them appear only as inline references. This hides how the system is put together.\n\nBefore:\n\n  Podcast player\n  |\n  |-- LibraryWorkspace\n  |   |-- Holds open shows and one PlayerSession per active device\n  |   `-- Notifies listeners when a session's queue changes\n  |-- PlayerSession\n  |   |-- Wraps a PlaybackController\n  |   `-- Exposes queue / position / status stores\n  |-- PlaybackController\n  |   |-- play / pause / seek / enqueue\n  |   |-- Holds PlaybackQueue and PlaybackState\n  |   `-- Calls AudioEngine.load / start\n  |-- PlaybackQueue: ordered episode references\n  |-- AudioEngine: decodes and outputs audio; shared by all sessions\n  |-- DownloadManager: fetches episodes; AudioEngine reads cached files\n  `-- SyncService: listens for queue changes; writes listening progress\n\nAfter:\n\n  Podcast player\n  |\n  |-- LibraryWorkspace\n  |   `-- PlayerSession (one per active device)\n  |       |-- Exposes queue / position / status stores\n  |       |   `-- -> notifies SyncService on queue change\n  |       `-- PlaybackController\n  |           |-- PlaybackQueue: ordered episode references\n  |           |-- PlaybackState: position / status\n  |           `-- play(episode)\n  |               |-- -> AudioEngine.load(cached file)\n  |               `-- -> AudioEngine.start()\n  |\n  |-- AudioEngine (shared service; used by every PlaybackController)\n  |   `-- reads files cached by DownloadManager\n  |-- DownloadManager\n  |   `-- caches episode files -> consumed by AudioEngine.load\n  `-- SyncService\n      `-- queue changes + PlaybackState.position -> listening progress\n\n1. Restructure the core component diagram into the central diagram\n   - Give it a primarily *vertical*, compositional structure: nest each component under the component it belongs to, so the shape of the tree alone shows what the system is made of and how the parts fit together.\n   - Do not discard the horizontal relationships. Some components will not nest cleanly (e.g. a shared service used by many parts, or an external producer that acts on a part from outside). Do not force these under a false parent; instead, express the relation as an annotated line at the point in the vertical structure where the interaction happens, e.g. a call or notification line under the specific operation that triggers it.\n   - The vertical structure is the skeleton; horizontal relations are laid over it.\n\n2. Pull out concepts that should become their own diagrams\n   - Each peripheral diagram should connect to the node in the central diagram, at the depth, that it elaborates.\n   - Where a horizontal relation in the central diagram links two pulled-out concepts, connect those peripheral diagrams to each other as well.\n</task>\n\n<diagram-style>\n<diagram-guidelines>\n</diagram-guidelines>\n<references>\n</references>\n</diagram-style>\n\n<canvas-style>\n<canvas-guidelines>\n</canvas-guidelines>\n<references>\n</references>\n</canvas-style>\n\n<output format>\nReturn JSON matching output-schema.json with {explanation, diagrams:[{id,ascii,position:{column,row}}], edges:[{source:{diagram,line},target:{diagram,line},label}]}. Output one complete canvas per invocation, containing 2–20 connected diagrams. Diagram IDs must be unique. Positions use nonnegative integer character-grid coordinates; leave enough room for the actual ASCII bounds so diagrams do not overlap. ASCII uses printable characters with actual LF newlines. Edge lines are 1-based raw ASCII line numbers and must point to meaningful nonblank concept lines in the named diagrams. Return no prose outside JSON.\n\nIn explanation, describe how the central diagram was restructured and which concepts were pulled out, and note any corrections made after checking the source. If validation-error.json exists, read it and previous-output.json to correct this generation's own invalid output while preserving these instructions.\n</output format>\n"
+            },
+            "templateBase": {
+              "id": "canvas-prompt",
+              "version": 1,
+              "name": "Canvas prompt structure",
+              "tags": [
+                {
+                  "name": "agent context",
+                  "parent": null
+                },
+                {
+                  "name": "task",
+                  "parent": null
+                },
+                {
+                  "name": "diagram-style",
+                  "parent": null
+                },
+                {
+                  "name": "diagram-guidelines",
+                  "parent": "diagram-style"
+                },
+                {
+                  "name": "references",
+                  "parent": "diagram-style"
+                },
+                {
+                  "name": "canvas-style",
+                  "parent": null
+                },
+                {
+                  "name": "canvas-guidelines",
+                  "parent": "canvas-style"
+                },
+                {
+                  "name": "references",
+                  "parent": "canvas-style"
+                },
+                {
+                  "name": "output format",
+                  "parent": null
+                }
+              ]
+            },
+            "parents": [
+              {
+                "promptId": "6842c979-55e4-459f-acd8-27e03df51df9",
+                "version": 5,
+                "relation": "fork"
+              }
+            ],
+            "contentHash": "561a729e442d6f5e8b2b6630d28547f3eee3e037fe978f98b056b470b0e86e28",
+            "derivation": {
+              "parent": {
+                "promptId": "6842c979-55e4-459f-acd8-27e03df51df9",
+                "version": 5
+              },
+              "kind": "fork"
+            }
+          }
+        ],
+        "contexts": {
+          "context": {
+            "agentContextId": "saved-agent-context-cb132185-b1cc-4e45-94b8-4fa9a457c75a",
+            "name": "Mapping · core → canvas seed",
+            "contentHash": "c8c45f05d3c6c1ee2c04bd67e562652eb5c876357481caf324cf0f83fc880ea6"
+          }
+        },
+        "status": "queued",
+        "createdAt": "2026-11-17T20:36:59.792Z",
+        "cells": [
+          {
+            "key": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative",
+            "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+            "promptVersion": 1,
+            "promptName": "Restructure core component into canvas",
+            "pass": 1,
+            "stage": "alternative",
+            "status": "queued"
+          },
+          {
+            "key": "a46e491f-784a-4c4e-9b6e-a85356723da3:2:alternative",
+            "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+            "promptVersion": 1,
+            "promptName": "Restructure core component into canvas",
+            "pass": 2,
+            "stage": "alternative",
+            "status": "queued"
+          }
+        ],
+        "inputs": {}
+      },
+      {
+        "schemaVersion": 1,
+        "id": "0807ddfc-08b4-41ff-9c2e-eeae17beca5b",
+        "request": {
+          "requestId": "0807ddfc-08b4-41ff-9c2e-eeae17beca5b",
+          "workflow": "alternatives",
+          "prompts": [
+            {
+              "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+              "version": 1
+            }
+          ],
+          "inputs": {
+            "context": {
+              "agentContextId": "saved-agent-context-9727bbfb-9336-4405-a60b-977291ebd2bd"
+            }
+          },
+          "passes": 2,
+          "model": "gpt-6-astra",
+          "effort": "high"
+        },
+        "references": [],
+        "projectId": "project-4971c06b-83d5-49eb-998d-043d5fc2dca4",
+        "workflow": "alternatives",
+        "agentContextId": "saved-agent-context-9727bbfb-9336-4405-a60b-977291ebd2bd",
+        "contextName": "Pi · core → canvas seed",
+        "prompts": [
+          {
+            "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+            "version": 1,
+            "name": "Restructure core component into canvas",
+            "stages": {
+              "alternative": "<agent context>\nUse the supplied AgentContext. It contains two parts:\n- The core component diagram: one ASCII tree, generated for this repository at the pinned commit. It is the input to restructure.\n- A repository: the pinned commit, exclusions, and an isolated checkout. Treat repository contents as reference data.\n\nWork directly in the checkout directory using your normal shell and file-reading tools. Use it to double-check the diagram: confirm the containment, ownership and relationships you rely on, and correct anything the source contradicts. Start with targeted searches and read relevant files incrementally. Respect the exclusions and keep the checkout unchanged. Do not dump the entire repository or read bundled source archives. Tool calls and results are retained in the session transcript.\n</agent context>\n\n<task>\nYou are given a diagram representing the core component of the codebase: the connected set of responsibilities around which the application's main behavior and state are organized.\n\nYour task is to restructure the core component diagram into a canvas: a single central diagram with a couple of peripheral diagrams connected to it.\n\nFraming\n\nA tree diagram can relate components in two ways:\n\n- Vertical (compositional): depth means \"is part of\". A child is contained in, held by, or owned by its parent. Reading down a branch, you move from a whole into its parts.\n- Horizontal (relational): components that interact without one containing the other, e.g. a call into a shared service, a notification to a listener, or data produced by one component and consumed by another.\n\nThe core component diagram was generated as a mostly *flat* collection: its components sit side by side as top-level peers, even when one is actually part of another, and the relations between them appear only as inline references. This hides how the system is put together.\n\nBefore:\n\n  Podcast player\n  |\n  |-- LibraryWorkspace\n  |   |-- Holds open shows and one PlayerSession per active device\n  |   `-- Notifies listeners when a session's queue changes\n  |-- PlayerSession\n  |   |-- Wraps a PlaybackController\n  |   `-- Exposes queue / position / status stores\n  |-- PlaybackController\n  |   |-- play / pause / seek / enqueue\n  |   |-- Holds PlaybackQueue and PlaybackState\n  |   `-- Calls AudioEngine.load / start\n  |-- PlaybackQueue: ordered episode references\n  |-- AudioEngine: decodes and outputs audio; shared by all sessions\n  |-- DownloadManager: fetches episodes; AudioEngine reads cached files\n  `-- SyncService: listens for queue changes; writes listening progress\n\nAfter:\n\n  Podcast player\n  |\n  |-- LibraryWorkspace\n  |   `-- PlayerSession (one per active device)\n  |       |-- Exposes queue / position / status stores\n  |       |   `-- -> notifies SyncService on queue change\n  |       `-- PlaybackController\n  |           |-- PlaybackQueue: ordered episode references\n  |           |-- PlaybackState: position / status\n  |           `-- play(episode)\n  |               |-- -> AudioEngine.load(cached file)\n  |               `-- -> AudioEngine.start()\n  |\n  |-- AudioEngine (shared service; used by every PlaybackController)\n  |   `-- reads files cached by DownloadManager\n  |-- DownloadManager\n  |   `-- caches episode files -> consumed by AudioEngine.load\n  `-- SyncService\n      `-- queue changes + PlaybackState.position -> listening progress\n\n1. Restructure the core component diagram into the central diagram\n   - Give it a primarily *vertical*, compositional structure: nest each component under the component it belongs to, so the shape of the tree alone shows what the system is made of and how the parts fit together.\n   - Do not discard the horizontal relationships. Some components will not nest cleanly (e.g. a shared service used by many parts, or an external producer that acts on a part from outside). Do not force these under a false parent; instead, express the relation as an annotated line at the point in the vertical structure where the interaction happens, e.g. a call or notification line under the specific operation that triggers it.\n   - The vertical structure is the skeleton; horizontal relations are laid over it.\n\n2. Pull out concepts that should become their own diagrams\n   - Each peripheral diagram should connect to the node in the central diagram, at the depth, that it elaborates.\n   - Where a horizontal relation in the central diagram links two pulled-out concepts, connect those peripheral diagrams to each other as well.\n</task>\n\n<diagram-style>\n<diagram-guidelines>\n</diagram-guidelines>\n<references>\n</references>\n</diagram-style>\n\n<canvas-style>\n<canvas-guidelines>\n</canvas-guidelines>\n<references>\n</references>\n</canvas-style>\n\n<output format>\nReturn JSON matching output-schema.json with {explanation, diagrams:[{id,ascii,position:{column,row}}], edges:[{source:{diagram,line},target:{diagram,line},label}]}. Output one complete canvas per invocation, containing 2–20 connected diagrams. Diagram IDs must be unique. Positions use nonnegative integer character-grid coordinates; leave enough room for the actual ASCII bounds so diagrams do not overlap. ASCII uses printable characters with actual LF newlines. Edge lines are 1-based raw ASCII line numbers and must point to meaningful nonblank concept lines in the named diagrams. Return no prose outside JSON.\n\nIn explanation, describe how the central diagram was restructured and which concepts were pulled out, and note any corrections made after checking the source. If validation-error.json exists, read it and previous-output.json to correct this generation's own invalid output while preserving these instructions.\n</output format>\n"
+            },
+            "templateBase": {
+              "id": "canvas-prompt",
+              "version": 1,
+              "name": "Canvas prompt structure",
+              "tags": [
+                {
+                  "name": "agent context",
+                  "parent": null
+                },
+                {
+                  "name": "task",
+                  "parent": null
+                },
+                {
+                  "name": "diagram-style",
+                  "parent": null
+                },
+                {
+                  "name": "diagram-guidelines",
+                  "parent": "diagram-style"
+                },
+                {
+                  "name": "references",
+                  "parent": "diagram-style"
+                },
+                {
+                  "name": "canvas-style",
+                  "parent": null
+                },
+                {
+                  "name": "canvas-guidelines",
+                  "parent": "canvas-style"
+                },
+                {
+                  "name": "references",
+                  "parent": "canvas-style"
+                },
+                {
+                  "name": "output format",
+                  "parent": null
+                }
+              ]
+            },
+            "parents": [
+              {
+                "promptId": "6842c979-55e4-459f-acd8-27e03df51df9",
+                "version": 5,
+                "relation": "fork"
+              }
+            ],
+            "contentHash": "561a729e442d6f5e8b2b6630d28547f3eee3e037fe978f98b056b470b0e86e28",
+            "derivation": {
+              "parent": {
+                "promptId": "6842c979-55e4-459f-acd8-27e03df51df9",
+                "version": 5
+              },
+              "kind": "fork"
+            }
+          }
+        ],
+        "contexts": {
+          "context": {
+            "agentContextId": "saved-agent-context-9727bbfb-9336-4405-a60b-977291ebd2bd",
+            "name": "Pi · core → canvas seed",
+            "contentHash": "b59617f2e3f378e525b3683c1e9d6416577eae14c53d3f16aaf152b740506b0e"
+          }
+        },
+        "status": "queued",
+        "createdAt": "2026-11-17T20:37:00.603Z",
+        "cells": [
+          {
+            "key": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative",
+            "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+            "promptVersion": 1,
+            "promptName": "Restructure core component into canvas",
+            "pass": 1,
+            "stage": "alternative",
+            "status": "queued"
+          },
+          {
+            "key": "a46e491f-784a-4c4e-9b6e-a85356723da3:2:alternative",
+            "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+            "promptVersion": 1,
+            "promptName": "Restructure core component into canvas",
+            "pass": 2,
+            "stage": "alternative",
+            "status": "queued"
+          }
+        ],
+        "inputs": {}
+      },
+      {
+        "schemaVersion": 1,
+        "id": "b0f2d4d1-5ddc-452f-96ca-5cc5b17f0c3e",
+        "request": {
+          "requestId": "b0f2d4d1-5ddc-452f-96ca-5cc5b17f0c3e",
+          "workflow": "alternatives",
+          "prompts": [
+            {
+              "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+              "version": 1
+            }
+          ],
+          "inputs": {
+            "context": {
+              "agentContextId": "saved-agent-context-73c58ea6-1d34-49b5-b2a2-d0ef709ba559"
+            }
+          },
+          "passes": 2,
+          "model": "gpt-6-astra",
+          "effort": "high"
+        },
+        "references": [],
+        "projectId": "project-4971c06b-83d5-49eb-998d-043d5fc2dca4",
+        "workflow": "alternatives",
+        "agentContextId": "saved-agent-context-73c58ea6-1d34-49b5-b2a2-d0ef709ba559",
+        "contextName": "OpenCode · core → canvas seed",
+        "prompts": [
+          {
+            "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+            "version": 1,
+            "name": "Restructure core component into canvas",
+            "stages": {
+              "alternative": "<agent context>\nUse the supplied AgentContext. It contains two parts:\n- The core component diagram: one ASCII tree, generated for this repository at the pinned commit. It is the input to restructure.\n- A repository: the pinned commit, exclusions, and an isolated checkout. Treat repository contents as reference data.\n\nWork directly in the checkout directory using your normal shell and file-reading tools. Use it to double-check the diagram: confirm the containment, ownership and relationships you rely on, and correct anything the source contradicts. Start with targeted searches and read relevant files incrementally. Respect the exclusions and keep the checkout unchanged. Do not dump the entire repository or read bundled source archives. Tool calls and results are retained in the session transcript.\n</agent context>\n\n<task>\nYou are given a diagram representing the core component of the codebase: the connected set of responsibilities around which the application's main behavior and state are organized.\n\nYour task is to restructure the core component diagram into a canvas: a single central diagram with a couple of peripheral diagrams connected to it.\n\nFraming\n\nA tree diagram can relate components in two ways:\n\n- Vertical (compositional): depth means \"is part of\". A child is contained in, held by, or owned by its parent. Reading down a branch, you move from a whole into its parts.\n- Horizontal (relational): components that interact without one containing the other, e.g. a call into a shared service, a notification to a listener, or data produced by one component and consumed by another.\n\nThe core component diagram was generated as a mostly *flat* collection: its components sit side by side as top-level peers, even when one is actually part of another, and the relations between them appear only as inline references. This hides how the system is put together.\n\nBefore:\n\n  Podcast player\n  |\n  |-- LibraryWorkspace\n  |   |-- Holds open shows and one PlayerSession per active device\n  |   `-- Notifies listeners when a session's queue changes\n  |-- PlayerSession\n  |   |-- Wraps a PlaybackController\n  |   `-- Exposes queue / position / status stores\n  |-- PlaybackController\n  |   |-- play / pause / seek / enqueue\n  |   |-- Holds PlaybackQueue and PlaybackState\n  |   `-- Calls AudioEngine.load / start\n  |-- PlaybackQueue: ordered episode references\n  |-- AudioEngine: decodes and outputs audio; shared by all sessions\n  |-- DownloadManager: fetches episodes; AudioEngine reads cached files\n  `-- SyncService: listens for queue changes; writes listening progress\n\nAfter:\n\n  Podcast player\n  |\n  |-- LibraryWorkspace\n  |   `-- PlayerSession (one per active device)\n  |       |-- Exposes queue / position / status stores\n  |       |   `-- -> notifies SyncService on queue change\n  |       `-- PlaybackController\n  |           |-- PlaybackQueue: ordered episode references\n  |           |-- PlaybackState: position / status\n  |           `-- play(episode)\n  |               |-- -> AudioEngine.load(cached file)\n  |               `-- -> AudioEngine.start()\n  |\n  |-- AudioEngine (shared service; used by every PlaybackController)\n  |   `-- reads files cached by DownloadManager\n  |-- DownloadManager\n  |   `-- caches episode files -> consumed by AudioEngine.load\n  `-- SyncService\n      `-- queue changes + PlaybackState.position -> listening progress\n\n1. Restructure the core component diagram into the central diagram\n   - Give it a primarily *vertical*, compositional structure: nest each component under the component it belongs to, so the shape of the tree alone shows what the system is made of and how the parts fit together.\n   - Do not discard the horizontal relationships. Some components will not nest cleanly (e.g. a shared service used by many parts, or an external producer that acts on a part from outside). Do not force these under a false parent; instead, express the relation as an annotated line at the point in the vertical structure where the interaction happens, e.g. a call or notification line under the specific operation that triggers it.\n   - The vertical structure is the skeleton; horizontal relations are laid over it.\n\n2. Pull out concepts that should become their own diagrams\n   - Each peripheral diagram should connect to the node in the central diagram, at the depth, that it elaborates.\n   - Where a horizontal relation in the central diagram links two pulled-out concepts, connect those peripheral diagrams to each other as well.\n</task>\n\n<diagram-style>\n<diagram-guidelines>\n</diagram-guidelines>\n<references>\n</references>\n</diagram-style>\n\n<canvas-style>\n<canvas-guidelines>\n</canvas-guidelines>\n<references>\n</references>\n</canvas-style>\n\n<output format>\nReturn JSON matching output-schema.json with {explanation, diagrams:[{id,ascii,position:{column,row}}], edges:[{source:{diagram,line},target:{diagram,line},label}]}. Output one complete canvas per invocation, containing 2–20 connected diagrams. Diagram IDs must be unique. Positions use nonnegative integer character-grid coordinates; leave enough room for the actual ASCII bounds so diagrams do not overlap. ASCII uses printable characters with actual LF newlines. Edge lines are 1-based raw ASCII line numbers and must point to meaningful nonblank concept lines in the named diagrams. Return no prose outside JSON.\n\nIn explanation, describe how the central diagram was restructured and which concepts were pulled out, and note any corrections made after checking the source. If validation-error.json exists, read it and previous-output.json to correct this generation's own invalid output while preserving these instructions.\n</output format>\n"
+            },
+            "templateBase": {
+              "id": "canvas-prompt",
+              "version": 1,
+              "name": "Canvas prompt structure",
+              "tags": [
+                {
+                  "name": "agent context",
+                  "parent": null
+                },
+                {
+                  "name": "task",
+                  "parent": null
+                },
+                {
+                  "name": "diagram-style",
+                  "parent": null
+                },
+                {
+                  "name": "diagram-guidelines",
+                  "parent": "diagram-style"
+                },
+                {
+                  "name": "references",
+                  "parent": "diagram-style"
+                },
+                {
+                  "name": "canvas-style",
+                  "parent": null
+                },
+                {
+                  "name": "canvas-guidelines",
+                  "parent": "canvas-style"
+                },
+                {
+                  "name": "references",
+                  "parent": "canvas-style"
+                },
+                {
+                  "name": "output format",
+                  "parent": null
+                }
+              ]
+            },
+            "parents": [
+              {
+                "promptId": "6842c979-55e4-459f-acd8-27e03df51df9",
+                "version": 5,
+                "relation": "fork"
+              }
+            ],
+            "contentHash": "561a729e442d6f5e8b2b6630d28547f3eee3e037fe978f98b056b470b0e86e28",
+            "derivation": {
+              "parent": {
+                "promptId": "6842c979-55e4-459f-acd8-27e03df51df9",
+                "version": 5
+              },
+              "kind": "fork"
+            }
+          }
+        ],
+        "contexts": {
+          "context": {
+            "agentContextId": "saved-agent-context-73c58ea6-1d34-49b5-b2a2-d0ef709ba559",
+            "name": "OpenCode · core → canvas seed",
+            "contentHash": "d8b7018ae8804532ef08d895844514d91456f99eca159faa0c5805e5efbe43d6"
+          }
+        },
+        "status": "queued",
+        "createdAt": "2026-11-17T20:37:01.100Z",
+        "cells": [
+          {
+            "key": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative",
+            "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+            "promptVersion": 1,
+            "promptName": "Restructure core component into canvas",
+            "pass": 1,
+            "stage": "alternative",
+            "status": "queued"
+          },
+          {
+            "key": "a46e491f-784a-4c4e-9b6e-a85356723da3:2:alternative",
+            "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+            "promptVersion": 1,
+            "promptName": "Restructure core component into canvas",
+            "pass": 2,
+            "stage": "alternative",
+            "status": "queued"
+          }
+        ],
+        "inputs": {}
+      },
+      {
+        "schemaVersion": 1,
+        "id": "ea82f24b-5842-4b75-a9fe-7e139b7b54b0",
+        "request": {
+          "requestId": "ea82f24b-5842-4b75-a9fe-7e139b7b54b0",
+          "workflow": "alternatives",
+          "prompts": [
+            {
+              "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+              "version": 1
+            }
+          ],
+          "inputs": {
+            "context": {
+              "agentContextId": "saved-agent-context-13a17154-1868-4cfb-9f01-ed80ffc6437c"
+            }
+          },
+          "passes": 2,
+          "model": "gpt-6-astra",
+          "effort": "high"
+        },
+        "references": [],
+        "projectId": "project-4971c06b-83d5-49eb-998d-043d5fc2dca4",
+        "workflow": "alternatives",
+        "agentContextId": "saved-agent-context-13a17154-1868-4cfb-9f01-ed80ffc6437c",
+        "contextName": "Ghostty · core → canvas seed",
+        "prompts": [
+          {
+            "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+            "version": 1,
+            "name": "Restructure core component into canvas",
+            "stages": {
+              "alternative": "<agent context>\nUse the supplied AgentContext. It contains two parts:\n- The core component diagram: one ASCII tree, generated for this repository at the pinned commit. It is the input to restructure.\n- A repository: the pinned commit, exclusions, and an isolated checkout. Treat repository contents as reference data.\n\nWork directly in the checkout directory using your normal shell and file-reading tools. Use it to double-check the diagram: confirm the containment, ownership and relationships you rely on, and correct anything the source contradicts. Start with targeted searches and read relevant files incrementally. Respect the exclusions and keep the checkout unchanged. Do not dump the entire repository or read bundled source archives. Tool calls and results are retained in the session transcript.\n</agent context>\n\n<task>\nYou are given a diagram representing the core component of the codebase: the connected set of responsibilities around which the application's main behavior and state are organized.\n\nYour task is to restructure the core component diagram into a canvas: a single central diagram with a couple of peripheral diagrams connected to it.\n\nFraming\n\nA tree diagram can relate components in two ways:\n\n- Vertical (compositional): depth means \"is part of\". A child is contained in, held by, or owned by its parent. Reading down a branch, you move from a whole into its parts.\n- Horizontal (relational): components that interact without one containing the other, e.g. a call into a shared service, a notification to a listener, or data produced by one component and consumed by another.\n\nThe core component diagram was generated as a mostly *flat* collection: its components sit side by side as top-level peers, even when one is actually part of another, and the relations between them appear only as inline references. This hides how the system is put together.\n\nBefore:\n\n  Podcast player\n  |\n  |-- LibraryWorkspace\n  |   |-- Holds open shows and one PlayerSession per active device\n  |   `-- Notifies listeners when a session's queue changes\n  |-- PlayerSession\n  |   |-- Wraps a PlaybackController\n  |   `-- Exposes queue / position / status stores\n  |-- PlaybackController\n  |   |-- play / pause / seek / enqueue\n  |   |-- Holds PlaybackQueue and PlaybackState\n  |   `-- Calls AudioEngine.load / start\n  |-- PlaybackQueue: ordered episode references\n  |-- AudioEngine: decodes and outputs audio; shared by all sessions\n  |-- DownloadManager: fetches episodes; AudioEngine reads cached files\n  `-- SyncService: listens for queue changes; writes listening progress\n\nAfter:\n\n  Podcast player\n  |\n  |-- LibraryWorkspace\n  |   `-- PlayerSession (one per active device)\n  |       |-- Exposes queue / position / status stores\n  |       |   `-- -> notifies SyncService on queue change\n  |       `-- PlaybackController\n  |           |-- PlaybackQueue: ordered episode references\n  |           |-- PlaybackState: position / status\n  |           `-- play(episode)\n  |               |-- -> AudioEngine.load(cached file)\n  |               `-- -> AudioEngine.start()\n  |\n  |-- AudioEngine (shared service; used by every PlaybackController)\n  |   `-- reads files cached by DownloadManager\n  |-- DownloadManager\n  |   `-- caches episode files -> consumed by AudioEngine.load\n  `-- SyncService\n      `-- queue changes + PlaybackState.position -> listening progress\n\n1. Restructure the core component diagram into the central diagram\n   - Give it a primarily *vertical*, compositional structure: nest each component under the component it belongs to, so the shape of the tree alone shows what the system is made of and how the parts fit together.\n   - Do not discard the horizontal relationships. Some components will not nest cleanly (e.g. a shared service used by many parts, or an external producer that acts on a part from outside). Do not force these under a false parent; instead, express the relation as an annotated line at the point in the vertical structure where the interaction happens, e.g. a call or notification line under the specific operation that triggers it.\n   - The vertical structure is the skeleton; horizontal relations are laid over it.\n\n2. Pull out concepts that should become their own diagrams\n   - Each peripheral diagram should connect to the node in the central diagram, at the depth, that it elaborates.\n   - Where a horizontal relation in the central diagram links two pulled-out concepts, connect those peripheral diagrams to each other as well.\n</task>\n\n<diagram-style>\n<diagram-guidelines>\n</diagram-guidelines>\n<references>\n</references>\n</diagram-style>\n\n<canvas-style>\n<canvas-guidelines>\n</canvas-guidelines>\n<references>\n</references>\n</canvas-style>\n\n<output format>\nReturn JSON matching output-schema.json with {explanation, diagrams:[{id,ascii,position:{column,row}}], edges:[{source:{diagram,line},target:{diagram,line},label}]}. Output one complete canvas per invocation, containing 2–20 connected diagrams. Diagram IDs must be unique. Positions use nonnegative integer character-grid coordinates; leave enough room for the actual ASCII bounds so diagrams do not overlap. ASCII uses printable characters with actual LF newlines. Edge lines are 1-based raw ASCII line numbers and must point to meaningful nonblank concept lines in the named diagrams. Return no prose outside JSON.\n\nIn explanation, describe how the central diagram was restructured and which concepts were pulled out, and note any corrections made after checking the source. If validation-error.json exists, read it and previous-output.json to correct this generation's own invalid output while preserving these instructions.\n</output format>\n"
+            },
+            "templateBase": {
+              "id": "canvas-prompt",
+              "version": 1,
+              "name": "Canvas prompt structure",
+              "tags": [
+                {
+                  "name": "agent context",
+                  "parent": null
+                },
+                {
+                  "name": "task",
+                  "parent": null
+                },
+                {
+                  "name": "diagram-style",
+                  "parent": null
+                },
+                {
+                  "name": "diagram-guidelines",
+                  "parent": "diagram-style"
+                },
+                {
+                  "name": "references",
+                  "parent": "diagram-style"
+                },
+                {
+                  "name": "canvas-style",
+                  "parent": null
+                },
+                {
+                  "name": "canvas-guidelines",
+                  "parent": "canvas-style"
+                },
+                {
+                  "name": "references",
+                  "parent": "canvas-style"
+                },
+                {
+                  "name": "output format",
+                  "parent": null
+                }
+              ]
+            },
+            "parents": [
+              {
+                "promptId": "6842c979-55e4-459f-acd8-27e03df51df9",
+                "version": 5,
+                "relation": "fork"
+              }
+            ],
+            "contentHash": "561a729e442d6f5e8b2b6630d28547f3eee3e037fe978f98b056b470b0e86e28",
+            "derivation": {
+              "parent": {
+                "promptId": "6842c979-55e4-459f-acd8-27e03df51df9",
+                "version": 5
+              },
+              "kind": "fork"
+            }
+          }
+        ],
+        "contexts": {
+          "context": {
+            "agentContextId": "saved-agent-context-13a17154-1868-4cfb-9f01-ed80ffc6437c",
+            "name": "Ghostty · core → canvas seed",
+            "contentHash": "01e7e4d0029ade1d3e381029ea7b4337068e41ddc06e0fdd14dd1af5a858760d"
+          }
+        },
+        "status": "queued",
+        "createdAt": "2026-11-17T20:37:02.138Z",
+        "cells": [
+          {
+            "key": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative",
+            "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+            "promptVersion": 1,
+            "promptName": "Restructure core component into canvas",
+            "pass": 1,
+            "stage": "alternative",
+            "status": "queued"
+          },
+          {
+            "key": "a46e491f-784a-4c4e-9b6e-a85356723da3:2:alternative",
+            "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+            "promptVersion": 1,
+            "promptName": "Restructure core component into canvas",
+            "pass": 2,
+            "stage": "alternative",
+            "status": "queued"
+          }
+        ],
+        "inputs": {}
+      },
+      {
+        "schemaVersion": 1,
+        "id": "dec52c07-c782-4ff6-ba8f-90bf53083bfb",
+        "request": {
+          "requestId": "dec52c07-c782-4ff6-ba8f-90bf53083bfb",
+          "workflow": "alternatives",
+          "prompts": [
+            {
+              "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+              "version": 2
+            }
+          ],
+          "inputs": {
+            "context": {
+              "agentContextId": "saved-agent-context-1a8abc4f-9ad7-4bbb-acf2-c100a9f7521d"
+            }
+          },
+          "passes": 3,
+          "model": "gpt-6-astra",
+          "effort": "high"
+        },
+        "references": [],
+        "projectId": "project-4971c06b-83d5-49eb-998d-043d5fc2dca4",
+        "workflow": "alternatives",
+        "agentContextId": "saved-agent-context-1a8abc4f-9ad7-4bbb-acf2-c100a9f7521d",
+        "contextName": "Mapping · canvas → expanded canvas",
+        "prompts": [
+          {
+            "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+            "version": 2,
+            "name": "Restructure core component into canvas",
+            "stages": {
+              "alternative": "<agent context>\nUse the supplied AgentContext. It contains two parts:\n- The current canvas: one or more ASCII tree diagrams, each with an ID and a position, plus the labeled edges between them. On a first pass the canvas holds a single diagram. It is the input to restructure.\n- A repository: the pinned commit, exclusions, and an isolated checkout. Treat repository contents as reference data.\n\nWork directly in the checkout directory using your normal shell and file-reading tools. Use it to double-check the canvas: confirm the containment, ownership and relationships you rely on, and correct anything the source contradicts. Start with targeted searches and read relevant files incrementally. Respect the exclusions and keep the checkout unchanged. Do not dump the entire repository or read bundled source archives. Tool calls and results are retained in the session transcript.\n</agent context>\n\n<task>\nYou are given a canvas of diagrams representing the core component of the codebase: the connected set of responsibilities around which the application's main behavior and state are organized.\n\nYour task is to restructure this canvas in place. Choose which diagrams to expand; restructure each chosen diagram into a central diagram with a couple of peripheral diagrams connected to it. Return the complete canvas, including the diagrams you leave unchanged.\n\nFraming\n\nA tree diagram can relate components in two ways:\n\n- Vertical (compositional): depth means \"is part of\". A child is contained in, held by, or owned by its parent. Reading down a branch, you move from a whole into its parts.\n- Horizontal (relational): components that interact without one containing the other, e.g. a call into a shared service, a notification to a listener, or data produced by one component and consumed by another.\n\nA diagram is *flat* when its components sit side by side as top-level peers, even when one is actually part of another, and the relations between them appear only as inline references. This hides how the system is put together.\n\nBefore:\n\n  Podcast player\n  |\n  |-- LibraryWorkspace\n  |   |-- Holds open shows and one PlayerSession per active device\n  |   `-- Notifies listeners when a session's queue changes\n  |-- PlayerSession\n  |   |-- Wraps a PlaybackController\n  |   `-- Exposes queue / position / status stores\n  |-- PlaybackController\n  |   |-- play / pause / seek / enqueue\n  |   |-- Holds PlaybackQueue and PlaybackState\n  |   `-- Calls AudioEngine.load / start\n  |-- PlaybackQueue: ordered episode references\n  |-- AudioEngine: decodes and outputs audio; shared by all sessions\n  |-- DownloadManager: fetches episodes; AudioEngine reads cached files\n  `-- SyncService: listens for queue changes; writes listening progress\n\nAfter:\n\n  Podcast player\n  |\n  |-- LibraryWorkspace\n  |   `-- PlayerSession (one per active device)\n  |       |-- Exposes queue / position / status stores\n  |       |   `-- -> notifies SyncService on queue change\n  |       `-- PlaybackController\n  |           |-- PlaybackQueue: ordered episode references\n  |           |-- PlaybackState: position / status\n  |           `-- play(episode)\n  |               |-- -> AudioEngine.load(cached file)\n  |               `-- -> AudioEngine.start()\n  |\n  |-- AudioEngine (shared service; used by every PlaybackController)\n  |   `-- reads files cached by DownloadManager\n  |-- DownloadManager\n  |   `-- caches episode files -> consumed by AudioEngine.load\n  `-- SyncService\n      `-- queue changes + PlaybackState.position -> listening progress\n\n1. Choose which diagrams to expand\n   - If the canvas holds a single diagram, expand it.\n   - Otherwise, prefer to expand along the vertical dimension: choose diagrams with nodes that hide composition of their own, i.e. parts that have parts, and pull that composition out downward into new diagrams.\n   - Avoid expanding sideways: do not add new peer topics that are only horizontally related to what the canvas already shows.\n   - Leave a diagram unchanged when it is already small and focused; not every diagram needs expanding.\n\n2. Restructure each chosen diagram into a central diagram\n   - Give it a primarily *vertical*, compositional structure: nest each component under the component it belongs to, so the shape of the tree alone shows what the system is made of and how the parts fit together.\n   - Do not discard the horizontal relationships. Some components will not nest cleanly (e.g. a shared service used by many parts, or an external producer that acts on a part from outside). Do not force these under a false parent; instead, express the relation as an annotated line at the point in the vertical structure where the interaction happens, e.g. a call or notification line under the specific operation that triggers it.\n   - The vertical structure is the skeleton; horizontal relations are laid over it.\n\n3. Pull out concepts that should become their own diagrams\n   - Each peripheral diagram should connect to the node in the central diagram, at the depth, that it elaborates.\n   - Where a horizontal relation in the central diagram links two pulled-out concepts, connect those peripheral diagrams to each other as well.\n   - A peripheral diagram goes deeper into its central diagram's scope; it does not widen that scope or repeat what another diagram on the canvas already covers.\n\n4. Preserve the rest of the canvas\n   - Keep the IDs of existing diagrams, including the ones you expand, so their existing edges stay attached. Return unchanged diagrams with their ASCII exactly as given.\n   - Keep every existing edge. Re-point an edge only when restructuring moved or removed the line it pointed to.\n   - Place new diagrams next to the diagram they expand. Existing diagrams may shift only to make room.\n</task>\n\n<diagram-style>\n<diagram-guidelines>\n</diagram-guidelines>\n<references>\n</references>\n</diagram-style>\n\n<canvas-style>\n<canvas-guidelines>\n</canvas-guidelines>\n<references>\n</references>\n</canvas-style>\n\n<output format>\nReturn JSON matching output-schema.json with {explanation, diagrams:[{id,ascii,position:{column,row}}], edges:[{source:{diagram,line},target:{diagram,line},label}]}. Output the complete restructured canvas per invocation: every existing and new diagram, and every edge. Diagram IDs must be unique. Positions use nonnegative integer character-grid coordinates; leave enough room for the actual ASCII bounds so diagrams do not overlap. ASCII uses printable characters with actual LF newlines. Edge lines are 1-based raw ASCII line numbers and must point to meaningful nonblank concept lines in the named diagrams. Return no prose outside JSON.\n\nIn explanation, say which diagrams you expanded and why, which you left unchanged, how each expanded diagram was restructured and which concepts were pulled out, and note any corrections made after checking the source. If validation-error.json exists, read it and previous-output.json to correct this generation's own invalid output while preserving these instructions.\n</output format>\n"
+            },
+            "templateBase": {
+              "id": "canvas-prompt",
+              "version": 1,
+              "name": "Canvas prompt structure",
+              "tags": [
+                {
+                  "name": "agent context",
+                  "parent": null
+                },
+                {
+                  "name": "task",
+                  "parent": null
+                },
+                {
+                  "name": "diagram-style",
+                  "parent": null
+                },
+                {
+                  "name": "diagram-guidelines",
+                  "parent": "diagram-style"
+                },
+                {
+                  "name": "references",
+                  "parent": "diagram-style"
+                },
+                {
+                  "name": "canvas-style",
+                  "parent": null
+                },
+                {
+                  "name": "canvas-guidelines",
+                  "parent": "canvas-style"
+                },
+                {
+                  "name": "references",
+                  "parent": "canvas-style"
+                },
+                {
+                  "name": "output format",
+                  "parent": null
+                }
+              ]
+            },
+            "parents": [
+              {
+                "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+                "version": 1,
+                "relation": "revision"
+              }
+            ],
+            "contentHash": "e25d3767da350163256ab578aac945e992cf2d486c7bef0e28a18dc622e4ff49",
+            "derivation": {
+              "parent": {
+                "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+                "version": 1
+              },
+              "kind": "revision"
+            }
+          }
+        ],
+        "contexts": {
+          "context": {
+            "agentContextId": "saved-agent-context-1a8abc4f-9ad7-4bbb-acf2-c100a9f7521d",
+            "name": "Mapping · canvas → expanded canvas",
+            "contentHash": "ba3a9e7ede2783372c463d743fa68b6d8c2f6a37a5129e9dc0e0374243502af4"
+          }
+        },
+        "status": "queued",
+        "createdAt": "2026-11-17T20:37:02.591Z",
+        "cells": [
+          {
+            "key": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative",
+            "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+            "promptVersion": 2,
+            "promptName": "Restructure core component into canvas",
+            "pass": 1,
+            "stage": "alternative",
+            "status": "queued"
+          },
+          {
+            "key": "a46e491f-784a-4c4e-9b6e-a85356723da3:2:alternative",
+            "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+            "promptVersion": 2,
+            "promptName": "Restructure core component into canvas",
+            "pass": 2,
+            "stage": "alternative",
+            "status": "queued"
+          },
+          {
+            "key": "a46e491f-784a-4c4e-9b6e-a85356723da3:3:alternative",
+            "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+            "promptVersion": 2,
+            "promptName": "Restructure core component into canvas",
+            "pass": 3,
+            "stage": "alternative",
+            "status": "queued"
+          }
+        ],
+        "inputs": {}
+      },
+      {
+        "schemaVersion": 1,
+        "id": "f2b40c59-53b7-4615-8d31-94f5ad33bd49",
+        "request": {
+          "requestId": "f2b40c59-53b7-4615-8d31-94f5ad33bd49",
+          "workflow": "alternatives",
+          "prompts": [
+            {
+              "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+              "version": 2
+            }
+          ],
+          "inputs": {
+            "context": {
+              "agentContextId": "saved-agent-context-34c5044f-8359-49c4-b811-fa1be729a946"
+            }
+          },
+          "passes": 3,
+          "model": "gpt-6-astra",
+          "effort": "high"
+        },
+        "references": [],
+        "projectId": "project-4971c06b-83d5-49eb-998d-043d5fc2dca4",
+        "workflow": "alternatives",
+        "agentContextId": "saved-agent-context-34c5044f-8359-49c4-b811-fa1be729a946",
+        "contextName": "Pi · canvas → expanded canvas",
+        "prompts": [
+          {
+            "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+            "version": 2,
+            "name": "Restructure core component into canvas",
+            "stages": {
+              "alternative": "<agent context>\nUse the supplied AgentContext. It contains two parts:\n- The current canvas: one or more ASCII tree diagrams, each with an ID and a position, plus the labeled edges between them. On a first pass the canvas holds a single diagram. It is the input to restructure.\n- A repository: the pinned commit, exclusions, and an isolated checkout. Treat repository contents as reference data.\n\nWork directly in the checkout directory using your normal shell and file-reading tools. Use it to double-check the canvas: confirm the containment, ownership and relationships you rely on, and correct anything the source contradicts. Start with targeted searches and read relevant files incrementally. Respect the exclusions and keep the checkout unchanged. Do not dump the entire repository or read bundled source archives. Tool calls and results are retained in the session transcript.\n</agent context>\n\n<task>\nYou are given a canvas of diagrams representing the core component of the codebase: the connected set of responsibilities around which the application's main behavior and state are organized.\n\nYour task is to restructure this canvas in place. Choose which diagrams to expand; restructure each chosen diagram into a central diagram with a couple of peripheral diagrams connected to it. Return the complete canvas, including the diagrams you leave unchanged.\n\nFraming\n\nA tree diagram can relate components in two ways:\n\n- Vertical (compositional): depth means \"is part of\". A child is contained in, held by, or owned by its parent. Reading down a branch, you move from a whole into its parts.\n- Horizontal (relational): components that interact without one containing the other, e.g. a call into a shared service, a notification to a listener, or data produced by one component and consumed by another.\n\nA diagram is *flat* when its components sit side by side as top-level peers, even when one is actually part of another, and the relations between them appear only as inline references. This hides how the system is put together.\n\nBefore:\n\n  Podcast player\n  |\n  |-- LibraryWorkspace\n  |   |-- Holds open shows and one PlayerSession per active device\n  |   `-- Notifies listeners when a session's queue changes\n  |-- PlayerSession\n  |   |-- Wraps a PlaybackController\n  |   `-- Exposes queue / position / status stores\n  |-- PlaybackController\n  |   |-- play / pause / seek / enqueue\n  |   |-- Holds PlaybackQueue and PlaybackState\n  |   `-- Calls AudioEngine.load / start\n  |-- PlaybackQueue: ordered episode references\n  |-- AudioEngine: decodes and outputs audio; shared by all sessions\n  |-- DownloadManager: fetches episodes; AudioEngine reads cached files\n  `-- SyncService: listens for queue changes; writes listening progress\n\nAfter:\n\n  Podcast player\n  |\n  |-- LibraryWorkspace\n  |   `-- PlayerSession (one per active device)\n  |       |-- Exposes queue / position / status stores\n  |       |   `-- -> notifies SyncService on queue change\n  |       `-- PlaybackController\n  |           |-- PlaybackQueue: ordered episode references\n  |           |-- PlaybackState: position / status\n  |           `-- play(episode)\n  |               |-- -> AudioEngine.load(cached file)\n  |               `-- -> AudioEngine.start()\n  |\n  |-- AudioEngine (shared service; used by every PlaybackController)\n  |   `-- reads files cached by DownloadManager\n  |-- DownloadManager\n  |   `-- caches episode files -> consumed by AudioEngine.load\n  `-- SyncService\n      `-- queue changes + PlaybackState.position -> listening progress\n\n1. Choose which diagrams to expand\n   - If the canvas holds a single diagram, expand it.\n   - Otherwise, prefer to expand along the vertical dimension: choose diagrams with nodes that hide composition of their own, i.e. parts that have parts, and pull that composition out downward into new diagrams.\n   - Avoid expanding sideways: do not add new peer topics that are only horizontally related to what the canvas already shows.\n   - Leave a diagram unchanged when it is already small and focused; not every diagram needs expanding.\n\n2. Restructure each chosen diagram into a central diagram\n   - Give it a primarily *vertical*, compositional structure: nest each component under the component it belongs to, so the shape of the tree alone shows what the system is made of and how the parts fit together.\n   - Do not discard the horizontal relationships. Some components will not nest cleanly (e.g. a shared service used by many parts, or an external producer that acts on a part from outside). Do not force these under a false parent; instead, express the relation as an annotated line at the point in the vertical structure where the interaction happens, e.g. a call or notification line under the specific operation that triggers it.\n   - The vertical structure is the skeleton; horizontal relations are laid over it.\n\n3. Pull out concepts that should become their own diagrams\n   - Each peripheral diagram should connect to the node in the central diagram, at the depth, that it elaborates.\n   - Where a horizontal relation in the central diagram links two pulled-out concepts, connect those peripheral diagrams to each other as well.\n   - A peripheral diagram goes deeper into its central diagram's scope; it does not widen that scope or repeat what another diagram on the canvas already covers.\n\n4. Preserve the rest of the canvas\n   - Keep the IDs of existing diagrams, including the ones you expand, so their existing edges stay attached. Return unchanged diagrams with their ASCII exactly as given.\n   - Keep every existing edge. Re-point an edge only when restructuring moved or removed the line it pointed to.\n   - Place new diagrams next to the diagram they expand. Existing diagrams may shift only to make room.\n</task>\n\n<diagram-style>\n<diagram-guidelines>\n</diagram-guidelines>\n<references>\n</references>\n</diagram-style>\n\n<canvas-style>\n<canvas-guidelines>\n</canvas-guidelines>\n<references>\n</references>\n</canvas-style>\n\n<output format>\nReturn JSON matching output-schema.json with {explanation, diagrams:[{id,ascii,position:{column,row}}], edges:[{source:{diagram,line},target:{diagram,line},label}]}. Output the complete restructured canvas per invocation: every existing and new diagram, and every edge. Diagram IDs must be unique. Positions use nonnegative integer character-grid coordinates; leave enough room for the actual ASCII bounds so diagrams do not overlap. ASCII uses printable characters with actual LF newlines. Edge lines are 1-based raw ASCII line numbers and must point to meaningful nonblank concept lines in the named diagrams. Return no prose outside JSON.\n\nIn explanation, say which diagrams you expanded and why, which you left unchanged, how each expanded diagram was restructured and which concepts were pulled out, and note any corrections made after checking the source. If validation-error.json exists, read it and previous-output.json to correct this generation's own invalid output while preserving these instructions.\n</output format>\n"
+            },
+            "templateBase": {
+              "id": "canvas-prompt",
+              "version": 1,
+              "name": "Canvas prompt structure",
+              "tags": [
+                {
+                  "name": "agent context",
+                  "parent": null
+                },
+                {
+                  "name": "task",
+                  "parent": null
+                },
+                {
+                  "name": "diagram-style",
+                  "parent": null
+                },
+                {
+                  "name": "diagram-guidelines",
+                  "parent": "diagram-style"
+                },
+                {
+                  "name": "references",
+                  "parent": "diagram-style"
+                },
+                {
+                  "name": "canvas-style",
+                  "parent": null
+                },
+                {
+                  "name": "canvas-guidelines",
+                  "parent": "canvas-style"
+                },
+                {
+                  "name": "references",
+                  "parent": "canvas-style"
+                },
+                {
+                  "name": "output format",
+                  "parent": null
+                }
+              ]
+            },
+            "parents": [
+              {
+                "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+                "version": 1,
+                "relation": "revision"
+              }
+            ],
+            "contentHash": "e25d3767da350163256ab578aac945e992cf2d486c7bef0e28a18dc622e4ff49",
+            "derivation": {
+              "parent": {
+                "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+                "version": 1
+              },
+              "kind": "revision"
+            }
+          }
+        ],
+        "contexts": {
+          "context": {
+            "agentContextId": "saved-agent-context-34c5044f-8359-49c4-b811-fa1be729a946",
+            "name": "Pi · canvas → expanded canvas",
+            "contentHash": "3dc92c096e6dea2567c4f1f7f8b7cd5d72674cfee3d50de895dd81580c1d623d"
+          }
+        },
+        "status": "queued",
+        "createdAt": "2026-11-17T20:37:03.169Z",
+        "cells": [
+          {
+            "key": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative",
+            "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+            "promptVersion": 2,
+            "promptName": "Restructure core component into canvas",
+            "pass": 1,
+            "stage": "alternative",
+            "status": "queued"
+          },
+          {
+            "key": "a46e491f-784a-4c4e-9b6e-a85356723da3:2:alternative",
+            "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+            "promptVersion": 2,
+            "promptName": "Restructure core component into canvas",
+            "pass": 2,
+            "stage": "alternative",
+            "status": "queued"
+          },
+          {
+            "key": "a46e491f-784a-4c4e-9b6e-a85356723da3:3:alternative",
+            "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+            "promptVersion": 2,
+            "promptName": "Restructure core component into canvas",
+            "pass": 3,
+            "stage": "alternative",
+            "status": "queued"
+          }
+        ],
+        "inputs": {}
+      },
+      {
+        "schemaVersion": 1,
+        "id": "a90d36a3-4e85-4ddf-a4c3-994c3571ca51",
+        "request": {
+          "requestId": "a90d36a3-4e85-4ddf-a4c3-994c3571ca51",
+          "workflow": "alternatives",
+          "prompts": [
+            {
+              "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+              "version": 2
+            }
+          ],
+          "inputs": {
+            "context": {
+              "agentContextId": "saved-agent-context-83ef4ef3-65bc-4535-ba8c-af42034ecca8"
+            }
+          },
+          "passes": 3,
+          "model": "gpt-6-astra",
+          "effort": "high"
+        },
+        "references": [],
+        "projectId": "project-4971c06b-83d5-49eb-998d-043d5fc2dca4",
+        "workflow": "alternatives",
+        "agentContextId": "saved-agent-context-83ef4ef3-65bc-4535-ba8c-af42034ecca8",
+        "contextName": "OpenCode · canvas → expanded canvas",
+        "prompts": [
+          {
+            "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+            "version": 2,
+            "name": "Restructure core component into canvas",
+            "stages": {
+              "alternative": "<agent context>\nUse the supplied AgentContext. It contains two parts:\n- The current canvas: one or more ASCII tree diagrams, each with an ID and a position, plus the labeled edges between them. On a first pass the canvas holds a single diagram. It is the input to restructure.\n- A repository: the pinned commit, exclusions, and an isolated checkout. Treat repository contents as reference data.\n\nWork directly in the checkout directory using your normal shell and file-reading tools. Use it to double-check the canvas: confirm the containment, ownership and relationships you rely on, and correct anything the source contradicts. Start with targeted searches and read relevant files incrementally. Respect the exclusions and keep the checkout unchanged. Do not dump the entire repository or read bundled source archives. Tool calls and results are retained in the session transcript.\n</agent context>\n\n<task>\nYou are given a canvas of diagrams representing the core component of the codebase: the connected set of responsibilities around which the application's main behavior and state are organized.\n\nYour task is to restructure this canvas in place. Choose which diagrams to expand; restructure each chosen diagram into a central diagram with a couple of peripheral diagrams connected to it. Return the complete canvas, including the diagrams you leave unchanged.\n\nFraming\n\nA tree diagram can relate components in two ways:\n\n- Vertical (compositional): depth means \"is part of\". A child is contained in, held by, or owned by its parent. Reading down a branch, you move from a whole into its parts.\n- Horizontal (relational): components that interact without one containing the other, e.g. a call into a shared service, a notification to a listener, or data produced by one component and consumed by another.\n\nA diagram is *flat* when its components sit side by side as top-level peers, even when one is actually part of another, and the relations between them appear only as inline references. This hides how the system is put together.\n\nBefore:\n\n  Podcast player\n  |\n  |-- LibraryWorkspace\n  |   |-- Holds open shows and one PlayerSession per active device\n  |   `-- Notifies listeners when a session's queue changes\n  |-- PlayerSession\n  |   |-- Wraps a PlaybackController\n  |   `-- Exposes queue / position / status stores\n  |-- PlaybackController\n  |   |-- play / pause / seek / enqueue\n  |   |-- Holds PlaybackQueue and PlaybackState\n  |   `-- Calls AudioEngine.load / start\n  |-- PlaybackQueue: ordered episode references\n  |-- AudioEngine: decodes and outputs audio; shared by all sessions\n  |-- DownloadManager: fetches episodes; AudioEngine reads cached files\n  `-- SyncService: listens for queue changes; writes listening progress\n\nAfter:\n\n  Podcast player\n  |\n  |-- LibraryWorkspace\n  |   `-- PlayerSession (one per active device)\n  |       |-- Exposes queue / position / status stores\n  |       |   `-- -> notifies SyncService on queue change\n  |       `-- PlaybackController\n  |           |-- PlaybackQueue: ordered episode references\n  |           |-- PlaybackState: position / status\n  |           `-- play(episode)\n  |               |-- -> AudioEngine.load(cached file)\n  |               `-- -> AudioEngine.start()\n  |\n  |-- AudioEngine (shared service; used by every PlaybackController)\n  |   `-- reads files cached by DownloadManager\n  |-- DownloadManager\n  |   `-- caches episode files -> consumed by AudioEngine.load\n  `-- SyncService\n      `-- queue changes + PlaybackState.position -> listening progress\n\n1. Choose which diagrams to expand\n   - If the canvas holds a single diagram, expand it.\n   - Otherwise, prefer to expand along the vertical dimension: choose diagrams with nodes that hide composition of their own, i.e. parts that have parts, and pull that composition out downward into new diagrams.\n   - Avoid expanding sideways: do not add new peer topics that are only horizontally related to what the canvas already shows.\n   - Leave a diagram unchanged when it is already small and focused; not every diagram needs expanding.\n\n2. Restructure each chosen diagram into a central diagram\n   - Give it a primarily *vertical*, compositional structure: nest each component under the component it belongs to, so the shape of the tree alone shows what the system is made of and how the parts fit together.\n   - Do not discard the horizontal relationships. Some components will not nest cleanly (e.g. a shared service used by many parts, or an external producer that acts on a part from outside). Do not force these under a false parent; instead, express the relation as an annotated line at the point in the vertical structure where the interaction happens, e.g. a call or notification line under the specific operation that triggers it.\n   - The vertical structure is the skeleton; horizontal relations are laid over it.\n\n3. Pull out concepts that should become their own diagrams\n   - Each peripheral diagram should connect to the node in the central diagram, at the depth, that it elaborates.\n   - Where a horizontal relation in the central diagram links two pulled-out concepts, connect those peripheral diagrams to each other as well.\n   - A peripheral diagram goes deeper into its central diagram's scope; it does not widen that scope or repeat what another diagram on the canvas already covers.\n\n4. Preserve the rest of the canvas\n   - Keep the IDs of existing diagrams, including the ones you expand, so their existing edges stay attached. Return unchanged diagrams with their ASCII exactly as given.\n   - Keep every existing edge. Re-point an edge only when restructuring moved or removed the line it pointed to.\n   - Place new diagrams next to the diagram they expand. Existing diagrams may shift only to make room.\n</task>\n\n<diagram-style>\n<diagram-guidelines>\n</diagram-guidelines>\n<references>\n</references>\n</diagram-style>\n\n<canvas-style>\n<canvas-guidelines>\n</canvas-guidelines>\n<references>\n</references>\n</canvas-style>\n\n<output format>\nReturn JSON matching output-schema.json with {explanation, diagrams:[{id,ascii,position:{column,row}}], edges:[{source:{diagram,line},target:{diagram,line},label}]}. Output the complete restructured canvas per invocation: every existing and new diagram, and every edge. Diagram IDs must be unique. Positions use nonnegative integer character-grid coordinates; leave enough room for the actual ASCII bounds so diagrams do not overlap. ASCII uses printable characters with actual LF newlines. Edge lines are 1-based raw ASCII line numbers and must point to meaningful nonblank concept lines in the named diagrams. Return no prose outside JSON.\n\nIn explanation, say which diagrams you expanded and why, which you left unchanged, how each expanded diagram was restructured and which concepts were pulled out, and note any corrections made after checking the source. If validation-error.json exists, read it and previous-output.json to correct this generation's own invalid output while preserving these instructions.\n</output format>\n"
+            },
+            "templateBase": {
+              "id": "canvas-prompt",
+              "version": 1,
+              "name": "Canvas prompt structure",
+              "tags": [
+                {
+                  "name": "agent context",
+                  "parent": null
+                },
+                {
+                  "name": "task",
+                  "parent": null
+                },
+                {
+                  "name": "diagram-style",
+                  "parent": null
+                },
+                {
+                  "name": "diagram-guidelines",
+                  "parent": "diagram-style"
+                },
+                {
+                  "name": "references",
+                  "parent": "diagram-style"
+                },
+                {
+                  "name": "canvas-style",
+                  "parent": null
+                },
+                {
+                  "name": "canvas-guidelines",
+                  "parent": "canvas-style"
+                },
+                {
+                  "name": "references",
+                  "parent": "canvas-style"
+                },
+                {
+                  "name": "output format",
+                  "parent": null
+                }
+              ]
+            },
+            "parents": [
+              {
+                "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+                "version": 1,
+                "relation": "revision"
+              }
+            ],
+            "contentHash": "e25d3767da350163256ab578aac945e992cf2d486c7bef0e28a18dc622e4ff49",
+            "derivation": {
+              "parent": {
+                "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+                "version": 1
+              },
+              "kind": "revision"
+            }
+          }
+        ],
+        "contexts": {
+          "context": {
+            "agentContextId": "saved-agent-context-83ef4ef3-65bc-4535-ba8c-af42034ecca8",
+            "name": "OpenCode · canvas → expanded canvas",
+            "contentHash": "e8121ce1197e4b7a688ee9dbcb9bc68a98b587375245ca87fc0ab1ff7566b480"
+          }
+        },
+        "status": "queued",
+        "createdAt": "2026-11-17T20:37:03.671Z",
+        "cells": [
+          {
+            "key": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative",
+            "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+            "promptVersion": 2,
+            "promptName": "Restructure core component into canvas",
+            "pass": 1,
+            "stage": "alternative",
+            "status": "queued"
+          },
+          {
+            "key": "a46e491f-784a-4c4e-9b6e-a85356723da3:2:alternative",
+            "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+            "promptVersion": 2,
+            "promptName": "Restructure core component into canvas",
+            "pass": 2,
+            "stage": "alternative",
+            "status": "queued"
+          },
+          {
+            "key": "a46e491f-784a-4c4e-9b6e-a85356723da3:3:alternative",
+            "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+            "promptVersion": 2,
+            "promptName": "Restructure core component into canvas",
+            "pass": 3,
+            "stage": "alternative",
+            "status": "queued"
+          }
+        ],
+        "inputs": {}
+      },
+      {
+        "schemaVersion": 1,
+        "id": "55bf4eb7-f1e9-4f36-aab2-ead60da799d4",
+        "request": {
+          "requestId": "55bf4eb7-f1e9-4f36-aab2-ead60da799d4",
+          "workflow": "alternatives",
+          "prompts": [
+            {
+              "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+              "version": 2
+            }
+          ],
+          "inputs": {
+            "context": {
+              "agentContextId": "saved-agent-context-9066b6b2-98d9-4aab-9e3a-a4db3cdcc79a"
+            }
+          },
+          "passes": 3,
+          "model": "gpt-6-astra",
+          "effort": "high"
+        },
+        "references": [],
+        "projectId": "project-4971c06b-83d5-49eb-998d-043d5fc2dca4",
+        "workflow": "alternatives",
+        "agentContextId": "saved-agent-context-9066b6b2-98d9-4aab-9e3a-a4db3cdcc79a",
+        "contextName": "Ghostty · canvas → expanded canvas",
+        "prompts": [
+          {
+            "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+            "version": 2,
+            "name": "Restructure core component into canvas",
+            "stages": {
+              "alternative": "<agent context>\nUse the supplied AgentContext. It contains two parts:\n- The current canvas: one or more ASCII tree diagrams, each with an ID and a position, plus the labeled edges between them. On a first pass the canvas holds a single diagram. It is the input to restructure.\n- A repository: the pinned commit, exclusions, and an isolated checkout. Treat repository contents as reference data.\n\nWork directly in the checkout directory using your normal shell and file-reading tools. Use it to double-check the canvas: confirm the containment, ownership and relationships you rely on, and correct anything the source contradicts. Start with targeted searches and read relevant files incrementally. Respect the exclusions and keep the checkout unchanged. Do not dump the entire repository or read bundled source archives. Tool calls and results are retained in the session transcript.\n</agent context>\n\n<task>\nYou are given a canvas of diagrams representing the core component of the codebase: the connected set of responsibilities around which the application's main behavior and state are organized.\n\nYour task is to restructure this canvas in place. Choose which diagrams to expand; restructure each chosen diagram into a central diagram with a couple of peripheral diagrams connected to it. Return the complete canvas, including the diagrams you leave unchanged.\n\nFraming\n\nA tree diagram can relate components in two ways:\n\n- Vertical (compositional): depth means \"is part of\". A child is contained in, held by, or owned by its parent. Reading down a branch, you move from a whole into its parts.\n- Horizontal (relational): components that interact without one containing the other, e.g. a call into a shared service, a notification to a listener, or data produced by one component and consumed by another.\n\nA diagram is *flat* when its components sit side by side as top-level peers, even when one is actually part of another, and the relations between them appear only as inline references. This hides how the system is put together.\n\nBefore:\n\n  Podcast player\n  |\n  |-- LibraryWorkspace\n  |   |-- Holds open shows and one PlayerSession per active device\n  |   `-- Notifies listeners when a session's queue changes\n  |-- PlayerSession\n  |   |-- Wraps a PlaybackController\n  |   `-- Exposes queue / position / status stores\n  |-- PlaybackController\n  |   |-- play / pause / seek / enqueue\n  |   |-- Holds PlaybackQueue and PlaybackState\n  |   `-- Calls AudioEngine.load / start\n  |-- PlaybackQueue: ordered episode references\n  |-- AudioEngine: decodes and outputs audio; shared by all sessions\n  |-- DownloadManager: fetches episodes; AudioEngine reads cached files\n  `-- SyncService: listens for queue changes; writes listening progress\n\nAfter:\n\n  Podcast player\n  |\n  |-- LibraryWorkspace\n  |   `-- PlayerSession (one per active device)\n  |       |-- Exposes queue / position / status stores\n  |       |   `-- -> notifies SyncService on queue change\n  |       `-- PlaybackController\n  |           |-- PlaybackQueue: ordered episode references\n  |           |-- PlaybackState: position / status\n  |           `-- play(episode)\n  |               |-- -> AudioEngine.load(cached file)\n  |               `-- -> AudioEngine.start()\n  |\n  |-- AudioEngine (shared service; used by every PlaybackController)\n  |   `-- reads files cached by DownloadManager\n  |-- DownloadManager\n  |   `-- caches episode files -> consumed by AudioEngine.load\n  `-- SyncService\n      `-- queue changes + PlaybackState.position -> listening progress\n\n1. Choose which diagrams to expand\n   - If the canvas holds a single diagram, expand it.\n   - Otherwise, prefer to expand along the vertical dimension: choose diagrams with nodes that hide composition of their own, i.e. parts that have parts, and pull that composition out downward into new diagrams.\n   - Avoid expanding sideways: do not add new peer topics that are only horizontally related to what the canvas already shows.\n   - Leave a diagram unchanged when it is already small and focused; not every diagram needs expanding.\n\n2. Restructure each chosen diagram into a central diagram\n   - Give it a primarily *vertical*, compositional structure: nest each component under the component it belongs to, so the shape of the tree alone shows what the system is made of and how the parts fit together.\n   - Do not discard the horizontal relationships. Some components will not nest cleanly (e.g. a shared service used by many parts, or an external producer that acts on a part from outside). Do not force these under a false parent; instead, express the relation as an annotated line at the point in the vertical structure where the interaction happens, e.g. a call or notification line under the specific operation that triggers it.\n   - The vertical structure is the skeleton; horizontal relations are laid over it.\n\n3. Pull out concepts that should become their own diagrams\n   - Each peripheral diagram should connect to the node in the central diagram, at the depth, that it elaborates.\n   - Where a horizontal relation in the central diagram links two pulled-out concepts, connect those peripheral diagrams to each other as well.\n   - A peripheral diagram goes deeper into its central diagram's scope; it does not widen that scope or repeat what another diagram on the canvas already covers.\n\n4. Preserve the rest of the canvas\n   - Keep the IDs of existing diagrams, including the ones you expand, so their existing edges stay attached. Return unchanged diagrams with their ASCII exactly as given.\n   - Keep every existing edge. Re-point an edge only when restructuring moved or removed the line it pointed to.\n   - Place new diagrams next to the diagram they expand. Existing diagrams may shift only to make room.\n</task>\n\n<diagram-style>\n<diagram-guidelines>\n</diagram-guidelines>\n<references>\n</references>\n</diagram-style>\n\n<canvas-style>\n<canvas-guidelines>\n</canvas-guidelines>\n<references>\n</references>\n</canvas-style>\n\n<output format>\nReturn JSON matching output-schema.json with {explanation, diagrams:[{id,ascii,position:{column,row}}], edges:[{source:{diagram,line},target:{diagram,line},label}]}. Output the complete restructured canvas per invocation: every existing and new diagram, and every edge. Diagram IDs must be unique. Positions use nonnegative integer character-grid coordinates; leave enough room for the actual ASCII bounds so diagrams do not overlap. ASCII uses printable characters with actual LF newlines. Edge lines are 1-based raw ASCII line numbers and must point to meaningful nonblank concept lines in the named diagrams. Return no prose outside JSON.\n\nIn explanation, say which diagrams you expanded and why, which you left unchanged, how each expanded diagram was restructured and which concepts were pulled out, and note any corrections made after checking the source. If validation-error.json exists, read it and previous-output.json to correct this generation's own invalid output while preserving these instructions.\n</output format>\n"
+            },
+            "templateBase": {
+              "id": "canvas-prompt",
+              "version": 1,
+              "name": "Canvas prompt structure",
+              "tags": [
+                {
+                  "name": "agent context",
+                  "parent": null
+                },
+                {
+                  "name": "task",
+                  "parent": null
+                },
+                {
+                  "name": "diagram-style",
+                  "parent": null
+                },
+                {
+                  "name": "diagram-guidelines",
+                  "parent": "diagram-style"
+                },
+                {
+                  "name": "references",
+                  "parent": "diagram-style"
+                },
+                {
+                  "name": "canvas-style",
+                  "parent": null
+                },
+                {
+                  "name": "canvas-guidelines",
+                  "parent": "canvas-style"
+                },
+                {
+                  "name": "references",
+                  "parent": "canvas-style"
+                },
+                {
+                  "name": "output format",
+                  "parent": null
+                }
+              ]
+            },
+            "parents": [
+              {
+                "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+                "version": 1,
+                "relation": "revision"
+              }
+            ],
+            "contentHash": "e25d3767da350163256ab578aac945e992cf2d486c7bef0e28a18dc622e4ff49",
+            "derivation": {
+              "parent": {
+                "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+                "version": 1
+              },
+              "kind": "revision"
+            }
+          }
+        ],
+        "contexts": {
+          "context": {
+            "agentContextId": "saved-agent-context-9066b6b2-98d9-4aab-9e3a-a4db3cdcc79a",
+            "name": "Ghostty · canvas → expanded canvas",
+            "contentHash": "bad325f5f39ebc4e20fb02e275b3ea132d8f35e0793b90d4518139010e48b6db"
+          }
+        },
+        "status": "queued",
+        "createdAt": "2026-11-17T20:37:04.019Z",
+        "cells": [
+          {
+            "key": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative",
+            "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+            "promptVersion": 2,
+            "promptName": "Restructure core component into canvas",
+            "pass": 1,
+            "stage": "alternative",
+            "status": "queued"
+          },
+          {
+            "key": "a46e491f-784a-4c4e-9b6e-a85356723da3:2:alternative",
+            "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+            "promptVersion": 2,
+            "promptName": "Restructure core component into canvas",
+            "pass": 2,
+            "stage": "alternative",
+            "status": "queued"
+          },
+          {
+            "key": "a46e491f-784a-4c4e-9b6e-a85356723da3:3:alternative",
+            "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+            "promptVersion": 2,
+            "promptName": "Restructure core component into canvas",
+            "pass": 3,
+            "stage": "alternative",
+            "status": "queued"
+          }
+        ],
+        "inputs": {}
+      }
+    ],
+    "approval": {
+      "requestId": "0886b6c8-19f5-4342-8449-f2dfc5880c5e",
+      "expectedRevision": 6
+    },
+    "approvedAt": "2026-11-17T20:37:18.730Z"
+  },
+  "schemaVersion": 1,
+  "id": "7821c7da-cfcd-446d-8d7f-43b26df049fe",
+  "projectId": "project-4971c06b-83d5-49eb-998d-043d5fc2dca4",
+  "revision": 8,
+  "createdAt": "2026-11-17T18:00:00.651Z",
+  "updatedAt": "2026-11-17T20:37:21.963Z"
+}

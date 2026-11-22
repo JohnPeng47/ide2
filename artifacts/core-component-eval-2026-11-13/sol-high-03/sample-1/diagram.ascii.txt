@@ -1,0 +1,74 @@
+Mapping workspace -- editable diagram canvases, their history, and their saved state
+|
+|-- [M/O] MappingWorkspacePage coordinates the open project
+|   |-- CanvasWorkspace owns drafts[documentId] and stable CanvasSession handles
+|   |   |-- controllers: Map<documentId, MappingDocumentController>
+|   |   |-- setDrafts() creates sessions, subscribes to commits, and disposes removed ones
+|   |   `-- dirtyScenes exposes canvases whose scene differs from the saved baseline
+|   |-- activeId selects the visible canvas; MappingDiagramExplorer opens project diagrams
+|   |   `-- documentFromRevision() seeds a session when a saved diagram is first opened
+|   `-- MappingServices supplies DiagramService, CanvasHistoryService, codeRepo, and WorkspaceStorage
+|
+|-- [O] CanvasSession is one canvas's observable editing boundary
+|   |-- controller: MappingDocumentController owns the editable document and canvas state
+|   |-- document / presentation / selection / controls / geometry stores
+|   |   `-- publish controller changes to UI consumers, not a second editable document
+|   |-- status: isDirty / sceneDirty / canUndo / canRedo
+|   |   `-- savedScene + savedEdges + savedName define the acknowledged save baseline
+|   `-- onCommit() notifies CanvasWorkspace and WorkspacePersistence
+|
+|-- [D] MappingDocumentController snapshot combines composition and interaction
+|   |-- MappingGridDocument
+|   |   |-- LineGridScene: root GridBox tree + contents[contentId]: Diagram
+|   |   |   |-- GridBox is a positioned diagram or child-owning container
+|   |   |   `-- resolveScene() / layoutScene() measure content and settle collisions
+|   |   |-- edges: DiagramConnection[] anchor relationships between boxes or content nodes
+|   |   `-- sections / jumps retain overlays and navigation targets
+|   |-- MappingCanvasState
+|   |   |-- selection and controls track active items and action surfaces
+|   |   |-- diagramViews track collapsed content nodes per displayed box
+|   |   `-- display: DisplayState owns floating selection, projected, and conversation panes
+|   `-- contextId / canvasRevisionId / version bind the visible state to its history head
+|
+|-- [C] Edits converge on MappingDocumentController
+|   |-- applyUpdate(expectedVersion, operations) rejects a stale version
+|   |   |-- DiagramOperation includes create, insert, replace, patch, move, collapse,
+|   |   |   group, remove, source mappings, jumps, and edge changes
+|   |   |-- RevisionedDiagramService.create() / revise() issues immutable Diagram revisions
+|   |   |   `-- Diagram.content holds ASCII and parsed structure; sourceContext binds
+|   |   |       mappings and evidence to a matching content hash
+|   |   `-- layoutScene(), reconcileConnections(), and node correspondence keep
+|   |       placement and anchors aligned with changed content
+|   |-- commitDocument() and select() also record edits; updateCanvas() can publish
+|   |   transient interaction changes without advancing history
+|   `-- MappingPocSelectionCanvas reads CanvasSession stores and sends user edits
+|       back through the controller; DiagramText and DiagramConnections render results
+|
+|-- [O] DefaultCanvasHistoryService owns each controller's CanvasHistory context
+|   |-- append() records a checkpoint: composition, diagramBindings, view, node origins
+|   |-- headId / past / future support undo(), redo(), and reset()
+|   |-- diagramRevisions retain the immutable content needed to resolve a checkpoint
+|   `-- persistenceChanges() exports changed checkpoints and revisions for storage
+|
+|-- [C/O] Cross-canvas operations belong to MappingWorkspacePage
+|   |-- copyDocument() forks source history into a new CanvasSession
+|   |-- transfer() prepares source and destination histories plus a CanvasTransfer
+|   |   `-- storage.save(workspace) precedes installWorkspace(): both sides publish together
+|   `-- undo() / redo() navigate both participants at a transfer boundary;
+|       ordinary edits delegate to the individual controller
+|
+|-- [M/O] WorkspacePersistence carries live state into durable records
+|   |-- subscribes to CanvasWorkspace commits and SourcePaneViewState changes
+|   |-- sync() writes document metadata, baselines, history deltas, canvas view,
+|   |   viewport, and the workspace index through RecordStorage
+|   |-- WorkspaceStorage sends batches through a worker to mapping workspace routes
+|   `-- MappingWorkspaceService -> MappingWorkspaceStore -> WorkspaceRecordStore
+|       `-- validates batches and publishes content-addressed records by atomic manifest
+|           replacement; project representation saves are a separate action
+|
+`-- [M/C] Other clients consume the same canvas boundary
+    |-- useAgentCanvasBridge registers live canvases and delivers CanvasCommand
+    |   `-- MappingWorkspacePage routes commands to a controller; versioned edits and
+    |       DiagramRevisionReceiver reuse its mutation and persistence paths
+    `-- DiagramSearchService indexes draft documents and saved project diagrams;
+        search results reopen and focus the matching canvas

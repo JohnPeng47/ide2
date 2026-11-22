@@ -1,0 +1,85 @@
+{
+  "experimentId": "f579350b-0a1a-5ddb-8c2c-e0ea72e2335e",
+  "sourceExperimentId": "08ccc7fa-8ea6-4cfa-b0b7-8819b7fcbf35",
+  "sourceRevision": 35,
+  "model": "gpt-6-astra",
+  "effort": "high",
+  "diagrams": [
+    {
+      "repository": "mapping",
+      "sample": 1,
+      "file": "mapping/sample-1.ascii.txt",
+      "sha256": "6dfd673b4255a9e895b05ccfa5b0ed5cbb48748064dfe4901a09e13912972f8a",
+      "promptFile": "prompts/v2.txt",
+      "promptVersion": 2,
+      "promptId": "0b3af2dd-ba89-4032-936a-40070a3e167e",
+      "runId": "df362edd-3c37-49aa-932d-84181ef9d0c2",
+      "cellKey": "0b3af2dd-ba89-4032-936a-40070a3e167e:1:alternative",
+      "diagramRevisionId": "diagram-revision-c450619c-abb4-49c6-aa76-8c9ac6eb24ee"
+    },
+    {
+      "repository": "mapping",
+      "sample": 2,
+      "file": "mapping/sample-2.ascii.txt",
+      "sha256": "361034d5cbef0d97adfc5d2f8d0fe1dc484f0fda0c0303b53a373d1bb3adc60c",
+      "promptFile": "prompts/v4.txt",
+      "promptVersion": 4,
+      "promptId": "0b3af2dd-ba89-4032-936a-40070a3e167e",
+      "runId": "641693cf-fc8b-43c8-ab5d-bc9b08dd22c7",
+      "cellKey": "0b3af2dd-ba89-4032-936a-40070a3e167e:1:alternative",
+      "diagramRevisionId": "diagram-revision-0adc05b1-1689-46f4-9ef4-c101d94a2652"
+    },
+    {
+      "repository": "mapping",
+      "sample": 3,
+      "file": "mapping/sample-3.ascii.txt",
+      "sha256": "92c21cbd743f3bb6294bc4247f55e9ee0522f9a94aa425ef202113ffcb61a5df",
+      "promptFile": "prompts/v4.txt",
+      "promptVersion": 4,
+      "promptId": "0b3af2dd-ba89-4032-936a-40070a3e167e",
+      "runId": "c3aa93d2-4c2a-4e70-846c-61b571c3607d",
+      "cellKey": "0b3af2dd-ba89-4032-936a-40070a3e167e:1:alternative",
+      "diagramRevisionId": "diagram-revision-c15e40fb-08b9-4e0b-b8c1-9a06f387ad2c"
+    },
+    {
+      "repository": "ghostty",
+      "sample": 1,
+      "file": "ghostty/sample-1.ascii.txt",
+      "sha256": "26be0e04a5b23c282a6523704095d1c60acb42666372b8541197c9520c5ff365",
+      "promptFile": "prompts/v4.txt",
+      "promptVersion": 4,
+      "promptId": "0b3af2dd-ba89-4032-936a-40070a3e167e",
+      "runId": "3d97670a-8d2d-41fe-86c6-7b3914204965",
+      "cellKey": "0b3af2dd-ba89-4032-936a-40070a3e167e:1:alternative",
+      "diagramRevisionId": "diagram-revision-13e75f09-eb90-4ab7-a063-51736a75eee0"
+    },
+    {
+      "repository": "ghostty",
+      "sample": 2,
+      "file": "ghostty/sample-2.ascii.txt",
+      "sha256": "e0bf0476fec9fea4a55da3ac7144d5b8fa6c7489f9c07a6af7b7501202b74c1d",
+      "promptFile": "prompts/v4.txt",
+      "promptVersion": 4,
+      "promptId": "0b3af2dd-ba89-4032-936a-40070a3e167e",
+      "runId": "87b0635d-e644-43cd-856a-81c73fbc2af6",
+      "cellKey": "0b3af2dd-ba89-4032-936a-40070a3e167e:1:alternative",
+      "diagramRevisionId": "diagram-revision-b5756995-ff07-42eb-9084-1f88aa8f0949"
+    },
+    {
+      "repository": "ghostty",
+      "sample": 3,
+      "file": "ghostty/sample-3.ascii.txt",
+      "sha256": "9429ac29da63b01b1e59caaf05e0482b2dbf62a358acc92a952a510c93a78efa",
+      "promptFile": "prompts/v4.txt",
+      "promptVersion": 4,
+      "promptId": "0b3af2dd-ba89-4032-936a-40070a3e167e",
+      "runId": "d8ddfcb7-6be0-4a68-9277-c40a1254248f",
+      "cellKey": "0b3af2dd-ba89-4032-936a-40070a3e167e:1:alternative",
+      "diagramRevisionId": "diagram-revision-6e5e6253-4a71-492a-91b9-9fca5957628d"
+    }
+  ],
+  "promptSha256": {
+    "prompts/v2.txt": "9efae5ac4de1a1934c3e9bd4c5a6640155db583c920edbd94a7cd0c9a40517ea",
+    "prompts/v4.txt": "bb56ca114ae2e4c7f08ff6402992adb95a09d4a760f76e92ee83ae1a4edd1b28"
+  }
+}

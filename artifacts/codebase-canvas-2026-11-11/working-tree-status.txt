@@ -1,0 +1,86 @@
+ M AGENTS.md
+ M application/mapping/evals/evalPromptService.test.ts
+ M application/mapping/evals/evalPromptService.ts
+ M application/mapping/evals/evalRunService.test.ts
+ M application/mapping/evals/evalRunService.ts
+ M application/mapping/evals/experimentService.test.ts
+ M application/mapping/rollup/rollUpMaterializer.ts
+ M corpus/README.md
+ M corpus/manifest.json
+ D corpus/shopify-2022-annual-filing.pdf
+ D corpus/shopify-2023-annual-filing.pdf
+ D corpus/shopify-2024-annual-filing.pdf
+ D corpus/shopify-2025-annual-filing.pdf
+ M corpus/shopify/README.md
+ M corpus/shopify/manifest.json
+ D corpus/shopify/shopify-2018-annual-filing.pdf
+ D corpus/shopify/shopify-2019-annual-filing.pdf
+ D corpus/shopify/shopify-2020-annual-filing.pdf
+ D corpus/shopify/shopify-2021-annual-filing.pdf
+ D corpus/shopify/shopify-2022-annual-filing.pdf
+ D corpus/shopify/shopify-2023-annual-filing.pdf
+ D corpus/shopify/shopify-2024-annual-filing.pdf
+ D corpus/shopify/shopify-2025-annual-filing.pdf
+ D corpus/shopify/shopify/README.md
+ D corpus/shopify/shopify/manifest.json
+ D corpus/shopify/shopify/shopify-2022-annual-filing.pdf
+ D corpus/shopify/shopify/shopify-2022-annual-filing.txt
+ D corpus/shopify/shopify/shopify-2022-q1-earnings-transcript.txt
+ D corpus/shopify/shopify/shopify-2022-q2-earnings-transcript.txt
+ D corpus/shopify/shopify/shopify-2022-q3-earnings-transcript.txt
+ D corpus/shopify/shopify/shopify-2022-q4-earnings-transcript.txt
+ D corpus/shopify/shopify/shopify-2023-annual-filing.pdf
+ D corpus/shopify/shopify/shopify-2023-annual-filing.txt
+ D corpus/shopify/shopify/shopify-2023-q1-earnings-transcript.txt
+ D corpus/shopify/shopify/shopify-2023-q2-earnings-transcript.txt
+ D corpus/shopify/shopify/shopify-2023-q3-earnings-transcript.txt
+ D corpus/shopify/shopify/shopify-2023-q4-earnings-transcript.txt
+ D corpus/shopify/shopify/shopify-2024-annual-filing.pdf
+ D corpus/shopify/shopify/shopify-2024-annual-filing.txt
+ D corpus/shopify/shopify/shopify-2024-q1-earnings-transcript.txt
+ D corpus/shopify/shopify/shopify-2024-q2-earnings-transcript.txt
+ D corpus/shopify/shopify/shopify-2024-q3-earnings-transcript.txt
+ D corpus/shopify/shopify/shopify-2024-q4-earnings-transcript.txt
+ D corpus/shopify/shopify/shopify-2025-annual-filing.pdf
+ D corpus/shopify/shopify/shopify-2025-annual-filing.txt
+ D corpus/shopify/shopify/shopify-2025-q1-earnings-transcript.txt
+ D corpus/shopify/shopify/shopify-2025-q2-earnings-transcript.txt
+ D corpus/shopify/shopify/shopify-2025-q3-earnings-transcript.txt
+ D corpus/shopify/shopify/shopify-2025-q4-earnings-transcript.txt
+ D corpus/shopify/shopify/shopify-2026-q1-earnings-transcript.txt
+ D corpus/shopify/shopify/shopify-2026-q2-earnings-transcript.txt
+ D corpus/shopify/shopify/shopify-2026-q3-earnings-transcript.txt
+ M domain/core/agents/__tests__/agentContext.test.ts
+ M domain/core/agents/agentContext.ts
+ M domain/core/diagrams/generatedCanvas.ts
+ M domain/mapping/evals/evalRun.ts
+ M domain/mapping/evals/evalWorkflows.ts
+ M domain/mapping/evals/experiment.ts
+ M infrastructure/mapping/evals/__tests__/agentContextEvalRuntime.test.ts
+ M infrastructure/mapping/evals/agentContextEvalRuntime.ts
+ M infrastructure/mapping/evals/evalRuntime.ts
+ M src/features/mapping/changes/ChangeSessionPreview.tsx
+ M src/features/mapping/changes/__tests__/changePreviewState.test.ts
+ M src/features/mapping/changes/changePreviewState.ts
+ M src/features/mapping/evals/EvalsPage.tsx
+ M src/features/mapping/evals/EvalsTree.tsx
+ M src/features/mapping/evals/ExperimentPrompts.tsx
+ M src/features/mapping/evals/ExperimentView.tsx
+ M src/features/mapping/evals/OutputResultPreview.tsx
+ M src/features/mapping/evals/evals.css
+ M src/server/app/bootstrap.ts
+ M src/server/routes/mapping/evals/evalRoutes.ts
+?? application/mapping/history/
+?? artifacts/architecture-fewshot-slices-2026-11-10/
+?? artifacts/codebase-canvas-2026-11-11/
+?? artifacts/diagram-history-2026-11-10-rerun/
+?? artifacts/diagram-history-2026-11-10/
+?? artifacts/eval-output-drag/
+?? artifacts/synthetic-fewshot-examples-2026-11-10/
+?? docs/EXPERIMENTS.md
+?? domain/mapping/evals/evalLimits.ts
+?? domain/mapping/history/
+?? infrastructure/mapping/history/
+?? scripts/evals/history/
+?? src/features/mapping/evals/ExperimentOverview.tsx
+?? tests/performance/browser-eval-output-drag.mjs

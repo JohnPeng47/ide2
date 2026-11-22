@@ -1,0 +1,316 @@
+{
+  "output": {
+    "explanation": "Expanded the sole diagram, call-core; none were left unchanged. Nested binding execution, font changes, clipboard completion, resizing and child-exit handling beneath their callers. Pulled IO execution/parsing and rendering into two adjacent peripheral diagrams, connecting worker entry points, mailboxes, shared-state hand-offs and shutdown. Verified against the pinned checkout without changing it. Corrections include: setCellSize queues IO resize rather than calling Surface.resize; DPI changes explicitly force resize; cursor-key actions scroll before writing; search UI alone does not start a worker; drawing and animation scheduling follow updateFrame rather than run inside it; scrollbar publication is deferred even on early drawing returns. Mailbox backpressure can temporarily release the terminal mutex.",
+    "diagrams": [
+      {
+        "id": "call-core",
+        "ascii": "Ghostty Surface: session ownership and runtime events (src/Surface.zig)\n|\n|-- Surface.init() (477): construct before starting workers\n|   |-- Apply conditional config; derive config; read DPI; acquire shared font grid and screen size\n|   |-- Initialize shared render device; Renderer.init(); allocate renderer_state.mutex\n|   |-- Initialize renderer.Thread and termio.Thread; renderer_state.terminal = &io.terminal\n|   |-- Choose initial-command/command; build environment; Exec.init(); Termio.init()\n|   |   `-- Own backend, mailbox, terminal grid and VT stream; parsing/snapshots share terminal mutex\n|   |-- Report cell_size/size_limit; resize() -> same size path expanded below\n|   |-- Spawn renderer.Thread.threadMain() [async entry -> render-worker]\n|   |-- Spawn termio.Thread.threadMain() [async entry -> io-worker]\n|   `-- recomputeInitialSize(); report configured/command title when applicable; clear app.first\n|\n|-- keyCallback(event) (2792)\n|   |-- Remap modifiers; prepare inspector event (record on return if inspector still exists)\n|   |-- maybeHandleBinding(): resolve releases, sequences, tables and binding flags\n|   |   |-- Global/all -> App.performAllChainedAction(); otherwise execute chained local actions\n|   |   |   `-- performBindingAction(action) (4941; also callable directly by runtime)\n|   |   |       |-- App/window/tab/split -> App.newWindow()/performAction() or rt_app.performAction()\n|   |   |       |   `-- [runtime-created surface] -> Surface.init(), not a synchronous binding child\n|   |   |       |-- Text/CSI/ESC -> encode; queueIo(); scrollToBottom()\n|   |   |       |-- Cursor key -> scrollToBottom(); snapshot mode; queueIo(normal/application bytes)\n|   |   |       |-- Reset -> locked Terminal.fullReset(); clear/scroll/prompt -> IO control messages\n|   |   |       |-- Font action -> setFontSize() (2536)\n|   |   |       |   |-- Acquire font grid; setCellSize(): update cells and balance padding\n|   |   |       |   |   |-- queueIo(.resize); recomputeInitialSize()\n|   |   |       |   |   `-- Report cell_size to runtime (does NOT call Surface.resize())\n|   |   |       |   `-- Send renderer .font_grid; update key/metrics; queueRender() [async wake]\n|   |   |       |-- Copy -> copySelectionToClipboards(); paste -> startClipboardRequest() (6219)\n|   |   |       |   |-- Snapshot paste-event mode: request text or MIME listing; enforce read policy\n|   |   |       |   `-- rt_surface.clipboardRequest() [completion/denial events -> callbacks below]\n|   |   |       |-- start_search/search_selection -> show runtime search UI only\n|   |   |       |-- search(nonempty) -> lazily initialize state and spawn search.Thread\n|   |   |       |   `-- Send .change_needle; navigate_search sends .select [async -> search loop below]\n|   |   |       |-- Empty search/end_search -> stop/join search; only end_search sends end_search UI action\n|   |   |       |-- Inspector action -> rt_app.performAction(.inspector) [runtime callbacks below]\n|   |   |       `-- Close surface -> close(): needsConfirmQuit(); rt_surface.close(confirm) (883)\n|   |   |           `-- [runtime confirmation/removal] -> eventual deinit(), not immediate destruction\n|   |   `-- Consumed binding/sequence -> return; otherwise continue terminal input\n|   |-- Respect disable_keyboard when allowed; update mouse/modifiers and pressed_key\n|   |-- encodeKey(): snapshot keyboard modes; encode small or allocated write request (3326)\n|   |-- No bytes -> ignored; child exited -> free request, re-enter close(), return closed\n|   |-- Otherwise queueIo(.write_*) (899; common hand-off also used by other callbacks)\n|   |   |-- Read-only + PTY write -> free message, return; control messages remain allowed\n|   |   `-- Termio.queueMessage(): mailbox.send(msg, mutex-state); notify() [async -> io-worker]\n|   `-- Encoded non-modifier -> lock; clear selection/scroll viewport as configured; queueRender()\n|       `-- [async wake -> render-worker]; deferred inspector recording runs on return\n|\n|-- completeClipboardRequest(req, completion) (6017; runtime completion, not request-time call)\n|   |-- Ordinary paste -> completeClipboardPaste(text, confirmed) (6264)\n|   |   |-- Empty -> return; lock and snapshot paste modes; reject unsafe data until confirmed\n|   |   |-- scrollToBottom() while locked; unlock; input.paste.encode() (copy if mutation required)\n|   |   `-- queueIo() for each nonempty encoded segment [async -> io-worker]\n|   |-- MIME listing -> completeClipboardPasteEvent(): terminal.paste.paste(); queue encoded event\n|   |-- OSC 52/Kitty read -> permission checks; encode response; queueIo()\n|   `-- OSC 52/Kitty write -> setClipboard(); Kitty sends status/grants and releases request state\n|-- denyClipboardRequest() (6167): no paste; empty OSC 52 read reply or Kitty EPERM; free Kitty state\n|-- textCallback(text) (3426) -> re-enter completeClipboardPaste(text, true)\n|-- preeditCallback(text) (2669)\n|   `-- Lock; clear selection as configured; free prior preedit; mark dirty; decode/install or clear; queueRender()\n|\n|-- mouseButtonCallback() (3918): update click/modifier state; dispatch gesture/capture behavior\n|   |-- Local selection -> selection_gesture.press/release(); setSelection()/setSelectionAndCopy()\n|   |-- Application capture -> mouseReport(): encode report; queueIo()\n|   |-- Link/prompt click -> processLinks()/maybePromptClick(): open URL or queue cursor movement\n|   `-- Paste gesture -> re-enter startClipboardRequest()\n|-- cursorPosCallback()/mousePressureCallback() (4678/4614)\n|   |-- Update hover/position; report motion or selection_gesture.drag()/deepPress(); setSelection()\n|   |-- Drag outside viewport -> queueIo(.selection_scroll) [async -> IO selection timer]\n|   `-- queueRender() [async -> render-worker]\n|-- scrollCallback() (3584): normalize wheel/pixel deltas; lock terminal\n|   |-- Alternate screen + alternate-scroll without reporting -> queue cursor-key writes\n|   |-- Reporting active -> mouseReport() for wheel steps; queueIo()\n|   `-- Otherwise Terminal.scrollViewport(); queueRender()\n|\n|-- sizeCallback() (2600): ignore unchanged screen size\n|   `-- resize() (2618; also entered by init and DPI changes)\n|       |-- Save screen size; balance padding; calculate grid size\n|       |-- queueIo(.resize) [async -> IO coalescing timer]\n|       `-- Send renderer .resize; queueRender() [async -> render-worker]\n|-- contentScaleCallback() (3765): ignore unchanged DPI\n|   `-- setFontSize() as above; update unbalanced padding; force resize(current screen)\n|-- updateConfig() (1804)\n|   |-- Apply conditional config; derive replacement (failure retains current config)\n|   |-- Replace config; restore mouse if needed; endKeySequence(); deactivateAllKeyTables()\n|   |-- setFontSize() as above, preserving manual adjustment; derive worker configs\n|   |-- Send renderer .change_config; queueIo(.change_config); queueRender() [async workers]\n|   `-- Report configured title/config_change; running command and cwd are not replaced\n|\n|-- focusCallback() (3466)\n|   |-- If focused, App.focusSurface(); ignore unchanged focus; send renderer .focus\n|   |-- On focus loss -> synthesize releases by re-entering keyCallback()\n|   `-- queueRender(); showMouse(); update locked terminal focus; queueIo(.focused)\n|-- occlusionCallback() (3437)\n|   `-- Ignore unchanged; update terminal visibility; queue enabled report; send renderer .visible and wake\n|-- displayRealized()/displayUnrealized() (2584): notify renderer; unrealize also wakes GPU cleanup\n|-- refreshCallback() (3554) -> queueRender(); reportPresentationHealth() (961) -> renderer message + wake\n|-- draw() (925) -> Renderer.drawFrame(true) [synchronous presentation -> render-worker shared draw path]\n|\n|-- App.tick() -> drainMailbox() (src/App.zig:164,273; main-thread event)\n|   `-- Pop until empty/quit; .surface_message -> surfaceMessage(): verify surface still exists\n|       `-- Surface.handleMessage() (1017)\n|           |-- .change_config/.close -> re-enter updateConfig()/close()\n|           |-- Title/cwd/colors/bell/progress/scrollbar/health/password/search -> runtime actions\n|           |-- Clipboard read -> startClipboardRequest()/kittyClipboardRead()\n|           |-- Clipboard write -> clipboardWrite()/kittyClipboardWrite(); OSC 52 goes directly to setClipboard\n|           |-- .selection_scroll_tick -> selectionScrollTick(): update drag/viewport; setSelection(); queueRender()\n|           |-- .start_command/.stop_command -> measure duration; report command_finished\n|           `-- .child_exited -> childExited() (1297): mark child_exited\n|               |-- Abnormal short run (platform/exit-code rules) -> native or terminal error; retain surface\n|               `-- Normal -> native exit UI or terminal message; wait_after_command retains, else close()\n|                   `-- Retained exited surface: a later encoded key re-enters close()\n|\n|-- search.Thread.threadMain() (src/terminal/search/Thread.zig:142; independent spawned worker)\n|   |-- Register wake/stop handlers; initial wake; start refresh timer\n|   |-- Until stopped: no search -> loop.run(.once); active -> notify pending results\n|   |   |-- Complete -> loop.run(.once)\n|   |   |-- Incomplete -> TerminalSearch.tick(); if blocked, lock/feedLocked(); loop.run(.no_wait)\n|   |   `-- Events: drain .change_needle/.select; refresh timer reconsiders terminal/viewport changes\n|   |-- notify() -> Surface.searchCallback_() (1496; runs on search thread)\n|   |   |-- Copy highlights -> renderer mailbox + wake [async -> render-worker]\n|   |   `-- Result count/selected index -> surface mailbox [async -> App.tick()]\n|   `-- On exit callback(.quit): clear renderer highlights and reported totals via mailboxes\n|\n|-- activateInspector()/deactivateInspector() (934/972; runtime events)\n|   `-- Attach/detach under terminal mutex; notify renderer/IO; destroy on deactivate\n|       `-- Key and PTY recording consult shared inspector state; renderer uses overlay features\n|\n`-- Surface.deinit() (829; runtime destruction)\n    |-- Stop/join optional search worker\n    |-- Signal renderer stop; join [render-worker exits]\n    |-- Signal IO stop; join [io-worker stops child and joins reader]\n    |-- Renderer.deinit(); renderer_thread.deinit(); io_thread.deinit()\n    |-- Release selection gesture; Termio.deinit(): backend, terminal, mailbox, stream, config\n    `-- Free inspector/keyboard/preedit; dereference font grid; destroy mutex and surface config",
+        "position": {
+          "column": 0,
+          "row": 0
+        }
+      },
+      {
+        "id": "io-worker",
+        "ascii": "IO execution and terminal mutation (spawned by Surface.init)\n|\n|-- termio.Thread.threadMain() (src/termio/Thread.zig:236)\n|   |-- Termio.threadEnter() (src/termio/Termio.zig:367)\n|   |   |-- Prepare configured initial input before starting backend\n|   |   |-- Exec.threadEnter() (src/termio/Exec.zig:86)\n|   |   |   |-- Subprocess.start(): establish PTY and launch command\n|   |   |   |-- Create process watcher, quit pipe, write stream and termios timer\n|   |   |   |-- Spawn Exec.ReadThread [async entry -> reader branch below]\n|   |   |   `-- Register exit watcher and POSIX termios polling\n|   |   `-- Queue prepared initial input using Termio.queueWrite() after backend startup\n|   |-- Register mailbox-wake and stop handlers; xev.Loop.run(.until_done)\n|   |   |-- Mailbox wake -> drainMailbox() (289)\n|   |   |   |-- .write_* -> Termio.queueWrite() -> Exec.queueWrite() (Exec.zig:403)\n|   |   |   |   |-- Exited -> discard; otherwise chunk into pooled buffers; optionally expand CR to CRLF\n|   |   |   |   `-- write_stream.queueWrite() [async completion -> ttyWrite() returns buffer to pool]\n|   |   |   |-- .resize -> handleResize(): keep latest size; arm timer unless already active\n|   |   |   |-- .change_config -> Termio.changeConfig(): lock; replace emulator/handler/backend policy\n|   |   |   |   `-- Update colors/policies, not running command or working directory\n|   |   |   |-- .clear_screen/.scroll_viewport/.jump_to_prompt -> corresponding Termio mutation\n|   |   |   |-- .focused/.visibility_report/.size_report -> enabled reports -> queueWrite()\n|   |   |   |   `-- Focus also controls backend termios polling\n|   |   |   |-- .selection_scroll/.start_synchronized_output -> arm/stop corresponding timers\n|   |   |   |-- Inspector, linefeed, clipboard grants, color-scheme reports -> update/control handlers\n|   |   |   `-- After nonempty drain -> renderer_wakeup.notify() [async -> render-worker]\n|   |   |-- coalesceCallback() -> Termio.resize() (Termio.zig:524)\n|   |   |   |-- Lock shared terminal BEFORE backend.resize() notifies PTY\n|   |   |   |-- Terminal.resize(): reflow grid; emit in-band size report if enabled; unlock\n|   |   |   `-- Send renderer .resize and wake [async -> render-worker]\n|   |   |-- syncResetCallback() -> resetSynchronizedOutput(): lock, clear mode, wake renderer\n|   |   |-- selectionScrollCallback() -> surface .selection_scroll_tick [async -> App.tick()]\n|   |   |-- termiosTimer(): inspect driver mode -> surface .password_input on change\n|   |   |-- processExit()/flatpakExit() -> processExitCommon(): mark backend exited\n|   |   |   `-- Send surface .child_exited with status/runtime [async -> App.tick(); loop does not stop]\n|   |   `-- stopCallback() -> loop.stop()\n|   `-- On loop exit: Termio.threadExit() -> Exec.threadExit() (Exec.zig:196)\n|       |-- Mark externally reaped process if needed; Subprocess.stop()\n|       |-- Signal reader quit pipe; Windows also cancels blocking read; join reader\n|       `-- Then deinitialize thread data\n|\n`-- Exec.ReadThread (Exec.zig:1412,1526,1778; independent PTY output activation)\n    |-- POSIX: set nonblocking FD; initialize bounded batch pipeline\n    |   |-- Spawn gatherMainPosix() [async producer]\n    |   |   |-- Wait for free slot; read/poll PTY and quit pipe; publish batches in ring order\n    |   |   `-- EOF/error/quit -> publish remaining bytes; mark done and wake parser\n    |   `-- Parse stage: consume batches until done AND ring empty\n    |       |-- Termio.processOutput(batch) (Termio.zig:702)\n    |       |   `-- Lock renderer_state.mutex; processOutputLocked(); unlock on return\n    |       |       |-- Queue renderer wake first; throttle reset_cursor_blink messages\n    |       |       |-- Inspector -> record and stream.next(byte); otherwise stream.nextSlice(batch)\n    |       |       |   `-- StreamHandler.vt()/vtPrintAscii() (src/termio/stream_handler.zig:188)\n    |       |       |       |-- Terminal methods mutate text, cursor, styles, screens, modes and scrollback\n    |       |       |       |-- Protocol replies/control -> messageWriter(): enqueue to IO mailbox\n    |       |       |       `-- Title/clipboard/bell/cwd/etc. -> surfaceMessageWriter() [async -> App.tick()]\n    |       |       |-- If parser queued IO messages: mailbox.notify() [async -> control loop above]\n    |       |       `-- [locking rule] Mailbox backpressure may temporarily release/reacquire terminal mutex\n    |       |-- Release batch slot; signal producer (interrupt refill wait if parser goes idle)\n    |       `-- renderer_state.yieldToDemand() between batches [shared lock -> render-worker snapshot]\n    |-- On POSIX reader return -> join gatherer; close reader-side resources\n    `-- Windows alternative: threadMainWindows() reads directly; same Termio.processOutput() path",
+        "position": {
+          "column": 145,
+          "row": 0
+        }
+      },
+      {
+        "id": "render-worker",
+        "ascii": "Rendering: terminal snapshot to presentation (src/renderer)\n|\n|-- renderer.Thread.threadMain() (Thread.zig:200; independent spawned worker)\n|   |-- Renderer.loopEnter()/threadEnter(); register wake, stop and draw-now handlers\n|   |-- Queue initial wake; start cursor timer; arm animation timer\n|   |-- xev.Loop.run(.until_done)\n|   |   |-- wakeupCallback() (474)\n|   |   |   |-- drainMailbox(): apply queued messages (290)\n|   |   |   |   |-- .font_grid -> install grid; dereference old grid\n|   |   |   |   |-- .resize/.change_config -> setScreenSize()/changeConfig()\n|   |   |   |   `-- Apply focus/visibility/health/inspector/search; becoming visible also renders immediately\n|   |   |   |-- renderCallback() (537; also re-entered by timers/visibility)\n|   |   |   |   |-- Unrealized -> lock draw state; releaseGpuResources(); return\n|   |   |   |   |-- Invisible -> return without rebuilding cells\n|   |   |   |   |-- Renderer.updateFrame() (generic.zig:1371)\n|   |   |   |   |   |-- state.lockDemand(); synchronized-output mode -> return without snapshot update\n|   |   |   |   |   |-- Otherwise apply output-scroll policy; advance Kitty image animations\n|   |   |   |   |   |-- terminal_state.beginUpdate(); mark search viewport dirty when needed\n|   |   |   |   |   |-- Capture scrollbar, preedit, links/overlay; update image placements; unlockDemand()\n|   |   |   |   |   |-- terminal_state.endUpdate(); update regex links, search highlights and overlay\n|   |   |   |   |   |-- Lock draw state; rebuildCells(): shape/rasterize into GPU cell data; update uniforms\n|   |   |   |   |   `-- Unlock draw state; syncDisplayLink() with rebuilt frame ready\n|   |   |   |   |-- Thread.drawFrame(false): skip if invisible or vsync owns drawing\n|   |   |   |   |   `-- Renderer.drawFrame(false) -> shared drawing activation below\n|   |   |   |   `-- armAnimationTimer() [async next required frame/animation wake]\n|   |   |   `-- compression.wake(): schedule eligible scrollback compression\n|   |   |-- Cursor/animation timer -> update blink/scheduling; re-enter renderCallback() or draw as needed\n|   |   |-- drawNowCallback()/display-link wake -> Thread.drawFrame(true)\n|   |   |   `-- Skip if invisible; otherwise Renderer.drawFrame(false), NOT sync=true\n|   |   `-- stopCallback() -> loop.stop()\n|   `-- On loop exit -> Renderer.threadExit(); loopExit()\n|\n`-- Renderer.drawFrame(sync) (generic.zig:1716; shared entry, including Surface.draw(true))\n    |-- Lock draw_mutex; drawFrameLocked(sync)\n    |   |-- Begin graphics API bookkeeping; query surface size\n    |   |-- Zero size/unrealized -> return; rebuild swap chain if needed\n    |   |-- Unchanged and not synchronous/animating -> return with display-link resync request\n    |   |-- Acquire swap-chain frame; initialize shaders/targets and resize as needed\n    |   |-- Upload images/background, uniforms/cells and changed font atlases\n    |   |-- api.beginFrame()\n    |   |   |-- renderPass(): background; images behind cell backgrounds; cell backgrounds\n    |   |   |   `-- Images below text; text; images above text; inspector overlay\n    |   |   `-- Optional post-processing passes; frame_ctx.complete(sync)\n    |   `-- On return (including early return): end bookkeeping; publish dirty scrollbar if mailbox accepts\n    |       `-- [async surface message -> App.tick() -> Surface.handleMessage()]\n    `-- Unlock draw_mutex; syncDisplayLink() if requested",
+        "position": {
+          "column": 145,
+          "row": 70
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": {
+          "diagram": "call-core",
+          "line": 10
+        },
+        "target": {
+          "diagram": "render-worker",
+          "line": 3
+        },
+        "label": "spawn renderer worker"
+      },
+      {
+        "source": {
+          "diagram": "call-core",
+          "line": 11
+        },
+        "target": {
+          "diagram": "io-worker",
+          "line": 3
+        },
+        "label": "spawn IO worker"
+      },
+      {
+        "source": {
+          "diagram": "call-core",
+          "line": 45
+        },
+        "target": {
+          "diagram": "io-worker",
+          "line": 13
+        },
+        "label": "transfer message ownership and wake IO"
+      },
+      {
+        "source": {
+          "diagram": "call-core",
+          "line": 28
+        },
+        "target": {
+          "diagram": "render-worker",
+          "line": 9
+        },
+        "label": "install new font grid; release old reference"
+      },
+      {
+        "source": {
+          "diagram": "call-core",
+          "line": 79
+        },
+        "target": {
+          "diagram": "io-worker",
+          "line": 17
+        },
+        "label": "coalesce PTY/grid resize"
+      },
+      {
+        "source": {
+          "diagram": "call-core",
+          "line": 80
+        },
+        "target": {
+          "diagram": "render-worker",
+          "line": 10
+        },
+        "label": "immediate renderer size update"
+      },
+      {
+        "source": {
+          "diagram": "call-core",
+          "line": 87
+        },
+        "target": {
+          "diagram": "io-worker",
+          "line": 18
+        },
+        "label": "independent Termio config"
+      },
+      {
+        "source": {
+          "diagram": "call-core",
+          "line": 87
+        },
+        "target": {
+          "diagram": "render-worker",
+          "line": 10
+        },
+        "label": "independent renderer config + wake"
+      },
+      {
+        "source": {
+          "diagram": "call-core",
+          "line": 98
+        },
+        "target": {
+          "diagram": "render-worker",
+          "line": 33
+        },
+        "label": "main-thread synchronous drawing"
+      },
+      {
+        "source": {
+          "diagram": "call-core",
+          "line": 121
+        },
+        "target": {
+          "diagram": "render-worker",
+          "line": 11
+        },
+        "label": "search result ownership + wake"
+      },
+      {
+        "source": {
+          "diagram": "io-worker",
+          "line": 25
+        },
+        "target": {
+          "diagram": "render-worker",
+          "line": 7
+        },
+        "label": "wake after IO controls/input"
+      },
+      {
+        "source": {
+          "diagram": "io-worker",
+          "line": 29
+        },
+        "target": {
+          "diagram": "render-worker",
+          "line": 10
+        },
+        "label": "resize notification after terminal reflow"
+      },
+      {
+        "source": {
+          "diagram": "io-worker",
+          "line": 49
+        },
+        "target": {
+          "diagram": "render-worker",
+          "line": 7
+        },
+        "label": "output wake; snapshot waits for terminal lock"
+      },
+      {
+        "source": {
+          "diagram": "io-worker",
+          "line": 58
+        },
+        "target": {
+          "diagram": "render-worker",
+          "line": 16
+        },
+        "label": "shared terminal mutex and demand hand-off"
+      },
+      {
+        "source": {
+          "diagram": "io-worker",
+          "line": 54
+        },
+        "target": {
+          "diagram": "call-core",
+          "line": 100
+        },
+        "label": "VT GUI/clipboard messages, not direct UI calls"
+      },
+      {
+        "source": {
+          "diagram": "io-worker",
+          "line": 34
+        },
+        "target": {
+          "diagram": "call-core",
+          "line": 100
+        },
+        "label": "asynchronous child-exit notification"
+      },
+      {
+        "source": {
+          "diagram": "io-worker",
+          "line": 31
+        },
+        "target": {
+          "diagram": "call-core",
+          "line": 107
+        },
+        "label": "asynchronous drag-autoscroll tick"
+      },
+      {
+        "source": {
+          "diagram": "render-worker",
+          "line": 44
+        },
+        "target": {
+          "diagram": "call-core",
+          "line": 100
+        },
+        "label": "asynchronous scrollbar update"
+      },
+      {
+        "source": {
+          "diagram": "call-core",
+          "line": 131
+        },
+        "target": {
+          "diagram": "render-worker",
+          "line": 30
+        },
+        "label": "stop then join renderer"
+      },
+      {
+        "source": {
+          "diagram": "call-core",
+          "line": 132
+        },
+        "target": {
+          "diagram": "io-worker",
+          "line": 35
+        },
+        "label": "stop then join IO and reader"
+      }
+    ]
+  },
+  "usage": {
+    "input": 56941,
+    "output": 15837,
+    "cacheRead": 306048,
+    "cacheWrite": 0,
+    "reasoning": 2211,
+    "totalTokens": 378826
+  },
+  "execution": {
+    "runtime": "pi-agent-context",
+    "sessionId": "01a1f4b2-60c8-79f9-9c2c-b85600db86af",
+    "contextHash": "5b5e253525d4627e9a8ec45fc642668ff86fcac1deb71b58625aaf2fd7d50d44",
+    "cacheKey": "eval-667548ccd8c2678f446f2e6f832dc22c7be5ba25cfc23aaa9b695719b8844680",
+    "modelContextHash": "3dd362852cdbd99bdb2da1e0029cd96ec1dcb4cd2732a41f4cafe13eb1f6081a",
+    "repositories": [
+      {
+        "repository": "repo-1",
+        "repositoryPath": "/home/john/softwarez/ghostty",
+        "commit": "ea8b12a8a9894b5259c441eadd8f6f0c65e215af",
+        "exclusions": [
+          "**/*-LICENSE",
+          "**/*.md",
+          "**/*.mdx",
+          "**/*.spec.*",
+          "**/*.test.*",
+          "**/AGENTS.md",
+          "**/CODEX-LICENSE",
+          "**/LICENSE*",
+          "**/Tests/**",
+          "**/__fixtures__/**",
+          "**/__tests__/**",
+          "**/benchmark/**",
+          "**/benchmarks/**",
+          "**/build/**",
+          "**/dist/**",
+          "**/docs/**",
+          "**/examples/**",
+          "**/fixtures/**",
+          "**/node_modules/**",
+          "**/scripts/**",
+          "**/test/**",
+          "**/tests/**",
+          ".agents/**",
+          ".github/**",
+          ".husky/**",
+          ".pi/**",
+          "deps/**",
+          "example/**",
+          "flake.lock",
+          "flatpak/**",
+          "images/**",
+          "nix/**",
+          "package-lock.json",
+          "po/**",
+          "scripts/**",
+          "snap/**",
+          "vendor/**"
+        ],
+        "checkout": "/tmp/agent-repository-pF1Fgz/checkout",
+        "inspectionSource": "session-transcript"
+      }
+    ]
+  }
+}

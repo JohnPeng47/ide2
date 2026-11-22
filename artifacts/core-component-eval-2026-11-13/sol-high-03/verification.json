@@ -1,0 +1,40 @@
+{
+  "samples": [
+    {
+      "sample": 1,
+      "outputHttpStatus": 200,
+      "canvases": 1,
+      "sessionId": "01a1db6d-4280-73da-9627-2eb4b04741b5",
+      "transcriptBytes": 284006,
+      "checkoutRemoved": true,
+      "lines": 74,
+      "nodes": 56,
+      "outputUrl": "http://localhost:5191/evals?run=e0da55e9-87bf-4567-85bc-22bb197073cf&output=0b3af2dd-ba89-4032-936a-40070a3e167e%3A1%3Aalternative"
+    },
+    {
+      "sample": 2,
+      "outputHttpStatus": 200,
+      "canvases": 1,
+      "sessionId": "01a1db6d-425d-706a-a5ae-d87e0b892a57",
+      "transcriptBytes": 254372,
+      "checkoutRemoved": true,
+      "lines": 69,
+      "nodes": 55,
+      "outputUrl": "http://localhost:5191/evals?run=d2663236-2eee-470b-841c-50ea8055ae1f&output=0b3af2dd-ba89-4032-936a-40070a3e167e%3A1%3Aalternative"
+    },
+    {
+      "sample": 3,
+      "outputHttpStatus": 200,
+      "canvases": 1,
+      "sessionId": "01a1db6d-4269-7d61-8ae2-e379e0d610e9",
+      "transcriptBytes": 353169,
+      "checkoutRemoved": true,
+      "lines": 62,
+      "nodes": 49,
+      "outputUrl": "http://localhost:5191/evals?run=c70d3c75-a3c2-49fe-9ff8-ed36ba609fb8&output=0b3af2dd-ba89-4032-936a-40070a3e167e%3A1%3Aalternative"
+    }
+  ],
+  "independentSessions": true,
+  "promptVersion": 2,
+  "contextHash": "00b9ed11b05d12f61ea9897c890dca21baf63782b67254a23c6fb80d94ae0fc2"
+}

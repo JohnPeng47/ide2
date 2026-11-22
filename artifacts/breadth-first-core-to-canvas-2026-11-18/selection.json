@@ -1,0 +1,100 @@
+{
+  "selections": [
+    {
+      "repository": "mapping",
+      "sample": 2,
+      "runId": "7b6995d1-7ee3-4e92-9c27-2b43984f7100",
+      "checkpointId": "canvas-revision-ff223af2-8087-46d4-97d0-325f0270d572",
+      "rationale": "This split follows the draft-owned session through the controller to its subscribers, and gives the mounted editor and its sibling source panel their own place. MappingPage.tsx and MappingCanvas.tsx at 8ca1437 confirm the sibling mounting and the overlay's selection/local-chat calls. NativeRoutingStore.ts exposes a concrete further split into obstacle measurement and asynchronous route computation. One inherited statement needs qualification: undo/redo of a copy to a newly created projection replaces only its child session (MappingPage.tsx:788).",
+      "considered": [
+        {
+          "sample": 1,
+          "runId": "1984b079-6552-46bd-b4af-fbf5d6c9e489",
+          "assessment": "Separates held sessions from borrowed renderers and captures projection-copy undo accurately. Its workspace still associates selection/local-chat requests with AgentChatPanel."
+        },
+        {
+          "sample": 2,
+          "runId": "7b6995d1-7ee3-4e92-9c27-2b43984f7100",
+          "assessment": "Traces the store and subscription lifetimes, sibling panels and selection calls most precisely. The routing worker and shared history remain substantive next targets."
+        },
+        {
+          "sample": 3,
+          "runId": "f082889e-4714-4128-b0b3-a1dd947dbdfc",
+          "assessment": "Preserves existing positions and captures the sibling panel and projection-copy exception. The surface omits the selection request path and reduces source-pane behavior to a single line."
+        }
+      ]
+    },
+    {
+      "repository": "pi",
+      "sample": 2,
+      "runId": "d8edd57f-2040-43ba-8020-bbdf0b4c4ffd",
+      "checkpointId": "canvas-revision-b331a475-259b-4566-87fa-4a5336e7e545",
+      "rationale": "The two added diagrams distinguish the session's run and event state from the Agent's queues, active run and awaited listeners. At 682c7b93, agent-session.ts shows that recovery and before-settle continuations can drive Agent.continue() before session settlement. The unchanged history diagram still compresses SessionManager's file entries, identity and label indexes, leaf cursor, and projection into a few lines. Those held parts can support another expansion tied back to the event bridge.",
+      "considered": [
+        {
+          "sample": 1,
+          "runId": "852a3877-211f-4e04-a2ec-af4867f3ee20",
+          "assessment": "The Agent and CacheWarmer diagrams explain timer ownership, prefix checks and streaming-only settlement, but spend one of the two new diagrams on optional warming."
+        },
+        {
+          "sample": 2,
+          "runId": "d8edd57f-2040-43ba-8020-bbdf0b4c4ffd",
+          "assessment": "Connects both halves of the main run and makes extension dispatch, history appends, compaction and settlement visible across diagrams."
+        },
+        {
+          "sample": 3,
+          "runId": "c9db6aa3-4abd-4aa3-a309-428856687241",
+          "assessment": "Develops loader caches, catalog composition and runtime credentials. Its unchanged core retains the seed's overgeneralization that settlement starts idle warming."
+        }
+      ]
+    },
+    {
+      "repository": "opencode",
+      "sample": 3,
+      "runId": "a119ab93-f28e-4db9-8449-4cc0784aff80",
+      "checkpointId": "canvas-revision-d2f4c55d-0f6d-410c-8b22-c4be7704e44a",
+      "rationale": "The host coordinator's busy period and the borrowed location runner's provider attempt have distinct state and lifetimes. The canvas connects drain and handoff in both directions and links the prepared request to the executor captured in its tool snapshot. At fe355244, runner/step.ts shows snapshot capture, publication before local tool launch, scoped fibers and the handoff exception. The event publisher's per-tool records and independently buffered text and reasoning fragments provide two concrete next branches in runner/publish-llm-event.ts.",
+      "considered": [
+        {
+          "sample": 1,
+          "runId": "d72d65ce-861f-43a6-9048-dd5adcfacf6a",
+          "assessment": "Clear coordinator and location-drain structures, including reacquisition after a move. The attempt publisher is summarized largely by emitted events."
+        },
+        {
+          "sample": 2,
+          "runId": "08a7251e-89b1-4070-92a3-5d0908fa7616",
+          "assessment": "Strong attempt-level treatment of fragment maps, timers and tool fibers. The cross-diagram links cover drain and return, but leave the child-report wake and captured executor less explicit."
+        },
+        {
+          "sample": 3,
+          "runId": "a119ab93-f28e-4db9-8449-4cc0784aff80",
+          "assessment": "Pairs the host-to-location handoff with precise attempt ownership, direct report and prepared-request edges, and a clear split between local and provider-hosted tools."
+        }
+      ]
+    },
+    {
+      "repository": "ghostty",
+      "sample": 2,
+      "runId": "b6ff535e-6a4f-454d-aa77-91bb5ae80e3f",
+      "checkpointId": "canvas-revision-1d877332-ec25-4fad-8d94-3560ebe8f1f8",
+      "rationale": "The diagrams trace Termio through the worker-local Exec state and through ScreenSet to PageList. The edges show how the reader, renderer and search worker use that state. At ea8b12a8, Exec.zig places the POSIX pipeline on the reader stack and joins its gather worker, ScreenSet.zig stores the active pointer alongside the owning map, and PageList.zig distinguishes resident and compressed nodes. The page's backing representation and the renderer's owned snapshot and frame buffers are concrete further expansions.",
+      "considered": [
+        {
+          "sample": 1,
+          "runId": "4869cd25-2d55-4bd1-96f2-8b4c06b1beac",
+          "assessment": "Exposes page backing and the stream decoder clearly. Fewer explicit links connect the worker and stored terminal state with search, resize and snapshot demand."
+        },
+        {
+          "sample": 2,
+          "runId": "b6ff535e-6a4f-454d-aa77-91bb5ae80e3f",
+          "assessment": "Combines precise worker and screen lifetimes with direct links for resize, snapshot demand, search, and compression. The terminal and renderer each retain unexplored internal storage."
+        },
+        {
+          "sample": 3,
+          "runId": "79c0cbd4-15f9-487e-aef5-992492257e6b",
+          "assessment": "Shows the reader-owned gather lifecycle and the page-node hierarchy well. Its interaction edges cover demand and compression but leave search and coordinated resize in the tree text."
+        }
+      ]
+    }
+  ]
+}

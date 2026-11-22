@@ -1,0 +1,19 @@
+{
+  "id": "child-5",
+  "name": "geometry-shutdown",
+  "assignment": "Map n71-n89 geometry/config and shutdown subtrees. Full named declarations, numbered reads; return partial schema JSON.",
+  "model": "gpt-6-sol",
+  "effort": "medium",
+  "status": "generating",
+  "queuedAt": "2026-11-19T04:10:27.548Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-19T04:11:17.717Z",
+  "sessionId": "01a1f200-715a-7a26-b54e-6a08c2671c73",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-cmnd_qql-agent-repository-MGh7jV-checkout--/2026-11-19T04-11-17-722Z_01a1f200-715a-7a26-b54e-6a08c2671c73.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase3-cmnd_qql/agent-repository-MGh7jV/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

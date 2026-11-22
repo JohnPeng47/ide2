@@ -1,0 +1,160 @@
+{
+  "output": {
+    "explanation": "The central tree is reduced from 157 to 95 lines (39.5%) and from 10,777 to 6,665 characters (38.2%). It emphasizes boundaries, shared dependencies and transport transitions. Six peripherals hold configuration mechanics, dependency rules, concrete connections, evaluation callbacks, HTTP decisions and cleanup order. M = modular structure; C = calls; O = ownership/lifetime; D = data dependencies across those views.\n\nThe runtime critique is addressed by removing the central constructor inventory, giving detailed mechanisms a peripheral home, and aligning peripheral positions with their attachment rows. Evaluation now sits beside its evaluation anchor. Text rectangles do not overlap; all edge endpoints are valid and all diagrams are connected.\n\nEvidence comes only from the supplied point definition and pinned source texts. bootstrap.ts establishes construction and sharing; vitePlugin.ts establishes transport and shutdown; the two routes.ts files establish dispatch; vite.config.ts establishes configuration; dependencies.test.ts establishes static constraints. In particular, bootstrap constructs one CanvasApiProjection and supplies it to both LiveCanvasService and AgentDiagrammingSessionService: sharing is established within this backend instance.\n\nSeed refinements: the HTTP gate checks a falsy binding header, not merely header absence, and applies only to classified agent mutations. Shutdown registration requires an httpServer. Additional source-backed details include test exclusions, source-root defaults, named evaluation collections, definitions checking capability before reading the body, and DELETE /diagrams/publish falling through to diagrams.delete('publish') if admitted by the adapter. That last statement establishes dispatch, not deletion success. Cleanup has no local exception isolation; a synchronous disposer throw preventing later calls is an inference from the shown sequence.\n\nRelated-point labels use only relationship IDs supplied in context.json. The critique's suggestions to import context-status or receipt behavior from other canvases are not adopted: those implementations are outside the pinned evidence. Other points are neither recreated nor treated as sources. Imported mutation classification, handler internals, source classification and disposer implementations remain unverified. The binding-header exception establishes no authentication guarantee, and these call paths do not establish observed execution. Connector rendering remains unverified.",
+    "diagrams": [
+      {
+        "id": "central",
+        "ascii": "Runtime Composition and APIs\n|-- [M] Composition boundary: concrete choices become application services\n|   |-- createBackend connects persistence, runtimes and browser integration\n|   |-- Route factories receive services through explicit dependencies\n|   |-- Returned backend exposes two HTTP namespaces\n|   |   |-- /api/core: project source, catalog and representations\n|   |   `-- /api/mapping: diagram workspaces and mapping workflows\n|   |-- Other exposed handles: liveCanvas, diffSessionWorkflows, pushIntegrations\n|   |-- dispose() is the backend's explicit cleanup entry point\n|   `-- Dependency tests constrain layers and feature ownership separately\n|-- [C/D] Startup: deployment inputs select one backend graph\n|   |-- Vite configuration -> diagramApi(...) -> createBackend(...)\n|   |   `-- Backend construction happens before either server hook runs\n|   |-- Project root and diagrams directory determine the persistence location\n|   |-- Domain profile is accepted from the environment only when valid\n|   |-- Vite supplies its app root as the agent source root\n|   |-- Capabilities are independent inputs\n|   |   |-- HTTP: gates classified mutations and socket write capabilities\n|   |   |-- Pi: passed to concrete model integrations and workflow options\n|   |   `-- LSP: controls construction of the project language service\n|   |-- Fake mode substitutes selected runtimes, not the entire backend\n|   |-- Preview host configuration comes from a separate environment list\n|   `-- Watcher exclusions separate application data writes from source reloads\n|-- [O/D] Shared foundations feed both API families\n|   |-- DiagramStore supplies common project state and repository access\n|   |   `-- Its storeRoot anchors file stores and JSON collections\n|   |-- corpusAccess supplies discovery and document reads\n|   |   |-- CoreApplication combines the store with corpus access\n|   |   `-- Source queries additionally receive the optional language service\n|   |-- Context evidence resolves source IDs against repositories or a project\n|   |   `-- Context library and diagram-context storage share the source resolver\n|   |-- Workspace and diagram services receive the same primary store\n|   |-- Selection receives the mapping runtime and agent source root\n|   |-- Compaction combines core access with a runtime and injected prompt policy\n|   `-- Related point storage: durable repository boundary beyond this wiring\n|-- [O/D] Canvas and workflow collaborators share live dependencies\n|   |-- Browser bridge connects live context, agents and change sessions\n|   |-- LiveCanvasService and AgentDiagrammingSessionService share\n|   |   `-- One AgentContextService and one CanvasApiProjection instance\n|   |-- The diagramming agent receives changes, editing and execution support\n|   |-- Agent chat receives live canvas, context library and agent tool bindings\n|   |   `-- Related point chat: chat runtime and tool behavior\n|   |-- Local chat remains a separately constructed application service\n|   |-- Push integration receives the diff-session workflow\n|   |   `-- Diff workflow receives the shared changes service and agent\n|   |-- Related point changes: proposal workflows beyond this injection boundary\n|   `-- Related point agent-api: canvas services and WebSocket transport\n|-- [O/D] Evaluation and comparison join workspace, context and generated output\n|   |-- Compare sessions receive workspace, generated catalog and shared store\n|   |-- Eval runs receive compare sessions, context library and prompt services\n|   |-- Bootstrap adds history, templates, reference generation and judgements\n|   |-- Comparison generation and eval runs retain distinct run stores\n|   |-- Reference generation links agent chat back to eval runs\n|   |-- Judgements connect comparison output with evaluation run records\n|   |-- Generation observation connects agent chat to evaluation reconciliation\n|   |-- Catalog snapshots delegate to eval output snapshots\n|   |-- Replay, cancellation and lookups cross service boundaries via callbacks\n|   `-- Related point evals: evaluation behavior beyond composition\n|-- [C] Server attachment turns the captured graph into transports\n|   |-- Plugin new-diagram-api exposes dev and preview hooks\n|   |   `-- Both hooks use the same attach function and captured backend\n|   |-- attach always installs the HTTP middleware\n|   |-- An available httpServer also receives live-canvas sockets\n|   `-- HTTP capability sets socket context-upload and canvas-write flags\n|-- [C/M] HTTP entry selects a namespace before invoking application behavior\n|   |-- Outside /api and /internal -> next middleware\n|   |-- Classified agent mutations pass through the HTTP capability gate\n|   |-- Only /api/<known namespace> reaches a route factory's handler\n|   |   `-- /internal enters the prefix filter but has no dispatched namespace\n|   |-- Core project routes separate source queries from catalog operations\n|   |   |-- Files, source and definitions use the source service\n|   |   |-- Projections and compaction listings use the catalog\n|   |   `-- Representation reads and compaction updates use CoreApplication\n|   |-- Mapping routes expose workspace, diagram and workflow operations\n|   |   |-- Optional service presence determines delegated handler availability\n|   |   |-- Workspace reads/writes and record batches call workspace services\n|   |   |-- Diagram save, checkpoint publication and deletion call diagrams\n|   |   `-- Prompt preparation precedes streamed selection execution\n|   |-- Explicit method checks return 405; unmatched routes return 404\n|   `-- Imported handler internals are outside the pinned source\n|-- [C/O] Response boundaries govern cancellation and error delivery\n|   |-- Definitions requests attach cancellation to premature response close\n|   |   `-- The route removes its listener when the awaited operation finishes\n|   |-- Selection emits progress and result events after committing headers\n|   |-- Awaited namespace failures are translated by the Vite adapter\n|   |   |-- Before headers: typed failures become JSON status responses\n|   |   `-- After headers: errors become stream events\n|   `-- These are visible call paths, not evidence of observed execution\n`-- [O] Vite's HTTP server close listener initiates shutdown\n    |-- Socket cleanup precedes backend cleanup\n    |-- backend.dispose() calls service and runtime disposers in explicit order\n    |-- Language-service cleanup is conditional on its construction\n    |-- Cleanup registration itself requires an httpServer\n    |   `-- No alternate automatic shutdown hook is shown without one\n    `-- Imported disposer implementations determine their internal cleanup",
+        "position": {
+          "column": 110,
+          "row": 0
+        }
+      },
+      {
+        "id": "bounds",
+        "ascii": "Dependency rules enforced by static tests [M]\n|-- Allowed internal dependency targets\n|   |-- domain -> domain\n|   |-- application -> application + domain\n|   |-- infrastructure -> infrastructure + application + domain\n|   |-- server -> server + application + domain\n|   |   `-- bootstrap classification also permits infrastructure\n|   `-- UI src -> src + domain + packages\n|-- Ownership condition is independent of layer permission\n|   |-- Composition origin bypasses only the ownership condition\n|   `-- Otherwise: non-composition target AND (core OR same owner)\n|-- External restrictions depend on the originating layer\n|   |-- domain forbids node:, React/ReactDOM and Vite; UI forbids node:\n|   `-- application forbids selected node: APIs and integration packages\n|-- Dependency scan: TS/TSX; skip *.test.ts and *.test.tsx\n|   `-- String-literal imports, exports, import types, import() and require()\n`-- Separate call-name guard skips /__tests__/ paths\n    |-- constructDiagram: diagramRevisionEditor.ts / submitDiagramEdit.ts\n    |-- prepareCreate / prepareEdit: diagramRevision.ts\n    `-- These allowlisted files are under domain/core/diagrams/",
+        "position": {
+          "column": 0,
+          "row": 0
+        }
+      },
+      {
+        "id": "deploy",
+        "ascii": "Deployment choices [D/O]\n|-- Vite ROOT = directory containing vite.config.ts\n|   |-- projectRoot = resolve(NEW_DIAGRAM_PROJECT_ROOT || ROOT/../..)\n|   |-- diagramsDirectory = NEW_DIAGRAMS_DIR || '.diagrams'\n|   `-- STORAGE_ROOT = resolve(projectRoot, diagramsDirectory)\n|-- Vite passes ROOT as mappingPocSourceRoot\n|   `-- Direct diagramApi calls instead default it to projectRoot\n|-- Undefined profile argument invokes diagramApi's environment default\n|   `-- NEW_DIAGRAM_DOMAIN is validated as a built-in profile ID\n|-- Symbol.for flags, each enabled only by === true\n|   |-- new-diagram.http-enabled -> adapter and socket flags\n|   |-- new-diagram.pi-enabled -> runtime/workflow options\n|   `-- new-diagram.lsp-enabled -> ProjectLanguageService construction\n|-- NEW_DIAGRAM_AGENT === 'fake' substitutes six runtime choices\n|   |-- Local chat, selection, diagram edit, compaction, evals, comparisons\n|   `-- AgentChat still gets StdioCodexConnection; diff gets Pi runtime\n|-- Watch exclusions\n|   |-- Path components beginning .diagrams\n|   `-- Exact STORAGE_ROOT and descendants separated by path.sep\n`-- NEW_DIAGRAM_ALLOWED_HOSTS: split commas, trim, drop empty entries\n    `-- No entries -> preview configuration is undefined",
+        "position": {
+          "column": 210,
+          "row": 10
+        }
+      },
+      {
+        "id": "links",
+        "ascii": "Shared source and canvas connections [D/C]\n|-- FileAgentContextSources resolver(sourceId)\n|   |-- repo- prefix -> await repositories.resolveCheckoutRoot(sourceId)\n|   |   `-- Return { kind: 'git-worktree', root }\n|   `-- Other IDs -> await store.loadProject()\n|       |-- Missing project -> AGENT_CONTEXT_SOURCE_UNAVAILABLE\n|       `-- resolveDiagramSource(store, { projectId, sourceId }).binding().corpus\n|-- Resolver consumers\n|   |-- AgentContextLibrary with FileAgentContextRepository\n|   |-- FileDiagramAgentContextStore\n|   `-- PiDiagramEditRuntime in the non-fake branch\n|-- GenerationCanvasBridge wraps CanvasSessionBridge\n|   |-- LiveCanvasService list callback -> bridge.list()\n|   `-- Context callback(workspaceInstanceId, documentId)\n|       `-- bridge.dispatch(workspaceInstanceId, { method: 'context', documentId })\n|-- One contexts object and one projection object\n|   `-- Both injected into LiveCanvasService and diagramming agent\n|-- AgentChat's tools bind to the same diagramming agent\n|   |-- ChatDiagramTools(agent)\n|   `-- MappingChatMcpBinding(agent, process.cwd())\n|-- PushIntegrationService gets GitPushSource(store.repositories)\n|   `-- Its injected diff workflow also receives changes and agent\n`-- Diff workflow captures repository source through an injected callback\n    `-- capture -> createDiffSessionSourceReader(store.repositories, capture)",
+        "position": {
+          "column": 0,
+          "row": 28
+        }
+      },
+      {
+        "id": "eval",
+        "ascii": "Evaluation collaborators and callback directions [O/D/C]\n|-- EvalRunService receives\n|   |-- Compare sessions, workspace, store, context library, eval prompts\n|   `-- Generated catalog, eval-run JSON store, runtime, roll-up store\n|-- Collaborators assigned after construction\n|   |-- layoutTemplates <- LayoutTemplateService + compare sessions + store\n|   |-- histories <- FileCanvasTimeline\n|   |-- referenceGenerations <- session store + agentChat + evalRuns\n|   |-- judgements <- compare sessions + comparisonRuns + both run stores\n|   `-- experiments <- evalRuns + store + context library\n|-- JSON collections use storeRoot\n|   |-- eval-references / eval-reference-groups\n|   |-- eval-prompts / eval-prompt-snapshots / eval-runs\n|   `-- layout-templates / eval-reference-sessions / judgements / eval-experiments\n|-- observeGenerations(children, parent, historical)\n|   `-- evalRuns.recordLegacy(children, parent, historical)\n|       |-- Startup does not await the observation promise\n|       `-- Rejection logs 'Generation reconciliation failed'\n|-- generatedCanvases.snapshot(id, checkpoint)\n|   `-- evalRuns.outputSnapshot(id, checkpoint)\n`-- Eval callbacks delegate outward\n    |-- replayLegacy(run, requestId) -> agentChat.rerunAlternatives\n    |-- cancelLegacy(id) -> agentChat.cancelGeneration\n    |-- readChangeSession(id) -> changes.get\n    `-- deleteContextComparisons(id, workflow) -> comparisonRuns.deleteContextOutputs",
+        "position": {
+          "column": 210,
+          "row": 48
+        }
+      },
+      {
+        "id": "http",
+        "ascii": "HTTP decisions and request lifetimes [C/O]\n|-- Mutation gate returns 403 HTTP_WRITES_DISABLED only when all hold\n|   |-- httpEnabled !== true\n|   |-- x-canvas-chat-binding header is falsy\n|   `-- isAgentMutationRequest(method, pathname) returns true\n|-- Optional mapping dependencies gate delegation\n|   |-- evals/ requires evalRuns + evalPrompts + evalReferences\n|   |-- generated-canvases requires evalRuns\n|   |-- Other optional groups require their corresponding service\n|   |-- integrations handler receives NEW_DIAGRAM_PUSH_TOKEN\n|   `-- Missing dependency skips branch; unmatched request reaches 404\n|-- Definitions: ensureDefinitionsEnabled BEFORE readBody\n|   |-- Then create AbortController and response.once('close', abort)\n|   |-- Abort only if !response.writableEnded\n|   |-- definitions(body, signal); send result only if !response.destroyed\n|   `-- finally removes the close listener\n|-- Workspace write/export/import bodies: 64 * 1024 * 1024 byte limit\n|-- Read defaults: records and representations use history=current, else all\n|-- Prompt: selection.prepare completes before headers are committed\n|   |-- Flush status 200, NDJSON and no-cache/no-transform headers\n|   `-- selection.run -> progress events -> result event -> end()\n|-- /diagrams/publish is method-sensitive\n|   |-- POST -> diagrams.publishCheckpoint\n|   `-- DELETE -> generic diagram route calls diagrams.delete('publish')\n`-- Exceptions from awaited namespace handler\n    |-- headersSent -> send error event\n    |   `-- End only if neither destroyed nor writableEnded\n    `-- Otherwise JSON error status\n        |-- RequestTooLarge 413; ProjectDiagramConflict 409\n        |-- Application conflict 409; binary-source 415\n        |-- lsp-disabled / ai-disabled / storage-unavailable 503\n        |   `-- Only LSP/AI disabled add LSP_DISABLED / AI_DISABLED code\n        `-- invalid-input or other thrown error 400",
+        "position": {
+          "column": 0,
+          "row": 65
+        }
+      },
+      {
+        "id": "close",
+        "ascii": "Shutdown calls and their limits [O/C]\n|-- attach registers httpServer?.once('close', callback)\n|   `-- callback: disposeSockets?.() then backend.dispose()\n|-- Backend disposer calls, in source order\n|   |-- comparisonRuns -> evalRuns -> agentChat -> diffSessionWorkflows\n|   |-- agent -> diagramEditRuntime -> canvasBridge\n|   |-- languageService?.dispose()\n|   `-- mappingRuntime -> chatRuntime -> compactionService\n`-- Sequence has no await, try/finally or per-disposer catch here\n    |-- A synchronous throw would prevent later calls in this sequence\n    `-- Async completion and internal resource release are not established",
+        "position": {
+          "column": 210,
+          "row": 88
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": {
+          "diagram": "central",
+          "line": 10
+        },
+        "target": {
+          "diagram": "bounds",
+          "line": 1
+        },
+        "label": "Layer permissions and ownership constraints"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 11
+        },
+        "target": {
+          "diagram": "deploy",
+          "line": 1
+        },
+        "label": "Resolve deployment inputs and runtime choices"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 30
+        },
+        "target": {
+          "diagram": "links",
+          "line": 2
+        },
+        "label": "Resolve source IDs into backing evidence"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 36
+        },
+        "target": {
+          "diagram": "links",
+          "line": 12
+        },
+        "label": "Shared bridge, contexts and agent bindings"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 48
+        },
+        "target": {
+          "diagram": "eval",
+          "line": 1
+        },
+        "label": "Evaluation collaborators and cross-service callbacks"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 65
+        },
+        "target": {
+          "diagram": "http",
+          "line": 1
+        },
+        "label": "Gating and route-specific transport decisions"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 81
+        },
+        "target": {
+          "diagram": "http",
+          "line": 12
+        },
+        "label": "Request cancellation and response lifetime"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 89
+        },
+        "target": {
+          "diagram": "close",
+          "line": 1
+        },
+        "label": "Close callback and disposer sequence"
+      }
+    ]
+  },
+  "usage": {
+    "input_tokens": 315397,
+    "cached_input_tokens": 285824,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 10663,
+    "reasoning_output_tokens": 1539
+  }
+}

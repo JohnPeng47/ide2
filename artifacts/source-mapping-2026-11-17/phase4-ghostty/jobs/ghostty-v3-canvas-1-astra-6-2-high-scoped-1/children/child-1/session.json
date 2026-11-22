@@ -1,0 +1,19 @@
+{
+  "id": "child-1",
+  "name": "Termio",
+  "assignment": "Map all d2 nodes within diagram context. Private scratch /tmp/d2work. Return compact text in format nID scope letters (s structure,e entity,b behavior,r relationship,g guarantee,y subsystem) then path:start-end:roles (d declaration,u use,i implementation); use path aliases, parent inheritance references to avoid repetition. Verify line numbers.",
+  "model": "gpt-6.2-astra",
+  "effort": "high",
+  "status": "generating",
+  "queuedAt": "2026-11-22T02:48:10.226Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-22T02:48:10.230Z",
+  "sessionId": "01a20127-6b11-714e-929c-6b3fb486db12",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-0k2pl7su-agent-repository-ny3xVh-checkout--/2026-11-22T02-48-10-257Z_01a20127-6b11-714e-929c-6b3fb486db12.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase4-0k2pl7su/agent-repository-ny3xVh/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

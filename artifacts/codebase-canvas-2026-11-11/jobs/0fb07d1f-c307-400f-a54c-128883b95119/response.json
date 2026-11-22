@@ -1,0 +1,41 @@
+{
+  "output": {
+    "summary": "Phase 3 produces a connected, technically detailed canvas with useful topic-specific expansions and precise attachment endpoints. Its main weakness is limited separation between overview and detail: the 98-line central diagram repeats peripheral mechanics, while some peripheral topics lack navigation from their relevant central branches. The supplied output supports these structural findings, but does not establish source correctness or later rendering defects.",
+    "strengths": [
+      "The central diagram’s five named groups provide clear conceptual entry points, and all six peripherals have attachment edges.",
+      "Several attachments are specific and meaningful: central:8 → codec:10 connects reference differences to transition checks, and central:89 → reads:13 connects source bindings to the scope of stored revisions.",
+      "Peripherals add useful distinctions: retry:10–19 separates background scheduling from explicit commit retries; publish:6–10 distinguishes hydrated content from pinned references; reads:6–9 explains selected-head versus wider restoration.",
+      "Qualifications remain visible near relevant claims: central:36 identifies the UI acknowledgement rule as a documented contract, publish:20–22 distinguishes publication boundaries, and blobs:20 explicitly marks the independent utility."
+    ],
+    "issues": [
+      {
+        "evidence": "central:9–13 repeats replay-depth and head-map distinctions expanded in codec:14–21; central:29–35 repeats retry mechanics expanded in retry:5–19; central:51–53 repeats publication steps in blobs:2–6. The center remains 98 lines long.",
+        "impact": "The center behaves partly as a second detailed reference, weakening the overview-to-detail hierarchy and making readers scan repeated mechanics before reaching later conceptual groups.",
+        "recommendation": "Retain central responsibilities, major handoffs and essential semantic distinctions. Move detailed timing, replay checks and file-operation sequences into their existing peripherals, leaving concise attachment-bearing summaries in the center."
+      },
+      {
+        "evidence": "validate receives only central:49 → validate:9, although validate:2–6 covers browser-side presentation normalization associated with central:20–24. reads:21–22 expands viewHeaders from central:57, but its two incoming edges originate at central:85 and central:89. blobs is attached only through central:50 → blobs:2, despite also covering DiagramRevisionStore and the independent ImmutableRecords utility at blobs:10–20.",
+        "impact": "These peripherals contain useful material that cannot be discovered directly from the corresponding central concept. The single workspace-publication entry into blobs also gives unrelated utility details an ambiguous navigational context, despite the explicit independence caveat.",
+        "recommendation": "Align each peripheral’s scope with its attachment points. Add selective secondary attachments for substantial topics such as viewHeaders and presentation normalization, or regroup those topics. Give independent storage utilities a clearly separated comparison role rather than making them appear to continue workspace publication."
+      },
+      {
+        "evidence": "All eight edges connect central to a peripheral. retry:20–22 describes server receipt lookup, while central:44–46 describes the corresponding receipt and revision checks, but no attachment joins those concepts. Likewise, publish:9–10 describes stored workspace pointers and reads:2–4 describes consuming storage representations without an explicit connection between them.",
+        "impact": "The canvas supports topic expansion better than tracing persistence across component boundaries. Readers must reconstruct how retry identity reaches server acceptance and how published references become read inputs.",
+        "recommendation": "Make these already-described handoffs navigable through a small number of precise links or a compact central dependency path. Label each connection with the actual transferred identity or reference; avoid adding relationships unsupported by the supplied content."
+      },
+      {
+        "evidence": "reads is positioned at row 32, although central:85 → reads:2 spans global rows 84 to 33 and central:89 → reads:13 spans rows 88 to 44. blobs begins at row 66, while its sole attachment central:50 → blobs:2 spans rows 49 to 67. Thus the two lower left peripherals occur in the opposite vertical order from their attached central concepts.",
+        "impact": "The supplied arrangement creates long navigation jumps, especially for read behavior. This establishes an alignment problem, but the JSON alone does not establish connector crossings, clipping or a renderer failure.",
+        "recommendation": "When regenerating Phase 3, order and scope peripherals around their principal central anchors, and shorten the center before placement. If coordinates are assigned later, supply that anchor priority to the layout stage; the exact placement defect should not be attributed solely to Phase 3."
+      }
+    ],
+    "regenerationInstructions": "Preserve the useful conceptual groups, precise semantic distinctions and evidence qualifications. Make the center a shorter navigation map by removing mechanics already explained in peripherals. Reconcile peripheral scope with incoming attachments, distinguish independent utility comparisons, and expose the evidenced retry-to-receipt and publication-to-read handoffs. Order peripherals around their main anchors and update every line endpoint after editing. Choose grouping and detail according to the material, without imposing a fixed branch count or uniform template. Treat source correctness and later rendering behavior as unverified."
+  },
+  "usage": {
+    "input_tokens": 82136,
+    "cached_input_tokens": 55040,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 1647,
+    "reasoning_output_tokens": 339
+  }
+}

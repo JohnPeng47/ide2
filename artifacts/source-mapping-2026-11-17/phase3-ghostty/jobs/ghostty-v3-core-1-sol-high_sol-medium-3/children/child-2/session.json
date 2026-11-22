@@ -1,0 +1,19 @@
+{
+  "id": "child-2",
+  "name": "input",
+  "assignment": "Map nodes n19-n31 and n71-n80. Return JSON partial mappings; use numbered reads.",
+  "model": "gpt-6-sol",
+  "effort": "medium",
+  "status": "generating",
+  "queuedAt": "2026-11-19T04:40:46.614Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-19T04:40:46.632Z",
+  "sessionId": "01a1f21b-6f39-7da4-8b8f-9a7e663c941e",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-890xorfx-agent-repository-UrrAMG-checkout--/2026-11-19T04-40-46-649Z_01a1f21b-6f39-7da4-8b8f-9a7e663c941e.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase3-890xorfx/agent-repository-UrrAMG/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

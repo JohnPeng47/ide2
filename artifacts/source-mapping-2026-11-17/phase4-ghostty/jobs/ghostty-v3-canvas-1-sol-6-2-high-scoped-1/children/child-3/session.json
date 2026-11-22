@@ -1,0 +1,19 @@
+{
+  "id": "child-3",
+  "name": "surface-lifecycle",
+  "assignment": "Map d1 n22–n48; focus on Surface wiring and lifecycle, precise mappings for each (other diagrams delegated separately). Return compact text per node with scopes and ranges + role (D/U/I). Own private /tmp via mktemp if useful.",
+  "model": "gpt-6.2-sol",
+  "effort": "high",
+  "status": "generating",
+  "queuedAt": "2026-11-22T02:48:13.476Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-22T02:51:45.651Z",
+  "sessionId": "01a2012a-b47e-76a7-b0a2-2c2c93874504",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-gr3iob08-agent-repository-kN3gdl-checkout--/2026-11-22T02-51-45-662Z_01a2012a-b47e-76a7-b0a2-2c2c93874504.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase4-gr3iob08/agent-repository-kN3gdl/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

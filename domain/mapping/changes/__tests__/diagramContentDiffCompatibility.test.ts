@@ -143,7 +143,12 @@ it('does not mutate content/provenance after a broad patch or depend on patch hi
   expect(diffDiagramContent(a.content, reverted.diagram.content).counts).toEqual({ added: 0, removed: 0, modified: 0, moved: 0 });
 });
 
-it.each(['', '   ', 'Root\tChild', 'Root\r\nChild', 'Root\n\u2514-- Child', '\x1b[31mRed', 'x'.repeat(20001)])('preserves strict builder input validation (%#)', ascii => {
+it('preserves large diagram text exactly when building a revision', () => {
+  const ascii = ['Root', ...Array.from({ length: 64 }, (_, i) => `|-- Part ${i} ${'x'.repeat(1024)}`)].join('\n');
+  expect(buildDiagramContent(ascii, 'large-tree', 'tree').ascii).toBe(ascii);
+});
+
+it.each(['', '   ', 'Root\tChild', 'Root\r\nChild', 'Root\n\u2514-- Child', '\x1b[31mRed'])('preserves strict builder input validation (%#)', ascii => {
   expect(() => tree(ascii)).toThrow('printable ASCII');
 });
 

@@ -1,0 +1,130 @@
+{
+  "output": {
+    "explanation": "The central tree retains the four lenses while reducing the seed from 9,906 to 6,686 characters (32.5%) and from 138 to 92 lines (33.3%). M describes modular boundaries and dependencies, C describes calls and transitions, O describes responsibility and lifetime, and D describes computational dependencies. Five peripheral trees expand meaningful central concepts rather than source-file containment.\n\nDetails beyond the seed include patch-driven section removal and collapsed-node rebasing; saved-view dirty checks, working copies and diff promotion; conversion of every source edge during a move; canonical anchor encoding; incremental change sequencing; and concrete geometry limits. These come respectively from mappingDocumentController.ts:applyOperations/updateSnapshot, canvasHistory.ts:canvasViews/openCanvasView/canvasView, canvasTransfer.ts:prepareCanvasTransfer/prepareTransferNavigation, canvasHistory.ts:encodeAnchor/documentFromHistory/persistenceChanges, and lineGrid.ts:resolveScene/layoutScene/composeScene. All are pinned sources in context.json.\n\nTwo seed generalizations are qualified: opening the already-active view stashes it and returns rather than necessarily restoring a fresh checkpoint; an empty native gesture passes through updateSnapshot, whose reference-equality exits can avoid a checkpoint. The transfer guard in the seed is confirmed: both heads must match for copy and move, although copy navigates only the destination. Move converts even edges between two unmoved placements into jumps.\n\nExternal editor-driver wiring, workspace publication, revision-store internals and checkpoint-encoder internals are not supplied; the diagrams show their visible contracts and calls without inventing implementations. Positions use measured text dimensions with at least 15 columns between occupied diagram columns. All connection endpoints identify meaningful nodes using 1-based raw lines.",
+    "diagrams": [
+      {
+        "id": "central",
+        "ascii": "Canvas Commands and History\n|-- [M] Modular structure: boundaries, visibility and dependencies\n|   |-- MappingDocumentController: shared semantic mutation boundary\n|   |   |-- Exposes applyUpdate / transact, commitEditorGesture and subscriptions\n|   |   |-- Coordinates content, placements, connections, presentation and contexts\n|   |   `-- Keeps operation staging, node correspondence and publication private\n|   |-- CanvasHistoryService: context-based history contract\n|   |   |-- Exposes checkpoints, navigation, named views, forks and transfers\n|   |   `-- Default implementation hides context -> CanvasHistory lookup\n|   |-- CanvasHistory: exact checkpoint and navigation machinery\n|   |   |-- Separates composition, revision bindings and personal view state\n|   |   |-- Uses revision registry/editor plus scene and semantic validators\n|   |   `-- Produces incremental records through CanvasCheckpointEncoder\n|   `-- Geometry, connection and transfer collaborators\n|       |-- Grid rules measure, edit, lay out, compose and hit-test placements\n|       |-- Connection rules validate endpoints and reconcile changed scenes\n|       `-- Transfer preparation returns states; workspace owns publication\n|-- [C] Commands, checkpoints and restoration\n|   |-- applyUpdate(expectedVersion, operations); transact delegates here\n|   |   |-- Settle live-editor gesture; clear temporary node correspondence\n|   |   |-- applyOperations checks version and batch size before staging\n|   |   |   `-- VERSION_CONFLICT; API accepts 1..100, native batch 1..10000\n|   |   |-- Clone document/view; dispatch operations in supplied order\n|   |   |   |-- Later operations observe earlier staged changes\n|   |   |   |-- Content: create, insert, replace, patch, receive or review revisions\n|   |   |   |-- Composition and links: placements, edges, jumps, source mappings\n|   |   |   |-- Presentation: highlights, alternatives, selections and geometry\n|   |   |   `-- Context: check revision, owning diagram and source fingerprint\n|   |   |-- Clean context/alternative references; validate scene projection\n|   |   |-- updateSnapshot(record = true) reconciles document and view\n|   |   |   |-- Normalize selection, edges, jumps, diagram views and geometry\n|   |   |   |-- Service.append -> CanvasHistory.append validates dependencies\n|   |   |   |   `-- Encode checkpoint; retain revisions; push head; clear redo\n|   |   |   `-- Publish snapshot/version/history flags; notify subscribers\n|   |   `-- Return projected nodes; clear correspondence in finally\n|   |       `-- Failed staging may already have issued diagram revisions\n|   |-- commitEditorGesture: stage native operations and settle moves together\n|   |   `-- Publishes one checkpoint; unchanged view-only state may return early\n|   |-- Placement and endpoint reconciliation\n|   |   |-- Anchor changed subtree; settle sibling collisions by pushing right\n|   |   |-- Deleted placement removes incident edges\n|   |   `-- Rebase proven correspondence; otherwise retain stale endpoints\n|   |-- Undo / redo restores archived document and personal view\n|   |   |-- Live editor delegates undo; restoreEditorCheckpoint exposes restoration\n|   |   |-- Headless -> service.navigate -> validate target -> move stacks\n|   |   `-- Service rejects transfer-linked navigation; workspace must coordinate\n|   |-- Named CanvasViews and branching\n|   |   |-- create/save pin endpoints; start/stop record checkpoint sequences\n|   |   |-- open another view stashes work and restores a fresh checkpoint\n|   |   |   `-- Keep current camera; remove original transfer linkage\n|   |   |-- fork/alternatives pin child views to a saved endpoint\n|   |   |-- keep/discard archive alternatives and affected descendants\n|   |   `-- Generation updates candidate endpoints without moving the live head\n|   |-- Adopt a proposed history: validate and publish one new checkpoint\n|   `-- Cross-canvas copy / move prepares isolated histories\n|       |-- Copy creates identities and copies edges internal to the selection\n|       |-- Move preserves identities where possible and converts edges to jumps\n|       |-- Append/link destination; append/link source only for move\n|       `-- Navigation checks BOTH heads; copy navigates destination only\n|-- [O] Responsibility for state and lifetime\n|   |-- Controller owns runtime coordination\n|   |   |-- Context handle, snapshot, listeners, node cache and correspondence\n|   |   |-- Measured endpoints and captured camera support display projection\n|   |   `-- One editor driver; attachment/subscription return cleanup functions\n|   |-- DefaultCanvasHistoryService retains histories in a WeakMap\n|   |   |-- Frozen object handles isolate viewers sharing a persisted contextId\n|   |   `-- Handles are runtime-only; unreachable handles permit collection\n|   |-- CanvasHistory retains archive, revision table and navigation stacks\n|   |   |-- New edits clear redo navigation while archive records remain\n|   |   |-- Named recordings live outside state restored by undo/view application\n|   |   |-- Fork creates a new context/baseline and empty navigation stacks\n|   |   `-- Current-only export keeps head dependencies and parent boundaries\n|   |       `-- Saved views or active recording force full-history export\n|   `-- persistenceChanges(since) supplies records to a persistence consumer\n|       |-- Header carries navigation/views; sequence selects accumulated changes\n|       `-- Encoder supplies storage records; supplied sources perform no storage I/O\n`-- [D] Data dependency: what exact restoration and rendering require\n    |-- Checkpoint K -> resolved canvas document\n    |   |-- K.document holds composition and semantic metadata\n    |   |   |-- Placement hierarchy, positions, collapse and minimum sizes\n    |   |   `-- Edges/jumps/sections, presentation, alternatives and contexts\n    |   |-- K.diagramBindings: content ID -> exact diagram revision ID\n    |   |   `-- History revision table supplies content; composition embeds none\n    |   `-- Canonical anchors resolve logical nodes against bound revisions\n    |       `-- Unresolved legacy anchors preserve their original stale endpoint\n    |-- K.view supplies personal state separately from composition/bindings\n    |-- Revision dependency set includes bindings, alternatives and reviews\n    |   `-- Selected/base/context revisions and required ancestry are retained\n    |-- Rendered geometry combines placement and bound ASCII dimensions\n    |   |-- Collapse/minimum-size rules -> absolute bounds and hit testing\n    |   `-- Diagram views, selection/display state and measurements -> display nodes\n    `-- Restoration follows pinned revisions, never whichever revision is newest",
+        "position": {
+          "column": 100,
+          "row": 0
+        }
+      },
+      {
+        "id": "patch",
+        "ascii": "Patch edits and endpoint identity\n|-- [C/D] patchDiagram consumes the staged bound revision\n|   |-- reviseStoredDiagram returns diagram, nodeIds and lineAfter\n|   |-- trackNodes composes correspondence across successive edits\n|   |-- Edges reanchor only for matching content and old revision\n|   |   `-- Mapped node ID -> new node ID plus new content revision\n|   |-- Canvas jumps require an active old source and surviving line\n|   |   `-- Update line, revision, content hash and mapped node ID\n|   |-- Matching diagram views remap collapsed content-node IDs\n|   |-- Sections remap both endpoints; drop if either line disappears\n|   `-- layoutScene measures the changed placement before publication\n|-- [M/D] Connection contract\n|   |-- Source must be a content-node; target may be a content-node or box\n|   |-- Content anchors carry placement, content-node ID and revision\n|   |-- At most 2000 edges; IDs must be unique\n|   |-- New or changed endpoints require a current node and revision\n|   `-- An unchanged endpoint on edge-update may retain a stale revision\n|-- [C] reconcileConnections compares old and new scenes\n|   |-- Missing source or target placement -> drop edge\n|   |-- Proven node mapping -> rebase to new node and revision\n|   |-- Same ASCII and structure kind -> match line and startColumn\n|   `-- Otherwise keep the stale endpoint without guessing\n`-- [O] Staging and publication are distinct\n    |-- A staged failure does not append that operation batch\n    |-- Revision-store calls may already have issued revisions\n    |-- applyUpdate settles the editor before validating its own batch\n    `-- An empty native batch uses updateSnapshot's reference-based early exits",
+        "position": {
+          "column": 0,
+          "row": 0
+        }
+      },
+      {
+        "id": "grid",
+        "ascii": "Placement geometry and display measurements\n|-- [D] resolveScene derives absolute bounds\n|   |-- Parent origin + local cell position -> absolute origin\n|   |-- Bound ASCII gives width/height; printable ASCII and LF only\n|   |-- Expanded container encloses child extents\n|   |-- minimumSize reserves expanded space only\n|   `-- Collapsed box requires summary content and hides child traversal\n|-- [C] layoutScene settles immutable sibling obstacles\n|   |-- Anchor the child containing the changed subtree at each ancestor\n|   |-- Then order by column, row and original index\n|   |-- Each collision pushes right past obstacle plus configured gap\n|   `-- composeScene checks final overlap and allocation before return\n|-- [M/D] Coordinate and allocation rules\n|   |-- Zero-based cells; right/bottom bounds are exclusive\n|   |-- Coordinates, dimensions and final extents are limited to 20000\n|   |-- Composition allocation is limited to 4,000,000 cells\n|   |-- hitTest visits children first and returns local coordinates\n|   `-- projectMapping converts one-based source spans to grid bounds\n`-- [O/C] Controller owns transient display measurements\n    |-- Endpoint rectangles must be finite with positive width/height\n    |-- Changed scene or diagram views clears cached endpoint bounds\n    |-- configureLayout recomputes floating/conversation geometry\n    |   `-- Cell-size changes also clear endpoint measurements\n    `-- nodes() caches by snapshot identity and returns a structured clone",
+        "position": {
+          "column": 0,
+          "row": 50
+        }
+      },
+      {
+        "id": "views",
+        "ascii": "Named views, working copies and proposals\n|-- [O/D] CanvasHistory owns canvasViews outside checkpoint state\n|   |-- Saved view pins start/final checkpoint IDs and a sequence\n|   |-- workingCopies maps view ID -> unsaved checkpoint\n|   `-- Dirty compares document, bindings and remaining view fields\n|       `-- Ignore viewport and selection when comparing personal view\n|-- [C] openCanvasView\n|   |-- Already active -> stash current view/working copy and return\n|   |-- Otherwise choose working copy or saved final checkpoint\n|   |-- Validate target; stash departing view; clone target as new head\n|   `-- Preserve current viewport; strip transfer ID; push past; clear future\n|-- [C] Recording and branches\n|   |-- start/stop capture a sequence; cancel drops recording metadata\n|   |-- Recording blocks create/open/fork/save/alternatives/keep/discard\n|   |-- fork opens its child; alternatives creates children without opening\n|   |-- keep archives sibling alternatives and their descendants\n|   `-- discard archives chosen view and descendants; delete rejects parents\n|-- [C/D] Generation uses a pinned starting state\n|   |-- 1..8 uniquely identified canvas candidates\n|   |-- Saved parent endpoint, or explicitly supplied validated history\n|   |-- Update requires the same runId and chatId and an available target\n|   |-- A proposed history may publish only when status is finished\n|   `-- Validate/import revisions; advance candidate endpoint, not live head\n`-- [C/D] Comparison and promotion\n    |-- canvasViewComparison reads only pinned start/final endpoints\n    |-- promote-diffs derives diagram alternatives from that comparison\n    |-- Changed saved alternatives create a fresh saved endpoint\n    |   `-- Keep original checkpoints and comparison baseline\n    `-- Changed live alternatives append a live checkpoint as well",
+        "position": {
+          "column": 200,
+          "row": 0
+        }
+      },
+      {
+        "id": "transfer",
+        "ascii": "Cross-canvas transfer preparation and navigation\n|-- [M/O] Prepare on isolated CanvasHistory instances\n|   |-- Distinct canvas IDs; nonempty, unique diagram-only selection\n|   |-- Expand containers for measurement; retain relative selected positions\n|   `-- Return source/destination states, selected IDs and transaction\n|       `-- Workspace publication is outside the supplied implementation\n|-- [C/D] Copy\n|   |-- Fresh placement/content identities; preserve sharing via contentIds map\n|   |-- Carry source-context binding, mappings/evidence, sections and presentation\n|   |-- Copy only edges with both endpoints selected; assign fresh edge IDs\n|   `-- Remap selected jump targets; leave source history head unchanged\n|-- [C/D] Move\n|   |-- Keep placement/content identities unless destination IDs collide\n|   |-- Convert EVERY source edge to a jump, including unmoved-to-unmoved\n|   |   |-- Jump resides with its source; target follows moved placement\n|   |   `-- Validate every old edge endpoint; stale anchors can reject move\n|   |-- Clear source edges; remove selected placements and unused content\n|   `-- Append source checkpoint; remaining diagram jumps follow moved targets\n|-- [C] Destination assembly\n|   |-- placeTransferredGroup chooses placement; merge existing destination\n|   |-- Append destination checkpoint and link transaction\n|   `-- Move also links source checkpoint; copy does not\n`-- [C/D] prepareTransferNavigation\n    |-- Reject discarded transaction or incompatible applied/redo state\n    |-- BOTH heads must equal recorded before/after boundaries\n    |   `-- This guard applies to COPY as well as MOVE\n    |-- Move navigates source and destination; copy navigates destination only\n    `-- Return prepared states and updated applied flag for publication",
+        "position": {
+          "column": 200,
+          "row": 45
+        }
+      },
+      {
+        "id": "restore",
+        "ascii": "Exact checkpoints, anchors and persistence\n|-- [D] StoredCanvasSnapshot joins three independent inputs\n|   |-- document: root/composition, edges and semantic metadata\n|   |-- diagramBindings: content ID -> revision table entry\n|   `-- view: personal state restored separately\n|-- [C/D] Encode and decode canonical content anchors\n|   |-- Locate placement -> content ID -> bound revision\n|   |-- Encode current content-node ID as revision.nodeRefs logical reference\n|   |   `-- Canonical anchor omits revisionId; binding supplies the revision\n|   |-- Decode logical reference by reverse lookup in bound nodeRefs\n|   |-- Missing canonical correspondence -> Unresolvable canonical anchor\n|   `-- Already-stale legacy anchor -> unresolvedAnchors retains original\n|       `-- Decode returns original before attempting logical lookup\n|-- [C/O] Validation and read projection\n|   |-- Check bindings, revision identity, parent boundaries and unique node refs\n|   |-- Reject embedded scene.contents in canonical checkpoints\n|   |-- 'current' load validates current dependencies; later reads validate lazily\n|   `-- documentFromHistory clones resolved state and deep-freezes diagrams\n|-- [O/D] Export and archive lifetime\n|   |-- Current-only: real head ID, no checkpoint parent, empty past/future\n|   |-- Keep direct checkpoint revision dependencies\n|   |   `-- Omitted revision parents become identity boundaries\n|   |-- Saved views or recording override current-only with full export\n|   `-- adopt retains revision-table object used by internal resolver\n`-- [C/O] Incremental persistence boundary\n    |-- persistenceChanges(since) returns current header on every call\n    |-- Sequence indexes accumulated snapshot/revision change entries\n    |-- Append records revisions and snapshot in separate entries\n    |-- Navigation changes header without adding an archive checkpoint\n    |-- Transaction linking/retirement replaces records and logs the changes\n    `-- CanvasCheckpointEncoder.encode supplies storage records; I/O is external",
+        "position": {
+          "column": 200,
+          "row": 90
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": {
+          "diagram": "central",
+          "line": 25
+        },
+        "target": {
+          "diagram": "patch",
+          "line": 2
+        },
+        "label": "Patch revision and dependent anchors"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 39
+        },
+        "target": {
+          "diagram": "grid",
+          "line": 8
+        },
+        "label": "How placements settle"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 47
+        },
+        "target": {
+          "diagram": "views",
+          "line": 2
+        },
+        "label": "Saved endpoints and working copies"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 55
+        },
+        "target": {
+          "diagram": "transfer",
+          "line": 2
+        },
+        "label": "Preparation, identity and coordinated navigation"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 78
+        },
+        "target": {
+          "diagram": "restore",
+          "line": 2
+        },
+        "label": "Inputs required to reconstruct a checkpoint"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 74
+        },
+        "target": {
+          "diagram": "restore",
+          "line": 25
+        },
+        "label": "Incremental records and archive ownership"
+      }
+    ]
+  },
+  "usage": {
+    "input_tokens": 465376,
+    "cached_input_tokens": 410752,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 11566,
+    "reasoning_output_tokens": 1840
+  }
+}

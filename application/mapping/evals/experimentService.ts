@@ -1,18 +1,21 @@
+import { isDeepStrictEqual } from 'node:util';
 import { judgeDiagramChangeTrees } from '../../../domain/mapping/evals/diagramChangeTree';
-import { saveExperimentSchema, relaunchExperimentSchema, approveExperimentSchema, judgeExperimentSchema, type EvalExperiment } from '../../../domain/mapping/evals/experiment';
+import { experimentOverviewPhases, addExperimentCommentSchema, addGroundTruthSampleSchema, updateExperimentCommentSchema, updateExperimentCommentTagsSchema, updateExperimentTagsSchema, renameExperimentSchema, saveExperimentSchema, rerunExperimentSchema, relaunchExperimentSchema, approveExperimentSchema, judgeExperimentSchema, type EvalExperiment, type UpdateExperimentComment } from '../../../domain/mapping/evals/experiment';
 import { summarizeEvalRun, type EvalRun } from '../../../domain/mapping/evals/evalRun';
 import { sha256 } from '../../../domain/core/sha256';
 import { ApplicationError } from '../../core/errors';
 import type { EvalRunService } from './evalRunService';
+import { ExperimentReadService } from './experimentReadService';
+import { commentExcerpts } from '../../../domain/mapping/evals/experimentNodeComments';
 
-export type StoredExperiment = EvalExperiment & { lastRequest: { id: string; hash: string }; startedRunIds?: string[]; preparedRuns?: EvalRun[]; approvalRequest?: { id: string; hash: string }; launches?: { id: string; hash: string; sample: EvalExperiment['samples'][number] }[] };
+export type StoredExperiment = EvalExperiment & { lastRequest: { id: string; hash: string }; reruns?: { id: string; hash: string }[]; startedRunIds?: string[]; preparedRuns?: EvalRun[]; approvalRequest?: { id: string; hash: string }; launches?: { id: string; hash: string; sample: EvalExperiment['samples'][number] }[] };
 export interface ExperimentStore { list(): Promise<StoredExperiment[]>; read(id: string): Promise<StoredExperiment | null>; save(value: StoredExperiment): Promise<void> }
 export class ExperimentService {
   private writes: Promise<unknown> = Promise.resolve();
-  constructor(private store: ExperimentStore, private runs: Pick<EvalRunService, 'read' | 'judgements'> & Partial<Pick<EvalRunService, 'editedPrompt' | 'launchEdited' | 'prepareForReview' | 'launchPrepared'>>,
+  constructor(private store: ExperimentStore, private runs: Pick<EvalRunService, 'read' | 'judgements'> & Partial<Pick<EvalRunService, 'rerunWithSavedPrompt' | 'editedPrompt' | 'launchEdited' | 'prepareForReview' | 'launchPrepared' | 'outputResult' | 'promotionSource'>>,
     private projects: { loadProject(): Promise<{ id: string } | null> },
     private contexts: { read(id: string, resolveSources: boolean): Promise<{ contentHash: string }> }) {}
-  private public({ lastRequest: _, launches: __, preparedRuns: ___, approvalRequest: ____, startedRunIds: _____, ...record }: StoredExperiment): EvalExperiment { return structuredClone(record); }
+  private public({ reruns: _reruns, lastRequest: _, launches: __, preparedRuns: ___, approvalRequest: ____, startedRunIds: _____, ...record }: StoredExperiment): EvalExperiment { return structuredClone({ ...record, tags: record.tags ?? [] }); }
   private async projectId() {
     const project = await this.projects.loadProject();
     if (!project) throw new ApplicationError('invalid-input', 'Open a project first.');
@@ -27,6 +30,127 @@ export class ExperimentService {
     if (!item || item.projectId !== await this.projectId()) throw new ApplicationError('invalid-input', 'Experiment not found.');
     return this.public(item);
   }
+  overview(id: string) { return new ExperimentReadService(this, this.runs).overview(id); }
+  readBatch(id: string, raw: unknown) { return new ExperimentReadService(this, this.runs).read(id, raw); }
+  rename(id: string, raw: unknown) {
+    const { name, expectedRevision } = renameExperimentSchema.parse(raw);
+    const work = async () => {
+      const experiment = await this.store.read(id);
+      if (!experiment || experiment.projectId !== await this.projectId()) throw new ApplicationError('invalid-input', 'Experiment not found.');
+      if (name === experiment.name) return this.public(experiment);
+      if (experiment.revision !== expectedRevision) throw new ApplicationError('conflict', 'The experiment changed while you were editing. Review the current title and save again.');
+      const saved = { ...experiment, name, revision: experiment.revision + 1, updatedAt: new Date().toISOString() };
+      await this.store.save(saved);
+      return this.public(saved);
+    };
+    const pending = this.writes.then(work);
+    this.writes = pending.catch(() => {});
+    return pending;
+  }
+  updateTags(id: string, raw: unknown) {
+    const input = updateExperimentTagsSchema.parse(raw);
+    const work = async () => {
+      await this.read(id);
+      const experiment = (await this.store.read(id))!;
+      if (JSON.stringify(experiment.tags ?? []) === JSON.stringify(input.tags)) return this.public(experiment);
+      if (experiment.revision !== input.expectedRevision) throw new ApplicationError('conflict', 'Experiment changed. Refresh before editing tags.');
+      const saved = { ...experiment, tags: input.tags, revision: experiment.revision + 1, updatedAt: new Date().toISOString() };
+      await this.store.save(saved);
+      return this.public(saved);
+    };
+    const pending = this.writes.then(work); this.writes = pending.catch(() => {}); return pending;
+  }
+  addComment(id: string, raw: unknown) {
+    const input = addExperimentCommentSchema.parse(raw);
+    const work = async () => {
+      await this.read(id);
+      const experiment = (await this.store.read(id))!;
+      const existing = experiment.comments?.find(comment => comment.id === input.requestId);
+      if (existing) {
+        if (existing.text !== input.text || existing.phaseId !== input.phaseId || JSON.stringify(existing.tags ?? []) !== JSON.stringify(input.tags ?? []) || JSON.stringify(existing.anchor) !== JSON.stringify(input.anchor)) throw new ApplicationError('conflict', 'Request ID already used for different comment content.');
+        return this.public(experiment);
+      }
+      if (input.phaseId && !experimentOverviewPhases(experiment).some(phase => phase.id === input.phaseId)) {
+        throw new ApplicationError('invalid-input', 'The phase does not belong to this experiment.');
+      }
+      let excerpts;
+      if (input.anchor) {
+        const anchor = input.anchor;
+        if (!experiment.samples.some(sample => sample.outputs.some(output => output.runId === anchor.runId && output.cellKey === anchor.cellKey)))
+          throw new ApplicationError('invalid-input', 'The output set does not belong to this experiment.');
+        const run = await this.runs.read(anchor.runId), cell = run.cells.find(cell => cell.key === anchor.cellKey);
+        if (run.projectId !== experiment.projectId || !cell || cell.status !== 'finished' || cell.output?.format === 'markdown' || cell.output?.format === 'canvas-layout')
+          throw new ApplicationError('invalid-input', 'Choose a completed canvas output.');
+        if (!cell.output && anchor.checkpointId !== cell.checkpointId) throw new ApplicationError('invalid-input', 'The output snapshot changed.');
+        const result = await this.runs.promotionSource?.(anchor.runId, anchor.cellKey);
+        const canvas = result?.canvases.find(canvas => canvas.id === anchor.canvasId);
+        if (!canvas) throw new ApplicationError('invalid-input', 'The canvas is not in this output set.');
+        try { excerpts = commentExcerpts(canvas.proposed.document, anchor.selections); }
+        catch (error) { throw new ApplicationError('invalid-input', error instanceof Error ? error.message : 'Invalid selection.'); }
+      }
+      const now = new Date().toISOString();
+      const saved = { ...experiment, revision: experiment.revision + 1, updatedAt: now,
+        commentTags: [...new Set([...(experiment.commentTags ?? []), ...(experiment.comments ?? []).flatMap(comment => comment.tags ?? []), ...(input.tags ?? [])])],
+        comments: [...(experiment.comments ?? []), { id: input.requestId, text: input.text, createdAt: now, ...(input.phaseId ? { phaseId: input.phaseId } : {}), ...(input.tags ? { tags: input.tags } : {}), ...(input.anchor ? { anchor: input.anchor, excerpts } : {}) }] };
+      await this.store.save(saved);
+      return this.public(saved);
+    };
+    const pending = this.writes.then(work); this.writes = pending.catch(() => {}); return pending;
+  }
+  updateCommentTags(id: string, commentId: string, raw: unknown) {
+    return this.mutateComment(id, commentId, updateExperimentCommentTagsSchema.parse(raw));
+  }
+  updateComment(id: string, commentId: string, raw: unknown) {
+    return this.mutateComment(id, commentId, updateExperimentCommentSchema.parse(raw));
+  }
+  deleteComment(id: string, commentId: string) { return this.mutateComment(id, commentId); }
+  /** Append-only: the request ID becomes the sample ID, and identical retries return the saved experiment. */
+  addGroundTruth(id: string, raw: unknown) {
+    const { requestId, ...input } = addGroundTruthSampleSchema.parse(raw);
+    const work = async () => {
+      await this.read(id);
+      const experiment = (await this.store.read(id))!;
+      const reference = input.format === 'ascii-tree'
+        ? { ...input, asciiSha256: sha256(input.ascii) }
+        : { ...input, markdownSha256: sha256(input.markdown) };
+      const existing = experiment.groundTruth?.find(sample => sample.id === requestId);
+      if (existing) {
+        const { id: _, createdAt: __, ...saved } = existing;
+        if (!isDeepStrictEqual(saved, reference)) throw new ApplicationError('conflict', 'Request ID already used for a different ground truth sample.');
+        return this.public(experiment);
+      }
+      const cases = new Set(experiment.cases.map(item => item.id));
+      if (input.caseIds.some(caseId => !cases.has(caseId))) throw new ApplicationError('invalid-input', 'Ground truth names an unknown input case.');
+      if (new Set(input.caseIds).size !== input.caseIds.length) throw new ApplicationError('invalid-input', 'Duplicate ground truth case.');
+      const now = new Date().toISOString();
+      const saved = { ...experiment, revision: experiment.revision + 1, updatedAt: now,
+        groundTruth: [...(experiment.groundTruth ?? []), { id: requestId, ...reference, createdAt: now }] };
+      await this.store.save(saved);
+      return this.public(saved);
+    };
+    const pending = this.writes.then(work); this.writes = pending.catch(() => {}); return pending;
+  }
+  private mutateComment(id: string, commentId: string, patch?: UpdateExperimentComment) {
+    const work = async () => {
+      await this.read(id);
+      const experiment = (await this.store.read(id))!;
+      const existing = experiment.comments?.find(comment => comment.id === commentId);
+      if (!existing) {
+        if (patch) throw new ApplicationError('invalid-input', 'Comment not found.');
+        return this.public(experiment);
+      }
+      if (patch && (patch.text === undefined || patch.text === existing.text)
+        && (patch.tags === undefined || JSON.stringify(existing.tags ?? []) === JSON.stringify(patch.tags))) return this.public(experiment);
+      const comments = patch ? experiment.comments!.map(comment => comment.id === commentId ? { ...comment,
+        ...(patch.text !== undefined ? { text: patch.text } : {}), ...(patch.tags !== undefined ? { tags: patch.tags } : {}) } : comment)
+        : experiment.comments!.filter(comment => comment.id !== commentId);
+      const commentTags = [...new Set([...(experiment.commentTags ?? []), ...(experiment.comments ?? []).flatMap(comment => comment.tags ?? []), ...(patch?.tags ?? [])])];
+      const saved = { ...experiment, comments, commentTags, revision: experiment.revision + 1, updatedAt: new Date().toISOString() };
+      await this.store.save(saved);
+      return this.public(saved);
+    };
+    const pending = this.writes.then(work); this.writes = pending.catch(() => {}); return pending;
+  }
   save(raw: unknown) {
     const input = saveExperimentSchema.parse(raw), hash = sha256(JSON.stringify(input));
     const work = async () => {
@@ -39,7 +163,16 @@ export class ExperimentService {
       }
       if (input.experimentId ? !previous || previous.revision !== input.expectedRevision : !!previous)
         throw new ApplicationError('conflict', 'Experiment changed. Read its current revision before updating.');
-      const design = input.experiment;
+      const design = { ...input.experiment, tags: input.experiment.tags ?? previous?.tags ?? [] };
+      if (previous?.inputLineage) {
+        const retained = previous.inputLineage.filter(edge => design.cases.some(c => c.id === edge.caseId && c.agentContextId === edge.agentContextId));
+        design.inputLineage ??= retained;
+        for (const edge of retained) {
+          const replacement = design.inputLineage.find(item => item.caseId === edge.caseId);
+          if (JSON.stringify(replacement?.sources) !== JSON.stringify(edge.sources))
+            throw new ApplicationError('conflict', 'Recorded source outputs for a pinned case cannot change.');
+        }
+      }
       for (const inputCase of design.cases) {
         const context = await this.contexts.read(inputCase.agentContextId, false);
         if (inputCase.contentHash && inputCase.contentHash !== context.contentHash)
@@ -57,6 +190,19 @@ export class ExperimentService {
       }
       const judgements = await this.runs.judgements?.list() ?? [];
       const otherExperiments = (await this.store.list()).filter(e => e.projectId === projectId && e.id !== id);
+      const incoming = otherExperiments.flatMap(e => (e.inputLineage ?? []).flatMap(edge => edge.sources.filter(source => source.experimentId === id)));
+      for (const source of incoming) {
+        if (!design.samples.some(sample => sample.outputs.some(output => output.runId === source.runId && output.cellKey === source.cellKey)))
+          throw new ApplicationError('conflict', 'Another experiment uses this output as a pinned input.');
+      }
+      for (const edge of design.inputLineage ?? []) {
+        for (const source of edge.sources) {
+          const producer = source.experimentId === id ? design : otherExperiments.find(e => e.id === source.experimentId);
+          const sample = producer?.samples.find(s => s.outputs.some(o => o.runId === source.runId && o.cellKey === source.cellKey));
+          if (!sample || (producer === design && sample.caseId === edge.caseId))
+            throw new ApplicationError('invalid-input', 'Input lineage must reference a registered upstream output in this project.');
+        }
+      }
       for (const comparison of design.comparisons) for (const judgementId of comparison.judgementIds) {
         const judgement = judgements.find(j => j.id === judgementId);
         const outputs = design.samples.filter(s => s.phaseId === comparison.phaseId && comparison.caseIds.includes(s.caseId) && comparison.conditionIds.includes(s.conditionId)).flatMap(s => s.outputs);
@@ -112,7 +258,7 @@ export class ExperimentService {
       const generationReview = preparedRuns?.length ? samePlan && previous?.generationReview
         ? previous.generationReview : { status: 'awaiting-approval' as const, runs: preparedRuns.filter(r => !startedRunIds.includes(r.id)).map(summarizeEvalRun) } : undefined;
       const now = new Date().toISOString();
-      const saved: StoredExperiment = { ...design, startedRunIds, ...(preparedRuns ? { preparedRuns, generationReview } : {}), ...(samePlan && previous?.approvalRequest ? { approvalRequest: previous.approvalRequest } : {}), ...(previous?.launches ? { launches: previous.launches } : {}), schemaVersion: 1, id, projectId, revision: (previous?.revision ?? 0) + 1, createdAt: previous?.createdAt ?? now, updatedAt: now, lastRequest: { id: input.requestId, hash } };
+      const saved: StoredExperiment = { ...design, ...(previous?.reruns ? { reruns: previous.reruns } : {}), ...(previous?.comments ? { comments: previous.comments } : {}), ...(previous?.commentTags ? { commentTags: previous.commentTags } : {}), ...(previous?.groundTruth ? { groundTruth: previous.groundTruth } : {}), startedRunIds, ...(preparedRuns ? { preparedRuns, generationReview } : {}), ...(samePlan && previous?.approvalRequest ? { approvalRequest: previous.approvalRequest } : {}), ...(previous?.launches ? { launches: previous.launches } : {}), schemaVersion: 1, id, projectId, revision: (previous?.revision ?? 0) + 1, createdAt: previous?.createdAt ?? now, updatedAt: now, lastRequest: { id: input.requestId, hash } };
       await this.store.save(saved); return this.public(saved);
     };
     const pending = this.writes.then(work); this.writes = pending.catch(() => {}); return pending;
@@ -185,6 +331,58 @@ export class ExperimentService {
     };
     const pending = this.writes.then(work); this.writes = pending.catch(() => {}); return pending;
   }
+  rerun(id: string, raw: unknown) {
+    const input = rerunExperimentSchema.parse(raw);
+    const hash = sha256(JSON.stringify([input.runId, input.cellKey, input.prompt]));
+    const work = async () => {
+      await this.read(id);
+      const experiment = (await this.store.read(id))!;
+      const receipt = experiment.reruns?.find(item => item.id === input.requestId);
+      if (receipt && receipt.hash !== hash) throw new ApplicationError('conflict', 'Rerun request ID already used.');
+      if (receipt && experiment.samples.some(sample => sample.id === `rerun-${input.requestId}-0`))
+        return { experiment: this.public(experiment), runId: input.requestId };
+      if (!receipt && input.expectedRevision !== experiment.revision)
+        throw new ApplicationError('conflict', 'The experiment changed. Review the refreshed experiment and try again.');
+      const selected = experiment.samples.flatMap(sample => sample.outputs).find(output => output.runId === input.runId && output.cellKey === input.cellKey);
+      if (!selected || !this.runs.rerunWithSavedPrompt) throw new ApplicationError('invalid-input', 'Choose an existing generation to rerun.');
+      const source = await this.runs.read(selected.runId);
+      const originalPrompt = source.cells.find(cell => cell.key === selected.cellKey)?.promptId;
+      if (!originalPrompt) throw new ApplicationError('invalid-input', 'Pinned prompt is unavailable.');
+      // Reserve the request before generation so a retry after an interrupted attachment reuses the run.
+      if (!receipt) {
+        experiment.reruns = [...experiment.reruns ?? [], { id: input.requestId, hash }];
+        await this.store.save(experiment);
+      }
+      const run = await this.runs.rerunWithSavedPrompt(source, selected.cellKey, input.prompt, input.requestId);
+      const attemptKey = (sample: EvalExperiment['samples'][number]) => JSON.stringify([sample.phaseId, sample.caseId, sample.conditionId, sample.number]);
+      const attempts = new Map<string, number>();
+      for (const sample of [...experiment.samples, ...(experiment.launches ?? []).map(item => item.sample)]) {
+        const key = attemptKey(sample);
+        attempts.set(key, Math.max(sample.attempt, attempts.get(key) ?? 0));
+      }
+      const originals = experiment.samples.filter(sample => sample.outputs.some(output => output.runId === source.id));
+      for (const [index, original] of originals.entries()) {
+        const outputs = original.outputs.filter(output => output.runId === source.id).map(output => {
+          const before = source.cells.find(cell => cell.key === output.cellKey)!;
+          const promptId = before.promptId === originalPrompt ? input.prompt.promptId : before.promptId;
+          const cell = run.cells.find(cell => cell.stage === before.stage && cell.pass === before.pass && cell.promptId === promptId);
+          if (!cell) throw new ApplicationError('conflict', 'The rerun is missing an expected output.');
+          return { stageId: output.stageId, runId: run.id, cellKey: cell.key };
+        });
+        const key = attemptKey(original), attempt = attempts.get(key)! + 1;
+        attempts.set(key, attempt);
+        experiment.samples.push({ ...original, id: `rerun-${input.requestId}-${index}`, attempt,
+          relaunchedFrom: { sampleId: original.id, stageId: outputs.find(output => output.stageId === selected.stageId)?.stageId ?? outputs[0].stageId }, outputs });
+      }
+      experiment.revision++;
+      experiment.updatedAt = new Date().toISOString();
+      await this.store.save(experiment);
+      return { experiment: this.public(experiment), runId: run.id };
+    };
+    const pending = this.writes.then(work);
+    this.writes = pending.catch(() => {});
+    return pending;
+  }
   relaunch(id: string, raw: unknown) {
     const input = relaunchExperimentSchema.parse(raw), hash = sha256(JSON.stringify(input));
     const work = async () => {
@@ -197,7 +395,7 @@ export class ExperimentService {
       const sample = experiment.samples.find(s => s.id === input.sampleId), output = sample?.outputs.find(o => o.stageId === input.stageId);
       if (!sample || !output || !this.runs.launchEdited || !this.runs.editedPrompt) throw new ApplicationError('invalid-input', 'Choose an existing generation output to relaunch.');
       const source = await this.runs.read(output.runId);
-      await this.runs.editedPrompt(source, output.cellKey, input.stages);
+      await this.runs.editedPrompt(source, output.cellKey, input.stages, input.requestId);
       if (!receipt) {
         const attempts = [...experiment.samples, ...(experiment.launches ?? []).map(l => l.sample)].filter(s => s.phaseId === sample.phaseId && s.caseId === sample.caseId && s.conditionId === sample.conditionId && s.number === sample.number);
         receipt = { id: input.requestId, hash, sample: { id: `attempt-${input.requestId}`, ...(sample.phaseId ? { phaseId: sample.phaseId } : {}), caseId: sample.caseId, conditionId: sample.conditionId, number: sample.number,

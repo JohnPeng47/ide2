@@ -1,3 +1,4 @@
+import { authoredStages } from '../../../../domain/mapping/evals/promptTemplateIncludes';
 import { canResizeGenerationRun, configureGenerationRun, generationModelPresets, generationModelPreset } from '../../../../domain/mapping/evals/generationSettings';
 import { PromptSectionsEditor, PromptTextBox } from './PromptSectionsEditor';
 import { legacyPromptTemplateBase, parsePromptSections, type PromptTemplateBase } from '../../../../domain/mapping/evals/promptTemplateBase';
@@ -61,7 +62,7 @@ export function GenerationReview({ experiment: incomingExperiment, onChanged }: 
     const base = pinned.templateBase ?? legacyPromptTemplateBase(pinned.stages);
     const issues = parsePromptSections(editing.text, base).issues;
     if (issues.length) { setError(issues.map(i => i.message).join(' ')); return; }
-    if (pinned.stages[editing.stage] === editing.text) {
+    if (authoredStages(pinned)[editing.stage] === editing.text) {
       setSaveStatus('Saved');
       if (!keepOpen) setEditing(undefined);
       return;
@@ -75,7 +76,7 @@ export function GenerationReview({ experiment: incomingExperiment, onChanged }: 
         const source = await readPrompt(pinned.promptId);
         const result = await savePrompt({ requestId: attempt.promptRequestId, promptId: source.id, baseVersion: source.versions.at(-1)!.version,
           workflow: source.workflow, name: source.name, templateBase: base, derivation: { parent: { promptId: pinned.promptId, version: editing.version }, kind: 'revision' },
-          stages: { ...pinned.stages, [editing.stage]: editing.text }, note: 'Edited during experiment review, before generation approval.' });
+          stages: { ...authoredStages(pinned), [editing.stage]: editing.text }, note: 'Edited during experiment review, before generation approval.' });
         attempt.version = result.versions.at(-1)!.version;
       }
       const { id, projectId, schemaVersion, revision, createdAt, updatedAt, generationReview, ...design } = experiment;
@@ -111,7 +112,7 @@ export function GenerationReview({ experiment: incomingExperiment, onChanged }: 
         {Object.entries(prompt.stages).map(([stage, text]) => {
           const base = prompt.templateBase ?? legacyPromptTemplateBase(prompt.stages);
           return <section key={stage}><div className="evals-actions"><h4>{stage}</h4>
-            {review.status === 'awaiting-approval' && <button type="button" disabled={busy || dirtySettings.size > 0} onClick={() => { setEditing({ promptId: prompt.promptId, version: prompt.version!, stage, text }); setReviewed(false); setError(''); setSaveStatus(''); }}>Edit section</button>}
+            {review.status === 'awaiting-approval' && <button type="button" disabled={busy || dirtySettings.size > 0} onClick={() => { setEditing({ promptId: prompt.promptId, version: prompt.version!, stage, text: authoredStages(prompt)[stage] }); setReviewed(false); setError(''); setSaveStatus(''); }}>Edit section</button>}
           </div>
           <PromptSectionsEditor base={base} readOnly known={new Set()} label={`${stage} pinned prompt`} value={text} onChange={() => {}} onUndo={() => {}} onRedo={() => {}} />
           </section>;

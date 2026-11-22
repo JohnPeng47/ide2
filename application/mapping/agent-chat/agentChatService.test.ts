@@ -1,3 +1,4 @@
+import { AgentContext } from '../../../domain/core/agents/agentContext';
 import { describe, expect, it, vi } from 'vitest';
 import { AgentChatService } from './agentChatService';
 import type { ChatCanvasReader, ChatMcpBinding, ChatStore, ChatTools, CodexConnection, CodexMessage } from './ports';
@@ -50,6 +51,38 @@ describe('Codex agent chat', () => {
     ] },
     model: 'native-model', reasoningEffort: 'medium', sandbox: { type: 'workspaceWrite' }
   });
+  it('loads saved canvas background on opening, deduplicates concurrent reopens, and switches before a turn', async () => {
+    const { connection, store, service: empty } = fixture();
+    empty.dispose();
+    const agentContextId = `saved-agent-context-${crypto.randomUUID()}`;
+    const otherId = `saved-agent-context-${crypto.randomUUID()}`;
+    const snapshot = AgentContext.fromMessages('test', [{ role: 'user', timestamp: 0, content: [{ type: 'text', text: 'Source text' }] }]).toSnapshot();
+    const read = vi.fn(async (id: string) => ({ agentContextId: id, name: 'Context', description: '', createdAt: '', messageCount: 1,
+      source: snapshot.source, contentHash: snapshot.contentHash, snapshot }));
+    const service = new AgentChatService(connection, store, '/workspace', undefined, undefined, undefined, undefined, { read });
+    const canvas = { workspaceInstanceId: 'workspace', documentId: 'one' };
+    const background = { canvas, agentContextId }, other = { canvas: { ...canvas, documentId: 'two' }, agentContextId: otherId };
+    try {
+      const chat = await service.create(background);
+      const injects = () => connection.calls.filter(c => c.method === 'thread/inject_items');
+      expect(injects()).toHaveLength(1);
+      expect(JSON.stringify(injects()[0].params)).toContain('Source text');
+      expect(connection.turn).toBe(0);
+      await Promise.all([service.loadCanvasBackground(chat.id, other), service.loadCanvasBackground(chat.id, other)]);
+      expect(injects()).toHaveLength(2);
+      await service.send(chat.id, { ...input(), ...other });
+      expect(injects()).toHaveLength(2);
+      expect((await store.list())[0].loadedCanvasBackground).toEqual({ documentId: 'two', agentContextId: otherId });
+      expect((await service.get(chat.id)).items.filter(item => item.kind === 'user')).toHaveLength(1);
+      const fresh = await service.create(background);
+      expect(fresh.threadId).not.toBe(chat.threadId);
+      expect(injects()).toHaveLength(3);
+      await service.loadCanvasBackground(fresh.id, { canvas: other.canvas });
+      expect(JSON.stringify(injects().at(-1))).toContain('no attached AgentContext');
+      expect(read).toHaveBeenCalledTimes(3);
+    } finally { service.dispose(); }
+  });
+
   it('imports native history and settings once without overriding instructions, tools, or cwd', async () => {
     const { service, connection, saved } = fixture();
     const rpc = vi.spyOn(connection, 'request').mockResolvedValue(nativeResume());
@@ -156,7 +189,7 @@ describe('Codex agent chat', () => {
     expect(connection.calls.at(-1)).toMatchObject({ method: 'turn/start', params: { approvalPolicy: 'never', sandboxPolicy: { type: 'dangerFullAccess' } } });
     service.dispose();
     const resumedConnection = new Connection();
-    const resumed = new AgentChatService(resumedConnection, store, '/workspace', { shortContextForCanvas: async () => canvasSnapshot() });
+    const resumed = new AgentChatService(resumedConnection, store, '/workspace', { projectedContextForCanvas: async () => canvasSnapshot() });
     try {
       await resumed.readCanvas(session.id, { canvas: { workspaceInstanceId: 'workspace', documentId: 'doc' }, requestId: crypto.randomUUID() });
       expect(resumedConnection.calls[0]).toMatchObject({ method: 'thread/resume', params: { sandbox: 'danger-full-access', approvalPolicy: 'never' } });
@@ -222,20 +255,20 @@ describe('Codex agent chat', () => {
     service.dispose();
   });
   const canvasSnapshot = (documentId = 'doc', version = 12) => ({
-    apiFormatVersion: 1 as const, shortFormatVersion: 1 as const, view: 'short' as const,
+    projectionType: 'graph' as const,
     workspaceInstanceId: 'workspace', documentId, canvasEpoch: 'epoch', version, name: 'Canvas',
-    diagrams: [], edges: [], groups: [], selections: [], otherNodes: [], detailsDeferred: []
+    nodes: [], edges: []
   });
   const readInput = (documentId = 'doc') => ({ ...input(), canvas: { workspaceInstanceId: 'workspace', documentId } });
   it('delivers complete canvas tool output to the existing thread, with fresh targets and retry deduplication', async () => {
     const snapshot = { ...canvasSnapshot(), name: 'Large canvas ' + 'x'.repeat(130_000) };
-    const read = vi.fn<ChatCanvasReader['shortContextForCanvas']>().mockResolvedValue(snapshot);
-    const { service, connection, saved } = fixture([], { shortContextForCanvas: read });
+    const read = vi.fn<ChatCanvasReader['projectedContextForCanvas']>().mockResolvedValue(snapshot);
+    const { service, connection, saved } = fixture([], { projectedContextForCanvas: read });
     const first = await service.create({}), other = await service.create({});
     const request = readInput();
     await service.readCanvas(first.id, request);
     await service.readCanvas(first.id, request);
-    expect(read).toHaveBeenCalledExactlyOnceWith('workspace', 'doc');
+    expect(read).toHaveBeenCalledExactlyOnceWith('workspace', 'doc', 'graph');
     const turn = connection.calls.find(call => call.method === 'turn/start')!;
     expect(turn.params).toMatchObject({ threadId: first.threadId, input: [], toolOutput: { name: 'read_canvas', namespace: null, output: JSON.stringify(snapshot) } });
     expect(turn.params).not.toHaveProperty('clientUserMessageId');
@@ -249,12 +282,12 @@ describe('Codex agent chat', () => {
     expect(saved.get(first.id)?.title).toBe('Read Canvas');
     read.mockResolvedValue(canvasSnapshot('other', 14));
     await service.readCanvas(first.id, readInput('other'));
-    expect(read).toHaveBeenLastCalledWith('workspace', 'other');
+    expect(read).toHaveBeenLastCalledWith('workspace', 'other', 'graph');
     expect(connection.calls.at(-1)?.params.toolOutput).toMatchObject({ output: JSON.stringify(canvasSnapshot('other', 14)) });
   });
   it('fails a missing canvas without starting a model turn, and allows the read to be retried', async () => {
-    const read = vi.fn<ChatCanvasReader['shortContextForCanvas']>().mockRejectedValue(Error('CANVAS_NOT_READY'));
-    const { service, connection } = fixture([], { shortContextForCanvas: read });
+    const read = vi.fn<ChatCanvasReader['projectedContextForCanvas']>().mockRejectedValue(Error('CANVAS_NOT_READY'));
+    const { service, connection } = fixture([], { projectedContextForCanvas: read });
     const session = await service.create({}), request = readInput();
     await expect(service.readCanvas(session.id, request)).rejects.toThrow('CANVAS_NOT_READY');
     expect(connection.calls.some(call => call.method === 'turn/start')).toBe(false);
@@ -264,11 +297,11 @@ describe('Codex agent chat', () => {
     expect(connection.calls.filter(call => call.method === 'turn/start')).toHaveLength(1);
   });
   it('resumes old conversations for read-only canvas reads and does not replay an ambiguous model start', async () => {
-    const read = vi.fn<ChatCanvasReader['shortContextForCanvas']>().mockResolvedValue(canvasSnapshot());
+    const read = vi.fn<ChatCanvasReader['projectedContextForCanvas']>().mockResolvedValue(canvasSnapshot());
     const { service, store } = fixture();
     const session = await service.create({});
     const connection = new Connection(); connection.fail = true;
-    const restored = new AgentChatService(connection, store, '/workspace', { shortContextForCanvas: read });
+    const restored = new AgentChatService(connection, store, '/workspace', { projectedContextForCanvas: read });
     const request = { ...readInput(), sandbox: 'read-only' };
     await expect(restored.readCanvas(session.id, request)).rejects.toThrow('turn failed');
     await restored.readCanvas(session.id, request);

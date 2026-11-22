@@ -1,0 +1,119 @@
+{
+  "output": {
+    "explanation": "The central tree shrinks from 99 to 64 lines (35.4%) and from 6,622 to 4,375 characters (33.9%). Five peripheral trees expand commit mechanics, checkpoint encoding, validation, publication, and read/portability boundaries. Modular structure identifies component interfaces and private machinery; call sequences show commit and publication ordering; ownership covers manifests, blobs and caches; data dependencies connect checkpoints, items, revisions and transfers. Edges attach to the corresponding central concept lines. Positions leave gaps between actual text bounds.\n\nEvidence is limited to context.json and seed.json. The seed is largely supported. Its direct MappingWorkspaceService -> WorkspaceRecordStore connection is qualified: workspaceService.ts delegates through MappingWorkspaceRepository, whose adapter is not supplied. Initialization can create empty records when no legacy snapshot exists. The archive description is refined: canvasCatalogStore.ts preserves encoded references during its metadata write, but the default return path restores the catalog; includeHistory: false avoids that restoration. workspaceRecordStore.ts explicitly syncs files and directories, whereas diagramRevisionStore.ts uses temporary files and rename without explicit fsync. These implementations should not be assigned identical durability guarantees.\n\nAdditional details absent from the seed come from workspaceRecords.ts (transfer linkage and interrupted-view normalization), canvasCheckpointRecords.ts (reversible diffs and identity-based restoration caching), canvasCatalogStore.ts (source-binding caching and ownership migration during reads), and workspaceRecordStore.ts (queue cleanup and deletion of manifest mappings without blob deletion). Imported implementations such as DiagramPersistence, catalog rules and writeJsonAtomic are not supplied, so their internal behavior is not inferred. Catalog atomicity is represented through the named helper and supplied comments; no cross-process locking or garbage-collection guarantee is established.",
+    "diagrams": [
+      {
+        "id": "central",
+        "ascii": "Durable Records and Publication\n|-- Shared repository facade: DiagramStore\n|   |-- storeRoot = resolved checkoutRoot / .diagrams (default)\n|   |-- repositories -> GitRepositoryRegistry\n|   |-- diagramPersistence -> DiagramPersistence -> DiagramRevisionStore\n|   |   |-- SHA-256(JSON) identifies records; reads verify stored bytes\n|   |   `-- diagrams/<kind>/<hash>.json; workspace-records/<hash>.json\n|   `-- canvases = projectCatalogs -> one ProjectCatalogStore\n|       `-- CanvasCatalogStore publication + corpus compaction catalog\n|-- Editable workspace: records and revision-guarded commits\n|   |-- MappingWorkspaceService -> MappingWorkspaceRepository port\n|   |   `-- WorkspaceRecordStore supplies storage; adapter not supplied\n|   |-- Record model: workspace index + records per document\n|   |   |-- metadata, saved baseline, current canvas, optional viewport\n|   |   |-- history header + checkpointHead map + checkpoint/revision archive\n|   |   `-- shared value/text items; content-addressed and deduplicated\n|   |-- CanvasCheckpointEncoder: bounded record-reference deltas\n|   |   |-- parent depth < 31 -> delta; otherwise full map at depth 0\n|   |   `-- sourceAscii and strings >= 512 characters stored as text items\n|   |-- WorkspaceRecordStore.apply(requestId, expectedRevision, changes)\n|   |   |-- serialize through an in-process queue keyed by storage root\n|   |   |-- durable receipt checked before expectedRevision\n|   |   |   `-- same batch -> recorded revision; changed batch -> conflict\n|   |   |-- stale expectedRevision -> VERSION_CONFLICT\n|   |   |-- validate staged records, history and cross-canvas transfers\n|   |   |   `-- revisions/items immutable; checkpoint re-encoding checked\n|   |   `-- publish revision + 1 through the manifest\n|   |       |-- write/reuse hashed blobs; await all writers (up to 8)\n|   |       |-- fsync new blob files, rename, then fsync blob directory\n|   |       |-- replace workspace-records.json after blobs are ready\n|   |       |   `-- record hashes + revision + retry receipt committed together\n|   |       `-- uncertain commit outcome -> retry the SAME requestId\n|   `-- Initialization / replacement\n|       |-- state(): absent manifest -> legacy snapshot or empty records, revision 0\n|       `-- replace(): existing manifest -> replace records, revision + 1\n|-- Published catalog: MappingDiagramService -> CanvasCatalogStore\n|   |-- publishCheckpoint(): pin a persisted workspace checkpoint\n|   |   |-- require project, publication support and capture service\n|   |   |-- instance queue; read stored catalog without history expansion\n|   |   |-- request receipt replay precedes representation-version checks\n|   |   |-- existing representation: settled + expectedRevisionId; guard ownership\n|   |   |-- capture(): one manifest fixes the immutable record references\n|   |   |   |-- match history.headId and metadata.version to requested values\n|   |   |   `-- hydrate selected checkpoint and its referenced diagram revisions\n|   |   |-- derive publication document; validate repository association\n|   |   `-- write catalog head + captured archive references + retry receipt\n|   |       `-- old revisions and unrelated checkpoint bodies stay unexpanded\n|   |-- Other publication operations\n|   |   |-- saveMappingDiagram(): generated-key retry reuse\n|   |   |-- saveProjectedTree(): tree and relationship in one catalog write\n|   |   |-- publishOutputPromotion(): group, canvases and receipt together\n|   |   `-- acceptCanvasChanges(): accepted heads and receipt together\n|   |-- saveRepresentationCatalog(): await persist(catalog), then writeJsonAtomic\n|   `-- archiveRepresentation(): metadata write retains encoded history refs\n`-- Read and portability boundaries\n    |-- Workspace: verify blob hashes and validate referenced records\n    |   |-- viewHeaders(): index + metadata + history headers only\n    |   `-- selected checkpoint: direct head map or bounded delta replay\n    |-- Catalog: canvases/catalog.json; legacy representations/catalog.json fallback\n    |   |-- loadCurrentRepresentationCatalog(): selected/current revisions\n    |   `-- loadRepresentationCatalog(): restore with requested history validation\n    `-- MappingWorkspaceService import/export\n        |-- portableExport(): expand diagram-context refs into snapshots\n        `-- prepareImport(): store context files before publishing their refs",
+        "position": {
+          "column": 0,
+          "row": 0
+        }
+      },
+      {
+        "id": "commit",
+        "ascii": "Workspace commit: visibility and lifetime\n|-- Public apply() -> private serial(), read(), publish()\n|   |-- queue shared by instances with the same root string\n|   `-- queue entry removed when its last queued operation settles\n|-- Retry identity = SHA-256(JSON.stringify(entire batch))\n|   |-- receipt hit: compare hash, then return original revision\n|   `-- expectedRevision check runs only when no receipt exists\n|-- publish(): stage immutable blobs before the manifest\n|   |-- at most 8 workers share a cursor over changed keys\n|   |-- existing target bytes must match serialized record\n|   |-- new blob: exclusive temp -> write -> file sync -> rename\n|   |-- Promise.allSettled: every worker finishes before error propagation\n|   |-- sync blob directory before publishing references\n|   `-- manifest: temp -> file sync -> rename -> directory sync\n|-- Manifest owns the currently reachable workspace record map\n|   |-- schemaVersion, projectId, revision, records, receipts\n|   |-- deletion removes a mapping; publish() does not delete its blob\n|   `-- failure before replacement leaves prior manifest in place\n|       `-- newly created blobs can remain unreferenced\n|-- Failure after manifest rename can still report an error\n|   |-- apply() reports storage-unavailable\n|   `-- retry same requestId and identical batch to recover receipt\n`-- DiagramRevisionStore has a different write implementation\n    |-- put(): verify existing bytes OR write temp -> rename -> cleanup\n    |-- get(): verify raw JSON hash before parsing\n    `-- no explicit file/directory fsync in the supplied implementation",
+        "position": {
+          "column": 110,
+          "row": 0
+        }
+      },
+      {
+        "id": "codec",
+        "ascii": "Checkpoint codec: state -> references -> state\n|-- CanvasValueEncoder exposes encode() and takeItems()\n|   |-- private maps track known, pending and all encoded items\n|   `-- record boundaries split independently edited objects\n|       |-- scene root/children, edges, diagram contexts and bindings\n|       `-- view nodes, surfaces and selection items\n|-- Parent skeletons preserve ordering with null placeholders\n|   |-- record key = JSON path; root record key = []\n|   |-- sourceAscii or string length >= 512 -> canvas-text item\n|   `-- canvas-value holds skeleton + [path, text hash] references\n|-- CanvasCheckpointEncoder keeps prior encodings by checkpoint ID\n|   |-- parent available and depth < 31 -> reference delta\n|   |-- otherwise diff against empty map; no baseId; depth 0\n|   |-- added/removed store hashes; updated stores [old, new]\n|   `-- optional checkpointHead carries the full current reference map\n|-- applyCanvasRecordDiff() can run forward or reverse\n|   `-- reject duplicate keys, invalid hashes and mismatched prior values\n|-- loadCanvasCheckpoint() expands one selected checkpoint\n|   |-- head map supplied: read selected checkpoint, skip base traversal\n|   |-- no head map: follow bounded base chain and apply diffs\n|   |-- load unique value items, then their referenced text items\n|   `-- verify item hashes; fill placeholders in increasing path depth\n`-- restoreCanvasCheckpoints(): restore archive and verify head map\n    |-- optional WeakMap cache keyed by checkpoint object\n    `-- reuse snapshot only if refs match and item object identities match",
+        "position": {
+          "column": 110,
+          "row": 36
+        }
+      },
+      {
+        "id": "publish",
+        "ascii": "Publication: persisted workspace -> catalog reference\n|-- MappingDiagramService supplies a deferred capture callback\n|   `-- CanvasCatalogStore serializes operations per store instance\n|-- Parse input; read stored catalog; compare request signature\n|   |-- identical requestId/signature -> prior receipt, without capture\n|   `-- then check settled status, expected revision and ownership\n|-- WorkspaceRecordStore.capture() pins one manifest\n|   |-- read history + metadata; match checkpoint ID and version\n|   |-- load selected checkpoint and its referenced diagram revisions\n|   `-- retain header + ALL document checkpoint/revision/item references\n|       `-- {$diagramRecord: 'workspace', id: blob hash}\n|-- Build temporary history to derive the publication document\n|   |-- baselineId = headId = requested checkpoint; past/future empty\n|   `-- selected snapshot has no parent in this temporary history\n|-- Repository selection and checks\n|   |-- input -> existing representation -> capture metadata -> inference\n|   `-- reject unknown repository; new canvas may require explicit choice\n|-- rules.publishMappingDiagram() creates the publication result\n|   `-- overwrite new revision content with capture.stored references\n|-- writeJsonAtomic(catalog path, catalog + checkpointReceipts)\n|   `-- receipt: representation, revisionId, savedVersion, checkpointId\n`-- Related publication retry identities\n    |-- saveMappingDiagram: generated key, only without representationId\n    |-- output promotion: requestId + signature\n    `-- acceptance: changeSessionId, matching requestId + sessionVersion",
+        "position": {
+          "column": 220,
+          "row": 0
+        }
+      },
+      {
+        "id": "guards",
+        "ascii": "Workspace validation: references and semantic immutability\n|-- apply() rejects malformed batches before staging\n|   |-- requestId: 1-150 word/hyphen characters\n|   |-- expectedRevision: safe integer; at most 100000 changes\n|   `-- unique keys; each change is either a value or a true deletion\n|-- Existing value replacements\n|   |-- revision/item: serialized content must match\n|   `-- checkpoint: re-encoding allowed if stateKey remains equal\n|       `-- transactionId excluded from the semantic comparison\n|-- validateRecordUpdate() checks workspace ownership\n|   |-- project ID matches; at most 100 unique document IDs\n|   |-- activeDocumentId must be listed\n|   |-- canonical encoded document keys; item key must match item hash\n|   `-- metadata, baseline, history and canvas required per document\n|-- Affected document validation\n|   |-- restore history and validate checkpointHead\n|   |-- current mode: validate current history changes\n|   |-- otherwise: changed history, or full validation on history removal\n|   `-- deserialize current document without accumulated history\n|-- Transfers form cross-document dependencies\n|   |-- unique transfer IDs; distinct, existing source and destination\n|   |-- before/after checkpoints must exist for both participants\n|   |-- destination-after transactionId must equal transfer ID\n|   `-- move also requires source-after transactionId to match\n`-- canvasViewChanges() normalizes a cloned view before encoding\n    |-- conversations: clear pending/progress; error if pending with context\n    `-- generating surfaces become error state with retry guidance",
+        "position": {
+          "column": 220,
+          "row": 36
+        }
+      },
+      {
+        "id": "reads",
+        "ascii": "Read boundaries and portable diagram contexts\n|-- WorkspaceRecordStore.read(): full manifest record loading\n|   |-- identical raw manifest -> reuse cached records\n|   `-- current-only cache -> validate all when 'all' is later requested\n|-- viewHeaders(): workspace index + each document's metadata/history\n|   `-- excludes checkpoint bodies, items and diagram revision bodies\n|-- CanvasCatalogStore offers distinct read paths\n|   |-- loadCurrentRepresentationCatalog: deduplicate selected revision IDs\n|   |   `-- call DiagramPersistence.currentHistory() per selected revision\n|   |-- loadRepresentationCatalog: restore catalog; normalize canvas types\n|   |   `-- legacy ownership inference can trigger a catalog write\n|   |-- loadChangeSessionAcceptances: stored receipts without restoration\n|   `-- loadDiagramSourceBindings: cache a promise using file metadata\n|       |-- key: project + path/inode/size/mtime/ctime\n|       `-- clear failed cache; return a structured clone\n|-- archiveRepresentation(): keep encoded refs during metadata write\n|   |-- default includeHistory -> reread restored catalog for return\n|   `-- includeHistory false -> return catalog with revisions: {}\n`-- MappingWorkspaceService import/export traverses live and history contexts\n    |-- both deserialize workspace and require matching project ID\n    |-- portableExport: load context; optionally call store.portable()\n    |   `-- return embedded snapshots instead of backing-record references\n    `-- prepareImport: context store and embedded snapshots required\n        |-- reuse stored bindings by snapshot contentHash\n        `-- persist context files, then return workspace with stored bindings",
+        "position": {
+          "column": 0,
+          "row": 74
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": {
+          "diagram": "central",
+          "line": 27
+        },
+        "target": {
+          "diagram": "commit",
+          "line": 1
+        },
+        "label": "Commit ordering and blob lifetime"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 17
+        },
+        "target": {
+          "diagram": "codec",
+          "line": 1
+        },
+        "label": "Encoding and reconstruction dependencies"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 25
+        },
+        "target": {
+          "diagram": "guards",
+          "line": 1
+        },
+        "label": "Validation before publication"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 37
+        },
+        "target": {
+          "diagram": "publish",
+          "line": 1
+        },
+        "label": "Capture-to-catalog call and data flow"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 55
+        },
+        "target": {
+          "diagram": "reads",
+          "line": 1
+        },
+        "label": "Selective reads and portability"
+      }
+    ]
+  },
+  "usage": {
+    "input_tokens": 287892,
+    "cached_input_tokens": 245632,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 8830,
+    "reasoning_output_tokens": 1089
+  }
+}

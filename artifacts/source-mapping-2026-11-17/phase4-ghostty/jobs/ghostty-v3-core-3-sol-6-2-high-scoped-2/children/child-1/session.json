@@ -1,0 +1,19 @@
+{
+  "id": "child-1",
+  "name": "host-session",
+  "assignment": "Map d1 n2–n23 using enclosing diagram. Use private scratch mktemp -d if needed. Read line-numbered ranges. Return compact lines `node scopeCodes | relative/path:start-end:roleCodes ...` plus notes. Codes scope s structure,e entity,b behavior,r relationship,g guarantee,u subsystem, role d declaration,i implementation,v use. Include parent coverage via explicit 'inherit nX ...' if useful. Do not touch checkout.",
+  "model": "gpt-6.2-sol",
+  "effort": "high",
+  "status": "generating",
+  "queuedAt": "2026-11-22T04:07:34.517Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-22T04:07:34.519Z",
+  "sessionId": "01a20170-1d95-7bbb-bff5-f7c4343bcd2b",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-sicjwt9e-agent-repository-XwfxvL-checkout--/2026-11-22T04-07-34-549Z_01a20170-1d95-7bbb-bff5-f7c4343bcd2b.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase4-sicjwt9e/agent-repository-XwfxvL/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

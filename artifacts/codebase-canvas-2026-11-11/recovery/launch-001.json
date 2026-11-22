@@ -1,0 +1,20 @@
+{
+  "pid": 337499,
+  "previousPid": 112138,
+  "at": "2026-11-11T14:20:21.188198+00:00",
+  "reason": "Install tested four-call concurrent scheduling at selection preflight boundary; zero existing generations discarded.",
+  "concurrency": 4,
+  "confirmedExistingOutputs": 160,
+  "runnerFiles": {
+    "scripts/evals/from-scratch/artifacts.ts": "1c2c0687c5eb0f5e877d8398132828caaf4e67b6902bccbffd78766bd51667b5",
+    "scripts/evals/from-scratch/concurrency.ts": "a78cf2f68403d86766c86de0417a3c39c85093b7597e2455276929c816532aa1",
+    "scripts/evals/from-scratch/confirm.ts": "177b4bf079d98d6ce5f0a3d9604295238552b8602ac0264dfe8b62b449ff6129",
+    "scripts/evals/from-scratch/fixtures.ts": "cb5eaf5234993f8a2cb644e2c13734bfdbd5d3bb1539648b0263cd1d3f251cfc",
+    "scripts/evals/from-scratch/model.ts": "2a7ee80be544eb3a368a971820308c9f2fdf030d94554eb9b2a3a0bfc05cf9e3",
+    "scripts/evals/from-scratch/prompts.ts": "649ed3dd0a0683b8c26b809d317384ee381abe31dc7dc358617e56d6ece4fa6c",
+    "scripts/evals/from-scratch/recover.ts": "c842e5a183532982157d1ac4f4af29524877f8c4a19d8bdd0ce3e8fa42ec808c",
+    "scripts/evals/from-scratch/run.ts": "cafc8768a05f76b1d5257b02abe6a62f735c49e529c4d539c18a716080e5aff8",
+    "scripts/evals/from-scratch/smoke.ts": "d5d8dac0db31d25f91df27de65e486630f385312f37b695eadc2ec58ffe36039",
+    "scripts/evals/from-scratch/supervise.py": "b33aef46602b2a5f5eef4ee0c6c5ba69aafd37081918d08a6e0085e1bd121e5c"
+  }
+}

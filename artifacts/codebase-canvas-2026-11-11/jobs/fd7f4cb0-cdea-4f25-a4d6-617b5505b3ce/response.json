@@ -1,0 +1,119 @@
+{
+  "output": {
+    "explanation": "The central tree reduces the seed from 111 to 67 lines (39.6%) and from 8,771 to 5,641 characters (35.7%). Five peripherals give scope resolution, incremental reuse, evidence accounting, graph projection and source joins their primary explanatory locations. Modular structure combines containment and lexical visibility conceptually; the implementation retains separate views. C denotes source-visible invocation relationships, not observed runtime activations. D describes computational dependencies beneath the organizational choices.\n\nThe critique is addressed by reducing repeated detail, attaching expansions to concepts that cover their full scope, and placing peripheral roots near their central anchors. The complete result has 153 lines versus the previous result's 188. Three attachments align exactly by row; the other two differ by three and seven rows. Text rectangles do not overlap, all endpoints are valid 1-based lines, and every diagram is connected.\n\nSource-grounded qualifications: schema.ts permits exported metadata, but the supplied declaration/context code does not populate it. derive.ts retains relation IDs on inter-component condensation edges; internal relations remain in artifact.relations, and only edge participants enter the SCC universe. Although layers declare excludeSelfEdges=true, the shown SCC filter does not remove self edges. context.ts derives candidateSites from persisted relation/uncertainty sites, not an exhaustive AST inventory. sourceJoins.ts never emits ambiguous and returns values without appending them. analyze.ts publishes artifact, report and manifest sequentially; no shared transaction is shown.\n\nPeripherals add details absent from the seed, including parameter-property identities, receiver lookup, reuse-key exclusions, coverage accounting and SCC filtering. Imported extractor, metric, finding, serialization, report and domain incremental helper implementations are not supplied, so their internal behavior remains unverified. The critique's proposed reconciliation with other points cannot be established from this point's pinned evidence and was not imported. The supplied relationship supports a textual pointer to the diagrams point, but no destination diagram ID or external implementation is invented. Rendered routing and interaction remain unverified.",
+    "diagrams": [
+      {
+        "id": "central",
+        "ascii": "Static Architecture Analysis - pinned source at 8ca143700ca4\n|-- Analysis boundary [M]: TypeScript extraction through StaticAnalyzer\n|   |-- analyze(request) -> Promise of artifact, measurements and optional execution mode\n|   |-- Request fixes repository, tsconfig, selected paths, views, frameworks and metrics\n|   |   `-- Selection limits emitted facts; imported code may support symbol resolution\n|   |-- staticAnalyzer implements extraction; IncrementalAnalyzer can wrap an extractor\n|   |-- AnalysisContext owns compiler access, fact registries and source evidence\n|   |-- Declarations supplies source entities, scope bindings and component links\n|   |-- Extraction consumes the domain schema; deriveAnalysis computes graph projections\n|   |   `-- Artifacts expose entities, relations, uncertainties and derived results\n|   `-- Modular structure combines boundaries, visibility and component dependencies\n|       |-- Implementation keeps containment and lexical as separate evidence views\n|       |-- Names and component boundaries: declarations, imports, reexports and JSX links\n|       `-- Layer/feature metadata and concept partitions supply higher-level groupings\n|-- Invocation path [C]: CLI orchestration visible in source\n|   |-- CLI invokes staticAnalyzer directly, independently of the interactive backend\n|   |   |-- Select TS/TSX inputs from tsconfig; optional prefixes narrow the analyzed set\n|   |   `-- Request every view and React/Zustand/tldraw/controller framework analysis\n|   |-- Construct context + declarations; then index() -> imports() -> composition()\n|   |-- Any requested view beyond containment enables lexical reference extraction\n|   |-- Calls, ownership or dependencies enable resource, call and framework extraction\n|   |   `-- Ownership/dependencies also prepare dataflow, release compiler, then extract flow\n|   |       `-- connectCallbackCandidates follows dataflow extraction\n|   |-- Finish snapshot -> release working state -> deriveAnalysis -> return result\n|   `-- Call evidence describes static relationships; it does not record activations\n|       `-- Schema reserves runtime identities; this path establishes no observed call tree\n|-- State responsibility [O+D]: owners of extraction state and reusable facts\n|   |-- Each AnalysisContext owns mutable registries for one artifact\n|   |   |-- Compiler begins in syntax mode; checker access enables semantic resolution\n|   |   `-- Pin compiler inputs before releasing active compiler references\n|   |-- Module-level previousProgram can retain compiler state across smaller analyses\n|   |-- finish() transfers facts into artifact arrays; release() clears extraction maps\n|   |-- IncrementalAnalyzer owns a session checkpoint behind analyze/export/restore\n|   |   `-- Reuse decision and successful assembly determine checkpoint publication\n|   `-- Analyzed ownership is a separate relation vocabulary with provenance\n|       `-- Creation, retention, mutation and disposal labels alone prove no lifetime\n|-- Evidence contract [D]: results depend on pinned inputs and attributable facts\n|   |-- Snapshot records source/configuration hashes, compiler settings and input roles\n|   |-- Provenance and coverage connect emitted facts and uncertainty to pinned locations\n|   |-- Git commit and dirty inputs are recorded when available; hashes also pin non-Git input\n|   `-- Elapsed time, RSS and publication timestamps remain outside deterministic facts\n|-- Computational graph [D]: dependencies precede the choice of grouping\n|   |-- Relation schema covers value, argument, return, read/write and control dependencies\n|   |   `-- Reactive, selection, prop, context, effect and await dependencies are also allowed\n|   |-- Organizational partitions group entities without replacing the underlying relations\n|   |-- Derived comparisons use one source-entity universe plus selected graph layers\n|   |   |-- Universe draws from analyzed files and excludes structural/type/external scaffolding\n|   |   |-- Built-in groupings compare directory, layer and an all-source single group\n|   |   `-- Metric schema reports coverage, edge mass, cohesion and seeded baseline results\n|   |-- deriveAnalysis selects eligible relations, evaluates partitions and condenses cycles\n|   |   `-- Findings and a containment projection are additional derived outputs\n|   `-- Reused facts still receive a fresh snapshot and recomputed derived results\n|-- Diagram correspondence [M+D]: pinned leaves define conceptual groupings\n|   |-- joinSourceRange maps a leaf's pinned source interval to eligible source entities\n|   |-- partitionFromSourceJoins maps matched entities to groups for one diagram revision\n|   |   `-- Membership may overlap; an uncovered entity has no primary group\n|   |-- Integration seam: helpers return values for callers to incorporate\n|   |   `-- The shown analysis CLI does not supply diagram joins\n|   `-- Matching and group assignment enforce the source evidence boundary\n|       `-- Related point: diagrams; only the analysis side of this handoff is supplied\n`-- Output publication [C+O+D]: CLI owns artifact, report and manifest files\n    |-- Artifact chunks -> gzip stream -> temporary file -> rename to final artifact\n    |   `-- Artifact temporary path is removed in finally, including after pipeline failure\n    |-- Markdown report links to the compressed artifact; report has its own write/rename\n    |-- Run manifest records snapshot, byte hashes, sizes, coverage, counts and measurements\n    |   `-- Manifest is written and renamed after artifact and report publication\n    `-- These are sequential file publications; no shared transaction is shown",
+        "position": {
+          "column": 90,
+          "row": 0
+        }
+      },
+      {
+        "id": "names",
+        "ascii": "Name visibility and component boundaries [M+D]\n|-- Binding lookup walks enclosing scopeBindings first\n|   |-- var uses function scope; let/const use current scope\n|   `-- Type-only names stay out of the local value map\n|-- Unresolved local lookup falls back to TypeChecker symbols\n|   |-- Follow aliases; cache value/callable resolutions separately\n|   `-- Callable preference can choose a function initializer\n|-- Constructor parameter property has separate parameter/field IDs\n|   `-- Parameter -> field is a dependencies/value-flow relation\n|-- Synthetic this binding belongs to an enclosing receiver\n|   `-- Walk past arrows to a non-arrow callable or class\n|-- External summaries belong to the referencing module\n|   `-- The same declaration can have distinct per-module summaries\n|-- imports() records imports/reexports with typeOnly information\n|-- composition() emits jsx-child for resolved component tags\n`-- Visibility evidence has a limit\n    `-- exported is optional in schema; supplied code does not set it",
+        "position": {
+          "column": 0,
+          "row": 12
+        }
+      },
+      {
+        "id": "reuse",
+        "ascii": "Reuse decisions and checkpoint publication [C+O+D]\n|-- Inventory current inputs before consulting cached facts\n|   |-- Hash source/environment inputs and package manifests\n|   `-- Record import resolution, including unresolved null targets\n|-- Combine current import edges with surviving cached edges\n|   `-- Group dependency components; uncertain global effects broaden scope\n|-- Fallback uses one component containing all local inputs\n|   |-- Global scripts, augmentation or nonliteral import()/require()\n|   `-- Declaration involvement or Node16/NodeNext resolution mode\n|-- Component key includes environment identity and selected paths\n|   |-- Plus member content hashes and current resolution observations\n|   |-- Metrics are absent from reuse keys; derivation always reruns\n|   `-- Hit retains fragment; miss invokes the injected extractor\n|-- Fresh assembly preserves each fragment's semantic-resolution mode\n|   `-- Enable checker if needed; retain nested package configuration pins\n`-- Publish checkpoint only after assembly and derivation succeed\n    |-- Busy guard rejects concurrent analyze and restore\n    |-- finally clears busy on success or failure\n    `-- Export/restore clone; restore validates keys, mode, scope and artifacts",
+        "position": {
+          "column": 0,
+          "row": 33
+        }
+      },
+      {
+        "id": "evidence",
+        "ascii": "Evidence identity and coverage accounting [D]\n|-- Preserve BOM, line terminators and surrogate pairs\n|   `-- UTF-16 offsets/columns; 1-based lines; exclusive range end\n|-- Pin compiler inputs once before releasing the compiler\n|   |-- In-repository compiler inputs become resolution-only files\n|   `-- Outside files contribute basename/hash pairs to configuration hash\n|-- Snapshot ID hashes the completed header; facts receive that ID\n|-- Entity identity carries explicit stability guarantees\n|   |-- Named keys include repository, path, owner, kind and role\n|   |-- Structural fingerprints ignore trivia, retain literal/JSX text\n|   `-- Collisions add ordinals and ambiguous-identity uncertainty\n`-- Coverage is reconstructed from persisted relation/issue sites\n    |-- Site = path + start offset + end offset of first location\n    |-- Relations count resolved unless an issue shares their site\n    |-- Issue sites count unresolved and make an active view partial\n    `-- candidateSites is their union, not an exhaustive AST-site count",
+        "position": {
+          "column": 200,
+          "row": 36
+        }
+      },
+      {
+        "id": "graphs",
+        "ascii": "Graph projection and comparison policy [D+M]\n|-- Layers select active views, resolved/inferred status, unit weights\n|   |-- calls: calls + constructs\n|   |-- data: value-flow + argument + return + reads + writes\n|   |-- state: reads + writes\n|   `-- reactive: reactive + selects + prop-flow + context-read\n|       `-- Plus effect-dependency; control/awaits are outside these layers\n|-- evaluateAllPartitions gets directory as comparison if present\n|   `-- Metric formulas are in an unprovided implementation\n|-- SCC construction uses eligible edges within the entity universe\n|   |-- Only edge participants enter the SCC universe\n|   |-- Iterative Kosaraju avoids recursive traversal depth limits\n|   |-- Condensed edges retain inter-component relation IDs\n|   `-- Intra-component relations remain in artifact.relations\n|-- Layers declare excludeSelfEdges=true\n|   `-- The shown SCC edge filter does not remove self edges\n`-- Other projections\n    |-- deriveFindings is called; its rules are not supplied\n    `-- Containment uses contains parents; liftedEdges stays empty",
+        "position": {
+          "column": 200,
+          "row": 56
+        }
+      },
+      {
+        "id": "joins",
+        "ascii": "Pinned leaf matching and conceptual membership [M+D]\n|-- joinSourceRange checks snapshot ID, path and file hash\n|   |-- Mismatch returns stale with no entities; no silent rebasing\n|   `-- Valid pin: negative/reversed/out-of-file offsets throw\n|-- Match eligible source-origin entities at the same path/hash\n|   |-- fully-contained: entity range lies inside the leaf range\n|   `-- intersects: entity.start < leaf.end AND entity.end > leaf.start\n|-- Sort entity IDs; nonempty -> matched, empty -> unmapped\n|   `-- Schema permits ambiguous; this function never emits it\n`-- partitionFromSourceJoins constructs the concept partition\n    |-- Reject duplicate group IDs or universe members\n    |-- Accept only matched joins for the requested diagram revision\n    |-- A leaf contributes to every group that contains it\n    |-- Ignore joined entity IDs outside the supplied universe\n    `-- Sort each entity's group IDs; first is primary, or null if empty",
+        "position": {
+          "column": 0,
+          "row": 55
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": {
+          "diagram": "central",
+          "line": 13
+        },
+        "target": {
+          "diagram": "names",
+          "line": 1
+        },
+        "label": "Scope lookup, external summaries and component links"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 34
+        },
+        "target": {
+          "diagram": "reuse",
+          "line": 1
+        },
+        "label": "Validate reuse before publishing the session checkpoint"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 37
+        },
+        "target": {
+          "diagram": "evidence",
+          "line": 1
+        },
+        "label": "Pin inputs and account for attributable evidence"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 50
+        },
+        "target": {
+          "diagram": "graphs",
+          "line": 1
+        },
+        "label": "Select graph layers, evaluate partitions and condense cycles"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 53
+        },
+        "target": {
+          "diagram": "joins",
+          "line": 1
+        },
+        "label": "Match pinned leaf ranges and assign concept memberships"
+      }
+    ]
+  },
+  "usage": {
+    "input_tokens": 378390,
+    "cached_input_tokens": 324864,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 8670,
+    "reasoning_output_tokens": 1082
+  }
+}

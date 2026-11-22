@@ -1,0 +1,19 @@
+{
+  "id": "child-4",
+  "name": "terminal",
+  "assignment": "Map all d5 per instructions; return compact node scopes, path abbreviations, ranges/roles, include child refs for inheritance when appropriate.",
+  "model": "gpt-6.2-astra",
+  "effort": "high",
+  "status": "generating",
+  "queuedAt": "2026-11-22T15:27:49.169Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-22T15:32:58.858Z",
+  "sessionId": "01a203e3-9f70-70b4-aa0c-0403bd62c839",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase5-gcchw3sl-agent-repository-E7lXKk-checkout--/2026-11-22T15-32-58-864Z_01a203e3-9f70-70b4-aa0c-0403bd62c839.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase5-gcchw3sl/agent-repository-E7lXKk/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

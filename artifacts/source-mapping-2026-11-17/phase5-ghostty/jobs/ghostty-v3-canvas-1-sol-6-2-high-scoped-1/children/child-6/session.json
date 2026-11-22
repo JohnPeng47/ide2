@@ -1,0 +1,19 @@
+{
+  "id": "child-6",
+  "name": "d4",
+  "assignment": "Map all d4 nodes. Return compact verified lines + scopes/roles. I can union children for parent nodes.",
+  "model": "gpt-6.2-sol",
+  "effort": "high",
+  "status": "generating",
+  "queuedAt": "2026-11-22T15:27:50.288Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-22T15:41:21.252Z",
+  "sessionId": "01a203eb-49ed-7e5a-9bcf-2d421ce881c7",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase5-kerh8ebv-agent-repository-tUNAhF-checkout--/2026-11-22T15-41-21-261Z_01a203eb-49ed-7e5a-9bcf-2d421ce881c7.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase5-kerh8ebv/agent-repository-tUNAhF/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

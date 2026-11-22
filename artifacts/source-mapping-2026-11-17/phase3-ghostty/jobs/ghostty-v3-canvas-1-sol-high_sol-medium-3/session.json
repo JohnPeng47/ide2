@@ -1,0 +1,13 @@
+{
+  "id": "01a1f20d-e906-7cc2-84a6-0e9647dfa897",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-txvy8xb9-agent-repository-FzeYha-checkout--/2026-11-19T04-26-00-326Z_01a1f20d-e906-7cc2-84a6-0e9647dfa897.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase3-txvy8xb9/agent-repository-FzeYha/checkout",
+  "model": "gpt-6-sol",
+  "effort": "high",
+  "tools": [
+    "read",
+    "bash",
+    "validate_source_mappings",
+    "delegate_subagents"
+  ]
+}

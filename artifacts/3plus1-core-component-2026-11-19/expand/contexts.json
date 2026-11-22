@@ -1,0 +1,66 @@
+{
+  "modular": {
+    "agentContextId": "saved-agent-context-f9240664-77a7-4098-be0b-52593fa87fab",
+    "name": "Ghostty · Modular structure · core tree",
+    "description": "Pinned core sample 1 (existing few-shot examples) from run 959850e3-81aa-4e37-a24a-8a32860cea1b at checkpoint canvas-revision-4f18d2f8-46fd-485d-a616-f34a0abcb2ae; diagram 959850e3-81aa-4e37-a24a-8a32860cea1b-central is supplied as modular-core.",
+    "createdAt": "2026-11-19T16:43:42.282Z",
+    "group": "3+1 Model Core Component",
+    "contentHash": "aea34a51388d00d4bbfc9812aea54e3427338fc1a72c79d1b45e216b65742701",
+    "messageCount": 1,
+    "source": {
+      "experimentId": "044f0072-fded-4c61-b694-2a75fd2433ca",
+      "runId": "959850e3-81aa-4e37-a24a-8a32860cea1b",
+      "cellKey": "7b35b0e6-03fe-4733-9df6-6e6addcd97cd:1:alternative",
+      "checkpointId": "canvas-revision-4f18d2f8-46fd-485d-a616-f34a0abcb2ae",
+      "label": "Ghostty · Modular structure · core tree"
+    }
+  },
+  "call": {
+    "agentContextId": "saved-agent-context-a538234c-3d6f-42a9-a0fc-8f046d50fb16",
+    "name": "Ghostty · Call · core tree",
+    "description": "Pinned core sample 1 (existing few-shot examples) from run a0075b75-ea50-4c2b-b7a1-13496ed95456 at checkpoint canvas-revision-489c62dc-a08a-4a34-a656-6287cc85f593; diagram a0075b75-ea50-4c2b-b7a1-13496ed95456-central is supplied as call-core.",
+    "createdAt": "2026-11-19T16:43:42.279Z",
+    "group": "3+1 Model Core Component",
+    "contentHash": "5b5e253525d4627e9a8ec45fc642668ff86fcac1deb71b58625aaf2fd7d50d44",
+    "messageCount": 1,
+    "source": {
+      "experimentId": "044f0072-fded-4c61-b694-2a75fd2433ca",
+      "runId": "a0075b75-ea50-4c2b-b7a1-13496ed95456",
+      "cellKey": "054e7ca0-c62a-49d9-bafa-2fc7750f7f6f:1:alternative",
+      "checkpointId": "canvas-revision-489c62dc-a08a-4a34-a656-6287cc85f593",
+      "label": "Ghostty · Call · core tree"
+    }
+  },
+  "ownership": {
+    "agentContextId": "saved-agent-context-5e3d5207-5b42-4179-ba27-3015b760f3bd",
+    "name": "Ghostty · Ownership · core tree",
+    "description": "Pinned core sample 1 (existing few-shot examples) from run 938d0e94-1797-4078-a2f3-6acc3495c919 at checkpoint canvas-revision-d4b61d51-2887-4244-b838-2f2c018a6838; diagram 938d0e94-1797-4078-a2f3-6acc3495c919-central is supplied as ownership-core.",
+    "createdAt": "2026-11-19T16:43:42.283Z",
+    "group": "3+1 Model Core Component",
+    "contentHash": "4ec0bd2e0be8980031776ade17009754ac2e2b301f80872a6253db33ffd4ca27",
+    "messageCount": 1,
+    "source": {
+      "experimentId": "044f0072-fded-4c61-b694-2a75fd2433ca",
+      "runId": "938d0e94-1797-4078-a2f3-6acc3495c919",
+      "cellKey": "5048e138-dd64-4c4b-8856-cdc2243e12ea:1:alternative",
+      "checkpointId": "canvas-revision-d4b61d51-2887-4244-b838-2f2c018a6838",
+      "label": "Ghostty · Ownership · core tree"
+    }
+  },
+  "data": {
+    "agentContextId": "saved-agent-context-ddb70dee-f5ee-4cfa-a831-984347ea4b49",
+    "name": "Ghostty · Data dependency · core tree",
+    "description": "Pinned core sample 1 (existing few-shot examples) from run 6ff63464-5fa4-4cdf-916b-d287b395baf7 at checkpoint canvas-revision-c1464820-045c-4a4b-bef5-f45c8a23e2f3; diagram 6ff63464-5fa4-4cdf-916b-d287b395baf7-central is supplied as data-core.",
+    "createdAt": "2026-11-19T16:43:42.281Z",
+    "group": "3+1 Model Core Component",
+    "contentHash": "8e95a1ffce3924ea122384efe4918d50cb898a4fc3bb5a4001b4bb18abe247be",
+    "messageCount": 1,
+    "source": {
+      "experimentId": "044f0072-fded-4c61-b694-2a75fd2433ca",
+      "runId": "6ff63464-5fa4-4cdf-916b-d287b395baf7",
+      "cellKey": "a97d8e92-be48-433d-b98b-a868a36583e8:1:alternative",
+      "checkpointId": "canvas-revision-c1464820-045c-4a4b-bef5-f45c8a23e2f3",
+      "label": "Ghostty · Data dependency · core tree"
+    }
+  }
+}

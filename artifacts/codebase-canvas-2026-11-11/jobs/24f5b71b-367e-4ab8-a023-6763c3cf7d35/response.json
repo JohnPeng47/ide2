@@ -1,0 +1,111 @@
+{
+  "output": {
+    "explanation": "The central tree is reduced from 6,251 to 4,411 characters (29.4%) and from 87 to 58 lines (33.3%). Four peripheral trees expand identity/cache ownership, tree navigation/folding, graph parsing, and interpreter evidence. Modular boundaries distinguish public entry points from private adapters; call order and data dependencies explain computation; ownership distinguishes stored tree nodes from cached derived anchors. Connections attach to specific concept lines, and positions leave gaps around measured text bounds. Corrections clarify two seed claims: asciiTree.ts takes text from node.label, while the first span supplies coordinates; diagramContentNodes.ts scopes legacy node and parent/child IDs, without retaining interpreter edges. Details absent from the seed include object-identity caching, the tree path bypassing deepFreeze, raw-ASCII helpers always using the default tree parser, frame-cell grouping, wire-component source fallback, and explainNode's precise evidence filters. Evidence comes only from the supplied point, six pinned source texts, and seed. identity and folding draw on diagramContent.ts, diagramContentNodes.ts and asciiTree.ts; graph draws on parseAsciiGraph.ts; evidence draws on interpreter/index.ts and types.ts. Imported interpreter-stage implementations and geometry consumers were not supplied, so their internal behavior is not inferred. Selection and endpoint uses are stated by the supplied point; downstream UI behavior is not independently established.",
+    "diagrams": [
+      {
+        "id": "central",
+        "ascii": "ASCII Structure and Anchors\n|-- Content boundary: buildDiagramContent(ascii, revisionId, kind, version)\n|   |-- Validate printable ASCII + LF and length <= 20000 characters\n|   |   `-- Blank allowed only as a multi-row, equal-width spaces rectangle for diagram kind\n|   |-- Retain revisionId, original ascii and asciiSha256 in DiagramContent\n|   `-- Pin parser choice so rebuilds can reproduce structure and node IDs\n|       |-- New tree: ascii-tree-2; ascii-tree-1 remains supported\n|       |-- New diagram: ascii-graph-1; unversioned diagram: legacy-diagram\n|       `-- Rebuild with contentParserVersion(structure); reject version/kind mismatch\n|-- Tree structure: parse during construction and retain nodes in content\n|   |-- parseAsciiTree calls shared parseDiagram with tree compatibility\n|   |   `-- Both tolerances 0; continuation separate; repairs none\n|   |-- Project first-span line/column and node.label into line-addressed nodes\n|   |   `-- Map parent IDs to lines; accumulate descendants through ancestor chains\n|   |-- Build node ID = revisionId:asciiSha256:line-<line>\n|   |   `-- Store rootIds and nodes with label, anchors, parentId and childIds\n|   |-- Descendants enable foldRanges through the line before the next peer\n|   |   `-- Peer has branchColumn <= current; absent peer extends fold to end of text\n|   `-- Expose stored nodes, lineage/subtree helpers and visible/hidden source lines\n|       `-- visibleContentLines rejects an unknown collapsed tree ID: STALE_CONTENT_NODE\n|-- Diagram anchors: diagramContentNodes derives an index on demand\n|   |-- Private WeakMap keyed by DiagramContent object retains derived arrays\n|   |   `-- Cache hit returns array; miss selects parser, deepFreeze, cache, return\n|   |-- ascii-graph-1 selects private graphNodes -> parseAsciiGraph\n|   |   |-- Classify frames, branches, wires, heads and labels; assemble text boxes\n|   |   |-- Resolve containment and wire endpoints; emit directed/undirected edges\n|   |   `-- Return boxes, edges and rootIds with one-based inclusive coordinates\n|   |-- Project boxes to content nodes, preserving every text span in lines[]\n|   |   |-- ID = revisionId:asciiSha256:node-<first span line>-<first span column>\n|   |   `-- Map parent/child IDs; foldRanges = []; graph edges are not in this index\n|   `-- Unversioned content selects private legacyNodes -> shared parseDiagram\n|       |-- mixed dialect; repairs none; continuation separate; retain nodes with spans\n|       `-- Scope node/parent/child IDs; use first-span anchors; foldRanges = []\n|-- Common anchor contract: DiagramContentNode\n|   |-- id + label provide addressable content for selection, mapping and endpoints\n|   |-- parentId + childIds express containment; foldRanges identify collapsible lines\n|   |-- line/startColumn/endColumn retain first-line identity anchors\n|   |   `-- Deprecated as complete geometry for multiline content\n|   `-- Optional lines[] carries one-based inclusive spans for multiline geometry\n`-- Shared spatial interpreter: parseDiagram returns spatial-diagram-1\n    |-- Pure synchronous parser; validate input and freeze interpretation policy\n    |   |-- Defaults: mixed dialect, tree tolerance 1, wire tolerance 2\n    |   |-- continuation auto; detached lists auto; conservative repairs\n    |   `-- Compatibility requires tree dialect; validate numeric limits and maxChars\n    |-- Pipeline: normalizeSource -> recognize -> interpretLayout\n    |   |-- Then interpretTrees -> interpretWires on the same result object\n    |   `-- Callers may override glyphs and supply custom recognizers\n    |-- Retain source mapping alongside interpreted structure\n    |   |-- Original text, normalized rows and original offset pairs per UTF-16 column\n    |   |-- SourceSpan uses one-based coordinates and end-exclusive UTF-16 ranges\n    |   |-- Nodes carry spans, containment IDs and decision IDs\n    |   |-- Edges carry contains/references, decision ID and optional wire cells\n    |   |   `-- A head meeting a branch can address its region\n    |   `-- Regions group roots/nodes; original lines remain addressable\n    `-- Retain evidence: candidates, decisions, repairs, unresolved cases, diagnostics\n        |-- Repairs describe logical geometry moves without rewriting original source\n        `-- explainNode returns node-related decisions, repairs and unresolved cases\n            `-- Uses actual evidence; unknown node ID returns undefined",
+        "position": {
+          "column": 100,
+          "row": 5
+        }
+      },
+      {
+        "id": "identity",
+        "ascii": "Identity, storage and derived-cache ownership\n|-- buildDiagramContent owns the stored representation\n|   |-- Tree: parserVersion + rootIds + node record\n|   |-- Graph: ascii-graph-1 marker; anchors are derived later\n|   `-- legacy-diagram request stores kind: diagram with no version\n|-- contentParserVersion exposes the rebuild choice\n|   |-- Missing diagram version resolves to legacy-diagram\n|   `-- Caller must pass this choice when rebuilding old content\n|-- Node identity depends on revisionId + asciiSha256\n|   |-- Tree suffix: line-<line>\n|   |-- Graph suffix: node-<first span line>-<first span column>\n|   `-- Legacy suffix: interpreter node.id\n|-- diagramContentNodes exposes nodes; adapters and cache stay private\n|   |-- Tree returns a new Object.values array of existing stored nodes\n|   |   `-- This path bypasses cache and deepFreeze\n|   |-- Diagram miss builds nodes, deepFreeze(nodes), then caches them\n|   |-- Same content object hits the same derived array\n|   `-- Cache key is object identity, not hash or revision equality\n|-- Projection determines which geometry survives\n|   |-- Graph copies all box spans into inclusive lines[]\n|   |   `-- branchColumn = rectangle left; anchor = first span left\n|   |-- Legacy copies first span only; endColumn subtracts 1\n|   |   `-- branchColumn falls back to first-span column\n|   `-- Tree builder stores anchors without lines[]\n`-- DeepReadonly is the public content/node type contract\n    `-- buildDiagramContent itself contains no runtime freeze call",
+        "position": {
+          "column": 0,
+          "row": 0
+        }
+      },
+      {
+        "id": "folding",
+        "ascii": "Tree navigation and folding\n|-- parseAsciiTree projects shared interpreter output\n|   |-- First span supplies line and textColumn; node.label supplies text\n|   |-- branchColumn subtracts 1; absent branchColumn becomes -1\n|   `-- Each node appends its line to every ancestor's descendantLines\n|-- Stored fold interval requires at least one descendant\n|   |-- Start = node.line + 1\n|   |-- End = next peer.line - 1, or final source line\n|   `-- Interval includes intervening non-node lines\n|-- visibleContentLines reads stored foldRanges\n|   |-- Union collapsed intervals, then filter original line numbers\n|   |-- Unknown tree ID throws STALE_CONTENT_NODE\n|   `-- Diagram kind ignores collapsed IDs and returns every line\n|-- contentTreeNodes reconstructs line-based nodes without parsing\n|   |-- Descendants are nodes whose lines fall inside foldRanges\n|   `-- Non-tree content returns []\n`-- Raw-ASCII helpers reparse using default ascii-tree-2\n    |-- asciiTreeLineage: ancestors through requested node; missing -> []\n    |-- asciiTreeSubtree: node and descendants in display order; missing -> []\n    |-- hiddenAsciiTreeLines: union intervals for matched collapsed lines\n    |   `-- Unknown lines and leaves contribute nothing\n    `-- These helpers accept no stored parser-version argument",
+        "position": {
+          "column": 0,
+          "row": 37
+        }
+      },
+      {
+        "id": "graph",
+        "ascii": "Graph parsing: text ownership and wire resolution\n|-- parseAsciiGraph normalizes CR/CRLF to LF\n|   `-- Internal cells are zero-based; returned coordinates are one-based\n|-- Classify geometry before assembling boxes\n|   |-- Frame borders separate cells and are excluded from wire components\n|   |-- Branch markers delimit tree items; heads can mark wire targets\n|   `-- Text on wires can become edge labels instead of boxes\n|-- Segment rows into text runs\n|   |-- Wires and markers bound runs; gaps can split them\n|   `-- Three-space gaps spare aligned operators starting =, <, : or -\n|-- Assemble boxes top to bottom; owner map relates text cells to boxes\n|   |-- Frame cell key = frame ID + border band + column cell\n|   |   `-- Further text in that cell appends to its existing box\n|   |-- Branch parent starts as deepest open entry left of marker\n|   |   `-- Upward scan can replace it with the box owning that column\n|   |-- Continuation considers overlap, indentation and column context\n|   `-- Blank rows reset open stack; separators also advance block\n|-- Group connected wire cells with union-find\n|   |-- Direction compatibility controls joins\n|   |-- Vertical neighbor search also checks adjacent columns\n|   `-- Certain vertical strokes can bridge one blank cell\n|-- Resolve each component's source boxes, targets and labels\n|   |-- Heads seek nearby boxes; exposed ends scan for text owners\n|   |-- Upward exit at final tree item can use the tree root as source\n|   |-- Missing source can inherit from a nearby component above\n|   `-- If still absent, incoming boxes supply sources when targets exist\n`-- Emit graph result\n    |-- Source to head target yields directed edge\n    |-- Other eligible incoming boxes yield undirected edges\n    |-- Skip self-edges and duplicates; retain component cells and label\n    `-- Boxes retain text spans, bounding rectangle and containment",
+        "position": {
+          "column": 210,
+          "row": 0
+        }
+      },
+      {
+        "id": "evidence",
+        "ascii": "Interpreter execution and evidence queries\n|-- Public parseDiagram creates policy and a fresh result per call\n|   |-- Private policyFor validates enums and numeric settings\n|   |   `-- Safe integers: tolerances >= 0; other numeric settings >= 1\n|   |-- Default maxChars = 1000000; input length checked before normalization\n|   `-- Freeze policy and merged glyph table\n|-- Ordered calls populate shared interpretation state\n|   |-- normalizeSource supplies rows and original-coordinate mapping\n|   |-- recognize supplies candidates and can add diagnostics\n|   |-- interpretLayout returns labels and wires\n|   `-- interpretTrees then interpretWires receive result, labels and wires\n|-- Public types retain links from structure to evidence\n|   |-- Candidate: ruleId + span + branch/route/vertical kind\n|   |-- Decision: reason + evidence spans + candidateIds + repairIds\n|   |-- Repair: logical moves + changesStructure; original source preserved\n|   |-- Unresolved: spans + alternative candidate/node IDs\n|   `-- Diagnostic: code + line + severity + message\n`-- Public explainNode(result, nodeId) selects related evidence\n    |-- Missing node returns undefined\n    |-- Include decisions named by node.decisionIds\n    |-- Also include decisions on edges incident to that node\n    |-- Include repairs referenced by those selected decisions\n    `-- Include unresolved cases when either condition holds\n        |-- A case span overlaps a node span in original offsets\n        `-- An alternative explicitly lists the node ID",
+        "position": {
+          "column": 210,
+          "row": 40
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": {
+          "diagram": "central",
+          "line": 6
+        },
+        "target": {
+          "diagram": "identity",
+          "line": 6
+        },
+        "label": "Pinned rebuild choice"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 22
+        },
+        "target": {
+          "diagram": "identity",
+          "line": 13
+        },
+        "label": "Derived-cache ownership"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 17
+        },
+        "target": {
+          "diagram": "folding",
+          "line": 6
+        },
+        "label": "Fold ranges and helper behavior"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 24
+        },
+        "target": {
+          "diagram": "graph",
+          "line": 1
+        },
+        "label": "Graph parser data flow"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 57
+        },
+        "target": {
+          "diagram": "evidence",
+          "line": 18
+        },
+        "label": "Evidence selection"
+      }
+    ]
+  },
+  "usage": {
+    "input_tokens": 221594,
+    "cached_input_tokens": 188160,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 7335,
+    "reasoning_output_tokens": 665
+  }
+}

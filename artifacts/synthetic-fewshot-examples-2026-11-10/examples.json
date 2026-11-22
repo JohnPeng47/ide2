@@ -1,0 +1,93 @@
+{
+  "schemaVersion": 1,
+  "createdAt": "2026-11-11T04:33:28.274602+00:00",
+  "name": "Synthetic diagram styles",
+  "artifactKind": "assistant-authored synthetic examples",
+  "description": "Six invented examples inspired by the selected architecture excerpts, varying topology, semantic perspective, detail, and notation.",
+  "parentSelection": {
+    "path": "artifacts/architecture-fewshot-slices-2026-11-10/selection.json",
+    "sha256": "523682435d4553cd624adb50aeee1b3a55a30167611dd8793414e770bdc20b75"
+  },
+  "usageGuidance": "These examples describe invented software systems. Use them only as demonstrations of representational choices, never as source evidence for a target system. Match the actual evidence when choosing labels, depth, branching, density, and relationships. The examples deliberately differ: some are shallow, some expand selectively; some use [M]/[O]/[C]/[D], others need no tags. Do not impose all four relationship types, public/private sections, error branches, shared-result markers, or lifecycle phases on every diagram. Shared-result references, retry arrows, and event siblings have explicit meanings; reuse those devices only when supported. Branch order implies sequence only when the labels explicitly say so. These are output-style references, not paired source-to-diagram demonstrations. Treat this set as a pool: choose a small, complementary subset for a prompt rather than always including all six. Selection diversity is an authoring judgment, not a measured reduction in model overfitting.",
+  "examples": [
+    {
+      "id": "01-shallow-dispatch",
+      "title": "Shallow dispatch",
+      "synthetic": true,
+      "styleReferences": [
+        "02-derived-model"
+      ],
+      "diversityRationale": "Broad and shallow; parallel alternatives need no invented internal hierarchy.",
+      "lineCount": 5,
+      "ascii": "decode(mediaType, bytes)\n|-- application/json -> JSON value\n|-- text/csv         -> rows keyed by header\n|-- image/png        -> pixel buffer + dimensions\n`-- anything else    -> UnsupportedMediaType",
+      "asciiSha256": "3d7bc33c259de7d43cdc793f96b7f27cbae2613db66f9de640639fcdc4ade5f2",
+      "file": "01-shallow-dispatch.txt"
+    },
+    {
+      "id": "02-shared-dependency",
+      "title": "Shared dependency",
+      "synthetic": true,
+      "styleReferences": [
+        "02-derived-model"
+      ],
+      "diversityRationale": "Result-first dependency tree; names shared intermediate results explicitly instead of implying exclusive ownership.",
+      "lineCount": 10,
+      "ascii": "[D] Search response\n|-- page of matches\n|   |-- ranked matches\n|   |   |-- matching document IDs [shared A]\n|   |   |   `-- query terms + inverted index\n|   |   `-- scoring weights + document statistics\n|   `-- offset + page size\n`-- total matches\n    `-- count([shared A])\n        `-- same IDs; no second matching pass",
+      "asciiSha256": "accca7b602cdd6b6d867fe1cad092c4cf3bd5d2e7c16487d4782f137f3b2dfeb",
+      "file": "02-shared-dependency.txt"
+    },
+    {
+      "id": "03-resource-lifetime",
+      "title": "Resource lifetime",
+      "synthetic": true,
+      "styleReferences": [
+        "01-ownership"
+      ],
+      "diversityRationale": "Temporal phases distinguish ownership from borrowing; a short call path sits inside an asymmetric lifecycle tree.",
+      "lineCount": 11,
+      "ascii": "[O] Connection lease\n|-- Acquire\n|   `-- pool lends one connection to one request\n|       `-- pool retains ownership; request gets exclusive use\n|-- While borrowed\n|   |-- [C] begin -> execute statements -> commit\n|   `-- statement or commit fails -> attempt rollback\n`-- Release on every exit\n    |-- healthy connection -> return to idle pool\n    `-- broken connection -> close and remove from pool\n        `-- later acquisition may create a replacement",
+      "asciiSha256": "27836bfb49d837b89f173a11ecf6514f0fa850a2679a11d3cb28ac8cbc099636",
+      "file": "03-resource-lifetime.txt"
+    },
+    {
+      "id": "04-bounded-retry",
+      "title": "Bounded retry",
+      "synthetic": true,
+      "styleReferences": [
+        "03-request-flow"
+      ],
+      "diversityRationale": "Outcome branches, a terminal failure, and a bounded back-reference express control flow without recursively expanding a loop.",
+      "lineCount": 9,
+      "ascii": "[C] Deliver webhook                         at most 3 attempts\n`-- POST event with stable delivery ID\n    |-- 2xx -> mark delivered\n    |-- permanent rejection -> mark failed\n    `-- timeout / temporary rejection\n        |-- attempts remain\n        |   `-- wait with backoff -> retry POST above\n        |       `-- receiver deduplicates by delivery ID\n        `-- exhausted -> dead-letter queue",
+      "asciiSha256": "a024d13af5a591f09904e511273751d1752070fdc517c5c307e0a8e8036e1d23",
+      "file": "04-bounded-retry.txt"
+    },
+    {
+      "id": "05-module-boundary",
+      "title": "Module boundary",
+      "synthetic": true,
+      "styleReferences": [
+        "01-ownership",
+        "02-derived-model"
+      ],
+      "diversityRationale": "Groups a module by public contract and hidden mechanisms, crosses that boundary with an explicit dependency, and keeps most leaves compact.",
+      "lineCount": 12,
+      "ascii": "[M] Template engine\n|-- Public contract\n|   |-- compile(text): Template\n|   `-- render(template, bindings): text\n|-- Internal machinery\n|   |-- parser -> syntax tree\n|   |-- compiler -> rendering instructions\n|   `-- interpreter\n|       `-- [D] instructions + bindings -> output text\n`-- Extension boundary\n    `-- registered formatters: value -> text\n        `-- interpreter calls them; parser stays private",
+      "asciiSha256": "e3f7283e1d25a5729f2a0f1d961ec37e4eeec50f2a9b22d783b9759016b040ce",
+      "file": "05-module-boundary.txt"
+    },
+    {
+      "id": "06-event-fanout",
+      "title": "Event fan-out",
+      "synthetic": true,
+      "styleReferences": [
+        "03-request-flow"
+      ],
+      "diversityRationale": "Independent reactions to one event; explicitly avoids implying sibling order or treating every consequence as a nested call.",
+      "lineCount": 7,
+      "ascii": "DocumentSaved(documentId, revision)\n|-- Search subscriber -> enqueue reindex\n|-- Preview subscriber -> invalidate cached thumbnail\n`-- Audit subscriber -> append revision record\n\nSubscribers run independently; branch order is not execution order.\nEach subscriber handles its own retry.",
+      "asciiSha256": "ae2f026d4615f0c60f756e454e84bf1f1c702318f1ff02884c74b0c8b4d666c6",
+      "file": "06-event-fanout.txt"
+    }
+  ]
+}

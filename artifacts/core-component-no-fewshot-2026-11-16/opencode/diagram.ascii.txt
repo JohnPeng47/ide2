@@ -1,0 +1,106 @@
+OpenCode core: durable Session + location-scoped agent execution
+|
+|-- Public boundary: commands enter through Session.Service
+|   |-- packages/core/src/session.ts: Interface, Service
+|   |   |-- create/get/list, prompt/command/shell, interrupt/wait
+|   |   `-- fork/revert, compact, messages/context/log, remove
+|   |-- packages/server/src/handlers/session.ts: SessionHandler -> Session.Service
+|   |   `-- HTTP handlers expose operations; execution remains owned by the server
+|   |-- packages/cli/src/run/noninteractive.ts
+|   |   `-- client.session.prompt(...) submits work; client.event.subscribe(...) observes it
+|   `-- packages/app/src/session/composer/queue.ts
+|       `-- data.session.prompt(...) submits and retries identified admissions
+|
+|-- Admission and scheduling: durable input is separate from active execution
+|   |-- packages/core/src/session/session.ts: Session.make(), forSession(id)
+|   |   |-- Handles share host services and reload current session state
+|   |   `-- prompt -> SessionPrompt.prepare -> SessionInbox.admit -> execution.wake
+|   |-- packages/core/src/session/inbox.ts: SessionInbox.Service
+|   |   |-- reconcile/admit identify repeated submissions before creating new work
+|   |   |-- Pending user/synthetic inputs and compaction/move controls are durable
+|   |   `-- steer/queue/cancel govern when work becomes visible in history
+|   `-- packages/core/src/session/execution.ts: SessionExecution.Service
+|       |-- SessionRunCoordinator.make(...) [session/run-coordinator.ts]
+|       |   `-- Coalesces wakeups; coordinates active drains, interruption and idle waits
+|       |-- store.get(sessionID) -> instances.provide(session) -> runner.drain(...)
+|       `-- SessionRunner.DrainResult: Complete | Moved | Reloaded
+|           `-- Moves/reloads reacquire the selected instance and continue execution
+|
+|-- Agent turn: history -> model request -> tools -> recorded history -> next step
+|   |-- packages/core/src/session/runner/llm.ts: SessionRunnerLLM
+|   |   |-- drain -> advanceToStep -> runStep; repeat while continuation is needed
+|   |   |-- Promotes eligible inbox work at execution boundaries
+|   |   `-- SessionCompaction + SessionRunnerRetry + agent.steps
+|   |       `-- Bound context size, recover model failures and limit tool-enabled steps
+|   |-- packages/core/src/session/context.ts: SessionContext.select/load
+|   |   |-- select <- SessionStore + Agent + permission-filtered Tool.snapshot
+|   |   |-- Instructions <- built-ins, discovery, skills, references, MCP, session entries
+|   |   `-- load <- SessionRunnerModel.resolve + SessionHistory.entriesForRunner
+|   |       `-- Produces selected model, initial instructions and active messages
+|   |-- packages/core/src/session/model-request.ts: SessionModelRequest
+|   |   |-- baseTranscript/primary -> model request and transport options
+|   |   `-- PluginHooks shape requests; prepared.executeTool delegates to tool snapshot
+|   `-- packages/core/src/session/runner/step.ts: SessionStep.make().attempt
+|       |-- LLMClient.stream(...) [@opencode/ai/effect] supplies provider events
+|       |-- Local tool-call -> prepared.executeTool(...) in a scoped fiber
+|       |   `-- Tool.Called is published before local execution starts
+|       |-- createLLMEventPublisher [session/runner/publish-llm-event.ts]
+|       |   `-- Records assistant content, tool progress/results and step lifecycle via Bus
+|       `-- Settles provider/tool work -> Completed, Retry, OutputLimit or Compacted
+|           `-- Runner reads updated history for the following request
+|
+|-- Action boundary: tools connect model decisions to development resources
+|   |-- packages/core/src/tool.ts: Tool.Service, snapshot(...)
+|   |   |-- Captures visible tool definitions and executors for a request
+|   |   `-- PluginHooks: tool.execute.before / tool.execute.after
+|   |-- packages/core/src/tool/runtime.ts: execute(...)
+|   |   `-- Validates input, invokes implementation and validates/normalizes output
+|   |-- packages/core/src/permission.ts: Permission.Service
+|   |   |-- Combines agent/session rules and saved decisions; evaluates action/resources
+|   |   `-- assert/ask support approval or denial; declines stop execution, not ordinary output
+|   |-- packages/core/src/tool/plugin/{read,edit,write,patch,shell,grep,glob}.ts
+|   |   `-- File inspection/mutation, command execution and repository search
+|   |-- packages/core/src/tool/mcp.ts + codemode/{catalog,execution}.ts
+|   |   `-- External MCP capabilities and code-driven tool composition
+|   `-- packages/core/src/tool/plugin/subagent.ts + session/subagent-job.ts
+|       `-- Child sessions/jobs report completion through session/execution/subagent-report.ts
+|
+|-- Durable state and observation: Bus events connect writes, reads and clients
+|   |-- packages/core/src/session/event.ts: SessionEvent
+|   |   `-- Session identity, input, execution, assistant/tool and lifecycle facts
+|   |-- packages/core/src/bus.ts: publish/publishAll, project, log, listen
+|   |   |-- Durable event storage and registered projections commit transactionally
+|   |   `-- Live publication follows commit; log supports cursor replay and following
+|   |-- packages/core/src/session/projector.ts: SessionProjector
+|   |   `-- Folds events into session/message/part state, inbox transitions and usage totals
+|   |-- packages/core/src/session/sql.ts + database/database.ts
+|   |   |-- SessionTable: identity, project/location, parent, agent/model, permissions, usage
+|   |   |-- SessionMessageTable + SessionPartTable: ordered history and assistant content
+|   |   `-- SessionInboxTable: admitted work not yet delivered into history
+|   |-- packages/core/src/session/store.ts: SessionStore
+|   |   `-- Reads projected sessions/messages/context; feeds API queries and subsequent turns
+|   `-- packages/core/src/session.ts: log -> Bus.log
+|       |-- Durable replay resumes after a cursor, then can follow live events
+|       `-- packages/server/src/event-feed.ts: EventFeed -> Bus.listen
+|           `-- Separate bounded live SSE feed; subscriber scopes release queues
+|
+`-- Ownership and lifetime: persistent sessions outlive execution and location graphs
+    |-- packages/core/src/session.ts: create/remove
+    |   |-- create resolves Project and Location; children inherit parent placement/policies
+    |   `-- remove interrupts and awaits idle, cancels jobs, closes model transport,
+    |       clears environment, deletes session/log and recursively removes children
+    |-- packages/core/src/instance.ts: Instance.graph, Instance.layer(ref)
+    |   `-- Location boundary groups runner, agents/models, tools and supporting services
+    |-- packages/core/src/location-services.ts: buildLocationServiceMap
+    |   |-- Caches healthy graphs by canonical Location.Ref; executions borrow their scopes
+    |   `-- Reload detaches routing; borrowed graphs remain until handoff/release
+    |-- packages/core/src/session/runner/step.ts: scoped provider/tool fibers
+    |   `-- User stop allows cooperative tool cancellation; teardown interrupts owned work
+    |-- packages/core/src/session/execution.ts: claimOnCommit, publishTerminal
+    |   |-- Execution start records a durable claim; normal terminal settlement releases it
+    |   `-- Shutdown preserves the claim for recovery rather than pretending work completed
+    |-- packages/core/src/session/execution/restart.ts: SessionRestart
+    |   `-- Startup recovery resumes orphaned claims with an attempt budget;
+    |       recovery is at-least-once, not exactly-once external side effects
+    `-- packages/core/src/session/{diff,revert}.ts + snapshot.ts
+        `-- Track workspace changes and support turn diffs/reverts alongside conversation state

@@ -1,0 +1,21 @@
+{
+  "status": "draft-not-run",
+  "parent": {
+    "promptId": "a55a7264-84e2-4285-a4c3-9cd252ebd0d5",
+    "version": 1,
+    "stage": "alternative",
+    "sha256": "55a8557d511e5e1eceb00cfb5a8a170782d806d92266b2c276c94a59321d2aea"
+  },
+  "additions": {
+    "modelDescription": "1. [REPLACED] Containment\t      where code lives\n2. [REPLACED] Lexical scope\t    which names code can see\n  -> *collapse* into 1. Modular structure\n    I want to collapse Containment / Lexical scope into a single category, called modular structure, which:\n    - abstracts out the source file level organization\n      - but retains boundaries and visibility: what a component exposes versus keeps internal\n    - retains dependency graph\n    - groups components into higher level, logic-semantical categorizations\n3. Call (dynamic)     which activation invoked which\n4. Ownership          responsibility for state, storage, resources, and their lifetimes: who creates, retains, changes, or releases them\n1. [SPECIAL] Data dependency   is a different kind of thing. It isn’t a fifth organizational choice; it is the record of what actually needs what for the program to compute its result. It’s a graph, and it exists before you decide how to organize anything. ",
+    "ratio": "there should be 60/40 between code refs and nat lang"
+  },
+  "wordingSource": {
+    "promptId": "c31b1715-87bf-49b5-a07d-d26f8819c55d",
+    "version": 1,
+    "name": "40_60_single_diagram",
+    "originalLine": "there should be 40/60 between code refs and nat lang",
+    "adaptation": "Reversed ratio to 60/40 per the current user request."
+  },
+  "unchanged": "Original context instructions, six synthetic examples, anti-overfitting paragraph and output contract."
+}

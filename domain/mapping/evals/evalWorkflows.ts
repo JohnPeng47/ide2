@@ -1,9 +1,10 @@
+import { canvasLayoutInstructions } from './canvasLayout';
 import { linkedCanvasesInstructions } from './linkedCanvases';
 import { renderPromptSections, legacyPromptTemplateBase, type PromptTemplateBase } from './promptTemplateBase';
 import { templateOutputInstructions } from './layoutTemplate';
 import { renderTemplate, validateTemplate, type TemplateIssue } from './promptTemplate';
 
-export const evalWorkflowIds = ['roll-up', 'alternatives', 'few-shot-refinement', 'diagram-change-proposal', 'linked-canvases'] as const;
+export const evalWorkflowIds = ['roll-up', 'alternatives', 'few-shot-refinement', 'diagram-change-proposal', 'linked-canvases', 'canvas-layout', 'diagram-history'] as const;
 export type EvalWorkflowId = typeof evalWorkflowIds[number];
 
 /** Inputs are bound when a run starts; system values are supplied per generation. */
@@ -201,6 +202,17 @@ const linkedCanvases: EvalWorkflow = {
   } }
 };
 
+const canvasLayout: EvalWorkflow = {
+  ...linkedCanvases, id: 'canvas-layout', label: 'Canvas layout',
+  description: 'Plan diagram footprints and connections before writing their contents.',
+  stages: [{ ...linkedCanvases.stages[0], id: 'layout', label: 'Canvas layout',
+    description: 'Diagram sizes, positions and named edge endpoints.',
+    outputFormat: `<output format>${canvasLayoutInstructions}</output format>` }],
+  defaultPrompt: { name: 'Plan a canvas layout', description: 'Generate a layout from the pinned inputs.', stages: {
+    layout: 'Plan the canvases and diagram titles from the supplied context. Budget lines for each future diagram and place the nodes where its edges will attach.'
+  } }
+};
+
 /** Expand authoring defaults before saving a prompt, so every instruction is visible and versioned. */
 export function explicitPromptStages(workflow: EvalWorkflow, stages: Record<string, string>, layout = false) {
   return Object.fromEntries(workflow.stages.map(stage => [stage.id,
@@ -213,10 +225,18 @@ Generate a complete canvas using layout-template.json. Fill every slot exactly o
 Infer each diagram's scope and level of detail from its title and dimensions. Ground every diagram in context.json.
 ` }, true)
 };
-for (const workflow of [rollUp, alternatives, fewShot, changeProposal, linkedCanvases])
+for (const workflow of [rollUp, alternatives, fewShot, changeProposal, linkedCanvases, canvasLayout])
   workflow.defaultPrompt.stages = explicitPromptStages(workflow, workflow.defaultPrompt.stages, workflow.id === 'few-shot-refinement');
 
-export const evalWorkflows: Record<EvalWorkflowId, EvalWorkflow> = { 'roll-up': rollUp, alternatives, 'few-shot-refinement': fewShot, 'diagram-change-proposal': changeProposal, 'linked-canvases': linkedCanvases };
+const diagramHistory: EvalWorkflow = {
+  id: 'diagram-history', label: 'Diagram history', defaultPasses: 1,
+  description: 'Plan chronological commit batches, then execute serially into pinned canvas sets. Launched by the history experiment runner.',
+  inputs: alternatives.inputs, variables: [],
+  stages: ['plan', 'execute'].map(id => ({ id, label: id === 'plan' ? 'Phase 1 · Plan and scaffold' : 'Phase 2 · Execute',
+    description: 'One sample per step; exact instructions and input files are recorded in the prompt.', files: [], contextHeader: '', outputFormat: '' })),
+  defaultPrompt: { name: 'Diagram history', description: 'Use the history experiment setup to pin evidence and prompts.', stages: { plan: 'Read the pinned history evidence and return the ordered plan.', execute: 'Apply one planned batch to the pinned preceding canvas state.' } }
+};
+export const evalWorkflows: Record<EvalWorkflowId, EvalWorkflow> = { 'roll-up': rollUp, alternatives, 'few-shot-refinement': fewShot, 'diagram-change-proposal': changeProposal, 'linked-canvases': linkedCanvases, 'canvas-layout': canvasLayout, 'diagram-history': diagramHistory };
 
 export function validatePromptStages(workflow: EvalWorkflow, stages: Record<string, string>, references?: ReadonlySet<string>) {
   const issues: Record<string, TemplateIssue[]> = {};

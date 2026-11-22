@@ -1,0 +1,175 @@
+Mapping application                                      baseline 03f2168
+|
+|-- [M] MappingPage composes the editing workspace
+|   |-- Injected services
+|   |   |-- DiagramService
+|   |   |   |-- [M] Exposes create / revise / resolve / generate
+|   |   |   |-- [O] Sole writer of immutable diagram content revisions
+|   |   |   `-- [D] content + source evidence + base revision
+|   |   |       `-- new revision + proven node correspondence
+|   |   `-- CanvasHistoryService
+|   |       |-- [M] Exposes context, checkpoint and navigation operations
+|   |       |-- [O] Owns editing contexts and their histories
+|   |       |   |-- retained checkpoints and diagram revision bindings
+|   |       |   `-- baseline / current head / undo and redo paths
+|   |       `-- [D] document + view + correspondence
+|   |           `-- checkpoint binding layout to exact diagram revisions
+|   |
+|   `-- [O] CanvasWorkspace manages open documents
+|       |-- [M] Exposes document lifecycle and persistence notifications
+|       |-- [O] Creates, subscribes to and disposes CanvasSessions
+|       |   `-- drafts[documentId]: CanvasDraft
+|       |       |-- Document identity and save baseline
+|       |       |   |-- representationId / name / revisionId
+|       |       |   `-- savedName / savedScene / savedEdges
+|       |       |-- Workspace presentation
+|       |       |   `-- busy / hidden / viewport / focusBox
+|       |       `-- session: CanvasSession
+|       |           |-- [O] Retains MappingDocumentController
+|       |           |-- [M] Exposes coordinated session stores
+|       |           |   |-- document
+|       |           |   |-- presentation / selection
+|       |           |   `-- controls / geometry / status
+|       |           `-- [C] onCommit()
+|       |               `-- notify workspace persistence
+|       `-- controllers[documentId]
+|           `-- [D] indexes the controllers retained by sessions
+|
+|-- [M] MappingDocumentController coordinates one document
+|   |-- [O] Retains the current editing state
+|   |   |-- Semantic document: MappingGridDocument
+|   |   |   |-- scene: LineGridScene
+|   |   |   |   |-- root: GridBox
+|   |   |   |   |   |-- diagram instance -> contentId
+|   |   |   |   |   `-- container -> nested GridBoxes
+|   |   |   |   `-- contents[id]: Diagram
+|   |   |   |       |-- ASCII + parsed content structure
+|   |   |   |       `-- source context -> mappings and captured evidence
+|   |   |   `-- edges / jumps / sections
+|   |   |
+|   |   |-- Interaction state: MappingCanvasState
+|   |   |   |-- selection.items[]
+|   |   |   |   `-- unified diagram and region membership
+|   |   |   |-- diagramViews
+|   |   |   |   `-- per-diagram folding
+|   |   |   |-- display: DisplayState
+|   |   |   |   `-- floating selections, projections, conversations, details
+|   |   |   `-- controls: MappingControls
+|   |   |       |-- activeBoxId / selectionFocusId / activeThreadId
+|   |   |       `-- surfaces[ownerId]: SelectionSurfaceState
+|   |   |
+|   |   `-- History attachment
+|   |       `-- retains CanvasEditingContext
+|   |           `-- [O] context lifetime belongs to CanvasHistoryService
+|   |
+|   |-- [M] Exposes editing operations
+|   |   |-- applyUpdate(expectedVersion, operations)
+|   |   |   |-- [C] Invoked by UI or agent bridge
+|   |   |   `-- [C] Apply a document change
+|   |   |       |-- Validate and stage
+|   |   |       |   |-- [D] expected + current version -> conflict check
+|   |   |       |   `-- [D] document + interaction state -> staged state
+|   |   |       |
+|   |   |       |-- Apply operations
+|   |   |       |   |-- Content changes
+|   |   |       |   |   `-- [C] DiagramService.create / revise
+|   |   |       |   |       `-- [D] new revision + node correspondence
+|   |   |       |   `-- Instance and view changes
+|   |   |       |       `-- update boxes / edges / sections / views
+|   |   |       |
+|   |   |       |-- Derive consistent layout and presentation
+|   |   |       |   |-- Grid layout and validation
+|   |   |       |   |   |-- [D] ASCII dimensions + box hierarchy
+|   |   |       |   |   |   `-- final cell bounds
+|   |   |       |   |   `-- anchor changed box; push colliding siblings
+|   |   |       |   |-- Connection reconciliation
+|   |   |       |   |   `-- [D] content changes + correspondence
+|   |   |       |   |       `-- retained, reanchored or stale endpoints
+|   |   |       |   `-- Floating geometry
+|   |   |       |       |-- [D] grid bounds + placement policies
+|   |   |       |       |   `-- pixel positions and dimensions
+|   |   |       |       `-- floating bounds never displace GridBoxes
+|   |   |       |
+|   |   |       `-- Commit and publish
+|   |   |           |-- [C] CanvasHistoryService.append
+|   |   |           |   `-- [D] document + view + correspondence
+|   |   |           |       `-- checkpoint and advanced version
+|   |   |           `-- [C] Notify subscribers with updated snapshot
+|   |   |               `-- session -> workspace persistence
+|   |   |
+|   |   |-- commitDocument(...)
+|   |   |   `-- [C] Commit document and layout edits
+|   |   `-- updateCanvas(...) / select(...)
+|   |       `-- [C] Update pane, control and selection state
+|   |           `-- ordinary controls and measurements add no checkpoint
+|   |
+|   |-- [M] Exposes history navigation
+|   |   |-- undo / redo / reset
+|   |   |   `-- [C] Delegate navigation to CanvasHistoryService
+|   |   |       `-- [D] context + target checkpoint -> restored state
+|   |   `-- exportHistory / forkHistory
+|   |       `-- [C] Delegate to exportContext / forkContext
+|   |           `-- [O] fork gets a distinct context retaining revision IDs
+|   |
+|   `-- [M] Exposes read models
+|       |-- getSnapshot(): ControllerSnapshot
+|       |   |-- [D] current context -> contextId / canvasRevisionId / version
+|       |   |-- [C] historyService.state(context) -> canUndo / canRedo
+|       |   `-- document + canvas interaction state
+|       |-- getCanvasSnapshot(): CanvasDocument
+|       |   `-- semantic canvas snapshot
+|       |-- resolveDiagram(diagramId): DiagramView
+|       |   `-- [D] diagram identity + current revision binding -> view
+|       `-- nodes(): DisplayNode[]
+|           |-- [D] document + presentation + geometry -> public registry
+|           |   `-- derived nodes; not a second authoritative document
+|           |-- Common identity and hierarchy
+|           |   `-- id / read-time version / childIds / expansion
+|           |-- Grid nodes
+|           |   |-- diagram or group; authoritative boxId
+|           |   |-- [D] GridBox layout -> cell bounds
+|           |   |   `-- column / row / columns / rows
+|           |   `-- diagram instance -> DiagramContent
+|           `-- Floating nodes
+|               |-- [D] placement + geometry policy -> pixel bounds
+|               |   `-- position / size / canvas or viewport coordinates
+|               `-- FloatingBox
+|                   |-- SelectionRegion -> selected grid rectangle
+|                   |-- ProjectedPane -> parent projection owner
+|                   |-- ConversationPane -> anchor and presentation
+|                   `-- DetailPane -> retained placement
+|
+|-- [M] Agent access adapts external requests to document operations
+|   `-- [C] MCP -> HTTP backend -> AgentDiagrammingSessionService.exec
+|       |-- synchronous canvas / nodes / edges API
+|       `-- Live document request
+|           `-- [C] CanvasSessionBridge -> useAgentCanvasBridge
+|               `-- attached session's MappingDocumentController
+|                   |-- reads -> exposed read models
+|                   `-- edits -> applyUpdate(expectedVersion, operations)
+|
+`-- [M] Persistence retains and restores workspace state
+    |-- Incremental autosave: WorkspacePersistence
+    |   |-- [C] Triggered by workspace.onPersist(documentIds)
+    |   |   `-- session commits identify changed documents
+    |   |-- [C] Also observes SourcePaneViewState changes
+    |   `-- [C] controller.persistenceChanges(cursor)
+    |       |-- [D] retained records + cursor -> incremental changes
+    |       `-- [C] RecordStorage.batch(changes)
+    |
+    |-- WorkspaceStorage
+    |   |-- [O] Owns RecordStorage
+    |   |   `-- cached records + pending writes
+    |   `-- [O] Owns workspaceStorage.worker
+    |       `-- [C] Encode, transport and restore records
+    |
+    `-- Explicit export: capture(): MappingWorkspaceSnapshot
+        |-- [D] workspace identity + active document + transfers
+        |   `-- schemaVersion / projectId / activeDocumentId / transfers
+        `-- [D] each open document -> MappingDocumentSnapshot
+            |-- identity / name / saved baselines / revisionId / hidden
+            |-- document / interaction state / viewport
+            `-- [C] controller.exportHistory()
+                `-- portable history with revision tables and bindings
+
+[M] modular boundary | [O] ownership | [C] call flow | [D] data dependency

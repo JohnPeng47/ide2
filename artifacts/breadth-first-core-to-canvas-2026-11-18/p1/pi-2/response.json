@@ -1,0 +1,270 @@
+{
+  "output": {
+    "explanation": "Checked the pinned commit using targeted source reads; the checkout was unchanged. The central diagram now nests the current AgentSession and cwd-bound service references under AgentSessionRuntime. AgentSession contains its held Agent, SessionManager, ExtensionRunner, tool registry, lazy nested-call runner, CacheWarmer and orchestration state. Three peripheral diagrams expand turn execution, canonical history and shared services, with direct connections between their interacting concepts. Ownership is distinguished from injected references and function calls. Source-based clarifications: agent-loop helpers are called functions, not owned objects; recovery belongs to AgentSession; ExtensionRunner holds a ModelRegistry facade over ModelRuntime; failed attempts are omitted through persistent context edits rather than deleted; summaries use Agent.streamFunction; reload emits session_start only when bindings exist. SDK restoration separately preserves virtual-model selection using branch history. Paths beginning core/ are relative to packages/coding-agent/src/.",
+    "diagrams": [
+      {
+        "id": "core",
+        "ascii": "Pi coding-agent session core\n|\n|-- Application boundary: main.ts + interactive / print / RPC modes\n|   |-- I/O, subscriptions and extension UI bindings\n|   `-- -> runtime replacement commands; rebind host to the next session\n|\n|-- SDK assembly: createAgentSession() [core/sdk.ts]\n|   |-- -> injected/default services + SessionManager.buildSessionContext()\n|   |-- Restores messages, model, thinking level and tool selection\n|   `-- Creates Agent, CacheWarmer and AgentSession; injects stream wrapper\n|\n`-- AgentSessionRuntime [core/agent-session-runtime.ts]\n    |-- Current AgentSession [core/agent-session.ts]\n    |   |-- Run coordination and public control\n    |   |   |-- Active/preflight flags, idle wait, listeners, displayed queues\n    |   |   |-- Pending custom messages and session-owned abort controllers\n    |   |   |-- prompt / steer / followUp / abort / waitForIdle / subscribe\n    |   |   `-- _preparePrompt / _prepareRun / _startRun\n    |   |       |-- -> resources + ExtensionRunner input/before_agent_start hooks\n    |   |       `-- -> Agent.prompt(); recovery/continuations -> Agent.continue()\n    |   |-- Agent: held turn engine and live state [detail: engine]\n    |   |   `-- SDK stream wrapper -> settings, extension hooks, ModelRuntime, warmer\n    |   |-- SessionManager: held canonical history [detail: history]\n    |   |-- ExtensionRunner: session-created execution bridge\n    |   |   |-- Loaded extensions/runtime references, bindings and error listeners\n    |   |   |-- ModelRegistry facade -> shared ModelRuntime; reads -> SessionManager\n    |   |   `-- Bound actions -> session; replacement/UI actions -> host bindings\n    |   |-- Tool environment: definitions, executable registry and loadout\n    |   |   |-- Built-in/custom/extension tools; allow/deny, pending/hidden names\n    |   |   |-- Built-ins: read, bash, edit, write; grep, find, ls, powershell\n    |   |   |-- setActiveToolsByName / preparation -> Agent tools + declarations\n    |   |   `-- Lazy NestedToolCallRunner: ctx.executeTool -> hooks + registry\n    |   |       `-- Nested calls and usage -> parent tool-result message\n    |   |-- Shell work: executeBash / recordBashResult\n    |   |   |-- Abort controllers + pending BashExecutionMessage queue\n    |   |   `-- -> bash-executor operations; output -> subscribers; result -> history\n    |   |-- Context maintenance and recovery (session methods, not engine state)\n    |   |   |-- compact / auto-compaction -> core/compaction helpers\n    |   |   |   |-- -> settings + branch projection + model limits\n    |   |   |   |-- -> extension summary/cancel hook, else Agent.streamFunction\n    |   |   |   `-- -> appendCompaction; refreshed projection -> Agent\n    |   |   |-- navigateTree -> optional branch summary + history branch operations\n    |   |   `-- Retry budget/backoff + abortable wait -> context edits + continue\n    |   |-- Event bridge: _handleAgentEvent / _emitAgentSettled\n    |   |   |-- Agent events -> extensions first -> public subscribers\n    |   |   |-- message_end -> history; delayed inserts preserve tool-result order\n    |   |   `-- Recovery/boundary continuations finish -> warmer + agent_settled\n    |   |-- CacheWarmer: held request snapshot, validity check and warming state\n    |   |   `-- -> ModelRuntime; usage -> SessionManager; onWarmed -> entry_appended\n    |   |-- Model selection: setModel / cycleModel / setThinkingLevel\n    |   |   `-- -> Agent + history metadata; optional defaults -> settings\n    |   |-- Inspection/export -> history + projection + tool renderers\n    |   |-- reload: shutdown/invalidate runner; reload settings/resources; rebuild\n    |   |   `-- Preserves flags/tool intent; session_start only when bindings exist\n    |   `-- dispose: abort work, invalidate runner, detach listeners, cancel warmer\n    |-- AgentSessionServices: cwd-bound service references [detail: services]\n    |   `-- Shared with session; injection allowed, not session-private copies\n    `-- Replacement lifecycle: switch / new / fork / import\n        |-- -> abort old session; session_shutdown; host teardown; dispose\n        `-- -> factory creates next session/services; apply; host rebind",
+        "position": {
+          "column": 100,
+          "row": 0
+        }
+      },
+      {
+        "id": "engine",
+        "ascii": "Agent: session-held turn engine [packages/agent/src/agent.ts]\n|\n|-- Mutable live state\n|   |-- Messages + system prompt, selected model and thinking level\n|   `-- Executable tools and streaming status (not the canonical history)\n|-- Scheduling\n|   |-- Steering/follow-up queues, active-run promise and AbortController\n|   `-- Event listeners -> AgentSession event bridge\n|-- Injected callbacks\n|   |-- prepareRequest / prepareNextTurn / finishTurn -> session hooks\n|   |-- transformContext -> ExtensionRunner; convertToLlm -> provider messages\n|   `-- streamFunction -> SDK wrapper -> ModelRuntime.streamSimple()\n`-- prompt / continue\n    `-- -> runAgentLoop / runAgentLoopContinue [agent-loop.ts functions]\n        |-- Inner loop: assistant responses, tool results and steering\n        |-- Outer loop: follow-ups; boundary decisions may request continuation\n        |-- streamAssistantResponse()\n        |   `-- Context transform/conversion -> streamFunction; deltas -> events\n        `-- executeToolCalls / runToolCall\n            |-- Prepare arguments; before/after hooks -> session/extensions\n            |-- Sequential or parallel dispatch -> session's callable tools\n            |-- Results -> live conversation + message lifecycle events\n            `-- Length-truncated response: fail tool calls, do not execute",
+        "position": {
+          "column": 205,
+          "row": 0
+        }
+      },
+      {
+        "id": "history",
+        "ascii": "SessionManager: session-held canonical history [core/session-manager.ts]\n|\n|-- Stored session tree (JSONL or in-memory)\n|   |-- Header, entries, parent links, current leaf, ID index and labels\n|   `-- Messages, model/thinking changes, summaries, context edits, custom data, usage\n|-- Append operations\n|   |-- New entry becomes a child of the current leaf\n|   `-- -> persistence; raw failed attempts remain available for inspection\n|-- Branch operations: getBranch / getTree / branch / createBranchedSession\n|   `-- Move leaf or copy a branch; alternate history is not deleted\n`-- Projection API: buildSessionProjection / buildSessionContext\n    |-- -> pure projection helpers in session-manager.ts\n    |-- Selected branch + latest compaction + retained range\n    |-- Latest context edits replace/omit model-visible content\n    |   `-- Session recovery writes edits for failed attempts and paired results\n    |-- Custom data entries are not custom-message context entries\n    `-- Effective messages + selection metadata -> Agent live context\n        `-- Session restore also uses branch selection to preserve virtual models",
+        "position": {
+          "column": 205,
+          "row": 32
+        }
+      },
+      {
+        "id": "services",
+        "ascii": "AgentSessionServices [core/agent-session-services.ts]\n|\n|-- cwd, agentDir and creation diagnostics\n|-- ModelRuntime reference [core/model-runtime.ts]\n|   |-- MutableModels, RuntimeCredentials, ModelConfig and availability snapshots\n|   |-- Built-in/configured/extension providers and virtual-model registrations\n|   |-- resolveModel / streamSimple: model + context + auth -> provider request\n|   |   `-- -> @earendil-works/pi-ai catalog, credentials and streaming engine\n|   `-- Availability, login/logout, provider registration and model lookup APIs\n|-- SettingsManager reference [core/settings-manager.ts]\n|   |-- Global/project/effective settings and project-trust state\n|   |-- Storage, dirty fields, serialized writes and diagnostics\n|   `-- Policies -> session, tools, recovery, resource loader and SDK requests\n`-- ResourceLoader reference (normally DefaultResourceLoader)\n    |-- Package/resource resolution, metadata and diagnostics\n    |-- Retained skills, templates, themes, context files and prompt text\n    |   `-- -> session prompt construction; themes -> mode UI\n    |-- Loaded extensions + extension runtime -> session's ExtensionRunner\n    |   |-- Built-ins: llama.cpp, codemode, tool-search and MCP\n    |   `-- Codemode/tool-search/MCP registrations can be replaced\n    `-- reload() -> refreshed resources; session rebuilds runner and tool registry",
+        "position": {
+          "column": 0,
+          "row": 4
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": {
+          "diagram": "core",
+          "line": 21
+        },
+        "target": {
+          "diagram": "engine",
+          "line": 1
+        },
+        "label": "Expands the session-held Agent"
+      },
+      {
+        "source": {
+          "diagram": "core",
+          "line": 23
+        },
+        "target": {
+          "diagram": "history",
+          "line": 1
+        },
+        "label": "Expands canonical history"
+      },
+      {
+        "source": {
+          "diagram": "core",
+          "line": 56
+        },
+        "target": {
+          "diagram": "services",
+          "line": 1
+        },
+        "label": "Expands cwd-bound service references"
+      },
+      {
+        "source": {
+          "diagram": "engine",
+          "line": 12
+        },
+        "target": {
+          "diagram": "services",
+          "line": 7
+        },
+        "label": "SDK-injected stream delegates provider requests"
+      },
+      {
+        "source": {
+          "diagram": "services",
+          "line": 13
+        },
+        "target": {
+          "diagram": "engine",
+          "line": 12
+        },
+        "label": "SDK wrapper applies timeout and provider-retry settings"
+      },
+      {
+        "source": {
+          "diagram": "history",
+          "line": 17
+        },
+        "target": {
+          "diagram": "engine",
+          "line": 4
+        },
+        "label": "Restored/refreshed projection supplies live context"
+      },
+      {
+        "source": {
+          "diagram": "engine",
+          "line": 8
+        },
+        "target": {
+          "diagram": "core",
+          "line": 44
+        },
+        "label": "Session subscribes to lifecycle events"
+      },
+      {
+        "source": {
+          "diagram": "engine",
+          "line": 21
+        },
+        "target": {
+          "diagram": "core",
+          "line": 28
+        },
+        "label": "Dispatches callable tools from the session loadout"
+      },
+      {
+        "source": {
+          "diagram": "services",
+          "line": 18
+        },
+        "target": {
+          "diagram": "core",
+          "line": 24
+        },
+        "label": "Loaded extensions/runtime are passed into the runner"
+      },
+      {
+        "source": {
+          "diagram": "core",
+          "line": 26
+        },
+        "target": {
+          "diagram": "services",
+          "line": 4
+        },
+        "label": "ModelRegistry delegates to ModelRuntime"
+      },
+      {
+        "source": {
+          "diagram": "core",
+          "line": 49
+        },
+        "target": {
+          "diagram": "services",
+          "line": 7
+        },
+        "label": "Cache warming uses model runtime"
+      },
+      {
+        "source": {
+          "diagram": "core",
+          "line": 49
+        },
+        "target": {
+          "diagram": "history",
+          "line": 6
+        },
+        "label": "Warming appends usage entries"
+      },
+      {
+        "source": {
+          "diagram": "core",
+          "line": 41
+        },
+        "target": {
+          "diagram": "history",
+          "line": 11
+        },
+        "label": "After appending compaction, rebuild model-visible context"
+      },
+      {
+        "source": {
+          "diagram": "core",
+          "line": 42
+        },
+        "target": {
+          "diagram": "history",
+          "line": 9
+        },
+        "label": "Navigate the retained session tree"
+      },
+      {
+        "source": {
+          "diagram": "core",
+          "line": 43
+        },
+        "target": {
+          "diagram": "history",
+          "line": 14
+        },
+        "label": "Persist omission of failed attempts and paired tool results"
+      },
+      {
+        "source": {
+          "diagram": "core",
+          "line": 46
+        },
+        "target": {
+          "diagram": "history",
+          "line": 6
+        },
+        "label": "Persist completed messages"
+      }
+    ]
+  },
+  "usage": {
+    "input": 38153,
+    "output": 7045,
+    "cacheRead": 93056,
+    "cacheWrite": 0,
+    "reasoning": 969,
+    "totalTokens": 138254
+  },
+  "execution": {
+    "runtime": "pi-agent-context",
+    "sessionId": "01a1efab-b844-7e56-abdf-8f1864c06085",
+    "contextHash": "c316293d4d54ae96a505fd2a4bd672b43134c76964c026311fd21b3c7632967e",
+    "cacheKey": "eval-06285c2163f42f35a57f27e6acdf072090cc52bc1887e1b12d8780f0a42e1b61",
+    "modelContextHash": "140f283ce7319eb8be8ea3a69295d9bdc4cd03eee549fcb6605219e0c18df26d",
+    "repositories": [
+      {
+        "repository": "repo-1",
+        "repositoryPath": "/home/john/softwarez/pi",
+        "commit": "682c7b93ce3e0a52b579c2b65b4c06bb392e7180",
+        "exclusions": [
+          "**/*-LICENSE",
+          "**/*.md",
+          "**/*.mdx",
+          "**/*.spec.*",
+          "**/*.test.*",
+          "**/AGENTS.md",
+          "**/CODEX-LICENSE",
+          "**/LICENSE*",
+          "**/__fixtures__/**",
+          "**/__tests__/**",
+          "**/benchmarks/**",
+          "**/build/**",
+          "**/dist/**",
+          "**/docs/**",
+          "**/examples/**",
+          "**/fixtures/**",
+          "**/node_modules/**",
+          "**/scripts/**",
+          "**/test/**",
+          "**/tests/**",
+          ".github/**",
+          ".husky/**",
+          ".pi/**",
+          "flake.lock",
+          "nix/**",
+          "package-lock.json",
+          "scripts/**"
+        ],
+        "checkout": "/tmp/agent-repository-7e1cvf/checkout",
+        "inspectionSource": "session-transcript"
+      }
+    ]
+  }
+}

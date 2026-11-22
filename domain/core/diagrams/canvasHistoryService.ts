@@ -28,7 +28,7 @@ export interface CanvasHistoryService {
   openContext(document: ResolvedCanvasDocument, view: unknown, history?: CanvasHistoryRecord): CanvasEditingContext;
   state(context: CanvasEditingContext): CanvasContextState;
   resolve(context: CanvasEditingContext, diagramId: string): DiagramView;
-  document(context: CanvasEditingContext): ResolvedCanvasDocument;
+  document(context: CanvasEditingContext, checkpointId?: string): ResolvedCanvasDocument;
   append(context: CanvasEditingContext, document: ResolvedCanvasDocument, view: unknown, correspondence?: ReadonlyMap<string, string>): void;
   navigate(context: CanvasEditingContext, redo?: boolean): boolean;
   reset(context: CanvasEditingContext): void;
@@ -69,7 +69,7 @@ export class DefaultCanvasHistoryService implements CanvasHistoryService {
     const history = this.history(context);
     return history.diagrams.resolve(history.contextId, diagramId);
   }
-  document(context: CanvasEditingContext) { return this.history(context).document(); }
+  document(context: CanvasEditingContext, checkpointId?: string) { return this.history(context).document(checkpointId); }
   append(context: CanvasEditingContext, document: ResolvedCanvasDocument, view: unknown, correspondence?: ReadonlyMap<string, string>) {
     this.history(context).append(document, view, correspondence);
   }

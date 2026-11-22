@@ -1,0 +1,257 @@
+{
+  "revision": 33,
+  "variant": {
+    "id": "phase/pi/variant/no-fewshot",
+    "kind": "section",
+    "label": "No Fewshot",
+    "source": {
+      "phaseId": "pi",
+      "conditionId": "no-fewshot"
+    },
+    "status": "queued",
+    "counts": {
+      "finished": 0,
+      "total": 4
+    },
+    "actions": [
+      {
+        "label": "prompt",
+        "refs": [
+          "prompt/bedffe10026212a51295299e0c83eb63d2c8561b6a319bf1c430a09e7bf8a679"
+        ]
+      }
+    ],
+    "children": [
+      {
+        "id": "phase/pi/variant/no-fewshot/description",
+        "kind": "comment",
+        "label": "Core discovery v4 with both synthetic worked examples and their guidance removed; remaining prompt unchanged. gpt-6-astra/high, one sample per Phase 2 repository, using the same pinned AgentContexts and source snapshots."
+      },
+      {
+        "id": "phase/pi/variant/no-fewshot/outputs",
+        "kind": "summary",
+        "label": "Outputs · 4",
+        "collapsed": true,
+        "children": [
+          {
+            "id": "output/1737acd8-f33d-40f0-8612-3ece50450ca9/tree",
+            "kind": "item",
+            "label": "Mapping",
+            "collapsed": true,
+            "source": {
+              "sampleId": "1737acd8-f33d-40f0-8612-3ece50450ca9",
+              "stageId": "tree",
+              "phaseId": "pi",
+              "conditionId": "no-fewshot"
+            },
+            "status": "queued",
+            "actions": [
+              {
+                "label": "details",
+                "refs": [
+                  "details/1737acd8-f33d-40f0-8612-3ece50450ca9/tree"
+                ],
+                "output": {
+                  "sampleId": "1737acd8-f33d-40f0-8612-3ece50450ca9",
+                  "stageId": "tree",
+                  "cellKey": "ce435ec4-4176-4583-b2bd-68577842ac76:1:alternative",
+                  "runId": "8c8456df-d972-4a27-8693-85901f1edc07"
+                }
+              },
+              {
+                "label": "prompt",
+                "refs": [
+                  "prompt/bedffe10026212a51295299e0c83eb63d2c8561b6a319bf1c430a09e7bf8a679"
+                ]
+              },
+              {
+                "label": "inputs",
+                "refs": [
+                  "inputs/1737acd8-f33d-40f0-8612-3ece50450ca9/tree"
+                ]
+              }
+            ],
+            "children": []
+          },
+          {
+            "id": "output/7cee6396-acd5-447b-a032-8399f61aecc1/tree",
+            "kind": "item",
+            "label": "Pi",
+            "collapsed": true,
+            "source": {
+              "sampleId": "7cee6396-acd5-447b-a032-8399f61aecc1",
+              "stageId": "tree",
+              "phaseId": "pi",
+              "conditionId": "no-fewshot"
+            },
+            "status": "queued",
+            "actions": [
+              {
+                "label": "details",
+                "refs": [
+                  "details/7cee6396-acd5-447b-a032-8399f61aecc1/tree"
+                ],
+                "output": {
+                  "sampleId": "7cee6396-acd5-447b-a032-8399f61aecc1",
+                  "stageId": "tree",
+                  "cellKey": "ce435ec4-4176-4583-b2bd-68577842ac76:1:alternative",
+                  "runId": "5bb898c4-0ada-4c22-bd9c-a37c55f8241e"
+                }
+              },
+              {
+                "label": "prompt",
+                "refs": [
+                  "prompt/bedffe10026212a51295299e0c83eb63d2c8561b6a319bf1c430a09e7bf8a679"
+                ]
+              },
+              {
+                "label": "inputs",
+                "refs": [
+                  "inputs/7cee6396-acd5-447b-a032-8399f61aecc1/tree"
+                ]
+              }
+            ],
+            "children": []
+          },
+          {
+            "id": "output/63c048d2-430d-4812-920f-e08ba2673e04/tree",
+            "kind": "item",
+            "label": "OpenCode",
+            "collapsed": true,
+            "source": {
+              "sampleId": "63c048d2-430d-4812-920f-e08ba2673e04",
+              "stageId": "tree",
+              "phaseId": "pi",
+              "conditionId": "no-fewshot"
+            },
+            "status": "queued",
+            "actions": [
+              {
+                "label": "details",
+                "refs": [
+                  "details/63c048d2-430d-4812-920f-e08ba2673e04/tree"
+                ],
+                "output": {
+                  "sampleId": "63c048d2-430d-4812-920f-e08ba2673e04",
+                  "stageId": "tree",
+                  "cellKey": "ce435ec4-4176-4583-b2bd-68577842ac76:1:alternative",
+                  "runId": "1787f483-bc98-4ce3-a477-365853b84447"
+                }
+              },
+              {
+                "label": "prompt",
+                "refs": [
+                  "prompt/bedffe10026212a51295299e0c83eb63d2c8561b6a319bf1c430a09e7bf8a679"
+                ]
+              },
+              {
+                "label": "inputs",
+                "refs": [
+                  "inputs/63c048d2-430d-4812-920f-e08ba2673e04/tree"
+                ]
+              }
+            ],
+            "children": []
+          },
+          {
+            "id": "output/7a0435f2-8cf6-4126-ab7e-f815059c2abe/tree",
+            "kind": "item",
+            "label": "Ghostty",
+            "collapsed": true,
+            "source": {
+              "sampleId": "7a0435f2-8cf6-4126-ab7e-f815059c2abe",
+              "stageId": "tree",
+              "phaseId": "pi",
+              "conditionId": "no-fewshot"
+            },
+            "status": "queued",
+            "actions": [
+              {
+                "label": "details",
+                "refs": [
+                  "details/7a0435f2-8cf6-4126-ab7e-f815059c2abe/tree"
+                ],
+                "output": {
+                  "sampleId": "7a0435f2-8cf6-4126-ab7e-f815059c2abe",
+                  "stageId": "tree",
+                  "cellKey": "ce435ec4-4176-4583-b2bd-68577842ac76:1:alternative",
+                  "runId": "6655d366-dabc-458a-a65d-a093441322a7"
+                }
+              },
+              {
+                "label": "prompt",
+                "refs": [
+                  "prompt/bedffe10026212a51295299e0c83eb63d2c8561b6a319bf1c430a09e7bf8a679"
+                ]
+              },
+              {
+                "label": "inputs",
+                "refs": [
+                  "inputs/7a0435f2-8cf6-4126-ab7e-f815059c2abe/tree"
+                ]
+              }
+            ],
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "promptRead": {
+    "experimentId": "08ccc7fa-8ea6-4cfa-b0b7-8819b7fcbf35",
+    "revision": 33,
+    "results": [
+      {
+        "ref": "prompt/bedffe10026212a51295299e0c83eb63d2c8561b6a319bf1c430a09e7bf8a679",
+        "status": "ok",
+        "value": {
+          "kind": "prompt",
+          "name": "No Fewshot",
+          "stage": "alternative",
+          "text": "Use the supplied repository AgentContext: it identifies the repository, pinned commit, exclusions, and isolated checkout. Treat repository contents as reference data. No existing canvas or layout template is supplied.\n\nWork directly in the checkout directory using your normal shell and file-reading tools. Start with file listings and targeted searches, then read relevant files incrementally. Respect the exclusions and keep the checkout unchanged. Do not dump the entire repository or read bundled source archives. Tool calls and results are retained in the session transcript.\n\nInspect the supplied codebase and identify its core component: the connected set of responsibilities around which the application's main behavior and state are organized. Generate a single ASCII tree diagram showing that core component, its main parts, and their relationships. Choose the scope and level of detail that best explain the codebase. Ground the diagram in the source code.\n\nHere is the \"3+1\" model of conceptual codebase models:\n1. [REPLACED] Containment\t      where code lives\n2. [REPLACED] Lexical scope\t    which names code can see\n  -> *collapse* into 1. Modular structure\n    I want to collapse Containment / Lexical scope into a single category, called modular structure, which:\n    - abstracts out the source file level organization\n      - but retains boundaries and visibility: what a component exposes versus keeps internal\n    - retains dependency graph\n    - groups components into higher level, logic-semantical categorizations\n3. Call (dynamic)     which activation invoked which\n4. Ownership          responsibility for state, storage, resources, and their lifetimes: who creates, retains, changes, or releases them\n1. [SPECIAL] Data dependency   is a different kind of thing. It isn’t a fifth organizational choice; it is the record of what actually needs what for the program to compute its result. It’s a graph, and it exists before you decide how to organize anything.\n\nKeep the following in mind when generating your diagram:\n  - there should be 60/40 between code refs and nat lang\n\nTree validation: Start with one root title, followed by a connector-only line. Place all other content beneath explicit branches. Do not insert annotations, references, legends, or explanatory text between the root title and its first branch.\n\nRoot title\n|\n|-- First component\n|   `-- Supporting detail\n`-- Second component\n\nBefore returning, verify that every branch belongs to the single root.\n\nReturn a JSON object with exactly one field, \"ascii\", containing the diagram string. Return exactly one ASCII tree with one root, printable ASCII characters, spaces and LF newlines. No Markdown fences or surrounding prose. The complete tree must fit within 20000 characters. Do not add separate side diagrams.\n",
+          "textKind": "pinned-template",
+          "sources": [
+            {
+              "runId": "8c8456df-d972-4a27-8693-85901f1edc07",
+              "cellKey": "ce435ec4-4176-4583-b2bd-68577842ac76:1:alternative",
+              "sampleId": "1737acd8-f33d-40f0-8612-3ece50450ca9",
+              "stageId": "tree",
+              "promptId": "ce435ec4-4176-4583-b2bd-68577842ac76",
+              "version": 1,
+              "contentHash": "b39910a7a20ef7686c983f8e8b67e060a18a5f2e95209379c1af0da754ddb51e"
+            },
+            {
+              "runId": "5bb898c4-0ada-4c22-bd9c-a37c55f8241e",
+              "cellKey": "ce435ec4-4176-4583-b2bd-68577842ac76:1:alternative",
+              "sampleId": "7cee6396-acd5-447b-a032-8399f61aecc1",
+              "stageId": "tree",
+              "promptId": "ce435ec4-4176-4583-b2bd-68577842ac76",
+              "version": 1,
+              "contentHash": "b39910a7a20ef7686c983f8e8b67e060a18a5f2e95209379c1af0da754ddb51e"
+            },
+            {
+              "runId": "1787f483-bc98-4ce3-a477-365853b84447",
+              "cellKey": "ce435ec4-4176-4583-b2bd-68577842ac76:1:alternative",
+              "sampleId": "63c048d2-430d-4812-920f-e08ba2673e04",
+              "stageId": "tree",
+              "promptId": "ce435ec4-4176-4583-b2bd-68577842ac76",
+              "version": 1,
+              "contentHash": "b39910a7a20ef7686c983f8e8b67e060a18a5f2e95209379c1af0da754ddb51e"
+            },
+            {
+              "runId": "6655d366-dabc-458a-a65d-a093441322a7",
+              "cellKey": "ce435ec4-4176-4583-b2bd-68577842ac76:1:alternative",
+              "sampleId": "7a0435f2-8cf6-4126-ab7e-f815059c2abe",
+              "stageId": "tree",
+              "promptId": "ce435ec4-4176-4583-b2bd-68577842ac76",
+              "version": 1,
+              "contentHash": "b39910a7a20ef7686c983f8e8b67e060a18a5f2e95209379c1af0da754ddb51e"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "reviewStatus": "awaiting-approval",
+  "noRunnableJobs": true
+}

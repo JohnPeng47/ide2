@@ -1,0 +1,18 @@
+{
+  "text": "d4 — path aliases, relative to the checkout:\n\n```text\nE  src/termio/Exec.zig\nB  src/termio/backend.zig\nT  src/termio/Termio.zig\nH  src/termio/Thread.zig\nS  src/Surface.zig\nA  src/App.zig\nM  src/apprt/surface.zig\nR  src/renderer/State.zig\nV  src/terminal/Terminal.zig\nP  src/pty.zig\nC  src/Command.zig\nF  src/os/flatpak.zig\n```\n\nScope codes: `s=structure e=entity b=behavior r=relationship g=guarantee x=subsystem`. Range role suffixes: `d=declaration u=use i=implementation`. `+nK` means include the indicated node’s ranges, unioning overlaps within the receiving node. A single line is an inclusive singleton.\n\n```text\nn1  [e,x,b,r]    E:1-4d,86-194di,232-264di,1260-1267i,2062-2064di B:39-86ui,105-113ui +n2 +n12\nn2  [s,e,r]      T:34-35d,308-310ui,344i,354-355ui B:22-31di S:688-701ui,711-721ui +n3 +n9 +n10 +n11\nn3  [s,e,r]      E:44-61di,587-609d,622-884di,886-893di +n4 +n5 +n6 +n8\nn4  [s]          E:590-593d,624-634i,829-834i,855-875i,887-893i\nn5  [s]          E:594-595d,880-883i,909-915u,1135-1156i\nn6  [s,r]        E:596-597d,901u,909-924i,997-1008i,1083-1095i,1105-1109i +n7\nn7  [s,r]        E:24d,38-42d,602-609d,990-1008ui,1021-1039ui,1063-1084ui C:1-3d,20d F:33d,48-64d\nn8  [e,b,r]      E:86-104u,897-1095di,1097-1103i P:19-23d,69-72di,134-187di,344-455di C:163-176di,178-198i,203-225i,227-262i,305-306d,422-436i F:122-139di,280-281d,303-306u,319-324d,410-447i\nn9  [e,b,r]      T:272-277i,308-310u B:33-37ui E:63-84di,266-272ui,1135-1156di V:5569-5583di\nn10 [e,b,g]      T:456-463ui B:76-86ui E:274-277i,403-469di,471-490di,494-508d,514-515d,520-525d\nn11 [e,b,r,g]    H:263-269u T:427-429ui B:50-54ui E:196-230di,1105-1133di,1158-1258i,1462-1474ui,1713-1724i,1814-1826i\nn12 [s,r,g]      S:762-767ui H:136-138u,236d,259-279i,281-286d E:44-45d T:824-851di +n13\nn13 [s,e,r]      T:367-371d,389-400i,824-851di B:39-48ui,115-123di E:86-91d,147-156i,492-566di +n14 +n16 +n18 +n19\nn14 [s,b,r]      E:106-121i,147-151i,158-179ui,510-512d,517-518d,527-533d,557-558i +n15\nn15 [e,b,r]      E:274-315di,158-179u T:389-396i S:720i,1017d,1141u,1297-1299i M:104-107d,186-207di A:293u,532-550i\nn16 [s,b,r]      E:129-131i,148-150i,514-515d,520-525d,552-561i +n17\nn17 [s,b,r,g]    E:494-508d,403-409d,416-434i,436-455i,459-469ui,471-490di\nn18 [s,b]        E:35-36d,133-137i,155i,181-194i,232-264di,317-401di,540-547d,563-565i P:196-205di\nn19 [s,r,b]      E:123-127i,139-156ui,196-230ui,535-538d,549-550i +n20 +n26\nn20 [s,b,r,x]    E:139-145ui,1269-1279d,1305-1318d,1412-1520di,1522-1741di,1756-1776i +n21 +n23 +n24\nn21 [s,e,b,r]    E:1305-1318d,1359-1410d,1441-1442i,1481-1491u,1497-1505i,1551-1563u,1696-1705i +n22\nn22 [s,b,r]      E:1364-1373d,1386-1406d,1444-1460i,1481-1491i,1497-1514i,1532-1549i,1556-1563i,1614-1629i,1643-1658i,1696-1705i,1735-1741i\nn23 [e,b,r]      E:139-145ui,1412d,1431-1439i,1462-1476ui,1522-1733di,1735-1741i,1756-1776i\nn24 [b,r]        E:1412d,1478-1520ui,1696-1705i T:705-716di,736-762i R:82-105di +n25\nn25 [b,g,r]      E:1412-1414d,1462-1476i,1481-1488i,1526d,1532-1539i\nn26 [e,b,r]      E:139-145ui,219-229i,1083-1088i,1778-1826di T:705-716di,736-762i R:82-105di\n```\n\nNo unresolved d4 claims. The `fork_exec` variant holds `Command` even on Windows; `Command.start` dispatches to `startWindows`, not POSIX fork. `Pipeline` itself is reader-stack storage (`E:1441-1442`), separate from `CallbackData.data` on the I/O thread (`H:259-269`).",
+  "usage": {
+    "input": 60067,
+    "output": 2844,
+    "cacheRead": 256128,
+    "cacheWrite": 0,
+    "reasoning": 44,
+    "totalTokens": 319039
+  },
+  "cost": {
+    "input": 0.6006700000000001,
+    "output": 0.1422,
+    "cacheRead": 0.256128,
+    "cacheWrite": 0,
+    "total": 0.998998
+  }
+}

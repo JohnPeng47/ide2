@@ -1,0 +1,46 @@
+{
+  "commit": "ea8b12a8a9894b5259c441eadd8f6f0c65e215af",
+  "repositoryPath": "/home/john/softwarez/ghostty",
+  "eligibleSourceFiles": 1004,
+  "eligibleSourceLines": 542715,
+  "allTrackedSourceFiles": 1237,
+  "allTrackedSourceLines": 583357,
+  "meanSourceLinesSeen": 2978.6666666666665,
+  "meanPercent": 0.548845465238047,
+  "summedPerRunLines": 8936,
+  "unionSourceLinesSeen": 4210,
+  "unionPercent": 0.7757294344176962,
+  "runs": [
+    {
+      "sample": 1,
+      "runId": "3d97670a-8d2d-41fe-86c6-7b3914204965",
+      "eligibleSourceLines": 542715,
+      "sourceLinesSeen": 3134,
+      "percent": 0.5774669946472827,
+      "sourceFilesSeen": 16,
+      "allSourceLinesSeen": 3134,
+      "outsideEligiblePaths": []
+    },
+    {
+      "sample": 2,
+      "runId": "87b0635d-e644-43cd-856a-81c73fbc2af6",
+      "eligibleSourceLines": 542715,
+      "sourceLinesSeen": 3059,
+      "percent": 0.5636475866707203,
+      "sourceFilesSeen": 16,
+      "allSourceLinesSeen": 3059,
+      "outsideEligiblePaths": []
+    },
+    {
+      "sample": 3,
+      "runId": "d8ddfcb7-6be0-4a68-9277-c40a1254248f",
+      "eligibleSourceLines": 542715,
+      "sourceLinesSeen": 2743,
+      "percent": 0.505421814396138,
+      "sourceFilesSeen": 17,
+      "allSourceLinesSeen": 2743,
+      "outsideEligiblePaths": []
+    }
+  ],
+  "method": "Physical source lines including comments/blanks, read and shell outputs; repeated file/line pairs deduplicated per run. Average coverage = sum of three run coverages / (3 \u00d7 eligible source lines). Union deduplicates across all runs. Only complete returned lines count; listings, wc counts, prompts, JSON configs and generated diagrams excluded."
+}

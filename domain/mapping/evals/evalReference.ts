@@ -1,3 +1,4 @@
+import { projectionTypeSchema } from '../projections/projectionType';
 import { z } from 'zod';
 import { asciiFromClipboardText } from '../../core/diagrams/diagramClipboard';
 import { compareSourceSchema, type CompareSource } from '../compare/comparePageSession';
@@ -30,7 +31,7 @@ export const createEvalReferenceSchema = z.object({
 export const updateEvalReferenceSchema = z.object({ name: z.string().trim().min(1).max(120).optional(), archived: z.boolean().optional(), groupId: z.string().min(1).max(80).nullable().optional(), comment: z.string().trim().max(5000).optional() }).strict();
 export const createEvalReferenceGroupSchema = z.object({ requestId: z.string().uuid(), name: z.string().trim().min(1).max(120) }).strict();
 export const updateEvalReferenceGroupSchema = z.object({ name: z.string().trim().min(1).max(120) }).strict();
-export const captureCanvasSchema = z.object({ source: compareSourceSchema }).strict();
+export const captureCanvasSchema = z.object({ projectionType: projectionTypeSchema.optional(), source: compareSourceSchema }).strict();
 
 /** Readable, stable IDs: the token in a prompt names what it cites. */
 export function referenceSlug(name: string, taken: ReadonlySet<string>) {

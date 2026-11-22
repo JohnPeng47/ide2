@@ -1,0 +1,1 @@
+{"path": "domain/core/diagrams/asciiSha256.ts", "text": "import { sha256 } from '../sha256';\n\n/** Artifact identity deliberately remains limited to 7-bit ASCII. */\nexport function asciiSha256(value: string): string {\n  if (!/^[\\x00-\\x7f]*$/.test(value)) throw new Error(\"artifact revision input must be 7-bit ASCII\");\n  return sha256(value);\n}\n"}

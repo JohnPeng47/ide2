@@ -1,0 +1,324 @@
+{
+  "output": {
+    "validatedCandidate": "73f693378ed018c80ba43898021965041ef5e336d5d483d2c8b48d2ca7f2c699"
+  },
+  "usage": {
+    "input": 828440,
+    "output": 67147,
+    "cacheRead": 8020992,
+    "cacheWrite": 0,
+    "reasoning": 5142,
+    "totalTokens": 8916579
+  },
+  "execution": {
+    "runtime": "pi-agent-context",
+    "sessionId": "01a2014c-76f2-7f9a-9401-d66ad088e9cc",
+    "contextHash": "f80fdfee53c9c2eecb607117514795b67267e5117b0960c2a77e390d08a58685",
+    "cacheKey": "eval-0bf8762cb114d6243362c1d8d964e9fc568df5b4ff243432c6bd76af397eca71",
+    "modelContextHash": "461f7a866f8ba1f0b26dcb7d4f4c4955920f7c8e88c2f54e694006a59bd1914e",
+    "repositories": [
+      {
+        "repository": "repo-1",
+        "repositoryPath": "/home/john/softwarez/ghostty",
+        "commit": "ea8b12a8a9894b5259c441eadd8f6f0c65e215af",
+        "exclusions": [
+          "**/*-LICENSE",
+          "**/*.md",
+          "**/*.mdx",
+          "**/*.spec.*",
+          "**/*.test.*",
+          "**/AGENTS.md",
+          "**/CODEX-LICENSE",
+          "**/LICENSE*",
+          "**/Tests/**",
+          "**/__fixtures__/**",
+          "**/__tests__/**",
+          "**/benchmark/**",
+          "**/benchmarks/**",
+          "**/build/**",
+          "**/dist/**",
+          "**/docs/**",
+          "**/examples/**",
+          "**/fixtures/**",
+          "**/node_modules/**",
+          "**/scripts/**",
+          "**/test/**",
+          "**/tests/**",
+          ".agents/**",
+          ".github/**",
+          ".husky/**",
+          ".pi/**",
+          "deps/**",
+          "example/**",
+          "flake.lock",
+          "flatpak/**",
+          "images/**",
+          "nix/**",
+          "package-lock.json",
+          "po/**",
+          "scripts/**",
+          "snap/**",
+          "vendor/**"
+        ],
+        "checkout": "/home/john/.cache/mapping-phase4-_nrrnqb7/agent-repository-7lspAh/checkout",
+        "inspectionSource": "session-transcript"
+      }
+    ],
+    "subagents": {
+      "model": "gpt-6.2-astra",
+      "effort": "high",
+      "concurrency": 2,
+      "sessions": [
+        {
+          "id": "child-1",
+          "name": "termio",
+          "assignment": "Map all d2, scope first, per user. Return compact numeric range specs & scope/roles in text (private /tmp/d2work if needed). Build parents from children via explicit union instructions.",
+          "model": "gpt-6.2-astra",
+          "effort": "high",
+          "status": "finished",
+          "queuedAt": "2026-11-22T03:28:44.452Z",
+          "usage": {
+            "input": 98486,
+            "output": 8626,
+            "cacheRead": 947456,
+            "cacheWrite": 0,
+            "reasoning": 629,
+            "totalTokens": 1054568
+          },
+          "cost": {
+            "input": 0.9848600000000001,
+            "output": 0.4313,
+            "cacheRead": 0.947456,
+            "cacheWrite": 0,
+            "total": 2.363616
+          },
+          "startedAt": "2026-11-22T03:28:44.458Z",
+          "sessionId": "01a2014c-8fc2-72ae-8e39-a9d505bd92dc",
+          "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-_nrrnqb7-agent-repository-7lspAh-checkout--/2026-11-22T03-28-44-482Z_01a2014c-8fc2-72ae-8e39-a9d505bd92dc.jsonl",
+          "completedAt": "2026-11-22T03:32:33.320Z"
+        },
+        {
+          "id": "child-2",
+          "name": "renderer",
+          "assignment": "Map d3 all nodes. Return compact ranges, scopes, roles, and parent unions, private /tmp/d3work.",
+          "model": "gpt-6.2-astra",
+          "effort": "high",
+          "status": "finished",
+          "queuedAt": "2026-11-22T03:28:44.452Z",
+          "usage": {
+            "input": 120194,
+            "output": 10203,
+            "cacheRead": 1507968,
+            "cacheWrite": 0,
+            "reasoning": 953,
+            "totalTokens": 1638365
+          },
+          "cost": {
+            "input": 1.2019400000000005,
+            "output": 0.51015,
+            "cacheRead": 1.507968,
+            "cacheWrite": 0,
+            "total": 3.220058
+          },
+          "startedAt": "2026-11-22T03:28:44.458Z",
+          "sessionId": "01a2014c-8fcb-738f-ba5c-92c09e47f6aa",
+          "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-_nrrnqb7-agent-repository-7lspAh-checkout--/2026-11-22T03-28-44-491Z_01a2014c-8fcb-738f-ba5c-92c09e47f6aa.jsonl",
+          "completedAt": "2026-11-22T03:33:27.276Z"
+        },
+        {
+          "id": "child-3",
+          "name": "exec",
+          "assignment": "Map d4 all nodes, private /tmp/d4work. Return compact ranges/scopes/roles + unions for parents.",
+          "model": "gpt-6.2-astra",
+          "effort": "high",
+          "status": "finished",
+          "queuedAt": "2026-11-22T03:28:44.452Z",
+          "usage": {
+            "input": 65214,
+            "output": 3628,
+            "cacheRead": 348032,
+            "cacheWrite": 0,
+            "reasoning": 156,
+            "totalTokens": 416874
+          },
+          "cost": {
+            "input": 0.65214,
+            "output": 0.1814,
+            "cacheRead": 0.348032,
+            "cacheWrite": 0,
+            "total": 1.1815720000000003
+          },
+          "startedAt": "2026-11-22T03:32:33.320Z",
+          "sessionId": "01a20150-0db3-7800-89e1-c473d2b59497",
+          "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-_nrrnqb7-agent-repository-7lspAh-checkout--/2026-11-22T03-32-33-331Z_01a20150-0db3-7800-89e1-c473d2b59497.jsonl",
+          "completedAt": "2026-11-22T03:34:18.167Z"
+        },
+        {
+          "id": "child-4",
+          "name": "terminal",
+          "assignment": "Map d5 all nodes including related files; return compact ranges/scopes/roles and parent union instructions. Private /tmp/d5work.",
+          "model": "gpt-6.2-astra",
+          "effort": "high",
+          "status": "finished",
+          "queuedAt": "2026-11-22T03:28:44.453Z",
+          "usage": {
+            "input": 79688,
+            "output": 5632,
+            "cacheRead": 633344,
+            "cacheWrite": 0,
+            "reasoning": 547,
+            "totalTokens": 718664
+          },
+          "cost": {
+            "input": 0.7968800000000001,
+            "output": 0.2816,
+            "cacheRead": 0.633344,
+            "cacheWrite": 0,
+            "total": 1.7118240000000002
+          },
+          "startedAt": "2026-11-22T03:33:27.276Z",
+          "sessionId": "01a20150-e07e-737c-991b-97cec16bbd91",
+          "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-_nrrnqb7-agent-repository-7lspAh-checkout--/2026-11-22T03-33-27-294Z_01a20150-e07e-737c-991b-97cec16bbd91.jsonl",
+          "completedAt": "2026-11-22T03:36:11.521Z"
+        },
+        {
+          "id": "child-5",
+          "name": "input",
+          "assignment": "Map d1 n11-21 (Core Surface and input/config/resize) including runtime input dispatch and all flow endpoints. Return compact ranges, scopes, roles, and union instructions. Private /tmp/d1input.",
+          "model": "gpt-6.2-astra",
+          "effort": "high",
+          "status": "finished",
+          "queuedAt": "2026-11-22T03:28:44.453Z",
+          "usage": {
+            "input": 109456,
+            "output": 7599,
+            "cacheRead": 1202048,
+            "cacheWrite": 0,
+            "reasoning": 845,
+            "totalTokens": 1319103
+          },
+          "cost": {
+            "input": 1.09456,
+            "output": 0.37995000000000007,
+            "cacheRead": 1.2020480000000002,
+            "cacheWrite": 0,
+            "total": 2.676558
+          },
+          "startedAt": "2026-11-22T03:34:18.168Z",
+          "sessionId": "01a20151-a74a-7030-91cd-532db6ae4590",
+          "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-_nrrnqb7-agent-repository-7lspAh-checkout--/2026-11-22T03-34-18-186Z_01a20151-a74a-7030-91cd-532db6ae4590.jsonl",
+          "completedAt": "2026-11-22T03:37:59.297Z"
+        },
+        {
+          "id": "child-6",
+          "name": "e2",
+          "assignment": "Need d4 ranges/scopes/roles in RETURN TEXT (private scratch not shared), concise list per node with path aliases. Prior worker files not accessible. Inspect sources for d4.",
+          "model": "gpt-6.2-astra",
+          "effort": "high",
+          "status": "finished",
+          "queuedAt": "2026-11-22T03:38:16.960Z",
+          "usage": {
+            "input": 60067,
+            "output": 2844,
+            "cacheRead": 256128,
+            "cacheWrite": 0,
+            "reasoning": 44,
+            "totalTokens": 319039
+          },
+          "cost": {
+            "input": 0.6006700000000001,
+            "output": 0.1422,
+            "cacheRead": 0.256128,
+            "cacheWrite": 0,
+            "total": 0.998998
+          },
+          "startedAt": "2026-11-22T03:38:16.962Z",
+          "sessionId": "01a20155-4c0e-78be-8db3-d8edf9e5f6b3",
+          "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-_nrrnqb7-agent-repository-7lspAh-checkout--/2026-11-22T03-38-16-974Z_01a20155-4c0e-78be-8db3-d8edf9e5f6b3.jsonl",
+          "completedAt": "2026-11-22T03:39:41.189Z"
+        },
+        {
+          "id": "child-7",
+          "name": "t2",
+          "assignment": "Need d5 ranges/scopes/roles in RETURN TEXT, concise list per node with path aliases. Private scratch not shared. Inspect sources for d5.",
+          "model": "gpt-6.2-astra",
+          "effort": "high",
+          "status": "finished",
+          "queuedAt": "2026-11-22T03:38:16.960Z",
+          "usage": {
+            "input": 54750,
+            "output": 3348,
+            "cacheRead": 288896,
+            "cacheWrite": 0,
+            "reasoning": 95,
+            "totalTokens": 346994
+          },
+          "cost": {
+            "input": 0.5475,
+            "output": 0.1674,
+            "cacheRead": 0.28889600000000004,
+            "cacheWrite": 0,
+            "total": 1.003796
+          },
+          "startedAt": "2026-11-22T03:38:16.962Z",
+          "sessionId": "01a20155-4c1f-725d-b16d-19374f0bccaa",
+          "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-_nrrnqb7-agent-repository-7lspAh-checkout--/2026-11-22T03-38-16-991Z_01a20155-4c1f-725d-b16d-19374f0bccaa.jsonl",
+          "completedAt": "2026-11-22T03:39:55.951Z"
+        },
+        {
+          "id": "child-8",
+          "name": "i2",
+          "assignment": "Need d1 n11-21 ranges/scopes/roles in RETURN TEXT. Previous worker generated unshared private files; your reply must have actual ranges. Include all functions/dispatch.",
+          "model": "gpt-6.2-astra",
+          "effort": "high",
+          "status": "finished",
+          "queuedAt": "2026-11-22T03:38:16.960Z",
+          "usage": {
+            "input": 90950,
+            "output": 6716,
+            "cacheRead": 841472,
+            "cacheWrite": 0,
+            "reasoning": 685,
+            "totalTokens": 939138
+          },
+          "cost": {
+            "input": 0.9095,
+            "output": 0.3358,
+            "cacheRead": 0.841472,
+            "cacheWrite": 0,
+            "total": 2.086772
+          },
+          "startedAt": "2026-11-22T03:39:41.190Z",
+          "sessionId": "01a20156-950d-793c-b359-1e0a466e5354",
+          "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-_nrrnqb7-agent-repository-7lspAh-checkout--/2026-11-22T03-39-41-197Z_01a20156-950d-793c-b359-1e0a466e5354.jsonl",
+          "completedAt": "2026-11-22T03:42:49.462Z"
+        }
+      ]
+    }
+  },
+  "accounting": {
+    "mainUsage": {
+      "input": 149635,
+      "output": 18551,
+      "cacheRead": 1995648,
+      "cacheWrite": 0,
+      "reasoning": 1188,
+      "totalTokens": 2163834
+    },
+    "mainCost": {
+      "input": 1.4963499999999996,
+      "output": 0.9275499999999999,
+      "cacheRead": 1.9956479999999996,
+      "cacheWrite": 0,
+      "total": 4.419548000000001
+    },
+    "totalCost": {
+      "input": 8.2844,
+      "output": 3.3573499999999994,
+      "cacheRead": 8.020992000000001,
+      "cacheWrite": 0,
+      "total": 19.662742
+    },
+    "children": 8
+  }
+}

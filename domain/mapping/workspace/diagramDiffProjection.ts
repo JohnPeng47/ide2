@@ -1,7 +1,8 @@
 import { projectDiagramDiffRows } from '../../core/presentation/diagramDiffProjection';
 import { analyzeDiagramSyntax } from '../../core/diagrams/diagramSyntaxAnalysis';
 import { presentationHighlights, type DiagramPresentations } from '../../core/presentation/diagramPresentation';
-import { getDiagramRevision } from '../../core/diagrams/diagramRevisionStore';
+import { findDiagramRevision } from '../../core/diagrams/diagramRevisionStore';
+import type { Diagram } from '../../core/diagrams/diagram';
 import type { ResolvedCanvasDocument } from '../../core/diagrams/canvasHistory';
 import { migrationMarkKey, type MigrationMark } from '../changes/migrationDecoration';
 import type { CanvasJump } from '../../core/diagrams/canvasJump';
@@ -12,6 +13,15 @@ import type { DiagramContentDiff } from '../../core/diagrams/diagramContentDiff'
 
 export interface PreviewTextRun extends DiagramTextRun { diffVersion?: 'previous' | 'current'; diffStatus?: 'removed'; migrations?: MigrationMark[] }
 export interface PreviewTextRow extends DiagramTextRow { runs: PreviewTextRun[] }
+
+// Scoped proposals carry parsed diagrams and their captured highlight targets, without a revision archive.
+function previewHighlights(diagram: Diagram, settings?: DiagramPresentations[string]) {
+  const highlights = settings?.highlights ?? diagram.highlights;
+  if (!highlights?.some(item => item.nodeRefs?.length)) return highlights;
+  const revision = findDiagramRevision(diagram.revisionId);
+  if (revision) return presentationHighlights(diagram, settings, revision.nodeRefs);
+  return highlights.filter(item => !item.nodeRefs?.length || item.contentNodeId || item.contentNodeIds?.length);
+}
 
 /** Reserve the fully expanded diff once, before the preview document is frozen. */
 export function layoutDiagramComparisons(scene: LineGridScene, diffs: ReadonlyMap<string, DiagramContentDiff>, modifiedDiagramIds: ReadonlySet<string>) {
@@ -36,8 +46,7 @@ export function projectDiagramComparisons(scene: LineGridScene, views: DiagramVi
     const displayNodeId = `grid:${box.id}`, diagram = scene.contents[box.contentId], content = diagram.content;
     const visible = projectDiagramContent(content, views?.[displayNodeId]);
     const settings = presentations?.[box.contentId];
-    const refs = getDiagramRevision(diagram.revisionId).nodeRefs;
-    const ranges = diagramTextRanges({ revisionId: diagram.revisionId, syntax: analyzeDiagramSyntax(diagram, settings?.markerRules), presentation: settings, highlights: presentationHighlights(diagram, settings, refs), ascii: content.ascii, content, displayNodeId, mappings: diagram.sourceContext.mappings, sourceContext: diagram.sourceContext, jumps: [...(diagram.jumps ?? []), ...jumps.filter(jump => jump.sourceDisplayNodeId === displayNodeId)] });
+    const ranges = diagramTextRanges({ revisionId: diagram.revisionId, syntax: analyzeDiagramSyntax(diagram, settings?.markerRules), presentation: settings, highlights: previewHighlights(diagram, settings), ascii: content.ascii, content, displayNodeId, mappings: diagram.sourceContext.mappings, sourceContext: diagram.sourceContext, jumps: [...(diagram.jumps ?? []), ...jumps.filter(jump => jump.sourceDisplayNodeId === displayNodeId)] });
     const find = (root: GridBox): GridBox | undefined => root.id === box.id ? root : root.kind === 'container' ? root.children.map(find).find(Boolean) : undefined;
     const oldBox = baseline && find(baseline.scene.root);
     const previous = oldBox?.kind === 'diagram' ? baseline!.scene.contents[oldBox.contentId] : undefined;
@@ -45,7 +54,7 @@ export function projectDiagramComparisons(scene: LineGridScene, views: DiagramVi
     const previousRanges = previous ? diagramTextRanges({ revisionId: previous.revisionId, ascii: previous.content.ascii, content: previous.content, displayNodeId,
       mappings: previous.sourceContext.mappings, sourceContext: previous.sourceContext,
       syntax: analyzeDiagramSyntax(previous, previousSettings?.markerRules), presentation: previousSettings,
-      highlights: presentationHighlights(previous, previousSettings, getDiagramRevision(previous.revisionId).nodeRefs) }) : undefined;
+      highlights: previewHighlights(previous, previousSettings) }) : undefined;
     projections.set(displayNodeId, projectDiagramDiffRows({ content, ranges, sourceLines: visible.sourceLines,
       collapsedContentNodeIds: views?.[displayNodeId]?.contentRevisionId === content.revisionId ? views[displayNodeId].collapsedContentNodeIds : [],
       diff: diffs.get(displayNodeId), enabled: modifiedDiagramIds.has(displayNodeId), previous, previousRanges,

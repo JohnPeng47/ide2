@@ -1,0 +1,184 @@
+S src/Surface.zig
+A src/App.zig
+R src/renderer.zig
+Z src/renderer/size.zig
+RT src/renderer/Thread.zig
+RG src/renderer/generic.zig
+RS src/renderer/State.zig
+RM src/renderer/message.zig
+GL src/renderer/OpenGL.zig
+MT src/renderer/Metal.zig
+DL src/renderer/DisplayLink.zig
+GD src/renderer/opengl/Device.zig
+MD src/renderer/metal/Device.zig
+IO src/termio/Termio.zig
+IT src/termio/Thread.zig
+IM src/termio/mailbox.zig
+IQ src/termio/message.zig
+E src/termio/Exec.zig
+B src/termio/backend.zig
+P src/pty.zig
+T src/terminal/Terminal.zig
+SC src/terminal/Screen.zig
+SG src/terminal/SelectionGesture.zig
+ST src/terminal/search/Thread.zig
+VS src/terminal/stream.zig
+VH src/termio/stream_handler.zig
+F src/font/SharedGridSet.zig
+DD src/datastruct/message_data.zig
+C src/config/Config.zig
+AP src/apprt.zig
+AS src/apprt/surface.zig
+AA src/apprt/action.zig
+AZ src/apprt/structs.zig
+EM src/apprt/embedded.zig
+GA src/apprt/gtk/App.zig
+GW src/apprt/gtk/Surface.zig
+GS src/apprt/gtk/class/surface.zig
+GT src/apprt/gtk/class/split_tree.zig
+GC src/apprt/gtk/class/application.zig
+GE src/apprt/gtk/class/surface_child_exited.zig
+MA macos/Sources/Ghostty/Ghostty.App.swift
+MS macos/Sources/Ghostty/Ghostty.Surface.swift
+MV macos/Sources/Ghostty/Surface View/SurfaceView_AppKit.swift
+MO macos/Sources/Ghostty/Surface View/OSSurfaceView.swift
+MB macos/Sources/Ghostty/Surface View/SurfaceView.swift
+MC macos/Sources/Features/Terminal/BaseTerminalController.swift
+MW macos/Sources/Features/Terminal/TerminalController.swift
+MAIN src/main_ghostty.zig
+%%
+n78 BRGS +n79 +n80 +n81 +n82 +n83 +n84
+ S 536-562 dui;711-721 u;746-751 u;2508-2531 dui
+ IO 273-277 ui;304-310 ui;335-345 ui;573-593 dui
+ B 33-37 dui
+ E 67-84 dui;909-916 ui
+ SC 2234-2237 d;2310-2322 ui
+n79 EBR
+ AP 37 d;43-53 d
+ AZ 13-21 di
+ GS 3497-3502 d;3514-3538 ui;3975 u
+ EM 1026-1043 dui;1994-1998 dui
+ MV 482-507 dui
+ S 899-903 d;919-920 ui;2600-2638 dui
+ IQ 48-49 d
+ IO 431-447 dui
+ IM 63-83 dui;93-108 i
+n80 TEBR
+ S 141-142 d;447-471 di;536-562 dui;2618-2627 ui;2651-2658 dui
+ R 25-31 d
+ Z 25-38 dui;46-79 dui;186-204 di;237-262 dui;270-306 di
+ IO 529-530 u
+n81 EBR
+ IT 27-34 d;253-278 ui;288-313 dui;325-326 ui;389-406 dui;427-471 dui
+ IO 523-564 dui
+n82 EBRG
+ IO 523-559 dui
+ B 66-74 dui
+ E 266-272 dui;1135-1156 dui
+ P 12-23 d;85-90 di;218-224 di;473-484 di
+ T 4870-4877 d;4894-5074 dui
+n83 BRG
+ S 633-636 ui;711-721 u
+ RS 13-20 d
+ IO 335-345 ui;524-553 dui;702-716 dui;736-754 ui
+ E 139-145 u;1481-1495 ui;1778 d;1789-1806 ui
+ P 220-224 di;475-484 di
+ T 4912-4921 di;5049-5074 i
+n84 BR
+ S 2574-2579 di;2618 d;2637-2649 ui
+ IO 524-528 d;561-564 ui
+ RM 45-46 d
+ RT 232 u;289-303 dui;404 ui;460-497 dui;537-543 d;556-586 ui
+ RG 471-483 dui;1716-1731 dui;1740-1743 d;1759-1769 ui;1785-1800 i;1843-1866 ui;2248-2304 dui
+ GL 216-236 di
+ MT 199-217 di
+n85 SBGR +n86 +n87 +n88 +n89 +n90 +n95
+ S 155-157 d;1017-1018 d;1139-1141 ui
+n86 EBR
+ S 155-157 d;711-721 u;1017-1018 d;1141 ui;1297-1454 dui
+ IO 335-345 ui;389-396 ui
+ E 120-121 ui;158-179 ui;274-315 dui
+ AS 104-107 d;169-183 d;186-207 dui
+ A 164-167 dui;273-281 dui;293 ui;532-550 dui;597-613 dui
+ AA 323-324 d
+ GA 61-68 dui
+ GC 569-576 ui;692-698 d;789 ui;3052-3060 dui
+ GS 1526-1539 dui
+ GE 69-84 dui;89-110 di;173-176 u
+ EM 301-323 dui;1730-1736 dui
+ MA 56-62 u;119-122 dui;768-769 ui;1854-1872 dui
+ MO 56 d;99-101 di
+ MB 106-110 ui
+n87 TBR
+ C 1348-1354 d
+ S 335 d;416 ui;1297 d;1301-1331 ui;1333-1338 i;1368-1375 ui;2792-2795 d;2938-2951 ui
+n88 EBR
+ S 77-79 d;881-885 dui;993-1013 di
+ AP 43-53 d
+ EM 98-99 d;678-685 dui
+ GW 36-39 dui
+ GT 786-820 dui
+n89 BR
+ AP 43-53 d
+ S 829 d;881-885 dui
+ A 220-252 dui
+ EM 98-99 d;290-294 dui;634-646 dui;678-685 dui;1859-1861 dui
+ MA 79 ui;291-296 dui
+ MC 183-188 u;469-495 dui;518-583 dui;658-664 dui;1231-1256 dui
+ MW 694-755 dui;846-870 dui
+ MV 177-186 d;391-395 ui;408-412 d
+ MS 11-45 dui
+ GW 36-39 dui
+ GS 1517-1524 dui;1963-1981 dui;4045-4047 ui
+ GT 497-508 dui;602-639 dui;786-871 dui;906-986 dui
+n90 EBRG +n91 +n92 +n93 +n94
+ S 829-879 dui
+n91 BRG
+ S 184-185 d;209-227 dui;829-845 dui
+ ST 116-131 dui;160-162 u;181-192 ui;462-471 di
+ RT 231-234 u;253-257 i;722-731 di
+ IT 267-279 ui;473-482 di
+n92 EBRG
+ S 840-845 u
+ IT 263-279 ui
+ IO 427-429 dui
+ B 50-54 dui
+ E 123-127 ui;139-156 ui;196-230 dui;1105-1133 dui;1412-1414 di;1462-1490 ui;1522-1549 dui;1635-1641 i;1696-1733 i;1778-1826 dui
+n93 BRG
+ S 592-595 dui;633-636 ui;829 d;840-869 ui;873-875 ui
+ RS 13-30 d
+ RT 175-189 di;220-234 u
+ RG 41-47 di;841-874 dui;911-955 dui;958-974 dui;1078-1086 dui;1244-1256 dui;1273-1288 dui
+ DL 113-146 dui
+ MT 139-146 di
+ GL 92-96 di;208-214 ui
+ IT 125-133 di;263-269 ui
+ IO 354-365 dui;848-852 dui
+ IM 47-55 dui
+ B 27-31 dui;115-123 dui
+ E 59-61 dui;549-565 dui;886-893 dui
+ P 19-23 d;74-76 di;189-192 di;457-464 di
+ T 395-404 dui
+ VS 667-671 dui
+ VH 101-112 dui
+ SG 172-179 dui
+ DD 76-81 di
+n94 BR
+ S 81-84 d;144-147 d;442-445 di;528-534 ui;627 u;829 d;870-876 ui
+ F 411-431 di
+n95 EBRG
+ A 53-58 d;136-159 dui
+ AP 43-53 d
+ MAIN 99-115 ui
+ GA 49-54 dui
+ GC 663-689 dui
+ GW 15-17 di
+ GS 1963-1981 dui
+ EM 634-646 dui;1743-1748 dui
+ S 564-588 ui;854-855 u;870-871 ui
+ F 64-86 di
+ R 35-45 d
+ MT 139-146 di
+ GL 92-96 di
+ MD 63-66 di
+ GD 102-105 di

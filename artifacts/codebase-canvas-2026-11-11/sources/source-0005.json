@@ -1,0 +1,1 @@
+{"path": "application/core/context.ts", "text": "import type { CorpusAccess } from './corpus/corpusAccess';\nimport type { DiagramRepository } from './ports/diagramRepository';\nexport interface CoreContext { store: DiagramRepository; corpus: CorpusAccess; }\n"}

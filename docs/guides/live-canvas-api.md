@@ -199,7 +199,15 @@ curl --get http://localhost:41431/api/mapping/live/context/short \
 
 This stateless GET requires a running browser publisher, but no reader WebSocket,
 agent session, or request ID. It does not change the connected-agent count.
-The response has `view: "short"`, `shortFormatVersion: 1`, `apiFormatVersion: 1`,
+Add `projectionType=graph` for diagram text and labeled connections, `layout` for
+grid positions and bounds, or `detail` for anchors, source evidence, and annotations.
+WebSocket `attach` and `context.get` accept the same `projectionType` field.
+In graph reads a resolved content endpoint uses `{node,line,column}` within the
+returned ASCII. A diagram box uses `{node}`, a container uses `{node,kind:"container"}`,
+and an unresolved endpoint carries a status. Layout includes positions for hidden
+descendants and bounds for visible boxes.
+
+Without a projection selector the response has `view: "short"`, `shortFormatVersion: 1`, `apiFormatVersion: 1`,
 `workspaceInstanceId`, `documentId`, `canvasEpoch`, the current context `version`,
 and `name`. `X-Canvas-Epoch` and `X-Document-Version` mirror that snapshot's identity.
 Reads are `Cache-Control: no-store`; each request loads fresh browser context.
@@ -320,10 +328,9 @@ The buffer belongs to the target document session. It is not persisted and clear
 on browser publisher disconnect, document removal/replacement, or reload. Switching
 documents never pastes another document's buffer.
 
-Input is bounded to 41,000 JavaScript characters including an optional single
-Markdown fence. CRLF becomes LF and the fence is removed; spaces and blank lines
-inside the diagram are preserved. The resulting text must contain 1–20,000
-printable ASCII/LF characters and some non-whitespace text.
+Paste accepts plain text or a single Markdown fence. It normalizes CRLF to LF
+and preserves spaces and blank lines inside the diagram. The resulting text
+must use printable ASCII and LF and contain some non-whitespace text.
 
 The browser acknowledgement timeout is 25 seconds; clients should allow at least
 30 seconds. After an ambiguous transport failure, retry identical arguments with

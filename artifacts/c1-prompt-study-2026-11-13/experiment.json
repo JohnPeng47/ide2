@@ -1,0 +1,130 @@
+{
+  "name": "C1 \u00b7 Prompt style study",
+  "description": "Four selected Phase 2/C1 cases from Codebase canvas discovery. Existing outputs are reused as the baseline. Revised prompt is awaiting user input; no new model calls have run. Reuse the exact original point/source contexts for a controlled prompt comparison. Generation setting: Astra/high, one output per case per new condition.",
+  "phases": [
+    {
+      "id": "baseline",
+      "name": "Original C1 baseline",
+      "description": "Four existing single-tree diagrams with their original pinned prompts and source contexts. Imported references; no new generation."
+    },
+    {
+      "id": "prompt-trial",
+      "name": "Revised prompt",
+      "description": "Awaiting the requested prompt change. The same four pinned source contexts will be used; new outputs will be recorded separately."
+    }
+  ],
+  "workflow": {
+    "id": "c1-prompt-study",
+    "name": "C1 prompt comparison",
+    "version": 1,
+    "stages": [
+      {
+        "id": "tree",
+        "name": "Single tree",
+        "dependsOn": []
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "workspace",
+      "name": "Browser Workspace Ownership",
+      "agentContextId": "saved-agent-context-3d3dc5b9-88b3-4f93-ab2b-d5115413fc37",
+      "contentHash": "5e3c7cd69afd7421d5cfa6b41a0668cdf4f80c7a27b3a25b504878a5f1156e34"
+    },
+    {
+      "id": "diagrams",
+      "name": "Immutable Diagram Revisions",
+      "agentContextId": "saved-agent-context-44370132-c3b3-41f0-a368-3b6f7f50d697",
+      "contentHash": "ff523120f6949f4d04b1f4b43520d5794021f685a80d99436285856896c3aff5"
+    },
+    {
+      "id": "agent_access",
+      "name": "Agent Canvas Access",
+      "agentContextId": "saved-agent-context-b7307449-98d6-4e5d-a752-7d59484188ae",
+      "contentHash": "a521994f81e9906adea2673d21489e60520458c0765a4ed3439cfca22ce9efd4"
+    },
+    {
+      "id": "changes",
+      "name": "Isolated Change Proposals",
+      "agentContextId": "saved-agent-context-1e29b936-1e16-4b40-a95e-22b32f3999a5",
+      "contentHash": "10ae7152ae244c3a9d8fb6727086ac1111dd4011c16641ea83f6de789ca0db89"
+    }
+  ],
+  "conditions": [
+    {
+      "id": "original-c1",
+      "name": "Original C1 \u00b7 Minimal prompt",
+      "description": "Saved Phase 2/C1 outputs using the minimal instruction and six synthetic examples."
+    }
+  ],
+  "samples": [
+    {
+      "id": "baseline-workspace",
+      "phaseId": "baseline",
+      "caseId": "workspace",
+      "conditionId": "original-c1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "1862519a-4f8b-441b-a45f-2636c9a91b89",
+          "cellKey": "a55a7264-84e2-4285-a4c3-9cd252ebd0d5:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "baseline-diagrams",
+      "phaseId": "baseline",
+      "caseId": "diagrams",
+      "conditionId": "original-c1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "2bc7f0dc-8335-44db-a0db-6fe74ffe1958",
+          "cellKey": "5073254b-a3b1-4eb9-adf7-3d0cd092da6a:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "baseline-agent_access",
+      "phaseId": "baseline",
+      "caseId": "agent_access",
+      "conditionId": "original-c1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "bc537a0e-48fd-4359-ad2f-f84ea929b1a0",
+          "cellKey": "9ba9fe0b-d7e4-4a4e-a900-1a0418360206:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "baseline-changes",
+      "phaseId": "baseline",
+      "caseId": "changes",
+      "conditionId": "original-c1",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "9a0e8742-60de-495d-a006-5572ed9b58d9",
+          "cellKey": "b1ad9606-b08a-451d-ab79-8860ad269766:1:alternative"
+        }
+      ]
+    }
+  ],
+  "comparisons": [],
+  "schemaVersion": 1,
+  "id": "494ea720-15c0-41c6-ba56-bf727967c8ff",
+  "projectId": "project-4971c06b-83d5-49eb-998d-043d5fc2dca4",
+  "revision": 1,
+  "createdAt": "2026-11-13T23:34:22.526Z",
+  "updatedAt": "2026-11-13T23:34:22.526Z"
+}

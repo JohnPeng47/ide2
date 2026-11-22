@@ -34,7 +34,7 @@ interface NavNode extends DeletableTreeNode {
   children?: NavNode[];
 }
 export interface PickedOutput { canvasId: string; checkpointId?: string; label: string; runId?: string }
-const WORKFLOWS: { id: EvalWorkflowId; label: string }[] = [{ id: 'linked-canvases', label: 'Linked canvases' }, { id: 'diagram-change-proposal', label: 'Diagram change proposals' }, { id: 'few-shot-refinement', label: 'Few-shot refinement' }, { id: 'alternatives', label: 'Alternatives' }, { id: 'roll-up', label: 'Roll-ups' }];
+const WORKFLOWS: { id: EvalWorkflowId; label: string }[] = [{ id: 'diagram-history', label: 'Diagram histories' }, { id: 'canvas-layout', label: 'Canvas layouts' }, { id: 'linked-canvases', label: 'Linked canvases' }, { id: 'diagram-change-proposal', label: 'Diagram change proposals' }, { id: 'few-shot-refinement', label: 'Few-shot refinement' }, { id: 'alternatives', label: 'Alternatives' }, { id: 'roll-up', label: 'Roll-ups' }];
 const STORAGE = 'evals-tree-toggled';
 const cellLabel = (cell: EvalRunCell, workflow: EvalWorkflowId) =>
   [cell.promptName ? promptLabel({ name: cell.promptName, version: cell.promptVersion }) : cell.candidateName ?? UNKNOWN_PROMPT, `sample ${cell.pass}`, workflow === 'few-shot-refinement' ? cell.stage === 'alternative' ? `round ${Math.ceil(cell.pass / 3)} · alternative ${(cell.pass - 1) % 3 + 1}` : cell.stage : workflow === 'roll-up' ? cell.stage : ''].filter(Boolean).join(' · ');
@@ -88,7 +88,7 @@ export function EvalsTree({ runs, generated, judgements = [], selection, actions
           const outputs = contextRuns.reduce((sum, run) => sum + run.cells.filter(hasEvalOutput).length, 0) + loose.length;
           const allContextRuns = allRuns.filter(run => run.workflow === workflow.id && run.agentContextId === contextId);
           const allOutputs = allGenerated.filter(canvas => canvas.generated!.agentContextId === contextId && generatedWorkflow(canvas.generated!) === workflow.id).length
-            + allContextRuns.reduce((sum, run) => sum + run.cells.filter(cell => cell.output?.canvases.length).length, 0);
+            + allContextRuns.reduce((sum, run) => sum + run.cells.filter(cell => cell.output && hasEvalOutput(cell)).length, 0);
           return { id: `context:${date}:${workflow.id}:${contextId}`, label: contextName, meta: `${outputs} output${outputs === 1 ? '' : 's'}`,
             onContextMenu: at => actions.contextMenu({ id: contextId, name: contextName, workflow: workflow.id, outputs: allOutputs, runs: allContextRuns }, at),
             children: [
@@ -96,7 +96,7 @@ export function EvalsTree({ runs, generated, judgements = [], selection, actions
                 const output = (cell: EvalRunCell, label: string): NavNode => ({ id: `cell:${run.id}:${cell.key}`, label, status: cell.status,
                   resources: cell.canvasId ? { canvasIds: [cell.canvasId] } : undefined,
                   title: [cellLabel(cell, run.workflow), cell.error, cell.explanation].filter(Boolean).join('\n\n'),
-                  muted: cell.status !== 'finished', meta: cell.status === 'finished' ? cell.output && `${cell.output.canvases.length} canvases` : statusLabel[cell.status],
+                  muted: cell.status !== 'finished', meta: cell.status === 'finished' ? cell.output && (cell.output.format === 'canvas-layout' ? 'Canvas layout' : cell.output.format === 'markdown' ? 'Markdown' : `${cell.output.canvases.length} canvases`) : statusLabel[cell.status],
                   current: selection?.kind === 'run' && selection.id === run.id && selection.output === cell.key,
                   onOpen: () => actions.open({ kind: 'run', id: run.id, output: cell.key }),
                   ...(cell.canvasId ? {

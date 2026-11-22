@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "assessments": {
+      "minItems": 6,
+      "maxItems": 6,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "variantId": {
+            "type": "string"
+          },
+          "strengths": {
+            "type": "string"
+          },
+          "weaknesses": {
+            "type": "string"
+          },
+          "improvementPotential": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "variantId",
+          "strengths",
+          "weaknesses",
+          "improvementPotential"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "selectedVariantIds": {
+      "minItems": 2,
+      "maxItems": 2,
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "rationale": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "assessments",
+    "selectedVariantIds",
+    "rationale"
+  ],
+  "additionalProperties": false
+}

@@ -1,3 +1,4 @@
+import { runtimeUsageRecorder } from '../../../core/usage/runtimeUsage';
 import { requireAiEnabled } from '../../../../application/core/errors';
 import { spawn, type ChildProcess } from "node:child_process";
 import type { LocalChatRuntime } from "../../../../application/mapping/chat/agent";
@@ -45,10 +46,12 @@ export class CodexLocalChatRuntime implements LocalChatRuntime {
       this.cancellations.set(child, abort);
       const timeout = setTimeout(() => finish(new Error("Codex chat timed out; retry the question")), 300000);
       context.signal.addEventListener("abort", abort, { once: true });
+      const recordUsage = runtimeUsageRecorder(LOCAL_CHAT_MODEL, 'unknown');
       const consume = (line: string) => {
         if (!line.trim()) return;
         try {
           const event = JSON.parse(line);
+          recordUsage(event);
           if (event.type === "item.completed" && event.item?.type === "agent_message") reply = event.item.text;
           if (event.type === "item.started" && event.item?.type === "command_execution") context.onProgress("Inspecting project files…");
           if (event.type === "turn.started") context.onProgress("Thinking…");

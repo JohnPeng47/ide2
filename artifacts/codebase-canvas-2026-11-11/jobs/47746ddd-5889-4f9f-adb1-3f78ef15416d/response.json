@@ -1,0 +1,138 @@
+{
+  "output": {
+    "explanation": "The central tree retains the boundary's major components and contracts while reducing the seed from 147 to 102 lines (30.6%) and from 10,965 to 7,505 characters (31.6%). Six peripheral trees expand composition, MCP scope, HTTP admission, chat streaming, live sockets and evaluation. [M] denotes modular structure, [C] calls, [O] ownership and [D] data dependency; these perspectives can coexist within each tree. Edges attach to the corresponding central concept lines. Positions leave gaps between the measured text bounds.\n\nOnly context.json and seed.json supply evidence. Composition details come from bootstrap.ts; MCP details from infrastructure/mapping/mcp/server.ts and scripts/mapping/mcp.ts; admission from vitePlugin.ts, apiAccess.ts, http.ts and agentRoutes.ts; streaming from agentChatRoutes.ts and liveCanvasRoutes.ts; evaluation from evalRoutes.ts and the mapping router.\n\nCorrections and qualifications: the seed's broad public-session/event filtering claim is narrowed to the explicit publicSession/publicEvent paths; list and generations routes delegate directly, so their filtering cannot be inferred here. The socket implementation permits errors before successful attach/publish, rather than enforcing that the first validated frame selects a role. Fake mode switches selected runtimes, while Agent Chat still receives StdioCodexConnection and diff workflows receive PiDiffSessionRuntime. Diagram-tool validation without a chat binding also applies to target-bound connections, so 'unbound' was too ambiguous.\n\nNew source-grounded details include context-source resolution, the distinction between MCP readOnlyHint and HTTP gate exemptions, extra MCP callbacks omitting the binding header, precise snapshot shortening, weak/wildcard ETag matching, and evaluation input dependencies. Imported service implementations and schemas are not supplied; delegation does not establish their internal validation, persistence or authorization behavior.",
+    "diagrams": [
+      {
+        "id": "central",
+        "ascii": "HTTP and MCP boundary: external access to shared application services\n|-- [M] Backend composition: createBackend\n|   |-- Chooses concrete stores, runtimes and service dependencies\n|   |   |-- DiagramStore + corpus access -> core, source, diagrams and workspace services\n|   |   |-- File-backed stores -> contexts, chat, change sessions, comparisons and evals\n|   |   `-- Selected runtimes switch with fake mode; language service is optional\n|   |-- Shared canvas machinery\n|   |   |-- GenerationCanvasBridge wraps CanvasSessionBridge [shared bridge]\n|   |   |-- AgentDiagrammingSessionService -> bridge, diagrams, changes, contexts, edit runtime\n|   |   |-- LiveCanvasService -> bridge.list() and bridge.dispatch(context)\n|   |   `-- AgentChatService -> live canvas, agent tools, MCP binding and shared bridge\n|   |-- Workflow dependencies\n|   |   |-- PushIntegrationService -> GitPushSource + DiffSessionWorkflowService\n|   |   |   `-- DiffSessionWorkflowService -> changes + agent + runtime + run store\n|   |   `-- EvalRunService -> comparison sessions, workspace, contexts, prompts and outputs\n|   `-- Exposes routes, liveCanvas, diffSessionWorkflows, pushIntegrations and dispose()\n|       `-- Route factories capture service instances; transport adapters delegate behavior\n|-- [M] MCP facade: tool contracts over the backend's HTTP API\n|   |-- Startup: URL argument or MAPPING_URL; optional canvas + document target\n|   |   |-- Requires both target IDs together; accepts only HTTP(S) backend URLs\n|   |   `-- startMappingMcpServer -> create tools -> load bound chat tools -> connect stdio\n|   |-- Tool contract dependencies\n|   |   |-- Domain agentToolSchemas -> registered agent tools\n|   |   |-- Diagram tools -> single/batch schemas; chat binding selects direct batch schemas\n|   |   `-- Bound connection -> sessionId optional in exposed schema\n|   |-- [C] Agent tool invocation\n|   |   |-- Resolve connection scope\n|   |   |   |-- Unbound -> caller supplies session obtained through list/attach\n|   |   |   |-- Canvas target, no chat binding -> lazily POST exec(canvas.attach(target))\n|   |   |   `-- Chat binding -> forward x-canvas-chat-binding\n|   |   |-- Without chat binding, validate diagram-tool arguments after scope resolution\n|   |   `-- POST /api/mapping/agent/tools/{name} -> shared HTTP dispatch below\n|   |-- [C] Additional tool-to-route translations\n|   |   |-- generate-roll-up -> POST /api/mapping/evals/roll-ups\n|   |   |-- read-eval-run -> GET /api/mapping/evals/runs/{runId}\n|   |   |-- generate-diagram-comparisons -> POST /api/mapping/comparison-runs\n|   |   |-- read-diagram-comparison-run -> GET /api/mapping/comparison-runs/{runId}\n|   |   `-- list-compare-candidates -> GET /api/mapping/compare-sessions/candidates\n|   `-- [C] Chat-bound tool discovery and invocation\n|       |-- GET /api/mapping/agent-chat/tools with binding -> current host definitions\n|       `-- chat_{name}(input) -> POST /api/mapping/agent-chat/tools/{name}\n|-- [M] HTTP adapter: diagramApi mounts on Vite dev and preview servers\n|   |-- [C] Request admission and dispatch\n|   |   |-- Outside /api and /internal -> next middleware\n|   |   |-- Programmable agent-tool write gate (only /api/mapping/agent/tools/*)\n|   |   |   `-- httpEnabled != true + no binding header + mutation -> 403 HTTP_WRITES_DISABLED\n|   |   `-- /api/{namespace} -> routes.core or routes.mapping; unmatched namespace -> 404\n|   |-- [M] Source and project contract: /api/core/project/*\n|   |   |-- files, source -> ProjectSourceService\n|   |   |-- definitions -> ensureDefinitionsEnabled() -> source.definitions(body, signal)\n|   |   |   `-- [O] Response closes before completion -> abort; finally remove close listener\n|   |   |-- projections -> ProjectCatalogService.saveProjection(...)\n|   |   `-- corpus-compactions, representations -> catalog/CoreApplication\n|   |-- [M] Canvas, persistence and change contract: /api/mapping/*\n|   |   |-- agent/tools/{name} -> known schema name + POST\n|   |   |   |-- String binding header -> agent.callBound(token, name, input)\n|   |   |   `-- Otherwise -> agent.call(name, input)\n|   |   |-- Browser agent endpoints expose fixed operations\n|   |   |-- agent/canvases -> shared bridge register/list/unregister\n|   |   |   `-- Browser GET commands -> bridge.poll; POST reply -> bridge.reply\n|   |   |-- workspace -> load/save; workspace/records -> loadRecords/applyBatch\n|   |   |   `-- Export and context import -> portableExport/prepareImport\n|   |   |-- diagrams -> save/delete; diagrams/publish -> publishCheckpoint\n|   |   `-- integrations and workflows/diff-session-create -> push and diff workflow handlers\n|   |-- [M] Chat, generation and evaluation contract\n|   |   |-- chat, compactions -> LocalChatService and FileCompactionService handlers\n|   |   |-- prompt -> SelectionService.prepare -> run(progress callback)\n|   |   |   `-- application/x-ndjson: progress records -> result record -> response.end()\n|   |   |-- agent-chat -> AgentChatService sessions, turns, tools and alternative generations\n|   |   |-- evals -> prompts, references, snapshots, templates, experiments and judgements\n|   |   |   `-- Start run / roll-up -> 202; later read/cancel/promote/output operations\n|   |   |-- generated-canvases -> evalRuns.generated() / migrate()\n|   |   `-- compare-sessions and comparison-runs -> comparison service handlers\n|   `-- Shared transport rules\n|       |-- readBody -> UTF-8 JSON; empty body becomes {}; malformed JSON rejects\n|       |   |-- Default limit 10 MiB; workspace payloads and canvas replies allow 64 MiB\n|       |   `-- Oversized body -> discard buffered text, reject, continue draining request\n|       |-- sendJson -> status + JSON content type + end\n|       |-- Adapter exception before headers -> JSON error\n|       |-- Adapter exception after headers -> newline JSON error record -> end if still open\n|       `-- Agent route handles conflicts, unavailable errors and oversized replies locally\n|-- [M] Live transports: subscriptions and browser publishers\n|   |-- [C] Agent Chat SSE: GET /api/mapping/agent-chat/sessions/{id}/events\n|   |   |-- Verify session -> flush event-stream headers -> chat.subscribe(...)\n|   |   |-- Public snapshot -> shorten completed tool details; split multiple items\n|   |   `-- [O] Route owns subscription, heartbeat and response queue\n|   |       `-- Response close -> clear heartbeat + unsubscribe\n|   |-- [C] WebSocket upgrade: /api/mapping/live\n|   |   |-- Origin absent or Origin host equals request Host; otherwise reject with 403\n|   |   |-- At 1024 clients -> reject with 503; incoming payload limit 8 MiB\n|   |   `-- attach/publish binds a role; subsequent operations require the appropriate role\n|   |       |-- attach(workspaceInstanceId, documentId) -> external reader connection\n|   |       `-- publish(workspaceInstanceId) -> browser publisher -> publisher.ready\n|   |           `-- Selection updates/removals and copy/paste replies -> LiveCanvasService\n|   |-- [D] HTTP live reads derive responses from service state\n|   |   |-- live/context/short + workspace/document IDs -> short context\n|   |   `-- live/connections/{id}/selection -> selection snapshot\n|   `-- [O] Socket adapter owns connections, timers and transport buffering\n|       `-- Socket close -> clear handshake, detach reader or disconnect publisher\n`-- [O] Server lifetime closes the boundary\n    |-- diagramApi creates one backend and attaches middleware + socket adapter\n    `-- HTTP server close -> dispose sockets -> backend.dispose()",
+        "position": {
+          "column": 0,
+          "row": 0
+        }
+      },
+      {
+        "id": "wiring",
+        "ascii": "Composition: concrete dependencies and retained resources\n|-- [M] createBackend selects integrations\n|   |-- NEW_DIAGRAM_AGENT == \"fake\" switches selected runtimes\n|   |   |-- Local chat, mapping selection, diagram edit and compaction\n|   |   `-- Eval and comparison generation\n|   |-- Agent Chat still receives StdioCodexConnection\n|   |-- Diff workflows still receive PiDiffSessionRuntime\n|   |   `-- Workflow enabled flag follows piEnabled === true\n|   `-- ProjectLanguageService exists only when lspEnabled === true\n|-- [D] Context source resolver closes over DiagramStore\n|   |-- sourceId starts with repo- -> repositories.resolveCheckoutRoot\n|   |   `-- Return git-worktree corpus binding\n|   `-- Otherwise loadProject -> resolveDiagramSource -> binding().corpus\n|       `-- Missing project -> AGENT_CONTEXT_SOURCE_UNAVAILABLE\n|-- [C] Cross-service callbacks wired at construction\n|   |-- Agent Chat generations -> evalRuns.recordLegacy\n|   |-- Legacy replay/cancel -> Agent Chat rerunAlternatives/cancelGeneration\n|   |-- Catalog snapshot(id, checkpoint) -> evalRuns.outputSnapshot\n|   `-- Context-output deletion callback -> comparisonRuns.deleteContextOutputs\n`-- [O] Backend retains instances captured by routes and callbacks\n    |-- File stores are constructed using store.storeRoot\n    |-- Exported handle exposes routes, liveCanvas and workflow/integration services\n    `-- dispose() calls service, bridge, runtime and optional language cleanup\n        `-- File store deletion is not part of this disposal code",
+        "position": {
+          "column": 125,
+          "row": 0
+        }
+      },
+      {
+        "id": "scope",
+        "ascii": "MCP connection scope and HTTP translation\n|-- [M] Startup inputs\n|   |-- URL argument or MAPPING_URL; require HTTP(S)\n|   |-- --canvas/--document or MAPPING_CANVAS_ID/MAPPING_DOCUMENT_ID\n|   `-- MAPPING_CHAT_BINDING enables host-discovered chat tools\n|-- [D] Exposed schemas depend on binding and tool kind\n|   |-- Chat binding + diagram tool -> directBatchSchemas\n|   |-- Other diagram tools -> object wrapper for single/batch arguments\n|   `-- Binding or target -> exposed sessionId becomes optional\n|-- [C/O] Target without chat binding -> lazy attachment\n|   |-- Scoped call -> POST exec with generated canvas.attach(target) code\n|   |-- Cache one Promise per server; rejection clears cache\n|   |-- Inject resolved sessionId; conflicting supplied ID -> BINDING_MISMATCH\n|   `-- Skip for changeSessionId or diagram-search with representationId\n|-- [C] No chat binding -> validate diagram-tool args after scope resolution\n|-- [C] Agent tools -> POST /api/mapping/agent/tools/{name}\n|   |-- Forward chat binding header when present; 65-second timeout\n|   |-- HTTP success -> text plus structuredContent.result\n|   `-- HTTP failure or exception -> isError\n|-- [C/D] Bound chat discovery -> GET /api/mapping/agent-chat/tools\n|   |-- 15-second timeout; host JSON schemas must become object schemas\n|   `-- Register chat_{name} -> POST input and callId \"mcp:<requestId>\"\n|       `-- Binding header; callId must be nonempty and at most 200 characters\n`-- [M] Extra eval/comparison tools have separate fetch callbacks\n    `-- These callbacks send JSON content type but no chat binding header",
+        "position": {
+          "column": 125,
+          "row": 30
+        }
+      },
+      {
+        "id": "admit",
+        "ascii": "HTTP admission and error translation\n|-- [C] Adapter claims /api and /internal prefixes\n|   |-- Only /api/{core|mapping}/... can dispatch\n|   `-- /internal is claimed but returns 404 in this adapter\n|-- [D] Write gate = disabled HTTP + no truthy binding header + mutation\n|   |-- Classifier examines /api/mapping/agent/tools/* only\n|   |-- GET/HEAD/OPTIONS are not classified as mutations\n|   |-- POST exemptions: list_repositories, get_repository_diff_hunks\n|   |   |-- read_change_session_diff_tree, edit-diagram-status\n|   |   `-- diagram-search, canvas-api-search\n|   |-- MCP readOnlyHint is separate metadata with a broader read list\n|   |   `-- list/read-agent-context hints do not exempt them from this gate\n|   `-- Gate bypass alone does not establish binding validity\n|       `-- Agent route passes string tokens to service.callBound\n|-- [C] readBody buffers UTF-8 JSON; counts bytes, not characters\n|   |-- Default 10 MiB; workspace operations and canvas reply allow 64 MiB\n|   `-- Overflow -> clear buffer, reject RequestTooLarge, keep draining\n|-- [C] Before headers: adapter maps errors to JSON\n|   `-- 413 size; 409 conflict; 415 binary; 503 disabled/unavailable; else 400\n|-- [C] After headers: newline JSON error -> end if open\n`-- [C] Agent route catches errors before the adapter\n    |-- Conflict strings -> 409; UNAVAILABLE -> 503; otherwise 400\n    `-- Oversized reply -> 413; x-canvas-command-id can identify failed command\n        `-- bridge.reply receives CANVAS_REPLY_REJECTED acknowledgement",
+        "position": {
+          "column": 125,
+          "row": 61
+        }
+      },
+      {
+        "id": "sse",
+        "ascii": "Agent Chat: public views and stream ownership\n|-- [M] Explicit publicSession projection\n|   |-- Removes toolDefinitions and generationRequests\n|   |-- Removes history from session.generation\n|   `-- Used for create, resume, individual get and SSE snapshot\n|-- [M] publicEvent filters selected event shapes\n|   |-- snapshot -> publicSession; state generation patch -> publicGeneration\n|   |-- batch -> recursively filter nested events\n|   `-- Other events pass through; list/generations routes delegate directly\n|-- [D] SSE snapshot derives compact tool items\n|   |-- Only completed tool items with text or diff over 1000 characters\n|   |-- Text: last 3 lines; diffs: first 3 lines; each line capped at 240\n|   |-- detailAvailable = true; full item available via /sessions/{id}/items/{id}\n|   `-- Multiple items -> empty partial snapshot then one snapshot-part per item\n|       `-- Last part sets final = true\n|-- [C/O] GET events -> verify session -> flush headers -> subscribe\n|   |-- identity encoding; no-cache/no-transform; disable proxy buffering\n|   |-- Heartbeat every 15 seconds\n|   |-- Snapshot bytes temporarily extend the queue allowance\n|   |   `-- Backpressure beyond allowance + 2 MiB -> destroy response\n|   `-- Close -> clear heartbeat and unsubscribe\n|       `-- Also clean up if response dies while awaiting subscribe\n`-- [D] MCP origin uses request.socket.localPort\n    `-- Constructs loopback URL without trusting Host/forwarded headers",
+        "position": {
+          "column": 240,
+          "row": 0
+        }
+      },
+      {
+        "id": "live",
+        "ascii": "Live canvas: roles, transport lifetime and read dependencies\n|-- [C] attach/publish establishes role; earlier errors need not close socket\n|   |-- Already bound or attaching -> ALREADY_ATTACHED\n|   |-- attach -> optional contextForCanvas -> service.attach -> attached\n|   |   |-- Reader: context.get, diagram.copy/paste, agent-context.upload\n|   |   `-- context.get rejects while request pending or context bytes queued\n|   `-- publish -> service.publish(capabilities) -> publisher.ready\n|       |-- Ready frame advertises protocolVersion 2\n|       `-- Publisher: selection update/remove and copy/paste replies\n|-- [M] Separate socket options govern copy/paste and context uploads\n|   `-- Vite sets both options from httpEnabled === true\n|-- [O] Adapter tracks handshake, heartbeat and output queue\n|   |-- Bind within 10 seconds; initial context fetch substitutes 30 seconds\n|   |-- Ping every 15 seconds; missing pong or socket error -> terminate\n|   |-- bufferedAmount > 64 KiB + contextAllowance -> close 1013\n|   |-- Context frame > 64 MiB -> close 1009\n|   |   `-- Otherwise add encoded bytes to allowance; send callback subtracts them\n|   `-- Close -> clear handshake; detach reader or disconnect publisher\n|-- [D] GET live/context/short\n|   |-- Exactly one workspaceInstanceId and documentId, each 1-200 characters\n|   |-- shortContextForCanvas -> body plus epoch/version headers; no-store\n|   `-- Non-LiveCanvasError failure -> 503 CONTEXT_UNAVAILABLE\n`-- [D] GET live/connections/{id}/selection\n    |-- service.read -> epoch, sequence, document version and received-at headers\n    |-- connectionId + sequence -> quoted ETag\n    `-- Match any comma-separated If-None-Match tag, stripping W/, or \"*\"\n        `-- Match -> 304; otherwise 200 selection JSON; private, no-cache",
+        "position": {
+          "column": 240,
+          "row": 30
+        }
+      },
+      {
+        "id": "eval",
+        "ascii": "Evaluation: request inputs, outputs and projections\n|-- [C] POST runs / roll-ups -> runs.start / startRollUp -> 202\n|-- [D] GET runs/{id}\n|   |-- runs.read(id) -> summarizeEvalRun\n|   `-- summary.id -> judgements.list -> add judgements only if nonempty\n|-- [D] POST prompt-snapshots\n|   `-- Strict UUID requestId + name (1-120) -> prompts.snapshot\n|-- [D] POST prompts/{id}/fork\n|   `-- Positive integer version + UUID requestId + name -> prompts.fork\n|-- [D] POST runs/{id}/output-result\n|   |-- Strict cellKey (1-300), changeSessionId (1-200), nonnegative expectedVersion\n|   `-- runs.captureOutputResult(runId, input) -> JSON result\n|-- [C] Output navigation\n|   |-- GET output-result / promotion-source -> runId and cell query\n|   |-- POST promote -> runs.promoteOutput\n|   `-- POST placement-backfill -> runs.backfillPlacementTracking\n|-- [M] History endpoint exposes a summary\n|   `-- runs.histories.read(id) -> omit documents -> response\n|-- [C] Experiments expose save/read, approve, judge and relaunch\n|   `-- Approve/relaunch return 202; judge returns 200\n`-- [M] Route delegates are conditional on supplied services\n    |-- Evals require runs, prompts and references in mapping router\n    `-- Bootstrap supplies these plus optional eval extensions",
+        "position": {
+          "column": 240,
+          "row": 63
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": {
+          "diagram": "central",
+          "line": 2
+        },
+        "target": {
+          "diagram": "wiring",
+          "line": 1
+        },
+        "label": "Concrete wiring, source resolution and ownership"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 27
+        },
+        "target": {
+          "diagram": "scope",
+          "line": 1
+        },
+        "label": "How connection state changes schemas and calls"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 43
+        },
+        "target": {
+          "diagram": "admit",
+          "line": 1
+        },
+        "label": "Admission predicates and transport failures"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 83
+        },
+        "target": {
+          "diagram": "sse",
+          "line": 1
+        },
+        "label": "Public projections, snapshot data and subscription lifetime"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 88
+        },
+        "target": {
+          "diagram": "live",
+          "line": 1
+        },
+        "label": "Socket roles, buffering and associated HTTP reads"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 70
+        },
+        "target": {
+          "diagram": "eval",
+          "line": 1
+        },
+        "label": "Evaluation request and response dependencies"
+      }
+    ]
+  },
+  "usage": {
+    "input_tokens": 350789,
+    "cached_input_tokens": 298112,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 10180,
+    "reasoning_output_tokens": 1173
+  }
+}

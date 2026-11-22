@@ -1,0 +1,110 @@
+{
+  "score": 0,
+  "anchors": {
+    "pairs": [],
+    "unmatchedA": [
+      {
+        "lines": [
+          3,
+          11
+        ],
+        "label": "Runtime boundary and application coordination"
+      },
+      {
+        "lines": [
+          13,
+          20
+        ],
+        "label": "Surface session and workers"
+      },
+      {
+        "lines": [
+          22,
+          34
+        ],
+        "label": "Terminal input handling"
+      },
+      {
+        "lines": [
+          36,
+          47
+        ],
+        "label": "Child output and protocol interpretation"
+      },
+      {
+        "lines": [
+          49,
+          62
+        ],
+        "label": "Terminal session model"
+      },
+      {
+        "lines": [
+          64,
+          76
+        ],
+        "label": "Frame preparation and GPU rendering"
+      },
+      {
+        "lines": [
+          78,
+          87
+        ],
+        "label": "Geometry and configuration"
+      },
+      {
+        "lines": [
+          89,
+          97
+        ],
+        "label": "Session shutdown"
+      }
+    ],
+    "unmatchedB": [
+      {
+        "lines": [
+          3,
+          17
+        ],
+        "label": "Canvas workspace and session ownership"
+      },
+      {
+        "lines": [
+          19,
+          42
+        ],
+        "label": "Canvas history and diagram revisions"
+      },
+      {
+        "lines": [
+          44,
+          63
+        ],
+        "label": "Document controller and editor runtime"
+      },
+      {
+        "lines": [
+          65,
+          83
+        ],
+        "label": "Selection and source exploration"
+      },
+      {
+        "lines": [
+          85,
+          106
+        ],
+        "label": "AI and agent operations"
+      },
+      {
+        "lines": [
+          108,
+          129
+        ],
+        "label": "Workspace persistence and publication"
+      }
+    ],
+    "J": 0
+  },
+  "markdown": "## 1. Anchor tree\nNo shared component anchors. The root descriptions are treated as headings; their immediate component branches are compared.\n\n- unmatched: A 3–11 (runtime boundary and application coordination)\n- unmatched: A 13–20 (Surface session and workers)\n- unmatched: A 22–34 (terminal input handling)\n- unmatched: A 36–47 (child output and protocol interpretation)\n- unmatched: A 49–62 (terminal session model)\n- unmatched: A 64–76 (frame preparation and GPU rendering)\n- unmatched: A 78–87 (geometry and configuration)\n- unmatched: A 89–97 (session shutdown)\n- unmatched: B 3–17 (canvas workspace and session ownership)\n- unmatched: B 19–42 (canvas history and diagram revisions)\n- unmatched: B 44–63 (document controller and editor runtime)\n- unmatched: B 65–83 (selection and source exploration)\n- unmatched: B 85–106 (AI and agent operations)\n- unmatched: B 108–129 (workspace persistence and publication)\n\n## 2. Score\nk = 0, uA = 8, uB = 6; Σs = 0.\n\nJ = 0 / (0 + 8 + 6) = **0**.\n\nThere are no top-level anchor scores or recursive comparisons.\n\n## 3. Verdict\nThe trees identify no common code components. A decomposes a terminal session; B decomposes a revisioned mapping workspace. Generic similarities such as sessions, selection, workers and cleanup do not establish code identity. In particular, A's App coordinates terminal surfaces, whereas B's App names a mapping-page entry point. This is a difference in component identity, not detail, grouping or relocation. No shared implied parent was identified. The score reflects unmatched components, not an assessment of either tree's correctness."
+}

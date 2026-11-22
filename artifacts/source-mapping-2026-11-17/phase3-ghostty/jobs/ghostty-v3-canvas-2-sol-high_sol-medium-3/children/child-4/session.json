@@ -1,0 +1,19 @@
+{
+  "id": "child-4",
+  "name": "exec",
+  "assignment": "Map all nodes d4 n1-n30. Return JSON partial with nl-verified ranges.",
+  "model": "gpt-6-sol",
+  "effort": "medium",
+  "status": "generating",
+  "queuedAt": "2026-11-19T04:34:01.331Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-19T04:34:01.339Z",
+  "sessionId": "01a1f215-4014-7e25-8d4a-6e0a3b6a7e85",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-ndc66q4v-agent-repository-poUpRX-checkout--/2026-11-19T04-34-01-364Z_01a1f215-4014-7e25-8d4a-6e0a3b6a7e85.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase3-ndc66q4v/agent-repository-poUpRX/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

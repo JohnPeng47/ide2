@@ -1,0 +1,40 @@
+{
+  "model": "gpt-6-astra",
+  "effort": "high",
+  "samples": 3,
+  "conditionId": "pi-astra-high-v4",
+  "conditionName": "Pi · Astra/high v4",
+  "repositoryName": "Pi",
+  "phaseId": "pi",
+  "caseId": "pi-source",
+  "experimentId": "08ccc7fa-8ea6-4cfa-b0b7-8819b7fcbf35",
+  "promptId": "0b3af2dd-ba89-4032-936a-40070a3e167e",
+  "promptVersion": 4,
+  "promptSha256": "bb56ca114ae2e4c7f08ff6402992adb95a09d4a760f76e92ee83ae1a4edd1b28",
+  "savedPromptContentHash": "4a4234357bd6f6927342a1a6dab2491999a38c6b4710b0ece0bfe8317a0d83af",
+  "agentContextId": "saved-agent-context-2b31f263-f81f-4df1-a146-8946dc709b5c",
+  "contextHash": "642eff5f7c0caf04881c5a7a06cc6f80a6acefc263656940751d03a1c1360017",
+  "sourceCommit": "682c7b93ce3e0a52b579c2b65b4c06bb392e7180",
+  "repositoryPath": "/home/john/softwarez/pi",
+  "eligibleFiles": 1840,
+  "contextRequestId": "95080401-a752-48a0-968f-41ef4d94eab2",
+  "attachRequestId": "a8b0374e-4fad-4af7-8013-e7c14c5ec79e",
+  "coverageAttachRequestId": "fdcb2a1d-8d09-40f1-8217-e62078721792",
+  "cases": [
+    {
+      "number": 1,
+      "runId": "3f123c60-c475-4fbc-958f-c66dbb757de2",
+      "sampleId": "6c3c72a7-0379-414d-ac76-f6197bde958f"
+    },
+    {
+      "number": 2,
+      "runId": "c5923f60-da9e-4740-ab82-74fad423bda1",
+      "sampleId": "724ad104-7c52-4848-a8ed-f14362c9ce73"
+    },
+    {
+      "number": 3,
+      "runId": "0fc465ae-961d-4c0a-a0c6-f60338bbe689",
+      "sampleId": "4cd79b45-a595-4605-a9be-3d18ef23cf6e"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "fingerprint": "4b80b264d62ca0fc97258eb0d46bc22127aa597ee620c730d56570b92b235935",
+  "files": {
+    "context.json": {
+      "sha256": "b4b7a18053a76a5d4435f8973297264596bd1bd0b0218ab974daebb9e84674e9",
+      "bytes": 153695
+    },
+    "critique.json": {
+      "sha256": "5105cbc241422d7f3cc140aeb752442806b870a5bb41e862ae4e2acdb1166813",
+      "bytes": 10915
+    },
+    "previous-output.json": {
+      "sha256": "b31940ab7de5748bf23ef51a54924cd83c0d3512b1a1e13a29f5432002285d98",
+      "bytes": 9504
+    }
+  },
+  "dependencies": [
+    "initial/discover/C",
+    "initial/C1/tree/canvas_commands",
+    "feedback/C1/phase2/round1/judge"
+  ],
+  "round": 1
+}

@@ -1,3 +1,4 @@
+import { projectionTypeSchema } from '../../../domain/mapping/projections/projectionType';
 import { agentContextToolDefinitions } from '../../../domain/core/agents/savedAgentContext';
 import { genAlternativesSchema, genAlternativesDescription } from '../../../domain/core/diagrams/canvasGeneration';
 import { directOperationSchemas, directDiagramInstructions, isDiagramTool, type DiagramTool } from '../../../domain/mapping/agent/diagramBatch';
@@ -29,7 +30,7 @@ const chatSchemas = {
   'extend-diagram': z.object({ requestId: z.string().min(1).max(200), operations: z.array(chatOperationSchemas['extend-diagram']).min(1).max(20) }).strict()
 };
 type ChatDiagramInput = z.infer<typeof chatSchemas[DiagramTool]>;
-const viewSchema = canvasViewCommandSchema.extend({ requestId: z.string().min(1).max(200) }).strict();
+const viewSchema = canvasViewCommandSchema.extend({ projectionType: projectionTypeSchema.optional(), requestId: z.string().min(1).max(200) }).strict();
 const contextSchema = z.object({ operation: z.enum(['prepare', 'read', 'delete']), reference: z.number().int().min(1).max(20).optional(),
   nodeId: z.string().min(1).max(200).optional(), requestId: z.string().min(1).max(200) }).strict();
 const runSchema = z.object({ runId: z.string().min(1).max(200) }).strict();

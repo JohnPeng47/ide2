@@ -1,0 +1,650 @@
+[
+  {
+    "caseId": "core-mapping",
+    "effort": "low",
+    "a": 1,
+    "b": 2,
+    "mappedNodeJaccard": 0.5193798449612403,
+    "sourceLineIoU": 0.3894028916784707,
+    "commonNodeSourceIoU": 0.7497458660675033
+  },
+  {
+    "caseId": "core-mapping",
+    "effort": "low",
+    "a": 1,
+    "b": 3,
+    "mappedNodeJaccard": 1.0,
+    "sourceLineIoU": 0.6792491783279219,
+    "commonNodeSourceIoU": 0.6792491783279219
+  },
+  {
+    "caseId": "core-mapping",
+    "effort": "low",
+    "a": 2,
+    "b": 3,
+    "mappedNodeJaccard": 0.5193798449612403,
+    "sourceLineIoU": 0.4084114482813714,
+    "commonNodeSourceIoU": 0.7863444302730882
+  },
+  {
+    "caseId": "core-mapping",
+    "effort": "medium",
+    "a": 1,
+    "b": 2,
+    "mappedNodeJaccard": 1.0,
+    "sourceLineIoU": 0.698330164270318,
+    "commonNodeSourceIoU": 0.698330164270318
+  },
+  {
+    "caseId": "core-mapping",
+    "effort": "medium",
+    "a": 1,
+    "b": 3,
+    "mappedNodeJaccard": 1.0,
+    "sourceLineIoU": 0.7312624598226778,
+    "commonNodeSourceIoU": 0.7312624598226778
+  },
+  {
+    "caseId": "core-mapping",
+    "effort": "medium",
+    "a": 2,
+    "b": 3,
+    "mappedNodeJaccard": 1.0,
+    "sourceLineIoU": 0.690333758877152,
+    "commonNodeSourceIoU": 0.690333758877152
+  },
+  {
+    "caseId": "core-mapping",
+    "effort": "high",
+    "a": 1,
+    "b": 2,
+    "mappedNodeJaccard": 1.0,
+    "sourceLineIoU": 0.6934977119083672,
+    "commonNodeSourceIoU": 0.6934977119083672
+  },
+  {
+    "caseId": "core-mapping",
+    "effort": "high",
+    "a": 1,
+    "b": 3,
+    "mappedNodeJaccard": 1.0,
+    "sourceLineIoU": 0.6869092003821038,
+    "commonNodeSourceIoU": 0.6869092003821038
+  },
+  {
+    "caseId": "core-mapping",
+    "effort": "high",
+    "a": 2,
+    "b": 3,
+    "mappedNodeJaccard": 1.0,
+    "sourceLineIoU": 0.6792894133028585,
+    "commonNodeSourceIoU": 0.6792894133028585
+  },
+  {
+    "caseId": "core-pi",
+    "effort": "low",
+    "a": 1,
+    "b": 2,
+    "mappedNodeJaccard": 0.46,
+    "sourceLineIoU": 0.384454501363229,
+    "commonNodeSourceIoU": 0.8357706551374543
+  },
+  {
+    "caseId": "core-pi",
+    "effort": "low",
+    "a": 1,
+    "b": 3,
+    "mappedNodeJaccard": 1.0,
+    "sourceLineIoU": 0.6980116299965495,
+    "commonNodeSourceIoU": 0.6980116299965495
+  },
+  {
+    "caseId": "core-pi",
+    "effort": "low",
+    "a": 2,
+    "b": 3,
+    "mappedNodeJaccard": 0.46,
+    "sourceLineIoU": 0.34525075615034145,
+    "commonNodeSourceIoU": 0.7505451220659597
+  },
+  {
+    "caseId": "core-pi",
+    "effort": "medium",
+    "a": 1,
+    "b": 2,
+    "mappedNodeJaccard": 1.0,
+    "sourceLineIoU": 0.7112989932423093,
+    "commonNodeSourceIoU": 0.7112989932423093
+  },
+  {
+    "caseId": "core-pi",
+    "effort": "medium",
+    "a": 1,
+    "b": 3,
+    "mappedNodeJaccard": 1.0,
+    "sourceLineIoU": 0.6238006852745916,
+    "commonNodeSourceIoU": 0.6238006852745916
+  },
+  {
+    "caseId": "core-pi",
+    "effort": "medium",
+    "a": 2,
+    "b": 3,
+    "mappedNodeJaccard": 1.0,
+    "sourceLineIoU": 0.6419126410348212,
+    "commonNodeSourceIoU": 0.6419126410348212
+  },
+  {
+    "caseId": "core-pi",
+    "effort": "high",
+    "a": 1,
+    "b": 2,
+    "mappedNodeJaccard": 1.0,
+    "sourceLineIoU": 0.733342917096433,
+    "commonNodeSourceIoU": 0.733342917096433
+  },
+  {
+    "caseId": "core-pi",
+    "effort": "high",
+    "a": 1,
+    "b": 3,
+    "mappedNodeJaccard": 1.0,
+    "sourceLineIoU": 0.699989956535102,
+    "commonNodeSourceIoU": 0.699989956535102
+  },
+  {
+    "caseId": "core-pi",
+    "effort": "high",
+    "a": 2,
+    "b": 3,
+    "mappedNodeJaccard": 1.0,
+    "sourceLineIoU": 0.6523523490141099,
+    "commonNodeSourceIoU": 0.6523523490141099
+  },
+  {
+    "caseId": "core-opencode",
+    "effort": "low",
+    "a": 1,
+    "b": 2,
+    "mappedNodeJaccard": 1.0,
+    "sourceLineIoU": 0.5808171742357219,
+    "commonNodeSourceIoU": 0.5808171742357219
+  },
+  {
+    "caseId": "core-opencode",
+    "effort": "low",
+    "a": 1,
+    "b": 3,
+    "mappedNodeJaccard": 0.5625,
+    "sourceLineIoU": 0.21357606571246737,
+    "commonNodeSourceIoU": 0.3796907834888309
+  },
+  {
+    "caseId": "core-opencode",
+    "effort": "low",
+    "a": 2,
+    "b": 3,
+    "mappedNodeJaccard": 0.5625,
+    "sourceLineIoU": 0.2297206167301533,
+    "commonNodeSourceIoU": 0.4083922075202725
+  },
+  {
+    "caseId": "core-opencode",
+    "effort": "medium",
+    "a": 1,
+    "b": 2,
+    "mappedNodeJaccard": 1.0,
+    "sourceLineIoU": 0.5621485379611305,
+    "commonNodeSourceIoU": 0.5621485379611305
+  },
+  {
+    "caseId": "core-opencode",
+    "effort": "medium",
+    "a": 1,
+    "b": 3,
+    "mappedNodeJaccard": 1.0,
+    "sourceLineIoU": 0.6399074304696057,
+    "commonNodeSourceIoU": 0.6399074304696057
+  },
+  {
+    "caseId": "core-opencode",
+    "effort": "medium",
+    "a": 2,
+    "b": 3,
+    "mappedNodeJaccard": 1.0,
+    "sourceLineIoU": 0.6091295627361379,
+    "commonNodeSourceIoU": 0.6091295627361379
+  },
+  {
+    "caseId": "core-opencode",
+    "effort": "high",
+    "a": 1,
+    "b": 2,
+    "mappedNodeJaccard": 1.0,
+    "sourceLineIoU": 0.591391833422369,
+    "commonNodeSourceIoU": 0.591391833422369
+  },
+  {
+    "caseId": "core-opencode",
+    "effort": "high",
+    "a": 1,
+    "b": 3,
+    "mappedNodeJaccard": 0.9895833333333334,
+    "sourceLineIoU": 0.5725211967623696,
+    "commonNodeSourceIoU": 0.5785477356756576
+  },
+  {
+    "caseId": "core-opencode",
+    "effort": "high",
+    "a": 2,
+    "b": 3,
+    "mappedNodeJaccard": 0.9895833333333334,
+    "sourceLineIoU": 0.6526947035747638,
+    "commonNodeSourceIoU": 0.6595651741387086
+  },
+  {
+    "caseId": "core-ghostty",
+    "effort": "low",
+    "a": 1,
+    "b": 2,
+    "mappedNodeJaccard": 1.0,
+    "sourceLineIoU": 0.4947567188092895,
+    "commonNodeSourceIoU": 0.4947567188092895
+  },
+  {
+    "caseId": "core-ghostty",
+    "effort": "low",
+    "a": 1,
+    "b": 3,
+    "mappedNodeJaccard": 0.968421052631579,
+    "sourceLineIoU": 0.5755541055684645,
+    "commonNodeSourceIoU": 0.5943221742283057
+  },
+  {
+    "caseId": "core-ghostty",
+    "effort": "low",
+    "a": 2,
+    "b": 3,
+    "mappedNodeJaccard": 0.968421052631579,
+    "sourceLineIoU": 0.5076557078125072,
+    "commonNodeSourceIoU": 0.5242096982846542
+  },
+  {
+    "caseId": "core-ghostty",
+    "effort": "medium",
+    "a": 1,
+    "b": 2,
+    "mappedNodeJaccard": 1.0,
+    "sourceLineIoU": 0.6218413258983881,
+    "commonNodeSourceIoU": 0.6218413258983881
+  },
+  {
+    "caseId": "core-ghostty",
+    "effort": "medium",
+    "a": 1,
+    "b": 3,
+    "mappedNodeJaccard": 1.0,
+    "sourceLineIoU": 0.5645473748893693,
+    "commonNodeSourceIoU": 0.5645473748893693
+  },
+  {
+    "caseId": "core-ghostty",
+    "effort": "medium",
+    "a": 2,
+    "b": 3,
+    "mappedNodeJaccard": 1.0,
+    "sourceLineIoU": 0.6128901447511936,
+    "commonNodeSourceIoU": 0.6128901447511936
+  },
+  {
+    "caseId": "core-ghostty",
+    "effort": "high",
+    "a": 1,
+    "b": 2,
+    "mappedNodeJaccard": 1.0,
+    "sourceLineIoU": 0.6005353136413631,
+    "commonNodeSourceIoU": 0.6005353136413631
+  },
+  {
+    "caseId": "core-ghostty",
+    "effort": "high",
+    "a": 1,
+    "b": 3,
+    "mappedNodeJaccard": 1.0,
+    "sourceLineIoU": 0.7020502141524395,
+    "commonNodeSourceIoU": 0.7020502141524395
+  },
+  {
+    "caseId": "core-ghostty",
+    "effort": "high",
+    "a": 2,
+    "b": 3,
+    "mappedNodeJaccard": 1.0,
+    "sourceLineIoU": 0.6057825851313132,
+    "commonNodeSourceIoU": 0.6057825851313132
+  },
+  {
+    "caseId": "canvas-mapping",
+    "effort": "low",
+    "a": 1,
+    "b": 2,
+    "mappedNodeJaccard": 0.9915254237288136,
+    "sourceLineIoU": 0.5100686230058428,
+    "commonNodeSourceIoU": 0.5144281838862346
+  },
+  {
+    "caseId": "canvas-mapping",
+    "effort": "low",
+    "a": 1,
+    "b": 3,
+    "mappedNodeJaccard": 0.3389830508474576,
+    "sourceLineIoU": 0.21274519155376584,
+    "commonNodeSourceIoU": 0.6275983150836092
+  },
+  {
+    "caseId": "canvas-mapping",
+    "effort": "low",
+    "a": 2,
+    "b": 3,
+    "mappedNodeJaccard": 0.3418803418803419,
+    "sourceLineIoU": 0.2686378199198712,
+    "commonNodeSourceIoU": 0.7857656232656233
+  },
+  {
+    "caseId": "canvas-mapping",
+    "effort": "medium",
+    "a": 1,
+    "b": 2,
+    "mappedNodeJaccard": 0.9752066115702479,
+    "sourceLineIoU": 0.7087164873403274,
+    "commonNodeSourceIoU": 0.7267347031201663
+  },
+  {
+    "caseId": "canvas-mapping",
+    "effort": "medium",
+    "a": 1,
+    "b": 3,
+    "mappedNodeJaccard": 0.9915966386554622,
+    "sourceLineIoU": 0.6339901838808439,
+    "commonNodeSourceIoU": 0.6393629820493257
+  },
+  {
+    "caseId": "canvas-mapping",
+    "effort": "medium",
+    "a": 2,
+    "b": 3,
+    "mappedNodeJaccard": 0.9834710743801653,
+    "sourceLineIoU": 0.6449496621953679,
+    "commonNodeSourceIoU": 0.6557891523162984
+  },
+  {
+    "caseId": "canvas-mapping",
+    "effort": "high",
+    "a": 1,
+    "b": 2,
+    "mappedNodeJaccard": 1.0,
+    "sourceLineIoU": 0.7447217469558322,
+    "commonNodeSourceIoU": 0.7447217469558322
+  },
+  {
+    "caseId": "canvas-mapping",
+    "effort": "high",
+    "a": 1,
+    "b": 3,
+    "mappedNodeJaccard": 1.0,
+    "sourceLineIoU": 0.7234538344646273,
+    "commonNodeSourceIoU": 0.7234538344646273
+  },
+  {
+    "caseId": "canvas-mapping",
+    "effort": "high",
+    "a": 2,
+    "b": 3,
+    "mappedNodeJaccard": 1.0,
+    "sourceLineIoU": 0.7502939904227214,
+    "commonNodeSourceIoU": 0.7502939904227214
+  },
+  {
+    "caseId": "canvas-pi",
+    "effort": "low",
+    "a": 1,
+    "b": 2,
+    "mappedNodeJaccard": 0.9818181818181818,
+    "sourceLineIoU": 0.5949814415344764,
+    "commonNodeSourceIoU": 0.6059996163777075
+  },
+  {
+    "caseId": "canvas-pi",
+    "effort": "low",
+    "a": 1,
+    "b": 3,
+    "mappedNodeJaccard": 0.18181818181818182,
+    "sourceLineIoU": 0.10721589731458153,
+    "commonNodeSourceIoU": 0.5896874352301984
+  },
+  {
+    "caseId": "canvas-pi",
+    "effort": "low",
+    "a": 2,
+    "b": 3,
+    "mappedNodeJaccard": 0.18518518518518517,
+    "sourceLineIoU": 0.11080854753213051,
+    "commonNodeSourceIoU": 0.5983661566735048
+  },
+  {
+    "caseId": "canvas-pi",
+    "effort": "medium",
+    "a": 1,
+    "b": 2,
+    "mappedNodeJaccard": 1.0,
+    "sourceLineIoU": 0.6282100843249744,
+    "commonNodeSourceIoU": 0.6282100843249744
+  },
+  {
+    "caseId": "canvas-pi",
+    "effort": "medium",
+    "a": 1,
+    "b": 3,
+    "mappedNodeJaccard": 1.0,
+    "sourceLineIoU": 0.6682861101558416,
+    "commonNodeSourceIoU": 0.6682861101558416
+  },
+  {
+    "caseId": "canvas-pi",
+    "effort": "medium",
+    "a": 2,
+    "b": 3,
+    "mappedNodeJaccard": 1.0,
+    "sourceLineIoU": 0.6272485762617688,
+    "commonNodeSourceIoU": 0.6272485762617688
+  },
+  {
+    "caseId": "canvas-pi",
+    "effort": "high",
+    "a": 1,
+    "b": 2,
+    "mappedNodeJaccard": 1.0,
+    "sourceLineIoU": 0.6454971916244624,
+    "commonNodeSourceIoU": 0.6454971916244624
+  },
+  {
+    "caseId": "canvas-pi",
+    "effort": "high",
+    "a": 1,
+    "b": 3,
+    "mappedNodeJaccard": 1.0,
+    "sourceLineIoU": 0.5946736313191265,
+    "commonNodeSourceIoU": 0.5946736313191265
+  },
+  {
+    "caseId": "canvas-pi",
+    "effort": "high",
+    "a": 2,
+    "b": 3,
+    "mappedNodeJaccard": 1.0,
+    "sourceLineIoU": 0.6782531020949761,
+    "commonNodeSourceIoU": 0.6782531020949761
+  },
+  {
+    "caseId": "canvas-opencode",
+    "effort": "low",
+    "a": 1,
+    "b": 2,
+    "mappedNodeJaccard": 0.35185185185185186,
+    "sourceLineIoU": 0.26289955347926364,
+    "commonNodeSourceIoU": 0.7471882046252756
+  },
+  {
+    "caseId": "canvas-opencode",
+    "effort": "low",
+    "a": 1,
+    "b": 3,
+    "mappedNodeJaccard": 0.9629629629629629,
+    "sourceLineIoU": 0.5189899180634248,
+    "commonNodeSourceIoU": 0.5389510687581719
+  },
+  {
+    "caseId": "canvas-opencode",
+    "effort": "low",
+    "a": 2,
+    "b": 3,
+    "mappedNodeJaccard": 0.32710280373831774,
+    "sourceLineIoU": 0.24507512738474566,
+    "commonNodeSourceIoU": 0.749229675147651
+  },
+  {
+    "caseId": "canvas-opencode",
+    "effort": "medium",
+    "a": 1,
+    "b": 2,
+    "mappedNodeJaccard": 1.0,
+    "sourceLineIoU": 0.4725474536843154,
+    "commonNodeSourceIoU": 0.4725474536843154
+  },
+  {
+    "caseId": "canvas-opencode",
+    "effort": "medium",
+    "a": 1,
+    "b": 3,
+    "mappedNodeJaccard": 1.0,
+    "sourceLineIoU": 0.5067649106730163,
+    "commonNodeSourceIoU": 0.5067649106730163
+  },
+  {
+    "caseId": "canvas-opencode",
+    "effort": "medium",
+    "a": 2,
+    "b": 3,
+    "mappedNodeJaccard": 1.0,
+    "sourceLineIoU": 0.4740732859743883,
+    "commonNodeSourceIoU": 0.4740732859743883
+  },
+  {
+    "caseId": "canvas-opencode",
+    "effort": "high",
+    "a": 1,
+    "b": 2,
+    "mappedNodeJaccard": 1.0,
+    "sourceLineIoU": 0.6361548949059634,
+    "commonNodeSourceIoU": 0.6361548949059634
+  },
+  {
+    "caseId": "canvas-opencode",
+    "effort": "high",
+    "a": 1,
+    "b": 3,
+    "mappedNodeJaccard": 1.0,
+    "sourceLineIoU": 0.6069720770443283,
+    "commonNodeSourceIoU": 0.6069720770443283
+  },
+  {
+    "caseId": "canvas-opencode",
+    "effort": "high",
+    "a": 2,
+    "b": 3,
+    "mappedNodeJaccard": 1.0,
+    "sourceLineIoU": 0.6557205094494563,
+    "commonNodeSourceIoU": 0.6557205094494563
+  },
+  {
+    "caseId": "canvas-ghostty",
+    "effort": "low",
+    "a": 1,
+    "b": 2,
+    "mappedNodeJaccard": 0.6944444444444444,
+    "sourceLineIoU": 0.42388448330565603,
+    "commonNodeSourceIoU": 0.6103936559601447
+  },
+  {
+    "caseId": "canvas-ghostty",
+    "effort": "low",
+    "a": 1,
+    "b": 3,
+    "mappedNodeJaccard": 0.7115384615384616,
+    "sourceLineIoU": 0.5068844682650878,
+    "commonNodeSourceIoU": 0.7123781716157991
+  },
+  {
+    "caseId": "canvas-ghostty",
+    "effort": "low",
+    "a": 2,
+    "b": 3,
+    "mappedNodeJaccard": 0.9537037037037037,
+    "sourceLineIoU": 0.5594578574305699,
+    "commonNodeSourceIoU": 0.5866160058495296
+  },
+  {
+    "caseId": "canvas-ghostty",
+    "effort": "medium",
+    "a": 1,
+    "b": 2,
+    "mappedNodeJaccard": 1.0,
+    "sourceLineIoU": 0.5730918982256498,
+    "commonNodeSourceIoU": 0.5730918982256498
+  },
+  {
+    "caseId": "canvas-ghostty",
+    "effort": "medium",
+    "a": 1,
+    "b": 3,
+    "mappedNodeJaccard": 1.0,
+    "sourceLineIoU": 0.7260067609992781,
+    "commonNodeSourceIoU": 0.7260067609992781
+  },
+  {
+    "caseId": "canvas-ghostty",
+    "effort": "medium",
+    "a": 2,
+    "b": 3,
+    "mappedNodeJaccard": 1.0,
+    "sourceLineIoU": 0.6206051868656622,
+    "commonNodeSourceIoU": 0.6206051868656622
+  },
+  {
+    "caseId": "canvas-ghostty",
+    "effort": "high",
+    "a": 1,
+    "b": 2,
+    "mappedNodeJaccard": 1.0,
+    "sourceLineIoU": 0.6248620877283282,
+    "commonNodeSourceIoU": 0.6248620877283282
+  },
+  {
+    "caseId": "canvas-ghostty",
+    "effort": "high",
+    "a": 1,
+    "b": 3,
+    "mappedNodeJaccard": 1.0,
+    "sourceLineIoU": 0.6354734384310528,
+    "commonNodeSourceIoU": 0.6354734384310528
+  },
+  {
+    "caseId": "canvas-ghostty",
+    "effort": "high",
+    "a": 2,
+    "b": 3,
+    "mappedNodeJaccard": 1.0,
+    "sourceLineIoU": 0.6837101434717958,
+    "commonNodeSourceIoU": 0.6837101434717958
+  }
+]

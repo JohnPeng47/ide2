@@ -1,4 +1,5 @@
 import { comparisonReportSchema } from '../compare/comparisonReport';
+import { reportSteps, type ReportStep } from '../compare/reportSteps';
 import { z } from 'zod';
 import { fewShotProgressSchema } from './fewShot';
 import { diagramChangeTreeResultSchema } from './diagramChangeTree';
@@ -46,10 +47,13 @@ export type Judgement = JudgementRecord & (
 );
 export type JudgementSummary = Omit<JudgementRecord, 'canvases' | 'source' | 'deletedAt' | 'evaluator'> & {
   kind: JudgementKind; evaluator: Omit<Extract<JudgementEvaluator, { kind: 'model' }>, 'prompt'> | Exclude<JudgementEvaluator, { kind: 'model' }>;
+  /** A finished comparison report's pages and findings, so navigation trees need not load every report. */
+  steps?: ReportStep[];
 };
 export function summarizeJudgement(judgement: Judgement): JudgementSummary {
-  const { canvases: _, source: __, deletedAt: ___, data: ____, evaluator, ...summary } = judgement;
-  if (evaluator.kind !== 'model') return { ...summary, evaluator };
+  const { canvases: _, source: __, deletedAt: ___, data, evaluator, ...summary } = judgement;
+  const steps = judgement.kind === 'comparison-report' && judgement.status === 'finished' && data ? { steps: reportSteps(judgement.data!) } : {};
+  if (evaluator.kind !== 'model') return { ...summary, ...steps, evaluator };
   const { prompt: _____, ...provenance } = evaluator;
-  return { ...summary, evaluator: provenance };
+  return { ...summary, ...steps, evaluator: provenance };
 }

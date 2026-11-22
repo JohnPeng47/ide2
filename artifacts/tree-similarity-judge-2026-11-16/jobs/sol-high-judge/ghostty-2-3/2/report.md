@@ -1,0 +1,89 @@
+### Anchor tree
+- A 3–14 ↔ B 3–12 · same · offset 0 · s = 0.983 · Surface integration and App boundary
+  - A 4–5 ↔ B 4–5 · same · offset 0 · s = 1 · event and draw entry points
+  - A 6–8 ↔ B 6–8 · same · offset 0 · s = 1 · apprt runtime and actions
+    - A 7 ↔ B 7 · same · offset 0 · s = 1 · host runtime
+    - A 8 ↔ B 8 · same · offset 0 · s = 1 · host UI actions
+  - A 9–14 ↔ B 9–12 · same · offset 0 · s = 0.901 · App coordination
+    - A 10 ↔ B 10 · same · offset 0 · s = 1 · surfaces and focus
+    - A 11–12 ↔ B 11, 12 · grouped · offset 0 · s = 1 · shared fonts and device
+    - A 13–14 ↔ B 54–55 · relocated · offset 2 · s = 0.405 · App mailbox dispatch
+- A 16–25 ↔ B 14–25 · same · offset 0 · s = 0.983 · Surface session resources
+  - A 17 ↔ B 16 · same · offset 0 · s = 1 · Termio and I/O thread
+  - A 18 ↔ B 17, 18 · grouped · offset 0 · s = 1 · renderer and workers
+  - A 19–21 ↔ B 22–25 · same · offset 0 · s = 0.833 · renderer.State
+    - A 20 ↔ B 23 · same · offset 0 · s = 1 · shared terminal reference
+    - A 21 ↔ B 24 · same · offset 0 · s = 1 · mutex
+    - unmatched: B 25 (demand handoff)
+  - A 22–23 ↔ B 19 · same · offset 0 · s = 1 · interaction state
+  - A 24–25 ↔ B 20 · same · offset 0 · s = 1 · derived configuration
+- A 27–40 ↔ B 27–38 · same · offset 0 · s = 0.972 · input and PTY writes
+  - A 28–32 ↔ B 28–31 · same · offset 0 · s = 1 · keys
+    - A 29 ↔ B 29 · same · offset 0 · s = 1 · bindings
+    - A 30–32 ↔ B 30–31 · same · offset 0 · s = 1 · key encoding
+  - A 33–36 ↔ B 32–34 · same · offset 0 · s = 0.833 · mouse and paste
+    - A 34 ↔ B 33 · same · offset 0 · s = 1 · mouse encoding
+    - A 36 ↔ B 34 · same · offset 0 · s = 1 · paste encoding
+    - unmatched: A 35 (local tracked selection)
+  - A 37–40 ↔ B 35–38 · same · offset 0 · s = 1 · queued writes
+    - A 38 ↔ B 36 · same · offset 0 · s = 1 · readonly handling
+    - A 39–40 ↔ B 37–38 · same · offset 0 · s = 1 · mailbox and PTY write
+- A 42–58 ↔ B 40–55 · same · offset 0 · s = 0.969 · child output and VT
+  - A 43–49 ↔ B 41–44 · same · offset 0 · s = 0.833 · Exec and readers
+    - A 45 ↔ B 42 · same · offset 0 · s = 1 · PTY launch
+    - A 47–49 ↔ B 43–44 · same · offset 0 · s = 1 · read paths
+    - unmatched: A 46 (child exit watcher)
+  - A 50–54 ↔ B 45–49 · same · offset 0 · s = 1 · locked parsing
+    - A 50–51 ↔ B 45–46 · same · offset 0 · s = 1 · output parsing
+    - A 52–54 ↔ B 47–49 · same · offset 0 · s = 1 · VT operations
+  - A 55–58 ↔ B 50–53 · same · offset 0 · s = 0.983 · StreamHandler effects
+    - A 56 ↔ B 50 · same · offset 0 · s = 1 · protocol replies
+    - A 57 ↔ B 52–53 · same · offset 1 · s = 0.9 · UI effects
+    - A 58 ↔ B 51 · same · offset 0 · s = 1 · render notification
+- A 60–73 ↔ B 57–70 · same · offset 0 · s = 0.983 · terminal model
+  - A 61–62 ↔ B 58 · summarized · offset 0 · s = 0.9 · terminal operations
+  - A 63–71 ↔ B 61–70 · same · offset 0 · s = 1 · ScreenSet, Screen and PageList
+    - A 64 ↔ B 62 · same · offset 0 · s = 1 · primary and alternate
+    - A 65–71 ↔ B 63–70 · same · offset 0 · s = 1 · active Screen
+      - A 65 ↔ B 63 · same · offset 0 · s = 1 · active pointer
+      - A 66–71 ↔ B 64–70 · same · offset 0 · s = 1 · Screen state
+        - A 66 ↔ B 65 · same · offset 0 · s = 1 · cursor and selection
+        - A 67 ↔ B 66 · same · offset 0 · s = 1 · images and prompts
+        - A 68–71 ↔ B 67–70 · same · offset 0 · s = 1 · PageList
+          - A 69 ↔ B 68 · same · offset 0 · s = 1 · ordered pages
+          - A 70 ↔ B 69 · same · offset 0 · s = 1 · rows and cells
+          - A 71 ↔ B 70 · same · offset 0 · s = 1 · tracked pins
+  - A 72–73 ↔ B 59–60 · same · offset 0 · s = 1 · terminal attributes
+- A 75–88 ↔ B 72–83 · same · offset 0 · s = 0.992 · rendering
+  - A 76 ↔ B 73–74 · same · offset 0 · s = 1 · worker scheduling
+  - A 77–78, 79–83, 84–85 ↔ B 75–80 · grouped · offset 0 · s = 0.95 · generic renderer, frames and fonts
+    - A 77–78 ↔ B 75 · summarized · offset 0 · s = 0.9 · generic renderer
+    - A 79–83 ↔ B 76–78, 80 · grouped · offset 1 · s = 0.9 · terminal extraction
+      - A 79 ↔ B 77 · same · offset 0 · s = 1 · locked snapshot
+      - A 80–83 ↔ B 78, 80 · grouped · offset 0 · s = 1 · presentation inputs
+    - A 84–85 ↔ B 79 · same · offset 1 · s = 0.9 · font shaping
+  - A 86–88 ↔ B 81–83 · same · offset 0 · s = 1 · presentation
+    - A 87 ↔ B 82 · same · offset 0 · s = 1 · graphics API
+    - A 88 ↔ B 83 · same · offset 0 · s = 1 · Surface drawing
+- A 90–99 ↔ B 85–91 · same · offset 0 · s = 0.897 · resize and configuration
+  - A 91–93 ↔ B 86–87 · same · offset 0 · s = 0.975 · Surface resize
+    - A 92 ↔ B 87 · same · offset 0 · s = 1 · grid geometry
+    - A 93 ↔ B 86 · same · offset 1 · s = 0.9 · I/O request
+  - A 94–97 ↔ B 88–91 · same · offset 0 · s = 1 · Termio resize
+    - A 95–96 ↔ B 89–90 · same · offset 0 · s = 1 · locked backend and terminal resize
+    - A 97 ↔ B 91 · same · offset 0 · s = 1 · renderer notification
+  - A 98–99 ↔ B 21 · relocated · offset 2 · s = 0.405 · configuration propagation
+- A 101–109 ↔ B 93–103 · same · offset 0 · s = 0.9 · teardown
+  - A 102 ↔ B 96–97 · same · offset 0 · s = 1 · runtime close
+  - A 103–104 ↔ B 98–100 · same · offset 0 · s = 1 · worker shutdown
+    - A 103 ↔ B 99 · same · offset 0 · s = 1 · search and worker threads
+    - A 104 ↔ B 100 · same · offset 0 · s = 1 · Exec reader shutdown
+  - A 105–107 ↔ B 101–102 · same · offset 0 · s = 1 · Surface resource release
+  - A 108–109 ↔ B 103 · same · offset 0 · s = 1 · App shared-resource release
+  - unmatched: B 94–95 (child exit and wait-after-command)
+
+### Score
+Eight top-level anchors and no top-level unmatched nodes: J = (0.983472 + 0.983334 + 0.972222 + 0.969445 + 0.983334 + 0.991667 + 0.896667 + 0.900000) / 8 = **0.960018**.
+
+### Verdict
+The trees identify the same eight main components and closely agree on their internal ownership. B groups generic rendering and font preparation under `updateFrame`, while A presents those as separate renderer branches; the implied parent is the generic renderer’s frame preparation. App mailbox dispatch appears under App in A but under child-output effects in B, and configuration propagation appears under resize in A but session settings in B. The remaining differences are mostly local detail, not different components.

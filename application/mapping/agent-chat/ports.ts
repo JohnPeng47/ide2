@@ -1,8 +1,9 @@
 import type { ChatSession } from '../../../domain/mapping/agent-chat/agentChat';
-import type { ShortCanvasContext } from '../../../domain/mapping/agent/shortContext';
+import type { ProjectedLiveContext } from '../../../domain/mapping/agent/liveCanvasStatus';
+import type { ProjectionType } from '../../../domain/mapping/projections/projectionType';
 
 export interface ChatCanvasReader {
-  shortContextForCanvas(workspaceInstanceId: string, documentId: string): Promise<ShortCanvasContext & {
+  projectedContextForCanvas(workspaceInstanceId: string, documentId: string, type: ProjectionType): Promise<ProjectedLiveContext & {
     workspaceInstanceId: string; documentId: string; canvasEpoch: string;
   }>;
 }

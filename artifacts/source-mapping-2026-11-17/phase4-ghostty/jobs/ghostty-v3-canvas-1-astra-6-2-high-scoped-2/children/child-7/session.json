@@ -1,0 +1,19 @@
+{
+  "id": "child-7",
+  "name": "t2",
+  "assignment": "Need d5 ranges/scopes/roles in RETURN TEXT, concise list per node with path aliases. Private scratch not shared. Inspect sources for d5.",
+  "model": "gpt-6.2-astra",
+  "effort": "high",
+  "status": "generating",
+  "queuedAt": "2026-11-22T03:38:16.960Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-22T03:38:16.962Z",
+  "sessionId": "01a20155-4c1f-725d-b16d-19374f0bccaa",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-_nrrnqb7-agent-repository-7lspAh-checkout--/2026-11-22T03-38-16-991Z_01a20155-4c1f-725d-b16d-19374f0bccaa.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase4-_nrrnqb7/agent-repository-7lspAh/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

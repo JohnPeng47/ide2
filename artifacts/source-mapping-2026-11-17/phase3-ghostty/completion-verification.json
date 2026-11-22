@@ -1,0 +1,864 @@
+{
+  "allJobsTerminal": true,
+  "successfulOutputsVerified": 21,
+  "failedAttempts": [
+    {
+      "key": "ghostty-v3-core-2-sol-high_sol-medium-1",
+      "runId": "18043c33-8db8-4fce-bd0e-423ea956edca",
+      "error": "Provider rate limit in child session(s); stopped without retry. Complete and partial transcripts retained."
+    },
+    {
+      "key": "ghostty-v3-core-2-astra-high_sol-medium-1",
+      "runId": "5a65b24f-ad7c-4a39-97c4-30ca199459e9",
+      "error": "Provider rate limit in child session(s); stopped without retry. Complete and partial transcripts retained."
+    },
+    {
+      "key": "ghostty-v3-canvas-2-sol-high_sol-medium-1",
+      "runId": "22ba0a71-5863-43c1-a102-304fa19d72af",
+      "error": "Provider rate limit in child session(s); stopped without retry. Complete and partial transcripts retained."
+    }
+  ],
+  "checkedAt": "2026-11-19T04:50:33.148Z",
+  "results": [
+    {
+      "key": "ghostty-v3-core-1-sol-high_sol-medium-1",
+      "runId": "509c11d3-9cd9-4c3b-b2fa-00d51c2e0451",
+      "children": 4,
+      "mappedNodes": 89,
+      "nodes": 89,
+      "usage": {
+        "input": 244288,
+        "output": 18069,
+        "cacheRead": 479104,
+        "cacheWrite": 0,
+        "reasoning": 587,
+        "totalTokens": 741461
+      },
+      "accounting": {
+        "mainUsage": {
+          "input": 15354,
+          "output": 9167,
+          "cacheRead": 48768,
+          "cacheWrite": 0,
+          "reasoning": 262,
+          "totalTokens": 73289
+        },
+        "mainCost": {
+          "input": 0.030708,
+          "output": 0.09167,
+          "cacheRead": 0.009753600000000001,
+          "cacheWrite": 0,
+          "total": 0.13213160000000002
+        },
+        "totalCost": {
+          "input": 0.488576,
+          "output": 0.18069000000000002,
+          "cacheRead": 0.09582080000000001,
+          "cacheWrite": 0,
+          "total": 0.7650868
+        },
+        "children": 4
+      }
+    },
+    {
+      "key": "ghostty-v3-core-1-sol-high_sol-medium-2",
+      "runId": "73b55dcc-a36f-4e7a-b669-3960887a40c2",
+      "children": 6,
+      "mappedNodes": 89,
+      "nodes": 89,
+      "usage": {
+        "input": 231874,
+        "output": 20280,
+        "cacheRead": 715008,
+        "cacheWrite": 0,
+        "reasoning": 1194,
+        "totalTokens": 967162
+      },
+      "accounting": {
+        "mainUsage": {
+          "input": 31517,
+          "output": 10553,
+          "cacheRead": 144256,
+          "cacheWrite": 0,
+          "reasoning": 614,
+          "totalTokens": 186326
+        },
+        "mainCost": {
+          "input": 0.06303399999999999,
+          "output": 0.10553000000000001,
+          "cacheRead": 0.028851200000000004,
+          "cacheWrite": 0,
+          "total": 0.1974152
+        },
+        "totalCost": {
+          "input": 0.46374799999999994,
+          "output": 0.20280000000000004,
+          "cacheRead": 0.1430016,
+          "cacheWrite": 0,
+          "total": 0.8095495999999999
+        },
+        "children": 6
+      }
+    },
+    {
+      "key": "ghostty-v3-core-1-sol-high_sol-medium-3",
+      "runId": "ae876a87-e75c-47a9-9465-741ef1d0a1e3",
+      "children": 4,
+      "mappedNodes": 89,
+      "nodes": 89,
+      "usage": {
+        "input": 165974,
+        "output": 17009,
+        "cacheRead": 461568,
+        "cacheWrite": 0,
+        "reasoning": 797,
+        "totalTokens": 644551
+      },
+      "accounting": {
+        "mainUsage": {
+          "input": 14951,
+          "output": 8766,
+          "cacheRead": 46976,
+          "cacheWrite": 0,
+          "reasoning": 370,
+          "totalTokens": 70693
+        },
+        "mainCost": {
+          "input": 0.029902,
+          "output": 0.08766,
+          "cacheRead": 0.009395200000000001,
+          "cacheWrite": 0,
+          "total": 0.1269572
+        },
+        "totalCost": {
+          "input": 0.33194799999999997,
+          "output": 0.17009000000000002,
+          "cacheRead": 0.09231360000000001,
+          "cacheWrite": 0,
+          "total": 0.5943516
+        },
+        "children": 4
+      }
+    },
+    {
+      "key": "ghostty-v3-core-1-astra-high_sol-medium-1",
+      "runId": "8b9d6ea8-a8cf-48ae-b8d8-1939ef26cdc3",
+      "children": 5,
+      "mappedNodes": 89,
+      "nodes": 89,
+      "usage": {
+        "input": 252405,
+        "output": 22697,
+        "cacheRead": 913664,
+        "cacheWrite": 0,
+        "reasoning": 1279,
+        "totalTokens": 1188766
+      },
+      "accounting": {
+        "mainUsage": {
+          "input": 32805,
+          "output": 12237,
+          "cacheRead": 168448,
+          "cacheWrite": 0,
+          "reasoning": 484,
+          "totalTokens": 213490
+        },
+        "mainCost": {
+          "input": 0.32805,
+          "output": 0.61185,
+          "cacheRead": 0.168448,
+          "cacheWrite": 0,
+          "total": 1.108348
+        },
+        "totalCost": {
+          "input": 0.7672500000000001,
+          "output": 0.7164499999999999,
+          "cacheRead": 0.31749120000000003,
+          "cacheWrite": 0,
+          "total": 1.8011912
+        },
+        "children": 5
+      }
+    },
+    {
+      "key": "ghostty-v3-core-1-astra-high_sol-medium-2",
+      "runId": "7fb6b859-b92b-425a-a1f4-a12949562dae",
+      "children": 5,
+      "mappedNodes": 89,
+      "nodes": 89,
+      "usage": {
+        "input": 246127,
+        "output": 23107,
+        "cacheRead": 1004800,
+        "cacheWrite": 0,
+        "reasoning": 1285,
+        "totalTokens": 1274034
+      },
+      "accounting": {
+        "mainUsage": {
+          "input": 37655,
+          "output": 12279,
+          "cacheRead": 178304,
+          "cacheWrite": 0,
+          "reasoning": 613,
+          "totalTokens": 228238
+        },
+        "mainCost": {
+          "input": 0.37655,
+          "output": 0.61395,
+          "cacheRead": 0.17830400000000002,
+          "cacheWrite": 0,
+          "total": 1.1688040000000002
+        },
+        "totalCost": {
+          "input": 0.793494,
+          "output": 0.7222300000000001,
+          "cacheRead": 0.3436032000000001,
+          "cacheWrite": 0,
+          "total": 1.8593272
+        },
+        "children": 5
+      }
+    },
+    {
+      "key": "ghostty-v3-core-1-astra-high_sol-medium-3",
+      "runId": "93beb4c6-3a32-4876-9956-723530390454",
+      "children": 4,
+      "mappedNodes": 89,
+      "nodes": 89,
+      "usage": {
+        "input": 198485,
+        "output": 20144,
+        "cacheRead": 744704,
+        "cacheWrite": 0,
+        "reasoning": 1317,
+        "totalTokens": 963333
+      },
+      "accounting": {
+        "mainUsage": {
+          "input": 33370,
+          "output": 11417,
+          "cacheRead": 144512,
+          "cacheWrite": 0,
+          "reasoning": 627,
+          "totalTokens": 189299
+        },
+        "mainCost": {
+          "input": 0.3337000000000001,
+          "output": 0.57085,
+          "cacheRead": 0.14451199999999997,
+          "cacheWrite": 0,
+          "total": 1.0490620000000002
+        },
+        "totalCost": {
+          "input": 0.66393,
+          "output": 0.65812,
+          "cacheRead": 0.26455039999999996,
+          "cacheWrite": 0,
+          "total": 1.5866004
+        },
+        "children": 4
+      }
+    },
+    {
+      "key": "ghostty-v3-core-2-sol-high_sol-medium-2",
+      "runId": "207f5817-ba0a-4507-b06d-9b7ff6c72649",
+      "children": 6,
+      "mappedNodes": 101,
+      "nodes": 101,
+      "usage": {
+        "input": 223541,
+        "output": 22537,
+        "cacheRead": 837504,
+        "cacheWrite": 0,
+        "reasoning": 1284,
+        "totalTokens": 1083582
+      },
+      "accounting": {
+        "mainUsage": {
+          "input": 40496,
+          "output": 12291,
+          "cacheRead": 125440,
+          "cacheWrite": 0,
+          "reasoning": 770,
+          "totalTokens": 178227
+        },
+        "mainCost": {
+          "input": 0.08099199999999998,
+          "output": 0.12291,
+          "cacheRead": 0.025088000000000003,
+          "cacheWrite": 0,
+          "total": 0.22899
+        },
+        "totalCost": {
+          "input": 0.447082,
+          "output": 0.22537000000000001,
+          "cacheRead": 0.1675008,
+          "cacheWrite": 0,
+          "total": 0.8399527999999999
+        },
+        "children": 6
+      }
+    },
+    {
+      "key": "ghostty-v3-core-2-sol-high_sol-medium-3",
+      "runId": "2bfead7f-842f-4750-bce7-0cc58a5ab0df",
+      "children": 5,
+      "mappedNodes": 101,
+      "nodes": 101,
+      "usage": {
+        "input": 197529,
+        "output": 19981,
+        "cacheRead": 703360,
+        "cacheWrite": 0,
+        "reasoning": 938,
+        "totalTokens": 920870
+      },
+      "accounting": {
+        "mainUsage": {
+          "input": 15745,
+          "output": 10273,
+          "cacheRead": 81024,
+          "cacheWrite": 0,
+          "reasoning": 476,
+          "totalTokens": 107042
+        },
+        "mainCost": {
+          "input": 0.031490000000000004,
+          "output": 0.10273,
+          "cacheRead": 0.016204800000000002,
+          "cacheWrite": 0,
+          "total": 0.15042480000000003
+        },
+        "totalCost": {
+          "input": 0.39505799999999996,
+          "output": 0.19981,
+          "cacheRead": 0.14067200000000002,
+          "cacheWrite": 0,
+          "total": 0.73554
+        },
+        "children": 5
+      }
+    },
+    {
+      "key": "ghostty-v3-core-2-astra-high_sol-medium-2",
+      "runId": "537bf92c-d0ea-46d2-a2b6-f59c06a377c6",
+      "children": 8,
+      "mappedNodes": 101,
+      "nodes": 101,
+      "usage": {
+        "input": 311136,
+        "output": 31707,
+        "cacheRead": 1309312,
+        "cacheWrite": 0,
+        "reasoning": 2282,
+        "totalTokens": 1652155
+      },
+      "accounting": {
+        "mainUsage": {
+          "input": 39889,
+          "output": 16320,
+          "cacheRead": 272512,
+          "cacheWrite": 0,
+          "reasoning": 1356,
+          "totalTokens": 328721
+        },
+        "mainCost": {
+          "input": 0.39889,
+          "output": 0.8160000000000001,
+          "cacheRead": 0.272512,
+          "cacheWrite": 0,
+          "total": 1.4874020000000001
+        },
+        "totalCost": {
+          "input": 0.9413840000000001,
+          "output": 0.9698700000000001,
+          "cacheRead": 0.47987200000000013,
+          "cacheWrite": 0,
+          "total": 2.391126
+        },
+        "children": 8
+      }
+    },
+    {
+      "key": "ghostty-v3-core-2-astra-high_sol-medium-3",
+      "runId": "526c7322-d76e-4ac4-84ed-bb94312afb9b",
+      "children": 6,
+      "mappedNodes": 101,
+      "nodes": 101,
+      "usage": {
+        "input": 209805,
+        "output": 22416,
+        "cacheRead": 802304,
+        "cacheWrite": 0,
+        "reasoning": 1032,
+        "totalTokens": 1034525
+      },
+      "accounting": {
+        "mainUsage": {
+          "input": 21229,
+          "output": 11620,
+          "cacheRead": 77952,
+          "cacheWrite": 0,
+          "reasoning": 236,
+          "totalTokens": 110801
+        },
+        "mainCost": {
+          "input": 0.21229000000000003,
+          "output": 0.581,
+          "cacheRead": 0.077952,
+          "cacheWrite": 0,
+          "total": 0.871242
+        },
+        "totalCost": {
+          "input": 0.5894420000000001,
+          "output": 0.68896,
+          "cacheRead": 0.2228224,
+          "cacheWrite": 0,
+          "total": 1.5012244
+        },
+        "children": 6
+      }
+    },
+    {
+      "key": "ghostty-v3-canvas-1-sol-high_sol-medium-1",
+      "runId": "83a35411-07d4-4b3a-82ae-649fbede8862",
+      "children": 5,
+      "mappedNodes": 152,
+      "nodes": 152,
+      "usage": {
+        "input": 225016,
+        "output": 25302,
+        "cacheRead": 830720,
+        "cacheWrite": 0,
+        "reasoning": 894,
+        "totalTokens": 1081038
+      },
+      "accounting": {
+        "mainUsage": {
+          "input": 27902,
+          "output": 13632,
+          "cacheRead": 65536,
+          "cacheWrite": 0,
+          "reasoning": 280,
+          "totalTokens": 107070
+        },
+        "mainCost": {
+          "input": 0.055804,
+          "output": 0.13632000000000002,
+          "cacheRead": 0.013107200000000001,
+          "cacheWrite": 0,
+          "total": 0.20523120000000003
+        },
+        "totalCost": {
+          "input": 0.45003200000000004,
+          "output": 0.2530200000000001,
+          "cacheRead": 0.16614400000000001,
+          "cacheWrite": 0,
+          "total": 0.8691960000000002
+        },
+        "children": 5
+      }
+    },
+    {
+      "key": "ghostty-v3-canvas-1-sol-high_sol-medium-2",
+      "runId": "03fdb750-32e6-4a95-8cc5-fce8e422026f",
+      "children": 5,
+      "mappedNodes": 152,
+      "nodes": 152,
+      "usage": {
+        "input": 213759,
+        "output": 27220,
+        "cacheRead": 878080,
+        "cacheWrite": 0,
+        "reasoning": 868,
+        "totalTokens": 1119059
+      },
+      "accounting": {
+        "mainUsage": {
+          "input": 27777,
+          "output": 16628,
+          "cacheRead": 121216,
+          "cacheWrite": 0,
+          "reasoning": 552,
+          "totalTokens": 165621
+        },
+        "mainCost": {
+          "input": 0.055554,
+          "output": 0.16628000000000004,
+          "cacheRead": 0.0242432,
+          "cacheWrite": 0,
+          "total": 0.2460772
+        },
+        "totalCost": {
+          "input": 0.42751799999999995,
+          "output": 0.27220000000000005,
+          "cacheRead": 0.175616,
+          "cacheWrite": 0,
+          "total": 0.875334
+        },
+        "children": 5
+      }
+    },
+    {
+      "key": "ghostty-v3-canvas-1-sol-high_sol-medium-3",
+      "runId": "4e1e776d-7e0d-4a16-a74a-654329e4befc",
+      "children": 5,
+      "mappedNodes": 152,
+      "nodes": 152,
+      "usage": {
+        "input": 186676,
+        "output": 23590,
+        "cacheRead": 594048,
+        "cacheWrite": 0,
+        "reasoning": 990,
+        "totalTokens": 804314
+      },
+      "accounting": {
+        "mainUsage": {
+          "input": 20703,
+          "output": 13090,
+          "cacheRead": 91264,
+          "cacheWrite": 0,
+          "reasoning": 716,
+          "totalTokens": 125057
+        },
+        "mainCost": {
+          "input": 0.041406000000000005,
+          "output": 0.13090000000000002,
+          "cacheRead": 0.018252800000000003,
+          "cacheWrite": 0,
+          "total": 0.19055880000000003
+        },
+        "totalCost": {
+          "input": 0.373352,
+          "output": 0.2359,
+          "cacheRead": 0.11880960000000002,
+          "cacheWrite": 0,
+          "total": 0.7280616
+        },
+        "children": 5
+      }
+    },
+    {
+      "key": "ghostty-v3-canvas-1-astra-high_sol-medium-1",
+      "runId": "142ee37c-7b3e-4a78-afdd-5d0233ade823",
+      "children": 4,
+      "mappedNodes": 152,
+      "nodes": 152,
+      "usage": {
+        "input": 224324,
+        "output": 26611,
+        "cacheRead": 1048320,
+        "cacheWrite": 0,
+        "reasoning": 1531,
+        "totalTokens": 1299255
+      },
+      "accounting": {
+        "mainUsage": {
+          "input": 76232,
+          "output": 17760,
+          "cacheRead": 585856,
+          "cacheWrite": 0,
+          "reasoning": 1238,
+          "totalTokens": 679848
+        },
+        "mainCost": {
+          "input": 0.7623200000000001,
+          "output": 0.8879999999999999,
+          "cacheRead": 0.5858559999999999,
+          "cacheWrite": 0,
+          "total": 2.236176
+        },
+        "totalCost": {
+          "input": 1.0585040000000001,
+          "output": 0.9765099999999999,
+          "cacheRead": 0.6783488,
+          "cacheWrite": 0,
+          "total": 2.7133628
+        },
+        "children": 4
+      }
+    },
+    {
+      "key": "ghostty-v3-canvas-1-astra-high_sol-medium-2",
+      "runId": "14a25734-30bd-4f6e-afe5-86df1b4096e1",
+      "children": 5,
+      "mappedNodes": 152,
+      "nodes": 152,
+      "usage": {
+        "input": 254601,
+        "output": 28950,
+        "cacheRead": 1256192,
+        "cacheWrite": 0,
+        "reasoning": 1769,
+        "totalTokens": 1539743
+      },
+      "accounting": {
+        "mainUsage": {
+          "input": 65784,
+          "output": 17313,
+          "cacheRead": 538880,
+          "cacheWrite": 0,
+          "reasoning": 1341,
+          "totalTokens": 621977
+        },
+        "mainCost": {
+          "input": 0.6578400000000001,
+          "output": 0.86565,
+          "cacheRead": 0.53888,
+          "cacheWrite": 0,
+          "total": 2.06237
+        },
+        "totalCost": {
+          "input": 1.035474,
+          "output": 0.9820200000000001,
+          "cacheRead": 0.6823424,
+          "cacheWrite": 0,
+          "total": 2.6998363999999997
+        },
+        "children": 5
+      }
+    },
+    {
+      "key": "ghostty-v3-canvas-1-astra-high_sol-medium-3",
+      "runId": "bedcc03b-5868-49cb-b364-92d6f3d08ced",
+      "children": 5,
+      "mappedNodes": 152,
+      "nodes": 152,
+      "usage": {
+        "input": 232710,
+        "output": 30774,
+        "cacheRead": 1240576,
+        "cacheWrite": 0,
+        "reasoning": 1269,
+        "totalTokens": 1504060
+      },
+      "accounting": {
+        "mainUsage": {
+          "input": 63128,
+          "output": 19637,
+          "cacheRead": 559616,
+          "cacheWrite": 0,
+          "reasoning": 927,
+          "totalTokens": 642381
+        },
+        "mainCost": {
+          "input": 0.6312800000000002,
+          "output": 0.9818500000000001,
+          "cacheRead": 0.559616,
+          "cacheWrite": 0,
+          "total": 2.172746
+        },
+        "totalCost": {
+          "input": 0.9704440000000002,
+          "output": 1.0932199999999999,
+          "cacheRead": 0.6958080000000001,
+          "cacheWrite": 0,
+          "total": 2.7594719999999997
+        },
+        "children": 5
+      }
+    },
+    {
+      "key": "ghostty-v3-canvas-2-sol-high_sol-medium-2",
+      "runId": "70a29aae-86a7-48f7-a1d0-efdbff54e974",
+      "children": 5,
+      "mappedNodes": 160,
+      "nodes": 160,
+      "usage": {
+        "input": 219230,
+        "output": 23865,
+        "cacheRead": 778880,
+        "cacheWrite": 0,
+        "reasoning": 1049,
+        "totalTokens": 1021975
+      },
+      "accounting": {
+        "mainUsage": {
+          "input": 29654,
+          "output": 12338,
+          "cacheRead": 149248,
+          "cacheWrite": 0,
+          "reasoning": 667,
+          "totalTokens": 191240
+        },
+        "mainCost": {
+          "input": 0.059308,
+          "output": 0.12338000000000002,
+          "cacheRead": 0.029849600000000004,
+          "cacheWrite": 0,
+          "total": 0.2125376
+        },
+        "totalCost": {
+          "input": 0.43845999999999996,
+          "output": 0.23865000000000006,
+          "cacheRead": 0.155776,
+          "cacheWrite": 0,
+          "total": 0.8328859999999999
+        },
+        "children": 5
+      }
+    },
+    {
+      "key": "ghostty-v3-canvas-2-sol-high_sol-medium-3",
+      "runId": "42fc0f97-f936-485e-b816-d0000f2d9f9b",
+      "children": 5,
+      "mappedNodes": 160,
+      "nodes": 160,
+      "usage": {
+        "input": 217943,
+        "output": 27001,
+        "cacheRead": 755840,
+        "cacheWrite": 0,
+        "reasoning": 941,
+        "totalTokens": 1000784
+      },
+      "accounting": {
+        "mainUsage": {
+          "input": 30350,
+          "output": 16237,
+          "cacheRead": 153856,
+          "cacheWrite": 0,
+          "reasoning": 550,
+          "totalTokens": 200443
+        },
+        "mainCost": {
+          "input": 0.06069999999999999,
+          "output": 0.16237000000000001,
+          "cacheRead": 0.030771200000000005,
+          "cacheWrite": 0,
+          "total": 0.2538412
+        },
+        "totalCost": {
+          "input": 0.43588599999999994,
+          "output": 0.27001000000000003,
+          "cacheRead": 0.15116800000000002,
+          "cacheWrite": 0,
+          "total": 0.8570639999999999
+        },
+        "children": 5
+      }
+    },
+    {
+      "key": "ghostty-v3-canvas-2-astra-high_sol-medium-1",
+      "runId": "4752271b-45e7-413c-bd32-f41fb9fb2b31",
+      "children": 5,
+      "mappedNodes": 160,
+      "nodes": 160,
+      "usage": {
+        "input": 207574,
+        "output": 27035,
+        "cacheRead": 731008,
+        "cacheWrite": 0,
+        "reasoning": 814,
+        "totalTokens": 965617
+      },
+      "accounting": {
+        "mainUsage": {
+          "input": 28570,
+          "output": 15939,
+          "cacheRead": 104320,
+          "cacheWrite": 0,
+          "reasoning": 422,
+          "totalTokens": 148829
+        },
+        "mainCost": {
+          "input": 0.2857,
+          "output": 0.79695,
+          "cacheRead": 0.10432,
+          "cacheWrite": 0,
+          "total": 1.18697
+        },
+        "totalCost": {
+          "input": 0.6437080000000001,
+          "output": 0.9079100000000001,
+          "cacheRead": 0.2296576,
+          "cacheWrite": 0,
+          "total": 1.7812756
+        },
+        "children": 5
+      }
+    },
+    {
+      "key": "ghostty-v3-canvas-2-astra-high_sol-medium-2",
+      "runId": "9de0dbad-9cde-4f0f-b81d-d1ad2afe25c1",
+      "children": 5,
+      "mappedNodes": 160,
+      "nodes": 160,
+      "usage": {
+        "input": 250511,
+        "output": 29067,
+        "cacheRead": 1042944,
+        "cacheWrite": 0,
+        "reasoning": 1043,
+        "totalTokens": 1322522
+      },
+      "accounting": {
+        "mainUsage": {
+          "input": 48728,
+          "output": 17644,
+          "cacheRead": 246528,
+          "cacheWrite": 0,
+          "reasoning": 648,
+          "totalTokens": 312900
+        },
+        "mainCost": {
+          "input": 0.48728000000000005,
+          "output": 0.8822000000000001,
+          "cacheRead": 0.24652799999999997,
+          "cacheWrite": 0,
+          "total": 1.6160080000000001
+        },
+        "totalCost": {
+          "input": 0.8908460000000001,
+          "output": 0.9964300000000001,
+          "cacheRead": 0.4058111999999999,
+          "cacheWrite": 0,
+          "total": 2.2930871999999995
+        },
+        "children": 5
+      }
+    },
+    {
+      "key": "ghostty-v3-canvas-2-astra-high_sol-medium-3",
+      "runId": "59f2c7cd-c9a5-450f-96a0-c769e3ea1cb8",
+      "children": 5,
+      "mappedNodes": 160,
+      "nodes": 160,
+      "usage": {
+        "input": 221058,
+        "output": 26393,
+        "cacheRead": 790912,
+        "cacheWrite": 0,
+        "reasoning": 983,
+        "totalTokens": 1038363
+      },
+      "accounting": {
+        "mainUsage": {
+          "input": 41771,
+          "output": 15891,
+          "cacheRead": 195840,
+          "cacheWrite": 0,
+          "reasoning": 610,
+          "totalTokens": 253502
+        },
+        "mainCost": {
+          "input": 0.41771,
+          "output": 0.7945500000000001,
+          "cacheRead": 0.19584,
+          "cacheWrite": 0,
+          "total": 1.4081000000000001
+        },
+        "totalCost": {
+          "input": 0.776284,
+          "output": 0.8995700000000001,
+          "cacheRead": 0.31485440000000003,
+          "cacheWrite": 0,
+          "total": 1.9907084000000004
+        },
+        "children": 5
+      }
+    }
+  ]
+}

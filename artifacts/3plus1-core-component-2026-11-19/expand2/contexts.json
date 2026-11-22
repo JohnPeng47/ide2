@@ -1,0 +1,128 @@
+{
+  "modular-1": {
+    "agentContextId": "saved-agent-context-a605a0e6-a2d2-407f-bc6e-10c8c79fd2c1",
+    "name": "Ghostty · Modular structure · expand 1",
+    "description": "Pinned expand sample 1 from run 504accee-900e-4738-b3fe-b2baebc5f604 at checkpoint canvas-revision-70b41b71-9759-4012-ba74-5ec0ae6ca2b5.",
+    "createdAt": "2026-11-20T15:27:56.256Z",
+    "group": "3+1 Model Core Component",
+    "contentHash": "51a0ff11a235d89c97f5c52514a0e38f08b86bd2937938c1638bc393778370d1",
+    "messageCount": 1,
+    "source": {
+      "experimentId": "044f0072-fded-4c61-b694-2a75fd2433ca",
+      "runId": "504accee-900e-4738-b3fe-b2baebc5f604",
+      "cellKey": "61e02e93-a0f2-4e32-9a9d-5cc3069bbcce:1:alternative",
+      "checkpointId": "canvas-revision-70b41b71-9759-4012-ba74-5ec0ae6ca2b5",
+      "label": "Ghostty · Modular structure · expand 1"
+    },
+    "diagrams": 3,
+    "edges": 12
+  },
+  "modular-2": {
+    "agentContextId": "saved-agent-context-9deab640-444c-4739-bf8f-3d82bf7c4cae",
+    "name": "Ghostty · Modular structure · expand 2",
+    "description": "Pinned expand sample 2 from run d5006a9f-ad6e-4548-bac7-4cdf0ee8a315 at checkpoint canvas-revision-af7987f3-f9d5-4077-bbd8-2f429cb64a3c.",
+    "createdAt": "2026-11-20T15:27:56.225Z",
+    "group": "3+1 Model Core Component",
+    "contentHash": "3caeb45cc2f3d78710576e69149a1b37aa0b1e3083934f1cd58be23727a704a4",
+    "messageCount": 1,
+    "source": {
+      "experimentId": "044f0072-fded-4c61-b694-2a75fd2433ca",
+      "runId": "d5006a9f-ad6e-4548-bac7-4cdf0ee8a315",
+      "cellKey": "61e02e93-a0f2-4e32-9a9d-5cc3069bbcce:1:alternative",
+      "checkpointId": "canvas-revision-af7987f3-f9d5-4077-bbd8-2f429cb64a3c",
+      "label": "Ghostty · Modular structure · expand 2"
+    },
+    "diagrams": 3,
+    "edges": 12
+  },
+  "call-1": {
+    "agentContextId": "saved-agent-context-4eb51f9e-607e-4961-a18a-91c339ec69d5",
+    "name": "Ghostty · Call · expand 1",
+    "description": "Pinned expand sample 1 from run d9468256-27c8-412a-8dae-a989f87ea285 at checkpoint canvas-revision-79baa8b1-b38d-44ef-83ac-963841417f58.",
+    "createdAt": "2026-11-20T15:27:56.232Z",
+    "group": "3+1 Model Core Component",
+    "contentHash": "c17b14aec588ac893afd598dd1c054ec8d1a3d3ad6942a6b48ccc0a5935340c8",
+    "messageCount": 1,
+    "source": {
+      "experimentId": "044f0072-fded-4c61-b694-2a75fd2433ca",
+      "runId": "d9468256-27c8-412a-8dae-a989f87ea285",
+      "cellKey": "2768cf5d-8461-474f-ab25-0b15d768af91:1:alternative",
+      "checkpointId": "canvas-revision-79baa8b1-b38d-44ef-83ac-963841417f58",
+      "label": "Ghostty · Call · expand 1"
+    },
+    "diagrams": 3,
+    "edges": 19
+  },
+  "call-2": {
+    "agentContextId": "saved-agent-context-eaff3cf2-d09b-41a2-a351-e532f610f58e",
+    "name": "Ghostty · Call · expand 2",
+    "description": "Pinned expand sample 2 from run 88b75001-52e6-4ce1-bfa4-c9280074be2d at checkpoint canvas-revision-27ef2d69-fe96-4c29-943b-1f5432ed5648.",
+    "createdAt": "2026-11-20T15:27:56.254Z",
+    "group": "3+1 Model Core Component",
+    "contentHash": "fdb0df7f7da6def364f02f5c2a08b05b7545229cf3472fb53685be0750b347eb",
+    "messageCount": 1,
+    "source": {
+      "experimentId": "044f0072-fded-4c61-b694-2a75fd2433ca",
+      "runId": "88b75001-52e6-4ce1-bfa4-c9280074be2d",
+      "cellKey": "2768cf5d-8461-474f-ab25-0b15d768af91:1:alternative",
+      "checkpointId": "canvas-revision-27ef2d69-fe96-4c29-943b-1f5432ed5648",
+      "label": "Ghostty · Call · expand 2"
+    },
+    "diagrams": 3,
+    "edges": 20
+  },
+  "ownership-1": {
+    "agentContextId": "saved-agent-context-76eeda61-00b3-41b1-8dc4-f0d6fbb92095",
+    "name": "Ghostty · Ownership · expand 1",
+    "description": "Pinned expand sample 1 from run 5eea6a41-9cb5-4317-8030-7c8bd5705424 at checkpoint canvas-revision-9c5f3fe0-827b-4b4e-88fe-81399ecc1b21.",
+    "createdAt": "2026-11-20T15:27:56.258Z",
+    "group": "3+1 Model Core Component",
+    "contentHash": "0ec80edddfd4d9398b9f3cba39664afdaa1aff7ac8d9c16e3116ab5a9871c971",
+    "messageCount": 1,
+    "source": {
+      "experimentId": "044f0072-fded-4c61-b694-2a75fd2433ca",
+      "runId": "5eea6a41-9cb5-4317-8030-7c8bd5705424",
+      "cellKey": "6a7c254c-4f06-475f-8e40-28ede960fa5a:1:alternative",
+      "checkpointId": "canvas-revision-9c5f3fe0-827b-4b4e-88fe-81399ecc1b21",
+      "label": "Ghostty · Ownership · expand 1"
+    },
+    "diagrams": 3,
+    "edges": 13
+  },
+  "data-1": {
+    "agentContextId": "saved-agent-context-de3fb1a8-30db-4af7-8313-09b94adcdbb4",
+    "name": "Ghostty · Data dependency · expand 1",
+    "description": "Pinned expand sample 1 from run aa6d07b7-b8aa-40d7-a634-d2e08456b126 at checkpoint canvas-revision-47e14b05-4ee4-4c5e-bf6f-5ddc0c9f7b78.",
+    "createdAt": "2026-11-20T15:27:56.245Z",
+    "group": "3+1 Model Core Component",
+    "contentHash": "8b5281debb36c57b46bdf91170dc0086629683a319c856c05c1518f9ed64374b",
+    "messageCount": 1,
+    "source": {
+      "experimentId": "044f0072-fded-4c61-b694-2a75fd2433ca",
+      "runId": "aa6d07b7-b8aa-40d7-a634-d2e08456b126",
+      "cellKey": "bf3e4f14-91d8-4147-95f0-79ff83a81503:1:alternative",
+      "checkpointId": "canvas-revision-47e14b05-4ee4-4c5e-bf6f-5ddc0c9f7b78",
+      "label": "Ghostty · Data dependency · expand 1"
+    },
+    "diagrams": 3,
+    "edges": 15
+  },
+  "data-2": {
+    "agentContextId": "saved-agent-context-6de21ee8-d7ba-420a-8ed9-750c4bcbaec6",
+    "name": "Ghostty · Data dependency · expand 2",
+    "description": "Pinned expand sample 2 from run 3ca2c48c-666b-435c-bd3d-19370aac5ab0 at checkpoint canvas-revision-e1e2b0bd-614c-4ecf-8e9e-d2582ab2cd99.",
+    "createdAt": "2026-11-20T15:27:56.266Z",
+    "group": "3+1 Model Core Component",
+    "contentHash": "16940f7a4a92db31cf8dc636c5460fd1e06ab45a1bcd16dab9c70ba864103e5f",
+    "messageCount": 1,
+    "source": {
+      "experimentId": "044f0072-fded-4c61-b694-2a75fd2433ca",
+      "runId": "3ca2c48c-666b-435c-bd3d-19370aac5ab0",
+      "cellKey": "bf3e4f14-91d8-4147-95f0-79ff83a81503:1:alternative",
+      "checkpointId": "canvas-revision-e1e2b0bd-614c-4ecf-8e9e-d2582ab2cd99",
+      "label": "Ghostty · Data dependency · expand 2"
+    },
+    "diagrams": 3,
+    "edges": 8
+  }
+}

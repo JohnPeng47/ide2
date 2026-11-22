@@ -1,0 +1,1146 @@
+{
+  "name": "Core component discovery",
+  "description": "Core-component discovery across repositories with pinned source snapshots and prompts. Phase 1 retains the original Mapping baseline. Phase 2 groups completed Astra/high diagrams and source-coverage results by repository.",
+  "phases": [
+    {
+      "id": "mapping",
+      "name": "Phase 1 · Baseline",
+      "description": "Original Mapping discovery at 03f2168: one Astra/high and three Sol/high diagrams."
+    },
+    {
+      "id": "pi",
+      "name": "Phase 2 · Repository discovery",
+      "description": "Astra/high core discovery across Mapping, Pi, OpenCode and Ghostty, with pinned prompts/snapshots and per-repository source coverage. Failed attempts have been deleted."
+    }
+  ],
+  "workflow": {
+    "id": "core-discovery",
+    "name": "Core component discovery",
+    "version": 4,
+    "stages": [
+      {
+        "id": "tree",
+        "name": "Core diagram",
+        "dependsOn": []
+      },
+      {
+        "id": "coverage",
+        "name": "Source coverage",
+        "dependsOn": [
+          "tree"
+        ]
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "source",
+      "name": "Mapping · baseline",
+      "agentContextId": "saved-agent-context-7344b95b-5c8c-4f6e-86e5-4323ee2478e4",
+      "contentHash": "00b9ed11b05d12f61ea9897c890dca21baf63782b67254a23c6fb80d94ae0fc2"
+    },
+    {
+      "id": "source-8ca1437-rerun",
+      "name": "Mapping",
+      "agentContextId": "saved-agent-context-2ba25014-3a84-42e9-b5f8-1e10c32fa2cd",
+      "contentHash": "206d36f8379bc52aa484c0043cf003a0e818438ad4df6fdaa3b47aaa59c167d0"
+    },
+    {
+      "id": "pi-source",
+      "name": "Pi",
+      "agentContextId": "saved-agent-context-2b31f263-f81f-4df1-a146-8946dc709b5c",
+      "contentHash": "642eff5f7c0caf04881c5a7a06cc6f80a6acefc263656940751d03a1c1360017"
+    },
+    {
+      "id": "opencode-source",
+      "name": "OpenCode",
+      "agentContextId": "saved-agent-context-3d034491-1ea2-4157-acc5-98ead2c12d98",
+      "contentHash": "99e7bdfbe45e3d3f5b21dde5a7a01b1c4cf40207ff22928867821476b8010d29"
+    },
+    {
+      "id": "ghostty-source",
+      "name": "Ghostty",
+      "agentContextId": "saved-agent-context-29fbdd95-72d4-4dc1-ad7c-a1b0f8cd7da6",
+      "contentHash": "c26f9e1d07185d26d78fd7cf31b447b58604b2cae4a040b1dc623aaaf9e7848a"
+    }
+  ],
+  "conditions": [
+    {
+      "id": "repository-browsing",
+      "name": "3+1 · checkout directory",
+      "description": "Combined prompt v2 (0b3af2dd-ba89-4032-936a-40070a3e167e); normal shell/read tools in a pinned checkout. No reference diagram or analysis rankings. Output: one ASCII tree in JSON {ascii}, at most 20000 characters."
+    },
+    {
+      "id": "sol-high",
+      "name": "Sol/high · checkout directory",
+      "description": "Three independent gpt-6-sol/high samples; exact same prompt v2, source commit, exclusions, and AgentContext as the Astra/high sample."
+    },
+    {
+      "id": "mapping-astra-high",
+      "name": "Mapping · Astra/high",
+      "description": "Three completed native-codebase diagrams at 8ca1437: one prompt v2 output and two prompt v4 outputs. Pinned prompt versions remain available per output. The attached coverage report summarizes the two v4 runs."
+    },
+    {
+      "id": "pi-astra-high-v4",
+      "name": "Pi · Astra/high v4",
+      "description": "Three independent Astra/high samples at Pi 682c7b9, prompt v4; all three passed canvas validation. Mean source exposure: 2,608 lines (0.71% of 368,377 eligible source lines). Three-run union: 4,247 lines (1.15%). Includes read and bash output. Coverage report is deterministic, not another generation."
+    },
+    {
+      "id": "opencode-astra-high-v4",
+      "name": "OpenCode · Astra/high v4",
+      "description": "Three independent Astra/high samples at OpenCode fe35524, prompt v4; all three passed canvas validation. Mean source exposure: 4,013 lines (0.44% of 915,717 eligible source lines). Three-run union: 5,833 lines (0.64%). Includes read and bash output. Coverage report is deterministic, not another generation."
+    },
+    {
+      "id": "ghostty-astra-high-v4",
+      "name": "Ghostty · Astra/high v4",
+      "description": "Three independent Astra/high samples at Ghostty ea8b12a, prompt v4; all three passed canvas validation. Mean source exposure: 2,978.7 lines (0.55% of 542,715 eligible source lines). Three-run union: 4,210 lines (0.78%). Includes read and bash output. Coverage report is deterministic, not another generation."
+    },
+    {
+      "id": "no-fewshot",
+      "name": "No Fewshot",
+      "description": "Core discovery v4 with both synthetic worked examples and their guidance removed; remaining prompt unchanged. gpt-6-astra/high, one sample per Phase 2 repository, using the same pinned AgentContexts and source snapshots."
+    }
+  ],
+  "plannedRuns": [
+    {
+      "request": {
+        "requestId": "8c8456df-d972-4a27-8693-85901f1edc07",
+        "workflow": "alternatives",
+        "prompts": [
+          {
+            "promptId": "ce435ec4-4176-4583-b2bd-68577842ac76",
+            "version": 1
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-2ba25014-3a84-42e9-b5f8-1e10c32fa2cd"
+          }
+        },
+        "passes": 1,
+        "model": "gpt-6-astra",
+        "effort": "high"
+      },
+      "outputs": [
+        {
+          "sampleId": "1737acd8-f33d-40f0-8612-3ece50450ca9",
+          "stageId": "tree",
+          "cellKey": "ce435ec4-4176-4583-b2bd-68577842ac76:1:alternative"
+        }
+      ]
+    },
+    {
+      "request": {
+        "requestId": "5bb898c4-0ada-4c22-bd9c-a37c55f8241e",
+        "workflow": "alternatives",
+        "prompts": [
+          {
+            "promptId": "ce435ec4-4176-4583-b2bd-68577842ac76",
+            "version": 1
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-2b31f263-f81f-4df1-a146-8946dc709b5c"
+          }
+        },
+        "passes": 1,
+        "model": "gpt-6-astra",
+        "effort": "high"
+      },
+      "outputs": [
+        {
+          "sampleId": "7cee6396-acd5-447b-a032-8399f61aecc1",
+          "stageId": "tree",
+          "cellKey": "ce435ec4-4176-4583-b2bd-68577842ac76:1:alternative"
+        }
+      ]
+    },
+    {
+      "request": {
+        "requestId": "1787f483-bc98-4ce3-a477-365853b84447",
+        "workflow": "alternatives",
+        "prompts": [
+          {
+            "promptId": "ce435ec4-4176-4583-b2bd-68577842ac76",
+            "version": 1
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-3d034491-1ea2-4157-acc5-98ead2c12d98"
+          }
+        },
+        "passes": 1,
+        "model": "gpt-6-astra",
+        "effort": "high"
+      },
+      "outputs": [
+        {
+          "sampleId": "63c048d2-430d-4812-920f-e08ba2673e04",
+          "stageId": "tree",
+          "cellKey": "ce435ec4-4176-4583-b2bd-68577842ac76:1:alternative"
+        }
+      ]
+    },
+    {
+      "request": {
+        "requestId": "6655d366-dabc-458a-a65d-a093441322a7",
+        "workflow": "alternatives",
+        "prompts": [
+          {
+            "promptId": "ce435ec4-4176-4583-b2bd-68577842ac76",
+            "version": 1
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-29fbdd95-72d4-4dc1-ad7c-a1b0f8cd7da6"
+          }
+        },
+        "passes": 1,
+        "model": "gpt-6-astra",
+        "effort": "high"
+      },
+      "outputs": [
+        {
+          "sampleId": "7a0435f2-8cf6-4126-ab7e-f815059c2abe",
+          "stageId": "tree",
+          "cellKey": "ce435ec4-4176-4583-b2bd-68577842ac76:1:alternative"
+        }
+      ]
+    }
+  ],
+  "samples": [
+    {
+      "id": "d4ae9c0d-3f81-4138-b25a-6266f8a7f1f8",
+      "phaseId": "mapping",
+      "caseId": "source",
+      "conditionId": "repository-browsing",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "22a83e6e-81ef-4161-a4b0-851062428f61",
+          "cellKey": "0b3af2dd-ba89-4032-936a-40070a3e167e:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "859eb44c-0634-483b-8163-3f8426bf8cf5",
+      "phaseId": "mapping",
+      "caseId": "source",
+      "conditionId": "sol-high",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "e0da55e9-87bf-4567-85bc-22bb197073cf",
+          "cellKey": "0b3af2dd-ba89-4032-936a-40070a3e167e:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "c7d66451-c54a-4207-95a9-c6d52d48af5a",
+      "phaseId": "mapping",
+      "caseId": "source",
+      "conditionId": "sol-high",
+      "number": 2,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "d2663236-2eee-470b-841c-50ea8055ae1f",
+          "cellKey": "0b3af2dd-ba89-4032-936a-40070a3e167e:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "b29b0427-55c3-4000-a783-438eb364a0cf",
+      "phaseId": "mapping",
+      "caseId": "source",
+      "conditionId": "sol-high",
+      "number": 3,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "c70d3c75-a3c2-49fe-9ff8-ed36ba609fb8",
+          "cellKey": "0b3af2dd-ba89-4032-936a-40070a3e167e:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "158a261e-afa2-4d05-aaa6-8b348ee66a6e",
+      "phaseId": "pi",
+      "caseId": "source-8ca1437-rerun",
+      "conditionId": "mapping-astra-high",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "df362edd-3c37-49aa-932d-84181ef9d0c2",
+          "cellKey": "0b3af2dd-ba89-4032-936a-40070a3e167e:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "6c3c72a7-0379-414d-ac76-f6197bde958f",
+      "phaseId": "pi",
+      "caseId": "pi-source",
+      "conditionId": "pi-astra-high-v4",
+      "number": 1,
+      "attempt": 2,
+      "relaunchedFrom": {
+        "sampleId": "cca240fa-314c-4034-9185-deb132719a43",
+        "stageId": "tree"
+      },
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "3f123c60-c475-4fbc-958f-c66dbb757de2",
+          "cellKey": "0b3af2dd-ba89-4032-936a-40070a3e167e:1:alternative"
+        },
+        {
+          "stageId": "coverage",
+          "runId": "3f123c60-c475-4fbc-958f-c66dbb757de2",
+          "cellKey": "source-coverage:1:analysis"
+        }
+      ]
+    },
+    {
+      "id": "724ad104-7c52-4848-a8ed-f14362c9ce73",
+      "phaseId": "pi",
+      "caseId": "pi-source",
+      "conditionId": "pi-astra-high-v4",
+      "number": 2,
+      "attempt": 2,
+      "relaunchedFrom": {
+        "sampleId": "e9f22385-f7f1-4a48-ae2a-d74d325ba568",
+        "stageId": "tree"
+      },
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "c5923f60-da9e-4740-ab82-74fad423bda1",
+          "cellKey": "0b3af2dd-ba89-4032-936a-40070a3e167e:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "4cd79b45-a595-4605-a9be-3d18ef23cf6e",
+      "phaseId": "pi",
+      "caseId": "pi-source",
+      "conditionId": "pi-astra-high-v4",
+      "number": 3,
+      "attempt": 2,
+      "relaunchedFrom": {
+        "sampleId": "f30b00ed-4b90-4a84-83e3-038b901b34be",
+        "stageId": "tree"
+      },
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "0fc465ae-961d-4c0a-a0c6-f60338bbe689",
+          "cellKey": "0b3af2dd-ba89-4032-936a-40070a3e167e:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "b9167bf8-112d-44e1-9e24-d256b6c26322",
+      "phaseId": "pi",
+      "caseId": "opencode-source",
+      "conditionId": "opencode-astra-high-v4",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "450850af-6c9b-4950-a4d8-31f5724302e6",
+          "cellKey": "0b3af2dd-ba89-4032-936a-40070a3e167e:1:alternative"
+        },
+        {
+          "stageId": "coverage",
+          "runId": "450850af-6c9b-4950-a4d8-31f5724302e6",
+          "cellKey": "source-coverage:1:analysis"
+        }
+      ]
+    },
+    {
+      "id": "eeb1c152-6d8a-485e-b3ee-a0523b153844",
+      "phaseId": "pi",
+      "caseId": "opencode-source",
+      "conditionId": "opencode-astra-high-v4",
+      "number": 2,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "c896fde7-00ef-4b9f-a62f-7cfc94310a5b",
+          "cellKey": "0b3af2dd-ba89-4032-936a-40070a3e167e:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "64edfc44-d923-4848-b288-f14d8fd4aeca",
+      "phaseId": "pi",
+      "caseId": "opencode-source",
+      "conditionId": "opencode-astra-high-v4",
+      "number": 3,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "e5dfe7ec-d1a8-45b9-bf7c-04ea78edf8da",
+          "cellKey": "0b3af2dd-ba89-4032-936a-40070a3e167e:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "e3c0f2a7-a8de-4bfa-ac37-0c214cf7ed42",
+      "phaseId": "pi",
+      "caseId": "source-8ca1437-rerun",
+      "conditionId": "mapping-astra-high",
+      "number": 2,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "641693cf-fc8b-43c8-ab5d-bc9b08dd22c7",
+          "cellKey": "0b3af2dd-ba89-4032-936a-40070a3e167e:1:alternative"
+        },
+        {
+          "stageId": "coverage",
+          "runId": "641693cf-fc8b-43c8-ab5d-bc9b08dd22c7",
+          "cellKey": "source-coverage:1:analysis"
+        }
+      ]
+    },
+    {
+      "id": "9a4051bc-9123-424b-a47e-c300ca452210",
+      "phaseId": "pi",
+      "caseId": "source-8ca1437-rerun",
+      "conditionId": "mapping-astra-high",
+      "number": 3,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "c3aa93d2-4c2a-4e70-846c-61b571c3607d",
+          "cellKey": "0b3af2dd-ba89-4032-936a-40070a3e167e:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "72e2dd01-94e2-45bb-aa00-d3c648356d26",
+      "phaseId": "pi",
+      "caseId": "ghostty-source",
+      "conditionId": "ghostty-astra-high-v4",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "3d97670a-8d2d-41fe-86c6-7b3914204965",
+          "cellKey": "0b3af2dd-ba89-4032-936a-40070a3e167e:1:alternative"
+        },
+        {
+          "stageId": "coverage",
+          "runId": "3d97670a-8d2d-41fe-86c6-7b3914204965",
+          "cellKey": "source-coverage:1:analysis"
+        }
+      ]
+    },
+    {
+      "id": "5ea03f0a-7d95-4de4-b3ab-9e28ad909cd7",
+      "phaseId": "pi",
+      "caseId": "ghostty-source",
+      "conditionId": "ghostty-astra-high-v4",
+      "number": 2,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "87b0635d-e644-43cd-856a-81c73fbc2af6",
+          "cellKey": "0b3af2dd-ba89-4032-936a-40070a3e167e:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "7aa069f0-5f11-46fc-b839-6988aa6fcc94",
+      "phaseId": "pi",
+      "caseId": "ghostty-source",
+      "conditionId": "ghostty-astra-high-v4",
+      "number": 3,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "d8ddfcb7-6be0-4a68-9277-c40a1254248f",
+          "cellKey": "0b3af2dd-ba89-4032-936a-40070a3e167e:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "1737acd8-f33d-40f0-8612-3ece50450ca9",
+      "phaseId": "pi",
+      "caseId": "source-8ca1437-rerun",
+      "conditionId": "no-fewshot",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "8c8456df-d972-4a27-8693-85901f1edc07",
+          "cellKey": "ce435ec4-4176-4583-b2bd-68577842ac76:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "7cee6396-acd5-447b-a032-8399f61aecc1",
+      "phaseId": "pi",
+      "caseId": "pi-source",
+      "conditionId": "no-fewshot",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "5bb898c4-0ada-4c22-bd9c-a37c55f8241e",
+          "cellKey": "ce435ec4-4176-4583-b2bd-68577842ac76:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "63c048d2-430d-4812-920f-e08ba2673e04",
+      "phaseId": "pi",
+      "caseId": "opencode-source",
+      "conditionId": "no-fewshot",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "1787f483-bc98-4ce3-a477-365853b84447",
+          "cellKey": "ce435ec4-4176-4583-b2bd-68577842ac76:1:alternative"
+        }
+      ]
+    },
+    {
+      "id": "7a0435f2-8cf6-4126-ab7e-f815059c2abe",
+      "phaseId": "pi",
+      "caseId": "ghostty-source",
+      "conditionId": "no-fewshot",
+      "number": 1,
+      "attempt": 1,
+      "outputs": [
+        {
+          "stageId": "tree",
+          "runId": "6655d366-dabc-458a-a65d-a093441322a7",
+          "cellKey": "ce435ec4-4176-4583-b2bd-68577842ac76:1:alternative"
+        }
+      ]
+    }
+  ],
+  "comparisons": [
+    {
+      "id": "pi-hierarchical-consistency",
+      "phaseId": "pi",
+      "name": "Pi · hierarchical consistency",
+      "description": "Agent-authored tree comparison of the three Pi Astra/high v4 outputs: component identification, implied parents, relocations and subtree alignment.",
+      "conditionIds": [
+        "pi-astra-high-v4"
+      ],
+      "caseIds": [
+        "pi-source"
+      ],
+      "judgementIds": [
+        "a671cc65-564d-401b-aba6-4786dcb28151"
+      ]
+    }
+  ],
+  "comments": [
+    {
+      "id": "51866985-3054-466e-a8c2-e44d2f9e5faa",
+      "text": "should review the structure/style of the generated diagrams before generating more",
+      "createdAt": "2026-11-15T01:57:26.888Z",
+      "tags": [
+        "todo"
+      ]
+    }
+  ],
+  "commentTags": [
+    "prompt-review",
+    "execution",
+    "result",
+    "todo"
+  ],
+  "groundTruth": [
+    {
+      "id": "dcd726cc-0b99-44e1-9383-82c20dcb2a12",
+      "name": "Core editing kernel · HEAD",
+      "description": "Core component diagram written from the source at HEAD 8ca1437, not the input case's pinned 03f2168 (89 commits earlier). Known snapshot differences: at 03f2168, DiagramService was the revision-writing boundary (at HEAD it is the diagramRevisionStore singleton), and tldraw did not yet own live geometry or undo. Judge structure and relationships; do not penalize outputs for those snapshot-specific differences.",
+      "caseIds": [
+        "source"
+      ],
+      "format": "ascii-tree",
+      "ascii": "Mapping application: core = per-document canvas editing kernel     HEAD 8ca1437\n|\n|-- [M] MappingDocumentController: single command path for one canvas\n|   |   domain/mapping/workspace/mappingDocumentController.ts\n|   |\n|   |-- [O] Owns the current ControllerSnapshot\n|   |   |-- document: MappingGridDocument (persistent composition)\n|   |   |   |-- scene: LineGridScene\n|   |   |   |   |-- root: GridBox tree\n|   |   |   |   |   |-- diagram box -> contentId\n|   |   |   |   |   `-- container box -> children, push-right layout\n|   |   |   |   `-- contents[id]: Diagram -> current revision\n|   |   |   |-- edges: DiagramConnection[] (node or box anchors)\n|   |   |   |-- jumps / sections\n|   |   |   `-- alternatives / revisionSelections / diagramContexts\n|   |   |-- canvas: MappingCanvasState (interaction, never content)\n|   |   |   |-- selection.items[] / controls\n|   |   |   |-- diagramViews (per-diagram folding)\n|   |   |   `-- display: floating panes + geometry policies\n|   |   `-- version / canvasRevisionId / canUndo / canRedo\n|   |       `-- [D] version is the optimistic-concurrency token\n|   |\n|   |-- [O] Retains a CanvasEditingContext (an opaque handle)\n|   |   `-- history state lives in CanvasHistoryService, not here\n|   |\n|   |-- [M] Write entry points (all converge on updateSnapshot)\n|   |   |-- applyUpdate(expectedVersion, DiagramOperation[])\n|   |   |   |-- [C] Called by agent bridge and ChangeSessionService\n|   |   |   `-- [C] applyOperations\n|   |   |       |-- [D] expectedVersion != version -> VERSION_CONFLICT\n|   |   |       |-- [D] clone snapshot -> staged document + canvas\n|   |   |       |-- Content operations\n|   |   |       |   |-- diagram-create / replace / patchDiagram\n|   |   |       |   |-- setSourceMappings / setJumps / highlight\n|   |   |       |   `-- [C] reviseStoredDiagram / createStoredDiagram\n|   |   |       |       `-- [D] new revision + nodeIds correspondence\n|   |   |       |-- Composition operations\n|   |   |       |   `-- move / group / remove / edge-* -> layoutScene\n|   |   |       |-- Floating operations\n|   |   |       |   `-- move / collapse / remove on display nodes\n|   |   |       `-- Invariants: >= 1 visible diagram, valid activeBoxId\n|   |   |-- commitEditorGesture(operations, canvas)\n|   |   |   `-- [C] One native tldraw gesture -> one checkpoint\n|   |   |-- commitDocument / commitProjectionLayout\n|   |   `-- updateCanvas / select\n|   |       `-- [D] record=false -> transient, no checkpoint\n|   |\n|   |-- [C] updateSnapshot(next, record): the commit pipeline\n|   |   |-- Prune selection items for deleted boxes\n|   |   |-- [C] reconcileConnections(before, after, edges)\n|   |   |   `-- [D] node correspondence -> retained or stale endpoints\n|   |   |-- [C] rebaseDiagramJumps -> jumps follow edited content\n|   |   |-- [C] validateConnections / normalizeDiagramViews\n|   |   |-- [C] resolveFloatingGeometry (panes never displace grid)\n|   |   |-- [C] historyService.append(context, document, canvas, nodeIds)\n|   |   |   `-- only when record = true\n|   |   |-- [D] contents re-bound via getDiagramRevision (frozen)\n|   |   `-- [C] notify listeners synchronously\n|   |\n|   |-- [M] History navigation\n|   |   |-- undo / redo\n|   |   |   `-- [C] delegated to editorDriver when tldraw is mounted\n|   |   |       `-- otherwise historyService.navigate (headless)\n|   |   |-- restoreEditorCheckpoint(id) <- tldraw history meta\n|   |   `-- reset / exportHistory / forkHistory / canvasViews\n|   |\n|   `-- [M] Read models\n|       |-- getSnapshot() / subscribe(listener)\n|       |-- nodes(): canvasDisplayNodes (cached, derived registry)\n|       |-- resolveDiagram(id): DiagramView (ascii, nodes, sourceContext)\n|       `-- persistenceChanges(cursor): incremental HistoryChanges\n|\n|-- [M] Diagram content model: immutable, identity-preserving\n|   |   domain/core/diagrams/\n|   |\n|   |-- Diagram (diagram.ts)\n|   |   |-- diagramId (stable) / revisionId / revision\n|   |   |-- content: DiagramContent\n|   |   |   |-- ascii + asciiSha256\n|   |   |   `-- structure: tree nodes | derived graph nodes\n|   |   |       `-- [D] parserVersion pins node-ID derivation\n|   |   |-- sourceContext: the product's link to code\n|   |   |   |-- binding: repository / corpus / domain profile\n|   |   |   |-- mappings: DiagramElementMapping[] (node -> range)\n|   |   |   `-- evidence: ProjectRepresentationEvidenceRecord\n|   |   `-- highlights / jumps\n|   |\n|   |-- DiagramRevision { id, diagramId, parentId, diagram, nodeRefs }\n|   |   `-- [D] nodeRefs: content node -> logical identity across revisions\n|   |\n|   |-- [C] reviseDiagram(base, DiagramEdit) via DiagramRevisionEditor\n|   |   |-- edit kinds: patch / patches / replace / source-mappings / ...\n|   |   |-- [C] correspondingNodes / matchDiagramNodes\n|   |   |   `-- [D] before + after nodes -> nodeIds map\n|   |   `-- [C] retainSourceMappings(before, after, nodeIds)\n|   |       `-- mappings survive text edits\n|   |\n|   `-- [O] diagramRevisionStore -> RevisionRegistry (module singleton)\n|       |-- register: validate, deep-freeze, reject mutated IDs\n|       |-- restore: deferred validation for history imports\n|       `-- [!] written directly by ~15 modules (controller, grid,\n|           agent edit, chat, change sessions, transfers, ...)\n|\n|-- [O] CanvasHistoryService: owns every editing context's history\n|   |   domain/core/diagrams/canvasHistoryService.ts, canvasHistory.ts\n|   |\n|   |-- WeakMap<CanvasEditingContext, CanvasHistory>\n|   |-- CanvasHistoryRecord (portable)\n|   |   |-- baselineId / headId / past[] / future[]\n|   |   |-- snapshots[id]: StoredCanvasSnapshot\n|   |   |   |-- document (composition only, no content)\n|   |   |   |-- diagramBindings: diagramId -> revisionId\n|   |   |   |-- view (personal, restored separately)\n|   |   |   `-- nodeOrigins (correspondence across checkpoints)\n|   |   `-- diagramRevisions: revision table for those bindings\n|   |-- append / navigate / reset / state / resolve\n|   |-- exportContext / forkContext / adopt\n|   |-- persistenceChanges(since) -> sequence-cursored delta\n|   `-- prepareTransfer / transferBoundary (cross-canvas moves)\n|\n|-- [M] Boundary: live renderer (tldraw)\n|   |   src/features/mapping/tldraw/MappingEditorRuntime.ts\n|   |-- [O] Editor owns live geometry and native undo stack\n|   |-- [C] controller.subscribe -> publish() projects shapes\n|   |-- [C] tick after gesture -> settle() -> commitEditorGesture\n|   |   `-- pointer/camera frames never write the controller\n|   |-- [D] document meta.mappingCheckpoint = canvasRevisionId\n|   |   `-- native undo -> restoreEditorCheckpoint(id)\n|   `-- [C] attachEditorDriver({ settle, undo }), one per controller\n|\n|-- [M] Boundary: workspace and sessions (browser)\n|   |   src/features/mapping/workspace/\n|   |-- CanvasWorkspace: drafts[documentId] -> CanvasSession\n|   |   `-- [C] onPersist(ids) when a session commits\n|   `-- CanvasSession\n|       |-- [O] constructs and retains the MappingDocumentController\n|       |-- [D] controller snapshot -> zustand slices\n|       |   `-- document / presentation / selection / controls / geometry / status\n|       `-- [C] canvasRevisionId changed -> onCommit listeners\n|\n|-- [M] Boundary: agent access\n|   |-- [C] MCP -> HTTP -> AgentDiagrammingSessionService.exec\n|   |-- [C] CanvasSessionBridge.dispatch -> command queue\n|   |   `-- browser long-polls (15s), 25s timeout, retry by requestId\n|   `-- [C] useAgentCanvasBridge -> attached controller.applyUpdate\n|\n|-- [M] Boundary: proposals (ChangeSessions, headless)\n|   |   application/mapping/changes/changeSessionService.ts\n|   |-- [O] new MappingDocumentController per proposed document\n|   |   `-- shares the same command path, without editorDriver\n|   |-- [C] apply -> controller.applyUpdate -> exportHistory\n|   `-- [C] accept -> projectCatalogs.acceptCanvasChanges\n|\n`-- [M] Boundary: persistence\n    |-- WorkspacePersistence.sync(ids)\n    |   |-- [C] controller.persistenceChanges(cursor)\n    |   |   `-- revision/* (immutable) + checkpoint/* records\n    |   |-- metadata / baseline / view / viewport records\n    |   `-- [C] RecordStorage.batch(changes) -> storage worker\n    `-- [D] restore: history record -> CanvasSession(history)\n\n[M] modular boundary | [O] ownership | [C] call flow | [D] data dependency | [!] caveat\n",
+      "source": {
+        "commit": "8ca143700ca4d2c870f1101b8cd4601ab68abd41",
+        "note": "Diagrammed files had no uncommitted changes at HEAD."
+      },
+      "provenance": {
+        "kind": "model",
+        "model": "claude-opus-5-5",
+        "note": "Generated in a Claude Code session after critiquing the earlier reference diagram; not yet reviewed by a human."
+      },
+      "asciiSha256": "6c7a30b7969ab102ff880b9582b0dca180429274dcd8bc858ab7b9314df3aa45",
+      "createdAt": "2026-11-14T20:16:44.692Z"
+    },
+    {
+      "id": "66e5f7b8-8459-4b93-9fe8-ec5fa2940a84",
+      "name": "Core editing kernel · matched snapshot",
+      "description": "Identical reference diagram scoped to the rerun at its exact source commit, 8ca1437.",
+      "caseIds": [
+        "source-8ca1437"
+      ],
+      "format": "ascii-tree",
+      "ascii": "Mapping application: core = per-document canvas editing kernel     HEAD 8ca1437\n|\n|-- [M] MappingDocumentController: single command path for one canvas\n|   |   domain/mapping/workspace/mappingDocumentController.ts\n|   |\n|   |-- [O] Owns the current ControllerSnapshot\n|   |   |-- document: MappingGridDocument (persistent composition)\n|   |   |   |-- scene: LineGridScene\n|   |   |   |   |-- root: GridBox tree\n|   |   |   |   |   |-- diagram box -> contentId\n|   |   |   |   |   `-- container box -> children, push-right layout\n|   |   |   |   `-- contents[id]: Diagram -> current revision\n|   |   |   |-- edges: DiagramConnection[] (node or box anchors)\n|   |   |   |-- jumps / sections\n|   |   |   `-- alternatives / revisionSelections / diagramContexts\n|   |   |-- canvas: MappingCanvasState (interaction, never content)\n|   |   |   |-- selection.items[] / controls\n|   |   |   |-- diagramViews (per-diagram folding)\n|   |   |   `-- display: floating panes + geometry policies\n|   |   `-- version / canvasRevisionId / canUndo / canRedo\n|   |       `-- [D] version is the optimistic-concurrency token\n|   |\n|   |-- [O] Retains a CanvasEditingContext (an opaque handle)\n|   |   `-- history state lives in CanvasHistoryService, not here\n|   |\n|   |-- [M] Write entry points (all converge on updateSnapshot)\n|   |   |-- applyUpdate(expectedVersion, DiagramOperation[])\n|   |   |   |-- [C] Called by agent bridge and ChangeSessionService\n|   |   |   `-- [C] applyOperations\n|   |   |       |-- [D] expectedVersion != version -> VERSION_CONFLICT\n|   |   |       |-- [D] clone snapshot -> staged document + canvas\n|   |   |       |-- Content operations\n|   |   |       |   |-- diagram-create / replace / patchDiagram\n|   |   |       |   |-- setSourceMappings / setJumps / highlight\n|   |   |       |   `-- [C] reviseStoredDiagram / createStoredDiagram\n|   |   |       |       `-- [D] new revision + nodeIds correspondence\n|   |   |       |-- Composition operations\n|   |   |       |   `-- move / group / remove / edge-* -> layoutScene\n|   |   |       |-- Floating operations\n|   |   |       |   `-- move / collapse / remove on display nodes\n|   |   |       `-- Invariants: >= 1 visible diagram, valid activeBoxId\n|   |   |-- commitEditorGesture(operations, canvas)\n|   |   |   `-- [C] One native tldraw gesture -> one checkpoint\n|   |   |-- commitDocument / commitProjectionLayout\n|   |   `-- updateCanvas / select\n|   |       `-- [D] record=false -> transient, no checkpoint\n|   |\n|   |-- [C] updateSnapshot(next, record): the commit pipeline\n|   |   |-- Prune selection items for deleted boxes\n|   |   |-- [C] reconcileConnections(before, after, edges)\n|   |   |   `-- [D] node correspondence -> retained or stale endpoints\n|   |   |-- [C] rebaseDiagramJumps -> jumps follow edited content\n|   |   |-- [C] validateConnections / normalizeDiagramViews\n|   |   |-- [C] resolveFloatingGeometry (panes never displace grid)\n|   |   |-- [C] historyService.append(context, document, canvas, nodeIds)\n|   |   |   `-- only when record = true\n|   |   |-- [D] contents re-bound via getDiagramRevision (frozen)\n|   |   `-- [C] notify listeners synchronously\n|   |\n|   |-- [M] History navigation\n|   |   |-- undo / redo\n|   |   |   `-- [C] delegated to editorDriver when tldraw is mounted\n|   |   |       `-- otherwise historyService.navigate (headless)\n|   |   |-- restoreEditorCheckpoint(id) <- tldraw history meta\n|   |   `-- reset / exportHistory / forkHistory / canvasViews\n|   |\n|   `-- [M] Read models\n|       |-- getSnapshot() / subscribe(listener)\n|       |-- nodes(): canvasDisplayNodes (cached, derived registry)\n|       |-- resolveDiagram(id): DiagramView (ascii, nodes, sourceContext)\n|       `-- persistenceChanges(cursor): incremental HistoryChanges\n|\n|-- [M] Diagram content model: immutable, identity-preserving\n|   |   domain/core/diagrams/\n|   |\n|   |-- Diagram (diagram.ts)\n|   |   |-- diagramId (stable) / revisionId / revision\n|   |   |-- content: DiagramContent\n|   |   |   |-- ascii + asciiSha256\n|   |   |   `-- structure: tree nodes | derived graph nodes\n|   |   |       `-- [D] parserVersion pins node-ID derivation\n|   |   |-- sourceContext: the product's link to code\n|   |   |   |-- binding: repository / corpus / domain profile\n|   |   |   |-- mappings: DiagramElementMapping[] (node -> range)\n|   |   |   `-- evidence: ProjectRepresentationEvidenceRecord\n|   |   `-- highlights / jumps\n|   |\n|   |-- DiagramRevision { id, diagramId, parentId, diagram, nodeRefs }\n|   |   `-- [D] nodeRefs: content node -> logical identity across revisions\n|   |\n|   |-- [C] reviseDiagram(base, DiagramEdit) via DiagramRevisionEditor\n|   |   |-- edit kinds: patch / patches / replace / source-mappings / ...\n|   |   |-- [C] correspondingNodes / matchDiagramNodes\n|   |   |   `-- [D] before + after nodes -> nodeIds map\n|   |   `-- [C] retainSourceMappings(before, after, nodeIds)\n|   |       `-- mappings survive text edits\n|   |\n|   `-- [O] diagramRevisionStore -> RevisionRegistry (module singleton)\n|       |-- register: validate, deep-freeze, reject mutated IDs\n|       |-- restore: deferred validation for history imports\n|       `-- [!] written directly by ~15 modules (controller, grid,\n|           agent edit, chat, change sessions, transfers, ...)\n|\n|-- [O] CanvasHistoryService: owns every editing context's history\n|   |   domain/core/diagrams/canvasHistoryService.ts, canvasHistory.ts\n|   |\n|   |-- WeakMap<CanvasEditingContext, CanvasHistory>\n|   |-- CanvasHistoryRecord (portable)\n|   |   |-- baselineId / headId / past[] / future[]\n|   |   |-- snapshots[id]: StoredCanvasSnapshot\n|   |   |   |-- document (composition only, no content)\n|   |   |   |-- diagramBindings: diagramId -> revisionId\n|   |   |   |-- view (personal, restored separately)\n|   |   |   `-- nodeOrigins (correspondence across checkpoints)\n|   |   `-- diagramRevisions: revision table for those bindings\n|   |-- append / navigate / reset / state / resolve\n|   |-- exportContext / forkContext / adopt\n|   |-- persistenceChanges(since) -> sequence-cursored delta\n|   `-- prepareTransfer / transferBoundary (cross-canvas moves)\n|\n|-- [M] Boundary: live renderer (tldraw)\n|   |   src/features/mapping/tldraw/MappingEditorRuntime.ts\n|   |-- [O] Editor owns live geometry and native undo stack\n|   |-- [C] controller.subscribe -> publish() projects shapes\n|   |-- [C] tick after gesture -> settle() -> commitEditorGesture\n|   |   `-- pointer/camera frames never write the controller\n|   |-- [D] document meta.mappingCheckpoint = canvasRevisionId\n|   |   `-- native undo -> restoreEditorCheckpoint(id)\n|   `-- [C] attachEditorDriver({ settle, undo }), one per controller\n|\n|-- [M] Boundary: workspace and sessions (browser)\n|   |   src/features/mapping/workspace/\n|   |-- CanvasWorkspace: drafts[documentId] -> CanvasSession\n|   |   `-- [C] onPersist(ids) when a session commits\n|   `-- CanvasSession\n|       |-- [O] constructs and retains the MappingDocumentController\n|       |-- [D] controller snapshot -> zustand slices\n|       |   `-- document / presentation / selection / controls / geometry / status\n|       `-- [C] canvasRevisionId changed -> onCommit listeners\n|\n|-- [M] Boundary: agent access\n|   |-- [C] MCP -> HTTP -> AgentDiagrammingSessionService.exec\n|   |-- [C] CanvasSessionBridge.dispatch -> command queue\n|   |   `-- browser long-polls (15s), 25s timeout, retry by requestId\n|   `-- [C] useAgentCanvasBridge -> attached controller.applyUpdate\n|\n|-- [M] Boundary: proposals (ChangeSessions, headless)\n|   |   application/mapping/changes/changeSessionService.ts\n|   |-- [O] new MappingDocumentController per proposed document\n|   |   `-- shares the same command path, without editorDriver\n|   |-- [C] apply -> controller.applyUpdate -> exportHistory\n|   `-- [C] accept -> projectCatalogs.acceptCanvasChanges\n|\n`-- [M] Boundary: persistence\n    |-- WorkspacePersistence.sync(ids)\n    |   |-- [C] controller.persistenceChanges(cursor)\n    |   |   `-- revision/* (immutable) + checkpoint/* records\n    |   |-- metadata / baseline / view / viewport records\n    |   `-- [C] RecordStorage.batch(changes) -> storage worker\n    `-- [D] restore: history record -> CanvasSession(history)\n\n[M] modular boundary | [O] ownership | [C] call flow | [D] data dependency | [!] caveat\n",
+      "source": {
+        "commit": "8ca143700ca4d2c870f1101b8cd4601ab68abd41",
+        "note": "Diagrammed files had no uncommitted changes at HEAD."
+      },
+      "provenance": {
+        "kind": "model",
+        "model": "claude-opus-5-5",
+        "note": "Generated in a Claude Code session after critiquing the earlier reference diagram; not yet reviewed by a human."
+      },
+      "asciiSha256": "6c7a30b7969ab102ff880b9582b0dca180429274dcd8bc858ab7b9314df3aa45",
+      "createdAt": "2026-11-14T20:41:35.312Z"
+    },
+    {
+      "id": "eece5ebf-538c-4fe7-9b91-a0806dbfdbc4",
+      "name": "Core editing kernel · matched snapshot",
+      "description": "Identical reference diagram scoped to the rerun at its exact source commit, 8ca1437.",
+      "caseIds": [
+        "source-8ca1437-rerun"
+      ],
+      "format": "ascii-tree",
+      "ascii": "Mapping application: core = per-document canvas editing kernel     HEAD 8ca1437\n|\n|-- [M] MappingDocumentController: single command path for one canvas\n|   |   domain/mapping/workspace/mappingDocumentController.ts\n|   |\n|   |-- [O] Owns the current ControllerSnapshot\n|   |   |-- document: MappingGridDocument (persistent composition)\n|   |   |   |-- scene: LineGridScene\n|   |   |   |   |-- root: GridBox tree\n|   |   |   |   |   |-- diagram box -> contentId\n|   |   |   |   |   `-- container box -> children, push-right layout\n|   |   |   |   `-- contents[id]: Diagram -> current revision\n|   |   |   |-- edges: DiagramConnection[] (node or box anchors)\n|   |   |   |-- jumps / sections\n|   |   |   `-- alternatives / revisionSelections / diagramContexts\n|   |   |-- canvas: MappingCanvasState (interaction, never content)\n|   |   |   |-- selection.items[] / controls\n|   |   |   |-- diagramViews (per-diagram folding)\n|   |   |   `-- display: floating panes + geometry policies\n|   |   `-- version / canvasRevisionId / canUndo / canRedo\n|   |       `-- [D] version is the optimistic-concurrency token\n|   |\n|   |-- [O] Retains a CanvasEditingContext (an opaque handle)\n|   |   `-- history state lives in CanvasHistoryService, not here\n|   |\n|   |-- [M] Write entry points (all converge on updateSnapshot)\n|   |   |-- applyUpdate(expectedVersion, DiagramOperation[])\n|   |   |   |-- [C] Called by agent bridge and ChangeSessionService\n|   |   |   `-- [C] applyOperations\n|   |   |       |-- [D] expectedVersion != version -> VERSION_CONFLICT\n|   |   |       |-- [D] clone snapshot -> staged document + canvas\n|   |   |       |-- Content operations\n|   |   |       |   |-- diagram-create / replace / patchDiagram\n|   |   |       |   |-- setSourceMappings / setJumps / highlight\n|   |   |       |   `-- [C] reviseStoredDiagram / createStoredDiagram\n|   |   |       |       `-- [D] new revision + nodeIds correspondence\n|   |   |       |-- Composition operations\n|   |   |       |   `-- move / group / remove / edge-* -> layoutScene\n|   |   |       |-- Floating operations\n|   |   |       |   `-- move / collapse / remove on display nodes\n|   |   |       `-- Invariants: >= 1 visible diagram, valid activeBoxId\n|   |   |-- commitEditorGesture(operations, canvas)\n|   |   |   `-- [C] One native tldraw gesture -> one checkpoint\n|   |   |-- commitDocument / commitProjectionLayout\n|   |   `-- updateCanvas / select\n|   |       `-- [D] record=false -> transient, no checkpoint\n|   |\n|   |-- [C] updateSnapshot(next, record): the commit pipeline\n|   |   |-- Prune selection items for deleted boxes\n|   |   |-- [C] reconcileConnections(before, after, edges)\n|   |   |   `-- [D] node correspondence -> retained or stale endpoints\n|   |   |-- [C] rebaseDiagramJumps -> jumps follow edited content\n|   |   |-- [C] validateConnections / normalizeDiagramViews\n|   |   |-- [C] resolveFloatingGeometry (panes never displace grid)\n|   |   |-- [C] historyService.append(context, document, canvas, nodeIds)\n|   |   |   `-- only when record = true\n|   |   |-- [D] contents re-bound via getDiagramRevision (frozen)\n|   |   `-- [C] notify listeners synchronously\n|   |\n|   |-- [M] History navigation\n|   |   |-- undo / redo\n|   |   |   `-- [C] delegated to editorDriver when tldraw is mounted\n|   |   |       `-- otherwise historyService.navigate (headless)\n|   |   |-- restoreEditorCheckpoint(id) <- tldraw history meta\n|   |   `-- reset / exportHistory / forkHistory / canvasViews\n|   |\n|   `-- [M] Read models\n|       |-- getSnapshot() / subscribe(listener)\n|       |-- nodes(): canvasDisplayNodes (cached, derived registry)\n|       |-- resolveDiagram(id): DiagramView (ascii, nodes, sourceContext)\n|       `-- persistenceChanges(cursor): incremental HistoryChanges\n|\n|-- [M] Diagram content model: immutable, identity-preserving\n|   |   domain/core/diagrams/\n|   |\n|   |-- Diagram (diagram.ts)\n|   |   |-- diagramId (stable) / revisionId / revision\n|   |   |-- content: DiagramContent\n|   |   |   |-- ascii + asciiSha256\n|   |   |   `-- structure: tree nodes | derived graph nodes\n|   |   |       `-- [D] parserVersion pins node-ID derivation\n|   |   |-- sourceContext: the product's link to code\n|   |   |   |-- binding: repository / corpus / domain profile\n|   |   |   |-- mappings: DiagramElementMapping[] (node -> range)\n|   |   |   `-- evidence: ProjectRepresentationEvidenceRecord\n|   |   `-- highlights / jumps\n|   |\n|   |-- DiagramRevision { id, diagramId, parentId, diagram, nodeRefs }\n|   |   `-- [D] nodeRefs: content node -> logical identity across revisions\n|   |\n|   |-- [C] reviseDiagram(base, DiagramEdit) via DiagramRevisionEditor\n|   |   |-- edit kinds: patch / patches / replace / source-mappings / ...\n|   |   |-- [C] correspondingNodes / matchDiagramNodes\n|   |   |   `-- [D] before + after nodes -> nodeIds map\n|   |   `-- [C] retainSourceMappings(before, after, nodeIds)\n|   |       `-- mappings survive text edits\n|   |\n|   `-- [O] diagramRevisionStore -> RevisionRegistry (module singleton)\n|       |-- register: validate, deep-freeze, reject mutated IDs\n|       |-- restore: deferred validation for history imports\n|       `-- [!] written directly by ~15 modules (controller, grid,\n|           agent edit, chat, change sessions, transfers, ...)\n|\n|-- [O] CanvasHistoryService: owns every editing context's history\n|   |   domain/core/diagrams/canvasHistoryService.ts, canvasHistory.ts\n|   |\n|   |-- WeakMap<CanvasEditingContext, CanvasHistory>\n|   |-- CanvasHistoryRecord (portable)\n|   |   |-- baselineId / headId / past[] / future[]\n|   |   |-- snapshots[id]: StoredCanvasSnapshot\n|   |   |   |-- document (composition only, no content)\n|   |   |   |-- diagramBindings: diagramId -> revisionId\n|   |   |   |-- view (personal, restored separately)\n|   |   |   `-- nodeOrigins (correspondence across checkpoints)\n|   |   `-- diagramRevisions: revision table for those bindings\n|   |-- append / navigate / reset / state / resolve\n|   |-- exportContext / forkContext / adopt\n|   |-- persistenceChanges(since) -> sequence-cursored delta\n|   `-- prepareTransfer / transferBoundary (cross-canvas moves)\n|\n|-- [M] Boundary: live renderer (tldraw)\n|   |   src/features/mapping/tldraw/MappingEditorRuntime.ts\n|   |-- [O] Editor owns live geometry and native undo stack\n|   |-- [C] controller.subscribe -> publish() projects shapes\n|   |-- [C] tick after gesture -> settle() -> commitEditorGesture\n|   |   `-- pointer/camera frames never write the controller\n|   |-- [D] document meta.mappingCheckpoint = canvasRevisionId\n|   |   `-- native undo -> restoreEditorCheckpoint(id)\n|   `-- [C] attachEditorDriver({ settle, undo }), one per controller\n|\n|-- [M] Boundary: workspace and sessions (browser)\n|   |   src/features/mapping/workspace/\n|   |-- CanvasWorkspace: drafts[documentId] -> CanvasSession\n|   |   `-- [C] onPersist(ids) when a session commits\n|   `-- CanvasSession\n|       |-- [O] constructs and retains the MappingDocumentController\n|       |-- [D] controller snapshot -> zustand slices\n|       |   `-- document / presentation / selection / controls / geometry / status\n|       `-- [C] canvasRevisionId changed -> onCommit listeners\n|\n|-- [M] Boundary: agent access\n|   |-- [C] MCP -> HTTP -> AgentDiagrammingSessionService.exec\n|   |-- [C] CanvasSessionBridge.dispatch -> command queue\n|   |   `-- browser long-polls (15s), 25s timeout, retry by requestId\n|   `-- [C] useAgentCanvasBridge -> attached controller.applyUpdate\n|\n|-- [M] Boundary: proposals (ChangeSessions, headless)\n|   |   application/mapping/changes/changeSessionService.ts\n|   |-- [O] new MappingDocumentController per proposed document\n|   |   `-- shares the same command path, without editorDriver\n|   |-- [C] apply -> controller.applyUpdate -> exportHistory\n|   `-- [C] accept -> projectCatalogs.acceptCanvasChanges\n|\n`-- [M] Boundary: persistence\n    |-- WorkspacePersistence.sync(ids)\n    |   |-- [C] controller.persistenceChanges(cursor)\n    |   |   `-- revision/* (immutable) + checkpoint/* records\n    |   |-- metadata / baseline / view / viewport records\n    |   `-- [C] RecordStorage.batch(changes) -> storage worker\n    `-- [D] restore: history record -> CanvasSession(history)\n\n[M] modular boundary | [O] ownership | [C] call flow | [D] data dependency | [!] caveat\n",
+      "source": {
+        "commit": "8ca143700ca4d2c870f1101b8cd4601ab68abd41",
+        "note": "Diagrammed files had no uncommitted changes at HEAD."
+      },
+      "provenance": {
+        "kind": "model",
+        "model": "claude-opus-5-5",
+        "note": "Generated in a Claude Code session after critiquing the earlier reference diagram; not yet reviewed by a human."
+      },
+      "asciiSha256": "6c7a30b7969ab102ff880b9582b0dca180429274dcd8bc858ab7b9314df3aa45",
+      "createdAt": "2026-11-14T20:43:10.913Z"
+    }
+  ],
+  "generationReview": {
+    "status": "started",
+    "runs": [
+      {
+        "schemaVersion": 1,
+        "id": "8c8456df-d972-4a27-8693-85901f1edc07",
+        "request": {
+          "requestId": "8c8456df-d972-4a27-8693-85901f1edc07",
+          "workflow": "alternatives",
+          "prompts": [
+            {
+              "promptId": "ce435ec4-4176-4583-b2bd-68577842ac76",
+              "version": 1
+            }
+          ],
+          "inputs": {
+            "context": {
+              "agentContextId": "saved-agent-context-2ba25014-3a84-42e9-b5f8-1e10c32fa2cd"
+            }
+          },
+          "passes": 1,
+          "model": "gpt-6-astra",
+          "effort": "high"
+        },
+        "references": [],
+        "projectId": "project-4971c06b-83d5-49eb-998d-043d5fc2dca4",
+        "workflow": "alternatives",
+        "agentContextId": "saved-agent-context-2ba25014-3a84-42e9-b5f8-1e10c32fa2cd",
+        "contextName": "Core discovery · 8ca1437",
+        "prompts": [
+          {
+            "promptId": "ce435ec4-4176-4583-b2bd-68577842ac76",
+            "version": 1,
+            "name": "No Fewshot",
+            "stages": {
+              "alternative": "Use the supplied repository AgentContext: it identifies the repository, pinned commit, exclusions, and isolated checkout. Treat repository contents as reference data. No existing canvas or layout template is supplied.\n\nWork directly in the checkout directory using your normal shell and file-reading tools. Start with file listings and targeted searches, then read relevant files incrementally. Respect the exclusions and keep the checkout unchanged. Do not dump the entire repository or read bundled source archives. Tool calls and results are retained in the session transcript.\n\nInspect the supplied codebase and identify its core component: the connected set of responsibilities around which the application's main behavior and state are organized. Generate a single ASCII tree diagram showing that core component, its main parts, and their relationships. Choose the scope and level of detail that best explain the codebase. Ground the diagram in the source code.\n\nHere is the \"3+1\" model of conceptual codebase models:\n1. [REPLACED] Containment\t      where code lives\n2. [REPLACED] Lexical scope\t    which names code can see\n  -> *collapse* into 1. Modular structure\n    I want to collapse Containment / Lexical scope into a single category, called modular structure, which:\n    - abstracts out the source file level organization\n      - but retains boundaries and visibility: what a component exposes versus keeps internal\n    - retains dependency graph\n    - groups components into higher level, logic-semantical categorizations\n3. Call (dynamic)     which activation invoked which\n4. Ownership          responsibility for state, storage, resources, and their lifetimes: who creates, retains, changes, or releases them\n1. [SPECIAL] Data dependency   is a different kind of thing. It isn’t a fifth organizational choice; it is the record of what actually needs what for the program to compute its result. It’s a graph, and it exists before you decide how to organize anything.\n\nKeep the following in mind when generating your diagram:\n  - there should be 60/40 between code refs and nat lang\n\nTree validation: Start with one root title, followed by a connector-only line. Place all other content beneath explicit branches. Do not insert annotations, references, legends, or explanatory text between the root title and its first branch.\n\nRoot title\n|\n|-- First component\n|   `-- Supporting detail\n`-- Second component\n\nBefore returning, verify that every branch belongs to the single root.\n\nReturn a JSON object with exactly one field, \"ascii\", containing the diagram string. Return exactly one ASCII tree with one root, printable ASCII characters, spaces and LF newlines. No Markdown fences or surrounding prose. The complete tree must fit within 20000 characters. Do not add separate side diagrams.\n"
+            },
+            "templateBase": {
+              "id": "legacy-prompt",
+              "version": 1,
+              "name": "Captured prompt structure",
+              "tags": [
+                {
+                  "name": "agent context",
+                  "parent": null
+                },
+                {
+                  "name": "task",
+                  "parent": null
+                },
+                {
+                  "name": "diagram-style",
+                  "parent": null
+                },
+                {
+                  "name": "diagram-guidelines",
+                  "parent": "diagram-style"
+                },
+                {
+                  "name": "references",
+                  "parent": "diagram-style"
+                },
+                {
+                  "name": "canvas-style",
+                  "parent": null
+                },
+                {
+                  "name": "canvas-guidelines",
+                  "parent": "canvas-style"
+                },
+                {
+                  "name": "references",
+                  "parent": "canvas-style"
+                },
+                {
+                  "name": "output format",
+                  "parent": null
+                }
+              ]
+            },
+            "parents": [
+              {
+                "promptId": "0b3af2dd-ba89-4032-936a-40070a3e167e",
+                "version": 4,
+                "relation": "variation"
+              }
+            ],
+            "contentHash": "b39910a7a20ef7686c983f8e8b67e060a18a5f2e95209379c1af0da754ddb51e",
+            "derivation": {
+              "parent": {
+                "promptId": "0b3af2dd-ba89-4032-936a-40070a3e167e",
+                "version": 4
+              },
+              "kind": "variation",
+              "dimension": {
+                "id": "few-shot-examples",
+                "name": "Few-shot examples",
+                "value": "None"
+              }
+            }
+          }
+        ],
+        "contexts": {
+          "context": {
+            "agentContextId": "saved-agent-context-2ba25014-3a84-42e9-b5f8-1e10c32fa2cd",
+            "name": "Core discovery · 8ca1437",
+            "contentHash": "206d36f8379bc52aa484c0043cf003a0e818438ad4df6fdaa3b47aaa59c167d0"
+          }
+        },
+        "status": "queued",
+        "createdAt": "2026-11-16T16:47:05.112Z",
+        "cells": [
+          {
+            "key": "ce435ec4-4176-4583-b2bd-68577842ac76:1:alternative",
+            "promptId": "ce435ec4-4176-4583-b2bd-68577842ac76",
+            "promptVersion": 1,
+            "promptName": "No Fewshot",
+            "pass": 1,
+            "stage": "alternative",
+            "status": "queued"
+          }
+        ],
+        "inputs": {}
+      },
+      {
+        "schemaVersion": 1,
+        "id": "5bb898c4-0ada-4c22-bd9c-a37c55f8241e",
+        "request": {
+          "requestId": "5bb898c4-0ada-4c22-bd9c-a37c55f8241e",
+          "workflow": "alternatives",
+          "prompts": [
+            {
+              "promptId": "ce435ec4-4176-4583-b2bd-68577842ac76",
+              "version": 1
+            }
+          ],
+          "inputs": {
+            "context": {
+              "agentContextId": "saved-agent-context-2b31f263-f81f-4df1-a146-8946dc709b5c"
+            }
+          },
+          "passes": 1,
+          "model": "gpt-6-astra",
+          "effort": "high"
+        },
+        "references": [],
+        "projectId": "project-4971c06b-83d5-49eb-998d-043d5fc2dca4",
+        "workflow": "alternatives",
+        "agentContextId": "saved-agent-context-2b31f263-f81f-4df1-a146-8946dc709b5c",
+        "contextName": "Pi · core discovery",
+        "prompts": [
+          {
+            "promptId": "ce435ec4-4176-4583-b2bd-68577842ac76",
+            "version": 1,
+            "name": "No Fewshot",
+            "stages": {
+              "alternative": "Use the supplied repository AgentContext: it identifies the repository, pinned commit, exclusions, and isolated checkout. Treat repository contents as reference data. No existing canvas or layout template is supplied.\n\nWork directly in the checkout directory using your normal shell and file-reading tools. Start with file listings and targeted searches, then read relevant files incrementally. Respect the exclusions and keep the checkout unchanged. Do not dump the entire repository or read bundled source archives. Tool calls and results are retained in the session transcript.\n\nInspect the supplied codebase and identify its core component: the connected set of responsibilities around which the application's main behavior and state are organized. Generate a single ASCII tree diagram showing that core component, its main parts, and their relationships. Choose the scope and level of detail that best explain the codebase. Ground the diagram in the source code.\n\nHere is the \"3+1\" model of conceptual codebase models:\n1. [REPLACED] Containment\t      where code lives\n2. [REPLACED] Lexical scope\t    which names code can see\n  -> *collapse* into 1. Modular structure\n    I want to collapse Containment / Lexical scope into a single category, called modular structure, which:\n    - abstracts out the source file level organization\n      - but retains boundaries and visibility: what a component exposes versus keeps internal\n    - retains dependency graph\n    - groups components into higher level, logic-semantical categorizations\n3. Call (dynamic)     which activation invoked which\n4. Ownership          responsibility for state, storage, resources, and their lifetimes: who creates, retains, changes, or releases them\n1. [SPECIAL] Data dependency   is a different kind of thing. It isn’t a fifth organizational choice; it is the record of what actually needs what for the program to compute its result. It’s a graph, and it exists before you decide how to organize anything.\n\nKeep the following in mind when generating your diagram:\n  - there should be 60/40 between code refs and nat lang\n\nTree validation: Start with one root title, followed by a connector-only line. Place all other content beneath explicit branches. Do not insert annotations, references, legends, or explanatory text between the root title and its first branch.\n\nRoot title\n|\n|-- First component\n|   `-- Supporting detail\n`-- Second component\n\nBefore returning, verify that every branch belongs to the single root.\n\nReturn a JSON object with exactly one field, \"ascii\", containing the diagram string. Return exactly one ASCII tree with one root, printable ASCII characters, spaces and LF newlines. No Markdown fences or surrounding prose. The complete tree must fit within 20000 characters. Do not add separate side diagrams.\n"
+            },
+            "templateBase": {
+              "id": "legacy-prompt",
+              "version": 1,
+              "name": "Captured prompt structure",
+              "tags": [
+                {
+                  "name": "agent context",
+                  "parent": null
+                },
+                {
+                  "name": "task",
+                  "parent": null
+                },
+                {
+                  "name": "diagram-style",
+                  "parent": null
+                },
+                {
+                  "name": "diagram-guidelines",
+                  "parent": "diagram-style"
+                },
+                {
+                  "name": "references",
+                  "parent": "diagram-style"
+                },
+                {
+                  "name": "canvas-style",
+                  "parent": null
+                },
+                {
+                  "name": "canvas-guidelines",
+                  "parent": "canvas-style"
+                },
+                {
+                  "name": "references",
+                  "parent": "canvas-style"
+                },
+                {
+                  "name": "output format",
+                  "parent": null
+                }
+              ]
+            },
+            "parents": [
+              {
+                "promptId": "0b3af2dd-ba89-4032-936a-40070a3e167e",
+                "version": 4,
+                "relation": "variation"
+              }
+            ],
+            "contentHash": "b39910a7a20ef7686c983f8e8b67e060a18a5f2e95209379c1af0da754ddb51e",
+            "derivation": {
+              "parent": {
+                "promptId": "0b3af2dd-ba89-4032-936a-40070a3e167e",
+                "version": 4
+              },
+              "kind": "variation",
+              "dimension": {
+                "id": "few-shot-examples",
+                "name": "Few-shot examples",
+                "value": "None"
+              }
+            }
+          }
+        ],
+        "contexts": {
+          "context": {
+            "agentContextId": "saved-agent-context-2b31f263-f81f-4df1-a146-8946dc709b5c",
+            "name": "Pi · core discovery",
+            "contentHash": "642eff5f7c0caf04881c5a7a06cc6f80a6acefc263656940751d03a1c1360017"
+          }
+        },
+        "status": "queued",
+        "createdAt": "2026-11-16T16:47:05.154Z",
+        "cells": [
+          {
+            "key": "ce435ec4-4176-4583-b2bd-68577842ac76:1:alternative",
+            "promptId": "ce435ec4-4176-4583-b2bd-68577842ac76",
+            "promptVersion": 1,
+            "promptName": "No Fewshot",
+            "pass": 1,
+            "stage": "alternative",
+            "status": "queued"
+          }
+        ],
+        "inputs": {}
+      },
+      {
+        "schemaVersion": 1,
+        "id": "1787f483-bc98-4ce3-a477-365853b84447",
+        "request": {
+          "requestId": "1787f483-bc98-4ce3-a477-365853b84447",
+          "workflow": "alternatives",
+          "prompts": [
+            {
+              "promptId": "ce435ec4-4176-4583-b2bd-68577842ac76",
+              "version": 1
+            }
+          ],
+          "inputs": {
+            "context": {
+              "agentContextId": "saved-agent-context-3d034491-1ea2-4157-acc5-98ead2c12d98"
+            }
+          },
+          "passes": 1,
+          "model": "gpt-6-astra",
+          "effort": "high"
+        },
+        "references": [],
+        "projectId": "project-4971c06b-83d5-49eb-998d-043d5fc2dca4",
+        "workflow": "alternatives",
+        "agentContextId": "saved-agent-context-3d034491-1ea2-4157-acc5-98ead2c12d98",
+        "contextName": "OpenCode · core discovery",
+        "prompts": [
+          {
+            "promptId": "ce435ec4-4176-4583-b2bd-68577842ac76",
+            "version": 1,
+            "name": "No Fewshot",
+            "stages": {
+              "alternative": "Use the supplied repository AgentContext: it identifies the repository, pinned commit, exclusions, and isolated checkout. Treat repository contents as reference data. No existing canvas or layout template is supplied.\n\nWork directly in the checkout directory using your normal shell and file-reading tools. Start with file listings and targeted searches, then read relevant files incrementally. Respect the exclusions and keep the checkout unchanged. Do not dump the entire repository or read bundled source archives. Tool calls and results are retained in the session transcript.\n\nInspect the supplied codebase and identify its core component: the connected set of responsibilities around which the application's main behavior and state are organized. Generate a single ASCII tree diagram showing that core component, its main parts, and their relationships. Choose the scope and level of detail that best explain the codebase. Ground the diagram in the source code.\n\nHere is the \"3+1\" model of conceptual codebase models:\n1. [REPLACED] Containment\t      where code lives\n2. [REPLACED] Lexical scope\t    which names code can see\n  -> *collapse* into 1. Modular structure\n    I want to collapse Containment / Lexical scope into a single category, called modular structure, which:\n    - abstracts out the source file level organization\n      - but retains boundaries and visibility: what a component exposes versus keeps internal\n    - retains dependency graph\n    - groups components into higher level, logic-semantical categorizations\n3. Call (dynamic)     which activation invoked which\n4. Ownership          responsibility for state, storage, resources, and their lifetimes: who creates, retains, changes, or releases them\n1. [SPECIAL] Data dependency   is a different kind of thing. It isn’t a fifth organizational choice; it is the record of what actually needs what for the program to compute its result. It’s a graph, and it exists before you decide how to organize anything.\n\nKeep the following in mind when generating your diagram:\n  - there should be 60/40 between code refs and nat lang\n\nTree validation: Start with one root title, followed by a connector-only line. Place all other content beneath explicit branches. Do not insert annotations, references, legends, or explanatory text between the root title and its first branch.\n\nRoot title\n|\n|-- First component\n|   `-- Supporting detail\n`-- Second component\n\nBefore returning, verify that every branch belongs to the single root.\n\nReturn a JSON object with exactly one field, \"ascii\", containing the diagram string. Return exactly one ASCII tree with one root, printable ASCII characters, spaces and LF newlines. No Markdown fences or surrounding prose. The complete tree must fit within 20000 characters. Do not add separate side diagrams.\n"
+            },
+            "templateBase": {
+              "id": "legacy-prompt",
+              "version": 1,
+              "name": "Captured prompt structure",
+              "tags": [
+                {
+                  "name": "agent context",
+                  "parent": null
+                },
+                {
+                  "name": "task",
+                  "parent": null
+                },
+                {
+                  "name": "diagram-style",
+                  "parent": null
+                },
+                {
+                  "name": "diagram-guidelines",
+                  "parent": "diagram-style"
+                },
+                {
+                  "name": "references",
+                  "parent": "diagram-style"
+                },
+                {
+                  "name": "canvas-style",
+                  "parent": null
+                },
+                {
+                  "name": "canvas-guidelines",
+                  "parent": "canvas-style"
+                },
+                {
+                  "name": "references",
+                  "parent": "canvas-style"
+                },
+                {
+                  "name": "output format",
+                  "parent": null
+                }
+              ]
+            },
+            "parents": [
+              {
+                "promptId": "0b3af2dd-ba89-4032-936a-40070a3e167e",
+                "version": 4,
+                "relation": "variation"
+              }
+            ],
+            "contentHash": "b39910a7a20ef7686c983f8e8b67e060a18a5f2e95209379c1af0da754ddb51e",
+            "derivation": {
+              "parent": {
+                "promptId": "0b3af2dd-ba89-4032-936a-40070a3e167e",
+                "version": 4
+              },
+              "kind": "variation",
+              "dimension": {
+                "id": "few-shot-examples",
+                "name": "Few-shot examples",
+                "value": "None"
+              }
+            }
+          }
+        ],
+        "contexts": {
+          "context": {
+            "agentContextId": "saved-agent-context-3d034491-1ea2-4157-acc5-98ead2c12d98",
+            "name": "OpenCode · core discovery",
+            "contentHash": "99e7bdfbe45e3d3f5b21dde5a7a01b1c4cf40207ff22928867821476b8010d29"
+          }
+        },
+        "status": "queued",
+        "createdAt": "2026-11-16T16:47:05.198Z",
+        "cells": [
+          {
+            "key": "ce435ec4-4176-4583-b2bd-68577842ac76:1:alternative",
+            "promptId": "ce435ec4-4176-4583-b2bd-68577842ac76",
+            "promptVersion": 1,
+            "promptName": "No Fewshot",
+            "pass": 1,
+            "stage": "alternative",
+            "status": "queued"
+          }
+        ],
+        "inputs": {}
+      },
+      {
+        "schemaVersion": 1,
+        "id": "6655d366-dabc-458a-a65d-a093441322a7",
+        "request": {
+          "requestId": "6655d366-dabc-458a-a65d-a093441322a7",
+          "workflow": "alternatives",
+          "prompts": [
+            {
+              "promptId": "ce435ec4-4176-4583-b2bd-68577842ac76",
+              "version": 1
+            }
+          ],
+          "inputs": {
+            "context": {
+              "agentContextId": "saved-agent-context-29fbdd95-72d4-4dc1-ad7c-a1b0f8cd7da6"
+            }
+          },
+          "passes": 1,
+          "model": "gpt-6-astra",
+          "effort": "high"
+        },
+        "references": [],
+        "projectId": "project-4971c06b-83d5-49eb-998d-043d5fc2dca4",
+        "workflow": "alternatives",
+        "agentContextId": "saved-agent-context-29fbdd95-72d4-4dc1-ad7c-a1b0f8cd7da6",
+        "contextName": "Ghostty · core discovery",
+        "prompts": [
+          {
+            "promptId": "ce435ec4-4176-4583-b2bd-68577842ac76",
+            "version": 1,
+            "name": "No Fewshot",
+            "stages": {
+              "alternative": "Use the supplied repository AgentContext: it identifies the repository, pinned commit, exclusions, and isolated checkout. Treat repository contents as reference data. No existing canvas or layout template is supplied.\n\nWork directly in the checkout directory using your normal shell and file-reading tools. Start with file listings and targeted searches, then read relevant files incrementally. Respect the exclusions and keep the checkout unchanged. Do not dump the entire repository or read bundled source archives. Tool calls and results are retained in the session transcript.\n\nInspect the supplied codebase and identify its core component: the connected set of responsibilities around which the application's main behavior and state are organized. Generate a single ASCII tree diagram showing that core component, its main parts, and their relationships. Choose the scope and level of detail that best explain the codebase. Ground the diagram in the source code.\n\nHere is the \"3+1\" model of conceptual codebase models:\n1. [REPLACED] Containment\t      where code lives\n2. [REPLACED] Lexical scope\t    which names code can see\n  -> *collapse* into 1. Modular structure\n    I want to collapse Containment / Lexical scope into a single category, called modular structure, which:\n    - abstracts out the source file level organization\n      - but retains boundaries and visibility: what a component exposes versus keeps internal\n    - retains dependency graph\n    - groups components into higher level, logic-semantical categorizations\n3. Call (dynamic)     which activation invoked which\n4. Ownership          responsibility for state, storage, resources, and their lifetimes: who creates, retains, changes, or releases them\n1. [SPECIAL] Data dependency   is a different kind of thing. It isn’t a fifth organizational choice; it is the record of what actually needs what for the program to compute its result. It’s a graph, and it exists before you decide how to organize anything.\n\nKeep the following in mind when generating your diagram:\n  - there should be 60/40 between code refs and nat lang\n\nTree validation: Start with one root title, followed by a connector-only line. Place all other content beneath explicit branches. Do not insert annotations, references, legends, or explanatory text between the root title and its first branch.\n\nRoot title\n|\n|-- First component\n|   `-- Supporting detail\n`-- Second component\n\nBefore returning, verify that every branch belongs to the single root.\n\nReturn a JSON object with exactly one field, \"ascii\", containing the diagram string. Return exactly one ASCII tree with one root, printable ASCII characters, spaces and LF newlines. No Markdown fences or surrounding prose. The complete tree must fit within 20000 characters. Do not add separate side diagrams.\n"
+            },
+            "templateBase": {
+              "id": "legacy-prompt",
+              "version": 1,
+              "name": "Captured prompt structure",
+              "tags": [
+                {
+                  "name": "agent context",
+                  "parent": null
+                },
+                {
+                  "name": "task",
+                  "parent": null
+                },
+                {
+                  "name": "diagram-style",
+                  "parent": null
+                },
+                {
+                  "name": "diagram-guidelines",
+                  "parent": "diagram-style"
+                },
+                {
+                  "name": "references",
+                  "parent": "diagram-style"
+                },
+                {
+                  "name": "canvas-style",
+                  "parent": null
+                },
+                {
+                  "name": "canvas-guidelines",
+                  "parent": "canvas-style"
+                },
+                {
+                  "name": "references",
+                  "parent": "canvas-style"
+                },
+                {
+                  "name": "output format",
+                  "parent": null
+                }
+              ]
+            },
+            "parents": [
+              {
+                "promptId": "0b3af2dd-ba89-4032-936a-40070a3e167e",
+                "version": 4,
+                "relation": "variation"
+              }
+            ],
+            "contentHash": "b39910a7a20ef7686c983f8e8b67e060a18a5f2e95209379c1af0da754ddb51e",
+            "derivation": {
+              "parent": {
+                "promptId": "0b3af2dd-ba89-4032-936a-40070a3e167e",
+                "version": 4
+              },
+              "kind": "variation",
+              "dimension": {
+                "id": "few-shot-examples",
+                "name": "Few-shot examples",
+                "value": "None"
+              }
+            }
+          }
+        ],
+        "contexts": {
+          "context": {
+            "agentContextId": "saved-agent-context-29fbdd95-72d4-4dc1-ad7c-a1b0f8cd7da6",
+            "name": "Ghostty · core discovery",
+            "contentHash": "c26f9e1d07185d26d78fd7cf31b447b58604b2cae4a040b1dc623aaaf9e7848a"
+          }
+        },
+        "status": "queued",
+        "createdAt": "2026-11-16T16:47:05.241Z",
+        "cells": [
+          {
+            "key": "ce435ec4-4176-4583-b2bd-68577842ac76:1:alternative",
+            "promptId": "ce435ec4-4176-4583-b2bd-68577842ac76",
+            "promptVersion": 1,
+            "promptName": "No Fewshot",
+            "pass": 1,
+            "stage": "alternative",
+            "status": "queued"
+          }
+        ],
+        "inputs": {}
+      }
+    ],
+    "approval": {
+      "requestId": "46b16d71-5343-484a-a11f-57ab7b740c0c",
+      "expectedRevision": 33
+    },
+    "approvedAt": "2026-11-16T16:49:58.354Z"
+  },
+  "schemaVersion": 1,
+  "id": "08ccc7fa-8ea6-4cfa-b0b7-8819b7fcbf35",
+  "projectId": "project-4971c06b-83d5-49eb-998d-043d5fc2dca4",
+  "revision": 35,
+  "createdAt": "2026-11-14T16:57:54.270Z",
+  "updatedAt": "2026-11-16T16:49:58.856Z"
+}

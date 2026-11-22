@@ -1,0 +1,40 @@
+{
+  "model": "gpt-6-astra",
+  "effort": "high",
+  "samples": 3,
+  "conditionId": "opencode-astra-high-v4",
+  "conditionName": "OpenCode · Astra/high v4",
+  "repositoryName": "OpenCode",
+  "phaseId": "pi",
+  "caseId": "opencode-source",
+  "experimentId": "08ccc7fa-8ea6-4cfa-b0b7-8819b7fcbf35",
+  "promptId": "0b3af2dd-ba89-4032-936a-40070a3e167e",
+  "promptVersion": 4,
+  "promptSha256": "bb56ca114ae2e4c7f08ff6402992adb95a09d4a760f76e92ee83ae1a4edd1b28",
+  "savedPromptContentHash": "4a4234357bd6f6927342a1a6dab2491999a38c6b4710b0ece0bfe8317a0d83af",
+  "agentContextId": "saved-agent-context-3d034491-1ea2-4157-acc5-98ead2c12d98",
+  "contextHash": "99e7bdfbe45e3d3f5b21dde5a7a01b1c4cf40207ff22928867821476b8010d29",
+  "sourceCommit": "fe3552441192ccbea91d117668e7f3a9eb097baf",
+  "repositoryPath": "/home/john/softwarez/opencode",
+  "eligibleFiles": 7838,
+  "contextRequestId": "3d034491-1ea2-4157-acc5-98ead2c12d98",
+  "attachRequestId": "83dcaef3-356d-4f15-8b9b-29092de0369e",
+  "coverageAttachRequestId": "88368415-f329-4cbf-969e-f0856cf3e768",
+  "cases": [
+    {
+      "number": 1,
+      "runId": "450850af-6c9b-4950-a4d8-31f5724302e6",
+      "sampleId": "b9167bf8-112d-44e1-9e24-d256b6c26322"
+    },
+    {
+      "number": 2,
+      "runId": "c896fde7-00ef-4b9f-a62f-7cfc94310a5b",
+      "sampleId": "eeb1c152-6d8a-485e-b3ee-a0523b153844"
+    },
+    {
+      "number": 3,
+      "runId": "e5dfe7ec-d1a8-45b9-bf7c-04ea78edf8da",
+      "sampleId": "64edfc44-d923-4848-b288-f14d8fd4aeca"
+    }
+  ]
+}

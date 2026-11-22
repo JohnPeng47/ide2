@@ -1,0 +1,19 @@
+{
+  "id": "child-3",
+  "name": "process-output",
+  "assignment": "Map n38-n54 (Termio backend process, PTY threads, stream parsing/stream handler side effects). Return partial JSON with numbered ranges.",
+  "model": "gpt-6-sol",
+  "effort": "medium",
+  "status": "generating",
+  "queuedAt": "2026-11-19T04:44:47.115Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-19T04:44:47.119Z",
+  "sessionId": "01a1f21f-1aab-709e-8bf8-9e8b1e440042",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-168wdcjn-agent-repository-zJWvc2-checkout--/2026-11-19T04-44-47-147Z_01a1f21f-1aab-709e-8bf8-9e8b1e440042.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase3-168wdcjn/agent-repository-zJWvc2/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

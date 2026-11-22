@@ -1,0 +1,19 @@
+{
+  "id": "child-1",
+  "name": "host",
+  "assignment": "Map n1–n11 (n1 independently identify core scope/own evidence, lead will add descendant coverage). Assign scope before ranges. Use private scratch /tmp/ghostty-host if needed. Return compact machine-readable records (one line per node: node scopes; path:start-end:roles ...) with exact verified locations, and notes.",
+  "model": "gpt-6.2-sol",
+  "effort": "high",
+  "status": "generating",
+  "queuedAt": "2026-11-22T03:14:46.728Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-22T03:14:46.732Z",
+  "sessionId": "01a2013f-c769-77ef-b556-a625eed432e5",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-2rop8tlu-agent-repository-a13C6i-checkout--/2026-11-22T03-14-46-761Z_01a2013f-c769-77ef-b556-a625eed432e5.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase4-2rop8tlu/agent-repository-a13C6i/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

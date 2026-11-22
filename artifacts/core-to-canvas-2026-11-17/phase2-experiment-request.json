@@ -1,0 +1,735 @@
+{
+  "requestId": "a596bf30-53fd-4529-9489-25032a3128a9",
+  "experimentId": "7821c7da-cfcd-446d-8d7f-43b26df049fe",
+  "expectedRevision": 5,
+  "experiment": {
+    "name": "Core component → canvas",
+    "description": "Restructure one Astra/high core component diagram per repository (from Core component discovery 08ccc7fa) into a vertical central diagram with connected peripheral diagrams. Repository checkout available to double-check the diagram. One gpt-6-astra/high canvas per repository.",
+    "tags": [
+      "core-discovery",
+      "canvas"
+    ],
+    "workflow": {
+      "id": "core-to-canvas",
+      "name": "Core component to canvas",
+      "version": 1,
+      "stages": [
+        {
+          "id": "split",
+          "name": "Generate canvas",
+          "dependsOn": []
+        },
+        {
+          "id": "expand",
+          "name": "Expand canvas",
+          "dependsOn": [
+            "split"
+          ]
+        }
+      ]
+    },
+    "phases": [
+      {
+        "id": "canvas",
+        "name": "Phase 1 · Core diagram → canvas",
+        "description": "Restructure each core component diagram into a central diagram with peripherals (prompt v1). Three samples per repository."
+      },
+      {
+        "id": "expand",
+        "name": "Phase 2 · Expand canvas",
+        "description": "Apply the recursive prompt (v2) to each repository's first Phase 1 canvas; the model chooses which diagrams to expand. Three samples per input canvas."
+      }
+    ],
+    "cases": [
+      {
+        "id": "mapping",
+        "name": "Mapping · core → canvas seed",
+        "agentContextId": "saved-agent-context-cb132185-b1cc-4e45-94b8-4fa9a457c75a",
+        "contentHash": "c8c45f05d3c6c1ee2c04bd67e562652eb5c876357481caf324cf0f83fc880ea6"
+      },
+      {
+        "id": "pi",
+        "name": "Pi · core → canvas seed",
+        "agentContextId": "saved-agent-context-9727bbfb-9336-4405-a60b-977291ebd2bd",
+        "contentHash": "b59617f2e3f378e525b3683c1e9d6416577eae14c53d3f16aaf152b740506b0e"
+      },
+      {
+        "id": "opencode",
+        "name": "OpenCode · core → canvas seed",
+        "agentContextId": "saved-agent-context-73c58ea6-1d34-49b5-b2a2-d0ef709ba559",
+        "contentHash": "d8b7018ae8804532ef08d895844514d91456f99eca159faa0c5805e5efbe43d6"
+      },
+      {
+        "id": "ghostty",
+        "name": "Ghostty · core → canvas seed",
+        "agentContextId": "saved-agent-context-13a17154-1868-4cfb-9f01-ed80ffc6437c",
+        "contentHash": "01e7e4d0029ade1d3e381029ea7b4337068e41ddc06e0fdd14dd1af5a858760d"
+      },
+      {
+        "id": "mapping-canvas",
+        "name": "Mapping · Phase 1 canvas",
+        "agentContextId": "saved-agent-context-1a8abc4f-9ad7-4bbb-acf2-c100a9f7521d",
+        "contentHash": "ba3a9e7ede2783372c463d743fa68b6d8c2f6a37a5129e9dc0e0374243502af4"
+      },
+      {
+        "id": "pi-canvas",
+        "name": "Pi · Phase 1 canvas",
+        "agentContextId": "saved-agent-context-34c5044f-8359-49c4-b811-fa1be729a946",
+        "contentHash": "3dc92c096e6dea2567c4f1f7f8b7cd5d72674cfee3d50de895dd81580c1d623d"
+      },
+      {
+        "id": "opencode-canvas",
+        "name": "OpenCode · Phase 1 canvas",
+        "agentContextId": "saved-agent-context-83ef4ef3-65bc-4535-ba8c-af42034ecca8",
+        "contentHash": "e8121ce1197e4b7a688ee9dbcb9bc68a98b587375245ca87fc0ab1ff7566b480"
+      },
+      {
+        "id": "ghostty-canvas",
+        "name": "Ghostty · Phase 1 canvas",
+        "agentContextId": "saved-agent-context-9066b6b2-98d9-4aab-9e3a-a4db3cdcc79a",
+        "contentHash": "bad325f5f39ebc4e20fb02e275b3ea132d8f35e0793b90d4518139010e48b6db"
+      }
+    ],
+    "conditions": [
+      {
+        "id": "vertical-framing",
+        "name": "Vertical restructure",
+        "description": "Horizontal/vertical framing with a podcast-player before/after example; seed diagram plus pinned checkout."
+      },
+      {
+        "id": "recursive",
+        "name": "Recursive expansion",
+        "description": "Prompt v2: whole canvas in, complete canvas out; soft preference for expanding along the vertical dimension."
+      }
+    ],
+    "samples": [
+      {
+        "id": "mapping",
+        "phaseId": "canvas",
+        "caseId": "mapping",
+        "conditionId": "vertical-framing",
+        "number": 1,
+        "attempt": 1,
+        "outputs": [
+          {
+            "stageId": "split",
+            "runId": "06d4f008-e3c4-4f8d-ac2d-e076490838af",
+            "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative"
+          }
+        ]
+      },
+      {
+        "id": "pi",
+        "phaseId": "canvas",
+        "caseId": "pi",
+        "conditionId": "vertical-framing",
+        "number": 1,
+        "attempt": 1,
+        "outputs": [
+          {
+            "stageId": "split",
+            "runId": "bcd72f13-5770-4244-9cd7-68810e37dd2b",
+            "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative"
+          }
+        ]
+      },
+      {
+        "id": "opencode",
+        "phaseId": "canvas",
+        "caseId": "opencode",
+        "conditionId": "vertical-framing",
+        "number": 1,
+        "attempt": 1,
+        "outputs": [
+          {
+            "stageId": "split",
+            "runId": "4d1d388a-78a5-4198-9c56-9fa04b4fbddf",
+            "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative"
+          }
+        ]
+      },
+      {
+        "id": "ghostty",
+        "phaseId": "canvas",
+        "caseId": "ghostty",
+        "conditionId": "vertical-framing",
+        "number": 1,
+        "attempt": 1,
+        "outputs": [
+          {
+            "stageId": "split",
+            "runId": "9f582f37-2a7a-4159-9b8e-5b6b30a20365",
+            "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative"
+          }
+        ]
+      },
+      {
+        "id": "mapping-2",
+        "caseId": "mapping",
+        "conditionId": "vertical-framing",
+        "number": 2,
+        "attempt": 1,
+        "outputs": [],
+        "phaseId": "canvas"
+      },
+      {
+        "id": "mapping-3",
+        "caseId": "mapping",
+        "conditionId": "vertical-framing",
+        "number": 3,
+        "attempt": 1,
+        "outputs": [],
+        "phaseId": "canvas"
+      },
+      {
+        "id": "pi-2",
+        "caseId": "pi",
+        "conditionId": "vertical-framing",
+        "number": 2,
+        "attempt": 1,
+        "outputs": [],
+        "phaseId": "canvas"
+      },
+      {
+        "id": "pi-3",
+        "caseId": "pi",
+        "conditionId": "vertical-framing",
+        "number": 3,
+        "attempt": 1,
+        "outputs": [],
+        "phaseId": "canvas"
+      },
+      {
+        "id": "opencode-2",
+        "caseId": "opencode",
+        "conditionId": "vertical-framing",
+        "number": 2,
+        "attempt": 1,
+        "outputs": [],
+        "phaseId": "canvas"
+      },
+      {
+        "id": "opencode-3",
+        "caseId": "opencode",
+        "conditionId": "vertical-framing",
+        "number": 3,
+        "attempt": 1,
+        "outputs": [],
+        "phaseId": "canvas"
+      },
+      {
+        "id": "ghostty-2",
+        "caseId": "ghostty",
+        "conditionId": "vertical-framing",
+        "number": 2,
+        "attempt": 1,
+        "outputs": [],
+        "phaseId": "canvas"
+      },
+      {
+        "id": "ghostty-3",
+        "caseId": "ghostty",
+        "conditionId": "vertical-framing",
+        "number": 3,
+        "attempt": 1,
+        "outputs": [],
+        "phaseId": "canvas"
+      },
+      {
+        "id": "mapping-expand-1",
+        "caseId": "mapping-canvas",
+        "conditionId": "recursive",
+        "number": 1,
+        "attempt": 1,
+        "outputs": [],
+        "phaseId": "expand"
+      },
+      {
+        "id": "mapping-expand-2",
+        "caseId": "mapping-canvas",
+        "conditionId": "recursive",
+        "number": 2,
+        "attempt": 1,
+        "outputs": [],
+        "phaseId": "expand"
+      },
+      {
+        "id": "mapping-expand-3",
+        "caseId": "mapping-canvas",
+        "conditionId": "recursive",
+        "number": 3,
+        "attempt": 1,
+        "outputs": [],
+        "phaseId": "expand"
+      },
+      {
+        "id": "pi-expand-1",
+        "caseId": "pi-canvas",
+        "conditionId": "recursive",
+        "number": 1,
+        "attempt": 1,
+        "outputs": [],
+        "phaseId": "expand"
+      },
+      {
+        "id": "pi-expand-2",
+        "caseId": "pi-canvas",
+        "conditionId": "recursive",
+        "number": 2,
+        "attempt": 1,
+        "outputs": [],
+        "phaseId": "expand"
+      },
+      {
+        "id": "pi-expand-3",
+        "caseId": "pi-canvas",
+        "conditionId": "recursive",
+        "number": 3,
+        "attempt": 1,
+        "outputs": [],
+        "phaseId": "expand"
+      },
+      {
+        "id": "opencode-expand-1",
+        "caseId": "opencode-canvas",
+        "conditionId": "recursive",
+        "number": 1,
+        "attempt": 1,
+        "outputs": [],
+        "phaseId": "expand"
+      },
+      {
+        "id": "opencode-expand-2",
+        "caseId": "opencode-canvas",
+        "conditionId": "recursive",
+        "number": 2,
+        "attempt": 1,
+        "outputs": [],
+        "phaseId": "expand"
+      },
+      {
+        "id": "opencode-expand-3",
+        "caseId": "opencode-canvas",
+        "conditionId": "recursive",
+        "number": 3,
+        "attempt": 1,
+        "outputs": [],
+        "phaseId": "expand"
+      },
+      {
+        "id": "ghostty-expand-1",
+        "caseId": "ghostty-canvas",
+        "conditionId": "recursive",
+        "number": 1,
+        "attempt": 1,
+        "outputs": [],
+        "phaseId": "expand"
+      },
+      {
+        "id": "ghostty-expand-2",
+        "caseId": "ghostty-canvas",
+        "conditionId": "recursive",
+        "number": 2,
+        "attempt": 1,
+        "outputs": [],
+        "phaseId": "expand"
+      },
+      {
+        "id": "ghostty-expand-3",
+        "caseId": "ghostty-canvas",
+        "conditionId": "recursive",
+        "number": 3,
+        "attempt": 1,
+        "outputs": [],
+        "phaseId": "expand"
+      }
+    ],
+    "comparisons": [],
+    "plannedRuns": [
+      {
+        "request": {
+          "requestId": "06d4f008-e3c4-4f8d-ac2d-e076490838af",
+          "workflow": "alternatives",
+          "prompts": [
+            {
+              "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+              "version": 1
+            }
+          ],
+          "inputs": {
+            "context": {
+              "agentContextId": "saved-agent-context-cb132185-b1cc-4e45-94b8-4fa9a457c75a"
+            }
+          },
+          "passes": 1,
+          "model": "gpt-6-astra",
+          "effort": "high"
+        },
+        "outputs": [
+          {
+            "sampleId": "mapping",
+            "stageId": "split",
+            "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative"
+          }
+        ]
+      },
+      {
+        "request": {
+          "requestId": "bcd72f13-5770-4244-9cd7-68810e37dd2b",
+          "workflow": "alternatives",
+          "prompts": [
+            {
+              "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+              "version": 1
+            }
+          ],
+          "inputs": {
+            "context": {
+              "agentContextId": "saved-agent-context-9727bbfb-9336-4405-a60b-977291ebd2bd"
+            }
+          },
+          "passes": 1,
+          "model": "gpt-6-astra",
+          "effort": "high"
+        },
+        "outputs": [
+          {
+            "sampleId": "pi",
+            "stageId": "split",
+            "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative"
+          }
+        ]
+      },
+      {
+        "request": {
+          "requestId": "4d1d388a-78a5-4198-9c56-9fa04b4fbddf",
+          "workflow": "alternatives",
+          "prompts": [
+            {
+              "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+              "version": 1
+            }
+          ],
+          "inputs": {
+            "context": {
+              "agentContextId": "saved-agent-context-73c58ea6-1d34-49b5-b2a2-d0ef709ba559"
+            }
+          },
+          "passes": 1,
+          "model": "gpt-6-astra",
+          "effort": "high"
+        },
+        "outputs": [
+          {
+            "sampleId": "opencode",
+            "stageId": "split",
+            "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative"
+          }
+        ]
+      },
+      {
+        "request": {
+          "requestId": "9f582f37-2a7a-4159-9b8e-5b6b30a20365",
+          "workflow": "alternatives",
+          "prompts": [
+            {
+              "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+              "version": 1
+            }
+          ],
+          "inputs": {
+            "context": {
+              "agentContextId": "saved-agent-context-13a17154-1868-4cfb-9f01-ed80ffc6437c"
+            }
+          },
+          "passes": 1,
+          "model": "gpt-6-astra",
+          "effort": "high"
+        },
+        "outputs": [
+          {
+            "sampleId": "ghostty",
+            "stageId": "split",
+            "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative"
+          }
+        ]
+      },
+      {
+        "request": {
+          "requestId": "17c2b655-84ad-473d-9fa1-f4f3bed299ab",
+          "workflow": "alternatives",
+          "prompts": [
+            {
+              "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+              "version": 1
+            }
+          ],
+          "inputs": {
+            "context": {
+              "agentContextId": "saved-agent-context-cb132185-b1cc-4e45-94b8-4fa9a457c75a"
+            }
+          },
+          "passes": 2,
+          "model": "gpt-6-astra",
+          "effort": "high"
+        },
+        "outputs": [
+          {
+            "sampleId": "mapping-2",
+            "stageId": "split",
+            "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative"
+          },
+          {
+            "sampleId": "mapping-3",
+            "stageId": "split",
+            "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:2:alternative"
+          }
+        ]
+      },
+      {
+        "request": {
+          "requestId": "0807ddfc-08b4-41ff-9c2e-eeae17beca5b",
+          "workflow": "alternatives",
+          "prompts": [
+            {
+              "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+              "version": 1
+            }
+          ],
+          "inputs": {
+            "context": {
+              "agentContextId": "saved-agent-context-9727bbfb-9336-4405-a60b-977291ebd2bd"
+            }
+          },
+          "passes": 2,
+          "model": "gpt-6-astra",
+          "effort": "high"
+        },
+        "outputs": [
+          {
+            "sampleId": "pi-2",
+            "stageId": "split",
+            "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative"
+          },
+          {
+            "sampleId": "pi-3",
+            "stageId": "split",
+            "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:2:alternative"
+          }
+        ]
+      },
+      {
+        "request": {
+          "requestId": "b0f2d4d1-5ddc-452f-96ca-5cc5b17f0c3e",
+          "workflow": "alternatives",
+          "prompts": [
+            {
+              "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+              "version": 1
+            }
+          ],
+          "inputs": {
+            "context": {
+              "agentContextId": "saved-agent-context-73c58ea6-1d34-49b5-b2a2-d0ef709ba559"
+            }
+          },
+          "passes": 2,
+          "model": "gpt-6-astra",
+          "effort": "high"
+        },
+        "outputs": [
+          {
+            "sampleId": "opencode-2",
+            "stageId": "split",
+            "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative"
+          },
+          {
+            "sampleId": "opencode-3",
+            "stageId": "split",
+            "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:2:alternative"
+          }
+        ]
+      },
+      {
+        "request": {
+          "requestId": "ea82f24b-5842-4b75-a9fe-7e139b7b54b0",
+          "workflow": "alternatives",
+          "prompts": [
+            {
+              "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+              "version": 1
+            }
+          ],
+          "inputs": {
+            "context": {
+              "agentContextId": "saved-agent-context-13a17154-1868-4cfb-9f01-ed80ffc6437c"
+            }
+          },
+          "passes": 2,
+          "model": "gpt-6-astra",
+          "effort": "high"
+        },
+        "outputs": [
+          {
+            "sampleId": "ghostty-2",
+            "stageId": "split",
+            "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative"
+          },
+          {
+            "sampleId": "ghostty-3",
+            "stageId": "split",
+            "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:2:alternative"
+          }
+        ]
+      },
+      {
+        "request": {
+          "requestId": "dec52c07-c782-4ff6-ba8f-90bf53083bfb",
+          "workflow": "alternatives",
+          "prompts": [
+            {
+              "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+              "version": 2
+            }
+          ],
+          "inputs": {
+            "context": {
+              "agentContextId": "saved-agent-context-1a8abc4f-9ad7-4bbb-acf2-c100a9f7521d"
+            }
+          },
+          "passes": 3,
+          "model": "gpt-6-astra",
+          "effort": "high"
+        },
+        "outputs": [
+          {
+            "sampleId": "mapping-expand-1",
+            "stageId": "expand",
+            "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative"
+          },
+          {
+            "sampleId": "mapping-expand-2",
+            "stageId": "expand",
+            "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:2:alternative"
+          },
+          {
+            "sampleId": "mapping-expand-3",
+            "stageId": "expand",
+            "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:3:alternative"
+          }
+        ]
+      },
+      {
+        "request": {
+          "requestId": "f2b40c59-53b7-4615-8d31-94f5ad33bd49",
+          "workflow": "alternatives",
+          "prompts": [
+            {
+              "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+              "version": 2
+            }
+          ],
+          "inputs": {
+            "context": {
+              "agentContextId": "saved-agent-context-34c5044f-8359-49c4-b811-fa1be729a946"
+            }
+          },
+          "passes": 3,
+          "model": "gpt-6-astra",
+          "effort": "high"
+        },
+        "outputs": [
+          {
+            "sampleId": "pi-expand-1",
+            "stageId": "expand",
+            "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative"
+          },
+          {
+            "sampleId": "pi-expand-2",
+            "stageId": "expand",
+            "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:2:alternative"
+          },
+          {
+            "sampleId": "pi-expand-3",
+            "stageId": "expand",
+            "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:3:alternative"
+          }
+        ]
+      },
+      {
+        "request": {
+          "requestId": "a90d36a3-4e85-4ddf-a4c3-994c3571ca51",
+          "workflow": "alternatives",
+          "prompts": [
+            {
+              "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+              "version": 2
+            }
+          ],
+          "inputs": {
+            "context": {
+              "agentContextId": "saved-agent-context-83ef4ef3-65bc-4535-ba8c-af42034ecca8"
+            }
+          },
+          "passes": 3,
+          "model": "gpt-6-astra",
+          "effort": "high"
+        },
+        "outputs": [
+          {
+            "sampleId": "opencode-expand-1",
+            "stageId": "expand",
+            "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative"
+          },
+          {
+            "sampleId": "opencode-expand-2",
+            "stageId": "expand",
+            "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:2:alternative"
+          },
+          {
+            "sampleId": "opencode-expand-3",
+            "stageId": "expand",
+            "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:3:alternative"
+          }
+        ]
+      },
+      {
+        "request": {
+          "requestId": "55bf4eb7-f1e9-4f36-aab2-ead60da799d4",
+          "workflow": "alternatives",
+          "prompts": [
+            {
+              "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+              "version": 2
+            }
+          ],
+          "inputs": {
+            "context": {
+              "agentContextId": "saved-agent-context-9066b6b2-98d9-4aab-9e3a-a4db3cdcc79a"
+            }
+          },
+          "passes": 3,
+          "model": "gpt-6-astra",
+          "effort": "high"
+        },
+        "outputs": [
+          {
+            "sampleId": "ghostty-expand-1",
+            "stageId": "expand",
+            "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative"
+          },
+          {
+            "sampleId": "ghostty-expand-2",
+            "stageId": "expand",
+            "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:2:alternative"
+          },
+          {
+            "sampleId": "ghostty-expand-3",
+            "stageId": "expand",
+            "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:3:alternative"
+          }
+        ]
+      }
+    ]
+  }
+}

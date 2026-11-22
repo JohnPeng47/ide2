@@ -1,0 +1,19 @@
+{
+  "id": "child-6",
+  "name": "teardown",
+  "assignment": "Map nodes n93-n101 (teardown and lifetime) to source ranges. Return partial JSON mappings only for assigned nodes, notes.",
+  "model": "gpt-6-sol",
+  "effort": "medium",
+  "status": "generating",
+  "queuedAt": "2026-11-19T04:19:17.161Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-19T04:20:09.487Z",
+  "sessionId": "01a1f208-8e92-7cd1-a4e3-b290558cb364",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-jwcn3zwe-agent-repository-AiLY88-checkout--/2026-11-19T04-20-09-490Z_01a1f208-8e92-7cd1-a4e3-b290558cb364.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase3-jwcn3zwe/agent-repository-AiLY88/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

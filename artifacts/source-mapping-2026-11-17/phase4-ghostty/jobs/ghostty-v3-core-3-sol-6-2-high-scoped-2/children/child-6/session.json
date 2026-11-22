@@ -1,0 +1,19 @@
+{
+  "id": "child-6",
+  "name": "geometry-exit",
+  "assignment": "Map d1 n78–n95 from diagram; private scratch mktemp -d if needed. Return compact `node scopeCodes | path:start-end:roleCodes ...` plus notes after line-number verification. Codes scope s structure,e entity,b behavior,r relationship,g guarantee,u subsystem, role d declaration,i implementation,v use. Can use explicit `inherit nX ...` for parent coverage. Do not touch checkout.",
+  "model": "gpt-6.2-sol",
+  "effort": "high",
+  "status": "generating",
+  "queuedAt": "2026-11-22T04:07:34.517Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-22T04:18:31.717Z",
+  "sessionId": "01a2017a-24b1-75d8-a66c-7bfd98cdde0d",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-sicjwt9e-agent-repository-XwfxvL-checkout--/2026-11-22T04-18-31-729Z_01a2017a-24b1-75d8-a66c-7bfd98cdde0d.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase4-sicjwt9e/agent-repository-XwfxvL/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

@@ -1,0 +1,66 @@
+[
+  {
+    "agentContextId": "saved-agent-context-3bbe4652-9c8d-4510-be50-2aa9a4c93fcf",
+    "name": "Mapping · P2 sample 2",
+    "description": "Pinned p2 sample 2 from run 7b6995d1-7ee3-4e92-9c27-2b43984f7100 at checkpoint canvas-revision-ff223af2-8087-46d4-97d0-325f0270d572.",
+    "createdAt": "2026-11-18T17:30:32.624Z",
+    "group": "Breadth-first core to canvas",
+    "contentHash": "4eff929f1b067358f5509e9fe804d615eeb7e78af64ce0fef9cd4a78b1065b9d",
+    "messageCount": 1,
+    "source": {
+      "experimentId": "d6db3d5a-0042-4bc3-b633-c1ffc3027efd",
+      "runId": "7b6995d1-7ee3-4e92-9c27-2b43984f7100",
+      "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative",
+      "checkpointId": "canvas-revision-ff223af2-8087-46d4-97d0-325f0270d572",
+      "label": "Mapping · P2 sample 2"
+    }
+  },
+  {
+    "agentContextId": "saved-agent-context-ce7919f2-36fa-4406-b804-f22246f4da4d",
+    "name": "Pi · P2 sample 2",
+    "description": "Pinned p2 sample 2 from run d8edd57f-2040-43ba-8020-bbdf0b4c4ffd at checkpoint canvas-revision-b331a475-259b-4566-87fa-4a5336e7e545.",
+    "createdAt": "2026-11-18T17:30:32.643Z",
+    "group": "Breadth-first core to canvas",
+    "contentHash": "b604501ab6c2b574fed9d61f776c982c7c6e932c96a572b68f4c23005e8b11e6",
+    "messageCount": 1,
+    "source": {
+      "experimentId": "d6db3d5a-0042-4bc3-b633-c1ffc3027efd",
+      "runId": "d8edd57f-2040-43ba-8020-bbdf0b4c4ffd",
+      "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative",
+      "checkpointId": "canvas-revision-b331a475-259b-4566-87fa-4a5336e7e545",
+      "label": "Pi · P2 sample 2"
+    }
+  },
+  {
+    "agentContextId": "saved-agent-context-3b0bd673-8cee-40ce-97ca-4e43cb603fda",
+    "name": "OpenCode · P2 sample 3",
+    "description": "Pinned p2 sample 3 from run a119ab93-f28e-4db9-8449-4cc0784aff80 at checkpoint canvas-revision-d2f4c55d-0f6d-410c-8b22-c4be7704e44a.",
+    "createdAt": "2026-11-18T17:30:32.635Z",
+    "group": "Breadth-first core to canvas",
+    "contentHash": "e4d60e8c1b0394e187967244e079fbebdeaed39fd92e4e0bc7c1bc7b3460cf2b",
+    "messageCount": 1,
+    "source": {
+      "experimentId": "d6db3d5a-0042-4bc3-b633-c1ffc3027efd",
+      "runId": "a119ab93-f28e-4db9-8449-4cc0784aff80",
+      "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative",
+      "checkpointId": "canvas-revision-d2f4c55d-0f6d-410c-8b22-c4be7704e44a",
+      "label": "OpenCode · P2 sample 3"
+    }
+  },
+  {
+    "agentContextId": "saved-agent-context-63b40188-8c5a-40e6-9d44-b260d6de5a2a",
+    "name": "Ghostty · P2 sample 2",
+    "description": "Pinned p2 sample 2 from run b6ff535e-6a4f-454d-aa77-91bb5ae80e3f at checkpoint canvas-revision-1d877332-ec25-4fad-8d94-3560ebe8f1f8.",
+    "createdAt": "2026-11-18T17:30:32.640Z",
+    "group": "Breadth-first core to canvas",
+    "contentHash": "0a84f8d2b93c408173df0b1c05f86d6f348b2236207952dc42441aa1000a54c3",
+    "messageCount": 1,
+    "source": {
+      "experimentId": "d6db3d5a-0042-4bc3-b633-c1ffc3027efd",
+      "runId": "b6ff535e-6a4f-454d-aa77-91bb5ae80e3f",
+      "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative",
+      "checkpointId": "canvas-revision-1d877332-ec25-4fad-8d94-3560ebe8f1f8",
+      "label": "Ghostty · P2 sample 2"
+    }
+  }
+]

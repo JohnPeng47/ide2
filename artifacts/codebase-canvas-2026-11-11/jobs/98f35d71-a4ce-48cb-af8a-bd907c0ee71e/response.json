@@ -1,0 +1,149 @@
+{
+  "output": {
+    "explanation": "The central tree is reduced from 151 lines / 10,947 characters to 104 lines / 7,542 characters: 31.1% smaller by both measures. Six peripherals expand turn admission, edit preparation, runtime ownership, event delivery, candidate execution and isolated canvas commands. Modular structure retains component boundaries and dependencies; calls and ownership explain execution and lifetimes. Data dependencies describe required inputs across these boundaries, rather than another organizational hierarchy. Trees show selected paths through those relationships; edges attach to specific concept lines. Positions use measured text bounds with gaps.\n\nSource-grounded corrections: MCP HTTP calls enter callBoundTool directly through agentChatRoutes, not through receive as the seed's nesting implied. GenerationCanvasBridge rejects unknown IDs with the generation- prefix; remove only deletes a context, so there is no general removed-ID registry. AgentChatService.dispose marks conversations interrupted and disposes the connection; it does not call the interrupt operation or await persistence. reloadTools requires no running/starting turn, rather than strictly idle status. Fork boundary arguments are conditional on a captured turnId.\n\nAdditional details come from the pinned sources: startTurn retains accepted request IDs after failures and does not compare retry arguments; ChatDiagramTools has separate 500-entry preparation caches and enforces single-document batches; publicGeneration removes history but leaves inputHistory; generation reconciliation can recover a source through stable workspace identity; bridge receipts allow persistence retries without reapplying mutations. Sources: agentChatService.ts (turns, generations, interactions and shutdown), chatDiagramTools.ts (preparation and caches), generationCanvasBridge.ts (dispatch and receipts), codexConnection.ts and chatStore.ts (resource lifetimes), agentChatRoutes.ts (HTTP/SSE), and ports.ts (boundaries), all supplied in context.json.\n\nUncertainty: imported reducer, controller, MCP binding and downstream diagram-service implementations are not supplied. Their internals and end-to-end delivery guarantees are therefore not inferred. These diagrams describe the pinned implementation, not observed runtime behavior.",
+    "diagrams": [
+      {
+        "id": "central",
+        "ascii": "Agent Chat Lifecycle\n|-- [M] Modular structure: conversation orchestration behind explicit ports\n|   |-- HTTP / SSE boundary -> AgentChatService\n|   |   |-- Exposes sessions, turns, canvas reads, tools, generations and events\n|   |   |-- Bound tool endpoint -> token lookup + active-turn validation\n|   |   `-- Public session/event projections hide toolDefinitions,\n|   |       generationRequests and generation.history\n|   |-- AgentChatService: public lifecycle operations; private coordination\n|   |   |-- Internals: thread/session indexes, pending RPC interactions,\n|   |   |   turn-start guards, generation coordination and delta buffers\n|   |   |-- CodexConnection -> StdioCodexConnection -> external app-server\n|   |   |-- ChatStore -> FileChatStore -> persisted session records\n|   |   |-- ChatCanvasReader -> short context for a specified canvas document\n|   |   |-- ChatMcpBinding -> configuration, token lookup, bind and clear\n|   |   |-- ChatTools -> ChatDiagramTools -> AgentDiagrammingSessionService\n|   |   `-- GenerationCanvasBridge + saved AgentContext reader\n|   |       -> candidate execution and captured background evidence\n|   |-- ChatDiagramTools: exposes definitions + call(name, input, session)\n|   |   |-- Adapts diagram edits, views, highlights, projection and context tools\n|   |   |-- Keeps target resolution, attachment reuse and retry caches internal\n|   |   `-- gen-alternatives dispatch is intercepted by AgentChatService\n|   `-- GenerationCanvasBridge: implements the canvas session contract\n|       |-- Known generation ID -> its isolated MappingDocumentController\n|       `-- Missing generation-* ID -> reject; other unknown IDs -> live port\n|-- [C] Calls and callbacks: opening a conversation and running a turn\n|   |-- create(settings) -> connection.request(thread/start)\n|   |   `-- Save session + tool-definition snapshot -> index thread -> return\n|   |-- resume(threadId)\n|   |   |-- Already indexed -> get session; concurrent import -> share promise\n|   |   `-- thread/resume -> reject externally active thread -> import transcript\n|   |       `-- Preserve native prompt/tools; canvas tools initially disabled\n|   |-- send(...) or readCanvas(...) -> startTurn(...)\n|   |   |-- Known requestId -> return without issuing another turn\n|   |   |-- Running / starting / reloading -> conflict\n|   |   `-- Mark running -> optionally read canvas -> resume thread if needed\n|   |       `-- Capture canvas + references; bind MCP target and access mode\n|   |           `-- Record requestId and save session BEFORE turn/start RPC\n|   |               |-- send -> text + references; readCanvas -> toolOutput\n|   |               `-- Late RPC reply sets turnId only while still running\n|   |-- App-server message -> receive(...) -> locate session by threadId\n|   |   |-- Native tool request -> validate active turn -> dispatch cloned context\n|   |   |-- Question / command approval / file approval / permission request\n|   |   |   `-- Retain wire request -> emit pending interaction\n|   |   |       `-- answer -> validate -> respond -> record interaction -> persist\n|   |   |-- Text delta -> merge adjacent matching deltas -> buffer\n|   |   |-- Item / plan / usage update -> emit corresponding session update\n|   |   `-- turn/completed -> settle open items and pending interactions\n|   |       |-- completed -> idle; interrupted -> interrupted; otherwise failed\n|   |       `-- Persist terminal state; generation child -> finishGeneration\n|   |-- MCP HTTP call -> binding + inventory + active-session checks -> dispatch\n|   |-- emit -> reduceChatEvent -> retain session -> listeners -> public SSE\n|   |-- interrupt(parent) -> cancel active generation children\n|   |   `-- Await pending turn start -> turn/interrupt when a turn ID exists\n|   `-- reloadTools, with no running/starting turn -> resume + MCP reload\n|       `-- Verify inventory -> inject guidance -> save refreshed definitions\n|-- [O] Responsibility for state, storage, resources and lifetimes\n|   |-- AgentChatService owns conversation state and coordination\n|   |   |-- Retains transcript, settings, accepted request IDs and generation data\n|   |   |-- Holds transient listeners, pending wire requests and in-flight guards\n|   |   |-- Startup -> load saved sessions; clear pending/activity\n|   |   |   `-- In-progress items/turns become interrupted; active generations fail\n|   |   |-- Connection loss -> clear resume state, requests and MCP bindings\n|   |   |   `-- Flush deltas; settle interactions; fail active sessions; persist\n|   |   `-- dispose -> mark active chats interrupted, fail generations, persist\n|   |       `-- Flush deltas -> clear bindings -> unsubscribe -> dispose connection\n|   |-- StdioCodexConnection owns child process and outstanding RPCs\n|   |   |-- Shared startup -> spawn app-server -> initialize\n|   |   |-- Pending RPC -> response or 30-second timeout\n|   |   `-- Process/input failure -> reject pending RPCs and notify subscribers\n|   |-- FileChatStore owns serialized disk writes\n|   |   `-- Capture session JSON -> queued write to .tmp with mode 0600\n|   |       `-- Rename to session file; failed write does not poison later queue\n|   |-- ChatDiagramTools owns process-local retry and edit-run associations\n|   |   |-- Session + request ID -> validated preparation; conflicts reject\n|   |   `-- Canvas -> attachment; edit-run ID -> owning conversation\n|   |-- Each SSE connection owns a listener and heartbeat timer\n|   |   `-- Response close -> clear 15-second heartbeat and unsubscribe\n|   `-- Each generation candidate owns an isolated execution lifetime\n|       |-- Validate access, tools, source and prior user item; no nested generation\n|       |-- Save queued children + request receipt -> capture history -> launch\n|       |-- Saved context -> new thread; otherwise fork parent at turn boundary\n|       |-- Clear inherited goal -> isolated controller + MCP binding -> one turn\n|       |-- Bridge serializes commands, caches receipts and persists history\n|       `-- Settle child -> save result -> sync source view -> release execution\n`-- [D] Data dependency: what results require, across the organization above\n    |-- Turn input depends on captured data [T]\n    |   |-- User text + selected reference snapshots, OR short canvas tool output\n    |   `-- Canvas target + reference list are cloned into the session at turn start\n    |       `-- Tool execution uses [T], independent of later browser selection\n    |-- Prepared diagram edit depends on\n    |   |-- Tool arguments + [T] -> target document, diagram and selected nodes\n    |   |-- Current snapshot -> document version + diagram revision + structure\n    |   |   `-- Stale reference/revision or incomplete subtree -> reject\n    |   `-- Resolved attachment + validated operations + expected version\n    |       `-- submitDirect -> edit-run result owned by this conversation\n    |-- Candidate result depends on shared captured history [H]\n    |   |-- Source start/replay -> inputHistory -> separate controller contexts\n    |   |-- Shared task + candidate prompt + model/effort/tool definitions\n    |   |-- Saved AgentContext snapshot OR fork + trigger + source references\n    |   `-- [H] + candidate mutations -> exported result history\n    |       `-- Saved child record -> finished candidate view, including retry path\n    |-- Visible transcript depends on prior session + ordered received updates\n    |   `-- reduceChatEvent -> current session -> redacted snapshot/event stream\n    `-- Candidate usage -> totals minus retained baseline, clamped to zero",
+        "position": {
+          "column": 110,
+          "row": 0
+        }
+      },
+      {
+        "id": "turns",
+        "ascii": "Turn admission and tool routing [C/O/D]\n|-- startTurn(id, data)\n|   |-- Existing requestId -> return; arguments are not compared\n|   |-- Running, starting or reloading -> conflict\n|   |-- Mark running -> optional canvas read -> optional resume\n|   |-- Clone canvas + references; bind eligible chat to MCP\n|   |-- Append requestId -> await store.save -> turn/start\n|   |   `-- Failure clears binding and marks failed\n|   |       `-- Accepted requestId is not rolled back\n|   `-- Reply writes turnId only if status remains running\n|-- Native item/tool/call -> callTool\n|   |-- Require tools, canvasTools, known name and no namespace\n|   |-- Require running; check turnId when session has one\n|   `-- Clone settings/context -> dispatch -> respond(wireId)\n|-- HTTP tools/:name -> callBoundTool\n|   |-- callId: nonempty string, at most 200 characters\n|   |-- Binding token -> chat; require running + canvasTools\n|   |-- Reject during reload; require name in tool inventory\n|   `-- Clone settings/context -> dispatch -> HTTP result\n|-- dispatchTool\n|   |-- gen-alternatives -> service.genAlternatives\n|   `-- Other name -> ChatTools.call\n`-- Pending interaction -> answer\n    |-- Require pending entry AND retained wire request\n    |-- Input: every question needs a nonempty answer array\n    |-- Permissions: accept non-null grants or deny with {}\n    |   `-- Response scope is turn\n    `-- Respond -> remove pending -> record -> persist\n        `-- Secret answers are masked in interaction text",
+        "position": {
+          "column": 0,
+          "row": 0
+        }
+      },
+      {
+        "id": "tools",
+        "ascii": "Diagram preparation and retries [M/C/O/D]\n|-- ChatDiagramTools exposes definitions + call\n|   `-- Private caches retain preparations, attachments and run owners\n|-- edit/create/extend -> reject read-only -> parse strict schema\n|   |-- Batch contains 1..20 operations\n|   |-- Each target: reference XOR nodeId\n|   |-- Reference canvas wins over captured turn canvas\n|   |   `-- Every operation must target one canvas document\n|   |-- Reuse attachment -> resolve aliases -> obtain one snapshot\n|   |-- Require matching base revision and reference diagram ID\n|   |-- Node selection -> roots -> full descendant membership\n|   |   `-- Incomplete subtree selection rejects before submission\n|   `-- Prepared operations + expectedVersion + new backend requestId\n|       `-- submitDirect -> retain runId -> owning chat\n|-- Retry identity: chat ID + caller requestId\n|   |-- Signature covers tool name and parsed edit input\n|   |-- Same signature -> reuse prepared input, submitDirect again\n|   |-- Changed signature -> REQUEST_ID_CONFLICT\n|   `-- Preparation rejection evicts cache entry\n|-- Projection retry identity: chat ID + transport toolCallId\n|   `-- Missing toolCallId -> random ID; prepared payload is reused\n|-- Edit, highlight, context, view and projection request caches\n|   `-- Each rejects new entries at 500; no eviction on success shown\n|-- Attachment cache: canvas target -> attachment promise\n|   `-- Failure removes entry; successful attachment is reused\n`-- Edit status/cancel -> require run owner == current chat\n    `-- Restart loses ownership map; prior runs are rejected",
+        "position": {
+          "column": 0,
+          "row": 38
+        }
+      },
+      {
+        "id": "runtime",
+        "ascii": "Transport and durable state [C/O]\n|-- StdioCodexConnection.request\n|   |-- Require AI enabled -> share startup promise\n|   |-- Spawn app-server with stdio pipes and configured cwd\n|   |-- initialize -> initialized notification -> requested RPC\n|   `-- Drain stderr; do not forward it to the browser\n|-- RPC ID -> pending promise + 30-second timer\n|   |-- Numeric response ID -> clear timer -> resolve/reject\n|   |-- Timeout -> remove pending entry -> reject caller\n|   |   `-- No cancellation message is sent by timeout handler\n|   `-- Invalid JSON stdout lines are ignored\n|-- Child error/exit or stdin error\n|   `-- Clear child/startup -> reject pending -> notify subscribers\n|-- dispose -> child.kill()\n|   `-- Exit handler later resets startup; no disposed flag\n|-- FileChatStore\n|   |-- list: read matching JSON files under root/agent-chat\n|   `-- save: stringify now -> shared write queue\n|       |-- Write .tmp with mode 0600 -> rename to session file\n|       `-- Caller sees failure; queue catches it for later saves\n`-- AgentChatService startup and shutdown\n    |-- Load: clear pending/activity; interrupt in-progress state\n    |-- Running generation metadata becomes failed\n    |-- Startup saves normalized records only for migration/generation\n    `-- dispose marks state, invokes persist, then kills connection\n        `-- persist is asynchronous; dispose does not await disk writes",
+        "position": {
+          "column": 0,
+          "row": 76
+        }
+      },
+      {
+        "id": "events",
+        "ascii": "Event reduction and HTTP delivery [C/O/D]\n|-- Text delta -> queueDelta\n|   |-- Adjacent same item ID + kind -> concatenate text\n|   |-- 32 ms timer -> flush batch\n|   |-- Burst check uses last/event text length > 64,000\n|   `-- get() or non-delta receive also flushes\n|-- emit -> reduceChatEvent -> retained session -> listeners\n|-- subscribe -> initial snapshot -> live events\n|   |-- Public session removes toolDefinitions + generationRequests\n|   |-- publicGeneration removes history only\n|   |   `-- inputHistory remains in the returned generation object\n|   |-- Generation state patches filtered; batches recurse\n|   `-- Tool text/diff > 1000 chars -> preview, unless in progress\n|       |-- Text: last 3 lines, each at most 240 characters\n|       |-- Diffs: first 3 lines, each at most 240 characters\n|       `-- In-progress tools stay full; item endpoint returns details\n|-- Multi-item snapshot -> empty partial snapshot + one item per part\n|   `-- Last part has final=true\n|-- SSE uses identity encoding and disables buffering/cache\n|   |-- Backpressure: allow snapshot bytes plus 2 MiB live backlog\n|   |   `-- Above allowance -> destroy stream; drain resets allowance\n|   `-- Close -> clear 15-second heartbeat -> unsubscribe listener\n`-- serverRequest/resolved notification\n    `-- Match pending by wire ID -> remove -> record resolved item",
+        "position": {
+          "column": 220,
+          "row": 0
+        }
+      },
+      {
+        "id": "gen",
+        "ascii": "Candidate execution and reconciliation [C/O/D]\n|-- genAlternatives -> durable parent receipt + queued child records\n|   |-- Same requestId + signature -> return prior receipt\n|   |-- Changed signature -> conflict; prior error is rethrown\n|   `-- Source start captures history; each child retains inputHistory\n|-- launchGeneration\n|   |-- Saved context -> thread/start + inject resolvedSnapshot/snapshot\n|   |-- Otherwise -> thread/fork\n|   |   |-- Parent running with turnId -> beforeTurnId\n|   |   |-- Other captured turnId -> lastTurnId\n|   |   `-- No turnId -> neither boundary argument is supplied\n|   |-- Save thread mapping -> clear inherited goal\n|   |-- Bridge.add(generation-<chatId>) -> separate controller context\n|   `-- Sync generating metadata -> start one bound turn\n|-- finishGeneration shares in-flight settlement\n|   |-- Cancelled metadata or interrupted chat -> cancelled\n|   |-- Idle chat -> finished; other state -> failed\n|   |-- Export controller history OR use retained child history\n|   |-- Save terminal child -> sync source candidate view\n|   |   `-- Include result history only when finished\n|   |-- Sync failure -> retain result and report pending save\n|   `-- Finally clear binding, remove controller, unsubscribe thread\n|-- Source recovery and retry\n|   |-- Missing source instance + stableWorkspaceId\n|   |   `-- Sync requires exactly one matching workspace/document\n|   |-- generations(source) retries unsynced terminal children\n|   `-- rerunAlternatives reuses run input history and child settings\n|       `-- Uses same child executor; source canvas must be available\n|-- Token accounting for running candidate and matching turn\n|   |-- Require numeric last usage for all five counters\n|   |-- First baseline = max(0, total - last), per counter\n|   `-- Candidate usage = max(0, total - retained baseline)\n`-- Child chats remain reviewable; send/readCanvas reject iteration\n    `-- createBackground is separate: hidden from list, no canvas tools",
+        "position": {
+          "column": 220,
+          "row": 34
+        }
+      },
+      {
+        "id": "bridge",
+        "ascii": "Isolated canvas command boundary [M/C/O/D]\n|-- add(id, history, persist)\n|   `-- documentId = id; controller gets fresh history contextId\n|-- dispatch(canvasId, command)\n|   |-- Known ID -> require matching documentId\n|   |-- Unknown generation-* ID -> reject\n|   `-- Other unknown ID -> live.dispatch\n|-- Per-candidate queue serializes reads and mutations\n|   |-- Reads: identity, context, document-state, read, snapshot\n|   |   `-- Snapshot can include requested/current revisions\n|   `-- Remaining commands require payload.requestId\n|       |-- Receipt key = method + requestId\n|       |-- Signature = full serialized command\n|       |-- Changed command under same key -> conflict\n|       `-- New command -> apply -> cache receipt -> persist history\n|           `-- Identical retry persists again without reapplying\n|-- Supported mutation paths\n|   |-- apply, diagram batch/revision, create, diagram context\n|   |-- Batch/revision returns unresolvedEdgeIds after anchor checks\n|   |-- canvas-view list -> empty saved map; save -> acknowledgement\n|   |   `-- Other view operations reject; parent manages forks\n|   `-- checkpoint -> check expectedVersion -> current canvasRevisionId\n`-- remove deletes context; no tombstone registry is retained\n    `-- dispose clears all contexts and disposes the live port",
+        "position": {
+          "column": 220,
+          "row": 78
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": {
+          "diagram": "central",
+          "line": 32
+        },
+        "target": {
+          "diagram": "turns",
+          "line": 2
+        },
+        "label": "Turn admission, transport paths and pending answers"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 90
+        },
+        "target": {
+          "diagram": "tools",
+          "line": 4
+        },
+        "label": "Captured targets become validated edit input"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 66
+        },
+        "target": {
+          "diagram": "runtime",
+          "line": 2
+        },
+        "label": "Process, RPC and persistence lifetimes"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 51
+        },
+        "target": {
+          "diagram": "events",
+          "line": 7
+        },
+        "label": "Reduced updates become public snapshots and SSE"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 78
+        },
+        "target": {
+          "diagram": "gen",
+          "line": 2
+        },
+        "label": "Candidate launch, settlement and recovery"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 22
+        },
+        "target": {
+          "diagram": "bridge",
+          "line": 4
+        },
+        "label": "Isolated dispatch and command receipts"
+      },
+      {
+        "source": {
+          "diagram": "gen",
+          "line": 13
+        },
+        "target": {
+          "diagram": "bridge",
+          "line": 2
+        },
+        "label": "Captured history seeds one controller per child"
+      }
+    ]
+  },
+  "usage": {
+    "input_tokens": 456266,
+    "cached_input_tokens": 408704,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 10476,
+    "reasoning_output_tokens": 1045
+  }
+}

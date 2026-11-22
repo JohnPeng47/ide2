@@ -1,0 +1,19 @@
+{
+  "id": "child-1",
+  "name": "d1",
+  "assignment": "Map ALL nodes d1 only (n1-n48), output partial JSON. Read numbered lines, full declarations.",
+  "model": "gpt-6-sol",
+  "effort": "medium",
+  "status": "generating",
+  "queuedAt": "2026-11-19T03:47:41.486Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-19T03:47:41.491Z",
+  "sessionId": "01a1f1ea-d569-7d71-a5f2-56dc92d936d8",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-dvs4w6s2-agent-repository-mP9uWe-checkout--/2026-11-19T03-47-41-545Z_01a1f1ea-d569-7d71-a5f2-56dc92d936d8.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase3-dvs4w6s2/agent-repository-mP9uWe/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

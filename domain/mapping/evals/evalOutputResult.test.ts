@@ -4,6 +4,16 @@ import { captureChangeSessionOutput, summarizeEvalOutput } from './evalOutputRes
 import { changeDocumentPreview } from '../changes/changeDocumentPreview';
 import { hasEvalOutput, summarizeEvalRun } from './evalRun';
 
+it('counts Markdown as a saved output without including its text in run summaries', () => {
+  const { run } = evalOutputFixture();
+  const result = { schemaVersion: 1 as const, format: 'markdown' as const, markdown: '# Judge\n\nLooks correct.', canvases: [] as [], diagramRevisions: {} };
+  run.outputResults = { [run.cells[0].key]: result };
+  run.cells[0].output = summarizeEvalOutput(result);
+  expect(run.cells.filter(hasEvalOutput)).toHaveLength(1);
+  expect(summarizeEvalRun(run).cells[0].output).toEqual({ format: 'markdown', canvases: [] });
+  expect(JSON.stringify(summarizeEvalRun(run))).not.toContain(result.markdown);
+});
+
 it('retains independent before/after snapshots and counts several canvases as one output', () => {
   const { run, session } = evalOutputFixture();
   const result = captureChangeSessionOutput(session), before = JSON.stringify(result);

@@ -1,0 +1,176 @@
+[
+  {
+    "id": "child-1",
+    "name": "termio",
+    "assignment": "Map d2 all nodes per instructions. Return compact text node scopes + path abbreviations, ranges with roles. Include parent coverage via child references where helpful.",
+    "model": "gpt-6.2-astra",
+    "effort": "high",
+    "status": "finished",
+    "queuedAt": "2026-11-22T15:27:49.169Z",
+    "usage": {
+      "input": 172409,
+      "output": 9081,
+      "cacheRead": 831616,
+      "cacheWrite": 0,
+      "reasoning": 645,
+      "totalTokens": 1013106
+    },
+    "cost": {
+      "input": 1.7240900000000001,
+      "output": 0.45405,
+      "cacheRead": 0.8316159999999999,
+      "cacheWrite": 0,
+      "total": 3.0097560000000003
+    },
+    "startedAt": "2026-11-22T15:27:49.184Z",
+    "sessionId": "01a203de-e5e1-703b-bcbb-27904f8742b8",
+    "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase5-gcchw3sl-agent-repository-E7lXKk-checkout--/2026-11-22T15-27-49-217Z_01a203de-e5e1-703b-bcbb-27904f8742b8.jsonl",
+    "text": "**d2 handoff:** `/tmp/termio-mapping/d2.json` contains all 29 node scopes and 746 expanded, nonoverlapping ranges at commit `ea8b12a8a9894b5259c441eadd8f6f0c65e215af`. Paths and line bounds were checked locally. `validate_source_mappings` was not available, so this is a merge candidate, not a validator receipt.\n\nCompact mapping below. Scopes: `s` structure, `e` entity, `b` behavior, `r` relationship, `g` guarantee, `x` subsystem. Range roles: `d` declaration, `u` use, `i` implementation. `+N` includes node N’s ranges, deduplicated on expansion.\n\n```text\nPath aliases (all under src/, all ending in .zig):\n  API=termio S=Surface A=App PT=pty\n  termio/: T=Termio E=Exec B=backend I=Thread H=stream_handler\n           M=mailbox MSG=message O=Options\n  renderer/: R=Thread G=generic RS=State Z=size RM=message\n  terminal/: V=stream P=Parser APC=apc DCS=dcs L=Terminal SS=ScreenSet\n             SC=Screen PL=PageList CW=kitty/clipboard_write CG=kitty/clipboard_grants\n  apprt/: AS=surface GTK=gtk/class/application GA=gtk/App EMB=embedded\n\nn1 esbrx API:1-33d T:1-5d,31-74d,254-365i,367-429i,466-521i,567-602i,605-658i,661-700i,767-822i S:134-137d,687-725u,761-767u +2 +5 +13 +16 +17 +19 +21 +25\n\nn2 srx T:34-35d,308-310i,344i,354-355u O:20-21d S:687-701i,711-716u B:13-54di E:1-4d,67-84i,897-901d,909-916i,997-1008i,1015-1019i,1063-1095i +3 +4\n\nn3 sbrg E:44-61di,86-194di,196-230di,587-597d,887-893i,1107-1133i,1412d,1462-1476i T:367-371d,389-400u,427-429u B:39-54i I:236d,259-269u S:761-767u\n\nn4 ebrg T:449-463di,524-530d,534-540u,824-852d B:66-86di,115-123di E:129-156i,266-272di,403-490di,492-566di,1136-1156di I:236d,259-278i,282-286d,349-366u,443-448u\n\nn5 esrx T:14d,64-66d,312-328i,346-349i,360-361u,740-754u H:96d V:588-603d,643-671i +6 +7\n\nn6 brx T:714d,740-754u V:722-739di,831-874i,890-911i,1371-1389i,1464-1482i,1553-1593i,1659-1667i P:254-317di H:188-199di,208-394i\n\nn7 esrx H:19-99d,101-136di,156-199di,208-394i,641-819i,1000-1035i,1851-1860i T:312-328i,346-349u +8 +9 +10 +11 +12\n\nn8 srb H:65-85d,101-112i,377-384u,396-412i,516-553i,938-946i,957-963i,1080-1134i,1235-1312i,1315-1386i,1443-1481i APC:13-40di,48-49i,169-178i,214-248i DCS:13-36di,114-125i,157-204i CW:34-58d,94-121i CG:16-34di T:767-776u\n\nn9 srb H:23-26d,188-199i,208-212d,226-259i,1000-1011i T:40-43d,312-322i,335-338i,705-716u,750-754u L:5618-5631i\n\nn10 br H:28-29d,87-90d,151-154i,305-306u,602-608i,628-639i,1454-1472i,1851-1860i T:315-317u,567-593i,756-761i M:63-108i I:327u +18\n\nn11 brg H:31-32d,138-149i,236u,555-557i T:314-320u S:573i,717-721u,1017-1018d,1164-1177i AS:186-207di A:164-167di,273-274i,291-293i,532-550i,596-613di GA:57-59i GTK:569-576u,1322-1325i EMB:269-271i,1730-1736i\n\nn12 ebr H:40-42d,114-119di T:318-320u,714-716u S:717-719i R:232i,474-493i,537-542d,556-583i\n\nn13 esrx T:40-43d,254-310i,322u,335-338i,354-356u L:1-4d,344-404di +14 +15\n\nn14 s L:56-77d,83-84d,366-383i T:304-306i\n\nn15 sr L:48-49d,344-349d,356-370i,395-400u SS:17-31d,38-62i,75-88i SC:44-45d,315-337i,361-367i PL:1-4d\n\nn16 sr T:37-38d,58-59d,182-248di,335-345i,354-357u,466-482i,524-530i O:9-18d S:707-715i I:321-324u\n\nn17 srbx T:61-62d,316u,345i,354-358u,437-447di,756-761i O:23-25d S:703-705i,711-716i,899-920i,2792d,2953-2957u M:11-18d,30-55di,57-108i MSG:8-98d,107-132i I:289-375i H:151-154i,628-639i +18\n\nn18 br S:761-767u I:136-138u,236d,253-279i,282-296di,308-313i,347-368i,453-471i T:449-463di B:76-86di E:129-131i,147-156i,403-469i\n\nn19 sr T:45-53d,314-322i,335-342i O:27-38d S:597-605i,631-636i,717-719u R:37-40d,75-80d,116-129i,147-164i +20\n\nn20 brg S:592-605i,631-636i,717-719u T:40-53d,318-322i,337-341i,534-553i,561-564u,705-716i RS:13-20d H:117-119i R:232u,474-493i,537-542d,573-580u G:1371-1375d,1420-1425u,1479-1487i\n\nn21 ebr E:139-145i,1412d,1481-1495u,1778d,1789-1811u T:702-762di +22 +23 +24\n\nn22 bg T:705-711di S:592-595i,633-636i,717u RS:13-20d\n\nn23 brg T:705-716di,740-754i H:114-119i V:733-739i R:232u,474-493i\n\nn24 brg T:705-711i E:139-145i,1412d,1493-1495u,1516-1520u,1778d,1806-1812u RS:36-52d,67-105di G:1371-1375d,1420-1425u,1479-1487i\n\nn25 ebr MSG:48-49d S:899-920i,2516u,2618-2627i,2637-2638u M:63-108i I:27-34d,289-296d,308-313i,326u,389-406i,427-451i,453-471i T:437-447i,524-564di,573-593i +26 +27 +28 +29\n\nn26 br T:524-530i,540-553u Z:28-44di,186-189d,194-204di,238-262di\n\nn27 brg T:524-559di,705-711i B:66-74i E:266-272i,1136-1156i PT:19-23d,87-90i,221-224i,476-484i L:4912-5074di\n\nn28 rg T:524-528d,532-559i,705-716i,740-754i E:266-272i,1136-1156i,1493-1495u,1806u L:4912-4933i,5049-5074i PT:221-224i\n\nn29 br T:524-528d,561-564i RM:45-46d S:717-719u R:232i,290d,301-303i,404u,474-493i G:2249-2266i\n```\n\n**Notes for merge:** d2/n23 uses `nextSlice` on the normal path; an active inspector receives byte-at-a-time `next` calls. d2/n24’s handoff is opportunistic and timeout-bounded. d2/n28’s mutex excludes parsing between the two resize operations on success; if `Terminal.resize` fails after the PTY has been resized, `Termio.resize` does not roll back the PTY.",
+    "completedAt": "2026-11-22T15:32:58.857Z"
+  },
+  {
+    "id": "child-2",
+    "name": "renderer",
+    "assignment": "Map all d3 per instructions. Return compact text node scopes + path abbreviations, ranges and roles, child reference for inheritance where appropriate.",
+    "model": "gpt-6.2-astra",
+    "effort": "high",
+    "status": "finished",
+    "queuedAt": "2026-11-22T15:27:49.169Z",
+    "usage": {
+      "input": 124742,
+      "output": 10227,
+      "cacheRead": 1355392,
+      "cacheWrite": 0,
+      "reasoning": 966,
+      "totalTokens": 1490361
+    },
+    "cost": {
+      "input": 1.2474200000000002,
+      "output": 0.51135,
+      "cacheRead": 1.355392,
+      "cacheWrite": 0,
+      "total": 3.114162
+    },
+    "startedAt": "2026-11-22T15:27:49.185Z",
+    "sessionId": "01a203de-e5e7-7c45-aff1-b239916c3d63",
+    "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase5-gcchw3sl-agent-repository-E7lXKk-checkout--/2026-11-22T15-27-49-223Z_01a203de-e5e7-7c45-aff1-b239916c3d63.jsonl",
+    "text": "**d3 renderer mapping** — `/tmp/renderer-d3.json` contains the merge-ready diagram object. All 20 node IDs are present; file existence and line bounds were checked locally. `validate_source_mappings` was not available in this subagent session.\n\nScopes: `s` structure, `e` entity, `b` behavior, `r` relationship, `g` guarantee, `x` subsystem. Range roles: `d` declaration, `u` use, `i` implementation. `+N` includes node N’s ranges recursively, deduplicating overlaps.\n\nPaths expand as `src/<name>.zig`; `gtk/` expands to `apprt/gtk/class/`. Aliases: `A=App`, `S=Surface`, `R=renderer`, `G=renderer/generic`, `T=renderer/Thread`, `ST=renderer/State`, `O=renderer/Options`, `C=renderer/cell`, `I=renderer/image`, `M=renderer/Metal`, `L=renderer/OpenGL`, `V=terminal/render`, `Q=termio/Termio`, `H=termio/stream_handler`.\n\n```text\nn1 brx R:1-8d S:45u,92-102d,574-590ui,597-605ui,631-637ui,753-759ui +2 +15\nn2 esrx R:17-20d,35-45di G:51-89d,90-3693di S:45u,92-93d,580-590ui,631u +3 +4 +5 +6 +8 +14\nn3 srg G:274-281d,841d,847ui,1371-1375d,1381-1392ui,1484-1487ui,1564-1567ui V:289-334d,358-374d,885-899i,941-947i,1029-1044i,2666-2675i,2696-2732i\nn4 sr G:172-192d,204-228d,254-275d,302-354di,365-484di,712-729ui,759-761ui,816-839ui,841-851ui,865-874ui,914-943ui,1244-1256ui,1868-1880ui C:42-81di I:18-68di font/shape:8-14d,19-36di\nn5 srg A:53-55d,123-124ui,130ui,136-146ui S:477-484d,528-534ui,580-588ui,627ui,829d,870-871ui,2536d,2542-2547ui,2555-2572ui O:14-15d G:204-205d,731-741ui,818-821ui,1317-1358ui,1889-1905ui,3491-3496u,3677-3691ui T:397-400ui font/SharedGridSet:96-154di,413-431di font/SharedGrid:41-64d,379-464i\nn6 srg A:57-58d,131ui,136-139ui,148-151ui S:477-484d,564-570ui,580-588ui O:7-9d G:227-228d,712-721ui,824ui M:44-45d,56-71ui,131-146ui L:47-96ui renderer/metal/Device:34-66di renderer/opengl/Device:37-74di,102-105di +7\nn7 srg R:16-20d,35-45di build_config:43du renderer/backend:4-17di M:15-31d L:15-26d\nn8 ebr S:597-605ui,631-636ui T:69-76d,151-164ui,573-577u G:1371-1710di +9 +10 +11 +12 +13\nn9 brg S:633-636ui ST:13-20d,67-72di G:1371-1375d,1420-1427ui,1434-1446ui,1484-1500ui V:941-947di,983-1027i,1399-1414i\nn10 brg ST:67-80i G:1371-1375d,1420-1421ui,1429-1477ui,1555-1562i terminal/Terminal:3522-3530i terminal/Screen:1719-1730i terminal/PageList:3347-3365i terminal/kitty/graphics_storage:1240-1365i\nn11 brg G:1371-1375d,1399-1409d,1420-1421ui,1479-1493ui,1502-1545ui,1555-1562ui V:941-1414di,2666-2675i,2696-2732i ST:26-34d,135-140i I:253-377di,398-486i,669-689i\nn12 brg G:1371-1375d,1408-1409i,1420-1421ui,1484-1487ui,1555-1567ui ST:74-80di V:920-940d,1416-1484di\nn13 brx G:1371-1375d,1479-1487ui,1508-1526ui,1564-1567ui,1631-1665ui,1694-1705ui,2630-2923di,2925-3371di,3374-3672di V:941-947i,1029-1044i,1290-1397i renderer/cursor:36-68i C:42-74d,136-203i I:253-377i,398-486i font/shape:19-36di font/shaper/run:47-74i,297-304i font/shaper/Cache:60-78i font/shaper/harfbuzz:131-260i font/shaper/coretext:316-544i font/shaper/noop:79-118i font/shaper/web_canvas:81-203i font/SharedGrid:379-464i font/CodepointResolver:327-349i font/face:11-24di font/face/freetype:426-433d,759-778i font/face/coretext:289-296d,548-567i font/face/web_canvas:187-194d,224-238i font/sprite/Face:174-182d,202-229i,252-260i\nn14 ebrx G:1712-2043di,2045-2067ui,1021-1043i,1060-1072i S:580-588ui,1017d,1154u,1778-1787ui M:56-60d,78-117ui,128-137ui,200-217i,236-243ui,378-387ui renderer/metal/Frame:29-56i,67-131ui renderer/metal/RenderPass:58-121i,124-223i,227-229i renderer/metal/IOSurfaceLayer:50-123i L:217-225i,273-303ui,439-449ui renderer/opengl/Frame:24-90ui renderer/opengl/RenderPass:51-57i,62-137i,141-144i renderer/opengl/Target:148-215i,224-242i apprt/surface:187-207ui A:164-167ui,273-274i,293u,532-542ui,605-612ui gtk/application:772u,2877-2882ui gtk/surface:835-838ui gtk/render_surface:149-205ui,307-365i,390-429i,446-451ui\nn15 esbrx S:92-102d,597-605ui,631-637ui,753-759ui T:1-3d,27-80d,113-173di,192-257di +16 +18 +19 +20\nn16 brx T:27-64d,78-80d,200d,220-257ui,290-444ui,462-497ui,516-586ui,596-652ui,654-688ui G:946-956ui,1074-1086ui,1136-1175i,1273-1312ui,1371-1375d,1716-1731ui +17\nn17 br renderer/message:45-46d S:2574-2579i,2618-2621i,2637-2649ui Q:524-530i,561-564ui T:290d,301-303i,404ui,474-479d,487-493ui G:2249-2266di,2271-2304di L:231-236di\nn18 brg S:597-605ui,631-636ui,711-721ui Q:254d,314-322ui,335-349ui,705-716ui,750-754ui H:117-119di T:231-234ui,474-479d,485-493ui,537-542d,567-580ui G:1371-1375d,1420-1427ui,1484-1493ui,1555-1567ui ST:13-20d,67-80di\nn19 ebr apprt/embedded:1001-1006ui,1990-1992ui S:922-929di G:1712-1731di,1733-1743d,1794-1801i,1907-1910ui M:128-129ui,148-160ui renderer/metal/IOSurfaceLayer:155-166ui renderer/metal/Frame:105-131ui\nn20 brg S:829d,833-855ui T:175-189di,228-234ui,253-257ui,722-731di G:841-874di,914-943di,946-956ui,1244-1256i renderer/DisplayLink:128-146i\n```",
+    "completedAt": "2026-11-22T15:32:53.810Z"
+  },
+  {
+    "id": "child-3",
+    "name": "exec",
+    "assignment": "Map all d4, include cross-file connections; return compact text node scopes + path abbreviations, ranges and roles with child refs for inheritance if useful.",
+    "model": "gpt-6.2-astra",
+    "effort": "high",
+    "status": "finished",
+    "queuedAt": "2026-11-22T15:27:49.169Z",
+    "usage": {
+      "input": 58272,
+      "output": 2991,
+      "cacheRead": 226048,
+      "cacheWrite": 0,
+      "reasoning": 80,
+      "totalTokens": 287311
+    },
+    "cost": {
+      "input": 0.5827200000000002,
+      "output": 0.14955000000000002,
+      "cacheRead": 0.226048,
+      "cacheWrite": 0,
+      "total": 0.9583180000000002
+    },
+    "startedAt": "2026-11-22T15:32:53.810Z",
+    "sessionId": "01a203e3-8bbb-79c6-8561-3df57ff47c83",
+    "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase5-gcchw3sl-agent-repository-E7lXKk-checkout--/2026-11-22T15-32-53-819Z_01a203e3-8bbb-79c6-8561-3df57ff47c83.jsonl",
+    "text": "d4 — pinned commit `ea8b12a8a9894b5259c441eadd8f6f0c65e215af`.\n\nPaths are relative to `src/`: `E=termio/Exec.zig`, `B=termio/backend.zig`, `T=termio/Termio.zig`, `H=termio/Thread.zig`, `S=Surface.zig`, `P=pty.zig`, `C=Command.zig`, `F=os/flatpak.zig`, `V=terminal/Terminal.zig`, `R=renderer/State.zig`, `M=apprt/surface.zig`, `A=App.zig`.\n\nScopes: `s=structure e=entity b=behavior r=relationship g=guarantee x=subsystem`. Roles: `d=declaration u=use i=implementation`. In each row, `+n` means include that node’s ranges recursively, unioning roles on overlaps and counting each line once. Commas within a path group separate disjoint ranges.\n\n```text\nnode scope | ranges (path:inclusive-lines:role)\nn1  ex     | +2 +12 E:1-4:d E:86-194:di E:232-264:di E:1263-1267,2062-2064:i B:108-112:u\nn2  ser    | +3 +9 +10 +11 T:34-35:d S:687-701,711-725:ui T:308-310,335-345,354-355:i B:22-31:di\nn3  ser    | +4 +5 +6 +8 E:44-61:di E:587-609:d E:624-634,830-884,887-893:di\nn4  s      | E:590-593:d E:624-634,830-853,855-875,887-893:i\nn5  s      | E:594-595:d E:880-883,1136-1142:i E:909-916:u\nn6  sr     | +7 E:596-597:d E:897-901,909-924,997-1008,1083-1095,1107-1109,1115-1133:i\nn7  sr     | E:24-26,38-42,602-609:d E:990-1008,1021-1040,1063-1077,1083-1095:ui C:1-3,163-176:d F:33-36,122-139:d\nn8  ebr    | E:86-104:u E:897-1095,1100-1103:di P:19-23:d P:134-187,230-230,251-266,344-455:i C:163-176,178-234,236-262,305-320,376-386,418-436:i F:122-139,280-280,303-312,319-326,395-447:i\nn9  ebr    | T:272-278,304-310:u B:33-37:u E:67-84:di E:266-272,1136-1144:i V:5570-5583:i\nn10 ebgr   | H:289-296,349-366:u T:456-463:u B:76-86:u E:403-469:di E:471-490,274-277:i E:494-508,510-515,520-525:d\nn11 ebgr   | H:263-269:u T:427-429:u B:50-54:u E:196-230:di E:1107-1133,1161-1216,1218-1252,1256-1258:i E:1462-1473,1481-1488,1532-1539,1635-1641,1720-1724,1791-1798,1814-1825:i\nn12 sr gx  | +13 S:761-767:u H:136-139,236-237:u H:259-279,281-286:di E:44-45:d T:367-371,389-400,427-429:ui\nn13 sr     | +14 +16 +18 +19 T:824-852:di B:115-123:di B:39-48:u E:86-93,147-156:ui E:492-493,549-566:di\nn14 sbr    | +15 E:86-93,106-121,148-152,158-179:i E:510-512,517-518,527-533:d E:557-558:i F:165-195,197-231:i\nn15 ebr    | E:274-315:di E:158-179:u T:389-396:u M:104-107,169-171:d M:186-207:ui A:605-612,273-274,293-293,532-538:i S:1017-1018,1141-1141,1297-1299:ui\nn16 sr     | +17 E:129-131,148-151:i E:514-515,520-525:d E:552-555,560-561:i\nn17 sbgr   | E:494-508,520-525:d E:403-423,426-434,454-469,471-490:i\nn18 sb     | E:35-36,540-547:d E:133-137,148-156,181-194,232-264,317-401,563-565:i P:31-37:d P:196-205:i\nn19 srx    | +20 +26 E:535-538:d E:123-127,139-156,196-230,549-550:i E:1015-1019,1083-1095:u\nn20 sbx    | +21 +23 +24 E:139-145:u E:1269-1279,1305-1318:d E:1412-1520:di E:1757-1776:i\nn21 sbr    | +22 E:1305-1318,1359-1410:d E:1441-1442,1481-1491,1497-1505,1551-1563,1696-1705:i\nn22 sbr    | E:1364-1373,1386-1406:d E:1444-1460,1481-1491,1497-1514,1532-1549,1556-1563,1614-1629,1648-1658,1698-1705,1737-1741:i\nn23 ebr    | E:1412-1414,1431-1439,1462-1476:u E:1522-1733:di E:1737-1741,1757-1776:i E:203-217:u\nn24 br     | +25 E:1412-1414:d E:1478-1520:ui T:705-711,714-716,740-754:i R:67-80,91-105:i\nn25 bg     | E:1412-1414:d E:1462-1473,1481-1488,1532-1539:i\nn26 ebr    | E:139-145:u E:1778-1826:di E:203-230,1083-1088:ui P:419-425,444-455:i T:705-711,714-716,740-754:i R:67-80,91-105:i\n```\n\n`n12` scope is `s,r,g,x`. No unresolved d4 claim. The validator was not available in this subagent’s tool set; these are ranges for the parent’s complete candidate, not a validation receipt.",
+    "completedAt": "2026-11-22T15:34:24.903Z"
+  },
+  {
+    "id": "child-4",
+    "name": "terminal",
+    "assignment": "Map all d5 per instructions; return compact node scopes, path abbreviations, ranges/roles, include child refs for inheritance when appropriate.",
+    "model": "gpt-6.2-astra",
+    "effort": "high",
+    "status": "finished",
+    "queuedAt": "2026-11-22T15:27:49.169Z",
+    "usage": {
+      "input": 70648,
+      "output": 6363,
+      "cacheRead": 528256,
+      "cacheWrite": 0,
+      "reasoning": 640,
+      "totalTokens": 605267
+    },
+    "cost": {
+      "input": 0.70648,
+      "output": 0.31815000000000004,
+      "cacheRead": 0.528256,
+      "cacheWrite": 0,
+      "total": 1.5528860000000002
+    },
+    "startedAt": "2026-11-22T15:32:58.858Z",
+    "sessionId": "01a203e3-9f70-70b4-aa0c-0403bd62c839",
+    "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase5-gcchw3sl-agent-repository-E7lXKk-checkout--/2026-11-22T15-32-58-864Z_01a203e3-9f70-70b4-aa0c-0403bd62c839.jsonl",
+    "text": "{\n  \"diagramId\": \"d5\",\n  \"expandedCandidate\": \"/tmp/terminal-mapping/d5.json\",\n  \"verification\": \"All 29 nodes mapped at ea8b12a8a9894b5259c441eadd8f6f0c65e215af. Paths and inclusive line bounds checked locally. validate_source_mappings was not available to this subagent.\",\n  \"paths\": {\n    \"T\": \"src/terminal/Terminal.zig\",\n    \"K\": \"src/terminal/ScreenSet.zig\",\n    \"S\": \"src/terminal/Screen.zig\",\n    \"Q\": \"src/terminal/Selection.zig\",\n    \"L\": \"src/terminal/PageList.zig\",\n    \"P\": \"src/terminal/page.zig\",\n    \"C\": \"src/terminal/compress/Page.zig\",\n    \"M\": \"src/terminal/mem.zig\",\n    \"H\": \"src/terminal/hyperlink.zig\",\n    \"Y\": \"src/terminal/style.zig\",\n    \"R\": \"src/terminal/c/grid_ref_tracked.zig\",\n    \"J\": \"src/datastruct/intrusive_linked_list.zig\",\n    \"I\": \"src/termio/Termio.zig\"\n  },\n  \"key\": \"Each row is [node, scopes, ranges]. d=declaration, u=use, i=implementation. A path prefix applies through the following comma-separated ranges. @n includes that node's ranges recursively; union roles on overlapping lines.\",\n  \"nodes\": [\n    [\"n1\", [\"structure\",\"entity\",\"relationship\",\"subsystem\"], \"T:d1-4,i344-404 I:d40-43,ui272-306,ui335-337,ui354-356 @n2 @n3 @n4 @n5 @n9 @n23\"],\n    [\"n2\", [\"structure\"], \"T:d56-68,d253-266,i366-376 I:i304-306\"],\n    [\"n3\", [\"structure\"], \"T:d70-77,d83-84,d153-165,d167-182,d227-251,i377-383\"],\n    [\"n4\", [\"structure\",\"relationship\",\"guarantee\"], \"T:d86-87,d268-279,i384-387,ui459-478 S:d52-56,d143-152\"],\n    [\"n5\", [\"structure\",\"entity\",\"relationship\",\"subsystem\"], \"T:d48-49,ui356-370,ui395-397,ui5680-5747 K:d1-8 S:d44-56,ui315-345,ui361-367 @n6 @n7 @n8\"],\n    [\"n6\", [\"structure\",\"relationship\",\"guarantee\"], \"K:d23-31,i43-52,i104-109 T:u5680-5683,u5743-5747\"],\n    [\"n7\", [\"structure\",\"behavior\",\"guarantee\"], \"K:d33-36,i51-51,i69-72,i90-102 T:d4912-4916,ui5010-5024,ui5045-5046 R:d18-21,ui23-31\"],\n    [\"n8\", [\"structure\",\"relationship\",\"behavior\",\"guarantee\"], \"K:d17-21,d30-31,i38-67,i74-102 T:ui5680-5683,ui5689-5715 S:i315-367\"],\n    [\"n9\", [\"structure\",\"entity\",\"relationship\",\"subsystem\"], \"S:d1-1,d37-50,i315-367 @n10 @n12 @n13 @n14 @n15\"],\n    [\"n10\", [\"structure\",\"relationship\"], \"S:d52-56,d143-199,d209-218 T:ui2701-2713 @n11\"],\n    [\"n11\", [\"structure\",\"relationship\",\"guarantee\"], \"S:d195-199,ui329-345,ui936-979 L:d7800-7803,i7812-7818 P:i1120-1133\"],\n    [\"n12\", [\"structure\",\"relationship\",\"behavior\",\"guarantee\"], \"S:d58-62,ui3063-3106 Q:d24-25,d32-52,ui70-82,ui129-149 L:d354-357,d472-473,i6309-6334\"],\n    [\"n13\", [\"structure\"], \"S:d64-75,d220-232\"],\n    [\"n14\", [\"structure\"], \"S:d77-98,d100-129,i348-356,i361-364\"],\n    [\"n15\", [\"structure\",\"entity\",\"relationship\",\"subsystem\"], \"S:d44-45,ui315-327,ui334-338,ui361-367 L:d1-4,i648-708,i727-805,i942-954,i977-988 @n16 @n17 @n18 @n19 @n20 @n21\"],\n    [\"n16\", [\"structure\"], \"L:d359-365,d401-402,d465-470,d507-511,i677-679,i691-700,d7601-7624\"],\n    [\"n17\", [\"structure\",\"relationship\"], \"L:d354-357,d472-487,d518-533,i681-688,i701-705,i710-719\"],\n    [\"n18\", [\"relationship\",\"behavior\",\"guarantee\"], \"S:ui329-345,ui936-979,ui3063-3071,ui3095-3097 Q:ui131-149 L:i681-688,i710-719,d5784-5789,i5800-5817,i5870-5883,i6309-6326,d7794-7810\"],\n    [\"n19\", [\"structure\",\"relationship\",\"guarantee\"], \"L:d14-14,d51-62,d404-405,ui783-800,ui4061-4081,ui4225-4236 J:d10-19,i26-38,i63-71,i77-88\"],\n    [\"n20\", [\"structure\",\"relationship\"], \"L:d56-77,d93-93,d407-419,ui757-773,i783-800,i942-954 J:i26-38\"],\n    [\"n21\", [\"structure\",\"relationship\"], \"L:d59-63,d79-96,i98-108,i239-245,i783-789,ui5590-5608,i5619-5632 C:d42-57,ui136-141 P:d157-186\"],\n    [\"n22\", [\"structure\",\"behavior\",\"relationship\",\"guarantee\"], \"L:d79-91,i256-299,i5553-5558,ui5590-5632 C:d39-57,i99-141,i143-163 M:i147-248,i278-308,i318-330,i343-358\"],\n    [\"n23\", [\"structure\",\"entity\",\"relationship\",\"subsystem\"], \"P:d147-176,i239-331,i1894-1943 L:ui783-791 @n24 @n25 @n26 @n27 @n28 @n29\"],\n    [\"n24\", [\"structure\",\"guarantee\"], \"P:d157-176,i31-82,i239-258,i268-275,i289-292,i1907-1924 L:i335-352,ui738-742,ui757-769,ui783-789\"],\n    [\"n25\", [\"structure\",\"relationship\"], \"P:d178-186,d2215-2217,i274-292,i1101-1118\"],\n    [\"n26\", [\"structure\",\"relationship\",\"guarantee\"], \"P:d182-186,d2396-2406,i277-287,i1107-1133\"],\n    [\"n27\", [\"structure\",\"relationship\"], \"P:d84-100,d202-213,i302-309,i1603-1640\"],\n    [\"n28\", [\"structure\",\"relationship\"], \"P:d197-200,d215-223,i293-301,i310-318,i1356-1361,i1410-1430,i1467-1485 H:d20-23,d210-217 Y:d676-680\"],\n    [\"n29\", [\"structure\"], \"P:d188-195,d225-232,i319-322,d2045-2049,d2060-2084\"]\n  ],\n  \"notes\": \"\"\n}",
+    "completedAt": "2026-11-22T15:36:05.763Z"
+  },
+  {
+    "id": "child-5",
+    "name": "inputs",
+    "assignment": "Map d1 n9-n21 (runtime, surface basics, input) including implementations across files. Return compact scopes and line ranges/roles; I will handle high-level n11 descendant aggregation.",
+    "model": "gpt-6.2-astra",
+    "effort": "high",
+    "status": "finished",
+    "queuedAt": "2026-11-22T15:27:49.169Z",
+    "usage": {
+      "input": 88393,
+      "output": 7606,
+      "cacheRead": 1134464,
+      "cacheWrite": 0,
+      "reasoning": 543,
+      "totalTokens": 1230463
+    },
+    "cost": {
+      "input": 0.88393,
+      "output": 0.38029999999999997,
+      "cacheRead": 1.134464,
+      "cacheWrite": 0,
+      "total": 2.3986940000000003
+    },
+    "startedAt": "2026-11-22T15:34:24.904Z",
+    "sessionId": "01a203e4-ef90-715b-bba4-99a696c44d97",
+    "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase5-gcchw3sl-agent-repository-E7lXKk-checkout--/2026-11-22T15-34-24-912Z_01a203e4-ef90-715b-bba4-99a696c44d97.jsonl",
+    "text": "The merge-ready fragment is `/tmp/d1-n9-n21.json`: **13 scope records, 293 mappings, 31 files**. Paths and inclusive line bounds were checked against `ea8b12a8a9894b5259c441eadd8f6f0c65e215af`. No `validate_source_mappings` tool was available in this session; the fragment does not have a validator hash.\n\nBelow is the compact handoff. **D** = declaration, **I** = implementation, **U** = use. `+nX` includes that child’s ranges, deduplicated. Paths without a directory prefix are under `src/`.\n\n| Node | Scope | Source ranges and roles |\n|---|---|---|\n| n9 | structure, relationship, subsystem | `apprt.zig` D1–10,39–53; `apprt/gtk.zig` D2–3; `apprt/gtk/Surface.zig` D6–13 I19–39; `apprt/gtk/class/surface.zig` D660–666 I3557–3570,3610–3629,1963–1981; `apprt/embedded.zig` D447–455 I278–294,504–520,615–624,634–646,670–676,1842–1861; `App.zig` I199–218,220–242; `macos/Sources/Ghostty/Surface View/SurfaceView_AppKit.swift` U386–395; +n10. |\n| n10 | behavior, relationship, subsystem | `Surface.zig` D1–11; `apprt/gtk/class/application.zig` D692–698 U739–750 I2535–2609,2611–2616 U2628–2634; `apprt/gtk/class/window.zig` I429–477,496–498; `apprt/gtk/class/tab.zig` I207–223; `apprt/gtk/class/split_tree.zig` I212–277 U735–742; `apprt/gtk/class/surface.zig` U1445–1458,2963–2974,3026–3034,3517–3551; `apprt/embedded.zig` I202–228,1026–1043,1052–1062,1131–1136; `macos/Sources/Ghostty/Ghostty.App.swift` U588–595 I924–1011; `macos/Sources/App/AppDelegate.swift` I798–816; `macos/Sources/Features/Terminal/BaseTerminalController.swift` I282–316,666–688. |\n| n11 | entity, structure, relationship, subsystem | `Surface.zig` D1–16,64–108,133–166 DI474–827,829–879; `termio/Thread.zig` D236 I259–269; `termio/Termio.zig` D367–371 I389–400; `termio/backend.zig` D22–25 I39–48; `termio/Exec.zig` I86–93,897–901,909–924,990–1007,1063–1084. These are n11’s independent ranges; descendant aggregation is left to the coordinator. |\n| n12 | structure, relationship, guarantee | `Surface.zig` D74–79,474–484 I623–626 U881–893; `apprt/embedded.zig` U615–624 I641–646,278–294; `apprt/gtk/class/surface.zig` I3557–3570 U3610–3625 I1963–1981. |\n| n13 | structure, entity, relationship | `Surface.zig` D144–147 DI301–472 U505–507 I643–644,873–876,1822–1831; +n14. |\n| n14 | entity, behavior, relationship | `App.zig` U172–176; `Surface.zig` U1017–1019 DI1804–1906 I2536–2572,2577–2579,919; `renderer/message.zig` I86–104; `renderer/Thread.zig` I397–400,406–415,446–458 U487–493; `renderer/generic.zig` D2171–2173 I2217–2229; `termio/Termio.zig` DI182–248 I437–447,466–521; `termio/Thread.zig` I308–313,321–324 U464–468. |\n| n15 | structure | `Surface.zig` D104–131,141–142,155–166,229–299 I638–643,1297–1299,3437–3451,3466–3477,3935–3942. |\n| n16 | entity, behavior, relationship, subsystem | `Surface.zig` D190–207 DI2790–2982,3421–3432,3918–4297; `apprt/gtk/class/surface.zig` U1445–1458,2963–2974,3026–3034; `apprt/embedded.zig` I202–228,1052–1062,1131–1136 U2073–2084,2110–2116,2150–2164; +n17, n18, n19. |\n| n17 | behavior, relationship | `Surface.zig` U2792–2795,2834–2840 DI2987–3219,4941–5819; `input/Binding.zig` D303 I2722–2760; `App.zig` I319–331,444–482,486–529; `apprt/gtk/App.zig` I61–68; `apprt/gtk/class/application.zig` D692–698 I739–750; `apprt/embedded.zig` I303–323. |\n| n18 | behavior, relationship, subsystem | `Surface.zig` U2792–2795,2834–2846,2938–2961 I3326–3419 U3421–3432 I3802–3805,3813–3875 U3918–3923,4057–4094 I6264–6341; `input/key_encode.zig` I59–72,82–319,327–550,1028–1116; `input/mouse_encode.zig` I41–50,81–172,176–238,248–280; `input/paste.zig` I12–22,42–119. |\n| n19 | entity, behavior, relationship, guarantee | `Surface.zig` D171–175 DI895–920 U2953–2957,3871–3875,6335–6340; `termio/Termio.zig` DI431–447 U456–463; `termio/mailbox.zig` I47–55,57–108; `termio/message.zig` D92–98 I119–132; `termio/Thread.zig` I289–302,308–313,349–366. |\n| n20 | entity, behavior, relationship | `apprt/structs.zig` D13–21; `apprt/gtk/class/surface.zig` U3497–3502,3517–3538; `apprt/embedded.zig` U1026–1043; `Surface.zig` I447–471,536–562,2510–2516 U2549–2553 DI2600–2649 I2651–2658; `renderer/size.zig` DI28–79 I199–204,245–262,279–306; +n21. |\n| n21 | behavior, relationship | `Surface.zig` D2618 I2637–2649 DI2577–2579 U899–903,919; `termio/Termio.zig` I437–447,524–530,534–553,561–564; `termio/Thread.zig` D289–296 I308–313 U326 I389–406,427–451 U464–468; `renderer/Thread.zig` D290 I301–303,404,474–493; `renderer/generic.zig` DI2249–2266. |",
+    "completedAt": "2026-11-22T15:38:24.336Z"
+  },
+  {
+    "id": "child-6",
+    "name": "app",
+    "assignment": "Map d1 n1-n8, App architecture including focused reference, mailbox, font and device; return compact scopes and ranges with roles. I will handle root parent aggregation.",
+    "model": "gpt-6.2-astra",
+    "effort": "high",
+    "status": "finished",
+    "queuedAt": "2026-11-22T15:27:49.169Z",
+    "usage": {
+      "input": 52482,
+      "output": 5386,
+      "cacheRead": 327424,
+      "cacheWrite": 0,
+      "reasoning": 454,
+      "totalTokens": 385292
+    },
+    "cost": {
+      "input": 0.5248200000000001,
+      "output": 0.2693,
+      "cacheRead": 0.327424,
+      "cacheWrite": 0,
+      "total": 1.121544
+    },
+    "startedAt": "2026-11-22T15:36:05.764Z",
+    "sessionId": "01a203e6-798b-7005-80de-c96c4957b4c8",
+    "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase5-gcchw3sl-agent-repository-E7lXKk-checkout--/2026-11-22T15-36-05-771Z_01a203e6-798b-7005-80de-c96c4957b4c8.jsonl",
+    "text": "The **d1 n1–n8 mapping fragment** is in `/tmp/d1-app.json` in the requested JSON shape. It contains 8 scope records and 184 ranges, with child coverage merged into n4 and n2. Node n1 contains coordination anchors for root aggregation. File bounds were checked against commit `ea8b12a8a9894b5259c441eadd8f6f0c65e215af`; `validate_source_mappings` was not available, so there is no validator hash.\n\nCompact handoff below. Paths are relative to `src/` unless marked otherwise. **D** = declaration, **U** = use, **I** = implementation.\n\n| Node | Scope | Principal ranges |\n|---|---|---|\n| n1 | subsystem, relationship | `apprt.zig:39–53` D; `App.zig:22–28,45–58` D, `199–206,531–550` I; `Surface.zig:1–16,74–84,92–108,133–147` D, `477–484,564–590,592–611,623–649,711–725,746–767,829–885` I; `apprt/embedded.zig:518–520,615–624,634–646` UI |\n| n2 | entity, structure, behavior, relationship, subsystem | `App.zig:1–4,22–74` D, `76–613` DI; `apprt/embedded.zig:1714–1728,1743–1748` UI; includes n3–n8 coverage |\n| n3 | structure, behavior, relationship, guarantee | `App.zig:22,27–28,45–47` D, `128` I, `199–260,313–316,544–550` DI; `Surface.zig:3466,3471–3473` U; `apprt/embedded.zig:518–520,641–645` U, `670–672` I; `apprt/gtk/Surface.zig:25–29` I; `apprt/gtk/class/surface.zig:1963–1970,3557–3570` U; `apprt/surface.zig:238–246` U |\n| n4 | structure, behavior, relationship, subsystem | `App.zig:49–51,562–594` D, `129` I, `596–613` DI; `apprt/surface.zig:186–207` DI; `Surface.zig:573,585,711–721` IU; `termio/Termio.zig:342,389–399` I; `termio/Exec.zig:274–315` UI; `datastruct/blocking_queue.zig:29–34,56–72` D, `99–168` I; `apprt/gtk/App.zig:56–59`, `apprt/gtk/class/application.zig:1322–1325`, `apprt/embedded.zig:269–271` IU; repository-root `macos/Sources/Ghostty/Ghostty.App.swift:58–62,119–122,526–534` U/I; includes n5 |\n| n5 | entity, behavior, relationship, guarantee | `apprt/embedded.zig:1730–1736`, `apprt/gtk/class/application.zig:500,569–576` U; `App.zig:161–167,272–306,531–550` DI; `Surface.zig:1017–1241` DI |\n| n6 | structure, behavior, relationship, guarantee | `App.zig:53–55` D, `119–131,141–146` I; `font/SharedGridSet.zig:1–10,38–48,433–438,468–472` D, `52–86,88–154,411–431` DI; `Surface.zig:81–84` D, `528–534,580–585,627,870–871,2535–2572` U/I; `renderer/message.zig:29–43` D; `renderer/Thread.zig:397–400` UI; `renderer/generic.zig:818–821,1317–1322` I |\n| n7 | structure, behavior, relationship, guarantee | `App.zig:57–58` D, `131,148–151` I; `Surface.zig:564–570,580–588` UI; `renderer.zig:35–45`, `renderer/Options.zig:7–9` D; `renderer/generic.zig:712–721` UI; `renderer/Metal.zig:20,44–45` D, `56–71,131–146` I; `renderer/OpenGL.zig:15,47–48` D, `52–73,84–96` I; `renderer/metal/Device.zig:34–66`, `renderer/opengl/Device.zig:37–74,102–105` DI |\n| n8 | entity, behavior, relationship, guarantee | `App.zig:136–159`, `Surface.zig:829–879` DI; `apprt/embedded.zig:634–646`, `apprt/gtk/class/surface.zig:1963–1978` UI; `apprt/gtk/Surface.zig:12–17`, `font/SharedGridSet.zig:64–86`, `renderer/metal/Device.zig:63–66`, `renderer/opengl/Device.zig:102–105` I |\n\n**n8 qualification:** `App.deinit` calls the runtime surface’s `deinit` before releasing fonts and device. Embedded directly unregisters and deinitializes its core surface there. The GTK wrapper’s `deinit` is a no-op; GTK unregisters and deinitializes the core surface in the GObject finalizer instead.",
+    "completedAt": "2026-11-22T15:38:35.539Z"
+  }
+]

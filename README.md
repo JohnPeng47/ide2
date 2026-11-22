@@ -83,9 +83,9 @@ be reopened from the conversation selector after reload or server restart.
 Model selections are saved immediately in this browser and reused across reloads
 and conversations, including an explicit choice of Codex default.
 
-**Read Canvas** sends the active live canvas's short-context JSON to the conversation
+**Read Canvas** sends the active live canvas's graph projection to the conversation
 as `read_canvas` tool output and starts an agent response. It preserves your message
-draft and includes diagram ASCII, source references, hierarchy, and edges. The button
+draft and includes diagram ASCII and labeled edges. The button
 is available when chat is idle and a live canvas is open, including in Read only
 mode. Each click reads fresh state; it does not change the canvas. This requires a
 Codex CLI with app-server `turn/start.toolOutput` support.
@@ -97,14 +97,12 @@ captured canvas. Reloading requires a fresh turn; a disconnected browser is neve
 replaced with a headless instance. Standalone clients still use `canvas.list()` and
 `canvas.attach(...)`. Read-only chat access also blocks canvas mutations.
 
-For a bound `exec`, start with `return canvas.read({level: "small"});`. This returns
-current ASCII, content anchors and ranges, complete source mappings/evidence for the
-selected diagrams, mapped file ranges per node, highlight/jump status, and collapse
-state. `nodeIds` restricts the read. `level: "full"` adds groups, layout, geometry,
-floating objects, view state, and existing connections. Neither level exports undo
-history. IDs such as `@r<generation>_<read>.node:1` are immutable aliases scoped to
-that read's browser/document. Tables expire after 30 minutes or 128 retained reads;
-a stale alias asks for a fresh read and is never reassigned. Pass the read's `version`
+For a bound `exec`, use `return canvas.read({projectionType:"graph"});` to read diagram
+instances (`id`, `ascii`) and labeled edges. Content endpoints identify 1-based lines and
+columns in that ASCII. Use `layout` for bounds, positions and groups when preparing a
+requested write. Use `detail` for revision identities, anchors and source evidence.
+`nodeIds` restricts the read. Existing `level: "small"` and `level: "full"` reads
+support read-scoped aliases. Pass the read's `version`
 as `expectedVersion` when mutating. `nodes.setSourceMappings` and
 `set_diagram_source_mappings` no longer accept `expectedContentHash`.
 

@@ -1,4 +1,5 @@
-.mapping-subtree-toggle {
+/* Keep cell-sized controls independent of page and panel button styles. */
+[data-diagram-canvas] .mapping-subtree-toggle {
   position: absolute;
   z-index: 6;
   display: grid;
@@ -14,8 +15,9 @@
   cursor: pointer;
   pointer-events: auto;
 }
-.mapping-subtree-toggle:hover, .mapping-subtree-toggle:focus-visible {
+[data-diagram-canvas] .mapping-subtree-toggle:hover,
+[data-diagram-canvas] .mapping-subtree-toggle:focus-visible {
   border-color: var(--accent, var(--accent-primary));
   color: var(--accent, var(--accent-primary));
 }
-.mapping-subtree-toggle:disabled { opacity: .4; cursor: default; }
+[data-diagram-canvas] .mapping-subtree-toggle:disabled { opacity: .4; cursor: default; }

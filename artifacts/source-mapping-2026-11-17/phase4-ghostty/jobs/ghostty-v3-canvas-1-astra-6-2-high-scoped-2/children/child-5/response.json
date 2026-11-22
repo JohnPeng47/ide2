@@ -1,0 +1,18 @@
+{
+  "text": "{\n  \"diagramId\": \"d1\",\n  \"assignedNodes\": \"n11–n21\",\n  \"subsetFile\": \"/tmp/d1input/subset.json\",\n  \"compactRangesScopesAndRoles\": \"/tmp/d1input/map.py\",\n  \"mergeInstructions\": [\n    \"Append diagrams[0].nodes and diagrams[0].mappings from subset.json to d1. The file contains 11 scope records and 559 expanded mapping records across 30 repository-relative paths.\",\n    \"The subset already includes n14 in n13, n17–n19 in n16, n21 in n20, and the assigned child branches in n11. Do not expand these unions again.\",\n    \"Complete n11 with the session-related contributions from d1 n22–n48, then propagate n11 to the enclosing session-system node. Deduplicate overlapping lines within each node.\"\n  ],\n  \"notes\": \"d1 n13: Surface owns and deinitializes its DerivedConfig, but ownership of the aggregate does not imply a deep copy of every field; src/Surface.zig:425 assigns config.title directly. d1 n18: textCallback uses confirmed text-paste semantics, not keyboard encoding. Clipboard-originated paste has an additional mode-5522 path. d1 n19: the readonly guard is on Surface.queueIo, not all Termio traffic. d1 n21: Surface sends a resize directly to each worker; the later coalesced Termio.resize also notifies the renderer.\",\n  \"verification\": \"Checked paths, roles and inclusive line bounds at ea8b12a8a9894b5259c441eadd8f6f0c65e215af. validate_source_mappings was not available to this worker; the merged candidate still requires validation.\"\n}",
+  "usage": {
+    "input": 109456,
+    "output": 7599,
+    "cacheRead": 1202048,
+    "cacheWrite": 0,
+    "reasoning": 845,
+    "totalTokens": 1319103
+  },
+  "cost": {
+    "input": 1.09456,
+    "output": 0.37995000000000007,
+    "cacheRead": 1.2020480000000002,
+    "cacheWrite": 0,
+    "total": 2.676558
+  }
+}

@@ -1,0 +1,121 @@
+OpenCode Session runtime -- persistent conversations coordinate model reasoning and tool work
+|
+|-- [M] Public boundary: Session.Service (packages/core/src/session.ts)
+|   |-- create / get / list / messages / context / prompt / resume / interrupt
+|   |   `-- SessionHandler delegates HTTP operations to this service
+|   |       (packages/server/src/handlers/session.ts)
+|   |-- Session.make().forSession(id) shares host services and reloads current state
+|   |   `-- Handles expose conversation operations, not the runner's execution machinery
+|   |       (packages/core/src/session/session.ts)
+|   `-- Session identity joins projectID, location, parentID, agent, model and permissions
+|       `-- create(parentID) inherits location, metadata and permissions from the parent
+|
+|-- [O] Persistent conversation state: SessionStore + SessionProjector
+|   |   (packages/core/src/session/store.ts, projector.ts, sql.ts)
+|   |-- SessionTable -> identity, settings, lifecycle times, usage, revert and execution claim
+|   |-- SessionMessageTable + SessionPartTable -> ordered history and assistant content
+|   |-- SessionInboxTable -> pending input/control work, separate from delivered history
+|   |-- InstructionStateTable + InstructionEntryTable -> instruction baseline and updates
+|   |-- BlobTable + BlobRefTable -> media bytes and conversation references
+|   `-- [C] Commands and execution publish SessionEvent changes through Bus
+|       |   (packages/core/src/bus.ts; packages/core/src/session/projector.ts)
+|       |-- Per-aggregate serialization -> SQLite transaction
+|       |   |-- SessionProjector applies message, inbox, lifecycle and usage changes
+|       |   |-- Local commit hook + EventSequenceTable advance in the same transaction
+|       |   `-- EventTable retains payloads only when Bus.configured({ persist: true })
+|       |       `-- Persistent projections do not require retaining the full event log
+|       `-- Commit -> notify subscribers; reads return projected SessionStore state
+|
+|-- [C] Input admission: Session.prompt -> SessionInbox -> SessionExecution.wake
+|   |   (packages/core/src/session/session.ts, prompt.ts, inbox.ts)
+|   |-- reconcile(messageID, sessionID, type, delivery) checks existing admission
+|   |-- SessionPrompt.prepare runs with the session's location capabilities
+|   |   `-- Successful preparation -> commit staged revert -> admit pending work
+|   |-- SessionInbox.admit records work before waking execution
+|   |   |-- User and synthetic input carry conversation content
+|   |   `-- Compaction and move items carry between-step control work
+|   |-- Delivery policy: steer versus queue
+|   |   |-- steer can enter the continuing turn at a step boundary
+|   |   `-- queue waits for a boundary admitting next-turn input
+|   `-- SessionInbox.promote -> SessionEvent.InboxDelivered
+|       `-- Delete pending row and insert delivered content in the same event transaction
+|
+|-- [O] Process-local execution owner: SessionExecution + SessionRunCoordinator
+|   |   (packages/core/src/session/execution.ts, run-coordinator.ts)
+|   |-- executions[sessionID] -> owner fiber, done Deferred, pendingWake, stopping flag
+|   |   |-- One execution per session; different sessions may run concurrently
+|   |   `-- wake coalesces requests; pendingWake prevents work being lost at idle transition
+|   |-- resume -> start or join; wake -> schedule without waiting for completion
+|   |-- started -> SessionEvent.Execution.Started + durable SessionStore claim
+|   |-- drain -> Instance.provide(session) -> SessionRunner.drain
+|   |   `-- Moved / Reloaded -> reacquire capabilities and continue at the new boundary
+|   |-- interrupt acknowledges cancellation before cleanup finishes
+|   |   `-- awaitIdle waits through cleanup, terminal settlement and successor executions
+|   `-- settled -> Execution.Succeeded / Failed / Interrupted
+|       |-- Normal terminal settlement releases the execution claim
+|       `-- Shutdown preserves the claim for SessionRestart.resumeSuspendedSessions
+|           (packages/core/src/session/execution/restart.ts)
+|           |-- Durable resume counter bounds repeated recovery attempts
+|           `-- Recovery is at-least-once, not exactly-once external tool effects
+|
+|-- [C] Agent loop: SessionRunnerLLM.drain -> runStep -> SessionStep.attempt
+|   |   (packages/core/src/session/runner/llm.ts, step.ts)
+|   |-- Boundary preparation
+|   |   |-- Wait for Plugin activation; settle stale compactions/tool calls
+|   |   |-- Process eligible inbox controls and promote input
+|   |   `-- SessionContext.select/load builds the next step's inputs
+|   |-- [D] Request context (packages/core/src/session/context.ts)
+|   |   |-- SessionStore state + Agent.select -> selected agent and session configuration
+|   |   |-- Agent permissions + session permissions -> Tool.snapshot and filtered discovery
+|   |   |-- Built-ins + discovered instructions + skills + MCP + references + entries
+|   |   |   `-- Instructions.combine -> ordered instruction sources
+|   |   `-- SessionRunnerModel.resolve + SessionHistory.entriesForRunner
+|   |       `-- Loaded = session + agent + model + initial instructions + messages + tools
+|   |-- SessionCompaction.estimatePrompt / compact / precompute
+|   |   `-- Context pressure or provider overflow -> compact history before retrying
+|   |-- SessionModelRequest.baseTranscript -> context.request.primary
+|   |   |   (packages/core/src/session/model-request.ts)
+|   |   |-- History + instructions + model capabilities + tool snapshot -> LLMRequest
+|   |   `-- Prepared request retains executeTool for the advertised tool set
+|   |-- SessionStep.attempt -> LLMClient.stream(request, options)
+|   |   |-- createLLMEventPublisher translates streaming progress into session events
+|   |   |-- Tool.Called publication completes before local tool execution starts
+|   |   |-- Scoped tool fibers execute calls while provider output streams
+|   |   `-- Join tool fibers -> settle results, usage and snapshot-derived file changes
+|   |       `-- SessionEvent.Step.Ended feeds the persistent conversation state above
+|   `-- Outcome drives the next activation
+|       |-- needsContinuation -> load updated history and run another step
+|       |-- Retry -> SessionRunnerRetry waits, then refreshes context
+|       |-- Agent step limit -> toolChoice: none for the final response
+|       `-- No continuation/input -> idle hook, then Complete unless new work appears
+|
+|-- [M] Execution capabilities are borrowed from the session's Location
+|   |   (packages/core/src/instance/service.ts, location-services.ts)
+|   |-- Instance.provide(session) selects capabilities by session.location
+|   |-- LocationServiceMap caches healthy service graphs by canonical Location.Ref
+|   |   |-- Agents, models, plugins, tools and runner context share location scope
+|   |   `-- Invalidation detaches routing; borrowers hand off at a boundary
+|   |-- [C] Tool.Snapshot.execute dispatches the request's captured tools
+|   |   |   (packages/core/src/tool.ts)
+|   |   |-- tool.execute.before / after hooks surround normalized execution
+|   |   |-- Direct tools or CodeMode execute; MCP contributes tools to the snapshot
+|   |   `-- Tool executors apply their permission policy within invocation context
+|   `-- [C] SubagentTool -> child Session + SubagentJob
+|       |   (packages/core/src/tool/plugin/subagent.ts)
+|       |-- Parent-linked child uses the same session execution machinery
+|       |-- Tool returns immediately while the child runs in the background
+|       `-- Terminal settlement -> SubagentReport -> parent notification and wake
+|           (packages/core/src/session/execution/subagent-report.ts)
+|
+`-- [M/O] Conversation management and observation remain session-centered
+    |-- fork -> copy history through/before a boundary and inherit current instructions
+    |-- revert.stage / clear / commit -> control which history and changes remain active
+    |-- remove -> interrupt -> awaitIdle -> cancel jobs -> close model transport
+    |   `-- Clear environment, publish Deleted, remove event log, recursively remove children
+    |       (packages/core/src/session.ts)
+    |-- Session.log -> Bus.log(aggregateID, after, follow)
+    |   `-- Ordered replay/follow API; historical payload availability depends on persistence
+    `-- Bus live events -> EventFeed -> SSE subscribers
+        (packages/server/src/event-feed.ts)
+        |-- Bounded subscriber queues; overflow fails the slow subscriber
+        `-- Subscriber scope releases queue and subscription; it does not own session execution

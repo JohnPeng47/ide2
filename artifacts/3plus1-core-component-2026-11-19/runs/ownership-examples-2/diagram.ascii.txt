@@ -1,0 +1,186 @@
+Ghostty terminal-session core -- shared application resources and independently owned terminal surfaces
+|
+|-- Core App: application-lifetime shared owner [src/App.zig:80-155]
+|   |   Created by main_ghostty or ghostty_app_new; destroyed at application shutdown.
+|   |   App.deinit requests remaining surface teardown before releasing shared resources.
+|   |
+|   |-- surfaces registry, focused_surface, focus/conditional state, notification state
+|   |   [src/App.zig:25-74, addSurface/deleteSurface]
+|   |   Owns registry storage, not native surface allocations; add/delete changes membership.
+|   |   `-- -> Runtime surface holders below; deleteSurface does not destroy their memory.
+|   |
+|   |-- mailbox: Mailbox.Queue [src/App.zig:51, tick/drainMailbox]
+|   |   Retained with App; producers enqueue application/surface messages; GUI ticks drain it.
+|   |   `-- -> Runtime app below supplies wakeup/event-loop integration.
+|   |
+|   |-- font_grid_set: font.SharedGridSet [src/font/SharedGridSet.zig:53-157,413-430]
+|   |   Initialized with App; ref(config,size) creates/reuses entries; deref removes at zero.
+|   |   |-- font_lib, lazy font_discover, map keys/refcounts, synchronization
+|   |   |   Retained across surfaces; deinit releases discovery/library after grids disappear.
+|   |   `-- SharedGrid entries [src/font/SharedGrid.zig:42-64,83-130]
+|   |       |-- resolver/face collection, metrics, codepoint/glyph caches, grayscale/color atlases
+|   |       |   Populated during font resolution/rasterization; final deref destroys grid storage.
+|   |       `-- -> SharedGridSet.font_discover and map-key configuration are borrowed.
+|   |
+|   `-- device: ?*renderer.Device [src/App.zig:58,149; src/Surface.zig:561-567]
+|       First Surface.init creates it; all surface renderers borrow it.
+|       `-- Backend graphics-device resources; App.deinit releases only after surfaces are gone.
+|
+|-- Runtime application holder: apprt.App / native application boundary
+|   |   Desktop bootstrap: src/main_ghostty.zig:99-114; embedded: src/apprt/embedded.zig:1716-1748.
+|   |   Native window/tab layout is outside this terminal-session ownership scope.
+|   |
+|   |-- Retained application configuration and runtime state
+|   |   |-- Embedded App.config, opts, lazy keymap [src/apprt/embedded.zig:139-177]
+|   |   |   init clones caller configuration; config changes replace it; terminate frees config/keymap.
+|   |   `-- GTK App.app: Application [src/apprt/gtk/App.zig:27-54]
+|   |       Application retains its Config reference and native application services;
+|   |       setConfig replaces the reference; deinit releases it and services.
+|   |       [src/apprt/gtk/class/application.zig:458-478,1253-1256]
+|   |
+|   `-- -> Core App above: runtime routes events to it, rather than duplicating terminal state.
+|       App.updateConfig borrows caller config only during the call; surfaces derive owned copies.
+|       [src/App.zig:170-205]
+|
+`-- Runtime surface holders: one per native terminal view
+    |   Embedded Surface.init/deinit or GTK Surface.initSurface/finalize controls core lifetime.
+    |   [src/apprt/embedded.zig:447-645; src/apprt/gtk/class/surface.zig:1963-1980,3557-3629]
+    |   Register at creation; unregister before core destruction; native holder releases allocation.
+    |
+    |-- Native-facing surface state
+    |   Embedded title, content_scale, size, cursor_pos and optional inspector frontend;
+    |   GTK retains its widget/render-surface state. Released by the respective native holder.
+    |   [src/apprt/embedded.zig:447-463,634-668; src/apprt/gtk/class/surface.zig:1963-1992]
+    |
+    |-- -> Runtime application above supplies configuration and platform callbacks.
+    |
+    `-- core_surface: Surface -- the live terminal-session owner [src/Surface.zig:69-188,477-891]
+        |   init constructs state before spawning renderer_thr and io_thr.
+        |   deinit stops/joins search, renderer, then IO; only afterward frees shared state.
+        |   Renderer deinit precedes renderer-thread deinit so display callbacks cannot use freed handles.
+        |
+        |-- Session/input state: config: DerivedConfig, mouse, keyboard, size, focus/visibility,
+        |   readonly/child-exit state, font size/metrics [src/Surface.zig:69-188,829-883,1804-1892]
+        |   |-- Owned derived configuration and keyboard sequence/table storage
+        |   |   Input callbacks mutate state; updateConfig replaces config and clears active key tables;
+        |   |   deinit releases queued requests, table storage and config.
+        |   `-- Mouse selection gesture state
+        |       -> io.terminal below; deinit releases gesture tracking before terminal destruction.
+        |
+        |-- font_grid_key: shared-grid lifetime claim [src/Surface.zig:530-534,871,2536-2575]
+        |   -> Core App.font_grid_set; Surface owns a reference, not the grid allocation.
+        |   setFontSize acquires a new reference and hands old-key release to renderer mailbox;
+        |   renderer installs the new grid before deref(old_key). Surface deinit drops current key.
+        |   [src/renderer/Thread.zig:397-400]
+        |
+        |-- renderer_state: renderer.State, with Surface-managed mutex and preedit allocation
+        |   [src/renderer/State.zig:13-45; src/Surface.zig:603-656,873-880]
+        |   |-- IME preedit, renderer-facing mouse state, demand/handoff synchronization state
+        |   |   UI updates under synchronization; Surface frees preedit/mutex after workers join.
+        |   |-- -> io.terminal below: shared terminal pointer, NOT a second terminal owner.
+        |   `-- -> inspector below: published/cleared under the mutex before inspector release.
+        |
+        |-- io: termio.Termio [src/termio/Termio.zig:254-366]
+        |   Initialized by Surface; takes backend/config/mailbox ownership on success;
+        |   deinit runs after IO worker and its reader have stopped.
+        |   |
+        |   |-- terminal: terminal.Terminal -- authoritative emulation state
+        |   |   [src/terminal/Terminal.zig:344-404; src/termio/Termio.zig:705-754]
+        |   |   PTY reader processOutput mutates it through the stream under renderer_state.mutex;
+        |   |   resize/input actions also change it under synchronization; Termio.deinit destroys it.
+        |   |   |-- Modes, cursor policy, tabstops, dimensions, scrolling region, palette,
+        |   |   |   title/pwd, glyph glossary and optional protocol state
+        |   |   |   Created/defaulted at init; escape sequences update them; Terminal.deinit frees storage.
+        |   |   `-- screens: ScreenSet [src/terminal/ScreenSet.zig:38-113]
+        |   |       Primary allocated immediately; alternate allocated lazily; remove/deinit frees screens.
+        |   |       |-- all[primary/alternate]: Screen [src/terminal/Screen.zig:315-367]
+        |   |       |   |-- pages: PageList -- visible cells, scrollback and tracked-position storage
+        |   |       |   |   Output/scroll/resize changes retained pages; limits prune history;
+        |   |       |   |   Screen.deinit releases remaining page storage.
+        |   |       |   `-- Cursor/saved cursor, selection, charset/keyboard flags, Kitty image storage
+        |   |       |       Screen-local state changes with terminal output/input; released with Screen.
+        |   |       `-- active -> an entry in ScreenSet.all; switching does not duplicate screen ownership.
+        |   |
+        |   |-- terminal_stream: StreamHandler.Stream [src/termio/Termio.zig:313-350,361-362]
+        |   |   |-- Persistent parser and handler state; bytes advance it across read boundaries;
+        |   |   |   stream.deinit releases parser/handler storage.
+        |   |   `-- -> Termio.terminal and Surface.renderer_state; handler does not own either.
+        |   |
+        |   |-- backend.exec: Exec [src/termio/Exec.zig:45-60,587-610,887-945,1115-1155]
+        |   |   `-- subprocess: Subprocess
+        |   |       |-- Command arguments/cwd arena, environment and configured sizes
+        |   |       |   Exec.init takes environment ownership; successful start frees environment;
+        |   |       |   Subprocess.deinit frees retained setup storage.
+        |   |       `-- pty and process handles
+        |   |           threadEnter starts command/PTY; resize updates PTY dimensions;
+        |   |           threadExit records external exit or stops command; deinit closes PTY.
+        |   |
+        |   |-- mailbox: termio.Mailbox, DerivedConfig, startup ThreadEnterState
+        |   |   [src/Surface.zig:724-751; src/termio/Termio.zig:354-436]
+        |   |   Queued input/config payloads transfer to IO processing; startup state is consumed/freed
+        |   |   at threadEnter; remaining config/mailbox/startup storage is released by Termio.deinit.
+        |   `-- -> Surface.renderer_state, renderer_thread mailbox/wakeup, Core App mailbox
+        |       Borrowed communication/synchronization targets remain alive until IO has joined.
+        |
+        |-- io_thread: termio.Thread + io_thr execution lifetime
+        |   [src/termio/Thread.zig:92-134,236-285; src/Surface.zig:762-776,841-860]
+        |   |-- Event loop, stop handle, scroll/coalescing/synchronized-output timers
+        |   |   Created at init; IO callbacks update timer state; deinit releases after join.
+        |   |-- CallbackData.data: Termio.ThreadData, local to threadMain_
+        |   |   Backend threadEnter initializes it; threadExit precedes data.deinit on worker exit.
+        |   |   |-- Exec.ThreadData: write stream/queue/pool, process watcher, termios timer, quit pipe
+        |   |   |   Writes recycle request storage on completion; deinit releases worker-local resources.
+        |   |   |   [src/termio/Exec.zig:493-565]
+        |   |   `-- read_thread: Exec.ReadThread [src/termio/Exec.zig:86-230,1412-1506]
+        |   |       Exec.threadExit stops command, signals reader and joins it before data cleanup.
+        |   |       |-- POSIX reader-local Pipeline, idle pipe and gather_thread
+        |   |       |   Gather fills ring batches; reader parses them; gather is joined and pipes closed
+        |   |       |   before reader-local storage expires. Windows uses its separate read loop.
+        |   |       `-- -> Termio backend's PTY and terminal_stream; borrowed for reader lifetime.
+        |   `-- -> Surface.io; worker execution does not own the Termio object.
+        |
+        |-- renderer: Renderer(GraphicsAPI) [src/renderer/generic.zig:90-304,712-878]
+        |   |-- DerivedConfig, terminal_state snapshot, cells, uniforms, image/overlay state,
+        |   |   font_shaper/cache, search highlights and draw_mutex
+        |   |   Render updates rebuild retained drawing state; config/messages replace snapshots;
+        |   |   threadExit/deinit release renderer-owned state, not the authoritative terminal.
+        |   |
+        |   |-- api, swap_chain/frame resources, shader pipelines and GPU images
+        |   |   [src/renderer/generic.zig:321-460,910-940,1244 releaseGpuResources]
+        |   |   Drawing creates/rebuilds resources; occlusion/unrealize can release GPU resources early;
+        |   |   threadExit releases GPU state before graphics-context teardown; deinit releases api.
+        |   |
+        |   |-- latest_frame and optional display_link [src/renderer/generic.zig:145-151,233-244,841-864]
+        |   |   New exports replace/release retained frame; deinit releases final frame.
+        |   |   Display link created lazily; main-thread deinit closes it before thread handles disappear.
+        |   |   `-- -> renderer_thread.draw_now; display callback borrows this handle.
+        |   |
+        |   |-- -> Core App.device and font_grid_set.SharedGrid; renderer borrows shared resources.
+        |   `-- -> Surface.renderer_state/io.terminal; frame snapshot reads use shared synchronization.
+        |
+        |-- renderer_thread: renderer.Thread + renderer_thr execution lifetime
+        |   [src/renderer/Thread.zig:116-235; src/Surface.zig:829-859]
+        |   |-- Event loop, mailbox, wakeup/stop/draw_now handles, render/cursor timers,
+        |   |   derived scheduling config and optional compression state
+        |   |   init allocates; worker drains messages and schedules frames/compression;
+        |   |   Surface signals stop and joins, then deinit destroys handles/mailbox/state.
+        |   `-- -> Surface.renderer, renderer_state and native surface; all outlive worker execution.
+        |
+        |-- search: ?Search [src/Surface.zig:210-226,5100-5146]
+        |   Nonempty search creates state/thread lazily; clearing search or Surface.deinit stops/joins it.
+        |   |-- terminal.search.Thread: mailbox, loop, wakeup/stop, refresh timer, notification state
+        |   |   deinit releases resources only after join [src/terminal/search/Thread.zig:84-130].
+        |   |-- TerminalSearch: viewport/per-screen searchers, copied needle, generations and matches
+        |   |   Queries/output refresh results; deinit releases search storage and valid tracked pins.
+        |   |   [src/terminal/search/terminal.zig:26-125]
+        |   `-- -> Surface.io.terminal and renderer_state.mutex; search is stopped before terminal dies.
+        |
+        |-- inspector: ?*Inspector [src/Surface.zig:936-995; src/inspector/Inspector.zig:19-64]
+        |   activateInspector allocates; deactivate clears shared pointer before freeing;
+        |   Surface.deinit frees any remaining inspector after workers stop.
+        |   `-- gui inspection panels/event history and mouse state
+        |       Recording updates retained diagnostic data; Inspector.deinit releases GUI-owned storage.
+        |
+        `-- -> Core App, runtime application and runtime surface: borrowed backpointers
+            Surface.close requests native teardown; it does not free its own native holder.
+            [src/Surface.zig:75-79,887-892]

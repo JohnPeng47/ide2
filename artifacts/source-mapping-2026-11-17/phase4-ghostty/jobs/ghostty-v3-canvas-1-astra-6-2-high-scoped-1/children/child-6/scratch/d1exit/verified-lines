@@ -1,0 +1,2492 @@
+n38 src/Surface.zig
+   138 /// Terminal inspector
+   139 inspector: ?*inspectorpkg.Inspector = null,
+n38 src/Surface.zig
+   184 /// Search state
+   185 search: ?Search = null,
+n38 src/Surface.zig
+   209 /// The search state for the surface.
+   210 const Search = struct {
+   211     state: terminal.search.Thread,
+   212     thread: std.Thread,
+   213 
+   214     pub fn deinit(self: *Search) void {
+   215         // Notify the thread to stop
+   216         self.state.stop.notify() catch |err| log.err(
+   217             "error notifying search thread to stop, may stall err={}",
+   218             .{err},
+   219         );
+   220 
+   221         // Wait for the OS thread to quit
+   222         self.thread.join();
+   223 
+   224         // Now it is safe to deinit the state
+   225         self.state.deinit();
+   226     }
+   227 };
+n38 src/Surface.zig
+   830     // Stop search thread
+   831     if (self.search) |*s| s.deinit();
+n38 src/Surface.zig
+   860     if (self.inspector) |v| {
+   861         v.deinit(self.alloc);
+   862         self.alloc.destroy(v);
+   863     }
+n38 src/Surface.zig
+   931 /// Activate the inspector. This will begin collecting inspection data.
+   932 /// This will not affect the GUI. The GUI must use performAction to
+   933 /// show/hide the inspector UI.
+   934 pub fn activateInspector(self: *Surface) !void {
+   935     if (self.inspector != null) return;
+   936 
+   937     // Setup the inspector
+   938     const ptr = try self.alloc.create(inspectorpkg.Inspector);
+   939     errdefer self.alloc.destroy(ptr);
+   940     ptr.* = try inspectorpkg.Inspector.init(self.alloc);
+   941     errdefer ptr.deinit(self.alloc);
+   942     self.inspector = ptr;
+   943     errdefer self.inspector = null;
+   944 
+   945     // Put the inspector onto the render state
+   946     {
+   947         self.renderer_state.mutex.lockUncancelable(global.io());
+   948         defer self.renderer_state.mutex.unlock(global.io());
+   949         assert(self.renderer_state.inspector == null);
+   950         self.renderer_state.inspector = self.inspector;
+   951     }
+   952 
+   953     // Notify our components we have an inspector active
+   954     _ = self.renderer_thread.mailbox.push(global.io(), .{ .inspector = true }, .{ .forever = {} });
+   955     self.queueIo(.{ .inspector = true }, .unlocked);
+   956 }
+n38 src/Surface.zig
+   971 /// Deactivate the inspector and stop collecting any information.
+   972 pub fn deactivateInspector(self: *Surface) void {
+   973     const insp = self.inspector orelse return;
+   974 
+   975     // Remove the inspector from the render state
+   976     {
+   977         self.renderer_state.mutex.lockUncancelable(global.io());
+   978         defer self.renderer_state.mutex.unlock(global.io());
+   979         assert(self.renderer_state.inspector != null);
+   980         self.renderer_state.inspector = null;
+   981     }
+   982 
+   983     // Notify our components we have deactivated inspector
+   984     _ = self.renderer_thread.mailbox.push(global.io(), .{ .inspector = false }, .{ .forever = {} });
+   985     self.queueIo(.{ .inspector = false }, .unlocked);
+   986 
+   987     // Deinit the inspector
+   988     insp.deinit(self.alloc);
+   989     self.alloc.destroy(insp);
+   990     self.inspector = null;
+   991 }
+n38 src/Surface.zig
+  1225         .search_total => |v| {
+  1226             _ = try self.rt_app.performAction(
+  1227                 .{ .surface = self },
+  1228                 .search_total,
+  1229                 .{ .total = v },
+  1230             );
+  1231         },
+  1232 
+  1233         .search_selected => |v| {
+  1234             _ = try self.rt_app.performAction(
+  1235                 .{ .surface = self },
+  1236                 .search_selected,
+  1237                 .{ .selected = v },
+  1238             );
+  1239         },
+n38 src/Surface.zig
+  1485 fn searchCallback(event: terminal.search.Thread.Event, ud: ?*anyopaque) void {
+  1486     // IMPORTANT: This function is run on the SEARCH THREAD! It is NOT SAFE
+  1487     // to access anything other than values that never change on the surface.
+  1488     // The surface is guaranteed to be valid for the lifetime of the search
+  1489     // thread.
+  1490     const self: *Surface = @ptrCast(@alignCast(ud.?));
+  1491     self.searchCallback_(event) catch |err| {
+  1492         log.warn("error in search callback err={}", .{err});
+  1493     };
+  1494 }
+  1495 
+  1496 fn searchCallback_(
+  1497     self: *Surface,
+  1498     event: terminal.search.Thread.Event,
+  1499 ) !void {
+  1500     // NOTE: This runs on the search thread.
+  1501 
+  1502     switch (event) {
+  1503         .viewport_matches => |matches_unowned| {
+  1504             var arena: ArenaAllocator = .init(self.alloc);
+  1505             errdefer arena.deinit();
+  1506             const alloc = arena.allocator();
+  1507 
+  1508             const matches = try alloc.dupe(terminal.highlight.Flattened, matches_unowned);
+  1509             for (matches) |*m| m.* = try m.clone(alloc);
+  1510 
+  1511             _ = self.renderer_thread.mailbox.push(
+  1512                 global.io(),
+  1513                 .{ .search_viewport_matches = .{
+  1514                     .arena = arena,
+  1515                     .matches = matches,
+  1516                 } },
+  1517                 .forever,
+  1518             );
+  1519             try self.renderer_thread.wakeup.notify();
+  1520         },
+  1521 
+  1522         .selected_match => |selected_| {
+  1523             if (selected_) |sel| {
+  1524                 // Copy the flattened match.
+  1525                 var arena: ArenaAllocator = .init(self.alloc);
+  1526                 errdefer arena.deinit();
+  1527                 const alloc = arena.allocator();
+  1528                 const match = try sel.highlight.clone(alloc);
+  1529 
+  1530                 _ = self.renderer_thread.mailbox.push(
+  1531                     global.io(),
+  1532                     .{ .search_selected_match = .{
+  1533                         .arena = arena,
+  1534                         .match = match,
+  1535                     } },
+  1536                     .forever,
+  1537                 );
+  1538 
+  1539                 // Send the selected index to the surface mailbox
+  1540                 _ = self.surfaceMailbox().push(
+  1541                     .{ .search_selected = sel.idx },
+  1542                     .forever,
+  1543                 );
+  1544             } else {
+  1545                 // Reset our selected match
+  1546                 _ = self.renderer_thread.mailbox.push(
+  1547                     global.io(),
+  1548                     .{ .search_selected_match = null },
+  1549                     .forever,
+  1550                 );
+  1551 
+  1552                 // Reset the selected index
+  1553                 _ = self.surfaceMailbox().push(
+  1554                     .{ .search_selected = null },
+  1555                     .forever,
+  1556                 );
+  1557             }
+  1558 
+  1559             try self.renderer_thread.wakeup.notify();
+  1560         },
+  1561 
+  1562         .total_matches => |total| {
+  1563             _ = self.surfaceMailbox().push(
+  1564                 .{ .search_total = total },
+  1565                 .forever,
+  1566             );
+  1567         },
+  1568 
+  1569         // When we quit, tell our renderer to reset any search state.
+  1570         .quit => {
+  1571             _ = self.renderer_thread.mailbox.push(
+  1572                 global.io(),
+  1573                 .{ .search_selected_match = null },
+  1574                 .forever,
+  1575             );
+  1576             _ = self.renderer_thread.mailbox.push(
+  1577                 global.io(),
+  1578                 .{ .search_viewport_matches = .{
+  1579                     .arena = .init(self.alloc),
+  1580                     .matches = &.{},
+  1581                 } },
+  1582                 .forever,
+  1583             );
+  1584             try self.renderer_thread.wakeup.notify();
+  1585 
+  1586             // Reset search totals in the surface
+  1587             _ = self.surfaceMailbox().push(
+  1588                 .{ .search_total = null },
+  1589                 .forever,
+  1590             );
+  1591             _ = self.surfaceMailbox().push(
+  1592                 .{ .search_selected = null },
+  1593                 .forever,
+  1594             );
+  1595         },
+  1596 
+  1597         // Unhandled, so far.
+  1598         .complete => {},
+  1599     }
+  1600 }
+n38 src/Surface.zig
+  4941 pub fn performBindingAction(self: *Surface, action: input.Binding.Action) !bool {
+n38 src/Surface.zig
+  5059         .start_search => {
+  5060             // To save resources, we don't actually start a search here,
+  5061             // we just notify the apprt. The real thread will start when
+  5062             // the first needles are set.
+  5063             return try self.rt_app.performAction(
+  5064                 .{ .surface = self },
+  5065                 .start_search,
+  5066                 .{ .needle = "" },
+  5067             );
+  5068         },
+  5069 
+  5070         .search_selection => {
+  5071             const selection = try self.selectionString(self.alloc) orelse return false;
+  5072             defer self.alloc.free(selection);
+  5073             return try self.rt_app.performAction(
+  5074                 .{ .surface = self },
+  5075                 .start_search,
+  5076                 .{ .needle = selection },
+  5077             );
+  5078         },
+  5079 
+  5080         .end_search => {
+  5081             // We only return that this was performed if we actually
+  5082             // stopped a search, but we also send the apprt end_search so
+  5083             // that GUIs can clean up stale stuff.
+  5084             const performed = self.search != null;
+  5085 
+  5086             if (self.search) |*s| {
+  5087                 s.deinit();
+  5088                 self.search = null;
+  5089             }
+  5090 
+  5091             _ = try self.rt_app.performAction(
+  5092                 .{ .surface = self },
+  5093                 .end_search,
+  5094                 {},
+  5095             );
+  5096 
+  5097             return performed;
+  5098         },
+  5099 
+  5100         .search => |text| search: {
+  5101             const s: *Search = if (self.search) |*s| s else init: {
+  5102                 // If we're stopping the search and we had no prior search,
+  5103                 // then there is nothing to do.
+  5104                 if (text.len == 0) return false;
+  5105 
+  5106                 // We need to assign directly to self.search because we need
+  5107                 // a stable pointer back to the thread state.
+  5108                 self.search = .{
+  5109                     .state = try .init(self.alloc, .{
+  5110                         .mutex = self.renderer_state.mutex,
+  5111                         .terminal = self.renderer_state.terminal,
+  5112                         .event_cb = &searchCallback,
+  5113                         .event_userdata = self,
+  5114                     }),
+  5115                     .thread = undefined,
+  5116                 };
+  5117                 const s: *Search = &self.search.?;
+  5118                 errdefer s.state.deinit();
+  5119 
+  5120                 s.thread = try .spawn(
+  5121                     .{},
+  5122                     terminal.search.Thread.threadMain,
+  5123                     .{&s.state},
+  5124                 );
+  5125                 s.thread.setName(global.io(), "search") catch {};
+  5126 
+  5127                 break :init s;
+  5128             };
+  5129 
+  5130             // Zero-length text means stop searching.
+  5131             if (text.len == 0) {
+  5132                 s.deinit();
+  5133                 self.search = null;
+  5134                 break :search;
+  5135             }
+  5136 
+  5137             _ = s.state.mailbox.push(
+  5138                 global.io(),
+  5139                 .{ .change_needle = try .init(
+  5140                     self.alloc,
+  5141                     text,
+  5142                 ) },
+  5143                 .forever,
+  5144             );
+  5145             s.state.wakeup.notify() catch {};
+  5146         },
+  5147 
+  5148         .navigate_search => |nav| {
+  5149             const s: *Search = if (self.search) |*s| s else return false;
+  5150             _ = s.state.mailbox.push(
+  5151                 global.io(),
+  5152                 .{ .select = switch (nav) {
+  5153                     .next => .next,
+  5154                     .previous => .prev,
+  5155                 } },
+  5156                 .forever,
+  5157             );
+  5158             s.state.wakeup.notify() catch {};
+  5159         },
+n38 src/terminal/search/Thread.zig
+   118 pub fn deinit(self: *Thread) void {
+   119     self.refresh.deinit();
+   120     self.wakeup.deinit();
+   121     self.stop.deinit();
+   122     self.loop.deinit();
+   123     // Nothing can possibly access the mailbox anymore, destroy it.
+   124     self.mailbox.destroy(self.alloc);
+   125 
+   126     if (self.search) |*s| {
+   127         self.opts.mutex.lockUncancelable(global.io());
+   128         defer self.opts.mutex.unlock(global.io());
+   129         s.deinit(self.opts.terminal);
+   130     }
+   131 }
+n38 src/terminal/search/Thread.zig
+   134 pub fn threadMain(self: *Thread) void {
+   135     // Call child function so we can use errors...
+   136     self.threadMain_() catch |err| {
+   137         // In the future, we should expose this on the thread struct.
+   138         log.warn("search thread err={}", .{err});
+   139     };
+   140 }
+   141 
+   142 fn threadMain_(self: *Thread) !void {
+n38 src/terminal/search/Thread.zig
+   160     // Start the async handlers
+   161     self.wakeup.wait(&self.loop, &self.wakeup_c, Thread, self, wakeupCallback);
+   162     self.stop.wait(&self.loop, &self.stop_c, Thread, self, stopCallback);
+   163 
+   164     // Send an initial wakeup so we drain our mailbox immediately.
+   165     try self.wakeup.notify();
+   166 
+   167     // Start the refresh timer
+   168     self.startRefreshTimer();
+   169 
+   170     // Run
+   171     log.debug("starting search thread", .{});
+   172     defer {
+   173         log.debug("starting search thread shutdown", .{});
+   174 
+   175         // Send the quit message
+   176         if (self.opts.event_cb) |cb| {
+   177             cb(.quit, self.opts.event_userdata);
+   178         }
+   179     }
+   180 
+   181     // Unlike some of our other threads, we interleave search work
+   182     // with our xev loop so that we can try to make forward search progress
+   183     // while also listening for messages.
+   184     while (true) {
+   185         // If our loop is canceled then we drain our messages and quit.
+   186         if (self.loop.stopped()) {
+   187             while (self.mailbox.pop(global.io())) |message| {
+   188                 log.debug("mailbox message ignored during shutdown={}", .{message});
+   189             }
+   190 
+   191             return;
+   192         }
+   193 
+   194         const s: *TerminalSearch = if (self.search) |*s| s else {
+   195             // If we're not actively searching, we can block the loop
+   196             // until it does some work.
+   197             try self.loop.run(.once);
+   198             continue;
+   199         };
+   200 
+   201         // If we have an active search, we always send any pending
+   202         // notifications. Even if the search is complete, there may be
+   203         // notifications to send.
+   204         if (self.opts.event_cb) |cb| {
+   205             self.notify(s, cb, self.opts.event_userdata);
+   206         }
+   207 
+   208         if (s.isComplete()) {
+   209             // If our search is complete, there's no more work to do, we
+   210             // can block until we have an xev action.
+   211             try self.loop.run(.once);
+   212             continue;
+   213         }
+   214 
+   215         // Tick the search. This will trigger any event callbacks, lock
+   216         // for data loading, etc.
+   217         switch (s.tick()) {
+   218             // We're complete now when we were not before. Notify!
+   219             .complete => {},
+   220 
+   221             // Forward progress was made.
+   222             .progress => {},
+   223 
+   224             // All searches are blocked. Let's grab the lock and feed data.
+   225             .blocked => {
+   226                 self.opts.mutex.lockUncancelable(global.io());
+   227                 defer self.opts.mutex.unlock(global.io());
+   228                 self.feedLocked(s);
+   229             },
+   230         }
+   231 
+   232         // We have an active search, so we only want to process messages
+   233         // we have but otherwise return immediately so we can continue the
+   234         // search. If the above completed the search, we still want to
+   235         // go around the loop as quickly as possible to send notifications,
+   236         // and then we'll block on the loop next time.
+   237         try self.loop.run(.no_wait);
+   238     }
+   239 }
+   240 
+   241 /// Feed the search from the terminal state. The terminal mutex must
+   242 /// be held by the caller.
+   243 fn feedLocked(self: *Thread, s: *TerminalSearch) void {
+   244     const t = self.opts.terminal;
+   245 
+   246     // See the `search_viewport_dirty` flag on the terminal to know
+   247     // what exactly this is for. But, if this is set, we know the renderer
+   248     // found the viewport/active area dirty, so the active area must be
+   249     // re-scanned.
+   250     const active_dirty = t.flags.search_viewport_dirty;
+   251     t.flags.search_viewport_dirty = false;
+   252 
+   253     s.feed(t, active_dirty);
+   254 }
+n38 src/terminal/search/Thread.zig
+   257 fn drainMailbox(self: *Thread) !void {
+   258     while (self.mailbox.pop(global.io())) |message| {
+   259         log.debug("mailbox message={}", .{message});
+   260         switch (message) {
+   261             .change_needle => |v| {
+   262                 defer v.deinit();
+   263                 try self.changeNeedle(v.slice());
+   264             },
+   265             .select => |v| try self.select(v),
+   266         }
+   267     }
+   268 }
+n38 src/inspector/Inspector.zig
+     1 //! The Inspector is a development tool to debug the terminal. This is
+     2 //! useful for terminal application developers as well as people potentially
+     3 //! debugging issues in Ghostty itself.
+     4 const Inspector = @This();
+n38 src/inspector/Inspector.zig
+    58 pub fn init(alloc: Allocator) !Inspector {
+    59     var gui: widgets.surface.Inspector = try .init(alloc);
+    60     errdefer gui.deinit(alloc);
+    61     return .{ .gui = gui };
+    62 }
+    63 
+    64 pub fn deinit(self: *Inspector, alloc: Allocator) void {
+    65     self.gui.deinit(alloc);
+    66 }
+n38 src/termio/Thread.zig
+   325             .inspector => |v| self.flags.has_inspector = v,
+n38 src/termio/Termio.zig
+   740     if (self.renderer_state.inspector) |insp| {
+   741         for (buf, 0..) |byte, i| {
+   742             insp.recordPtyRead(
+   743                 self.alloc,
+   744                 &self.terminal,
+   745                 buf[i .. i + 1],
+   746             ) catch |err| {
+   747                 log.err("error recording pty read in inspector err={}", .{err});
+   748             };
+   749 
+   750             self.terminal_stream.next(byte);
+   751         }
+   752     } else {
+   753         self.terminal_stream.nextSlice(buf);
+   754     }
+n38 src/renderer/Thread.zig
+   417             .search_viewport_matches => |v| {
+   418                 // Note we don't free the new value because we expect our
+   419                 // allocators to match.
+   420                 if (self.renderer.search_matches) |*m| m.arena.deinit();
+   421                 self.renderer.search_matches = v;
+   422                 self.renderer.search_matches_dirty = true;
+   423             },
+   424 
+   425             .search_selected_match => |v| {
+   426                 // Note we don't free the new value because we expect our
+   427                 // allocators to match.
+   428                 if (self.renderer.search_selected_match) |*m| m.arena.deinit();
+   429                 self.renderer.search_selected_match = v;
+   430                 self.renderer.search_matches_dirty = true;
+   431             },
+   432 
+   433             .inspector => |v| {
+   434                 self.flags.has_inspector = v;
+   435             },
+n39 src/Surface.zig
+   156 /// This is used to determine if we need to confirm, hold open, etc.
+   157 child_exited: bool = false,
+n39 src/termio/Exec.zig
+   274 fn processExitCommon(td: *termio.Termio.ThreadData, exit_code: u32) void {
+   275     assert(td.backend == .exec);
+   276     const execdata = &td.backend.exec;
+   277     execdata.exited = true;
+   278 
+   279     // Determine how long the process was running for.
+   280     const runtime_ms: u64 = @max(
+   281         0,
+   282         execdata.start.untilNow(global.io(), .awake).toMilliseconds(),
+   283     );
+   284     log.debug("child process exited status={} runtime={}ms", .{ exit_code, runtime_ms });
+   285 
+   286     // We always notify the surface immediately that the child has
+   287     // exited and some metadata about the exit.
+   288     _ = td.surface_mailbox.push(.{
+   289         .child_exited = .{
+   290             .exit_code = exit_code,
+   291             .runtime_ms = runtime_ms,
+   292         },
+   293     }, .{ .forever = {} });
+   294 }
+   295 
+   296 fn processExit(
+   297     td_: ?*termio.Termio.ThreadData,
+   298     _: *xev.Loop,
+   299     _: *xev.Completion,
+   300     r: xev.Process.WaitError!u32,
+   301 ) xev.CallbackAction {
+   302     const exit_code = r catch unreachable;
+   303     processExitCommon(td_.?, exit_code);
+   304     return .disarm;
+   305 }
+   306 
+   307 fn flatpakExit(
+   308     td_: ?*termio.Termio.ThreadData,
+   309     _: *xev.Loop,
+   310     _: *FlatpakHostCommand.Completion,
+   311     r: FlatpakHostCommand.WaitError!u8,
+   312 ) void {
+   313     const exit_code = r catch unreachable;
+   314     processExitCommon(td_.?, exit_code);
+   315 }
+n39 src/apprt/surface.zig
+   187 pub const Mailbox = struct {
+   188     surface: *Surface,
+   189     app: App.Mailbox,
+   190 
+   191     /// Send a message to the surface.
+   192     pub fn push(
+   193         self: Mailbox,
+   194         msg: Message,
+   195         timeout: App.Mailbox.Queue.Timeout,
+   196     ) App.Mailbox.Queue.Size {
+   197         // Surface message sending is actually implemented on the app
+   198         // thread, so we have to rewrap the message with our surface
+   199         // pointer and send it to the app thread.
+   200         return self.app.push(.{
+   201             .surface_message = .{
+   202                 .surface = self.surface,
+   203                 .message = msg,
+   204             },
+   205         }, timeout);
+   206     }
+   207 };
+n39 src/App.zig
+   273 fn drainMailbox(self: *App, rt_app: *apprt.App) !void {
+n39 src/App.zig
+   293             .surface_message => |msg| try self.surfaceMessage(msg.surface, msg.message),
+n39 src/App.zig
+   532 fn surfaceMessage(self: *App, surface: *Surface, msg: apprt.surface.Message) !void {
+   533     // We want to ensure our window is still active. Window messages
+   534     // are quite rare and we normally don't have many windows so we do
+   535     // a simple linear search here.
+   536     if (self.hasSurface(surface)) {
+   537         try surface.handleMessage(msg);
+   538     }
+   539 
+   540     // Window was not found, it probably quit before we handled the message.
+   541     // Not a problem.
+   542 }
+   543 
+   544 fn hasSurface(self: *const App, surface: *const Surface) bool {
+   545     for (self.surfaces.items) |v| {
+   546         if (v.core() == surface) return true;
+   547     }
+   548 
+   549     return false;
+   550 }
+n39 src/Surface.zig
+  1017 pub fn handleMessage(self: *Surface, msg: Message) !void {
+n39 src/Surface.zig
+  1141         .child_exited => |v| self.childExited(v),
+n39 src/Surface.zig
+  1297 fn childExited(self: *Surface, info: apprt.surface.Message.ChildExited) void {
+  1298     // Mark our flag that we exited immediately
+  1299     self.child_exited = true;
+  1300 
+  1301     // If our runtime was below some threshold then we assume that this
+  1302     // was an abnormal exit and we show an error message.
+  1303     if (info.runtime_ms <= self.config.abnormal_command_exit_runtime_ms) runtime: {
+  1304         // On macOS, our exit code detection doesn't work, possibly
+  1305         // because of our `login` wrapper. More investigation required.
+  1306         if (comptime !builtin.target.os.tag.isDarwin()) {
+  1307             // If the exit code is 0 then it was a good exit.
+  1308             if (info.exit_code == 0) break :runtime;
+  1309         }
+  1310 
+  1311         log.warn("abnormal process exit detected, showing error message", .{});
+  1312 
+  1313         // Try and show a GUI message. If it returns true, don't do anything else.
+  1314         if (self.rt_app.performAction(
+  1315             .{ .surface = self },
+  1316             .show_child_exited,
+  1317             info,
+  1318         ) catch |err| gui: {
+  1319             log.err("error trying to show native child exited GUI err={}", .{err});
+  1320             break :gui false;
+  1321         }) return;
+  1322 
+  1323         // If a native GUI notification was not shown, update our terminal to
+  1324         // note the abnormal exit.
+  1325         self.childExitedAbnormally(info) catch |err| {
+  1326             log.err("error handling abnormal child exit err={}", .{err});
+  1327             return;
+  1328         };
+  1329 
+  1330         return;
+  1331     }
+  1332 
+  1333     // We output a message so that the user knows what's going on and
+  1334     // doesn't think their terminal just froze. We show this unconditionally
+  1335     // on close even if `wait_after_command` is false and the surface closes
+  1336     // immediately because if a user does an `undo` to restore a closed
+  1337     // surface then they will see this message and know the process has
+  1338     // completed.
+  1339     terminal: {
+  1340         // First try and show a native GUI message.
+  1341         if (self.rt_app.performAction(
+  1342             .{ .surface = self },
+  1343             .show_child_exited,
+  1344             info,
+  1345         ) catch |err| gui: {
+  1346             log.err("error trying to show native child exited GUI err={}", .{err});
+  1347             break :gui false;
+  1348         }) break :terminal;
+  1349 
+  1350         // If the native GUI can't be shown, display a text message in the
+  1351         // terminal.
+  1352         self.renderer_state.mutex.lockUncancelable(global.io());
+  1353         defer self.renderer_state.mutex.unlock(global.io());
+  1354         const t: *terminal.Terminal = self.renderer_state.terminal;
+  1355         t.carriageReturn();
+  1356         t.linefeed() catch break :terminal;
+  1357         t.printString("Process exited. Press any key to close the terminal.") catch
+  1358             break :terminal;
+  1359         t.modes.set(.cursor_visible, false);
+  1360 
+  1361         // We also want to ensure that normal keyboard encoding is on
+  1362         // so that we can close the terminal. We close the terminal on
+  1363         // any key press that encodes a character.
+  1364         t.modes.set(.disable_keyboard, false);
+  1365         t.screens.active.kitty_keyboard.set(.set, .disabled);
+  1366     }
+  1367 
+  1368     // Waiting after command we stop here. The terminal is updated, our
+  1369     // state is updated, and now its up to the user to decide what to do.
+  1370     if (self.config.wait_after_command) return;
+  1371 
+  1372     // If we aren't waiting after the command, then we exit immediately
+  1373     // with no confirmation.
+  1374     self.close();
+  1375 }
+n39 src/Surface.zig
+  1377 /// Called when the child process exited abnormally.
+  1378 fn childExitedAbnormally(
+  1379     self: *Surface,
+  1380     info: apprt.surface.Message.ChildExited,
+  1381 ) !void {
+  1382     var arena = ArenaAllocator.init(self.alloc);
+  1383     defer arena.deinit();
+  1384     const alloc = arena.allocator();
+  1385 
+  1386     // Build up our command for the error message
+  1387     const command = try std.mem.join(alloc, " ", switch (self.io.backend) {
+  1388         .exec => |*exec| exec.subprocess.args,
+  1389     });
+  1390     const runtime_str = try alloc.print("{d} ms", .{info.runtime_ms});
+  1391 
+  1392     self.renderer_state.mutex.lockUncancelable(global.io());
+  1393     defer self.renderer_state.mutex.unlock(global.io());
+  1394     const t: *terminal.Terminal = self.renderer_state.terminal;
+  1395 
+  1396     // No matter what move the cursor back to the column 0.
+  1397     t.carriageReturn();
+  1398 
+  1399     // Reset styles
+  1400     try t.setAttribute(.{ .unset = {} });
+  1401 
+  1402     // If there is data in the viewport, we want to scroll down
+  1403     // a little bit and write a horizontal rule before writing
+  1404     // our message. This lets the use see the error message the
+  1405     // command may have output.
+  1406     const viewport_str = try t.plainString(alloc);
+  1407     if (viewport_str.len > 0) {
+  1408         try t.linefeed();
+  1409         for (0..t.cols) |_| try t.print(0x2501);
+  1410         t.carriageReturn();
+  1411         try t.linefeed();
+  1412         try t.linefeed();
+  1413     }
+  1414 
+  1415     // Output our error message
+  1416     try t.setAttribute(.{ .@"8_fg" = .bright_red });
+  1417     try t.setAttribute(.{ .bold = {} });
+  1418     try t.printString("Ghostty failed to launch the requested command:");
+  1419     try t.setAttribute(.{ .unset = {} });
+  1420 
+  1421     t.carriageReturn();
+  1422     try t.linefeed();
+  1423     try t.linefeed();
+  1424     try t.printString(command);
+  1425     try t.setAttribute(.{ .unset = {} });
+  1426 
+  1427     t.carriageReturn();
+  1428     try t.linefeed();
+  1429     try t.linefeed();
+  1430     try t.printString("Runtime: ");
+  1431     try t.setAttribute(.{ .@"8_fg" = .red });
+  1432     try t.printString(runtime_str);
+  1433     try t.setAttribute(.{ .unset = {} });
+  1434 
+  1435     // We don't print this on macOS because the exit code is always 0
+  1436     // due to the way we launch the process.
+  1437     if (comptime !builtin.target.os.tag.isDarwin()) {
+  1438         const exit_code_str = try alloc.print("{d}", .{info.exit_code});
+  1439         t.carriageReturn();
+  1440         try t.linefeed();
+  1441         try t.printString("Exit Code: ");
+  1442         try t.setAttribute(.{ .@"8_fg" = .red });
+  1443         try t.printString(exit_code_str);
+  1444         try t.setAttribute(.{ .unset = {} });
+  1445     }
+  1446 
+  1447     t.carriageReturn();
+  1448     try t.linefeed();
+  1449     try t.linefeed();
+  1450     try t.printString("Press any key to close the window.");
+  1451 
+  1452     // Hide the cursor
+  1453     t.modes.set(.cursor_visible, false);
+  1454 }
+n39 src/Surface.zig
+   881 /// Close this surface. This will trigger the runtime to start the
+   882 /// close process, which should ultimately deinitialize this surface.
+   883 pub fn close(self: *Surface) void {
+   884     self.rt_surface.close(self.needsConfirmQuit());
+   885 }
+n39 src/Surface.zig
+   309     abnormal_command_exit_runtime_ms: u32,
+n39 src/Surface.zig
+   390             .abnormal_command_exit_runtime_ms = config.@"abnormal-command-exit-runtime",
+n39 src/Surface.zig
+   335     wait_after_command: bool,
+n39 src/Surface.zig
+   416             .wait_after_command = config.@"wait-after-command",
+n39 src/apprt/gtk/class/application.zig
+   789             .show_child_exited => return Action.showChildExited(target, value),
+n39 src/apprt/gtk/class/application.zig
+  3052     pub fn showChildExited(
+  3053         target: apprt.Target,
+  3054         value: apprt.surface.Message.ChildExited,
+  3055     ) bool {
+  3056         return switch (target) {
+  3057             .app => false,
+  3058             .surface => |v| v.rt_surface.surface.childExited(value),
+  3059         };
+  3060     }
+n39 src/apprt/gtk/class/surface.zig
+  1526     pub fn childExited(
+  1527         self: *Self,
+  1528         data: apprt.surface.Message.ChildExited,
+  1529     ) bool {
+  1530         // Keep our property up to date for anyone listening.
+  1531         const priv = self.private();
+  1532         priv.child_exited = true;
+  1533         self.as(gobject.Object).notifyByPspec(
+  1534             properties.@"child-exited".impl.param_spec,
+  1535         );
+  1536 
+  1537         priv.child_exited_overlay.setData(&data);
+  1538         return true;
+  1539     }
+n39 src/apprt/gtk/class/surface_child_exited.zig
+    69     pub fn setData(
+    70         self: *Self,
+    71         data_: ?*const apprt.surface.Message.ChildExited,
+    72     ) void {
+    73         const priv = self.private();
+    74         if (priv.data) |v| glib.ext.destroy(v);
+    75         const data = data_ orelse {
+    76             priv.data = null;
+    77             return;
+    78         };
+    79 
+    80         const ptr = glib.ext.create(apprt.surface.Message.ChildExited);
+    81         ptr.* = data.*;
+    82         priv.data = ptr;
+    83         self.as(gobject.Object).notifyByPspec(properties.data.impl.param_spec);
+    84     }
+n39 src/apprt/gtk/class/surface_child_exited.zig
+    89     fn propData(
+    90         self: *Self,
+    91         _: *gobject.ParamSpec,
+    92         _: ?*anyopaque,
+    93     ) callconv(.c) void {
+    94         const priv = self.private();
+    95         const banner = priv.banner;
+    96         const data = priv.data orelse {
+    97             // Not localized on purpose.
+    98             banner.as(adw.Banner).setTitle("This is a bug in Ghostty. Please report it.");
+    99             return;
+   100         };
+   101         if (data.exit_code == 0) {
+   102             banner.as(adw.Banner).setTitle(i18n._("Command Succeeded"));
+   103             self.as(gtk.Widget).addCssClass("normal");
+   104             self.as(gtk.Widget).removeCssClass("abnormal");
+   105         } else {
+   106             banner.as(adw.Banner).setTitle(i18n._("Command Failed"));
+   107             self.as(gtk.Widget).removeCssClass("normal");
+   108             self.as(gtk.Widget).addCssClass("abnormal");
+   109         }
+   110     }
+n39 macos/Sources/Ghostty/Ghostty.App.swift
+   768             case GHOSTTY_ACTION_SHOW_CHILD_EXITED:
+   769                 return showChildExited(app, target: target, v: action.action.child_exited)
+n39 macos/Sources/Ghostty/Ghostty.App.swift
+  1854         private static func showChildExited(
+  1855             _ app: ghostty_app_t,
+  1856             target: ghostty_target_s,
+  1857             v: ghostty_surface_message_childexited_s,
+  1858         ) -> Bool {
+  1859             switch target.tag {
+  1860             case GHOSTTY_TARGET_SURFACE:
+  1861                 guard let surface = target.target.surface else { return false }
+  1862                 guard let surfaceView = self.surfaceView(from: surface) else { return false }
+  1863                 // We handle this when the window is visible and timetime_ms is greater than 0,
+  1864                 // which will rule out exit codes on launch
+  1865                 guard surfaceView.window != nil, v.timetime_ms > 0 else { return false }
+  1866                 guard let config = (NSApplication.shared.delegate as? AppDelegate)?.ghostty.config else { return false }
+  1867                 surfaceView.setChildExitedMessage(.init(v, threshold: config.abnormalCommandExitRuntime))
+  1868                 return true
+  1869             default:
+  1870                 return false
+  1871             }
+  1872         }
+n40 src/Surface.zig
+   309     abnormal_command_exit_runtime_ms: u32,
+n40 src/Surface.zig
+   390             .abnormal_command_exit_runtime_ms = config.@"abnormal-command-exit-runtime",
+n40 src/Surface.zig
+  1297 fn childExited(self: *Surface, info: apprt.surface.Message.ChildExited) void {
+  1298     // Mark our flag that we exited immediately
+  1299     self.child_exited = true;
+  1300 
+  1301     // If our runtime was below some threshold then we assume that this
+  1302     // was an abnormal exit and we show an error message.
+  1303     if (info.runtime_ms <= self.config.abnormal_command_exit_runtime_ms) runtime: {
+  1304         // On macOS, our exit code detection doesn't work, possibly
+  1305         // because of our `login` wrapper. More investigation required.
+  1306         if (comptime !builtin.target.os.tag.isDarwin()) {
+  1307             // If the exit code is 0 then it was a good exit.
+  1308             if (info.exit_code == 0) break :runtime;
+  1309         }
+  1310 
+  1311         log.warn("abnormal process exit detected, showing error message", .{});
+  1312 
+  1313         // Try and show a GUI message. If it returns true, don't do anything else.
+  1314         if (self.rt_app.performAction(
+  1315             .{ .surface = self },
+  1316             .show_child_exited,
+  1317             info,
+  1318         ) catch |err| gui: {
+  1319             log.err("error trying to show native child exited GUI err={}", .{err});
+  1320             break :gui false;
+  1321         }) return;
+  1322 
+  1323         // If a native GUI notification was not shown, update our terminal to
+  1324         // note the abnormal exit.
+  1325         self.childExitedAbnormally(info) catch |err| {
+  1326             log.err("error handling abnormal child exit err={}", .{err});
+  1327             return;
+  1328         };
+  1329 
+  1330         return;
+  1331     }
+n40 src/Surface.zig
+  1377 /// Called when the child process exited abnormally.
+  1378 fn childExitedAbnormally(
+  1379     self: *Surface,
+  1380     info: apprt.surface.Message.ChildExited,
+  1381 ) !void {
+  1382     var arena = ArenaAllocator.init(self.alloc);
+  1383     defer arena.deinit();
+  1384     const alloc = arena.allocator();
+  1385 
+  1386     // Build up our command for the error message
+  1387     const command = try std.mem.join(alloc, " ", switch (self.io.backend) {
+  1388         .exec => |*exec| exec.subprocess.args,
+  1389     });
+  1390     const runtime_str = try alloc.print("{d} ms", .{info.runtime_ms});
+  1391 
+  1392     self.renderer_state.mutex.lockUncancelable(global.io());
+  1393     defer self.renderer_state.mutex.unlock(global.io());
+  1394     const t: *terminal.Terminal = self.renderer_state.terminal;
+  1395 
+  1396     // No matter what move the cursor back to the column 0.
+  1397     t.carriageReturn();
+  1398 
+  1399     // Reset styles
+  1400     try t.setAttribute(.{ .unset = {} });
+  1401 
+  1402     // If there is data in the viewport, we want to scroll down
+  1403     // a little bit and write a horizontal rule before writing
+  1404     // our message. This lets the use see the error message the
+  1405     // command may have output.
+  1406     const viewport_str = try t.plainString(alloc);
+  1407     if (viewport_str.len > 0) {
+  1408         try t.linefeed();
+  1409         for (0..t.cols) |_| try t.print(0x2501);
+  1410         t.carriageReturn();
+  1411         try t.linefeed();
+  1412         try t.linefeed();
+  1413     }
+  1414 
+  1415     // Output our error message
+  1416     try t.setAttribute(.{ .@"8_fg" = .bright_red });
+  1417     try t.setAttribute(.{ .bold = {} });
+  1418     try t.printString("Ghostty failed to launch the requested command:");
+  1419     try t.setAttribute(.{ .unset = {} });
+  1420 
+  1421     t.carriageReturn();
+  1422     try t.linefeed();
+  1423     try t.linefeed();
+  1424     try t.printString(command);
+  1425     try t.setAttribute(.{ .unset = {} });
+  1426 
+  1427     t.carriageReturn();
+  1428     try t.linefeed();
+  1429     try t.linefeed();
+  1430     try t.printString("Runtime: ");
+  1431     try t.setAttribute(.{ .@"8_fg" = .red });
+  1432     try t.printString(runtime_str);
+  1433     try t.setAttribute(.{ .unset = {} });
+  1434 
+  1435     // We don't print this on macOS because the exit code is always 0
+  1436     // due to the way we launch the process.
+  1437     if (comptime !builtin.target.os.tag.isDarwin()) {
+  1438         const exit_code_str = try alloc.print("{d}", .{info.exit_code});
+  1439         t.carriageReturn();
+  1440         try t.linefeed();
+  1441         try t.printString("Exit Code: ");
+  1442         try t.setAttribute(.{ .@"8_fg" = .red });
+  1443         try t.printString(exit_code_str);
+  1444         try t.setAttribute(.{ .unset = {} });
+  1445     }
+  1446 
+  1447     t.carriageReturn();
+  1448     try t.linefeed();
+  1449     try t.linefeed();
+  1450     try t.printString("Press any key to close the window.");
+  1451 
+  1452     // Hide the cursor
+  1453     t.modes.set(.cursor_visible, false);
+  1454 }
+n40 src/apprt/gtk/class/application.zig
+   789             .show_child_exited => return Action.showChildExited(target, value),
+n40 src/apprt/gtk/class/application.zig
+  3052     pub fn showChildExited(
+  3053         target: apprt.Target,
+  3054         value: apprt.surface.Message.ChildExited,
+  3055     ) bool {
+  3056         return switch (target) {
+  3057             .app => false,
+  3058             .surface => |v| v.rt_surface.surface.childExited(value),
+  3059         };
+  3060     }
+n40 src/apprt/gtk/class/surface.zig
+  1526     pub fn childExited(
+  1527         self: *Self,
+  1528         data: apprt.surface.Message.ChildExited,
+  1529     ) bool {
+  1530         // Keep our property up to date for anyone listening.
+  1531         const priv = self.private();
+  1532         priv.child_exited = true;
+  1533         self.as(gobject.Object).notifyByPspec(
+  1534             properties.@"child-exited".impl.param_spec,
+  1535         );
+  1536 
+  1537         priv.child_exited_overlay.setData(&data);
+  1538         return true;
+  1539     }
+n40 src/apprt/gtk/class/surface_child_exited.zig
+    69     pub fn setData(
+    70         self: *Self,
+    71         data_: ?*const apprt.surface.Message.ChildExited,
+    72     ) void {
+    73         const priv = self.private();
+    74         if (priv.data) |v| glib.ext.destroy(v);
+    75         const data = data_ orelse {
+    76             priv.data = null;
+    77             return;
+    78         };
+    79 
+    80         const ptr = glib.ext.create(apprt.surface.Message.ChildExited);
+    81         ptr.* = data.*;
+    82         priv.data = ptr;
+    83         self.as(gobject.Object).notifyByPspec(properties.data.impl.param_spec);
+    84     }
+n40 src/apprt/gtk/class/surface_child_exited.zig
+    89     fn propData(
+    90         self: *Self,
+    91         _: *gobject.ParamSpec,
+    92         _: ?*anyopaque,
+    93     ) callconv(.c) void {
+    94         const priv = self.private();
+    95         const banner = priv.banner;
+    96         const data = priv.data orelse {
+    97             // Not localized on purpose.
+    98             banner.as(adw.Banner).setTitle("This is a bug in Ghostty. Please report it.");
+    99             return;
+   100         };
+   101         if (data.exit_code == 0) {
+   102             banner.as(adw.Banner).setTitle(i18n._("Command Succeeded"));
+   103             self.as(gtk.Widget).addCssClass("normal");
+   104             self.as(gtk.Widget).removeCssClass("abnormal");
+   105         } else {
+   106             banner.as(adw.Banner).setTitle(i18n._("Command Failed"));
+   107             self.as(gtk.Widget).removeCssClass("normal");
+   108             self.as(gtk.Widget).addCssClass("abnormal");
+   109         }
+   110     }
+n40 macos/Sources/Ghostty/Ghostty.App.swift
+   768             case GHOSTTY_ACTION_SHOW_CHILD_EXITED:
+   769                 return showChildExited(app, target: target, v: action.action.child_exited)
+n40 macos/Sources/Ghostty/Ghostty.App.swift
+  1854         private static func showChildExited(
+  1855             _ app: ghostty_app_t,
+  1856             target: ghostty_target_s,
+  1857             v: ghostty_surface_message_childexited_s,
+  1858         ) -> Bool {
+  1859             switch target.tag {
+  1860             case GHOSTTY_TARGET_SURFACE:
+  1861                 guard let surface = target.target.surface else { return false }
+  1862                 guard let surfaceView = self.surfaceView(from: surface) else { return false }
+  1863                 // We handle this when the window is visible and timetime_ms is greater than 0,
+  1864                 // which will rule out exit codes on launch
+  1865                 guard surfaceView.window != nil, v.timetime_ms > 0 else { return false }
+  1866                 guard let config = (NSApplication.shared.delegate as? AppDelegate)?.ghostty.config else { return false }
+  1867                 surfaceView.setChildExitedMessage(.init(v, threshold: config.abnormalCommandExitRuntime))
+  1868                 return true
+  1869             default:
+  1870                 return false
+  1871             }
+  1872         }
+n41 src/Surface.zig
+   335     wait_after_command: bool,
+n41 src/Surface.zig
+   416             .wait_after_command = config.@"wait-after-command",
+n41 src/Surface.zig
+  1297 fn childExited(self: *Surface, info: apprt.surface.Message.ChildExited) void {
+n41 src/Surface.zig
+  1368     // Waiting after command we stop here. The terminal is updated, our
+  1369     // state is updated, and now its up to the user to decide what to do.
+  1370     if (self.config.wait_after_command) return;
+  1371 
+  1372     // If we aren't waiting after the command, then we exit immediately
+  1373     // with no confirmation.
+  1374     self.close();
+  1375 }
+n41 src/Surface.zig
+   881 /// Close this surface. This will trigger the runtime to start the
+   882 /// close process, which should ultimately deinitialize this surface.
+   883 pub fn close(self: *Surface) void {
+   884     self.rt_surface.close(self.needsConfirmQuit());
+   885 }
+n42 src/Surface.zig
+   881 /// Close this surface. This will trigger the runtime to start the
+   882 /// close process, which should ultimately deinitialize this surface.
+   883 pub fn close(self: *Surface) void {
+   884     self.rt_surface.close(self.needsConfirmQuit());
+   885 }
+n42 src/apprt/gtk/Surface.zig
+    36 pub fn close(self: *Self, process_active: bool) void {
+    37     _ = process_active;
+    38     self.surface.close();
+    39 }
+n42 src/apprt/gtk/class/surface.zig
+  1517     pub fn close(self: *Self) void {
+  1518         signals.@"close-request".impl.emit(
+  1519             self,
+  1520             null,
+  1521             .{},
+  1522             null,
+  1523         );
+  1524     }
+n42 src/apprt/gtk/class/split_tree.zig
+   499         var it = tree.iterator();
+   500         while (it.next()) |entry| {
+   501             const surface = entry.view;
+   502             _ = Surface.signals.@"close-request".connect(
+   503                 surface,
+   504                 *Self,
+   505                 surfaceCloseRequest,
+   506                 self,
+   507                 .{},
+   508             );
+n42 src/apprt/gtk/class/split_tree.zig
+   786     fn surfaceCloseRequest(
+   787         surface: *Surface,
+   788         self: *Self,
+   789     ) callconv(.c) void {
+   790         const core = surface.core() orelse return;
+   791 
+   792         // Reset our pending close state
+   793         const priv = self.private();
+   794         priv.pending_close = null;
+   795 
+   796         // Find the surface in the tree to verify this is valid and
+   797         // set our pending close handle.
+   798         const tree = self.getTree() orelse return;
+   799         priv.pending_close = tree.locate(surface) orelse return;
+   800 
+   801         // If we don't need to confirm then just close immediately.
+   802         if (!core.needsConfirmQuit()) {
+   803             closeConfirmationClose(
+   804                 null,
+   805                 self,
+   806             );
+   807             return;
+   808         }
+   809 
+   810         // Show a confirmation dialog
+   811         const dialog: *CloseConfirmationDialog = .new(.surface);
+   812         _ = CloseConfirmationDialog.signals.@"close-request".connect(
+   813             dialog,
+   814             *Self,
+   815             closeConfirmationClose,
+   816             self,
+   817             .{},
+   818         );
+   819         dialog.present(self.as(gtk.Widget));
+   820     }
+   821 
+   822     fn closeConfirmationClose(
+   823         _: ?*CloseConfirmationDialog,
+   824         self: *Self,
+   825     ) callconv(.c) void {
+   826         // Get the handle we're closing
+   827         const priv = self.private();
+   828         const handle = priv.pending_close orelse return;
+   829         priv.pending_close = null;
+   830 
+   831         self.removeHandle(handle) catch |err| {
+   832             log.warn("unable to remove surface from tree: {}", .{err});
+   833         };
+   834     }
+n42 src/apprt/gtk/class/split_tree.zig
+   838     fn removeHandle(
+   839         self: *Self,
+   840         handle: Surface.Tree.Node.Handle,
+   841     ) Allocator.Error!void {
+n42 src/apprt/gtk/class/split_tree.zig
+   860         // Remove it from the tree.
+   861         var new_tree = try old_tree.remove(
+   862             Application.default().allocator(),
+   863             handle,
+   864         );
+   865         defer new_tree.deinit();
+   866         self.setTree(&new_tree);
+   867 
+   868         // Grab focus. We have to set this on the "last focused" because our
+   869         // focus will be set when the tree is redrawn.
+   870         if (next_focus) |v| self.private().last_focused.set(v);
+   871     }
+n42 src/apprt/gtk/class/surface.zig
+  1963     fn finalize(self: *Self) callconv(.c) void {
+  1964         const alloc = Application.default().allocator();
+  1965         const priv = self.private();
+  1966         if (priv.core_surface) |v| {
+  1967             // Remove ourselves from the list of known surfaces in the app.
+  1968             // We do this before deinit in case a callback triggers
+  1969             // searching for this surface.
+  1970             Application.default().core().deleteSurface(self.rt());
+  1971 
+  1972             // NOTE: We must deinit the surface in the finalize call and NOT
+  1973             // the dispose call because the inspector widget relies on this
+  1974             // behavior with a weakRef to properly deactivate.
+  1975 
+  1976             // Deinit the surface
+  1977             v.deinit();
+  1978             alloc.destroy(v);
+  1979 
+  1980             priv.core_surface = null;
+  1981         }
+n42 src/apprt/embedded.zig
+   678     pub fn close(self: *const Surface, process_alive: bool) void {
+   679         const func = self.app.opts.close_surface orelse {
+   680             log.info("runtime embedder does not support closing a surface", .{});
+   681             return;
+   682         };
+   683 
+   684         func(self.userdata, process_alive);
+   685     }
+n42 macos/Sources/Ghostty/Ghostty.App.swift
+    79                 close_surface_cb: { userdata, processAlive in App.closeSurface(userdata, processAlive: processAlive) }
+n42 macos/Sources/Ghostty/Ghostty.App.swift
+   291         static func closeSurface(_ userdata: UnsafeMutableRawPointer?, processAlive: Bool) {
+   292             let surface = self.surfaceUserdata(from: userdata)
+   293             NotificationCenter.default.post(name: Notification.ghosttyCloseSurface, object: surface, userInfo: [
+   294                 "process_alive": processAlive,
+   295             ])
+   296         }
+n42 macos/Sources/Features/Terminal/BaseTerminalController.swift
+   184         center.addObserver(
+   185             self,
+   186             selector: #selector(ghosttyDidCloseSurface(_:)),
+   187             name: Ghostty.Notification.ghosttyCloseSurface,
+   188             object: nil)
+n42 macos/Sources/Features/Terminal/BaseTerminalController.swift
+   658     @objc private func ghosttyDidCloseSurface(_ notification: Notification) {
+   659         guard let target = notification.object as? Ghostty.SurfaceView else { return }
+   660         guard let node = surfaceTree.root?.node(view: target) else { return }
+   661         closeSurface(
+   662             node,
+   663             withConfirmation: (notification.userInfo?["process_alive"] as? Bool) ?? false)
+   664     }
+n42 macos/Sources/Features/Terminal/TerminalController.swift
+   695     override func closeSurface(
+   696         _ node: SplitTree<Ghostty.SurfaceView>.Node,
+   697         withConfirmation: Bool = true
+   698     ) {
+   699         // If this isn't the root then we're dealing with a split closure.
+   700         if surfaceTree.root != node {
+   701             super.closeSurface(node, withConfirmation: withConfirmation)
+   702             return
+   703         }
+   704 
+   705         // More than 1 window means we have tabs and we're closing a tab
+   706         if window?.tabGroup?.windows.count ?? 0 > 1 {
+   707             if withConfirmation {
+   708                 closeTab(nil)
+   709             } else {
+   710                 closeTabImmediately()
+   711             }
+   712             return
+   713         }
+   714 
+   715         // 1 window, closing the window
+   716         if withConfirmation {
+   717             closeWindow(nil)
+   718         } else {
+   719             closeWindowImmediately()
+   720         }
+   721     }
+n42 macos/Sources/Features/Terminal/BaseTerminalController.swift
+   469     func closeSurface(
+   470         _ node: SplitTree<Ghostty.SurfaceView>.Node,
+   471         withConfirmation: Bool = true
+   472     ) {
+   473         // This node must be part of our tree
+   474         guard surfaceTree.contains(node) else { return }
+   475 
+   476         // If the child process is not alive, then we exit immediately
+   477         guard withConfirmation else {
+   478             removeSurfaceNode(node)
+   479             return
+   480         }
+   481 
+   482         // Confirm close. We use an NSAlert instead of a SwiftUI confirmationDialog
+   483         // due to SwiftUI bugs (see Ghostty #560). To repeat from #560, the bug is that
+   484         // confirmationDialog allows the user to Cmd-W close the alert, but when doing
+   485         // so SwiftUI does not update any of the bindings to note that window is no longer
+   486         // being shown, and provides no callback to detect this.
+   487         confirmClose(
+   488             messageText: "Close Terminal?",
+   489             informativeText: "The terminal still has a running process. If you close the terminal the process will be killed."
+   490         ) { [weak self] in
+   491             if let self {
+   492                 self.removeSurfaceNode(node)
+   493             }
+   494         }
+   495     }
+n42 macos/Sources/Features/Terminal/BaseTerminalController.swift
+   518     private func removeSurfaceNode(_ node: SplitTree<Ghostty.SurfaceView>.Node) {
+n42 macos/Sources/Features/Terminal/BaseTerminalController.swift
+   528         replaceSurfaceTree(
+   529             surfaceTree.removing(node),
+   530             // When a non-focused surface is removed and this window stays as the key window,
+   531             // we should refocus the `focusedSurface` to make sure the window's firstResponder remains as it is.
+   532             //
+   533             // This is a weird workaround, since `resignFirstResponder` wasn't called on `focusedSurface` after drag,
+   534             // but the first responder became the window itself.
+   535             moveFocusTo: nextFocus ?? focusedSurface,
+   536             undoAction: "Close Terminal"
+   537         )
+   538     }
+n42 macos/Sources/Ghostty/Surface View/SurfaceView_AppKit.swift
+   181         private(set) var surfaceModel: Ghostty.Surface?
+n42 macos/Sources/Ghostty/Surface View/SurfaceView_AppKit.swift
+   395             self.surfaceModel = Ghostty.Surface(cSurface: surface)
+n42 macos/Sources/Ghostty/Ghostty.Surface.swift
+    28         deinit {
+    29             guard !Thread.isMainThread else {
+    30                 // The surface remains registered with the app and holds unretained
+    31                 // userdata until it is freed. When already on the main thread, free
+    32                 // it synchronously so teardown completes before we disappear.
+    33                 ghostty_surface_free(surface)
+    34                 return
+    35             }
+    36             // deinit is not guaranteed to happen on the main actor and our API
+    37             // calls into libghostty must happen there so we capture the surface
+    38             // value so we don't capture `self` and then we detach it in a task.
+    39             // We can't wait for the task to succeed so this will happen sometime
+    40             // but that's okay.
+    41             nonisolated(unsafe) let surface = self.surface
+    42             Task.detached { @MainActor in
+    43                 ghostty_surface_free(surface)
+    44             }
+    45         }
+n42 src/apprt/embedded.zig
+  1859     export fn ghostty_surface_free(ptr: *Surface) void {
+  1860         ptr.app.closeSurface(ptr);
+  1861     }
+n42 src/apprt/embedded.zig
+   291     pub fn closeSurface(self: *App, surface: *Surface) void {
+   292         surface.deinit();
+   293         self.core_app.alloc.destroy(surface);
+   294     }
+n42 src/apprt/embedded.zig
+   634     pub fn deinit(self: *Surface) void {
+   635         // Shut down our inspector
+   636         self.freeInspector();
+   637 
+   638         // Free our title
+   639         if (self.title) |v| self.app.core_app.alloc.free(v);
+   640 
+   641         // Remove ourselves from the list of known surfaces in the app.
+   642         self.app.core_app.deleteSurface(self);
+   643 
+   644         // Clean up our core surface so that all the rendering and IO stop.
+   645         self.core_surface.deinit();
+   646     }
+n42 src/Surface.zig
+   829 pub fn deinit(self: *Surface) void {
+n42 src/Surface.zig
+   993 /// True if the surface requires confirmation to quit. This should be called
+   994 /// by apprt to determine if the surface should confirm before quitting.
+   995 pub fn needsConfirmQuit(self: *Surface) bool {
+   996     // If the surface is in read-only mode, always require confirmation
+   997     if (self.readonly) return true;
+   998 
+   999     // If the child has exited, then our process is certainly not alive.
+  1000     // We check this first to avoid the locking overhead below.
+  1001     if (self.child_exited) return false;
+  1002 
+  1003     // Check the configuration for confirming close behavior.
+  1004     return switch (self.config.confirm_close_surface) {
+  1005         .always => true,
+  1006         .false => false,
+  1007         .true => true: {
+  1008             self.renderer_state.mutex.lockUncancelable(global.io());
+  1009             defer self.renderer_state.mutex.unlock(global.io());
+  1010             break :true !self.io.terminal.cursorIsAtPrompt();
+  1011         },
+  1012     };
+  1013 }
+n43 src/Surface.zig
+   881 /// Close this surface. This will trigger the runtime to start the
+   882 /// close process, which should ultimately deinitialize this surface.
+   883 pub fn close(self: *Surface) void {
+   884     self.rt_surface.close(self.needsConfirmQuit());
+   885 }
+n43 src/apprt/gtk/Surface.zig
+    36 pub fn close(self: *Self, process_active: bool) void {
+    37     _ = process_active;
+    38     self.surface.close();
+    39 }
+n43 src/apprt/gtk/class/surface.zig
+  1517     pub fn close(self: *Self) void {
+  1518         signals.@"close-request".impl.emit(
+  1519             self,
+  1520             null,
+  1521             .{},
+  1522             null,
+  1523         );
+  1524     }
+n43 src/apprt/gtk/class/split_tree.zig
+   499         var it = tree.iterator();
+   500         while (it.next()) |entry| {
+   501             const surface = entry.view;
+   502             _ = Surface.signals.@"close-request".connect(
+   503                 surface,
+   504                 *Self,
+   505                 surfaceCloseRequest,
+   506                 self,
+   507                 .{},
+   508             );
+n43 src/apprt/gtk/class/split_tree.zig
+   786     fn surfaceCloseRequest(
+   787         surface: *Surface,
+   788         self: *Self,
+   789     ) callconv(.c) void {
+   790         const core = surface.core() orelse return;
+   791 
+   792         // Reset our pending close state
+   793         const priv = self.private();
+   794         priv.pending_close = null;
+   795 
+   796         // Find the surface in the tree to verify this is valid and
+   797         // set our pending close handle.
+   798         const tree = self.getTree() orelse return;
+   799         priv.pending_close = tree.locate(surface) orelse return;
+   800 
+   801         // If we don't need to confirm then just close immediately.
+   802         if (!core.needsConfirmQuit()) {
+   803             closeConfirmationClose(
+   804                 null,
+   805                 self,
+   806             );
+   807             return;
+   808         }
+   809 
+   810         // Show a confirmation dialog
+   811         const dialog: *CloseConfirmationDialog = .new(.surface);
+   812         _ = CloseConfirmationDialog.signals.@"close-request".connect(
+   813             dialog,
+   814             *Self,
+   815             closeConfirmationClose,
+   816             self,
+   817             .{},
+   818         );
+   819         dialog.present(self.as(gtk.Widget));
+   820     }
+   821 
+   822     fn closeConfirmationClose(
+   823         _: ?*CloseConfirmationDialog,
+   824         self: *Self,
+   825     ) callconv(.c) void {
+   826         // Get the handle we're closing
+   827         const priv = self.private();
+   828         const handle = priv.pending_close orelse return;
+   829         priv.pending_close = null;
+   830 
+   831         self.removeHandle(handle) catch |err| {
+   832             log.warn("unable to remove surface from tree: {}", .{err});
+   833         };
+   834     }
+n43 src/apprt/gtk/class/split_tree.zig
+   838     fn removeHandle(
+   839         self: *Self,
+   840         handle: Surface.Tree.Node.Handle,
+   841     ) Allocator.Error!void {
+n43 src/apprt/gtk/class/split_tree.zig
+   860         // Remove it from the tree.
+   861         var new_tree = try old_tree.remove(
+   862             Application.default().allocator(),
+   863             handle,
+   864         );
+   865         defer new_tree.deinit();
+   866         self.setTree(&new_tree);
+   867 
+   868         // Grab focus. We have to set this on the "last focused" because our
+   869         // focus will be set when the tree is redrawn.
+   870         if (next_focus) |v| self.private().last_focused.set(v);
+   871     }
+n43 src/apprt/gtk/class/surface.zig
+  1963     fn finalize(self: *Self) callconv(.c) void {
+  1964         const alloc = Application.default().allocator();
+  1965         const priv = self.private();
+  1966         if (priv.core_surface) |v| {
+  1967             // Remove ourselves from the list of known surfaces in the app.
+  1968             // We do this before deinit in case a callback triggers
+  1969             // searching for this surface.
+  1970             Application.default().core().deleteSurface(self.rt());
+  1971 
+  1972             // NOTE: We must deinit the surface in the finalize call and NOT
+  1973             // the dispose call because the inspector widget relies on this
+  1974             // behavior with a weakRef to properly deactivate.
+  1975 
+  1976             // Deinit the surface
+  1977             v.deinit();
+  1978             alloc.destroy(v);
+  1979 
+  1980             priv.core_surface = null;
+  1981         }
+n43 src/apprt/embedded.zig
+   678     pub fn close(self: *const Surface, process_alive: bool) void {
+   679         const func = self.app.opts.close_surface orelse {
+   680             log.info("runtime embedder does not support closing a surface", .{});
+   681             return;
+   682         };
+   683 
+   684         func(self.userdata, process_alive);
+   685     }
+n43 macos/Sources/Ghostty/Ghostty.App.swift
+    79                 close_surface_cb: { userdata, processAlive in App.closeSurface(userdata, processAlive: processAlive) }
+n43 macos/Sources/Ghostty/Ghostty.App.swift
+   291         static func closeSurface(_ userdata: UnsafeMutableRawPointer?, processAlive: Bool) {
+   292             let surface = self.surfaceUserdata(from: userdata)
+   293             NotificationCenter.default.post(name: Notification.ghosttyCloseSurface, object: surface, userInfo: [
+   294                 "process_alive": processAlive,
+   295             ])
+   296         }
+n43 macos/Sources/Features/Terminal/BaseTerminalController.swift
+   184         center.addObserver(
+   185             self,
+   186             selector: #selector(ghosttyDidCloseSurface(_:)),
+   187             name: Ghostty.Notification.ghosttyCloseSurface,
+   188             object: nil)
+n43 macos/Sources/Features/Terminal/BaseTerminalController.swift
+   658     @objc private func ghosttyDidCloseSurface(_ notification: Notification) {
+   659         guard let target = notification.object as? Ghostty.SurfaceView else { return }
+   660         guard let node = surfaceTree.root?.node(view: target) else { return }
+   661         closeSurface(
+   662             node,
+   663             withConfirmation: (notification.userInfo?["process_alive"] as? Bool) ?? false)
+   664     }
+n43 macos/Sources/Features/Terminal/TerminalController.swift
+   695     override func closeSurface(
+   696         _ node: SplitTree<Ghostty.SurfaceView>.Node,
+   697         withConfirmation: Bool = true
+   698     ) {
+   699         // If this isn't the root then we're dealing with a split closure.
+   700         if surfaceTree.root != node {
+   701             super.closeSurface(node, withConfirmation: withConfirmation)
+   702             return
+   703         }
+   704 
+   705         // More than 1 window means we have tabs and we're closing a tab
+   706         if window?.tabGroup?.windows.count ?? 0 > 1 {
+   707             if withConfirmation {
+   708                 closeTab(nil)
+   709             } else {
+   710                 closeTabImmediately()
+   711             }
+   712             return
+   713         }
+   714 
+   715         // 1 window, closing the window
+   716         if withConfirmation {
+   717             closeWindow(nil)
+   718         } else {
+   719             closeWindowImmediately()
+   720         }
+   721     }
+n43 macos/Sources/Features/Terminal/BaseTerminalController.swift
+   469     func closeSurface(
+   470         _ node: SplitTree<Ghostty.SurfaceView>.Node,
+   471         withConfirmation: Bool = true
+   472     ) {
+   473         // This node must be part of our tree
+   474         guard surfaceTree.contains(node) else { return }
+   475 
+   476         // If the child process is not alive, then we exit immediately
+   477         guard withConfirmation else {
+   478             removeSurfaceNode(node)
+   479             return
+   480         }
+   481 
+   482         // Confirm close. We use an NSAlert instead of a SwiftUI confirmationDialog
+   483         // due to SwiftUI bugs (see Ghostty #560). To repeat from #560, the bug is that
+   484         // confirmationDialog allows the user to Cmd-W close the alert, but when doing
+   485         // so SwiftUI does not update any of the bindings to note that window is no longer
+   486         // being shown, and provides no callback to detect this.
+   487         confirmClose(
+   488             messageText: "Close Terminal?",
+   489             informativeText: "The terminal still has a running process. If you close the terminal the process will be killed."
+   490         ) { [weak self] in
+   491             if let self {
+   492                 self.removeSurfaceNode(node)
+   493             }
+   494         }
+   495     }
+n43 macos/Sources/Features/Terminal/BaseTerminalController.swift
+   518     private func removeSurfaceNode(_ node: SplitTree<Ghostty.SurfaceView>.Node) {
+n43 macos/Sources/Features/Terminal/BaseTerminalController.swift
+   528         replaceSurfaceTree(
+   529             surfaceTree.removing(node),
+   530             // When a non-focused surface is removed and this window stays as the key window,
+   531             // we should refocus the `focusedSurface` to make sure the window's firstResponder remains as it is.
+   532             //
+   533             // This is a weird workaround, since `resignFirstResponder` wasn't called on `focusedSurface` after drag,
+   534             // but the first responder became the window itself.
+   535             moveFocusTo: nextFocus ?? focusedSurface,
+   536             undoAction: "Close Terminal"
+   537         )
+   538     }
+n43 macos/Sources/Ghostty/Surface View/SurfaceView_AppKit.swift
+   181         private(set) var surfaceModel: Ghostty.Surface?
+n43 macos/Sources/Ghostty/Surface View/SurfaceView_AppKit.swift
+   395             self.surfaceModel = Ghostty.Surface(cSurface: surface)
+n43 macos/Sources/Ghostty/Ghostty.Surface.swift
+    28         deinit {
+    29             guard !Thread.isMainThread else {
+    30                 // The surface remains registered with the app and holds unretained
+    31                 // userdata until it is freed. When already on the main thread, free
+    32                 // it synchronously so teardown completes before we disappear.
+    33                 ghostty_surface_free(surface)
+    34                 return
+    35             }
+    36             // deinit is not guaranteed to happen on the main actor and our API
+    37             // calls into libghostty must happen there so we capture the surface
+    38             // value so we don't capture `self` and then we detach it in a task.
+    39             // We can't wait for the task to succeed so this will happen sometime
+    40             // but that's okay.
+    41             nonisolated(unsafe) let surface = self.surface
+    42             Task.detached { @MainActor in
+    43                 ghostty_surface_free(surface)
+    44             }
+    45         }
+n43 src/apprt/embedded.zig
+  1859     export fn ghostty_surface_free(ptr: *Surface) void {
+  1860         ptr.app.closeSurface(ptr);
+  1861     }
+n43 src/apprt/embedded.zig
+   291     pub fn closeSurface(self: *App, surface: *Surface) void {
+   292         surface.deinit();
+   293         self.core_app.alloc.destroy(surface);
+   294     }
+n43 src/apprt/embedded.zig
+   634     pub fn deinit(self: *Surface) void {
+   635         // Shut down our inspector
+   636         self.freeInspector();
+   637 
+   638         // Free our title
+   639         if (self.title) |v| self.app.core_app.alloc.free(v);
+   640 
+   641         // Remove ourselves from the list of known surfaces in the app.
+   642         self.app.core_app.deleteSurface(self);
+   643 
+   644         // Clean up our core surface so that all the rendering and IO stop.
+   645         self.core_surface.deinit();
+   646     }
+n43 src/Surface.zig
+   829 pub fn deinit(self: *Surface) void {
+n44 src/Surface.zig
+   829 pub fn deinit(self: *Surface) void {
+   830     // Stop search thread
+   831     if (self.search) |*s| s.deinit();
+   832 
+   833     // Stop rendering thread
+   834     {
+   835         self.renderer_thread.stop.notify() catch |err|
+   836             log.err("error notifying renderer thread to stop, may stall err={}", .{err});
+   837         self.renderer_thr.join();
+   838     }
+   839 
+   840     // Stop our IO thread
+   841     {
+   842         self.io_thread.stop.notify() catch |err|
+   843             log.err("error notifying io thread to stop, may stall err={}", .{err});
+   844         self.io_thr.join();
+   845     }
+   846 
+   847     // We need to deinit AFTER everything is stopped, since there are
+   848     // shared values between the two threads.
+   849     //
+   850     // The renderer must be deinitialized before the renderer thread:
+   851     // on macOS the renderer's display link callback points at the
+   852     // thread's `draw_now` handle, and the renderer's deinit is what
+   853     // stops the display link for good.
+   854     self.renderer.deinit();
+   855     self.renderer_thread.deinit();
+   856     self.io_thread.deinit();
+   857     self.mouse.selection_gesture.deinit(&self.io.terminal);
+   858     self.io.deinit();
+   859 
+   860     if (self.inspector) |v| {
+   861         v.deinit(self.alloc);
+   862         self.alloc.destroy(v);
+   863     }
+   864 
+   865     // Clean up our keyboard state
+   866     for (self.keyboard.sequence_queued.items) |req| req.deinit();
+   867     self.keyboard.sequence_queued.deinit(self.alloc);
+   868     self.keyboard.table_stack.deinit(self.alloc);
+   869 
+   870     // Clean up our font grid
+   871     self.app.font_grid_set.deref(self.font_grid_key);
+   872 
+   873     // Clean up our render state
+   874     if (self.renderer_state.preedit) |p| self.alloc.free(p.codepoints);
+   875     self.alloc.destroy(self.renderer_state.mutex);
+   876     self.config.deinit();
+   877 
+   878     log.info("surface closed id={x}", .{self.id});
+   879 }
+n44 src/inspector/Inspector.zig
+    64 pub fn deinit(self: *Inspector, alloc: Allocator) void {
+    65     self.gui.deinit(alloc);
+    66 }
+n44 src/Surface.zig
+   214     pub fn deinit(self: *Search) void {
+   215         // Notify the thread to stop
+   216         self.state.stop.notify() catch |err| log.err(
+   217             "error notifying search thread to stop, may stall err={}",
+   218             .{err},
+   219         );
+   220 
+   221         // Wait for the OS thread to quit
+   222         self.thread.join();
+   223 
+   224         // Now it is safe to deinit the state
+   225         self.state.deinit();
+   226     }
+n44 src/terminal/search/Thread.zig
+   142 fn threadMain_(self: *Thread) !void {
+n44 src/terminal/search/Thread.zig
+   162     self.stop.wait(&self.loop, &self.stop_c, Thread, self, stopCallback);
+n44 src/terminal/search/Thread.zig
+   172     defer {
+   173         log.debug("starting search thread shutdown", .{});
+   174 
+   175         // Send the quit message
+   176         if (self.opts.event_cb) |cb| {
+   177             cb(.quit, self.opts.event_userdata);
+   178         }
+   179     }
+   180 
+   181     // Unlike some of our other threads, we interleave search work
+   182     // with our xev loop so that we can try to make forward search progress
+   183     // while also listening for messages.
+   184     while (true) {
+   185         // If our loop is canceled then we drain our messages and quit.
+   186         if (self.loop.stopped()) {
+   187             while (self.mailbox.pop(global.io())) |message| {
+   188                 log.debug("mailbox message ignored during shutdown={}", .{message});
+   189             }
+   190 
+   191             return;
+   192         }
+n44 src/terminal/search/Thread.zig
+   462 fn stopCallback(
+   463     self_: ?*Thread,
+   464     _: *xev.Loop,
+   465     _: *xev.Completion,
+   466     r: xev.Async.WaitError!void,
+   467 ) xev.CallbackAction {
+   468     _ = r catch unreachable;
+   469     self_.?.loop.stop();
+   470     return .disarm;
+   471 }
+n44 src/renderer/Thread.zig
+   200 fn threadMain_(self: *Thread) !void {
+n44 src/renderer/Thread.zig
+   228     try self.renderer.threadEnter(self.surface);
+   229     defer self.renderer.threadExit();
+   230 
+   231     // Start the async handlers
+   232     self.wakeup.wait(&self.loop, &self.wakeup_c, Thread, self, wakeupCallback);
+   233     self.stop.wait(&self.loop, &self.stop_c, Thread, self, stopCallback);
+n44 src/renderer/Thread.zig
+   253     // Run
+   254     log.debug("starting renderer thread", .{});
+   255     defer log.debug("starting renderer thread shutdown", .{});
+   256     _ = try self.loop.run(.until_done);
+   257 }
+n44 src/renderer/Thread.zig
+   722 fn stopCallback(
+   723     self_: ?*Thread,
+   724     _: *xev.Loop,
+   725     _: *xev.Completion,
+   726     r: xev.Async.WaitError!void,
+   727 ) xev.CallbackAction {
+   728     _ = r catch unreachable;
+   729     self_.?.loop.stop();
+   730     return .disarm;
+   731 }
+n44 src/termio/Thread.zig
+   236 fn threadMain_(self: *Thread, io: *termio.Termio) !void {
+n44 src/termio/Thread.zig
+   267     try io.threadEnter(self, &cb.data);
+   268     defer cb.data.deinit();
+   269     defer io.threadExit(&cb.data);
+   270 
+   271     // Start the async handlers.
+   272     mailbox.wakeup.wait(&self.loop, &self.wakeup_c, CallbackData, &cb, wakeupCallback);
+   273     self.stop.wait(&self.loop, &self.stop_c, CallbackData, &cb, stopCallback);
+   274 
+   275     // Run
+   276     log.debug("starting IO thread", .{});
+   277     defer log.debug("starting IO thread shutdown", .{});
+   278     try self.loop.run(.until_done);
+   279 }
+n44 src/termio/Thread.zig
+   473 fn stopCallback(
+   474     cb_: ?*CallbackData,
+   475     _: *xev.Loop,
+   476     _: *xev.Completion,
+   477     r: xev.Async.WaitError!void,
+   478 ) xev.CallbackAction {
+   479     _ = r catch unreachable;
+   480     cb_.?.self.loop.stop();
+   481     return .disarm;
+   482 }
+n44 src/termio/Termio.zig
+   427 pub fn threadExit(self: *Termio, data: *ThreadData) void {
+   428     self.backend.threadExit(data);
+   429 }
+n44 src/termio/backend.zig
+    50     pub fn threadExit(self: *Backend, td: *termio.Termio.ThreadData) void {
+    51         switch (self.*) {
+    52             .exec => |*exec| exec.threadExit(td),
+    53         }
+    54     }
+n44 src/termio/Exec.zig
+   196 pub fn threadExit(self: *Exec, td: *termio.Termio.ThreadData) void {
+   197     assert(td.backend == .exec);
+   198     const exec = &td.backend.exec;
+   199 
+   200     if (exec.exited) self.subprocess.externalExit();
+   201     self.subprocess.stop();
+   202 
+   203     // Quit our read thread after exiting the subprocess so that
+   204     // we don't get stuck waiting for data to stop flowing if it is
+   205     // a particularly noisy process.
+   206     switch (posix.errno(posix.system.write(exec.read_thread_pipe, "x", 1))) {
+   207         .SUCCESS => {},
+   208 
+   209         // EPIPE means that our read thread is closed already, which is
+   210         // completely fine since that is what we were trying to achieve.
+   211         .PIPE => {},
+   212 
+   213         else => |e| log.warn(
+   214             "error writing to read thread quit pipe err=E{s}",
+   215             .{@tagName(e)},
+   216         ),
+   217     }
+   218 
+   219     if (comptime builtin.target.os.tag == .windows) {
+   220         // Interrupt the blocking read so the thread can see the quit message
+   221         if (windows.exp.kernel32.CancelIoEx(exec.read_thread_fd, null) == windows.FALSE) {
+   222             switch (windows.GetLastError()) {
+   223                 .NOT_FOUND => {},
+   224                 else => |err| log.warn("error interrupting read thread err={}", .{err}),
+   225             }
+   226         }
+   227     }
+   228 
+   229     exec.read_thread.join();
+   230 }
+n44 src/termio/Exec.zig
+  1105     /// Called to notify that we exited externally so we can unset our
+  1106     /// running state.
+  1107     pub fn externalExit(self: *Subprocess) void {
+  1108         self.process = null;
+  1109     }
+  1110 
+  1111     /// Stop the subprocess. This is safe to call anytime. This will wait
+  1112     /// for the subprocess to register that it has been signalled, but not
+  1113     /// for it to terminate, so it will not block.
+  1114     /// This does not close the pty.
+  1115     pub fn stop(self: *Subprocess) void {
+  1116         switch (self.process orelse return) {
+  1117             .fork_exec => |*cmd| {
+  1118                 // Note: this will also wait for the command to exit, so
+  1119                 // DO NOT call cmd.wait
+  1120                 killCommand(cmd) catch |err|
+  1121                     log.err("error sending SIGHUP to command, may hang: {}", .{err});
+  1122             },
+  1123 
+  1124             .flatpak => |*cmd| if (comptime build_config.flatpak) {
+  1125                 killCommandFlatpak(cmd) catch |err|
+  1126                     log.err("error sending SIGHUP to command, may hang: {}", .{err});
+  1127                 _ = cmd.wait() catch |err|
+  1128                     log.err("error waiting for command to exit: {}", .{err});
+  1129             },
+  1130         }
+  1131 
+  1132         self.process = null;
+  1133     }
+n44 src/termio/Exec.zig
+  1161     fn killCommand(command: *Command) !void {
+  1162         if (command.pid) |pid| {
+  1163             switch (builtin.target.os.tag) {
+  1164                 .windows => {
+  1165                     if (windows.exp.kernel32.TerminateProcess(pid, 0) == windows.FALSE) {
+  1166                         return windows.unexpectedError(windows.GetLastError());
+  1167                     }
+  1168 
+  1169                     _ = try command.wait(false);
+  1170                 },
+  1171 
+  1172                 else => try killPid(pid),
+  1173             }
+  1174         }
+  1175     }
+  1176 
+  1177     fn killPid(pid: c.pid_t) !void {
+  1178         const pgid = getpgid(pid) orelse return;
+  1179 
+  1180         // It is possible to send a killpg between the time that
+  1181         // our child process calls setsid but before or simultaneous
+  1182         // to calling execve. In this case, the direct child dies
+  1183         // but grandchildren survive. To work around this, we loop
+  1184         // and repeatedly kill the process group until all
+  1185         // descendents are well and truly dead. We will not rest
+  1186         // until the entire family tree is obliterated.
+  1187         while (true) {
+  1188             switch (posix.errno(c.killpg(pgid, c.SIGHUP))) {
+  1189                 .SUCCESS => log.debug("process group killed pgid={}", .{pgid}),
+  1190                 else => |err| killpg: {
+  1191                     if ((comptime builtin.target.os.tag.isDarwin()) and
+  1192                         err == .PERM)
+  1193                     {
+  1194                         log.debug("killpg failed with EPERM, expected on Darwin and ignoring", .{});
+  1195                         break :killpg;
+  1196                     }
+  1197 
+  1198                     log.warn("error killing process group pgid={} err={}", .{ pgid, err });
+  1199                     return error.KillFailed;
+  1200                 },
+  1201             }
+  1202 
+  1203             // See Command.zig wait for why we specify WNOHANG.
+  1204             // The gist is that it lets us detect when children
+  1205             // are still alive without blocking so that we can
+  1206             // kill them again.
+  1207             const res_pid = while (true) {
+  1208                 const rc = posix.system.waitpid(pid, null, std.c.W.NOHANG);
+  1209                 if (posix.errno(rc) == .INTR) continue;
+  1210                 break rc;
+  1211             };
+  1212             log.debug("waitpid result={}", .{res_pid});
+  1213             if (res_pid != 0) break;
+  1214             try std.Io.sleep(global.io(), .fromMilliseconds(10), .awake);
+  1215         }
+  1216     }
+n44 src/termio/Exec.zig
+  1254     /// Kill the underlying process started via Flatpak host command.
+  1255     /// This sends a signal via the Flatpak API.
+  1256     fn killCommandFlatpak(command: *FlatpakHostCommand) !void {
+  1257         try command.signal(c.SIGHUP, true);
+  1258     }
+n44 src/renderer/generic.zig
+   841         pub fn deinit(self: *Self) void {
+   842             // This only deinitializes and frees CPU-side state
+   843             // and does not free GPU resources like the swap chain and
+   844             // shaders. Those are freed with `releaseGpuResources`.
+   845 
+   846             if (self.overlay) |*overlay| overlay.deinit(self.alloc);
+   847             self.terminal_state.deinit(self.alloc);
+   848             if (self.search_selected_match) |*m| m.arena.deinit();
+   849             if (self.search_matches) |*m| m.arena.deinit();
+   850 
+   851             self.latest_frame.deinit(global.io());
+   852 
+   853             // Stop and release the display link. Surfaces are destroyed
+   854             // on the main thread, where `close` stops the link before
+   855             // returning. After this the display link callback is never
+   856             // invoked again, so `renderer.Thread` can free the `draw_now`
+   857             // handle the callback points at.
+   858             if (DisplayLink != void) {
+   859                 if (self.display_link) |display_link| {
+   860                     display_link.close();
+   861                     self.display_link = null;
+   862                 }
+   863             }
+   864 
+   865             self.cells.deinit(self.alloc);
+   866 
+   867             self.font_shaper.deinit();
+   868             self.font_shaper_cache.deinit(self.alloc);
+   869 
+   870             self.config.deinit();
+   871             self.api.deinit();
+   872 
+   873             self.* = undefined;
+   874         }
+n44 src/renderer/Thread.zig
+   177 pub fn deinit(self: *Thread) void {
+   178     self.stop.deinit();
+   179     self.wakeup.deinit();
+   180     self.render_h.deinit();
+   181     self.draw_now.deinit();
+   182     self.cursor_h.deinit();
+   183     if (comptime terminalpkg.compression_enabled)
+   184         self.compression.deinit();
+   185     self.loop.deinit();
+   186 
+   187     // Nothing can possibly access the mailbox anymore, destroy it.
+   188     self.mailbox.destroy(self.alloc);
+   189 }
+n44 src/termio/Thread.zig
+   127 pub fn deinit(self: *Thread) void {
+   128     self.scroll.deinit();
+   129     self.coalesce.deinit();
+   130     self.sync_reset.deinit();
+   131     self.stop.deinit();
+   132     self.loop.deinit();
+   133 }
+n44 src/termio/Termio.zig
+   354 pub fn deinit(self: *Termio) void {
+   355     self.backend.deinit();
+   356     self.terminal.deinit(self.alloc);
+   357     self.config.deinit();
+   358     self.mailbox.deinit(self.alloc);
+   359 
+   360     // Clear any StreamHandler state
+   361     self.terminal_stream.deinit();
+   362 
+   363     // Clear any initial state if we have it
+   364     if (self.thread_enter_state) |v| v.destroy();
+   365 }
+n44 src/terminal/SelectionGesture.zig
+   172 pub fn deinit(self: *SelectionGesture, t: *Terminal) void {
+   173     // Grab our pagelist that is associated with the pin. If it doesn't
+   174     // exist anymore then our tracked pin is already free.
+   175     const pin = self.left_click_pin orelse return;
+   176     if (t.screens.generation(self.left_click_screen) != self.left_click_screen_generation) return;
+   177     const screen = t.screens.get(self.left_click_screen) orelse return;
+   178     screen.pages.untrackPin(pin);
+   179 }
+n44 src/Surface.zig
+   442     pub fn deinit(self: *DerivedConfig) void {
+   443         for (self.links) |*link| link.regex.deinit();
+   444         self.arena.deinit();
+   445     }
+n44 src/font/SharedGridSet.zig
+   413 pub fn deref(self: *SharedGridSet, key: Key) void {
+   414     self.lock.lockUncancelable(global.io());
+   415     defer self.lock.unlock(global.io());
+   416 
+   417     const entry = self.map.getEntry(key) orelse return;
+   418     assert(entry.value_ptr.ref >= 1);
+   419 
+   420     // If we have more than one reference, decrement and return.
+   421     if (entry.value_ptr.ref > 1) {
+   422         entry.value_ptr.ref -= 1;
+   423         return;
+   424     }
+   425 
+   426     // We are at a zero ref count so deinit the group and remove.
+   427     entry.key_ptr.deinit();
+   428     entry.value_ptr.grid.deinit(self.alloc);
+   429     self.alloc.destroy(entry.value_ptr.grid);
+   430     self.map.removeByPtr(entry.key_ptr);
+   431 }
+n45 src/Surface.zig
+   829 pub fn deinit(self: *Surface) void {
+   830     // Stop search thread
+   831     if (self.search) |*s| s.deinit();
+   832 
+   833     // Stop rendering thread
+   834     {
+   835         self.renderer_thread.stop.notify() catch |err|
+   836             log.err("error notifying renderer thread to stop, may stall err={}", .{err});
+   837         self.renderer_thr.join();
+   838     }
+   839 
+   840     // Stop our IO thread
+   841     {
+   842         self.io_thread.stop.notify() catch |err|
+   843             log.err("error notifying io thread to stop, may stall err={}", .{err});
+   844         self.io_thr.join();
+   845     }
+n45 src/Surface.zig
+   214     pub fn deinit(self: *Search) void {
+   215         // Notify the thread to stop
+   216         self.state.stop.notify() catch |err| log.err(
+   217             "error notifying search thread to stop, may stall err={}",
+   218             .{err},
+   219         );
+   220 
+   221         // Wait for the OS thread to quit
+   222         self.thread.join();
+   223 
+   224         // Now it is safe to deinit the state
+   225         self.state.deinit();
+   226     }
+n45 src/terminal/search/Thread.zig
+   142 fn threadMain_(self: *Thread) !void {
+n45 src/terminal/search/Thread.zig
+   162     self.stop.wait(&self.loop, &self.stop_c, Thread, self, stopCallback);
+n45 src/terminal/search/Thread.zig
+   172     defer {
+   173         log.debug("starting search thread shutdown", .{});
+   174 
+   175         // Send the quit message
+   176         if (self.opts.event_cb) |cb| {
+   177             cb(.quit, self.opts.event_userdata);
+   178         }
+   179     }
+   180 
+   181     // Unlike some of our other threads, we interleave search work
+   182     // with our xev loop so that we can try to make forward search progress
+   183     // while also listening for messages.
+   184     while (true) {
+   185         // If our loop is canceled then we drain our messages and quit.
+   186         if (self.loop.stopped()) {
+   187             while (self.mailbox.pop(global.io())) |message| {
+   188                 log.debug("mailbox message ignored during shutdown={}", .{message});
+   189             }
+   190 
+   191             return;
+   192         }
+n45 src/terminal/search/Thread.zig
+   462 fn stopCallback(
+   463     self_: ?*Thread,
+   464     _: *xev.Loop,
+   465     _: *xev.Completion,
+   466     r: xev.Async.WaitError!void,
+   467 ) xev.CallbackAction {
+   468     _ = r catch unreachable;
+   469     self_.?.loop.stop();
+   470     return .disarm;
+   471 }
+n45 src/renderer/Thread.zig
+   200 fn threadMain_(self: *Thread) !void {
+n45 src/renderer/Thread.zig
+   228     try self.renderer.threadEnter(self.surface);
+   229     defer self.renderer.threadExit();
+   230 
+   231     // Start the async handlers
+   232     self.wakeup.wait(&self.loop, &self.wakeup_c, Thread, self, wakeupCallback);
+   233     self.stop.wait(&self.loop, &self.stop_c, Thread, self, stopCallback);
+n45 src/renderer/Thread.zig
+   253     // Run
+   254     log.debug("starting renderer thread", .{});
+   255     defer log.debug("starting renderer thread shutdown", .{});
+   256     _ = try self.loop.run(.until_done);
+   257 }
+n45 src/renderer/Thread.zig
+   722 fn stopCallback(
+   723     self_: ?*Thread,
+   724     _: *xev.Loop,
+   725     _: *xev.Completion,
+   726     r: xev.Async.WaitError!void,
+   727 ) xev.CallbackAction {
+   728     _ = r catch unreachable;
+   729     self_.?.loop.stop();
+   730     return .disarm;
+   731 }
+n45 src/termio/Thread.zig
+   236 fn threadMain_(self: *Thread, io: *termio.Termio) !void {
+n45 src/termio/Thread.zig
+   267     try io.threadEnter(self, &cb.data);
+   268     defer cb.data.deinit();
+   269     defer io.threadExit(&cb.data);
+   270 
+   271     // Start the async handlers.
+   272     mailbox.wakeup.wait(&self.loop, &self.wakeup_c, CallbackData, &cb, wakeupCallback);
+   273     self.stop.wait(&self.loop, &self.stop_c, CallbackData, &cb, stopCallback);
+   274 
+   275     // Run
+   276     log.debug("starting IO thread", .{});
+   277     defer log.debug("starting IO thread shutdown", .{});
+   278     try self.loop.run(.until_done);
+   279 }
+n45 src/termio/Thread.zig
+   473 fn stopCallback(
+   474     cb_: ?*CallbackData,
+   475     _: *xev.Loop,
+   476     _: *xev.Completion,
+   477     r: xev.Async.WaitError!void,
+   478 ) xev.CallbackAction {
+   479     _ = r catch unreachable;
+   480     cb_.?.self.loop.stop();
+   481     return .disarm;
+   482 }
+n46 src/Surface.zig
+   829 pub fn deinit(self: *Surface) void {
+n46 src/Surface.zig
+   840     // Stop our IO thread
+   841     {
+   842         self.io_thread.stop.notify() catch |err|
+   843             log.err("error notifying io thread to stop, may stall err={}", .{err});
+   844         self.io_thr.join();
+   845     }
+n46 src/termio/Thread.zig
+   236 fn threadMain_(self: *Thread, io: *termio.Termio) !void {
+n46 src/termio/Thread.zig
+   267     try io.threadEnter(self, &cb.data);
+   268     defer cb.data.deinit();
+   269     defer io.threadExit(&cb.data);
+   270 
+   271     // Start the async handlers.
+   272     mailbox.wakeup.wait(&self.loop, &self.wakeup_c, CallbackData, &cb, wakeupCallback);
+   273     self.stop.wait(&self.loop, &self.stop_c, CallbackData, &cb, stopCallback);
+   274 
+   275     // Run
+   276     log.debug("starting IO thread", .{});
+   277     defer log.debug("starting IO thread shutdown", .{});
+   278     try self.loop.run(.until_done);
+   279 }
+n46 src/termio/Thread.zig
+   473 fn stopCallback(
+   474     cb_: ?*CallbackData,
+   475     _: *xev.Loop,
+   476     _: *xev.Completion,
+   477     r: xev.Async.WaitError!void,
+   478 ) xev.CallbackAction {
+   479     _ = r catch unreachable;
+   480     cb_.?.self.loop.stop();
+   481     return .disarm;
+   482 }
+n46 src/termio/Termio.zig
+   427 pub fn threadExit(self: *Termio, data: *ThreadData) void {
+   428     self.backend.threadExit(data);
+   429 }
+n46 src/termio/backend.zig
+    50     pub fn threadExit(self: *Backend, td: *termio.Termio.ThreadData) void {
+    51         switch (self.*) {
+    52             .exec => |*exec| exec.threadExit(td),
+    53         }
+    54     }
+n46 src/termio/Exec.zig
+   196 pub fn threadExit(self: *Exec, td: *termio.Termio.ThreadData) void {
+   197     assert(td.backend == .exec);
+   198     const exec = &td.backend.exec;
+   199 
+   200     if (exec.exited) self.subprocess.externalExit();
+   201     self.subprocess.stop();
+   202 
+   203     // Quit our read thread after exiting the subprocess so that
+   204     // we don't get stuck waiting for data to stop flowing if it is
+   205     // a particularly noisy process.
+   206     switch (posix.errno(posix.system.write(exec.read_thread_pipe, "x", 1))) {
+   207         .SUCCESS => {},
+   208 
+   209         // EPIPE means that our read thread is closed already, which is
+   210         // completely fine since that is what we were trying to achieve.
+   211         .PIPE => {},
+   212 
+   213         else => |e| log.warn(
+   214             "error writing to read thread quit pipe err=E{s}",
+   215             .{@tagName(e)},
+   216         ),
+   217     }
+   218 
+   219     if (comptime builtin.target.os.tag == .windows) {
+   220         // Interrupt the blocking read so the thread can see the quit message
+   221         if (windows.exp.kernel32.CancelIoEx(exec.read_thread_fd, null) == windows.FALSE) {
+   222             switch (windows.GetLastError()) {
+   223                 .NOT_FOUND => {},
+   224                 else => |err| log.warn("error interrupting read thread err={}", .{err}),
+   225             }
+   226         }
+   227     }
+   228 
+   229     exec.read_thread.join();
+   230 }
+n46 src/termio/Exec.zig
+  1105     /// Called to notify that we exited externally so we can unset our
+  1106     /// running state.
+  1107     pub fn externalExit(self: *Subprocess) void {
+  1108         self.process = null;
+  1109     }
+  1110 
+  1111     /// Stop the subprocess. This is safe to call anytime. This will wait
+  1112     /// for the subprocess to register that it has been signalled, but not
+  1113     /// for it to terminate, so it will not block.
+  1114     /// This does not close the pty.
+  1115     pub fn stop(self: *Subprocess) void {
+  1116         switch (self.process orelse return) {
+  1117             .fork_exec => |*cmd| {
+  1118                 // Note: this will also wait for the command to exit, so
+  1119                 // DO NOT call cmd.wait
+  1120                 killCommand(cmd) catch |err|
+  1121                     log.err("error sending SIGHUP to command, may hang: {}", .{err});
+  1122             },
+  1123 
+  1124             .flatpak => |*cmd| if (comptime build_config.flatpak) {
+  1125                 killCommandFlatpak(cmd) catch |err|
+  1126                     log.err("error sending SIGHUP to command, may hang: {}", .{err});
+  1127                 _ = cmd.wait() catch |err|
+  1128                     log.err("error waiting for command to exit: {}", .{err});
+  1129             },
+  1130         }
+  1131 
+  1132         self.process = null;
+  1133     }
+n46 src/termio/Exec.zig
+  1161     fn killCommand(command: *Command) !void {
+  1162         if (command.pid) |pid| {
+  1163             switch (builtin.target.os.tag) {
+  1164                 .windows => {
+  1165                     if (windows.exp.kernel32.TerminateProcess(pid, 0) == windows.FALSE) {
+  1166                         return windows.unexpectedError(windows.GetLastError());
+  1167                     }
+  1168 
+  1169                     _ = try command.wait(false);
+  1170                 },
+  1171 
+  1172                 else => try killPid(pid),
+  1173             }
+  1174         }
+  1175     }
+  1176 
+  1177     fn killPid(pid: c.pid_t) !void {
+  1178         const pgid = getpgid(pid) orelse return;
+  1179 
+  1180         // It is possible to send a killpg between the time that
+  1181         // our child process calls setsid but before or simultaneous
+  1182         // to calling execve. In this case, the direct child dies
+  1183         // but grandchildren survive. To work around this, we loop
+  1184         // and repeatedly kill the process group until all
+  1185         // descendents are well and truly dead. We will not rest
+  1186         // until the entire family tree is obliterated.
+  1187         while (true) {
+  1188             switch (posix.errno(c.killpg(pgid, c.SIGHUP))) {
+  1189                 .SUCCESS => log.debug("process group killed pgid={}", .{pgid}),
+  1190                 else => |err| killpg: {
+  1191                     if ((comptime builtin.target.os.tag.isDarwin()) and
+  1192                         err == .PERM)
+  1193                     {
+  1194                         log.debug("killpg failed with EPERM, expected on Darwin and ignoring", .{});
+  1195                         break :killpg;
+  1196                     }
+  1197 
+  1198                     log.warn("error killing process group pgid={} err={}", .{ pgid, err });
+  1199                     return error.KillFailed;
+  1200                 },
+  1201             }
+  1202 
+  1203             // See Command.zig wait for why we specify WNOHANG.
+  1204             // The gist is that it lets us detect when children
+  1205             // are still alive without blocking so that we can
+  1206             // kill them again.
+  1207             const res_pid = while (true) {
+  1208                 const rc = posix.system.waitpid(pid, null, std.c.W.NOHANG);
+  1209                 if (posix.errno(rc) == .INTR) continue;
+  1210                 break rc;
+  1211             };
+  1212             log.debug("waitpid result={}", .{res_pid});
+  1213             if (res_pid != 0) break;
+  1214             try std.Io.sleep(global.io(), .fromMilliseconds(10), .awake);
+  1215         }
+  1216     }
+n46 src/termio/Exec.zig
+  1254     /// Kill the underlying process started via Flatpak host command.
+  1255     /// This sends a signal via the Flatpak API.
+  1256     fn killCommandFlatpak(command: *FlatpakHostCommand) !void {
+  1257         try command.signal(c.SIGHUP, true);
+  1258     }
+n47 src/Surface.zig
+   829 pub fn deinit(self: *Surface) void {
+n47 src/Surface.zig
+   847     // We need to deinit AFTER everything is stopped, since there are
+   848     // shared values between the two threads.
+   849     //
+   850     // The renderer must be deinitialized before the renderer thread:
+   851     // on macOS the renderer's display link callback points at the
+   852     // thread's `draw_now` handle, and the renderer's deinit is what
+   853     // stops the display link for good.
+   854     self.renderer.deinit();
+   855     self.renderer_thread.deinit();
+   856     self.io_thread.deinit();
+   857     self.mouse.selection_gesture.deinit(&self.io.terminal);
+   858     self.io.deinit();
+n47 src/renderer/generic.zig
+   841         pub fn deinit(self: *Self) void {
+   842             // This only deinitializes and frees CPU-side state
+   843             // and does not free GPU resources like the swap chain and
+   844             // shaders. Those are freed with `releaseGpuResources`.
+   845 
+   846             if (self.overlay) |*overlay| overlay.deinit(self.alloc);
+   847             self.terminal_state.deinit(self.alloc);
+   848             if (self.search_selected_match) |*m| m.arena.deinit();
+   849             if (self.search_matches) |*m| m.arena.deinit();
+   850 
+   851             self.latest_frame.deinit(global.io());
+   852 
+   853             // Stop and release the display link. Surfaces are destroyed
+   854             // on the main thread, where `close` stops the link before
+   855             // returning. After this the display link callback is never
+   856             // invoked again, so `renderer.Thread` can free the `draw_now`
+   857             // handle the callback points at.
+   858             if (DisplayLink != void) {
+   859                 if (self.display_link) |display_link| {
+   860                     display_link.close();
+   861                     self.display_link = null;
+   862                 }
+   863             }
+   864 
+   865             self.cells.deinit(self.alloc);
+   866 
+   867             self.font_shaper.deinit();
+   868             self.font_shaper_cache.deinit(self.alloc);
+   869 
+   870             self.config.deinit();
+   871             self.api.deinit();
+   872 
+   873             self.* = undefined;
+   874         }
+n47 src/renderer/Thread.zig
+   177 pub fn deinit(self: *Thread) void {
+   178     self.stop.deinit();
+   179     self.wakeup.deinit();
+   180     self.render_h.deinit();
+   181     self.draw_now.deinit();
+   182     self.cursor_h.deinit();
+   183     if (comptime terminalpkg.compression_enabled)
+   184         self.compression.deinit();
+   185     self.loop.deinit();
+   186 
+   187     // Nothing can possibly access the mailbox anymore, destroy it.
+   188     self.mailbox.destroy(self.alloc);
+   189 }
+n47 src/termio/Thread.zig
+   127 pub fn deinit(self: *Thread) void {
+   128     self.scroll.deinit();
+   129     self.coalesce.deinit();
+   130     self.sync_reset.deinit();
+   131     self.stop.deinit();
+   132     self.loop.deinit();
+   133 }
+n47 src/termio/Termio.zig
+   354 pub fn deinit(self: *Termio) void {
+   355     self.backend.deinit();
+   356     self.terminal.deinit(self.alloc);
+   357     self.config.deinit();
+   358     self.mailbox.deinit(self.alloc);
+   359 
+   360     // Clear any StreamHandler state
+   361     self.terminal_stream.deinit();
+   362 
+   363     // Clear any initial state if we have it
+   364     if (self.thread_enter_state) |v| v.destroy();
+   365 }
+n48 src/Surface.zig
+   829 pub fn deinit(self: *Surface) void {
+n48 src/Surface.zig
+   857     self.mouse.selection_gesture.deinit(&self.io.terminal);
+n48 src/Surface.zig
+   865     // Clean up our keyboard state
+   866     for (self.keyboard.sequence_queued.items) |req| req.deinit();
+   867     self.keyboard.sequence_queued.deinit(self.alloc);
+   868     self.keyboard.table_stack.deinit(self.alloc);
+   869 
+   870     // Clean up our font grid
+   871     self.app.font_grid_set.deref(self.font_grid_key);
+   872 
+   873     // Clean up our render state
+   874     if (self.renderer_state.preedit) |p| self.alloc.free(p.codepoints);
+   875     self.alloc.destroy(self.renderer_state.mutex);
+   876     self.config.deinit();
+n48 src/terminal/SelectionGesture.zig
+   172 pub fn deinit(self: *SelectionGesture, t: *Terminal) void {
+   173     // Grab our pagelist that is associated with the pin. If it doesn't
+   174     // exist anymore then our tracked pin is already free.
+   175     const pin = self.left_click_pin orelse return;
+   176     if (t.screens.generation(self.left_click_screen) != self.left_click_screen_generation) return;
+   177     const screen = t.screens.get(self.left_click_screen) orelse return;
+   178     screen.pages.untrackPin(pin);
+   179 }
+n48 src/Surface.zig
+   442     pub fn deinit(self: *DerivedConfig) void {
+   443         for (self.links) |*link| link.regex.deinit();
+   444         self.arena.deinit();
+   445     }
+n48 src/font/SharedGridSet.zig
+   413 pub fn deref(self: *SharedGridSet, key: Key) void {
+   414     self.lock.lockUncancelable(global.io());
+   415     defer self.lock.unlock(global.io());
+   416 
+   417     const entry = self.map.getEntry(key) orelse return;
+   418     assert(entry.value_ptr.ref >= 1);
+   419 
+   420     // If we have more than one reference, decrement and return.
+   421     if (entry.value_ptr.ref > 1) {
+   422         entry.value_ptr.ref -= 1;
+   423         return;
+   424     }
+   425 
+   426     // We are at a zero ref count so deinit the group and remove.
+   427     entry.key_ptr.deinit();
+   428     entry.value_ptr.grid.deinit(self.alloc);
+   429     self.alloc.destroy(entry.value_ptr.grid);
+   430     self.map.removeByPtr(entry.key_ptr);
+   431 }

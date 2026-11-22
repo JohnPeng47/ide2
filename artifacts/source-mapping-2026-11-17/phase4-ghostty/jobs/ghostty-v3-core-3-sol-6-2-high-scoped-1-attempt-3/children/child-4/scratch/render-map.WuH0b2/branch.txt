@@ -1,0 +1,143 @@
+# paths relative to src/ unless marked @
+G=renderer/generic.zig T=renderer/Thread.zig R=terminal/render.zig P=terminal/PageList.zig S=Surface.zig RS=renderer/State.zig I=renderer/image.zig C=renderer/cell.zig M=renderer/Metal.zig O=renderer/OpenGL.zig X=renderer.zig
+n77 EBR
+S 922-929 DI
+@include/ghostty.h 1214 D
+apprt/embedded.zig 1001-1006 DIU 1988-1992 DIU
+G 114-116 D 1712-1739 DIU 1740 D 1754-1769 IU 1785-1806 IU 1843-1866 IU 1907-1909 U
+M 97-129 IU 148-160 DIU 199-217 DI 236-243 DIU
+renderer/metal/IOSurfaceLayer.zig 96-123 DI 125-166 DIU
+renderer/metal/Frame.zig 67-91 DIU 105-131 DIU
+n76 SBGR
+X 10 U 16-19 DU 35-42 DI
+build_config.zig 34-43 DU
+renderer/backend.zig 4-17 DI
+G 90-109 DU 712-721 IU
+M 15-31 DU 56-64 DI
+O 13-26 DU 52-72 DI
+S 45 DU 92-93 D
+n75 EBRY
+G 90-109 DU 114-116 D 305-484 DIU 904-909 DIU 1016-1072 DIU 1206-1215 DI 1712-2067 DIU 2158-2168 DIU 3674-3691 DIU
+M 22-31 DU 56-137 DIU 162-177 DI 199-243 DIU 377-387 DIU
+renderer/metal/Target.zig 33-103 DIU
+renderer/metal/RenderPass.zig 57-229 DIU
+renderer/metal/Frame.zig 29-131 DIU
+renderer/metal/IOSurfaceLayer.zig 50-123 DIU
+O 17-26 DU 52-90 DIU 197-250 DIU 264-323 DIU 438-449 DIU
+G 2249-2266 DIU
+apprt.zig 39-53 DI
+apprt/gtk.zig 1-3 DU
+apprt/gtk/App.zig 56-68 DIU
+renderer/opengl/RenderPass.zig 50-144 DIU
+renderer/opengl/Frame.zig 24-90 DIU
+renderer/opengl/Target.zig 55-139 DIU 148-242 DIU
+apprt/surface.zig 186-207 DIU
+App.zig 161-167 DIU 272-281 DI 293 U 531-550 DIU 596-613 DIU
+S 958-969 DIU 1015-1018 DI 1154 U 1777-1787 DIU
+T 402 U
+apprt/gtk/class/application.zig 569-576 IU 691-698 DI 772 U 1322-1325 DI 2877-2882 DIU
+apprt/gtk/class/surface.zig 831-838 DIU 3623-3629 U
+apprt/gtk/class/render_surface.zig 58-64 D 149-205 DIU 299-436 DIU 446-452 U
+n74 BRY
+G 1371-1375 D 1449-1477 IU 1502-1526 IU 1650-1665 IU 1868-1869 U 1950-2000 IU 2629-2923 DIU 2925-2942 DU 2973-3058 IU 3066-3231 I 3336-3355 U 3373-3412 DIU 3477-3537 DIU 3539-3672 DIU
+RS 119-140 DI 152-196 DI
+S 2660-2738 DIU
+R 633-640 DI 729-826 DIU 941-945 D 1029-1044 IU 1173-1198 I 1290-1397 IU 2103-2621 DIU 2737-2755 IU 2866-2889 IU
+terminal/kitty/graphics_storage.zig 1024-1096 DI 1240-1365 DIU 2050-2207 DIU
+terminal/kitty/graphics_unicode.zig 45-77 DI 160-246 I 257-268 I 277-298 DI
+M 304-344 DIU
+O 367-407 DIU
+I 70-191 DIU 248-390 DIU 397-486 DIU 776-811 DIU
+C 135-154 DI 168-203 DI
+renderer/cursor.zig 4-68 DIU
+font/SharedGrid.zig 221-250 DIU
+font/sprite/Face.zig 174-260 DIU
+font/sprite/canvas.zig 125-162 DIU
+renderer/metal/shaders.zig 20-38 DU
+renderer/opengl/shaders.zig 17-35 DU
+renderer/shaders/shaders.metal 556 D 658-675 I 767-852 DI
+renderer/shaders/glsl/cell_text.v.glsl 43 D 138-146 I
+renderer/shaders/glsl/image.v.glsl 3-47 DI
+renderer/shaders/glsl/image.f.glsl 3-21 DI
+n73 BRY
+G 204-207 D 274-275 D 712 D 725-741 IU 818-821 U 1314-1358 DIU 1564-1567 U 1645-1665 IU 1877-1880 IU 1889-1909 IU 1975-1992 IU 2623-2657 DIU 2679-2694 IU 2721-2758 IU 2925-2942 DU 2973-3058 IU 3233-3537 DIU 3674-3691 DIU
+R 828-845 D
+font/main.zig 13-24 DU
+font/shape.zig 19-58 DI 70-94 DI
+font/shaper/run.zig 10-396 DIU
+font/shaper/Cache.zig 58-78 DI
+font/shaper/coretext.zig 303-544 DIU
+font/shaper/harfbuzz.zig 114-299 DIU
+font/shaper/noop.zig 69-138 DIU
+font/SharedGrid.zig 41-64 D 150-219 DIU 377-464 DIU
+font/CodepointResolver.zig 301-349 DIU
+font/face.zig 10-24 DI
+font/face/coretext.zig 289-306 DI 517-567 IU
+font/face/freetype.zig 426-449 DIU 571-587 IU 622-778 IU
+font/sprite/Face.zig 174-260 DIU
+font/sprite/canvas.zig 125-162 DIU
+font/Atlas.zig 132-210 DI 253-364 DIU
+C 7-10 DU 13-74 DI 178-203 DI
+M 346-375 DIU
+O 409-436 DIU
+renderer/metal/Texture.zig 92-117 DIU
+renderer/opengl/Texture.zig 84-104 DIU
+renderer/metal/buffer.zig 125-183 DIU
+renderer/opengl/buffer.zig 94-124 DIU
+renderer/metal/shaders.zig 25-31 DU 266-283 D
+renderer/opengl/shaders.zig 22-28 DU 233-250 D
+renderer/shaders/shaders.metal 517-761 DI
+renderer/shaders/glsl/cell_text.v.glsl 3-146 DI
+renderer/shaders/glsl/cell_text.f.glsl 3-100 DI
+n72 BRG
+G 1371-1375 D 1399-1706 IU
+R 920-945 D 946-955 IU 1117-1158 IU 1241-1283 IU 1416-1484 DIU 1546-1567 DI 2666-2900 DIU
+RS 135-140 DI
+renderer/link.zig 71-145 DIU
+n71 BRG
+G 1371-1375 D 1408-1427 IU 1479-1487 U 1555-1567 IU
+RS 13-20 D 36-80 DIU
+R 920-947 DIU
+n70 SBR
+G 274-275 D 1371-1375 D 1381-1392 I 1429-1447 IU 1479-1493 IU 1564-1567 U 1631-1632 I 2630-2657 DIU 2679-2694 IU 2721-2758 IU
+terminal/main.zig 5 U 51 DU
+R 289-374 D 828-860 D 920-1484 DIU 1496-1533 DI 1546-1567 DI 2666-2900 DIU
+P 7133-7212 DI 7352-7383 DI 7863-7888 DI
+terminal/Terminal.zig 163-164 D 232-251 D
+terminal/Screen.zig 86-98 D
+terminal/page.zig 190-195 D 2272-2279 D
+n69 EB
++ n70 n71 n72
+G 90-94 D 204-210 D 274-281 D 1370-1710 DIU 2557-3672 DIU
+X 17 DU 35-42 U
+T 572-583 U
+R 920-1484 DIU 2666-2900 DIU
+renderer/link.zig 71-145 DIU
+RS 13-34 D 54-80 DI 119-140 DI 152-196 DI
+C 135-154 DI 168-203 DI
+renderer/cursor.zig 34-68 DI
+I 248-486 DIU
+R 729-826 DIU 2103-2621 DIU
+terminal/kitty/graphics_storage.zig 1240-1365 DIU
+font/shape.zig 19-58 DI
+font/shaper/run.zig 42-310 DIU
+font/shaper/coretext.zig 303-544 DIU
+font/shaper/harfbuzz.zig 114-260 DIU
+font/shaper/Cache.zig 58-78 DI
+font/SharedGrid.zig 221-250 DIU 377-464 DIU
+font/CodepointResolver.zig 301-349 DIU
+n68 SEBY
+X 22 DU
+T 1-3 D 20-111 DI 113-457 DIU 460-714 DIU 722-747 DIU
+n67 EBR
+T 27-80 D 113-173 DI 191-257 DIU 289-444 DIU 460-688 DIU
+S 97-102 D 597-605 IU 631-635 IU 711-721 U 753-759 IU 2574-2579 DIU
+termio/Termio.zig 312-322 IU 346-349 IU 714-716 U
+termio/stream_handler.zig 114-119 DIU
+G 42-47 DI 946-956 DIU 1074-1086 DIU 1107-1190 DIU 1258-1312 DIU 1371-1375 D 1716-1719 D
+renderer/DisplayLink.zig 93-111 DIU 149-256 DIU
+n66 EBRY
++ n67 n68 n69 n70 n71 n72 n73 n74 n75 n76 n77
+X 1-8 D 16-23 DU 35-42 DI
+S 45 DU 92-102 D 597-605 IU 628-637 IU 753-759 IU
+G 51-109 DU 114-116 D 712-749 DIU 818-827 IU 904-973 DIU 1479-1493 IU 1628-1710 IU 1712-2067 DIU

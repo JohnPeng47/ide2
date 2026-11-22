@@ -1,0 +1,90 @@
+Pi coding-agent core: AgentSession coordinates the live agent, durable conversation, tools, and model requests
+|
+|-- Public boundary and construction
+|   |-- packages/coding-agent/src/index.ts exports AgentSession and session factories
+|   |-- packages/coding-agent/src/main.ts -> createAgentSessionRuntime()
+|   |   `-- InteractiveMode / runPrintMode / runRpcMode consume the same session runtime
+|   |-- packages/coding-agent/src/core/agent-session-services.ts
+|   |   |-- createAgentSessionServices(): cwd-bound settings, resources, and ModelRuntime
+|   |   `-- createAgentSessionFromServices() -> createAgentSession()
+|   `-- packages/coding-agent/src/core/sdk.ts:191-484 -- createAgentSession()
+|       |-- SessionManager.buildSessionContext() restores messages and selection metadata
+|       |-- Resolves model, thinking level, settings, and initial tool selection
+|       `-- new Agent(...) -> new AgentSession(...); returns session and setup diagnostics
+|
+|-- Session orchestration -- packages/coding-agent/src/core/agent-session.ts
+|   |-- AgentSession:409 -- retains Agent, SessionManager, SettingsManager, and ModelRuntime
+|   |   `-- Private state: tool registry, ExtensionRunner, queued input, retry and cancellation state
+|   |-- prompt():2162 -> _preparePrompt() -> _startRun()
+|   |   |-- Extension commands may handle input without starting an LLM request
+|   |   |-- Input hooks -> skill/template expansion -> model/auth validation
+|   |   `-- During streaming, steer() / followUp() queue input instead of starting another run
+|   |-- _handleAgentEvent():1164 -- joins execution, extensions, observers, and storage
+|   |   |-- Agent events -> extension handlers -> public subscribe() listeners
+|   |   |-- message_end -> SessionManager.appendMessage() / appendCustomMessageEntry()
+|   |   `-- turn_end -> flush context-only messages after tool results, preserving call/result order
+|   `-- subscribe():1453 -- modes observe progress without implementing persistence themselves
+|
+|-- Live execution engine -- packages/agent/src
+|   |-- agent.ts: Agent -- reusable stateful engine beneath AgentSession
+|   |   |-- Owns current messages, model, tools, thinking level, and streaming state
+|   |   |-- Owns steering/follow-up queues and active-run AbortController
+|   |   `-- Calls runAgentLoop() / runAgentLoopContinue(); emits AgentEvent notifications
+|   `-- agent-loop.ts:172 -- runLoop()
+|       |-- prepareNextTurn / prepareRequest hooks refresh context and request selection
+|       |-- streamAssistantResponse():390
+|       |   |-- AgentMessage[] -> transformContext -> convertToLlm -> normalizeContext
+|       |   `-- streamFunction(model, context, options) -> partial/final assistant messages
+|       |-- executeToolCalls() -> runToolCall() -> tool execution and ToolResultMessage
+|       |   `-- Tool results join context; subsequent requests can use their output
+|       `-- Continue for tool calls or steering; consume follow-ups when otherwise finished
+|
+|-- Durable conversation and context projection
+|   |-- packages/coding-agent/src/core/session-manager.ts:995 -- SessionManager
+|   |   |-- Owns entry collection, id index, leafId, session identity, and file location
+|   |   |-- appendMessage() / appendCompaction() / metadata appenders -> JSONL persistence
+|   |   |-- Entries link through id + parentId; branch() changes the active leaf
+|   |   `-- buildSessionContext() / buildSessionProjection() derive the active model context
+|   |       `-- Stored history is not simply the live message array: branches and summaries affect replay
+|   |-- agent-session.ts:2923 -- compact()
+|   |   |-- Branch entries + model-specific settings -> prepareCompaction()
+|   |   |-- Extension override or default summary -> appendCompaction()
+|   |   `-- Refreshes live context; automatic compaction and overflow recovery share this responsibility
+|   `-- agent-session.ts:4126 -- navigateTree()
+|       |-- Resolves target entry and common ancestor; optionally summarizes the abandoned branch
+|       `-- core/compaction/branch-summarization.ts supplies branch-summary computation
+|
+|-- Tool and extension boundary
+|   |-- agent-session.ts:3761 -- _buildRuntime()
+|   |   |-- createAllToolDefinitions(cwd, settings) -> built-in definitions
+|   |   |-- ResourceLoader.getExtensions() -> new ExtensionRunner(...)
+|   |   `-- _refreshToolRegistry() combines selected built-ins, custom tools, and extension tools
+|   |-- packages/coding-agent/src/core/tools/index.ts
+|   |   |-- Default active tools: read, bash, edit, write
+|   |   |-- Additional built-ins: grep, find, ls, powershell
+|   |   `-- Tool factories bind operations to cwd; execution results return to the agent transcript
+|   |-- packages/coding-agent/src/core/extensions/runner.ts -- ExtensionRunner
+|   |   `-- Session binds commands, lifecycle hooks, context transforms, and tool hooks
+|   `-- packages/coding-agent/src/core/resource-loader.ts -- DefaultResourceLoader
+|       `-- Supplies extensions, skills, and prompt templates; reload() rebuilds session bindings
+|
+|-- Model request dependency boundary
+|   |-- sdk.ts:403 -- injected Agent.streamFn -> ModelRuntime.streamSimple()
+|   |   `-- Adds live request settings and provider hooks; session requests can seed CacheWarmer
+|   |-- packages/coding-agent/src/core/model-runtime.ts:174 -- ModelRuntime
+|   |   |-- Exposes model discovery, auth operations, provider registration, and virtual-model resolution
+|   |   `-- streamSimple():744 -> prepareRequest() -> prepared.provider.streamSimple()
+|   |       `-- Provider implementation supplies the assistant event stream consumed by agent-loop.ts
+|   `-- Request requires projected messages + selected model + resolved auth + request settings
+|       `-- Tool declarations travel in system messages; executable tools remain in AgentContext.tools
+|
+`-- Lifetime and replacement ownership
+    |-- packages/coding-agent/src/core/agent-session-runtime.ts:73 -- AgentSessionRuntime
+    |   |-- Owns the current AgentSession and its cwd-bound AgentSessionServices
+    |   |-- switchSession() / newSession() / fork operations replace the active runtime
+    |   `-- teardownCurrent(): abort and settle -> session_shutdown -> dispose()
+    |       `-- Factory creates replacement services/session; rebind callback reconnects the host
+    `-- agent-session.ts:1477 -- dispose()
+        |-- Aborts retry, compaction, branch summary, shell work, and agent execution
+        |-- Invalidates extension contexts and disconnects event listeners
+        `-- Cancels cache warming and cleans up session-scoped resources

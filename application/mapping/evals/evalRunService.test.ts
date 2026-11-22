@@ -58,6 +58,30 @@ async function fixture() {
 }
 const settle = (f: Awaited<ReturnType<typeof fixture>>, id: string) => expect.poll(async () => (await f.service.read(id)).status, { timeout: 10000 }).not.toMatch(/queued|generating/);
 
+it('pins Markdown without a canvas, survives restart, and rejects replacement or ambiguous formats', async () => {
+  const f = await fixture(), { run, session } = evalOutputFixture();
+  await f.service.list();
+  const store = new JsonDirectoryStore<EvalRun>(f.root, 'eval-runs');
+  await store.save(run);
+  const generate = vi.spyOn(f.runtime, 'generate');
+  const input = { cellKey: run.cells[0].key, format: 'markdown', markdown: '# Plan\n\n- Preserve the source.\n- Execute the batches.\n' };
+  await expect(f.service.captureOutputResult(run.id, { ...input, markdown: ' \n' })).rejects.toThrow('empty');
+  await expect(f.service.captureOutputResult(run.id, { ...input, changeSessionId: session.id, expectedVersion: session.version })).rejects.toThrow();
+  await expect(f.service.captureOutputResult(run.id, { ...input, cellKey: 'missing' })).rejects.toThrow('cell');
+  const [summary, retry] = await Promise.all([f.service.captureOutputResult(run.id, input), f.service.captureOutputResult(run.id, input)]);
+  expect(summary).toEqual({ format: 'markdown', canvases: [] }); expect(retry).toEqual(summary);
+  await expect(f.service.captureOutputResult(run.id, { ...input, markdown: '# Revised plan' })).rejects.toThrow('already pinned');
+  await expect(f.service.captureOutputResult(run.id, { cellKey: input.cellKey, changeSessionId: session.id, expectedVersion: session.version })).rejects.toThrow('already pinned');
+  const saved = await store.read(run.id);
+  expect(saved!.status).toBe('finished'); expect(saved!.cells[0].error).toBeUndefined();
+  expect(saved!.cells[0].canvasId).toBeUndefined();
+  expect((await f.service.list()).find(item => item.id === run.id)!.cells[0].output).toEqual(summary);
+  expect(generate).not.toHaveBeenCalled();
+  const restarted = new EvalRunService(f.comparisons, f.workspace, f.projects, f.contexts, f.prompts, f.canvases, store, f.runtime);
+  expect(await restarted.outputResult(run.id, input.cellKey)).toEqual({ schemaVersion: 1, format: 'markdown', markdown: input.markdown, canvases: [], diagramRevisions: {} });
+  restarted.dispose();
+});
+
 it('pins a multi-canvas execution result idempotently, survives source deletion, and never generates', async () => {
   const f = await fixture(), { run, session } = evalOutputFixture();
   await f.service.list();
@@ -300,7 +324,7 @@ it('adds a valid built-in version when a workflow input is renamed', async () =>
 it('seeds built-in prompts and versions edits with conflict detection and template validation', async () => {
   const f = await fixture();
   const list = await f.prompts.list();
-  expect(list.filter(p => p.builtin).map(p => p.workflow).sort()).toEqual(['alternatives', 'alternatives', 'diagram-change-proposal', 'few-shot-refinement', 'linked-canvases', 'roll-up']);
+  expect(list.filter(p => p.builtin).map(p => p.workflow).sort()).toEqual(['alternatives', 'alternatives', 'canvas-layout', 'diagram-change-proposal', 'diagram-history', 'few-shot-refinement', 'linked-canvases', 'roll-up']);
   await expect(f.prompts.save({ requestId: crypto.randomUUID(), workflow: 'roll-up', name: 'Bad', stages: { r2: '{{nope}}', g2: 'ok' } })).rejects.toThrow('Fix the prompt errors');
   const saved = await f.prompts.save({ requestId: crypto.randomUUID(), workflow: 'roll-up', promptId: f.strict.id, baseVersion: 1, name: 'Strict 2', stages: { r2: 'New {{pass}}', g2: 'New' } });
   expect(saved.versions.map(v => v.version)).toEqual([1, 2]);
@@ -398,6 +422,20 @@ it('retains generated metadata after Open in Mapping and pins previews/compariso
   expect((await f.comparisons.candidates()).some(candidate => candidate.documentId === original.id)).toBe(false);
   expect((await f.comparisons.capture([source])).canvases[0].history.headId).toBe(cell.checkpointId);
   expect((await f.comparisons.read(session.id)).canvases).toEqual(session.canvases);
+});
+
+it('loads an output-owned pinned snapshot directly without the catalog/all-runs lookup', async () => {
+  const f = await fixture(), started = await f.service.start(f.rollUp({ passes: 1 })); await settle(f, started.id);
+  const run = await f.service.read(started.id), cell = run.cells[0];
+  const lookup = vi.spyOn(f.canvases, 'read').mockRejectedValue(Error('Unexpected catalog scan'));
+  const source = { runId: run.id, cellKey: cell.key };
+  const saved = await f.service.canvas(cell.canvasId!, cell.checkpointId, source);
+  expect(saved).toEqual(run.outputSnapshots![cell.canvasId!]);
+  expect(lookup).not.toHaveBeenCalled();
+  await expect(f.service.canvas(cell.canvasId!, 'different-checkpoint', source)).rejects.toThrow('does not belong');
+  await expect(f.service.canvas('different-canvas', cell.checkpointId, source)).rejects.toThrow('does not belong');
+  await expect(f.service.canvas(cell.canvasId!, cell.checkpointId, { ...source, cellKey: 'missing' })).rejects.toThrow('does not belong');
+  expect(lookup).not.toHaveBeenCalled();
 });
 
 it('reruns durable source copies after a view is saved again or the source is deleted, including reruns of reruns', async () => {
@@ -782,6 +820,8 @@ it('does not publish a partial canvas bundle when graph validation or cancellati
 
 it('promotes frozen outputs into a named canvas project without modifying the run or generating', async () => {
   const f = await fixture(), { run, session } = evalOutputFixture();
+  const context = await f.contexts.create({ requestId: crypto.randomUUID(), name: 'Promotion source', context: 'Pinned codebase' });
+  run.agentContextId = context.agentContextId;
   await f.service.list();
   const store = new JsonDirectoryStore<EvalRun>(f.root, 'eval-runs'); await store.save(run);
   f.service.readChangeSession = async () => session;
@@ -790,6 +830,8 @@ it('promotes frozen outputs into a named canvas project without modifying the ru
   const request = { requestId: crypto.randomUUID(), cellKey: run.cells[0].key, destination: 'new-project', name: 'Shopify' };
   const receipt = await f.service.promoteOutput(run.id, request);
   expect(receipt.canvases).toHaveLength(2);
+  const catalog = await f.catalogs.loadRepresentationCatalog(run.projectId);
+  for (const canvas of receipt.canvases) expect(catalog.representations[canvas.id].agentContextId).toBe(context.agentContextId);
   expect(await f.service.promoteOutput(run.id, request)).toEqual(receipt);
   expect((await f.service.promotionTargets()).groups).toEqual([{ id: receipt.canvasProjectId, name: 'Shopify' }]);
   expect(await store.read(run.id)).toEqual(before);
@@ -826,4 +868,63 @@ it('backfills verified historical promotion metadata without changing output evi
   delete after.outputResults![cellKey].placementSnapshot;
   expect(after).toEqual(saved);
   expect(generate).not.toHaveBeenCalled();
+});
+
+it.each(['diagram-history', 'canvas-discovery'] as const)('preserves %s work across backend restart and records cancellation without another model call', async coordinator => {
+  const f = await fixture();
+  await f.service.list();
+  const { run } = evalOutputFixture();
+  run.coordinator = coordinator;
+  run.status = 'generating';
+  for (const cell of run.cells) cell.status = 'generating';
+  const store = new JsonDirectoryStore<EvalRun>(f.root, 'eval-runs');
+  await store.save(run);
+  const generate = vi.spyOn(f.runtime, 'generate');
+  const restarted = new EvalRunService(f.comparisons, f.workspace, f.projects, f.contexts, f.prompts, f.canvases, store, f.runtime);
+  expect((await restarted.read(run.id)).status).toBe('generating');
+  expect((await store.read(run.id))!.cells.every(cell => cell.status === 'generating')).toBe(true);
+  await restarted.cancel(run.id);
+  expect((await store.read(run.id))!.status).toBe('cancelled');
+  expect((await store.read(run.id))!.cells.every(cell => cell.status === 'cancelled')).toBe(true);
+  expect(generate).not.toHaveBeenCalled();
+  restarted.dispose();
+});
+
+
+it('generates and reopens sparse diagram layouts with immutable node-level edges', async () => {
+  const f = await fixture();
+  const context = await f.contexts.create({ requestId: crypto.randomUUID(), name: 'Session', context: 'Keyboard writes' });
+  const run = await f.service.start({ requestId: crypto.randomUUID(), workflow: 'canvas-layout',
+    prompts: [{ promptId: 'builtin-canvas-layout', version: 1 }],
+    inputs: { context: { agentContextId: context.agentContextId } }, canvasSources: [f.sources[0]], passes: 1 });
+  await settle(f, run.id);
+  const key = run.cells[0].key;
+  const result = await f.service.outputResult(run.id, key);
+  if (result.format !== 'canvas-layout') throw Error('Expected layout');
+  expect(result.layout.canvases[0].diagrams[1]).toMatchObject({ size: { lines: 12 }, nodes: [{ line: 6 }] });
+  const input = { cellKey: key, format: result.format, layout: structuredClone(result.layout) };
+  await expect(f.service.captureOutputResult(run.id, input)).resolves.toEqual({ format: 'canvas-layout', canvases: [] });
+  input.layout.edges[0].target.node = 'missing';
+  await expect(f.service.captureOutputResult(run.id, input)).rejects.toThrow('Missing anchor');
+  input.layout.edges[0].target.node = 'write';
+  input.layout.canvases[0].diagrams[1].nodes[0].line = 13;
+  await expect(f.service.captureOutputResult(run.id, input)).rejects.toThrow('anchor line');
+  input.layout.canvases[0].diagrams[1].nodes[0].line = 2;
+  await expect(f.service.captureOutputResult(run.id, input)).rejects.toThrow('already pinned');
+});
+
+it('sends expanded prompt templates to the runtime and keeps the source tokens on the run', async () => {
+  const f = await fixture();
+  const bodies = { r2: 'Read {{child}}.\n{{template:prompt-snippets/canvas-style-guidance.txt}}', g2: '{{template:prompt-snippets/diagrams-style.txt}}' };
+  const prompt = await f.prompts.save({ workflow: 'roll-up', name: 'Styles', requestId: crypto.randomUUID(), stages: bodies });
+  const generate = vi.spyOn(f.runtime, 'generate');
+  const summary = await f.service.start(f.rollUp({ passes: 1, prompts: [{ promptId: prompt.id, version: 1 }] }));
+  await settle(f, summary.id);
+  const run = await f.service.read(summary.id);
+  expect(run.status).toBe('finished');
+  expect(run.prompts[0].templateSources).toEqual(bodies);
+  expect(generate.mock.calls.map(([input]) => input.prompt)).toEqual([
+    expect.stringContaining('minimize the edge "travel-distance"'), expect.stringContaining('Incremental compiler')
+  ]);
+  for (const [input] of generate.mock.calls) expect(input.prompt).not.toMatch(/\{\{(?:template:|child\}\})/);
 });

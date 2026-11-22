@@ -1,0 +1,283 @@
+{
+  "output": {
+    "explanation": "The central tree follows runtime ownership: the Session facade holds a handle factory; SessionExecution owns its coordinator and report coordinator; LocationServiceMap caches location graphs; each graph contains the runner, whose SessionStep closure owns individual attempts and tool fibers. Shared dependencies remain peers with explicit call arrows. Two peripheral diagrams expand shared durable-state services and the other services inside each location graph, with direct connections between those diagrams. Verified against the pinned checkout, especially instance.ts, location-services.ts, session.ts, session/session.ts, execution.ts, runner/{llm,step}.ts, bus.ts, projector.ts and context.ts. Corrections: session handles do not expose every facade operation or own execution; child creation always uses the parent's location, while metadata and permissions permit overrides; SessionStep is a captured closure, not another service loop; transport, jobs, credentials and persistent PTYs are global rather than session/location-owned. An explicitly selected unavailable model errors rather than silently falling back. SessionInstructions injects durable synthetic guidance rather than owning InstructionEntry/State. Indented operation results denote temporary values, and arrows denote dependencies rather than ownership. Paths are relative to packages/core/src unless qualified.",
+    "diagrams": [
+      {
+        "id": "core",
+        "ascii": "OpenCode runtime - host composition (not one Session object)\n|\n|-- Session.Service facade [session.ts]\n|   |-- create / fork / list / messages / command / log\n|   |   |-- -> Project.resolve; Bus lifecycle events; Store reads\n|   |   `-- create child: parent's location wins; metadata/permissions default\n|   |-- Session.make() factory [session/session.ts]\n|   |   `-- forSession(id): bound operations, not an owned execution engine\n|   |       |-- get / rename / archive / permissions / agent / model\n|   |       |   `-- -> reload Store state; publish mutations through Bus\n|   |       |-- prompt / synthetic / shell / skill / compact\n|   |       |   |-- -> Instance.provide: prepare input using location services\n|   |       |   |-- prompt: prepare succeeds -> commit staged revert -> admit\n|   |       |   `-- -> SessionInbox; wake SessionExecution unless disabled\n|   |       `-- revert / resume / wait / interrupt -> maintenance or execution\n|   `-- remove(id)\n|       `-- -> interrupt + awaitIdle; cancel jobs; close transport; delete family\n|\n|-- SessionExecution [session/execution.ts; shared global service]\n|   |-- SessionRunCoordinator [session/run-coordinator.ts]\n|   |   `-- Execution map keyed by session ID\n|   |       |-- One active fiber + completion waiter + pending wake per key\n|   |       `-- drain -> Instance.provide(session) -> SessionRunner.drain\n|   |-- SubagentReport coordinator\n|   |   `-- -> Job settlement/outbox + parent SessionInbox delivery\n|   `-- Lifecycle hooks\n|       |-- Started -> Bus transaction claims durable work\n|       `-- Terminal -> release claim/report commit; shutdown retains claim\n|\n|-- Job [job.ts]: global running/background work, recovery and report outbox\n|-- SubagentJob / SessionRestart [session/subagent-job.ts; execution/restart.ts]\n|   `-- -> Job.start + child resume; restart claims/jobs or deliver notices\n|-- Schedule [schedule.ts]: persisted schedules + database-leased scheduler\n|   `-- due work -> Session.prompt; unattended permission checks\n|-- Shared durable-state services [expanded in state diagram]\n|-- SessionModelTransport [session/model-transport.ts]\n|   `-- Per-session connections/continuity; runner-only stateful requests\n|-- Credential / LLMClient / PersistentPty: shared provider/process facilities\n|-- Project: global identity resolution; workspace/worktree placement support\n|\n|-- Instance.Service: lends graph selected by session.location\n|-- LocationServiceMap [location-services.ts]\n|   `-- Cached Instance graph per canonical Location.Ref [instance.ts]\n|       |-- Location + LocationLifecycle\n|       |   `-- invalidation detaches routing; closes interactions, not borrowers\n|       |-- SessionRunnerLLM [session/runner/llm.ts]\n|       |   |-- drain / runStep: continuation, retry and max-step policy\n|       |   |   |-- -> Plugin activation; Inbox promotion; Context; Compaction\n|       |   |   `-- Reloaded/Moved -> execution reacquires location graph\n|       |   |-- Title-generation fibers keyed by session\n|       |   `-- SessionStep.make closure [session/runner/step.ts]\n|       |       `-- attempt: one provider attempt, not another service loop\n|       |           |-- Event publisher + scoped tool fibers\n|       |           |   `-- -> Bus text/reasoning/tools/usage/error events\n|       |           |-- -> LLMClient.stream; prepared.executeTool(snapshot)\n|       |           `-- Join/cancel tools; capture file changes before settlement\n|       `-- Shared location services [expanded in capabilities diagram]\n|\n`-- HTTP SessionHandler [packages/server/src/handlers/session.ts]\n    `-- -> Session.Service; also transfer/instructions/forms; log replays progress",
+        "position": {
+          "column": 0,
+          "row": 0
+        }
+      },
+      {
+        "id": "state",
+        "ascii": "Durable-state services - global peers, shared across sessions\n|\n|-- Bus [bus.ts]\n|   |-- Durable publish / publishAll\n|   |   `-- Database transaction\n|   |       |-- Sequence + event rows\n|   |       |-- -> registered projectors materialize state\n|   |       `-- -> local commit hook (claims/report bookkeeping); then notify\n|   |-- project / replay: registered handlers, replayable durable events\n|   `-- log(after, follow): history -> Synced watermark -> optional live\n|       `-- subscribe is volatile; not a replay API\n|-- SessionProjector [session/projector.ts]\n|   |-- Registers Bus projection handlers\n|   |   |-- -> SessionMessageUpdater / SessionStored / SessionBlob helpers\n|   |   `-- -> lifecycle, fork, inbox, compaction, parts, cost/token rows\n|   `-- Step/usage subscription -> publish aggregate session usage\n|-- SessionStore [session/store.ts]\n|   |-- Indexed session reads, message pages and active context\n|   `-- claim / release / listSuspended -> resumable execution state\n|-- SessionInbox [session/inbox.ts]\n|   |-- Serialized per-session reconcile / admit / cancel / steer / queue\n|   |-- -> Bus events + persisted pending user/synthetic/control rows\n|   `-- nextPromotable / promote: steer between steps; queue at input boundary\n|       `-- Compaction/move barriers preserve ordering\n|-- InstructionEntry / SessionTransfer: shared guidance and import/export\n|-- Database.Service [database/database.ts]\n|   `-- SQLite tables\n|       |-- event/sql.ts: sequences + durable event log\n|       |-- session/sql.ts: sessions, messages, parts, inbox, instruction state\n|       |-- session/sql.ts: media blobs/references; execution claim fields\n|       `-- Job/schedule persistence and scheduler lease\n`-- SessionHistory / SessionStats / SessionDiff / SessionRevert: helper operations\n    |-- -> active transcript, usage queries, file review and history boundaries\n    `-- Revert stage/clear -> Snapshot restore; commit -> Bus history mutation",
+        "position": {
+          "column": 100,
+          "row": 0
+        }
+      },
+      {
+        "id": "capabilities",
+        "ascii": "Shared services inside each cached Instance graph\n|\n|-- SessionContext [session/context.ts]\n|   |-- select -> Store + Agent + guidance + permission-filtered Tool snapshot\n|   `-- load -> SessionRunnerModel + SessionHistory active transcript\n|-- SessionModelRequest [session/model-request.ts]\n|   |-- prepare -> system prompt + toLLMMessages + tools + model limits\n|   |-- Hooks, media compatibility and output-token budgeting shape request\n|   `-- Prepared request value\n|       |-- Advertised definitions + retained Tool.Snapshot executor\n|       |-- executeTool -> captured snapshot, not the current registry\n|       `-- -> global SessionModelTransport for durable runner continuity\n|-- SessionRunnerModel / ModelResolver / Model / Provider / AISDK\n|   `-- Session model else agent/fallback; unavailable explicit model errors\n|-- SessionCompaction / SessionTitle [session/{compaction,title}.ts]\n|   `-- -> Context/model requests; summaries/precompute or title generation\n|-- Agent / Skill / Reference and instruction services\n|   |-- InstructionDiscovery / BuiltIns / SkillInstructions / ReferenceInstructions\n|   `-- SessionInstructions -> Bus synthetic guidance; history deduplicates paths\n|\n|-- Tool.Service [tool.ts; tool/runtime.ts]\n|   |-- Transformable registry: definitions + executors\n|   |-- snapshot(policy): fixes permitted capabilities for one request\n|   |   `-- CodeMode catalog -> sandbox execution over permitted tools\n|   `-- execute -> before/after hooks; normalize -> ToolOutput truncation\n|-- Permission / Form [permission.ts; form.ts]\n|   |-- Rules + saved project approvals + pending interactive waiters\n|   |-- assert -> policy/user reply; publish interaction events to Bus\n|   `-- close rejects/ends waiters <- LocationLifecycle.shutdown\n|-- Mcp / McpTool [mcp/; tool/mcp.ts]\n|   `-- Connections/discovery -> Tool registry + context instructions\n|\n|-- Plugin service [plugin.ts; plugin/service.ts]\n|   |-- Active generation slots and activation scopes\n|   |   `-- Per-plugin host API [plugin/host.ts]\n|   |-- Built-in/extension registrations -> providers, agents, tools, adapters\n|   |   |-- File/shell/web/image/skill/todo/question/artifact/MCP tools\n|   |   |-- Subagent tools -> Session.create/prompt + global SubagentJob\n|   |   `-- Schedule tools -> global Schedule\n|   `-- awaitActivation gates prompt preparation, runner steps and tool calls\n|-- PluginSupervisor / module loader / Config [plugin/; config/]\n|   `-- Discovery/settings/updates -> plugin generations and activation\n|-- PluginHooks: prompt/context/model/tool/permission/idle extension points\n|\n|-- Environment: local or workspace driver selected by Location\n|-- FileSystem / FileAccess / FileMutation / FileWrite / Formatter\n|   `-- File tools -> environment-backed reads/search/edits and formatting\n|-- Shell / Pty\n|   `-- Process/terminal operations; -> global PersistentPty for daemon lifetime\n|-- Snapshot / Vcs\n|   `-- capture/files/diff/restore -> step change tracking and reversible edits\n|\n`-- Helpers executed with this graph (not separate owned services)\n    |-- SessionPrompt / Command / Skill / Shell -> prepared input/completion\n    |   `-- Prompt -> activation + session.prompt hook + attachment/skill materialization\n    `-- SessionGenerate -> auxiliary request; no input admission/history mutation",
+        "position": {
+          "column": 100,
+          "row": 40
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": {
+          "diagram": "core",
+          "line": 35
+        },
+        "target": {
+          "diagram": "state",
+          "line": 1
+        },
+        "label": "Expands shared global state services"
+      },
+      {
+        "source": {
+          "diagram": "core",
+          "line": 57
+        },
+        "target": {
+          "diagram": "capabilities",
+          "line": 1
+        },
+        "label": "Expands peers within the cached location graph"
+      },
+      {
+        "source": {
+          "diagram": "core",
+          "line": 12
+        },
+        "target": {
+          "diagram": "capabilities",
+          "line": 54
+        },
+        "label": "Borrow location services for input preparation"
+      },
+      {
+        "source": {
+          "diagram": "core",
+          "line": 14
+        },
+        "target": {
+          "diagram": "state",
+          "line": 20
+        },
+        "label": "Admit durable pending work"
+      },
+      {
+        "source": {
+          "diagram": "core",
+          "line": 27
+        },
+        "target": {
+          "diagram": "state",
+          "line": 8
+        },
+        "label": "Claim work atomically with Started"
+      },
+      {
+        "source": {
+          "diagram": "core",
+          "line": 48
+        },
+        "target": {
+          "diagram": "capabilities",
+          "line": 3
+        },
+        "label": "Select and load request context"
+      },
+      {
+        "source": {
+          "diagram": "core",
+          "line": 48
+        },
+        "target": {
+          "diagram": "state",
+          "line": 23
+        },
+        "label": "Promote eligible inbox work"
+      },
+      {
+        "source": {
+          "diagram": "core",
+          "line": 54
+        },
+        "target": {
+          "diagram": "state",
+          "line": 3
+        },
+        "label": "Publish streamed progress and settlement"
+      },
+      {
+        "source": {
+          "diagram": "core",
+          "line": 55
+        },
+        "target": {
+          "diagram": "capabilities",
+          "line": 9
+        },
+        "label": "Consume prepared request and captured executor"
+      },
+      {
+        "source": {
+          "diagram": "capabilities",
+          "line": 4
+        },
+        "target": {
+          "diagram": "state",
+          "line": 17
+        },
+        "label": "Read current durable session state"
+      },
+      {
+        "source": {
+          "diagram": "capabilities",
+          "line": 5
+        },
+        "target": {
+          "diagram": "state",
+          "line": 32
+        },
+        "label": "Load active history through SessionHistory"
+      },
+      {
+        "source": {
+          "diagram": "capabilities",
+          "line": 28
+        },
+        "target": {
+          "diagram": "state",
+          "line": 3
+        },
+        "label": "Publish permission interaction events"
+      },
+      {
+        "source": {
+          "diagram": "state",
+          "line": 34
+        },
+        "target": {
+          "diagram": "capabilities",
+          "line": 50
+        },
+        "label": "Restore workspace files through Snapshot"
+      },
+      {
+        "source": {
+          "diagram": "capabilities",
+          "line": 12
+        },
+        "target": {
+          "diagram": "core",
+          "line": 36
+        },
+        "label": "Use globally held per-session transport"
+      },
+      {
+        "source": {
+          "diagram": "capabilities",
+          "line": 38
+        },
+        "target": {
+          "diagram": "core",
+          "line": 31
+        },
+        "label": "Launch child work outside plugin lifetime"
+      },
+      {
+        "source": {
+          "diagram": "capabilities",
+          "line": 39
+        },
+        "target": {
+          "diagram": "core",
+          "line": 33
+        },
+        "label": "Manage persisted schedules"
+      },
+      {
+        "source": {
+          "diagram": "core",
+          "line": 60
+        },
+        "target": {
+          "diagram": "state",
+          "line": 10
+        },
+        "label": "Expose replayable session progress"
+      }
+    ]
+  },
+  "usage": {
+    "input": 37305,
+    "output": 8094,
+    "cacheRead": 252032,
+    "cacheWrite": 0,
+    "reasoning": 1221,
+    "totalTokens": 297431
+  },
+  "execution": {
+    "runtime": "pi-agent-context",
+    "sessionId": "01a1efab-c039-7ce0-9835-7c774b3c22de",
+    "contextHash": "f58f7ccea0452d6e4717545a6585deb6a2deaae37919ea0af4b1cd21da081c2e",
+    "cacheKey": "eval-e65a33faec4e089aa8b9938fc6920585f219be5544478705073ac590fb4b965c",
+    "modelContextHash": "74c621f98abb6f75b5e6860fd0761ae8f6f371375f0c560f2e75bcd2e11e9d7d",
+    "repositories": [
+      {
+        "repository": "repo-1",
+        "repositoryPath": "/home/john/softwarez/opencode",
+        "commit": "fe3552441192ccbea91d117668e7f3a9eb097baf",
+        "exclusions": [
+          "**/*-LICENSE",
+          "**/*.md",
+          "**/*.mdx",
+          "**/*.spec.*",
+          "**/*.test.*",
+          "**/AGENTS.md",
+          "**/CODEX-LICENSE",
+          "**/LICENSE*",
+          "**/__fixtures__/**",
+          "**/__snapshots__/**",
+          "**/__tests__/**",
+          "**/benchmarks/**",
+          "**/build/**",
+          "**/dist/**",
+          "**/docs/**",
+          "**/e2e/**",
+          "**/examples/**",
+          "**/fixtures/**",
+          "**/node_modules/**",
+          "**/scripts/**",
+          "**/test/**",
+          "**/tests/**",
+          ".github/**",
+          ".husky/**",
+          ".opencode/**",
+          ".pi/**",
+          ".vscode/**",
+          ".zed/**",
+          "bun.lock",
+          "flake.lock",
+          "nix/**",
+          "package-lock.json",
+          "patches/**",
+          "salesforce/**",
+          "script/**",
+          "scripts/**",
+          "specs/**"
+        ],
+        "checkout": "/tmp/agent-repository-fskdDM/checkout",
+        "inspectionSource": "session-transcript"
+      }
+    ]
+  }
+}

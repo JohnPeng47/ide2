@@ -15,7 +15,7 @@ function policyFor(options: ParseOptions): Policy {
   const policy: Policy = { dialect: options.dialect ?? 'mixed', tabSize: options.tabSize ?? 4,
     treeTolerance: options.treeTolerance ?? 1, wireTolerance: options.wireTolerance ?? 2,
     continuation: options.continuation ?? 'auto', detachedLists: options.detachedLists ?? 'auto',
-    repairs: options.repairs ?? 'conservative', maxChars: options.maxChars ?? 1_000_000,
+    repairs: options.repairs ?? 'conservative', ...(options.maxChars === undefined ? {} : { maxChars: options.maxChars }),
     maxColumns: options.maxColumns ?? 100_000, maxCandidates: options.maxCandidates ?? 100_000,
     maxNodes: options.maxNodes ?? 10_000, maxMatchingCells: options.maxMatchingCells ?? 100_000,
     ...(options.compatibility ? { compatibility: options.compatibility } : {}) };
@@ -33,7 +33,7 @@ function policyFor(options: ParseOptions): Policy {
 export function parseDiagram(input: string, options: ParseOptions = {}): DiagramInterpretation {
   if (typeof input !== 'string') throw new TypeError('Diagram input must be a string');
   const policy = policyFor(options);
-  if (input.length > policy.maxChars) throw new RangeError('Diagram exceeds maxChars');
+  if (policy.maxChars !== undefined && input.length > policy.maxChars) throw new RangeError('Diagram exceeds maxChars');
   const diagnostics: DiagramInterpretation['diagnostics'] = [];
   const source = normalizeSource(input, policy, diagnostics);
   const glyphs = Object.freeze({ ...DEFAULT_GLYPHS, ...options.glyphs });

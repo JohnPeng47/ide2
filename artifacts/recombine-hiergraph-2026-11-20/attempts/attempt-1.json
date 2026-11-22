@@ -1,0 +1,387 @@
+{
+  "session": "/home/john/.pi/agent/sessions/--tmp-agent-repository-753TrL-checkout--/2026-11-20T22-12-02-510Z_01a1fb04-414e-7d6e-b5e3-e67ffbf13e01.jsonl",
+  "usage": {
+    "input": 63070,
+    "output": 19392,
+    "cacheRead": 548480,
+    "cacheWrite": 0,
+    "reasoning": 10152,
+    "totalTokens": 630942
+  },
+  "toolCalls": 16,
+  "output": {
+    "explanation": "Checked against checkout ea8b12a8a9894b5259c441eadd8f6f0c65e215af using targeted searches and incremental source reads. The checkout remains unchanged.\n\nNotation: M = modular-tree; C = call-tree; O = ownership-tree; D = data-tree. Selectors below identify named nodes in those input trees. Diagram line numbers and jump columns are zero-based; column ends are exclusive. Every terminal diagram line is a leaf; its source citations are its evidence. Nonterminal lines provide inclusion only. The provenance inventory below identifies the input nodes merged into each leaf.\n\nINTERSECTIONS\nThese are the source-checked intersections used to organize the graph. Each kernel is contained in the cited support of every listed witness. Singleton citations are treated conservatively as singleton slices; additional verification slices do not retroactively increase intersection degree.\n1. Session construction, degree 3. K=src/Surface.zig:477-477. M/S exposes initialization; C/Surface.init activates construction; O/Core Surface assigns session ownership.\n2. Application dispatch, degree 3. K=src/App.zig:164-164. M/A exposes tick; C/Main-thread message dispatch activates draining; O/CoreApp/bookkeeping retains the mailbox and assigns its draining responsibility.\n3. Owned derived policy, degree 2. K=src/Surface.zig:144-144. M/C/consumer settings establishes the no-borrowed-config boundary; O/Core Surface/main-thread config establishes ownership.\n4. Conditional reload, degree 3. K=src/Surface.zig:1804-1804. C/Surface.updateConfig activates replacement; O/main-thread config assigns replacement responsibility; D/T/C computes effective session policy.\n5. Dependency-safe teardown, degree 3. K=src/Surface.zig:829-829. M/S/lifecycle defines the boundary; C/Session closure activates teardown; O/Core Surface/lifetime orders releases.\n6. Binding-first input, degree 3. K=src/Surface.zig:2792-2792. M/S/Keyboard defines event policy; C/keyCallback activates it; D/W/U needs remaps, bindings and retained sequence state to determine disposition.\n7. Action dispatch, degree 3. K=src/Surface.zig:4941-4941. M/S exposes performBindingAction; C/performBindingAction dispatches commands; D/H/navigation and D/W/explicit payloads compute host requests or terminal input.\n8. Shared font lease acquisition, degree 2. K=src/font/SharedGridSet.zig:96-96. M/F exposes ref; O/CoreApp/font_grid_set assigns reference-counted ownership.\n9. Font-grid switching, degree 3. K=src/Surface.zig:2536-2536. C/Size/font entry points activates switching; O/main-thread Font lease transfers old-key release; D/G/B computes metrics from requested font settings and size.\n10. Geometry propagation, degree 2. K=src/Surface.zig:2618-2618. C/resize activates propagation; D/G computes dimensions from screen, padding and cell size.\n11. Terminal initialization, degree 2. K=src/termio/Termio.zig:254-275. M/P exposes initialization; D/T/defaults needs configuration and geometry.\n12. Locked output parsing, degree 3. K=src/termio/Termio.zig:705-761. M/P defines the parsing boundary; O/io/terminal_stream retains persistent parser state and assigns mutation responsibility; D/T computes the next terminal state from bytes and prior state. C describes the same operation but its literal anchor is 702, so it does not increase this kernel's degree.\n13. VT action dispatch, degree 3. K=src/termio/stream_handler.zig:188-188. M/P/StreamHandler bridges protocols and session services; C/PTY output loop invokes dispatch; D/T uses decoded actions to compute edits and requests.\n14. Screen storage, degree 2. K=src/terminal/Screen.zig:45-87. M/T/storage defines screen state; O/io/terminal/Screen assigns ownership of pages, selection and protocol state.\n15. Snapshot production, degree 3. K=src/renderer/generic.zig:1371-1371. M/R exposes updateFrame; C/Rendering loop invokes it; D/F needs terminal-derived viewport data for presentation. Ownership of the snapshot is independently supported by renderer fields, not a fourth witness to this kernel.\n16. Paste admission, degree 2. K=src/Surface.zig:6264-6264. C/Clipboard completion invokes admission and encoding; D/W/paste needs bytes, terminal modes and protection policy.\n17. Search result fan-out, degree 2. K=src/Surface.zig:1496-1496. C/Search loop invokes the callback on the search thread; D/X/search computes renderer highlights and UI counters from results.\n18. Shared terminal access, degree 2. K=src/renderer/State.zig:13-20. M/R defines the shared-state contract; O/renderer_state identifies the mutex and borrowed terminal pointer.\n19. Application resources, degree 2. K=src/App.zig:137-148. M/A defines shared font/device services; O/CoreApp assigns their shutdown lifetime.\n\nNo degree-4 intersection is certified from the literal supplied slices. Semantic agreement alone is not substituted for overlapping support.\n\nREJECTED CANDIDATES\nBroad Surface support overlaps many operations, but key encoding and search destruction are not the same concept merely because their ancestor is Surface. App registration and runtime allocation are different responsibilities: storing a pointer does not mean owning the wrapper allocation. Likewise, broad renderer ranges do not identify draw_mutex with the terminal mutex; they protect different state. The data tree's font-metric need and ownership tree's font-set allocation are semantically related, but their cited files do not supply a common kernel; they are connected through font switching instead. These candidates fail I2 or the literal kernel requirement and are not promoted to intersections.\n\nSTRUCTURE AND READING ORDER\nThe three canvases follow contracts, state exchange, then derived presentation. Canvas 1 combines runtime boundaries, ownership and policy because construction/reload/teardown intersect there. Canvas 2 follows the duplex byte path, keeping input encoding beside the modes it needs and transport beside authoritative mutations. Canvas 3 groups geometry, snapshots and search as consumers of shared resources and terminal data. Its search diagram follows snapshots because viewport invalidation couples the two read models.\nA canvas per lens would duplicate entities and require four canvases. A pure module hierarchy would hide asynchronous hand-offs and necessary data coupling. A single Surface call tree would incorrectly make reusable terminal semantics and shared resources look like incidental descendants of one activation. The selected structure instead preserves those distinctions while exposing their joins. This is a representative core spine, not an exhaustive catalog of every mouse gesture, protocol or inspector operation.\n\nLEAF PROVENANCE\nThe following selectors refer to the supplied trees, not newly invented input nodes. Multiple selectors indicate merged descriptions of the same fact.\nhost:2 <- O/Runtime surface holders/Embedded; C/Surface.init. host:3 <- M/A/host contract; C/performBindingAction and Session closure. host:5 <- O/CoreApp/bookkeeping. host:6 <- M/A/Mailbox; C/Main-thread message dispatch; O/CoreApp/tick. host:7 <- M/C/config distribution and M/A/updateConfig. host:8 <- M/A/shared resources; O/CoreApp/font_grid_set and device.\nlifetime:2,3 <- M/S/lifecycle; C/Surface.init; O/Core Surface/construction. lifetime:5 <- C/Session closure/close; O/Core Surface/lifetime; D/L/close decision. lifetime:6 <- M/S/lifecycle; C/Session closure/deinit; O/Core Surface/lifetime.\npolicy:2 <- M/C/consumer settings; O/main-thread config. policy:3 <- C/Surface.updateConfig; O/main-thread config and keyboard; D/T/C. policy:5 <- M/S/action dispatch; C/performBindingAction; D/H/navigation and D/W/explicit payloads. policy:6 <- C/childExited; D/L/hold-close decisions.\ninput:2 <- M/S/Keyboard; C/keyCallback; D/W/U. input:4 <- M/I/keyboard codecs; C/keyCallback/encodeKey; D/W/keyboard input. input:5 <- M/I/paste; C/Clipboard completion; D/W/paste. input:7 <- C/queueIo; D/W/read-only endpoint.\ntransport:2 <- M/P/Exec; C/IO control loop/threadEnter; O/IO runtime resources; D/L/spawn. transport:3 <- C/IO loop exit; O/Exec runtime lifetime. transport:5 <- M/P/writer loop; C/IO mailbox drain; O/io/mailbox. transport:6 <- C/Exec.queueWrite; D/W/bytes delivered. transport:7 <- C/PTY output loop; O/POSIX reader. transport:9 <- C/IO coalescing timer; D/G/geometry propagation.\nmodel:2 <- M/P/Termio; C/Surface.init/Termio.init; O/io/terminal_stream. model:3 <- M/T/storage; O/io/terminal; D/T. model:4 <- M/R/State; O/renderer_state; C/Surface.init/shared pointer. model:6 <- M/P/processOutput; C/PTY output; O/io/parser; D/T. model:7 <- M/P/StreamHandler; C/PTY output dispatch; D/T and D/W/protocol responses. model:9 <- C/IO coalescing/Termio.resize; D/T/G.\nmetrics:2 <- M/F/SharedGridSet; O/CoreApp/font_grid_set. metrics:3 <- C/Size/font; O/Font lease; D/G/B. metrics:4 <- M/F/SharedGrid; D/F/glyph resources. metrics:6,7 <- C/Size/font/resize; D/G.\nframe:2 <- M/R/scheduling; C/Rendering loop; O/renderer_thread. frame:3 <- M/R/snapshot consumption; C/updateFrame; O/renderer/CPU snapshot; D/F/R. frame:5 <- M/R and M/F/shaping; C/rebuildCells; D/F/glyph data. frame:6 <- C/updateFrame/highlights; O/renderer/search highlights; D/F/visual annotations. frame:8 <- C/drawFrame; O/renderer/GPU state; D/F/graphics target and geometry. frame:9 <- M/R/GraphicsAPI.\nsearch:2 <- M/S/Search; C/performBindingAction/search; O/optional Search. search:4 <- C/Search loop/feedLocked; O/search/shared terminal; D/X/search. search:5 <- C/Search loop/notify; D/X/results. search:7 <- C/searchCallback_; D/X/highlights. search:8 <- C/searchCallback_; D/H/search UI values.\n\nCORRECTIONS AND QUALIFICATIONS\nsetCellSize does not call Surface.resize: it updates cell size/padding and queues IO resize directly. Screen resize separately also mails the renderer. updateFrame does not call Thread.drawFrame or armAnimationTimer; Thread.renderCallback does so after updateFrame returns. Configuration reload is not globally transactional: only failure to derive the replacement preserves the old Surface config; subsequent steps can fail after replacement. App.deinit deinitializes remaining registered surfaces before releasing fonts/device, although deleteSurface itself neither destroys nor frees wrappers. POSIX output uses a gather thread plus a parsing reader, not just one read loop. Read-only filtering applies to Surface.queueIo writes, not to protocol replies sent directly through the Termio mailbox. The terminal mutex protects shared terminal values; draw_mutex separately serializes draw state. Source anchors were corrected, including processOutput at 705. Termio reload changes terminal policy but does not restart command/cwd.\n\nRELATIONS AND DIMENSIONS\nEvery edge endpoint is a leaf in a different diagram. Labels retain lens types: depends=modular boundary, calls=activation (explicitly marked when asynchronous), owns=lifetime responsibility, needs=data requirement. Jump source spans include their lens type. At the fully expanded leaf frontier lifting is identity; there are no self-loops or parallel endpoint pairs. Coarser frontiers can lift and merge these same relations without introducing containment edges.\nProduced 3 canvases (target 3), 3 diagrams each (target 3-4), and 6 intra-canvas edges each (target about 6). Five jumps touch canvases 3, 3 and 4 times, averaging 3.33 (target about 3); the extra incidence preserves the separate geometry and snapshot dependencies. There are 46 leaves and 23 total cross-diagram relations. Maximum inclusion depth is 4 edges from graph root, or 5 levels: root > canvas > diagram > cluster > leaf; no numeric depth target was specified. Diagrams are vertically spaced at rows 0, 20 and 40, with no overlap. Both later canvases are reachable from the root canvas.",
+    "rootCanvas": "session",
+    "canvases": [
+      {
+        "kind": "new",
+        "id": "session",
+        "name": "1. Session contracts and lifetime",
+        "diagrams": [
+          {
+            "id": "host",
+            "ascii": "Hosting boundary\n|-- Runtime storage and callbacks\n|   |-- Embedded wrapper holds core by value; initializes and frees it [src/apprt/embedded.zig:278-294; src/apprt/embedded.zig:447-454; src/apprt/embedded.zig:615-646]\n|   `-- Runtime contract dispatches native actions and close requests [src/apprt.zig:1-54; src/apprt/embedded.zig:303-323; src/apprt/embedded.zig:678-685]\n`-- Application coordination\n    |-- Registration does not own wrapper allocation; shutdown deinitializes survivors [src/App.zig:136-149; src/App.zig:221-240]\n    |-- App.tick drains messages; validates Surface before dispatch [src/App.zig:164-167; src/App.zig:273-305; src/App.zig:532-550; src/Surface.zig:1139-1141]\n    |-- App.updateConfig distributes settings to surfaces and runtime [src/App.zig:172-198]\n    `-- App retains shared font set and device until surfaces are deinitialized [src/App.zig:58-64; src/App.zig:136-148]",
+            "position": {
+              "column": 0,
+              "row": 0
+            }
+          },
+          {
+            "id": "lifetime",
+            "ascii": "Surface lifetime\n|-- Construction\n|   |-- init derives policy, acquires font lease and lazily creates app device [src/Surface.zig:477-535; src/Surface.zig:564-570]\n|   `-- owns: Termio session, renderer and worker lifetimes [src/Surface.zig:564-611; src/Surface.zig:664-765]\n`-- Dependency-safe shutdown\n    |-- close requests host removal using needsConfirmQuit; it does not destroy the session [src/Surface.zig:883-885; src/Surface.zig:995-1014]\n    `-- deinit joins search/render/IO; destroys renderer before thread handles, then state and font lease [src/Surface.zig:829-880]",
+            "position": {
+              "column": 0,
+              "row": 20
+            }
+          },
+          {
+            "id": "policy",
+            "ascii": "Policy and command disposition\n|-- Owned settings\n|   |-- DerivedConfig avoids retaining the caller's Config pointer [src/Surface.zig:144-153; src/Surface.zig:506-508]\n|   `-- Reload replaces configs; calls: setFontSize; drops key tables [src/Surface.zig:1804-1896]\n`-- Session decisions\n    |-- performBindingAction separates app/native actions from encoded terminal payloads [src/Surface.zig:4941-5020]\n    `-- Exit status, runtime and policy decide notification, hold-open or close [src/Surface.zig:1297-1374]",
+            "position": {
+              "column": 0,
+              "row": 40
+            }
+          }
+        ],
+        "edges": [
+          {
+            "source": {
+              "diagram": "host",
+              "line": 2
+            },
+            "target": {
+              "diagram": "lifetime",
+              "line": 3
+            },
+            "label": "owns: runtime allocates core storage and initializes the session"
+          },
+          {
+            "source": {
+              "diagram": "host",
+              "line": 7
+            },
+            "target": {
+              "diagram": "policy",
+              "line": 3
+            },
+            "label": "calls: per-surface configuration replacement"
+          },
+          {
+            "source": {
+              "diagram": "lifetime",
+              "line": 2
+            },
+            "target": {
+              "diagram": "policy",
+              "line": 2
+            },
+            "label": "needs: independently owned effective settings"
+          },
+          {
+            "source": {
+              "diagram": "lifetime",
+              "line": 5
+            },
+            "target": {
+              "diagram": "host",
+              "line": 3
+            },
+            "label": "depends: native runtime decides actual closure"
+          },
+          {
+            "source": {
+              "diagram": "policy",
+              "line": 5
+            },
+            "target": {
+              "diagram": "host",
+              "line": 3
+            },
+            "label": "calls: native action callbacks for host-scoped commands"
+          },
+          {
+            "source": {
+              "diagram": "host",
+              "line": 6
+            },
+            "target": {
+              "diagram": "policy",
+              "line": 6
+            },
+            "label": "calls: child_exited dispatch enters exit policy"
+          }
+        ]
+      },
+      {
+        "kind": "new",
+        "id": "exchange",
+        "name": "2. Duplex IO and authoritative state",
+        "diagrams": [
+          {
+            "id": "input",
+            "ascii": "Input policy to bytes\n|-- Event disposition\n|   `-- Remap modifiers and handle bindings before encoding an unconsumed key [src/Surface.zig:2792-2842; src/Surface.zig:2938-2960]\n|-- Protocol encoding\n|   |-- Keyboard bytes use active terminal modes and Kitty flags [src/Surface.zig:3326-3423; src/input/key_encode.zig:12-96]\n|   `-- Paste admission checks safety before mode-dependent framing [src/Surface.zig:6264-6344; src/input/paste.zig:12-42; src/input/paste.zig:163-183]\n`-- UI write ownership\n    `-- queueIo consumes payload; read-only drops UI writes, otherwise sends and notifies [src/Surface.zig:899-921; src/termio/Termio.zig:437-447]",
+            "position": {
+              "column": 0,
+              "row": 0
+            }
+          },
+          {
+            "id": "transport",
+            "ascii": "PTY transport\n|-- Backend lifetime\n|   |-- threadEnter starts subprocess, exit watcher and reader [src/termio/Exec.zig:86-165]\n|   `-- threadExit stops child before signaling and joining reader [src/termio/Exec.zig:196-230]\n|-- Ordered byte transport\n|   |-- IO mailbox drain dispatches writes and frees allocated message payloads [src/termio/Thread.zig:289-369]\n|   |-- Exec.queueWrite drops exited writes and chunks bytes into the async stream [src/termio/Exec.zig:403-469]\n|   `-- POSIX gather publishes ordered batches; parser consumes and yields between batches [src/termio/Exec.zig:1412-1520]\n`-- Geometry control\n    `-- Resize coalescer retains latest dimensions; timer invokes Termio.resize [src/termio/Thread.zig:389-406; src/termio/Thread.zig:427-452]",
+            "position": {
+              "column": 0,
+              "row": 20
+            }
+          },
+          {
+            "id": "model",
+            "ascii": "Authoritative terminal\n|-- Session-owned state\n|   |-- Termio owns Terminal and persistent Stream; initialization needs policy and geometry [src/termio/Termio.zig:254-291; src/termio/Termio.zig:313-364]\n|   |-- Terminal retains modes/screens; Screen owns pages, selection and protocol state [src/terminal/Terminal.zig:49-86; src/terminal/Screen.zig:45-87]\n|   `-- Shared mutex guards terminal access; renderer.State borrows the same terminal [src/Surface.zig:633-636; src/renderer/State.zig:13-20]\n|-- Output interpretation\n|   |-- processOutput locks, parses persistent stream and schedules repaint [src/termio/Termio.zig:705-763]\n|   `-- StreamHandler mutates terminal and queues protocol replies directly to IO [src/termio/stream_handler.zig:151-154; src/termio/stream_handler.zig:188-245; src/termio/stream_handler.zig:866-909]\n`-- Resize transaction\n    `-- resize locks before PTY notification and terminal reflow, then mails renderer [src/termio/Termio.zig:524-564]",
+            "position": {
+              "column": 0,
+              "row": 40
+            }
+          }
+        ],
+        "edges": [
+          {
+            "source": {
+              "diagram": "input",
+              "line": 4
+            },
+            "target": {
+              "diagram": "model",
+              "line": 3
+            },
+            "label": "needs: keyboard modes and active-screen Kitty flags"
+          },
+          {
+            "source": {
+              "diagram": "input",
+              "line": 5
+            },
+            "target": {
+              "diagram": "model",
+              "line": 3
+            },
+            "label": "needs: current bracketed-paste mode"
+          },
+          {
+            "source": {
+              "diagram": "input",
+              "line": 7
+            },
+            "target": {
+              "diagram": "transport",
+              "line": 5
+            },
+            "label": "calls: async mailbox hand-off transfers write payload"
+          },
+          {
+            "source": {
+              "diagram": "transport",
+              "line": 7
+            },
+            "target": {
+              "diagram": "model",
+              "line": 6
+            },
+            "label": "calls: processOutput for each ordered batch"
+          },
+          {
+            "source": {
+              "diagram": "model",
+              "line": 7
+            },
+            "target": {
+              "diagram": "transport",
+              "line": 5
+            },
+            "label": "calls: async replies bypass the UI read-only gate"
+          },
+          {
+            "source": {
+              "diagram": "transport",
+              "line": 9
+            },
+            "target": {
+              "diagram": "model",
+              "line": 9
+            },
+            "label": "calls: apply the coalesced resize transaction"
+          }
+        ]
+      },
+      {
+        "kind": "new",
+        "id": "presentation",
+        "name": "3. Geometry, frames and search",
+        "diagrams": [
+          {
+            "id": "metrics",
+            "ascii": "Fonts and geometry\n|-- Share without resizing a live grid\n|   |-- Grid leases are keyed and reference-counted; zero releases the grid [src/font/SharedGridSet.zig:89-115; src/font/SharedGridSet.zig:413-430]\n|   |-- setFontSize acquires a grid and hands old-key release to renderer [src/Surface.zig:2536-2573; src/renderer/Thread.zig:397-400]\n|   `-- SharedGrid retains resolver, glyph caches and atlases under an RwLock [src/font/SharedGrid.zig:40-65]\n`-- Geometry propagation\n    |-- Size.grid = (screen - padding) / cell; balancing adjusts padding [src/renderer/size.zig:28-77]\n    `-- Geometry changes; calls: queued IO resize; screen resize also mails renderer [src/Surface.zig:2510-2530; src/Surface.zig:2618-2650]",
+            "position": {
+              "column": 0,
+              "row": 0
+            }
+          },
+          {
+            "id": "frame",
+            "ascii": "Snapshot to presentation\n|-- Scheduling and capture\n|   |-- Wake drains mailbox; visibility/realization gate update, then thread draws and arms timer [src/renderer/Thread.zig:474-499; src/renderer/Thread.zig:537-586]\n|   `-- Snapshot needs: authoritative terminal; begin locked, end outside [src/renderer/generic.zig:1419-1430; src/renderer/generic.zig:1482-1567; src/terminal/render.zig:919-945; src/terminal/render.zig:1416-1426]\n|-- Frame assembly\n|   |-- Rebuild cells from snapshot, shaping cache and font grid [src/renderer/generic.zig:1644-1663; src/renderer/generic.zig:2973-3035]\n|   `-- Highlights combine snapshot with selected and viewport search matches [src/renderer/generic.zig:1581-1626]\n`-- GPU presentation\n    |-- drawFrame serializes with draw_mutex and checks drawable size/realization; geometry updates uniforms [src/renderer/generic.zig:1716-1788; src/renderer/generic.zig:2249-2264]\n    `-- GraphicsAPI selects Metal or OpenGL at compile time [src/renderer.zig:35-45]",
+            "position": {
+              "column": 0,
+              "row": 20
+            }
+          },
+          {
+            "id": "search",
+            "ascii": "Search as another read model\n|-- On-demand lifetime\n|   `-- Surface starts query worker; stopping joins before freeing search state [src/Surface.zig:210-227; src/Surface.zig:5080-5146]\n|-- Incremental results\n|   |-- Query scan feeds terminal under mutex; viewport dirtiness requests rescan [src/terminal/search/Thread.zig:223-254; src/terminal/search/Thread.zig:295-329]\n|   `-- Search-owned state yields totals, selected index and flattened matches [src/terminal/search/Thread.zig:331-405]\n`-- Split delivery\n    |-- Surface callback copies highlights into renderer mailbox and wakes renderer [src/Surface.zig:1496-1560]\n    `-- calls: App surface-message dispatch for totals/selection [src/Surface.zig:1538-1595]",
+            "position": {
+              "column": 0,
+              "row": 40
+            }
+          }
+        ],
+        "edges": [
+          {
+            "source": {
+              "diagram": "metrics",
+              "line": 3
+            },
+            "target": {
+              "diagram": "frame",
+              "line": 2
+            },
+            "label": "calls: async font-grid mailbox hand-off"
+          },
+          {
+            "source": {
+              "diagram": "frame",
+              "line": 5
+            },
+            "target": {
+              "diagram": "metrics",
+              "line": 4
+            },
+            "label": "needs: font resolution and reusable glyph resources"
+          },
+          {
+            "source": {
+              "diagram": "frame",
+              "line": 8
+            },
+            "target": {
+              "diagram": "metrics",
+              "line": 6
+            },
+            "label": "needs: screen, cell and padding geometry"
+          },
+          {
+            "source": {
+              "diagram": "search",
+              "line": 4
+            },
+            "target": {
+              "diagram": "frame",
+              "line": 3
+            },
+            "label": "needs: viewport-dirty signal set during snapshot refresh"
+          },
+          {
+            "source": {
+              "diagram": "frame",
+              "line": 6
+            },
+            "target": {
+              "diagram": "search",
+              "line": 5
+            },
+            "label": "needs: viewport matches and selected-match highlight"
+          },
+          {
+            "source": {
+              "diagram": "search",
+              "line": 7
+            },
+            "target": {
+              "diagram": "frame",
+              "line": 2
+            },
+            "label": "calls: async highlight delivery and renderer wake"
+          }
+        ]
+      }
+    ],
+    "jumps": [
+      {
+        "source": {
+          "canvas": "session",
+          "diagram": "lifetime",
+          "line": 3,
+          "startColumn": 8,
+          "endColumn": 28
+        },
+        "target": {
+          "canvas": "exchange",
+          "diagram": "model",
+          "line": 2
+        }
+      },
+      {
+        "source": {
+          "canvas": "session",
+          "diagram": "policy",
+          "line": 3,
+          "startColumn": 33,
+          "endColumn": 51
+        },
+        "target": {
+          "canvas": "presentation",
+          "diagram": "metrics",
+          "line": 3
+        }
+      },
+      {
+        "source": {
+          "canvas": "presentation",
+          "diagram": "metrics",
+          "line": 7,
+          "startColumn": 26,
+          "endColumn": 49
+        },
+        "target": {
+          "canvas": "exchange",
+          "diagram": "model",
+          "line": 9
+        }
+      },
+      {
+        "source": {
+          "canvas": "presentation",
+          "diagram": "frame",
+          "line": 3,
+          "startColumn": 17,
+          "endColumn": 46
+        },
+        "target": {
+          "canvas": "exchange",
+          "diagram": "model",
+          "line": 3
+        }
+      },
+      {
+        "source": {
+          "canvas": "presentation",
+          "diagram": "search",
+          "line": 8,
+          "startColumn": 8,
+          "endColumn": 43
+        },
+        "target": {
+          "canvas": "session",
+          "diagram": "host",
+          "line": 6
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "status": "finished",
+  "repository": "OpenCode",
+  "runId": "a17ff646-72cd-41bc-8f3d-96c736043cde",
+  "characters": 11017,
+  "lines": 137,
+  "nodes": 128,
+  "usage": {
+    "input": 62625,
+    "output": 4225,
+    "cacheRead": 301824,
+    "cacheWrite": 0,
+    "reasoning": 444,
+    "totalTokens": 368674
+  },
+  "execution": {
+    "runtime": "pi-agent-context",
+    "sessionId": "01a1efa9-8012-7813-9143-668b0f9b7edf",
+    "contextHash": "99e7bdfbe45e3d3f5b21dde5a7a01b1c4cf40207ff22928867821476b8010d29",
+    "cacheKey": "eval-e3cda840bf35525265f0ee7fa8ec0082df9e4e9864acb9ffa7462d3b428cd16a",
+    "modelContextHash": "a1e2297ba4b65ce3a2be5a1ded7e32aaaac80438b6d7b511d9d68842b8d11042",
+    "repositories": [
+      {
+        "repository": "repo-1",
+        "repositoryPath": "/home/john/softwarez/opencode",
+        "commit": "fe3552441192ccbea91d117668e7f3a9eb097baf",
+        "exclusions": [
+          "**/*-LICENSE",
+          "**/*.md",
+          "**/*.mdx",
+          "**/*.spec.*",
+          "**/*.test.*",
+          "**/AGENTS.md",
+          "**/CODEX-LICENSE",
+          "**/LICENSE*",
+          "**/__fixtures__/**",
+          "**/__snapshots__/**",
+          "**/__tests__/**",
+          "**/benchmarks/**",
+          "**/build/**",
+          "**/dist/**",
+          "**/docs/**",
+          "**/e2e/**",
+          "**/examples/**",
+          "**/fixtures/**",
+          "**/node_modules/**",
+          "**/scripts/**",
+          "**/test/**",
+          "**/tests/**",
+          ".github/**",
+          ".husky/**",
+          ".opencode/**",
+          ".pi/**",
+          ".vscode/**",
+          ".zed/**",
+          "bun.lock",
+          "flake.lock",
+          "nix/**",
+          "package-lock.json",
+          "patches/**",
+          "salesforce/**",
+          "script/**",
+          "scripts/**",
+          "specs/**"
+        ],
+        "checkout": "/tmp/agent-repository-ucSFyp/checkout",
+        "inspectionSource": "session-transcript"
+      }
+    ]
+  },
+  "outputUrl": "http://127.0.0.1:5191/evals?run=a17ff646-72cd-41bc-8f3d-96c736043cde&output=aa99c302-b7f5-46de-80d5-f7224b19cc2b%3A1%3Aalternative"
+}

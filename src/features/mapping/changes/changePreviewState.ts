@@ -8,10 +8,16 @@ import type { MappingCanvasState } from '../../../../domain/mapping/workspace/ma
 export class ChangePreviewState {
   private snapshot: ChangeDocumentState & { cell?: { width: number; height: number }; endpointBounds?: EndpointBounds };
   private listeners = new Set<() => void>();
+  private projection?: { snapshot: ChangePreviewState['snapshot']; nodes: ReturnType<typeof canvasDisplayNodes> };
   constructor(state: ChangeDocumentState, private readonly version: number) { this.snapshot = structuredClone(state); deepFreeze(this.snapshot.document); }
   getSnapshot = () => this.snapshot;
   subscribe = (listener: () => void) => { this.listeners.add(listener); return () => { this.listeners.delete(listener); }; };
-  nodes() { return canvasDisplayNodes(this.snapshot.document, this.snapshot.canvas, this.version, this.snapshot.cell, this.snapshot.endpointBounds); }
+  nodes() {
+    // Routing depends on viewer state, not on parent renders or the camera transform.
+    if (this.projection?.snapshot !== this.snapshot) this.projection = { snapshot: this.snapshot,
+      nodes: canvasDisplayNodes(this.snapshot.document, this.snapshot.canvas, this.version, this.snapshot.cell, this.snapshot.endpointBounds, 'snapshot') };
+    return this.projection.nodes;
+  }
   updateCanvas(update: (canvas: MappingCanvasState) => MappingCanvasState) {
     const canvas = update(this.snapshot.canvas);
     if (canvas === this.snapshot.canvas) return;

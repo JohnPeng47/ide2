@@ -1,0 +1,97 @@
+{
+  "output": {
+    "diagrams": [
+      {
+        "diagramId": "d1",
+        "mappings": [
+          {
+            "node": "n1",
+            "path": "src/App.zig",
+            "startLine": 22,
+            "endLine": 58
+          }
+        ]
+      },
+      {
+        "diagramId": "d2",
+        "mappings": []
+      },
+      {
+        "diagramId": "d3",
+        "mappings": []
+      },
+      {
+        "diagramId": "d4",
+        "mappings": []
+      },
+      {
+        "diagramId": "d5",
+        "mappings": []
+      }
+    ],
+    "notes": "Mapping incomplete: d1 n2–n48 and all nodes in d2–d5 remain unmapped."
+  },
+  "usage": {
+    "input": 34562,
+    "output": 2513,
+    "cacheRead": 190592,
+    "cacheWrite": 0,
+    "reasoning": 127,
+    "totalTokens": 227667
+  },
+  "execution": {
+    "runtime": "pi-agent-context",
+    "sessionId": "01a1f050-b807-7a4a-b0c2-2308bcf494ae",
+    "contextHash": "a78433ee817e7fb327fb6c961669e4dc7f2433a76841a8dadb62f83fef0f20d3",
+    "cacheKey": "eval-1d0d66d3b1548956ebafbbccc42bb1d1fc339326e14434815a0e1942a311d351",
+    "modelContextHash": "62e602f0e03b1818bca517798b6af0e4d83eafae8484c9325c655e6c18b5f618",
+    "repositories": [
+      {
+        "repository": "repo-1",
+        "repositoryPath": "/home/john/softwarez/ghostty",
+        "commit": "ea8b12a8a9894b5259c441eadd8f6f0c65e215af",
+        "exclusions": [
+          "**/*-LICENSE",
+          "**/*.md",
+          "**/*.mdx",
+          "**/*.spec.*",
+          "**/*.test.*",
+          "**/AGENTS.md",
+          "**/CODEX-LICENSE",
+          "**/LICENSE*",
+          "**/Tests/**",
+          "**/__fixtures__/**",
+          "**/__tests__/**",
+          "**/benchmark/**",
+          "**/benchmarks/**",
+          "**/build/**",
+          "**/dist/**",
+          "**/docs/**",
+          "**/examples/**",
+          "**/fixtures/**",
+          "**/node_modules/**",
+          "**/scripts/**",
+          "**/test/**",
+          "**/tests/**",
+          ".agents/**",
+          ".github/**",
+          ".husky/**",
+          ".pi/**",
+          "deps/**",
+          "example/**",
+          "flake.lock",
+          "flatpak/**",
+          "images/**",
+          "nix/**",
+          "package-lock.json",
+          "po/**",
+          "scripts/**",
+          "snap/**",
+          "vendor/**"
+        ],
+        "checkout": "/home/john/.cache/mapping-phase2-bu6ehmk9/agent-repository-N2lk1H/checkout",
+        "inspectionSource": "session-transcript"
+      }
+    ]
+  }
+}

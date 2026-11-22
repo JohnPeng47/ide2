@@ -1,6 +1,5 @@
 import type { DiagramElementMapping } from "../records/domain";
 export function validateDiagramLocalMappings(ascii: string, mappings: readonly DiagramElementMapping[]): void {
-  if (mappings.length > 2000) throw new Error("Too many source mappings");
   const lines = ascii.split("\n");
   const ids = new Set<string>();
   for (const mapping of mappings) {

@@ -1,0 +1,1 @@
+{"path": "application/core/corpus/location.ts", "text": "import type { BuiltInDomainProfileId, CorpusBinding } from \"../../../domain/core/profiles/domainProfile\";\n\nexport interface RepositoryLocation {\n  checkoutRoot: string;\n  repositoryIdentity: string;\n  gitRevision?: string;\n  domainProfileId?: BuiltInDomainProfileId;\n  corpus?: CorpusBinding;\n}\n"}

@@ -1,3 +1,4 @@
+import { projectCanvas } from '../../projections/canvasProjection';
 import { expect, it } from 'vitest';
 import { MappingDocumentController, type DiagramOperation } from '../../workspace/mappingDocumentController';
 import { initialCanvasState } from '../../workspace/mappingWorkspace';
@@ -31,6 +32,8 @@ it('compares pinned endpoints, survives later edits and reload, and never change
   expect(preview.doc.proposed.document.scene.contents.overview.content.ascii).toContain('Added');
   expect(preview.doc.baseline!.document.scene.contents.overview.content.ascii).toContain('B');
   expect(preview).toEqual(canvasViewDiff(saved));
+  expect(c.readCanvasView(id, 'graph')).toMatchObject({ checkpointId: saved.proposed.checkpointId,
+    canvas: { nodes: [{ ascii: preview.doc.proposed.document.scene.contents.overview.content.ascii }] } });
   expect(c.getSnapshot()).toBe(snapshot);
   expect(c.exportHistory()).toEqual(history);
   const restored = new MappingDocumentController(snapshot.document, snapshot.canvas, 0, undefined, undefined, JSON.parse(JSON.stringify(history)));
@@ -66,6 +69,8 @@ it('resolves selected subtree and nested variants at each endpoint, without appl
     { method: 'variant-select', nodeId: 'grid:overview', ownerNodeId: refs.Child, contextVariantId: variant.id, variantId: child.id });
   stop();
   const preview = canvasViewDiff(c.canvasViewComparison(id));
+  const pinned = c.canvasViewComparison(id).proposed;
+  expect(projectCanvas(pinned.document, 'graph', pinned.revisions).nodes[0].ascii).toBe(preview.doc.proposed.document.scene.contents.overview.content.ascii);
   expect(preview.doc.proposed.document.scene.contents.overview.content.ascii).toContain('Nested');
   expect(preview.doc.baseline!.document.scene.contents.overview.content.ascii).toContain('Child');
   expect(preview.diff.counts).toEqual({ added: 0, removed: 0, modified: 1, moved: 0 });

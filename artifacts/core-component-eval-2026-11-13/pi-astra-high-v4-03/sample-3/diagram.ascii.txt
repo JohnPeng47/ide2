@@ -1,0 +1,107 @@
+Pi coding-agent core: AgentSession coordinates conversation, execution, and history
+|
+|-- [M] One session API behind CLI modes and SDK
+|   |-- packages/coding-agent/src/core/agent-session.ts: AgentSession
+|   |   |-- Exposes prompt(), steer(), followUp(), abort(), compact(), navigateTree()
+|   |   |-- Exposes state/messages/model and subscribe(AgentSessionEventListener)
+|   |   `-- Keeps run bookkeeping, recovery controllers, and tool registry internal
+|   |-- packages/coding-agent/src/main.ts
+|   |   `-- InteractiveMode / runPrintMode / runRpcMode consume AgentSessionRuntime
+|   `-- packages/coding-agent/src/core/sdk.ts: createAgentSession()
+|       |-- Creates or accepts SessionManager, SettingsManager, ModelRuntime, ResourceLoader
+|       |-- [D] Restored branch + settings + explicit options -> model/thinking/tools
+|       `-- Constructs Agent -> AgentSession; SDK callers can bypass CLI presentation
+|
+|-- [C] Prompt-to-result orchestration
+|   |-- agent-session.ts: prompt() -> _preparePrompt()
+|   |   |-- Extension commands can handle input without starting an LLM run
+|   |   |-- Input hooks -> skill/template expansion -> model/auth validation
+|   |   `-- While streaming: queue through steer() or followUp(), rather than overlap runs
+|   |-- _startRun() -> _prepareRun() -> agent.prompt(messages)
+|   |   |-- Check compaction, emit before_agent_start, normalize images
+|   |   `-- [D] Prompt options + active tool loadout -> starting messages/system patch
+|   |-- packages/agent/src/agent.ts: Agent
+|   |   |-- [O] _state: messages, model, thinkingLevel, tools, streamingMessage,
+|   |   |   `-- isStreaming, pendingToolCalls, errorMessage
+|   |   |-- [O] steeringQueue / followUpQueue and activeRun abort controller
+|   |   `-- prompt()/continue() -> runAgentLoop()/runAgentLoopContinue()
+|   |-- packages/agent/src/agent-loop.ts: runLoop()
+|   |   |-- prepareRequest() -> streamAssistantResponse()
+|   |   |-- Assistant tool calls -> executeToolCalls() -> tool-result messages
+|   |   |-- Tool results and steering can drive another assistant turn
+|   |   `-- Follow-ups are drained when the agent would otherwise stop
+|   `-- agent-session.ts: _handlePostAgentRun()
+|       |-- Retryable response / compaction recovery -> agent.continue()
+|       `-- Boundary handlers and queues settle -> agent_settled, beyond agent_end
+|
+|-- [O] SessionManager owns the canonical conversation history
+|   |-- packages/coding-agent/src/core/session-manager.ts: SessionManager
+|   |   |-- fileEntries + byId + leafId: append-only tree, not just a message array
+|   |   |-- SessionEntry.id / parentId connect messages, settings, summaries, context edits
+|   |   `-- _persist(): JSONL storage when enabled; initial write waits for conversation
+|   |-- agent-session.ts: _handleAgentEvent()
+|   |   |-- Agent events -> extension handlers -> public subscribers
+|   |   `-- message_end -> appendMessage() / appendCustomMessageEntry()
+|   |       `-- Completed messages become history; streaming deltas are not separate entries
+|   |-- [D] buildSessionProjection(entries, leafId, byId)
+|   |   |-- Selected root-to-leaf path + latest compaction -> retained context entries
+|   |   |-- ContextEditEntry -> replace or omit model-visible content
+|   |   `-- Projected messages + model/thinking metadata retain source-entry provenance
+|   |-- buildSessionContext() -> restored Agent messages
+|   |   `-- _installAgentRequestProjection() rebuilds canonical context before requests
+|   `-- branch(entryId) moves leafId without rewriting old history
+|       `-- navigateTree() / createBranchedSession() support alternate continuations
+|
+|-- [M] Model boundary: application history becomes provider input
+|   |-- agent-loop.ts: streamAssistantResponse()
+|   |   `-- [D] AgentMessage[] -> transformContext() -> convertToLlm() -> LLM messages
+|   |-- sdk.ts: Agent.streamFn -> ModelRuntime.streamSimple(model, context, options)
+|   |   |-- Settings supply transport/retry/timeout behavior
+|   |   `-- Extension hooks can transform headers/payload and observe provider responses
+|   |-- packages/coding-agent/src/core/model-runtime.ts: ModelRuntime implements Models
+|   |   |-- pi-ai createModels() combines providers, credentials, and model storage
+|   |   `-- RuntimeCredentials / AuthStorage supply request authentication
+|   `-- agent-session.ts: _installAgentRequestProjection()
+|       |-- [D] Virtual model + branch routing state + current messages -> resolveModel()
+|       `-- Physical request model can differ from the user's retained model selection
+|
+|-- [M] Tools and extensions connect the conversation to coding operations
+|   |-- agent-session.ts: _buildRuntime() / _refreshToolRegistry()
+|   |   |-- [O] _toolRegistry and _toolDefinitions retain callable implementations
+|   |   |-- createAllToolDefinitions(cwd, options) binds built-ins to the working directory
+|   |   `-- Built-ins + custom/extension tools -> wrapRegisteredTools() -> Agent tools
+|   |-- packages/coding-agent/src/core/tools/index.ts
+|   |   |-- Default coding tools: read / bash / edit / write
+|   |   `-- Additional tools: powershell / grep / find / ls
+|   |-- agent-loop.ts: tool-call execution
+|   |   |-- [D] Tool name + declared schema + supplied arguments -> validateToolArguments()
+|   |   |-- beforeToolCall -> tool.execute(..., signal, onUpdate) -> afterToolCall
+|   |   `-- Tool results return to the transcript and become input to subsequent turns
+|   `-- packages/coding-agent/src/core/extensions/runner.ts: ExtensionRunner
+|       |-- ResourceLoader supplies extensions; AgentSession binds their session context
+|       |-- Hooks participate in input, context, tools, provider requests, and boundaries
+|       `-- Tool declarations in messages describe visibility; context.tools holds execution
+|
+|-- [C] Context maintenance and failure recovery stay inside AgentSession
+|   |-- agent-session.ts: compact() / _checkCompaction() / _runAutoCompaction()
+|   |   |-- [D] Branch history + model limits + compaction settings -> prepareCompaction()
+|   |   |-- Extension may cancel or supply summary; otherwise _runDefaultCompaction()
+|   |   `-- appendCompaction(summary, firstKeptEntryId, ...) -> _refreshFinalizedContext()
+|   |       `-- Shrinks model context while retaining the underlying history tree
+|   |-- _handlePostAgentRun() -> _prepareRetry()
+|   |   `-- Retryable errors and overflow recovery can continue the same logical run
+|   `-- [O] Separate abort controllers cover compaction, branch summaries, retry, and bash
+|       `-- abort() cancels agent/recovery work and awaits waitForIdle()
+|
+`-- [O] AgentSessionRuntime owns replacement and teardown
+    |-- packages/coding-agent/src/core/agent-session-runtime.ts: AgentSessionRuntime
+    |   |-- Retains current AgentSession + cwd-bound AgentSessionServices
+    |   `-- newSession() / switchSession() / fork() replace the active runtime
+    |-- teardownCurrent()
+    |   |-- await session.abort(): settle the turn so outgoing results are persisted
+    |   |-- session_shutdown handlers -> host UI invalidation callback -> session.dispose()
+    |   `-- Factory creates replacement services/session -> apply() -> rebindSession()
+    `-- agent-session.ts: dispose()
+        |-- Abort remaining work; invalidate captured extension contexts
+        |-- Disconnect Agent subscription and clear public listeners
+        `-- Cancel CacheWarmer and cleanupSessionResources(sessionId)

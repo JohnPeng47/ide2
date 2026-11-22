@@ -1,0 +1,46 @@
+{
+  "commit": "fe3552441192ccbea91d117668e7f3a9eb097baf",
+  "repositoryPath": "/home/john/softwarez/opencode",
+  "eligibleSourceFiles": 5019,
+  "eligibleSourceLines": 915717,
+  "allTrackedSourceFiles": 7169,
+  "allTrackedSourceLines": 1416740,
+  "meanSourceLinesSeen": 4013.0,
+  "meanPercent": 0.4382358305022185,
+  "summedPerRunLines": 12039,
+  "unionSourceLinesSeen": 5833,
+  "unionPercent": 0.6369871914576228,
+  "runs": [
+    {
+      "sample": 1,
+      "runId": "450850af-6c9b-4950-a4d8-31f5724302e6",
+      "eligibleSourceLines": 915717,
+      "sourceLinesSeen": 3735,
+      "percent": 0.40787710613650285,
+      "sourceFilesSeen": 29,
+      "allSourceLinesSeen": 3735,
+      "outsideEligiblePaths": []
+    },
+    {
+      "sample": 2,
+      "runId": "c896fde7-00ef-4b9f-a62f-7cfc94310a5b",
+      "eligibleSourceLines": 915717,
+      "sourceLinesSeen": 3669,
+      "percent": 0.40066963920075743,
+      "sourceFilesSeen": 26,
+      "allSourceLinesSeen": 3669,
+      "outsideEligiblePaths": []
+    },
+    {
+      "sample": 3,
+      "runId": "e5dfe7ec-d1a8-45b9-bf7c-04ea78edf8da",
+      "eligibleSourceLines": 915717,
+      "sourceLinesSeen": 4635,
+      "percent": 0.5061607461693951,
+      "sourceFilesSeen": 29,
+      "allSourceLinesSeen": 4635,
+      "outsideEligiblePaths": []
+    }
+  ],
+  "method": "Physical source lines including comments/blanks, read and shell outputs; repeated file/line pairs deduplicated per run. Average coverage = sum of three run coverages / (3 \u00d7 eligible source lines). Union deduplicates across all runs. Only complete returned lines count; listings, wc counts, prompts, JSON configs and generated diagrams excluded."
+}

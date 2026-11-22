@@ -1,0 +1,20 @@
+{
+  "capturedAt": "2026-11-11T06:10:34.056168+00:00",
+  "files": {
+    "scripts/evals/from-scratch/artifacts.ts": "1c2c0687c5eb0f5e877d8398132828caaf4e67b6902bccbffd78766bd51667b5",
+    "scripts/evals/from-scratch/fixtures.ts": "cb5eaf5234993f8a2cb644e2c13734bfdbd5d3bb1539648b0263cd1d3f251cfc",
+    "scripts/evals/from-scratch/model.ts": "2a7ee80be544eb3a368a971820308c9f2fdf030d94554eb9b2a3a0bfc05cf9e3",
+    "scripts/evals/from-scratch/prompts.ts": "649ed3dd0a0683b8c26b809d317384ee381abe31dc7dc358617e56d6ece4fa6c",
+    "scripts/evals/from-scratch/run.ts": "ed6730bfa4e234bafe19f6fc54b202e7850208401b852abe6259f6000dd1eb70",
+    "scripts/evals/from-scratch/smoke.ts": "916b739e527c732cd346b97ae8dc8806883bf276975aa28b8bffc15251648d4e"
+  },
+  "validation": {
+    "pinnedInputPreflight": "passed",
+    "endToEndSmoke": "71 fixture jobs and completed replay passed; zero model calls",
+    "typecheck": "passed",
+    "externalCoordinatorTests": "2 passed",
+    "isolatedRuntimeTest": "passed",
+    "experimentServiceTests": "15 passed",
+    "suiteNote": "One unrelated relaunch test initially raced on completedAt; its focused rerun passed."
+  }
+}

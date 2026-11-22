@@ -1,0 +1,19 @@
+{
+  "id": "child-1",
+  "name": "runtime-session",
+  "assignment": "Map nodes n1-n18 and n81-n89. Return JSON partial mappings; use numbered reads and exclusions.",
+  "model": "gpt-6-sol",
+  "effort": "medium",
+  "status": "generating",
+  "queuedAt": "2026-11-19T04:40:46.613Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-19T04:40:46.620Z",
+  "sessionId": "01a1f21b-6f39-7da4-8b8f-94208b5a7f8a",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-890xorfx-agent-repository-UrrAMG-checkout--/2026-11-19T04-40-46-649Z_01a1f21b-6f39-7da4-8b8f-94208b5a7f8a.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase3-890xorfx/agent-repository-UrrAMG/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

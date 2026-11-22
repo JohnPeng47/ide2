@@ -30,7 +30,7 @@ export class PiFileCompactionRuntime extends PiAgentRuntime implements FileCompa
       promptSnippet: "Submit the complete mapped file compaction",
       promptGuidelines: [newSubmission().promptGuideline],
       parameters: Type.Object({
-        ascii: Type.String({ minLength: 1, maxLength: 200000 }),
+        ascii: Type.String({ minLength: 1 }),
         mappings: Type.Array(Type.Object({
           treeLine: Type.Integer({ minimum: 1 }),
           sourceRanges: Type.Array(Type.Object({

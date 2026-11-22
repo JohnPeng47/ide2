@@ -1,0 +1,63 @@
+d5 — Terminal
+d=declaration u=use i=implementation; +N includes the ranges of node nN before deduplication.
+A=src/terminal/ansi.zig
+B=src/terminal/bitmap_allocator.zig
+C=src/terminal/compress/Page.zig
+CT=src/terminal/c/terminal.zig
+DLL=src/datastruct/intrusive_linked_list.zig
+DS=src/datastruct/main.zig
+GC=src/terminal/c/grid_ref_tracked.zig
+H=src/terminal/hyperlink.zig
+HM=src/terminal/hash_map.zig
+IO=src/termio/Termio.zig
+K=src/terminal/kitty/graphics_storage.zig
+KEY=src/terminal/kitty/key.zig
+KG=src/terminal/kitty/graphics.zig
+KT=src/terminal/kitty.zig
+L=src/terminal/PageList.zig
+M=src/terminal/mem.zig
+MOD=src/terminal/modes.zig
+P=src/terminal/page.zig
+R=src/terminal/render.zig
+RC=src/terminal/ref_counted_set.zig
+S=src/terminal/Screen.zig
+SEARCH=src/terminal/search/terminal.zig
+SEL=src/terminal/Selection.zig
+SG=src/terminal/SelectionGesture.zig
+SH=src/termio/stream_handler.zig
+SNAP=src/terminal/snapshot/snapshot.zig
+SS=src/terminal/ScreenSet.zig
+T=src/terminal/Terminal.zig
+TAB=src/terminal/Tabstops.zig
+VT=src/terminal/stream_terminal.zig
+Y=src/terminal/style.zig
+Z=src/terminal/size.zig
+n29 [structure]: P 188-195 d; P 225-232 d; P 319-323 i; P 2045-2084 d
+n28 [structure, relationship, behavior]: P 102-132 d; P 197-200 d; P 215-223 d; P 293-301 i; P 310-318 i; P 1368-1380 di; P 1410-1533 di; P 1976-1979 i; P 1996-2028 i; P 2419-2435 d; H 15-23 d; H 209-240 d; Y 676-691 d; B 29-52 d; B 93-184 di; T 2301-2305 d; T 2385-2449 ui; S 2943-2955 du; B 65-78 di; H 76-91 d; H 189-207 di; HM 56-62 di; HM 185-195 di; RC 299-380 di; RC 443-457 di; RC 481-506 di
+n27 [structure, relationship, behavior]: P 84-100 d; P 202-213 d; P 302-309 i; P 1603-1761 di; P 1981-1994 i; P 2396-2409 d; P 2444-2451 d; B 29-52 d; B 93-184 di; HM 56-62 di; B 65-78 di; HM 185-195 di; S 2728-2779 diu; T 1893 d; T 2122-2124 u; T 2301-2305 d; T 2378-2383 u
+n26 [structure, relationship]: P 182-186 d; P 274-287 i; P 1107-1133 di; P 1907-1921 i; P 2215-2217 d; P 2392-2458 d
+n25 [structure, relationship]: P 178-181 d; P 274-287 i; P 1101-1133 di; P 1907-1916 i; P 2215-2279 d; Z 40-71 di; Z 149-158 di; L 5896-5900 d; L 5911-5933 ui
+n24 [structure, behavior, guarantee]: P 30-82 di; P 147-176 di; P 245-258 di; P 268-269 d; P 289-292 i; P 325-331 di; P 1907-1943 di; L 335-352 d; L 751-789 ui; L 5152-5213 dui
+n23 [entity, subsystem, structure, relationship]: +24 +25 +26 +27 +28 +29; P 260-323 di; P 693-709 di; P 1873-2031 di; Z 73-127 di; L 79-91 d; P 134-145 d
+n22 [structure, behavior, relationship, guarantee]: C 34-57 d; C 71-82 di; C 99-163 di; L 79-91 d; L 247-299 di; L 5553-5632 dui; M 119-248 di; M 278-358 di
+n21 [structure, relationship]: +22; L 59-97 d; L 98-108 di; L 206-245 di; L 785-789 i; L 5197-5203 i; L 5660-5675 di; C 172-184 di; L 133-158 di; L 168-204 di; L 110-121 di
+n20 [structure, relationship]: L 51-77 d; L 93 d; L 309-317 d; L 407-431 d; L 727-732 d; L 751-799 i; L 942-975 di; L 4193-4206 i; L 5152-5213 di; L 5641-5643 di; L 5660-5724 di; L 6367-6382 ui
+n19 [structure, relationship, guarantee]: L 14 d; L 51-61 d; L 404-405 d; L 793-801 i; L 4061 d; L 4110-4126 ui; L 4193-4206 ui; L 4225-4249 ui; L 6263-6286 di; L 7352-7383 di; L 7677-7722 di; DLL 10-132 di; DS 14 d
+n18 [behavior, relationship, guarantee]: S 329-345 ui; S 936-979 di; S 2234-2253 di; S 2310-2322 ui; S 2336-2349 ui; S 2368-2396 ui; SEL 32-52 d; SEL 129-149 du; L 681-719 ui; L 1057-1076 i; L 1813-1848 i; L 3993-4025 di; L 4146-4156 i; L 4911-4921 i; L 5896 d; L 5950-5963 i; L 6263-6286 di; L 6309-6334 di; L 7677-7722 di; L 7800-7810 d; L 1372-1376 d; L 1434-1443 i; L 1507-1515 i; L 5911-5933 i
+n17 [structure, relationship]: L 354-357 d; L 472-533 d; L 681-719 di; L 3347 d; L 3364-3379 i; L 6313-6334 di; L 7353-7362 du; L 7795-7818 d
+n16 [structure]: L 317 d; L 338-352 d; L 356-366 d; L 401-402 d; L 433-436 d; L 465-470 d; L 507-511 d; L 648-651 d; L 677-704 i; L 7600-7616 d
+n15 [entity, subsystem, structure, relationship]: +16 +17 +18 +19 +20 +21 +23; L 1-4 d; L 369-399 di; L 648-708 di; L 727-805 di; L 977-988 di; L 1278-1369 di; L 3347-3558 di; L 4061-4250 di; L 5431-5546 di; L 7600-7722 di; S 44-45 d; S 315-327 u; S 361-367 u; S 1719-1737 u; S 2310-2322 u; L 1372-1406 di; L 1434-1443 i; L 1445-1515 i; L 3562-3614 di; L 5349-5396 di
+n14 [structure]: S 77-141 d; K 69-123 d; K 151-172 d; S 348-356 i; S 361-364 u; S 464-480 i; S 3017-3051 di; KT 9 d; KG 27 d; T 2784-2787 d; T 2791-2824 u; T 5726-5738 ui
+n13 [structure]: S 64-75 d; S 220-269 d; A 100-109 d; KEY 5-62 di; KEY 78-93 d; T 2491-2493 du; T 2757-2777 di; KT 5 d; KT 11-13 d; VT 726-730 u
+n12 [structure, relationship, behavior]: S 58-62 d; S 3053-3106 di; SEL 24-52 d; SEL 70-82 du; SEL 121-149 di; L 354-357 d; L 472-473 d; L 6313-6334 di
+n11 [structure, relationship]: S 195-199 d; S 329-345 ui; S 901-979 di; S 1582-1662 di; L 6313-6326 ui; L 7800-7818 di; P 1120-1133 di
+n10 [structure, behavior]: S 52-56 d; S 143-194 d; S 209-218 d; T 2698-2754 di; S 2234-2253 du; S 2368-2396 i; T 2258-2267 u
+n9 [entity, subsystem, structure]: +10 +11 +12 +13 +14 +15; S 1 d; S 37-141 d; S 271-306 d; S 315-367 di; S 441-489 di; S 1139-1168 diu; S 1719-1737 di; S 2234-2445 di; SS 38-62 u; SS 75-102 u
+n8 [structure, relationship, behavior]: SS 17-21 d; SS 30-31 d; SS 38-67 di; SS 74-102 di; T 5680-5715 u; T 5743-5747 u; T 5783-5785 u; T 5868-5876 u; S 315-327 u; S 361-367 u
+n7 [structure, behavior, guarantee]: SS 33-36 d; SS 38 d; SS 47-52 i; SS 69-72 di; SS 90-102 di; T 4912-4916 d; T 4999-5047 u; T 5868-5876 u; SG 212-221 ui; SG 583-601 dui; SEARCH 128-138 ui; SEARCH 310-315 u; SNAP 545-557 u; SNAP 782-796 ui; GC 16-32 dui; GC 88-98 u; CT 2204-2218 u
+n6 [structure, relationship, guarantee]: SS 23-31 d; SS 38-53 di; SS 104-109 di; T 5680-5683 u; T 5743-5747 u; T 5868-5876 u; T 5010-5015 u; SS 90-102 u; T 4999-5047 ui
+n5 [entity, subsystem, structure, relationship]: +6 +7 +8 +9; T 48-49 d; T 344-392 ui; T 395-404 ui; T 4912-4916 d; T 4968-5047 ui; T 5680-5747 di; T 5758-5827 di; SS 1-8 d; SS 17-109 di
+n4 [structure, relationship, guarantee]: T 86-87 d; T 268-279 d; T 384-387 i; T 459-509 di; S 143-152 d; T 5899-5907 u
+n3 [structure]: T 70-84 d; T 153-182 d; T 227-251 d; MOD 15-28 d
+n2 [structure]: T 56-68 d; T 253-266 d; TAB 1-10 d; TAB 42-50 d; Z 20-22 d
+n1 [entity, subsystem, structure, relationship]: +2 +3 +4 +5; T 1-4 d; T 48-165 d; T 344-404 di; T 420-430 du; T 1893 d; T 1906-1933 u; T 2117-2129 i; T 2258-2298 i; T 2301-2449 di; T 2451-2488 di; T 3017-3140 di; T 3522-3530 di; T 3585-3600 di; T 4441-4449 du; T 4515-4543 ui; T 4912-5074 di; T 5570-5583 di; T 5618-5638 di; T 5868-5911 di; IO 40-43 d; IO 272-310 ui; IO 314-328 u; IO 335-356 ui; SH 226-249 u; VT 504-508 ui; VT 609-620 u; VT 635-664 u; R 941-948 u; R 983-1009 u; R 1411-1414 u; T 608-656 di; T 5585-5590 di

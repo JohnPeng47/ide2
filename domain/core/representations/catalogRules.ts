@@ -1,3 +1,5 @@
+import { canvasAgentContextId } from '../diagrams/generatedCanvas';
+import { savedAgentContextIdSchema } from '../agents/savedAgentContext';
 import { canvasTypeOf } from '../diagrams/canvasType';
 import { createStoredDiagram } from '../diagrams/diagramRevisionStore';
 
@@ -44,7 +46,7 @@ export function saveProjection(catalog: ProjectRepresentationCatalogRecord, proj
 
 export function saveProjectedTree(catalog: ProjectRepresentationCatalogRecord, projectId: string, input: SaveProjectedTreeInput, environment: CatalogEnvironment) {
   if (!input || typeof input.name !== "string" || !input.name.trim() || input.name.length > 120
-    || typeof input.ascii !== "string" || !input.ascii.trim() || input.ascii.length > 20000
+    || typeof input.ascii !== "string" || !input.ascii.trim()
     || !Array.isArray(input.links) || !input.links.length || input.links.length > 2000) {
     throw new Error("A named ASCII tree and projection links are required");
   }
@@ -221,7 +223,9 @@ export function publishMappingDiagram(catalog: ProjectRepresentationCatalogRecor
     representationKind: current?.representationKind ?? source?.representationKind ?? inferredKind,
     evidence, mappings, ...(source?.provenance ? { provenance: source.provenance } : {}), createdAt: timestamp
   };
+  const agentContextId = input.agentContextId ?? canvasAgentContextId(current ?? (source && catalog.representations[source.representationId]));
   const representation: ProjectRepresentationRecord = {
+    ...(agentContextId ? { agentContextId: savedAgentContextIdSchema.parse(agentContextId) } : {}),
     canvasProjectId: input.canvasProjectId ?? current?.canvasProjectId,
     schemaVersion: 1, id, projectId, repositoryId: input.repositoryId ?? current?.repositoryId ?? (source ? catalog.representations[source.representationId]?.repositoryId : undefined), handle: current?.handle ?? id, name: input.name.trim(),
     type: canvasTypeOf({ type: input.type ?? current?.type, canvas: history.snapshots[history.headId].view as { projectionLayout?: unknown } }),

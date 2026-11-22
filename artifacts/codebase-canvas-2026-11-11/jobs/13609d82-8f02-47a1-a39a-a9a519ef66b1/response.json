@@ -1,0 +1,46 @@
+{
+  "output": {
+    "summary": "Phase 3 produces a connected, coherent set of expansions, but the central tree remains too detailed to function as an overview. The strongest improvements would be more selective extraction, more precise navigation into HTTP details, and placement closer to attachment points. These findings concern the supplied decomposition, text, edges and coordinates; source correctness and later rendering behavior cannot be established from this input.",
+    "strengths": [
+      "The central tree preserves a useful architectural sequence: composition boundary (central:2), startup (central:13), shared services (central:27), request dispatch (central:72) and shutdown (central:100).",
+      "All five peripheral diagrams connect to central. Several attachments are particularly meaningful: central:35 → context:2 expands source resolution, central:43 → context:13 expands live-context callbacks, and central:71 → eval:17 expands result callbacks.",
+      "Peripheral details explain consequential behavior rather than merely listing names: context:3–8 distinguishes source-resolution paths, eval:18–29 names callback producers and consumers, and http:16–22 describes cancellation and listener cleanup.",
+      "The supplied text rectangles do not overlap, and the shutdown attachment central:100 → deploy:24 makes the conditional registration discoverable."
+    ],
+    "issues": [
+      {
+        "evidence": "central spans 105 lines. Its shared-service section occupies central:27–71, including constructor-level inputs such as 'FileDiffSessionRunStore + prompts + repository-backed source reader' (central:54). central:84–97 also retains endpoint details. Meanwhile, central:15–19 overlaps deploy:2–13, central:68 overlaps eval:2–4, and central:79–82 overlaps http:2–6.",
+        "impact": "The overview remains a long implementation inventory, while some peripheral space repeats information already present centrally. Readers must scan substantial detail before reaching dispatch and shutdown, weakening the central/peripheral hierarchy.",
+        "recommendation": "Retain the composition sequence, major service responsibilities, important shared instances and boundary conditions centrally. Move constructor collaborator lists, configuration defaults and endpoint mechanics into suitable peripheral branches. Keep only enough repeated context to make each expansion understandable."
+      },
+      {
+        "evidence": "The only attachment to http is central:72 → http:1, labeled 'Dispatch, cancellation and streaming'. Yet central already has precise concepts for definitions (central:86), delegated services (central:93), prompt preparation (central:97) and exception translation (central:99), corresponding to http:16, http:7, http:30 and http:39.",
+        "impact": "Readers following a specific central concept arrive at the top of a 47-line peripheral tree and must search again. The broad attachment underuses the meaningful concept lines already present.",
+        "recommendation": "Add or retarget a selective set of attachments to the relevant HTTP branches, especially cancellation, streaming and error translation. Preserve concise central anchors when extracting their details; avoid creating an edge for every endpoint."
+      },
+      {
+        "evidence": "eval starts at row 0, although its attachments originate at central:68 and central:71, at canvas rows 67 and 70. context starts at row 70, placing context:2 at row 71 despite its source central:35 being at row 34. The shutdown attachment joins central:100 at row 99 to deploy:24 at row 59.",
+        "impact": "The positions create long vertical jumps between related content despite leaving clear gaps between diagrams. This increases navigation distance and the routing burden for attachment lines. Actual line crossings or label collisions are not demonstrated by the supplied output.",
+        "recommendation": "After reducing central detail, place expansions near their principal attachment rows and reassess long secondary connections. Use the resulting tree dimensions and attachment locations to guide placement, retaining adequate spacing without requiring a rigid column arrangement."
+      },
+      {
+        "evidence": "central:26 is labeled 'Vite deployment settings', but its edge is labeled 'Configuration and server lifetime' and targets deploy:1, 'Deployment inputs and lifetime'. deploy:20–26 discusses backend creation, attachment and cleanup, while central:14–19 contains the configuration inputs expanded by deploy:2–13.",
+        "impact": "The primary attachment promises a narrower subject than the peripheral actually covers and sits apart from the configuration branch it expands. The separate shutdown attachment helps, but startup configuration still lacks a direct semantic entry point.",
+        "recommendation": "Align the central anchor and peripheral scope: either broaden the anchor to describe configuration and attachment lifetime, or attach configuration and lifetime separately to their relevant branches within deploy. Choose the grouping that best supports the central reading sequence."
+      },
+      {
+        "evidence": "The '[O] Backend creates and retains a shared service graph' branch (central:27) mixes ownership with dependency lists. 'ChangeSessionService [shared changes]' appears as a child of AgentDiagrammingSessionService at central:44–46 and again as a service under 'Chat and change workflows' at central:52. Likewise, context:18 says the live canvas and agent share contexts and projection.",
+        "impact": "Although the shared labels help, indentation beneath an ownership heading can suggest containment where the text is describing a supplied collaborator. Repeated service appearances require readers to reconcile instance identity themselves. This is a presentation ambiguity, not evidence of incorrect wiring.",
+        "recommendation": "Make the distinction between backend-owned instances and injected references explicit where the tree could imply nested ownership. Give shared services a clear defining location and use concise reference wording at consumer sites; reserve additional relationship edges for connections that materially improve understanding."
+      }
+    ],
+    "regenerationInstructions": "Regenerate Phase 3 around the existing architectural sequence, preserving its useful source-resolution, callback and lifecycle expansions. Reduce central constructor and endpoint detail, remove redundant elaboration, clarify shared-instance references, and make expansion anchors match their destination scope. Give important HTTP subtopics direct navigation and position peripheral trees near their principal anchors after content changes. Preserve conditional behavior and evidence limitations. Do not impose a fixed branch count or relationship taxonomy, infer source-level errors, or treat unobserved renderer artifacts as established defects."
+  },
+  "usage": {
+    "input_tokens": 65321,
+    "cached_input_tokens": 38144,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 1828,
+    "reasoning_output_tokens": 316
+  }
+}

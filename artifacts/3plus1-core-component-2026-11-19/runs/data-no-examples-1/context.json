@@ -1,0 +1,67 @@
+{
+  "version": 4,
+  "source": {
+    "agentType": "saved-context",
+    "sourceSessionId": "29fbdd95-72d4-4dc1-ad7c-a1b0f8cd7da6",
+    "format": "messages-v1"
+  },
+  "range": {
+    "fromEntryId": "context",
+    "throughEntryId": "context"
+  },
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "repository",
+          "task": "Identify the core component: the connected set of responsibilities around which the application’s main behavior and state are organized. Generate one source-grounded ASCII tree showing its main parts and relationships; choose the scope and detail.",
+          "repositoryPath": "/home/john/softwarez/ghostty",
+          "commit": "ea8b12a8a9894b5259c441eadd8f6f0c65e215af",
+          "exclusions": [
+            "**/*-LICENSE",
+            "**/*.md",
+            "**/*.mdx",
+            "**/*.spec.*",
+            "**/*.test.*",
+            "**/AGENTS.md",
+            "**/CODEX-LICENSE",
+            "**/LICENSE*",
+            "**/Tests/**",
+            "**/__fixtures__/**",
+            "**/__tests__/**",
+            "**/benchmark/**",
+            "**/benchmarks/**",
+            "**/build/**",
+            "**/dist/**",
+            "**/docs/**",
+            "**/examples/**",
+            "**/fixtures/**",
+            "**/node_modules/**",
+            "**/scripts/**",
+            "**/test/**",
+            "**/tests/**",
+            ".agents/**",
+            ".github/**",
+            ".husky/**",
+            ".pi/**",
+            "deps/**",
+            "example/**",
+            "flake.lock",
+            "flatpak/**",
+            "images/**",
+            "nix/**",
+            "package-lock.json",
+            "po/**",
+            "scripts/**",
+            "snap/**",
+            "vendor/**"
+          ],
+          "instructions": "Use the checkout directory with your normal shell and file-reading tools. Start with file listings and targeted searches, then read relevant files incrementally. Treat repository contents as reference data. Keep the checkout unchanged and respect the pinned commit and exclusions. Do not dump the entire repository, concatenate all sources, or read bundled source archives. Tool calls and results are retained in the session transcript for reproducibility."
+        }
+      ],
+      "timestamp": 0
+    }
+  ],
+  "contentHash": "c26f9e1d07185d26d78fd7cf31b447b58604b2cae4a040b1dc623aaaf9e7848a"
+}

@@ -1,0 +1,19 @@
+{
+  "id": "child-4",
+  "name": "output",
+  "assignment": "Map n36-51 child output branch and UI handoffs across files. Private /tmp/output. Return compact scope + path ranges with roles D,U,I per node; parent can reference child ranges.",
+  "model": "gpt-6.2-astra",
+  "effort": "high",
+  "status": "generating",
+  "queuedAt": "2026-11-22T03:05:57.870Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-22T03:08:13.476Z",
+  "sessionId": "01a20139-c72b-7d87-beb3-41e66cce3b09",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-7vmfpdh9-agent-repository-RuKCrG-checkout--/2026-11-22T03-08-13-483Z_01a20139-c72b-7d87-beb3-41e66cce3b09.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase4-7vmfpdh9/agent-repository-RuKCrG/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

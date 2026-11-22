@@ -1,0 +1,144 @@
+{
+  "requestId": "0186d8d4-53e5-485f-9469-c452422a2ffd",
+  "experimentId": "08ccc7fa-8ea6-4cfa-b0b7-8819b7fcbf35",
+  "expectedRevision": 16,
+  "experiment": {
+    "name": "Core discovery · checkout directory",
+    "description": "Core discovery with one Astra/high and three Sol/high samples. All use the same prompt v2 and pinned repository context at 03f2168deba364103c2450ca9b8168cd1fc9ddc5, with ordinary shell/read tools and the same exclusions. Rerun: one Astra/high sample at 8ca1437, matching the reference source snapshot; earlier runs retain their original 03f2168 inputs. Rerun: one Astra/high sample at 8ca1437, matching the reference source snapshot; earlier runs retain their original 03f2168 inputs.",
+    "workflow": {
+      "id": "core-discovery",
+      "name": "Core component discovery",
+      "version": 1,
+      "stages": [
+        {
+          "id": "tree",
+          "name": "Core diagram",
+          "dependsOn": []
+        }
+      ]
+    },
+    "cases": [
+      {
+        "id": "source",
+        "name": "Pinned repository",
+        "agentContextId": "saved-agent-context-7344b95b-5c8c-4f6e-86e5-4323ee2478e4",
+        "contentHash": "00b9ed11b05d12f61ea9897c890dca21baf63782b67254a23c6fb80d94ae0fc2"
+      },
+      {
+        "id": "source-8ca1437",
+        "name": "Repository · 8ca1437",
+        "agentContextId": "saved-agent-context-5c5a2be5-6e33-42c2-a0fe-2abe7fee6723",
+        "contentHash": "20919f27a4f099bb26f7550be30fbd051781823d1a96bd8ad9e2c00d60fffa49"
+      },
+      {
+        "id": "source-8ca1437-rerun",
+        "name": "Repository · 8ca1437",
+        "agentContextId": "saved-agent-context-2ba25014-3a84-42e9-b5f8-1e10c32fa2cd",
+        "contentHash": "206d36f8379bc52aa484c0043cf003a0e818438ad4df6fdaa3b47aaa59c167d0"
+      }
+    ],
+    "conditions": [
+      {
+        "id": "repository-browsing",
+        "name": "3+1 · checkout directory",
+        "description": "Combined prompt v2 (0b3af2dd-ba89-4032-936a-40070a3e167e); normal shell/read tools in a pinned checkout. No reference diagram or analysis rankings. Output: one ASCII tree in JSON {ascii}, at most 20000 characters."
+      },
+      {
+        "id": "sol-high",
+        "name": "Sol/high · checkout directory",
+        "description": "Three independent gpt-6-sol/high samples; exact same prompt v2, source commit, exclusions, and AgentContext as the Astra/high sample."
+      },
+      {
+        "id": "astra-high-8ca1437",
+        "name": "Astra/high · matched snapshot",
+        "description": "One gpt-6-astra/high sample using unchanged prompt v2 and exclusions, with repository commit 8ca143700ca4d2c870f1101b8cd4601ab68abd41."
+      },
+      {
+        "id": "astra-high-8ca1437-rerun",
+        "name": "Astra/high · matched snapshot",
+        "description": "One gpt-6-astra/high sample using unchanged prompt v2 and source-only exclusions, with repository commit 8ca143700ca4d2c870f1101b8cd4601ab68abd41."
+      }
+    ],
+    "samples": [
+      {
+        "id": "d4ae9c0d-3f81-4138-b25a-6266f8a7f1f8",
+        "caseId": "source",
+        "conditionId": "repository-browsing",
+        "number": 1,
+        "attempt": 1,
+        "outputs": [
+          {
+            "stageId": "tree",
+            "runId": "22a83e6e-81ef-4161-a4b0-851062428f61",
+            "cellKey": "0b3af2dd-ba89-4032-936a-40070a3e167e:1:alternative"
+          }
+        ]
+      },
+      {
+        "id": "859eb44c-0634-483b-8163-3f8426bf8cf5",
+        "caseId": "source",
+        "conditionId": "sol-high",
+        "number": 1,
+        "attempt": 1,
+        "outputs": [
+          {
+            "stageId": "tree",
+            "runId": "e0da55e9-87bf-4567-85bc-22bb197073cf",
+            "cellKey": "0b3af2dd-ba89-4032-936a-40070a3e167e:1:alternative"
+          }
+        ]
+      },
+      {
+        "id": "c7d66451-c54a-4207-95a9-c6d52d48af5a",
+        "caseId": "source",
+        "conditionId": "sol-high",
+        "number": 2,
+        "attempt": 1,
+        "outputs": [
+          {
+            "stageId": "tree",
+            "runId": "d2663236-2eee-470b-841c-50ea8055ae1f",
+            "cellKey": "0b3af2dd-ba89-4032-936a-40070a3e167e:1:alternative"
+          }
+        ]
+      },
+      {
+        "id": "b29b0427-55c3-4000-a783-438eb364a0cf",
+        "caseId": "source",
+        "conditionId": "sol-high",
+        "number": 3,
+        "attempt": 1,
+        "outputs": [
+          {
+            "stageId": "tree",
+            "runId": "c70d3c75-a3c2-49fe-9ff8-ed36ba609fb8",
+            "cellKey": "0b3af2dd-ba89-4032-936a-40070a3e167e:1:alternative"
+          }
+        ]
+      },
+      {
+        "id": "0b117be9-b0ef-4649-a186-c8834e386d9b",
+        "caseId": "source-8ca1437",
+        "conditionId": "astra-high-8ca1437",
+        "number": 1,
+        "attempt": 1,
+        "outputs": [
+          {
+            "stageId": "tree",
+            "runId": "4fb8c242-f5b3-4fa0-ae11-1d0e2503a146",
+            "cellKey": "0b3af2dd-ba89-4032-936a-40070a3e167e:1:alternative"
+          }
+        ]
+      },
+      {
+        "id": "158a261e-afa2-4d05-aaa6-8b348ee66a6e",
+        "caseId": "source-8ca1437-rerun",
+        "conditionId": "astra-high-8ca1437",
+        "number": 1,
+        "attempt": 1,
+        "outputs": []
+      }
+    ],
+    "comparisons": []
+  }
+}

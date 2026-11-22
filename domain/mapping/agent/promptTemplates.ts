@@ -42,7 +42,6 @@ export function diagramOutputFormat(operation: PromptOperation, sourceMappings: 
 - Supply the complete resulting diagram as ascii, using printable ASCII, LF newlines, and spaces.
 - Do not use Markdown fences, diff prefixes, or editorial edit markers.
 - Set structureKind to "tree" for branch hierarchies or "diagram" for freeform flows.
-- The stored diagram must contain 1–20000 characters after identity annotations are stripped.
 ${operation === 'edit-diagram' ? `
 ## Node continuity
 - Optionally append [[keep:EXISTING_NODE_REF]] to retained output node lines, including renamed or moved nodes.

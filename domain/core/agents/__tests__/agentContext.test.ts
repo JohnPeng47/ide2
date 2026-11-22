@@ -75,8 +75,11 @@ describe('AgentContext', () => {
   it('supports slices starting after omitted ancestors and rejects unsupported records and oversized data', () => {
     expect(AgentContext.fromTrajectory({ ...trajectory(), fromEntryId: 'done' }).toSnapshot().messages).toHaveLength(1);
     expect(() => AgentContext.fromTrajectory({ ...trajectory(), format: 'codex-jsonl' })).toThrow();
-    const large = trajectory(); large.entries[0].message = { role: 'user', content: [{ type: 'text', text: 'x'.repeat(2_100_000) }] };
+    const large = trajectory(); large.entries[0].message = { role: 'user', content: Array.from({ length: 18 }, () => ({ type: 'text', text: 'x'.repeat(1_000_000) })) };
     expect(() => AgentContext.fromTrajectory(large)).toThrow('TOO_LARGE');
+    const expanded = trajectory();
+    expanded.entries[0].message = { role: 'user', content: Array.from({ length: 4 }, () => ({ type: 'text', text: 'x'.repeat(900_000) })) };
+    expect(AgentContext.fromTrajectory(expanded).toSnapshot().messages).toHaveLength(4);
     const unknown = trajectory();
     expect(() => AgentContext.fromTrajectory({ ...unknown, agentType: '' })).toThrow();
   });

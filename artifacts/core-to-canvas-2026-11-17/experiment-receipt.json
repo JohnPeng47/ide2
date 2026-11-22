@@ -1,0 +1,673 @@
+{
+  "name": "Core component → canvas",
+  "description": "Restructure one Astra/high core component diagram per repository (from Core component discovery 08ccc7fa) into a vertical central diagram with connected peripheral diagrams. Repository checkout available to double-check the diagram. One gpt-6-astra/high canvas per repository.",
+  "tags": [
+    "core-discovery",
+    "canvas"
+  ],
+  "workflow": {
+    "id": "core-to-canvas",
+    "name": "Core component to canvas",
+    "version": 1,
+    "stages": [
+      {
+        "id": "split",
+        "name": "Generate canvas",
+        "dependsOn": []
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "mapping",
+      "name": "Mapping · core → canvas seed",
+      "agentContextId": "saved-agent-context-cb132185-b1cc-4e45-94b8-4fa9a457c75a",
+      "contentHash": "c8c45f05d3c6c1ee2c04bd67e562652eb5c876357481caf324cf0f83fc880ea6"
+    },
+    {
+      "id": "pi",
+      "name": "Pi · core → canvas seed",
+      "agentContextId": "saved-agent-context-9727bbfb-9336-4405-a60b-977291ebd2bd",
+      "contentHash": "b59617f2e3f378e525b3683c1e9d6416577eae14c53d3f16aaf152b740506b0e"
+    },
+    {
+      "id": "opencode",
+      "name": "OpenCode · core → canvas seed",
+      "agentContextId": "saved-agent-context-73c58ea6-1d34-49b5-b2a2-d0ef709ba559",
+      "contentHash": "d8b7018ae8804532ef08d895844514d91456f99eca159faa0c5805e5efbe43d6"
+    },
+    {
+      "id": "ghostty",
+      "name": "Ghostty · core → canvas seed",
+      "agentContextId": "saved-agent-context-13a17154-1868-4cfb-9f01-ed80ffc6437c",
+      "contentHash": "01e7e4d0029ade1d3e381029ea7b4337068e41ddc06e0fdd14dd1af5a858760d"
+    }
+  ],
+  "conditions": [
+    {
+      "id": "vertical-framing",
+      "name": "Vertical restructure",
+      "description": "Horizontal/vertical framing with a podcast-player before/after example; seed diagram plus pinned checkout."
+    }
+  ],
+  "plannedRuns": [
+    {
+      "request": {
+        "requestId": "06d4f008-e3c4-4f8d-ac2d-e076490838af",
+        "workflow": "alternatives",
+        "prompts": [
+          {
+            "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+            "version": 1
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-cb132185-b1cc-4e45-94b8-4fa9a457c75a"
+          }
+        },
+        "passes": 1,
+        "model": "gpt-6-astra",
+        "effort": "high"
+      },
+      "outputs": [
+        {
+          "sampleId": "mapping",
+          "stageId": "split",
+          "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative"
+        }
+      ]
+    },
+    {
+      "request": {
+        "requestId": "bcd72f13-5770-4244-9cd7-68810e37dd2b",
+        "workflow": "alternatives",
+        "prompts": [
+          {
+            "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+            "version": 1
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-9727bbfb-9336-4405-a60b-977291ebd2bd"
+          }
+        },
+        "passes": 1,
+        "model": "gpt-6-astra",
+        "effort": "high"
+      },
+      "outputs": [
+        {
+          "sampleId": "pi",
+          "stageId": "split",
+          "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative"
+        }
+      ]
+    },
+    {
+      "request": {
+        "requestId": "4d1d388a-78a5-4198-9c56-9fa04b4fbddf",
+        "workflow": "alternatives",
+        "prompts": [
+          {
+            "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+            "version": 1
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-73c58ea6-1d34-49b5-b2a2-d0ef709ba559"
+          }
+        },
+        "passes": 1,
+        "model": "gpt-6-astra",
+        "effort": "high"
+      },
+      "outputs": [
+        {
+          "sampleId": "opencode",
+          "stageId": "split",
+          "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative"
+        }
+      ]
+    },
+    {
+      "request": {
+        "requestId": "9f582f37-2a7a-4159-9b8e-5b6b30a20365",
+        "workflow": "alternatives",
+        "prompts": [
+          {
+            "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+            "version": 1
+          }
+        ],
+        "inputs": {
+          "context": {
+            "agentContextId": "saved-agent-context-13a17154-1868-4cfb-9f01-ed80ffc6437c"
+          }
+        },
+        "passes": 1,
+        "model": "gpt-6-astra",
+        "effort": "high"
+      },
+      "outputs": [
+        {
+          "sampleId": "ghostty",
+          "stageId": "split",
+          "cellKey": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative"
+        }
+      ]
+    }
+  ],
+  "samples": [
+    {
+      "id": "mapping",
+      "caseId": "mapping",
+      "conditionId": "vertical-framing",
+      "number": 1,
+      "attempt": 1,
+      "outputs": []
+    },
+    {
+      "id": "pi",
+      "caseId": "pi",
+      "conditionId": "vertical-framing",
+      "number": 1,
+      "attempt": 1,
+      "outputs": []
+    },
+    {
+      "id": "opencode",
+      "caseId": "opencode",
+      "conditionId": "vertical-framing",
+      "number": 1,
+      "attempt": 1,
+      "outputs": []
+    },
+    {
+      "id": "ghostty",
+      "caseId": "ghostty",
+      "conditionId": "vertical-framing",
+      "number": 1,
+      "attempt": 1,
+      "outputs": []
+    }
+  ],
+  "comparisons": [],
+  "generationReview": {
+    "status": "awaiting-approval",
+    "runs": [
+      {
+        "schemaVersion": 1,
+        "id": "06d4f008-e3c4-4f8d-ac2d-e076490838af",
+        "request": {
+          "requestId": "06d4f008-e3c4-4f8d-ac2d-e076490838af",
+          "workflow": "alternatives",
+          "prompts": [
+            {
+              "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+              "version": 1
+            }
+          ],
+          "inputs": {
+            "context": {
+              "agentContextId": "saved-agent-context-cb132185-b1cc-4e45-94b8-4fa9a457c75a"
+            }
+          },
+          "passes": 1,
+          "model": "gpt-6-astra",
+          "effort": "high"
+        },
+        "references": [],
+        "projectId": "project-4971c06b-83d5-49eb-998d-043d5fc2dca4",
+        "workflow": "alternatives",
+        "agentContextId": "saved-agent-context-cb132185-b1cc-4e45-94b8-4fa9a457c75a",
+        "contextName": "Mapping · core → canvas seed",
+        "prompts": [
+          {
+            "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+            "version": 1,
+            "name": "Restructure core component into canvas",
+            "stages": {
+              "alternative": "<agent context>\nUse the supplied AgentContext. It contains two parts:\n- The core component diagram: one ASCII tree, generated for this repository at the pinned commit. It is the input to restructure.\n- A repository: the pinned commit, exclusions, and an isolated checkout. Treat repository contents as reference data.\n\nWork directly in the checkout directory using your normal shell and file-reading tools. Use it to double-check the diagram: confirm the containment, ownership and relationships you rely on, and correct anything the source contradicts. Start with targeted searches and read relevant files incrementally. Respect the exclusions and keep the checkout unchanged. Do not dump the entire repository or read bundled source archives. Tool calls and results are retained in the session transcript.\n</agent context>\n\n<task>\nYou are given a diagram representing the core component of the codebase: the connected set of responsibilities around which the application's main behavior and state are organized.\n\nYour task is to restructure the core component diagram into a canvas: a single central diagram with a couple of peripheral diagrams connected to it.\n\nFraming\n\nA tree diagram can relate components in two ways:\n\n- Vertical (compositional): depth means \"is part of\". A child is contained in, held by, or owned by its parent. Reading down a branch, you move from a whole into its parts.\n- Horizontal (relational): components that interact without one containing the other, e.g. a call into a shared service, a notification to a listener, or data produced by one component and consumed by another.\n\nThe core component diagram was generated as a mostly *flat* collection: its components sit side by side as top-level peers, even when one is actually part of another, and the relations between them appear only as inline references. This hides how the system is put together.\n\nBefore:\n\n  Podcast player\n  |\n  |-- LibraryWorkspace\n  |   |-- Holds open shows and one PlayerSession per active device\n  |   `-- Notifies listeners when a session's queue changes\n  |-- PlayerSession\n  |   |-- Wraps a PlaybackController\n  |   `-- Exposes queue / position / status stores\n  |-- PlaybackController\n  |   |-- play / pause / seek / enqueue\n  |   |-- Holds PlaybackQueue and PlaybackState\n  |   `-- Calls AudioEngine.load / start\n  |-- PlaybackQueue: ordered episode references\n  |-- AudioEngine: decodes and outputs audio; shared by all sessions\n  |-- DownloadManager: fetches episodes; AudioEngine reads cached files\n  `-- SyncService: listens for queue changes; writes listening progress\n\nAfter:\n\n  Podcast player\n  |\n  |-- LibraryWorkspace\n  |   `-- PlayerSession (one per active device)\n  |       |-- Exposes queue / position / status stores\n  |       |   `-- -> notifies SyncService on queue change\n  |       `-- PlaybackController\n  |           |-- PlaybackQueue: ordered episode references\n  |           |-- PlaybackState: position / status\n  |           `-- play(episode)\n  |               |-- -> AudioEngine.load(cached file)\n  |               `-- -> AudioEngine.start()\n  |\n  |-- AudioEngine (shared service; used by every PlaybackController)\n  |   `-- reads files cached by DownloadManager\n  |-- DownloadManager\n  |   `-- caches episode files -> consumed by AudioEngine.load\n  `-- SyncService\n      `-- queue changes + PlaybackState.position -> listening progress\n\n1. Restructure the core component diagram into the central diagram\n   - Give it a primarily *vertical*, compositional structure: nest each component under the component it belongs to, so the shape of the tree alone shows what the system is made of and how the parts fit together.\n   - Do not discard the horizontal relationships. Some components will not nest cleanly (e.g. a shared service used by many parts, or an external producer that acts on a part from outside). Do not force these under a false parent; instead, express the relation as an annotated line at the point in the vertical structure where the interaction happens, e.g. a call or notification line under the specific operation that triggers it.\n   - The vertical structure is the skeleton; horizontal relations are laid over it.\n\n2. Pull out concepts that should become their own diagrams\n   - Each peripheral diagram should connect to the node in the central diagram, at the depth, that it elaborates.\n   - Where a horizontal relation in the central diagram links two pulled-out concepts, connect those peripheral diagrams to each other as well.\n</task>\n\n<diagram-style>\n<diagram-guidelines>\n</diagram-guidelines>\n<references>\n</references>\n</diagram-style>\n\n<canvas-style>\n<canvas-guidelines>\n</canvas-guidelines>\n<references>\n</references>\n</canvas-style>\n\n<output format>\nReturn JSON matching output-schema.json with {explanation, diagrams:[{id,ascii,position:{column,row}}], edges:[{source:{diagram,line},target:{diagram,line},label}]}. Output one complete canvas per invocation, containing 2–20 connected diagrams. Diagram IDs must be unique. Positions use nonnegative integer character-grid coordinates; leave enough room for the actual ASCII bounds so diagrams do not overlap. ASCII uses printable characters with actual LF newlines. Edge lines are 1-based raw ASCII line numbers and must point to meaningful nonblank concept lines in the named diagrams. Return no prose outside JSON.\n\nIn explanation, describe how the central diagram was restructured and which concepts were pulled out, and note any corrections made after checking the source. If validation-error.json exists, read it and previous-output.json to correct this generation's own invalid output while preserving these instructions.\n</output format>\n"
+            },
+            "templateBase": {
+              "id": "canvas-prompt",
+              "version": 1,
+              "name": "Canvas prompt structure",
+              "tags": [
+                {
+                  "name": "agent context",
+                  "parent": null
+                },
+                {
+                  "name": "task",
+                  "parent": null
+                },
+                {
+                  "name": "diagram-style",
+                  "parent": null
+                },
+                {
+                  "name": "diagram-guidelines",
+                  "parent": "diagram-style"
+                },
+                {
+                  "name": "references",
+                  "parent": "diagram-style"
+                },
+                {
+                  "name": "canvas-style",
+                  "parent": null
+                },
+                {
+                  "name": "canvas-guidelines",
+                  "parent": "canvas-style"
+                },
+                {
+                  "name": "references",
+                  "parent": "canvas-style"
+                },
+                {
+                  "name": "output format",
+                  "parent": null
+                }
+              ]
+            },
+            "parents": [
+              {
+                "promptId": "6842c979-55e4-459f-acd8-27e03df51df9",
+                "version": 5,
+                "relation": "fork"
+              }
+            ],
+            "contentHash": "561a729e442d6f5e8b2b6630d28547f3eee3e037fe978f98b056b470b0e86e28",
+            "derivation": {
+              "parent": {
+                "promptId": "6842c979-55e4-459f-acd8-27e03df51df9",
+                "version": 5
+              },
+              "kind": "fork"
+            }
+          }
+        ],
+        "contexts": {
+          "context": {
+            "agentContextId": "saved-agent-context-cb132185-b1cc-4e45-94b8-4fa9a457c75a",
+            "name": "Mapping · core → canvas seed",
+            "contentHash": "c8c45f05d3c6c1ee2c04bd67e562652eb5c876357481caf324cf0f83fc880ea6"
+          }
+        },
+        "status": "queued",
+        "createdAt": "2026-11-17T18:00:00.494Z",
+        "cells": [
+          {
+            "key": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative",
+            "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+            "promptVersion": 1,
+            "promptName": "Restructure core component into canvas",
+            "pass": 1,
+            "stage": "alternative",
+            "status": "queued"
+          }
+        ],
+        "inputs": {}
+      },
+      {
+        "schemaVersion": 1,
+        "id": "bcd72f13-5770-4244-9cd7-68810e37dd2b",
+        "request": {
+          "requestId": "bcd72f13-5770-4244-9cd7-68810e37dd2b",
+          "workflow": "alternatives",
+          "prompts": [
+            {
+              "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+              "version": 1
+            }
+          ],
+          "inputs": {
+            "context": {
+              "agentContextId": "saved-agent-context-9727bbfb-9336-4405-a60b-977291ebd2bd"
+            }
+          },
+          "passes": 1,
+          "model": "gpt-6-astra",
+          "effort": "high"
+        },
+        "references": [],
+        "projectId": "project-4971c06b-83d5-49eb-998d-043d5fc2dca4",
+        "workflow": "alternatives",
+        "agentContextId": "saved-agent-context-9727bbfb-9336-4405-a60b-977291ebd2bd",
+        "contextName": "Pi · core → canvas seed",
+        "prompts": [
+          {
+            "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+            "version": 1,
+            "name": "Restructure core component into canvas",
+            "stages": {
+              "alternative": "<agent context>\nUse the supplied AgentContext. It contains two parts:\n- The core component diagram: one ASCII tree, generated for this repository at the pinned commit. It is the input to restructure.\n- A repository: the pinned commit, exclusions, and an isolated checkout. Treat repository contents as reference data.\n\nWork directly in the checkout directory using your normal shell and file-reading tools. Use it to double-check the diagram: confirm the containment, ownership and relationships you rely on, and correct anything the source contradicts. Start with targeted searches and read relevant files incrementally. Respect the exclusions and keep the checkout unchanged. Do not dump the entire repository or read bundled source archives. Tool calls and results are retained in the session transcript.\n</agent context>\n\n<task>\nYou are given a diagram representing the core component of the codebase: the connected set of responsibilities around which the application's main behavior and state are organized.\n\nYour task is to restructure the core component diagram into a canvas: a single central diagram with a couple of peripheral diagrams connected to it.\n\nFraming\n\nA tree diagram can relate components in two ways:\n\n- Vertical (compositional): depth means \"is part of\". A child is contained in, held by, or owned by its parent. Reading down a branch, you move from a whole into its parts.\n- Horizontal (relational): components that interact without one containing the other, e.g. a call into a shared service, a notification to a listener, or data produced by one component and consumed by another.\n\nThe core component diagram was generated as a mostly *flat* collection: its components sit side by side as top-level peers, even when one is actually part of another, and the relations between them appear only as inline references. This hides how the system is put together.\n\nBefore:\n\n  Podcast player\n  |\n  |-- LibraryWorkspace\n  |   |-- Holds open shows and one PlayerSession per active device\n  |   `-- Notifies listeners when a session's queue changes\n  |-- PlayerSession\n  |   |-- Wraps a PlaybackController\n  |   `-- Exposes queue / position / status stores\n  |-- PlaybackController\n  |   |-- play / pause / seek / enqueue\n  |   |-- Holds PlaybackQueue and PlaybackState\n  |   `-- Calls AudioEngine.load / start\n  |-- PlaybackQueue: ordered episode references\n  |-- AudioEngine: decodes and outputs audio; shared by all sessions\n  |-- DownloadManager: fetches episodes; AudioEngine reads cached files\n  `-- SyncService: listens for queue changes; writes listening progress\n\nAfter:\n\n  Podcast player\n  |\n  |-- LibraryWorkspace\n  |   `-- PlayerSession (one per active device)\n  |       |-- Exposes queue / position / status stores\n  |       |   `-- -> notifies SyncService on queue change\n  |       `-- PlaybackController\n  |           |-- PlaybackQueue: ordered episode references\n  |           |-- PlaybackState: position / status\n  |           `-- play(episode)\n  |               |-- -> AudioEngine.load(cached file)\n  |               `-- -> AudioEngine.start()\n  |\n  |-- AudioEngine (shared service; used by every PlaybackController)\n  |   `-- reads files cached by DownloadManager\n  |-- DownloadManager\n  |   `-- caches episode files -> consumed by AudioEngine.load\n  `-- SyncService\n      `-- queue changes + PlaybackState.position -> listening progress\n\n1. Restructure the core component diagram into the central diagram\n   - Give it a primarily *vertical*, compositional structure: nest each component under the component it belongs to, so the shape of the tree alone shows what the system is made of and how the parts fit together.\n   - Do not discard the horizontal relationships. Some components will not nest cleanly (e.g. a shared service used by many parts, or an external producer that acts on a part from outside). Do not force these under a false parent; instead, express the relation as an annotated line at the point in the vertical structure where the interaction happens, e.g. a call or notification line under the specific operation that triggers it.\n   - The vertical structure is the skeleton; horizontal relations are laid over it.\n\n2. Pull out concepts that should become their own diagrams\n   - Each peripheral diagram should connect to the node in the central diagram, at the depth, that it elaborates.\n   - Where a horizontal relation in the central diagram links two pulled-out concepts, connect those peripheral diagrams to each other as well.\n</task>\n\n<diagram-style>\n<diagram-guidelines>\n</diagram-guidelines>\n<references>\n</references>\n</diagram-style>\n\n<canvas-style>\n<canvas-guidelines>\n</canvas-guidelines>\n<references>\n</references>\n</canvas-style>\n\n<output format>\nReturn JSON matching output-schema.json with {explanation, diagrams:[{id,ascii,position:{column,row}}], edges:[{source:{diagram,line},target:{diagram,line},label}]}. Output one complete canvas per invocation, containing 2–20 connected diagrams. Diagram IDs must be unique. Positions use nonnegative integer character-grid coordinates; leave enough room for the actual ASCII bounds so diagrams do not overlap. ASCII uses printable characters with actual LF newlines. Edge lines are 1-based raw ASCII line numbers and must point to meaningful nonblank concept lines in the named diagrams. Return no prose outside JSON.\n\nIn explanation, describe how the central diagram was restructured and which concepts were pulled out, and note any corrections made after checking the source. If validation-error.json exists, read it and previous-output.json to correct this generation's own invalid output while preserving these instructions.\n</output format>\n"
+            },
+            "templateBase": {
+              "id": "canvas-prompt",
+              "version": 1,
+              "name": "Canvas prompt structure",
+              "tags": [
+                {
+                  "name": "agent context",
+                  "parent": null
+                },
+                {
+                  "name": "task",
+                  "parent": null
+                },
+                {
+                  "name": "diagram-style",
+                  "parent": null
+                },
+                {
+                  "name": "diagram-guidelines",
+                  "parent": "diagram-style"
+                },
+                {
+                  "name": "references",
+                  "parent": "diagram-style"
+                },
+                {
+                  "name": "canvas-style",
+                  "parent": null
+                },
+                {
+                  "name": "canvas-guidelines",
+                  "parent": "canvas-style"
+                },
+                {
+                  "name": "references",
+                  "parent": "canvas-style"
+                },
+                {
+                  "name": "output format",
+                  "parent": null
+                }
+              ]
+            },
+            "parents": [
+              {
+                "promptId": "6842c979-55e4-459f-acd8-27e03df51df9",
+                "version": 5,
+                "relation": "fork"
+              }
+            ],
+            "contentHash": "561a729e442d6f5e8b2b6630d28547f3eee3e037fe978f98b056b470b0e86e28",
+            "derivation": {
+              "parent": {
+                "promptId": "6842c979-55e4-459f-acd8-27e03df51df9",
+                "version": 5
+              },
+              "kind": "fork"
+            }
+          }
+        ],
+        "contexts": {
+          "context": {
+            "agentContextId": "saved-agent-context-9727bbfb-9336-4405-a60b-977291ebd2bd",
+            "name": "Pi · core → canvas seed",
+            "contentHash": "b59617f2e3f378e525b3683c1e9d6416577eae14c53d3f16aaf152b740506b0e"
+          }
+        },
+        "status": "queued",
+        "createdAt": "2026-11-17T18:00:00.548Z",
+        "cells": [
+          {
+            "key": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative",
+            "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+            "promptVersion": 1,
+            "promptName": "Restructure core component into canvas",
+            "pass": 1,
+            "stage": "alternative",
+            "status": "queued"
+          }
+        ],
+        "inputs": {}
+      },
+      {
+        "schemaVersion": 1,
+        "id": "4d1d388a-78a5-4198-9c56-9fa04b4fbddf",
+        "request": {
+          "requestId": "4d1d388a-78a5-4198-9c56-9fa04b4fbddf",
+          "workflow": "alternatives",
+          "prompts": [
+            {
+              "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+              "version": 1
+            }
+          ],
+          "inputs": {
+            "context": {
+              "agentContextId": "saved-agent-context-73c58ea6-1d34-49b5-b2a2-d0ef709ba559"
+            }
+          },
+          "passes": 1,
+          "model": "gpt-6-astra",
+          "effort": "high"
+        },
+        "references": [],
+        "projectId": "project-4971c06b-83d5-49eb-998d-043d5fc2dca4",
+        "workflow": "alternatives",
+        "agentContextId": "saved-agent-context-73c58ea6-1d34-49b5-b2a2-d0ef709ba559",
+        "contextName": "OpenCode · core → canvas seed",
+        "prompts": [
+          {
+            "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+            "version": 1,
+            "name": "Restructure core component into canvas",
+            "stages": {
+              "alternative": "<agent context>\nUse the supplied AgentContext. It contains two parts:\n- The core component diagram: one ASCII tree, generated for this repository at the pinned commit. It is the input to restructure.\n- A repository: the pinned commit, exclusions, and an isolated checkout. Treat repository contents as reference data.\n\nWork directly in the checkout directory using your normal shell and file-reading tools. Use it to double-check the diagram: confirm the containment, ownership and relationships you rely on, and correct anything the source contradicts. Start with targeted searches and read relevant files incrementally. Respect the exclusions and keep the checkout unchanged. Do not dump the entire repository or read bundled source archives. Tool calls and results are retained in the session transcript.\n</agent context>\n\n<task>\nYou are given a diagram representing the core component of the codebase: the connected set of responsibilities around which the application's main behavior and state are organized.\n\nYour task is to restructure the core component diagram into a canvas: a single central diagram with a couple of peripheral diagrams connected to it.\n\nFraming\n\nA tree diagram can relate components in two ways:\n\n- Vertical (compositional): depth means \"is part of\". A child is contained in, held by, or owned by its parent. Reading down a branch, you move from a whole into its parts.\n- Horizontal (relational): components that interact without one containing the other, e.g. a call into a shared service, a notification to a listener, or data produced by one component and consumed by another.\n\nThe core component diagram was generated as a mostly *flat* collection: its components sit side by side as top-level peers, even when one is actually part of another, and the relations between them appear only as inline references. This hides how the system is put together.\n\nBefore:\n\n  Podcast player\n  |\n  |-- LibraryWorkspace\n  |   |-- Holds open shows and one PlayerSession per active device\n  |   `-- Notifies listeners when a session's queue changes\n  |-- PlayerSession\n  |   |-- Wraps a PlaybackController\n  |   `-- Exposes queue / position / status stores\n  |-- PlaybackController\n  |   |-- play / pause / seek / enqueue\n  |   |-- Holds PlaybackQueue and PlaybackState\n  |   `-- Calls AudioEngine.load / start\n  |-- PlaybackQueue: ordered episode references\n  |-- AudioEngine: decodes and outputs audio; shared by all sessions\n  |-- DownloadManager: fetches episodes; AudioEngine reads cached files\n  `-- SyncService: listens for queue changes; writes listening progress\n\nAfter:\n\n  Podcast player\n  |\n  |-- LibraryWorkspace\n  |   `-- PlayerSession (one per active device)\n  |       |-- Exposes queue / position / status stores\n  |       |   `-- -> notifies SyncService on queue change\n  |       `-- PlaybackController\n  |           |-- PlaybackQueue: ordered episode references\n  |           |-- PlaybackState: position / status\n  |           `-- play(episode)\n  |               |-- -> AudioEngine.load(cached file)\n  |               `-- -> AudioEngine.start()\n  |\n  |-- AudioEngine (shared service; used by every PlaybackController)\n  |   `-- reads files cached by DownloadManager\n  |-- DownloadManager\n  |   `-- caches episode files -> consumed by AudioEngine.load\n  `-- SyncService\n      `-- queue changes + PlaybackState.position -> listening progress\n\n1. Restructure the core component diagram into the central diagram\n   - Give it a primarily *vertical*, compositional structure: nest each component under the component it belongs to, so the shape of the tree alone shows what the system is made of and how the parts fit together.\n   - Do not discard the horizontal relationships. Some components will not nest cleanly (e.g. a shared service used by many parts, or an external producer that acts on a part from outside). Do not force these under a false parent; instead, express the relation as an annotated line at the point in the vertical structure where the interaction happens, e.g. a call or notification line under the specific operation that triggers it.\n   - The vertical structure is the skeleton; horizontal relations are laid over it.\n\n2. Pull out concepts that should become their own diagrams\n   - Each peripheral diagram should connect to the node in the central diagram, at the depth, that it elaborates.\n   - Where a horizontal relation in the central diagram links two pulled-out concepts, connect those peripheral diagrams to each other as well.\n</task>\n\n<diagram-style>\n<diagram-guidelines>\n</diagram-guidelines>\n<references>\n</references>\n</diagram-style>\n\n<canvas-style>\n<canvas-guidelines>\n</canvas-guidelines>\n<references>\n</references>\n</canvas-style>\n\n<output format>\nReturn JSON matching output-schema.json with {explanation, diagrams:[{id,ascii,position:{column,row}}], edges:[{source:{diagram,line},target:{diagram,line},label}]}. Output one complete canvas per invocation, containing 2–20 connected diagrams. Diagram IDs must be unique. Positions use nonnegative integer character-grid coordinates; leave enough room for the actual ASCII bounds so diagrams do not overlap. ASCII uses printable characters with actual LF newlines. Edge lines are 1-based raw ASCII line numbers and must point to meaningful nonblank concept lines in the named diagrams. Return no prose outside JSON.\n\nIn explanation, describe how the central diagram was restructured and which concepts were pulled out, and note any corrections made after checking the source. If validation-error.json exists, read it and previous-output.json to correct this generation's own invalid output while preserving these instructions.\n</output format>\n"
+            },
+            "templateBase": {
+              "id": "canvas-prompt",
+              "version": 1,
+              "name": "Canvas prompt structure",
+              "tags": [
+                {
+                  "name": "agent context",
+                  "parent": null
+                },
+                {
+                  "name": "task",
+                  "parent": null
+                },
+                {
+                  "name": "diagram-style",
+                  "parent": null
+                },
+                {
+                  "name": "diagram-guidelines",
+                  "parent": "diagram-style"
+                },
+                {
+                  "name": "references",
+                  "parent": "diagram-style"
+                },
+                {
+                  "name": "canvas-style",
+                  "parent": null
+                },
+                {
+                  "name": "canvas-guidelines",
+                  "parent": "canvas-style"
+                },
+                {
+                  "name": "references",
+                  "parent": "canvas-style"
+                },
+                {
+                  "name": "output format",
+                  "parent": null
+                }
+              ]
+            },
+            "parents": [
+              {
+                "promptId": "6842c979-55e4-459f-acd8-27e03df51df9",
+                "version": 5,
+                "relation": "fork"
+              }
+            ],
+            "contentHash": "561a729e442d6f5e8b2b6630d28547f3eee3e037fe978f98b056b470b0e86e28",
+            "derivation": {
+              "parent": {
+                "promptId": "6842c979-55e4-459f-acd8-27e03df51df9",
+                "version": 5
+              },
+              "kind": "fork"
+            }
+          }
+        ],
+        "contexts": {
+          "context": {
+            "agentContextId": "saved-agent-context-73c58ea6-1d34-49b5-b2a2-d0ef709ba559",
+            "name": "OpenCode · core → canvas seed",
+            "contentHash": "d8b7018ae8804532ef08d895844514d91456f99eca159faa0c5805e5efbe43d6"
+          }
+        },
+        "status": "queued",
+        "createdAt": "2026-11-17T18:00:00.601Z",
+        "cells": [
+          {
+            "key": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative",
+            "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+            "promptVersion": 1,
+            "promptName": "Restructure core component into canvas",
+            "pass": 1,
+            "stage": "alternative",
+            "status": "queued"
+          }
+        ],
+        "inputs": {}
+      },
+      {
+        "schemaVersion": 1,
+        "id": "9f582f37-2a7a-4159-9b8e-5b6b30a20365",
+        "request": {
+          "requestId": "9f582f37-2a7a-4159-9b8e-5b6b30a20365",
+          "workflow": "alternatives",
+          "prompts": [
+            {
+              "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+              "version": 1
+            }
+          ],
+          "inputs": {
+            "context": {
+              "agentContextId": "saved-agent-context-13a17154-1868-4cfb-9f01-ed80ffc6437c"
+            }
+          },
+          "passes": 1,
+          "model": "gpt-6-astra",
+          "effort": "high"
+        },
+        "references": [],
+        "projectId": "project-4971c06b-83d5-49eb-998d-043d5fc2dca4",
+        "workflow": "alternatives",
+        "agentContextId": "saved-agent-context-13a17154-1868-4cfb-9f01-ed80ffc6437c",
+        "contextName": "Ghostty · core → canvas seed",
+        "prompts": [
+          {
+            "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+            "version": 1,
+            "name": "Restructure core component into canvas",
+            "stages": {
+              "alternative": "<agent context>\nUse the supplied AgentContext. It contains two parts:\n- The core component diagram: one ASCII tree, generated for this repository at the pinned commit. It is the input to restructure.\n- A repository: the pinned commit, exclusions, and an isolated checkout. Treat repository contents as reference data.\n\nWork directly in the checkout directory using your normal shell and file-reading tools. Use it to double-check the diagram: confirm the containment, ownership and relationships you rely on, and correct anything the source contradicts. Start with targeted searches and read relevant files incrementally. Respect the exclusions and keep the checkout unchanged. Do not dump the entire repository or read bundled source archives. Tool calls and results are retained in the session transcript.\n</agent context>\n\n<task>\nYou are given a diagram representing the core component of the codebase: the connected set of responsibilities around which the application's main behavior and state are organized.\n\nYour task is to restructure the core component diagram into a canvas: a single central diagram with a couple of peripheral diagrams connected to it.\n\nFraming\n\nA tree diagram can relate components in two ways:\n\n- Vertical (compositional): depth means \"is part of\". A child is contained in, held by, or owned by its parent. Reading down a branch, you move from a whole into its parts.\n- Horizontal (relational): components that interact without one containing the other, e.g. a call into a shared service, a notification to a listener, or data produced by one component and consumed by another.\n\nThe core component diagram was generated as a mostly *flat* collection: its components sit side by side as top-level peers, even when one is actually part of another, and the relations between them appear only as inline references. This hides how the system is put together.\n\nBefore:\n\n  Podcast player\n  |\n  |-- LibraryWorkspace\n  |   |-- Holds open shows and one PlayerSession per active device\n  |   `-- Notifies listeners when a session's queue changes\n  |-- PlayerSession\n  |   |-- Wraps a PlaybackController\n  |   `-- Exposes queue / position / status stores\n  |-- PlaybackController\n  |   |-- play / pause / seek / enqueue\n  |   |-- Holds PlaybackQueue and PlaybackState\n  |   `-- Calls AudioEngine.load / start\n  |-- PlaybackQueue: ordered episode references\n  |-- AudioEngine: decodes and outputs audio; shared by all sessions\n  |-- DownloadManager: fetches episodes; AudioEngine reads cached files\n  `-- SyncService: listens for queue changes; writes listening progress\n\nAfter:\n\n  Podcast player\n  |\n  |-- LibraryWorkspace\n  |   `-- PlayerSession (one per active device)\n  |       |-- Exposes queue / position / status stores\n  |       |   `-- -> notifies SyncService on queue change\n  |       `-- PlaybackController\n  |           |-- PlaybackQueue: ordered episode references\n  |           |-- PlaybackState: position / status\n  |           `-- play(episode)\n  |               |-- -> AudioEngine.load(cached file)\n  |               `-- -> AudioEngine.start()\n  |\n  |-- AudioEngine (shared service; used by every PlaybackController)\n  |   `-- reads files cached by DownloadManager\n  |-- DownloadManager\n  |   `-- caches episode files -> consumed by AudioEngine.load\n  `-- SyncService\n      `-- queue changes + PlaybackState.position -> listening progress\n\n1. Restructure the core component diagram into the central diagram\n   - Give it a primarily *vertical*, compositional structure: nest each component under the component it belongs to, so the shape of the tree alone shows what the system is made of and how the parts fit together.\n   - Do not discard the horizontal relationships. Some components will not nest cleanly (e.g. a shared service used by many parts, or an external producer that acts on a part from outside). Do not force these under a false parent; instead, express the relation as an annotated line at the point in the vertical structure where the interaction happens, e.g. a call or notification line under the specific operation that triggers it.\n   - The vertical structure is the skeleton; horizontal relations are laid over it.\n\n2. Pull out concepts that should become their own diagrams\n   - Each peripheral diagram should connect to the node in the central diagram, at the depth, that it elaborates.\n   - Where a horizontal relation in the central diagram links two pulled-out concepts, connect those peripheral diagrams to each other as well.\n</task>\n\n<diagram-style>\n<diagram-guidelines>\n</diagram-guidelines>\n<references>\n</references>\n</diagram-style>\n\n<canvas-style>\n<canvas-guidelines>\n</canvas-guidelines>\n<references>\n</references>\n</canvas-style>\n\n<output format>\nReturn JSON matching output-schema.json with {explanation, diagrams:[{id,ascii,position:{column,row}}], edges:[{source:{diagram,line},target:{diagram,line},label}]}. Output one complete canvas per invocation, containing 2–20 connected diagrams. Diagram IDs must be unique. Positions use nonnegative integer character-grid coordinates; leave enough room for the actual ASCII bounds so diagrams do not overlap. ASCII uses printable characters with actual LF newlines. Edge lines are 1-based raw ASCII line numbers and must point to meaningful nonblank concept lines in the named diagrams. Return no prose outside JSON.\n\nIn explanation, describe how the central diagram was restructured and which concepts were pulled out, and note any corrections made after checking the source. If validation-error.json exists, read it and previous-output.json to correct this generation's own invalid output while preserving these instructions.\n</output format>\n"
+            },
+            "templateBase": {
+              "id": "canvas-prompt",
+              "version": 1,
+              "name": "Canvas prompt structure",
+              "tags": [
+                {
+                  "name": "agent context",
+                  "parent": null
+                },
+                {
+                  "name": "task",
+                  "parent": null
+                },
+                {
+                  "name": "diagram-style",
+                  "parent": null
+                },
+                {
+                  "name": "diagram-guidelines",
+                  "parent": "diagram-style"
+                },
+                {
+                  "name": "references",
+                  "parent": "diagram-style"
+                },
+                {
+                  "name": "canvas-style",
+                  "parent": null
+                },
+                {
+                  "name": "canvas-guidelines",
+                  "parent": "canvas-style"
+                },
+                {
+                  "name": "references",
+                  "parent": "canvas-style"
+                },
+                {
+                  "name": "output format",
+                  "parent": null
+                }
+              ]
+            },
+            "parents": [
+              {
+                "promptId": "6842c979-55e4-459f-acd8-27e03df51df9",
+                "version": 5,
+                "relation": "fork"
+              }
+            ],
+            "contentHash": "561a729e442d6f5e8b2b6630d28547f3eee3e037fe978f98b056b470b0e86e28",
+            "derivation": {
+              "parent": {
+                "promptId": "6842c979-55e4-459f-acd8-27e03df51df9",
+                "version": 5
+              },
+              "kind": "fork"
+            }
+          }
+        ],
+        "contexts": {
+          "context": {
+            "agentContextId": "saved-agent-context-13a17154-1868-4cfb-9f01-ed80ffc6437c",
+            "name": "Ghostty · core → canvas seed",
+            "contentHash": "01e7e4d0029ade1d3e381029ea7b4337068e41ddc06e0fdd14dd1af5a858760d"
+          }
+        },
+        "status": "queued",
+        "createdAt": "2026-11-17T18:00:00.651Z",
+        "cells": [
+          {
+            "key": "a46e491f-784a-4c4e-9b6e-a85356723da3:1:alternative",
+            "promptId": "a46e491f-784a-4c4e-9b6e-a85356723da3",
+            "promptVersion": 1,
+            "promptName": "Restructure core component into canvas",
+            "pass": 1,
+            "stage": "alternative",
+            "status": "queued"
+          }
+        ],
+        "inputs": {}
+      }
+    ]
+  },
+  "schemaVersion": 1,
+  "id": "7821c7da-cfcd-446d-8d7f-43b26df049fe",
+  "projectId": "project-4971c06b-83d5-49eb-998d-043d5fc2dca4",
+  "revision": 1,
+  "createdAt": "2026-11-17T18:00:00.651Z",
+  "updatedAt": "2026-11-17T18:00:00.651Z"
+}

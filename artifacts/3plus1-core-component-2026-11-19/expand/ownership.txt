@@ -1,0 +1,92 @@
+<agent context>
+Use the supplied AgentContext. It contains two parts:
+- The current canvas: one or more ASCII tree diagrams, each with an ID and a position, plus the labeled edges between them. On a first pass the canvas holds a single diagram. It is the input to restructure.
+- A repository: the pinned commit, exclusions, and an isolated checkout. Treat repository contents as reference data.
+
+Work directly in the checkout directory using your normal shell and file-reading tools. Use it to double-check the canvas: confirm the owners, lifetimes and references you rely on, and correct anything the source contradicts. Start with targeted searches and read relevant files incrementally. Respect the exclusions and keep the checkout unchanged. Do not dump the entire repository or read bundled source archives. Tool calls and results are retained in the session transcript.
+</agent context>
+
+<task>
+You are given a canvas of diagrams representing the core component of the codebase: the connected set of responsibilities around which the application's main behavior and state are organized.
+
+Your task is to restructure this canvas in place. Choose which diagrams to expand; restructure each chosen diagram into a central diagram with a couple of peripheral diagrams connected to it. Return the complete canvas, including the diagrams you leave unchanged.
+
+Framing
+
+A tree diagram can relate components in two ways:
+
+- Vertical (ownership): depth means "is owned by". A child is created, retained or released by its parent, and does not outlive it unless handed off. Reading down a branch, you move from a long-lived owner into the state and resources it holds.
+- Horizontal (relational): components that use one another's state without owning it, e.g. a borrowed reference to a shared service, a handle passed to a worker, or a cache read by many holders.
+
+A diagram is *flat* when its owned things sit side by side as top-level peers, even when one is actually held by another, and the references between them appear only as inline mentions. This hides who keeps what alive.
+
+Before:
+
+  Podcast player
+  |
+  |-- LibraryWorkspace: app-lifetime object
+  |-- PlayerSession: one per device
+  |-- PlaybackQueue: list of episode references
+  |-- PlaybackState: position / status
+  |-- AudioEngine: one audio device
+  |-- EpisodeCache: downloaded files on disk
+  `-- SyncService: background uploader
+
+After:
+
+  Podcast player
+  |
+  |-- LibraryWorkspace (app lifetime)
+  |   |-- AudioEngine: created at startup; released at shutdown
+  |   |-- EpisodeCache: retained across sessions; evicts by size
+  |   `-- sessions[deviceId]: PlayerSession
+  |       |-- created on device connect; released on disconnect
+  |       `-- PlaybackController
+  |           |-- PlaybackQueue: replaced on a new playlist
+  |           |-- PlaybackState: reset on stop
+  |           `-- -> borrows AudioEngine and EpisodeCache
+  `-- SyncService (app lifetime)
+      |-- upload queue: drained every 30s
+      `-- -> reads PlaybackState through session notifications
+
+1. Choose which diagrams to expand
+   - If the canvas holds a single diagram, expand it.
+   - Otherwise, prefer to expand along the vertical dimension: choose diagrams with nodes that hide ownership structure of their own, i.e. owned things that hold state or resources of their own, and pull that structure out downward into new diagrams.
+   - Avoid expanding sideways: do not add new peer topics that are only horizontally related to what the canvas already shows.
+   - Leave a diagram unchanged when it is already small and focused; not every diagram needs expanding.
+
+2. Restructure each chosen diagram into a central diagram
+   - Give it a primarily *vertical*, ownership structure: nest each piece of state or resource under the owner that creates, retains and releases it, so the shape of the tree alone shows who keeps what alive.
+   - Do not discard the horizontal relationships. Some components will not nest cleanly (e.g. a shared service borrowed by many holders, or a handle passed to a worker that does not own it). Do not force these under a false parent; instead, express the relation as an annotated reference line under the specific holder that borrows it.
+   - The vertical structure is the skeleton; horizontal relations are laid over it.
+
+3. Pull out concepts that should become their own diagrams
+   - Each peripheral diagram should connect to the node in the central diagram, at the depth, that it elaborates.
+   - Where a horizontal relation in the central diagram links two pulled-out concepts, connect those peripheral diagrams to each other as well.
+   - A peripheral diagram goes deeper into its central diagram's scope; it does not widen that scope or repeat what another diagram on the canvas already covers.
+
+4. Preserve the rest of the canvas
+   - Keep the IDs of existing diagrams, including the ones you expand, so their existing edges stay attached. Return unchanged diagrams with their ASCII exactly as given.
+   - Keep every existing edge. Re-point an edge only when restructuring moved or removed the line it pointed to.
+   - Place new diagrams next to the diagram they expand. Existing diagrams may shift only to make room.
+</task>
+
+<diagram-style>
+<diagram-guidelines>
+</diagram-guidelines>
+<references>
+</references>
+</diagram-style>
+
+<canvas-style>
+<canvas-guidelines>
+</canvas-guidelines>
+<references>
+</references>
+</canvas-style>
+
+<output format>
+Return JSON matching output-schema.json with {explanation, diagrams:[{id,ascii,position:{column,row}}], edges:[{source:{diagram,line},target:{diagram,line},label}]}. Output the complete restructured canvas per invocation: every existing and new diagram, and every edge. Diagram IDs must be unique. Positions use nonnegative integer character-grid coordinates; leave enough room for the actual ASCII bounds so diagrams do not overlap. ASCII uses printable characters with actual LF newlines. Edge lines are 1-based raw ASCII line numbers and must point to meaningful nonblank concept lines in the named diagrams. Return no prose outside JSON.
+
+In explanation, say which diagrams you expanded and why, which you left unchanged, how each expanded diagram was restructured and which concepts were pulled out, and note any corrections made after checking the source. If validation-error.json exists, read it and previous-output.json to correct this generation's own invalid output while preserving these instructions.
+</output format>

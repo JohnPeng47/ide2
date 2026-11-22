@@ -3,6 +3,7 @@ import { compareSourceSchema, type CompareCanvasCopy, type CompareSource } from 
 import type { RollUpRun } from '../rollup/rollUp';
 import { evalWorkflowIds, type EvalWorkflowId } from './evalWorkflows';
 import { savedAgentContextIdSchema } from '../../core/agents/savedAgentContext';
+import { diagramTitle } from '../../core/diagrams/promoteDiagram';
 
 const id = z.string().regex(/^[A-Za-z0-9][A-Za-z0-9_-]{0,80}$/);
 export const evalRunRequestSchema = z.object({
@@ -24,18 +25,20 @@ export const evalRunRequestSchema = z.object({
   /** Reruns are filed under the original run and share its AgentContext. */
   parentRunId: id.optional()
 }).strict().refine(input => !input.contextDelivery || input.workflow === 'diagram-change-proposal',
-  'Session context delivery is supported by diagram-change-proposal.').refine(input => !input.canvasSources?.length || input.workflow === 'linked-canvases',
-  'Canvas sets are supported by Linked canvases.');
+  'Session context delivery is supported by diagram-change-proposal.').refine(input => !input.canvasSources?.length || ['linked-canvases', 'canvas-layout'].includes(input.workflow),
+  'Canvas sets are supported by Linked canvases and Canvas layout.');
 export type EvalRunRequest = z.infer<typeof evalRunRequestSchema>;
 export const renameEvalRunSchema = z.object({ name: z.string().trim().max(120) }).strict();
 export const evalEfforts = ['low', 'medium', 'high', 'xhigh'] as const;
 
 /** Prompt text is pinned into the run; later prompt edits never change what a run means. */
-export interface EvalRunPrompt { templateBase?: import('./promptTemplateBase').PromptTemplateBase; parents?: import('./evalPrompt').PromptParent[]; contentHash?: string; derivation?: import('./evalPrompt').PromptDerivation; promptId: string; version?: number; name: string; stages: Record<string, string>;
+export interface EvalRunPrompt { templateSources?: Record<string, string>; templateBase?: import('./promptTemplateBase').PromptTemplateBase; parents?: import('./evalPrompt').PromptParent[]; contentHash?: string; derivation?: import('./evalPrompt').PromptDerivation; promptId: string; version?: number; name: string; stages: Record<string, string>;
   /** Text of the references the stages cite, frozen when the run starts. */
   references?: Record<string, { name: string; ascii: string; comment?: string }> }
 export type EvalCellStatus = 'queued' | 'generating' | 'finished' | 'failed' | 'skipped' | 'cancelled';
 export interface EvalRunCell {
+  /** Payloads stay in the shared checkpoint store, not duplicated in each run. */
+  historyArtifact?: { timelineId: string; stepId: string };
   /** Multi-canvas result metadata; full frozen documents are stored once in the run. */
   output?: import('./evalOutputResult').EvalOutputSummary;
   layoutPlacements?: import('../../core/diagrams/layoutTemplate').LayoutPlacement[];
@@ -45,12 +48,18 @@ export interface EvalRunCell {
   key: string; promptId?: string; promptVersion?: number; promptName?: string; pass: number; stage: string;
   status: EvalCellStatus; canvasId?: string; checkpointId?: string; explanation?: string; error?: string;
   usage?: Record<string, number>; startedAt?: string; completedAt?: string;
-  execution?: { runtime: 'pi-agent-context'; sessionId: string; contextHash: string; cacheKey: string };
+  execution?: { runtime: 'pi-agent-context'; sessionId: string; contextHash: string; cacheKey: string;
+    modelContextHash?: string; repositories?: import('../../core/agents/agentContextRepository').RepositoryInspection[] };
   /** Set on summaries when the output canvas was deleted. */
   deleted?: boolean;
+  /** Set on summaries: the pinned output canvas's diagrams in canvas order, as focusable display IDs. */
+  diagrams?: { id: string; title: string }[];
 }
 export type EvalRunStatus = 'queued' | 'generating' | 'finished' | 'failed' | 'partial' | 'cancelled';
 export interface EvalRun {
+  /** A durable external coordinator owns recovery; server startup must not cancel it. */
+  coordinator?: 'diagram-history' | 'canvas-discovery';
+  historyInput?: { timelineId: string; stepId: string; batchId: string; scaffoldStepId?: string };
   canvasInputs?: CompareCanvasCopy[];
   outputResults?: Record<string, import('./evalOutputResult').EvalOutputResult>;
   layoutTemplate?: import('../../core/diagrams/layoutTemplate').LayoutTemplate;
@@ -81,11 +90,29 @@ export type EvalRunSummary = Omit<EvalRun, 'inputs' | 'previous' | 'requestHash'
   judgements?: import('./judgement').JudgementSummary[] };
 
 export const cellKey = (promptId: string | undefined, pass: number, stage: string) => `${promptId ?? 'unknown'}:${pass}:${stage}`;
-export function summarizeEvalRun({ inputs, previous, canvasInputs, outputSnapshots: _snapshots, outputResults: _results, requestHash: _, ...run }: EvalRun): EvalRunSummary {
-  return { ...run, ...(canvasInputs ? { canvasInputs: canvasInputs.map(copy => ({ source: copy.source, name: copy.view.name, canvasName: copy.canvasName })) } : {}), ...(previous?.length ? { previousNames: previous.map(copy => copy.view.name), previousInputs: previous.map(copy => ({ source: copy.source, name: copy.view.name, canvasName: copy.canvasName, ...(copy.generated ? { generated: copy.generated } : {}) })) } : {}), inputs: Object.fromEntries(Object.entries(inputs).map(([name, copy]) => [name, { source: copy.source, name: copy.view.name, canvasName: copy.canvasName }])) };
+/** Diagram boxes of one pinned checkpoint, in scene order. Reads stored composition only; no document is resolved. */
+export function canvasDiagrams(history: import('../../core/diagrams/canvasHistory').CanvasHistoryRecord, checkpointId = history.headId) {
+  const snapshot = history.snapshots[checkpointId];
+  if (!snapshot) return [];
+  const diagrams: { id: string; title: string }[] = [];
+  const walk = (box: import('../../core/diagrams/lineGrid').GridBox) => {
+    if (box.kind === 'container') { box.children.forEach(walk); return; }
+    const ascii = history.diagramRevisions[snapshot.diagramBindings[box.contentId]]?.diagram.content.ascii ?? '';
+    diagrams.push({ id: `grid:${box.id}`, title: diagramTitle(ascii) ?? box.id });
+  };
+  walk(snapshot.document.scene.root);
+  return diagrams;
+}
+export function summarizeEvalRun({ inputs, previous, canvasInputs, outputSnapshots, outputResults: _results, requestHash: _, ...run }: EvalRun): EvalRunSummary {
+  const cells = run.cells.map(cell => {
+    const record = cell.canvasId ? outputSnapshots?.[cell.canvasId] : undefined;
+    const diagrams = record ? canvasDiagrams(record.history, cell.checkpointId) : [];
+    return diagrams.length ? { ...cell, diagrams } : cell;
+  });
+  return { ...run, cells,...(canvasInputs ? { canvasInputs: canvasInputs.map(copy => ({ source: copy.source, name: copy.view.name, canvasName: copy.canvasName })) } : {}), ...(previous?.length ? { previousNames: previous.map(copy => copy.view.name), previousInputs: previous.map(copy => ({ source: copy.source, name: copy.view.name, canvasName: copy.canvasName, ...(copy.generated ? { generated: copy.generated } : {}) })) } : {}), inputs: Object.fromEntries(Object.entries(inputs).map(([name, copy]) => [name, { source: copy.source, name: copy.view.name, canvasName: copy.canvasName }])) };
 }
 /** A bundle is one output; its canvases are navigated inside the preview. */
-export const hasEvalOutput = (cell: EvalRunCell) => !!cell.output?.canvases.length || !!cell.canvasId && !cell.deleted;
+export const hasEvalOutput = (cell: EvalRunCell) => cell.output?.format === 'markdown' || cell.output?.format === 'canvas-layout' || !!cell.output?.canvases.length || !!cell.canvasId && !cell.deleted;
 export function runStatus(cells: EvalRunCell[]): EvalRunStatus {
   if (cells.some(cell => cell.status === 'generating')) return 'generating';
   if (cells.some(cell => cell.status === 'queued')) return cells.some(cell => cell.status !== 'queued') ? 'generating' : 'queued';

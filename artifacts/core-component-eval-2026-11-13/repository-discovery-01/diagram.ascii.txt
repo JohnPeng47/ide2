@@ -1,0 +1,138 @@
+Revisioned mapping workspace -- compose ASCII diagrams, connect them to source, and edit them through shared revision/history boundaries
+|
+|-- [M] Runtime composition and session ownership
+|   |   src/app/App.tsx; src/app/services.ts; src/features/mapping/MappingPage.tsx
+|   |-- App -> createMappingServices() -> MappingPocPage -> MappingWorkspacePage
+|   |   `-- Injects DiagramService, CanvasHistoryService, CodeRepoService and WorkspaceStorage
+|   |-- [O] CanvasWorkspace owns drafts[id]: CanvasDraft and controllers: Map
+|   |   |   src/features/mapping/workspace/canvasWorkspace.ts
+|   |   |-- DraftMetadata retains name, saved baseline, representationId and viewport
+|   |   |-- setDrafts() creates/replaces CanvasSession; removed sessions unsubscribe and dispose
+|   |   `-- copyDocument() forks history and clears selection/running conversation state
+|   `-- [O] CanvasSession publishes controller state, not a second editable document
+|       |   src/features/mapping/workspace/canvasSession.ts
+|       |-- Read-only stores: document / presentation / selection / controls / geometry / status
+|       |-- Controller subscription -> synchronous publication -> React useStore consumers
+|       |-- scene + edges + name versus captured baseline -> isDirty / sceneDirty
+|       `-- updateBaseline() acknowledges the saved capture, not later edits
+|
+|-- [M] MappingDocumentController -- the shared document mutation boundary
+|   |   domain/mapping/workspace/mappingDocumentController.ts
+|   |-- [O] ControllerSnapshot separates composition, presentation and concurrency state
+|   |   |-- document: MappingGridDocument
+|   |   |   |   domain/mapping/workspace/mappingGrid.ts
+|   |   |   |-- scene.root: GridBox hierarchy -> diagram instances and container layout
+|   |   |   |-- scene.contents[contentId]: Diagram -> resolved immutable revision
+|   |   |   `-- edges / jumps / sections -> connections, navigation and annotated ranges
+|   |   |-- canvas: MappingCanvasState
+|   |   |   |   domain/mapping/workspace/mappingWorkspace.ts
+|   |   |   |-- selection.items -> membership; controls.selectionFocusId -> action focus
+|   |   |   |-- diagramViews -> per-instance collapsed content nodes
+|   |   |   `-- display -> owned floating panes; controls -> interaction surfaces
+|   |   `-- contextId / canvasRevisionId / version / endpointBounds / canUndo / canRedo
+|   |
+|   |-- [C] applyUpdate(expectedVersion, DiagramOperation[]) / transact()
+|   |   |-- Reject stale versions; stage operations against a cloned snapshot
+|   |   |-- create / insert / replace / patch / delete / move / group / collapse
+|   |   |-- setSourceMappings / setJumps / edge-create / edge-update / edge-remove
+|   |   `-- updateSnapshot() -> reconcile connections and selections -> normalize views
+|   |       `-- Recorded change -> history.append() -> publish new snapshot to subscribers
+|   |
+|   |-- [M] DiagramService is the sole diagram-content writer
+|   |   |   domain/core/diagrams/diagramService.ts; diagramRevisionEditor.ts
+|   |   |-- Exposes create / getRevision / listRevisions / revise / generate
+|   |   |-- RevisionedDiagramService -> DiagramRevisionEditor -> internal revisionRegistry
+|   |   |-- [D] baseRevisionId + DiagramEdit -> new DiagramRevision + node correspondence
+|   |   |   `-- Correspondence preserves node references and helps reanchor links/views
+|   |   `-- Diagram = diagramId + revisionId + content + sourceContext + optional jumps
+|   |       |   domain/core/diagrams/diagram.ts
+|   |       |-- content -> ASCII, parsed structure and content hash
+|   |       `-- sourceContext -> source binding, mappings and captured evidence
+|   |
+|   `-- [O] CanvasHistoryService owns editing contexts and checkpoint navigation
+|       |   domain/core/diagrams/canvasHistoryService.ts; canvasHistory.ts
+|       |-- DefaultCanvasHistoryService.contexts: WeakMap<CanvasEditingContext, CanvasHistory>
+|       |-- StoredCanvasSnapshot separates composition from diagramBindings[contentId]
+|       |   `-- [D] composition + bound DiagramRevision records -> resolved document()
+|       |-- CanvasHistoryRecord retains headId / baselineId / past / future / snapshots
+|       |-- undo() / reset() restore document and view; transient layout need not append history
+|       `-- prepareTransfer() / prepareTransferNavigation() coordinate copy/move checkpoints
+|           `-- Linked transfers require workspace-level undo/redo, not isolated navigation
+|
+|-- [M] Canvas interaction derives views and source context from that state
+|   |   src/features/mapping/canvas/MappingCanvas.tsx
+|   |-- MappingPocSelectionCanvas subscribes to CanvasSession stores
+|   |   |-- DiagramText + DiagramSubtreeControls + DiagramConnections render the document
+|   |   `-- Selection, edits and presentation changes return through the controller
+|   |-- [D] diagramSource(diagram).forSelection(rect)
+|   |   |   domain/core/diagrams/diagram.ts
+|   |   |-- ASCII mappings -> evidence[entityId] -> sourceRanges[sourceRangeIndex]
+|   |   `-- handleNodeSelect() -> code panel; SourceCodePane -> repository source navigation
+|   |-- [D] selected evidence IDs + ProjectProjectionRecord + exact target revision
+|   |   |   domain/core/diagrams/diagramProjection.ts
+|   |   `-- validateProjection() -> projectSelection() -> target tree rows and coverage
+|   |-- [O] DisplayState.rootIds / nodes / childIds own attached panes
+|   |   |   domain/mapping/workspace/displayModel.ts
+|   |   |-- SelectionRegion -> projection / source-code / code-panel / detail panes
+|   |   |-- ConversationPane retains LocalChatThread; localChatResponder supplies replies
+|   |   `-- removeDisplayNode() removes descendants; arrows remain derived from document.edges
+|   `-- DiagramSearchService indexes saved revisions, open drafts and proposal previews
+|       |   src/features/mapping/MappingPage.tsx; search/diagramSearchService.ts
+|       `-- Worker matches -> DiagramFocus -> reveal/highlight, without owning diagram content
+|
+|-- [M] Agent-assisted editing uses the same controller and revision model
+|   |   src/server/app/bootstrap.ts; application/mapping/agent/sessionService.ts
+|   |-- createBackend() wires AgentDiagrammingSessionService to CanvasSessionBridge
+|   |   |-- Agent tools -> snapshot / apply / save / search and optional change-session routing
+|   |   `-- CanvasSessionBridge.dispatch() -> useAgentCanvasBridge() -> page command handler
+|   |       |   src/features/mapping/agent/useAgentCanvasBridge.ts; MappingPage.tsx
+|   |       |-- Browser registers documents, polls commands and replies with results
+|   |       `-- apply -> controller.applyUpdate(); snapshot -> document + canvas + history
+|   |
+|   |-- [C] DiagramEditCoordinator.submit() captures a target before requesting generation
+|   |   |   src/features/mapping/diagram-edit/diagramEditCoordinator.ts
+|   |   |-- Retains prompt, exact request, progress and polling independently of panel visibility
+|   |   `-- DiagramEditService.start() owns generation and installation
+|   |       |   application/mapping/agent/diagramEditService.ts
+|   |       |-- [D] expectedVersion + baseRevisionId + snapshot/history + prompt + AgentContext
+|   |       |   `-- DiagramService.generate() -> generated immutable revision
+|   |       |-- apply -> bridge -> DiagramRevisionReceiver -> controller.applyUpdate()
+|   |       |   |   src/features/mapping/agent/diagramRevisionReceiver.ts
+|   |       |   |-- Check document version and target base revision at mutation time
+|   |       |   `-- Retain receipt before persistence; retry flush without editing twice
+|   |       `-- completed only after workspace flush; uncertain application awaits acknowledgement
+|   |           `-- Request deduplication avoids regenerating; cancellation applies before installation
+|   |
+|   `-- [M] ChangeSessionService supports reviewable proposals instead of direct live edits
+|       |   application/mapping/changes/changeSessionService.ts
+|       |-- Capture saved/live documents -> fork histories -> mutate proposed copies
+|       |-- ChangeSessionPreview displays the proposal without replacing the live document
+|       `-- accept(expectedVersion) checks ready status and captured live baselines
+|           `-- projectCatalogs.acceptCanvasChanges() publishes affected canvases with a receipt
+|
+`-- [O] Durability separates working-session recovery from saved project representations
+    |-- Working workspace: incremental records, not repeated whole-workspace snapshots
+    |   |   src/features/mapping/workspace/workspacePersistence.ts
+    |   |-- CanvasWorkspace.onPersist() -> WorkspacePersistence.sync(changedIds)
+    |   |-- [D] per-session cursor + controller.persistenceChanges(cursor)
+    |   |   `-- metadata / baseline / revisions / checkpoints / canvas / viewport / workspace index
+    |   |-- RecordStorage.batch() coalesces writes; flush() waits for captured pending progress
+    |   |   |   src/features/mapping/workspace/recordStorage.ts; workspaceStorage.ts
+    |   |   `-- WorkspaceStorage worker -> HTTP -> MappingWorkspaceService.applyBatch()
+    |   `-- WorkspaceRecordStore.apply() validates expectedRevision and requestId
+    |       |   infrastructure/mapping/persistence/workspace/workspaceRecordStore.ts
+    |       |-- Immutable content-addressed records -> atomic workspace-records.json replacement
+    |       `-- Manifest retains retry receipts; conflicting clients must reload
+    |
+    |-- Saved project: named representations and durable revision history
+    |   |   application/mapping/diagrams/diagramService.ts
+    |   |-- saveMappingProjectDiagram() -> MappingDiagramService.save()
+    |   |   `-- projectCatalogs.saveMappingDiagram() -> catalog persistence
+    |   |-- documentFromRevision() / historyFromRevision() -> new CanvasSession when opened
+    |   `-- Save acknowledgement updates draft baseline; delete() archives the representation
+    |
+    `-- Lifetime boundaries
+        |-- CanvasWorkspace.dispose() detaches subscriptions and disposes sessions
+        |-- WorkspaceStorage.dispose() terminates its worker and rejects outstanding requests
+        |-- useAgentCanvasBridge cleanup aborts polling and unregisters the browser instance
+        `-- Backend dispose() stops agent runtimes, bridge and optional language service

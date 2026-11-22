@@ -1,0 +1,122 @@
+{
+  "output": {
+    "explanation": "The central tree is reduced from 111 to 72 lines (35.1%) and from 7,323 to 5,098 characters (30.4%). Four peripherals expand node continuity, generated-edit mapping policy, source evidence, and registry ownership. M denotes modular structure, C call flow, O ownership, and D data dependency; D describes inputs and joins across the organizational boundaries. Edges attach to specific concepts, with additional links for derivation and detached views. Positions use measured text dimensions and leave nonoverlapping gaps.\n\nTwo seed claims are qualified by the supplied code. First, diagram.ts does not establish that evidence paths are always relative: it rejects leading '/' and '..' segments but does not explicitly reject drive-absolute or backslash-rooted paths. Second, submitDiagramEdit.ts assembles scoped mappings, but diagramRevisionEditor.ts uses that list only when request.sourceMappings is truthy; otherwise retainSourceMappings supplies the mappings. The generated-edit peripheral shows this precedence.\n\nAdditional source-grounded details include source-binding hash inputs, clean continuity claims overriding caller claims, metadata edits preserving the numeric revision while receiving a new revisionId, derivation accepting supplied same-diagram sources without an ancestry check, registry assertions accepting serialized equality, listing without triggering deferred validation, and fields omitted from resolved views. These come from the seven pinned sources, not additional repository inspection. The flush-before-publication rule is a documented adapter contract; its implementation is not supplied. Parser, patching, mapping-retention, generated-edit validation and freeze helper bodies are also absent, so their internal algorithms are not inferred.",
+    "diagrams": [
+      {
+        "id": "central",
+        "ascii": "Immutable Diagram Revisions\n|-- [M] Shared content boundary: Diagram + DiagramRevision\n|   |-- Identity separates service, revision and canvas keys\n|   |   |-- diagramId persists; revisionId identifies an immutable payload\n|   |   `-- id is the local canvas key; revision is a numeric content revision\n|   |-- Payload carries parsed ASCII, source context, highlights and jumps\n|   |   `-- Revision adds optional parentId and parsed-node -> logical-ref map\n|   |-- Exposed operations: create / revise / derive / submitDiagramEdit\n|   |   |-- diagramSource joins mappings to evidence for selection and search\n|   |   `-- Store API: get, list, import, retain and composed commands\n|   |-- Internal dependencies preserve the content boundary\n|   |   |-- Revision operations -> editor -> construction and edit helpers\n|   |   |-- Construction / validation -> parser; issuance -> node extraction\n|   |   `-- Store -> registry -> validation, clone and freeze\n|   `-- Canvas history supplies bindings; placement stays outside this model\n|-- [C] Produce a revision without publishing it\n|   |-- createDiagram(input)\n|   |   `-- prepareCreate -> constructDiagram -> issueDiagramRevision\n|   |       |-- Parse ASCII, mint identities, clone metadata and validate\n|   |       `-- Assign logical refs, deep-freeze revision record and validate\n|   |-- reviseDiagram(base, edit) -> prepareEdit against the supplied base\n|   |   |-- source-mappings: guard ASCII hash; clone mappings/evidence; validate\n|   |   |-- patch / patches: patchDiagramRanges supplies diagram and node map\n|   |   |   `-- Check explicit claims; rebase highlights; choose mapping policy\n|   |   |-- replace: construct at numeric revision + 1; establish correspondence\n|   |   |   `-- Rebase prior jumps/highlights; optionally retain mappings; validate\n|   |   |-- jumps / highlights: validate supplied metadata\n|   |   `-- Prepared result determines whether a revision is issued\n|   |       |-- Same diagram object -> reuse base revision\n|   |       `-- Otherwise keep diagramId; mint revisionId; parentId = base.id\n|   |-- deriveDiagram(base, input, refs, sources)\n|   |   |-- Identity sources must share base.diagramId\n|   |   |-- Prepare replacement; validate base-node continuity claims\n|   |   `-- Source refs must select distinct output nodes; issue child revision\n|   `-- submitDiagramEdit(request, candidate, base, correspondence)\n|       |-- Check requested base identity, local key and replacement scope\n|       |-- Context: base -> request context -> constructed placeholder\n|       |   `-- Validate generated edit; combine claims and context evidence\n|       |-- Base + edit ranges -> scoped patches; preserve structure kind\n|       |   `-- Revise with mapping policy; return replacementRanges\n|       `-- Otherwise replace requested base, or create at numeric revision 0\n|-- [D] Valid content and node identity depend on checked inputs\n|   |-- Canonical content is rebuilt from ASCII + local id:numeric revision\n|   |   `-- Structure kind + parser version -> serialized equality check\n|   |-- Source context must match content and resolve mapping references\n|   |   |-- ASCII SHA-256 must equal sourceContext.contentHash\n|   |   |-- Optional binding requires compatible profile/corpus and absolute root\n|   |   `-- Mapping entityId + range index -> evidence range; check optional range id\n|   |-- Node continuity supplies logical refs across parsed revisions\n|   |   |-- correspondingNodes requires unchanged ASCII and structure kind\n|   |   |   `-- Infer only unique exact line, columns and label matches\n|   |   |-- Explicit ref -> output line: one old ref, one node, no conflicts\n|   |   `-- Issuance chooses derived ref, then corresponding base ref, then UUID\n|   `-- Source queries reuse mapping -> entity -> range + binding joins\n|       |-- Selection filters mappings before joining evidence\n|       `-- Search checks entity id, label, path and symbol\n`-- [O] Retain immutable records; publish bindings separately\n    |-- Domain operations return frozen revisions independently of the store\n    |-- retainDiagramRevision -> import -> registry -> canonical stored result\n    |   `-- Import checks nonempty, unique logical refs for parsed nodes\n    |-- Registry owns records, serialized signatures and pending-validation ids\n    |   |-- Record identities must agree with the embedded diagram\n    |   |-- New register: validate -> structuredClone -> deepFreeze -> retain\n    |   |-- Existing id: identical serialization reuses; changed payload rejects\n    |   `-- Restore defers validation; first get checks content and node refs\n    |-- resolve(contextId, localDiagramId) -> detached view\n    |   |-- Follow supplied binding; reject unknown or mismatched local key\n    |   `-- Translate node relationships and active jump anchors to logical refs\n    |-- merge(baseline, current, proposed) guards all baseline/current keys\n    |   |-- Any changed binding -> MERGE_REQUIRED\n    |   `-- Otherwise copy proposed bindings; no automatic three-way merge\n    `-- Adapter contract: flush retained revisions before publishing bindings",
+        "position": {
+          "column": 0,
+          "row": 0
+        }
+      },
+      {
+        "id": "refs",
+        "ascii": "[D/C] Logical node continuity\n|-- Parsed node ids and logical node refs serve different roles\n|   `-- revision.nodeRefs maps each parsed id to a persistent logical ref\n|-- correspondingNodes(before, after)\n|   |-- Different ASCII or structure kind -> empty inferred map\n|   `-- Otherwise match exact line, start/end columns and label uniquely\n|-- Editor correspondence extends its supplied inferred map\n|   |-- Claim key must resolve through base.nodeRefs to an old node\n|   |-- Claim value must be an integer line with exactly one output node\n|   |-- Existing old-node mapping cannot be redirected by a claim\n|   `-- Combined map must not send multiple old nodes to one output node\n|-- deriveDiagram can recover refs from supplied same-diagram revisions\n|   |-- Allowed set = union of all supplied source.nodeRefs values\n|   |-- Only claims for base refs go through editor correspondence\n|   |-- Every requested ref must be allowed and select one distinct node\n|   `-- No ancestry check on sources is shown; parent remains base.id\n|-- issueDiagramRevision assigns each output node's ref\n|   |-- Explicit derived identity takes precedence\n|   |-- Else reverse old->new map and reuse base.nodeRefs[old]\n|   `-- Else mint node-UUID; deep-freeze the revision record\n`-- Revision identity is distinct from numeric content revision\n    |-- source-mappings / jumps / highlights keep the numeric revision\n    |   `-- New prepared object still gets a new revisionId and parentId\n    |-- replace constructs at base numeric revision + 1\n    `-- Base reuse tests object identity, not equal serialized content",
+        "position": {
+          "column": 105,
+          "row": 0
+        }
+      },
+      {
+        "id": "submit",
+        "ascii": "[C/D] Generated edits and mapping policy\n|-- submitDiagramEdit validates entry conditions\n|   |-- Requested baseRevisionId requires an exactly matching base\n|   |-- Supplied base local id must equal request.input.id\n|   `-- Without base, raw replacementRanges are rejected\n|-- Choose context, then call validateGeneratedDiagramEdit\n|   |-- Prefer base.diagram, then request.context.diagram\n|   |-- Fallback constructs \"[New diagram]\" at revision 0 with mappings []\n|   |-- Pass context, raw edit, base node refs and request.sourceMappings\n|   |-- Clean continuity claims overwrite duplicate caller-supplied keys\n|   `-- Generated source binding and evidence come from chosen context\n|-- Choose nonempty editRanges, else editRange, else no ranges\n|-- Base + ranges -> scopedReplacements -> patches and outputRanges\n|   |-- Reject a supplied structure kind different from the base\n|   |-- Build candidate mappings from retained and generated mappings\n|   |   |-- Remove old mappings whose line is inside an edited range\n|   |   |-- Shift remaining lines by preceding range length deltas\n|   |   `-- Add generated mappings inside output ranges, excluding retained ids\n|   |-- reviseDiagram(patches): retainMappings = !request.sourceMappings\n|   |   |-- sourceMappings truthy -> editor accepts assembled mappings\n|   |   `-- sourceMappings falsy -> retainSourceMappings replaces that list\n|   `-- Return revision result plus outputRanges as replacementRanges\n`-- Without base + ranges, branch on request.baseRevisionId\n    |-- Present -> replace, with the same retainMappings flag\n    `-- Absent -> create using request.input.id and numeric revision 0",
+        "position": {
+          "column": 105,
+          "row": 35
+        }
+      },
+      {
+        "id": "evidence",
+        "ascii": "[D/M] Source evidence and validation boundary\n|-- sourceBindingFromLocation derives an optional source binding\n|   |-- Use supplied corpus; else git-worktree at checkoutRoot\n|   |   `-- Include gitRevision in fallback corpus when provided\n|   |-- sourceId = \"source-\" + first 24 SHA-256 hex chars of kind:root\n|   |   `-- Repository identity and corpus revision do not feed this hash\n|   `-- Carry repositoryIdentity; default domainProfileId to source-code\n|-- validateSourceBinding\n|   |-- Nonempty sourceId (max 200 chars) and repositoryIdentity\n|   |-- Absolute corpus root: leading slash or drive-letter slash/backslash\n|   `-- source-code pairs with git-worktree; document with filesystem-documents\n|-- validateDiagram rejects misplaced or inconsistent content\n|   |-- Content without service identities -> migration-required error\n|   |-- Reject top-level ascii, mappings, diagramContent and structureKind\n|   |-- Rebuild canonical content and compare JSON serializations\n|   `-- Verify source hash; invoke jump, highlight and local-mapping validators\n|-- Evidence entries and ranges\n|   |-- Entry key = entry.id; label is a string; sourceRanges is an array\n|   |-- Truthy entry.sourceId must match binding.sourceId when binding exists\n|   |-- Range id/path are strings; path cannot start with \"/\"\n|   |   `-- Split on slash/backslash and reject any \"..\" segment\n|   |-- Integer lines: 1 <= startLine <= endLine\n|   |-- originalLines has one string per line in the inclusive interval\n|   `-- Mapping resolves entity + range index; truthy sourceRangeId must match\n|-- Path check does not guarantee all paths are relative\n|   `-- Drive-absolute and backslash-rooted paths are not explicitly rejected\n`-- queryDiagramSourceContext centralizes evidence joins\n    |-- entries joins every mapping; mappings() returns context.mappings\n    |-- Search uses case-insensitive substring matching\n    `-- Returns existing context references; helper does not clone/freeze",
+        "position": {
+          "column": 210,
+          "row": 0
+        }
+      },
+      {
+        "id": "registry",
+        "ascii": "[O/C] Registry retention and detached views\n|-- Store import checks logical refs before registry registration\n|   `-- retainDiagramRevision returns the registry's canonical stored object\n|-- Registry install checks embedded revision and diagram identities\n|   |-- Signature = JSON.stringify(entire revision record)\n|   |-- Existing id + changed signature -> immutable-revision error\n|   |-- Existing id + same signature -> return prior object\n|   |   `-- Nondeferred registration calls get, validating pending records\n|   `-- New record -> clone/freeze; retain record and signature\n|       |-- register validates diagram before storing\n|       `-- restore marks pending; defers diagram/node-ref validation\n|-- get(id)\n|   |-- Missing id -> unknown-revision error\n|   `-- Pending -> validate diagram and nonempty unique refs for parsed nodes\n|       `-- Clear pending flag only after successful validation\n|-- assert(diagram) first calls get(diagram.revisionId)\n|   `-- Accept same object or equal serialized diagram; reject differing payload\n|-- listDiagramRevisions(diagramId)\n|   |-- Filter registry records; return frozen id/diagramId/parentId summaries\n|   `-- Does not call get; pending records are not validated by listing\n|-- resolve follows caller-supplied bindings into the editor's revision table\n|   |-- Translate node id, parentId and childIds through nodeRefs\n|   |-- Include only active jumps; translate source contentNodeId\n|   |   `-- Omit source revisionId and contentHash; keep jump target\n|   `-- structuredClone the view; no highlights or revision payload in view\n`-- Lifetime and publication boundary\n    |-- No removal or eviction operation appears in the supplied registry\n    `-- Durable flush-before-publish is an adapter contract stated in comments",
+        "position": {
+          "column": 210,
+          "row": 40
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": {
+          "diagram": "central",
+          "line": 49
+        },
+        "target": {
+          "diagram": "refs",
+          "line": 1
+        },
+        "label": "How logical identities survive revisions"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 31
+        },
+        "target": {
+          "diagram": "refs",
+          "line": 12
+        },
+        "label": "Recover identities from supplied revisions"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 35
+        },
+        "target": {
+          "diagram": "submit",
+          "line": 1
+        },
+        "label": "Generated-edit flow and mapping precedence"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 45
+        },
+        "target": {
+          "diagram": "evidence",
+          "line": 1
+        },
+        "label": "Binding derivation, evidence joins and validation limits"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 61
+        },
+        "target": {
+          "diagram": "registry",
+          "line": 4
+        },
+        "label": "Identity registration and deferred validation"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 66
+        },
+        "target": {
+          "diagram": "registry",
+          "line": 21
+        },
+        "label": "Translate and clone the consumer view"
+      }
+    ]
+  },
+  "usage": {
+    "input_tokens": 184212,
+    "cached_input_tokens": 163456,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 8000,
+    "reasoning_output_tokens": 804
+  }
+}

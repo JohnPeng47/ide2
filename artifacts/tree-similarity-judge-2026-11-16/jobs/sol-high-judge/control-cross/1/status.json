@@ -1,0 +1,31 @@
+{
+  "status": "finished",
+  "key": "sol-high-judge/control-cross/1",
+  "runId": "c50754a6-ca9a-4db3-8ef6-dc48160ea540",
+  "model": "gpt-6-sol",
+  "caseId": "control-cross",
+  "number": 1,
+  "reportedScore": 0,
+  "score": 0,
+  "rescore": {
+    "score": 0,
+    "reportedScore": 0,
+    "J": 0,
+    "reportedJ": 0,
+    "pairs": 0,
+    "unmatchedA": 8,
+    "unmatchedB": 6,
+    "depth": 1,
+    "maxPairError": 0,
+    "rangeIssues": []
+  },
+  "usage": {
+    "input": 7219,
+    "output": 992,
+    "cacheRead": 6656,
+    "cacheWrite": 0,
+    "reasoning": 298,
+    "totalTokens": 14867
+  },
+  "outputUrl": "http://localhost:5191/evals?run=c50754a6-ca9a-4db3-8ef6-dc48160ea540&output=450c8f11-3b30-485c-a282-7fc0e4dc74c0%3A1%3Aalternative"
+}

@@ -1,0 +1,17 @@
+{
+  "status": "prepared-paused",
+  "modelCalls": 0,
+  "prompts": {
+    "core": {
+      "promptId": "ff376a21-67fd-4112-8618-6144a0307f66",
+      "version": 2,
+      "contentHash": "e774dd0dc25d35b416ec90aebb6e040154ce5b13676196b06bacd0138a8baf5a"
+    },
+    "canvas": {
+      "promptId": "e45566cf-a9bf-477f-9774-b5758a2785bb",
+      "version": 2,
+      "contentHash": "6f930efeab4c424d3afd91cbc3292d396a036cdb87e3f6a7222ad6578c67d7f0"
+    }
+  },
+  "notes": "No existing run prompt pins or responses changed. Use revised prompts for new attempts on explicit resume; retain the six original v1 outcomes as baseline."
+}

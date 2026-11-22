@@ -1,0 +1,70 @@
+S=src/Surface.zig
+A=src/App.zig
+AR=src/apprt.zig
+AS=src/apprt/surface.zig
+AA=src/apprt/action.zig
+AZ=src/apprt/structs.zig
+E=src/apprt/embedded.zig
+KA=src/apprt/gtk/App.zig
+KR=src/apprt/gtk/Surface.zig
+KG=src/apprt/gtk/class/surface.zig
+K=src/apprt/gtk/class/application.zig
+KI=src/apprt/gtk/class/inspector_widget.zig
+KC=src/apprt/gtk/class/surface_child_exited.zig
+MA=macos/Sources/Ghostty/Ghostty.App.swift
+MV=macos/Sources/Ghostty/Surface View/SurfaceView_AppKit.swift
+MO=macos/Sources/Ghostty/Surface View/OSSurfaceView.swift
+MS=macos/Sources/Ghostty/Surface View/SurfaceView.swift
+MC=macos/Sources/Ghostty/Ghostty.ChildExitedMessage.swift
+C=src/config/Config.zig
+I=src/termio/Termio.zig
+IT=src/termio/Thread.zig
+IM=src/termio/message.zig
+IQ=src/termio/mailbox.zig
+IB=src/termio/backend.zig
+X=src/termio/Exec.zig
+IH=src/termio/stream_handler.zig
+P=src/pty.zig
+G=src/renderer/generic.zig
+RT=src/renderer/Thread.zig
+RS=src/renderer/State.zig
+RM=src/renderer/message.zig
+Z=src/renderer/size.zig
+DL=src/renderer/DisplayLink.zig
+T=src/terminal/Terminal.zig
+TS=src/terminal/stream.zig
+SC=src/terminal/Screen.zig
+PL=src/terminal/PageList.zig
+SG=src/terminal/SelectionGesture.zig
+ST=src/terminal/search/Thread.zig
+TP=src/terminal/paste.zig
+F=src/font/SharedGridSet.zig
+FG=src/font/SharedGrid.zig
+B=src/input/Binding.zig
+KEY=src/input/key_encode.zig
+MOUSE=src/input/mouse_encode.zig
+PASTE=src/input/paste.zig
+D=src/datastruct/message_data.zig
+N=src/inspector/Inspector.zig
+NW=src/inspector/widgets/surface.zig
+
+n11 sebrx +n12 +n13 +n14 +n15 +n16 +n20 +n38 +n39 +n44 S:1-12:d S:81-103:d S:133-137:d S:474-827:dui S:881-893:dui S:925-929:dui S:1015-1241:dui S:2669-2738:dui S:3437-3552:dui I:254-352:dui
+n12 srg S:74-79:d S:477-484:d S:623-626:ui E:447-455:d E:617-624:ui E:634-646:ui KG:657-666:d KG:1963-1981:ui KG:3557-3570:ui KG:3610-3625:ui AR:39-53:d
+n13 ser S:144-147:d S:301-472:dui S:505-507:ui S:643-644:ui S:1822-1831:ui S:876-876:ui
+n14 ebr IT:321-324:ui S:1017-1019:dui S:1804-1906:dui S:2536-2579:dui A:172-176:ui E:1881-1890:dui K:2865-2875:ui I:182-248:dui I:431-447:dui I:465-521:dui IH:121-136:dui IM:38-43:d IT:453-471:dui RM:48-53:d RM:86-104:dui RT:397-400:ui RT:406-415:ui RT:446-458:dui RT:474-493:dui G:627-703:dui G:2171-2246:dui
+n15 s S:104-108:d S:141-142:d S:155-166:d S:229-299:d Z:20-31:d
+n16 ebr +n17 +n18 +n19 S:190-207:d S:1609-1636:dui S:2450-2506:dui S:2792-2982:dui S:3421-3432:dui S:3880-3905:dui S:3918-4297:dui S:4300-4425:dui S:4553-4580:dui SC:3058-3106:dui E:201-228:dui E:1052-1062:dui E:1131-1136:dui E:2073-2084:dui E:2110-2116:dui E:2150-2164:dui KG:1445-1482:ui KG:2923-2979:ui KG:3000-3046:dui KG:3339-3420:dui
+n17 br K:739-739:ui S:2834-2840:ui S:2984-3219:dui S:3280-3322:dui S:4941-5057:dui S:5161-5187:ui S:5494-5507:ui S:5635-5663:ui S:5824-5833:dui B:1372-1489:dui B:1539-1557:dui B:2716-2760:dui A:319-331:dui A:444-482:dui A:484-529:dui E:303-323:dui KA:61-68:dui K:692-700:dui K:2535-2555:dui
+n18 brx S:3067-3078:ui S:2834-2846:ui S:2938-2961:ui S:3324-3432:dui S:3802-3805:dui S:3813-3875:dui S:4057-4094:ui S:4180-4191:ui S:5029-5051:ui S:5240-5248:ui S:6017-6033:dui S:6219-6239:dui S:6260-6398:dui KEY:14-97:dui KEY:100-619:dui KEY:631-703:dui KEY:1010-1117:dui MOUSE:13-280:dui PASTE:4-119:dui TP:167-177:dui TP:214-242:dui
+n19 ebrg S:2953-2957:ui S:171-175:d S:895-920:dui S:4096-4178:ui S:5161-5187:ui S:5555-5563:ui I:431-447:dui IQ:47-108:dui IM:91-98:d IM:118-132:dui IT:349-366:ui
+n20 sebr +n21 S:141-142:d S:447-471:dui S:536-562:ui S:2510-2516:ui S:2600-2635:dui S:2651-2658:dui S:3763-3798:dui E:1026-1043:dui KG:3497-3551:dui MV:482-507:dui AZ:13-21:d Z:8-79:dui Z:186-204:dui Z:231-262:dui Z:270-306:dui
+n21 br S:895-920:dui S:2577-2579:dui S:2618-2618:d S:2637-2649:ui I:431-447:dui I:524-564:dui IM:48-49:d IT:326-326:ui IT:389-406:dui IT:427-471:dui RM:45-46:d RT:404-404:ui RT:474-493:dui G:2248-2304:dui
+n38 sebrx S:138-139:d S:184-185:d S:209-227:dui S:931-956:dui S:971-991:dui S:1225-1239:ui S:1485-1600:dui S:2809-2832:ui S:5059-5159:ui S:5646-5655:ui ST:1-9:d ST:45-79:d ST:81-415:dui ST:441-471:dui RT:417-435:ui RS:22-24:d I:736-754:ui G:1547-1560:ui N:1-4:d N:58-110:dui NW:25-46:dui E:651-668:dui E:1284-1307:ui E:2303-2319:dui E:2349-2358:dui KG:3711-3738:dui KI:139-172:ui KI:177-196:dui
+n39 ebr +n40 +n41 S:155-157:d S:1017-1018:d S:1141-1141:ui S:1298-1300:ui X:158-179:ui X:274-315:dui AS:104-107:d AS:169-207:dui A:293-293:ui A:532-550:dui A:597-613:dui AA:324-324:d
+n40 bg S:1297-1297:d S:1301-1331:ui S:1377-1454:dui S:390-390:ui C:1356-1363:d E:303-323:dui KA:61-68:dui K:692-698:dui K:789-789:ui K:3052-3060:dui KG:1526-1539:dui KC:69-110:dui MA:768-769:ui MA:1854-1872:dui MO:99-101:dui MS:106-110:ui MC:6-40:dui
+n41 bg S:1297-1297:d S:1332-1375:ui S:335-335:d S:416-416:ui S:2940-2951:ui S:881-885:dui S:995-1013:dui C:1348-1354:d E:678-685:dui KR:36-39:dui KG:1517-1524:dui
+n44 ebxg +n45 +n46 +n47 +n48 S:860-864:ui S:877-879:i N:64-66:dui NW:42-46:dui
+n45 brg S:210-227:dui S:829-846:dui ST:118-131:dui ST:160-192:ui ST:462-471:dui RT:220-234:ui RT:722-731:dui IT:259-279:ui IT:473-482:dui
+n46 br IT:259-286:dui I:427-429:dui IB:50-54:dui X:139-156:ui X:196-230:dui X:1105-1133:dui X:1158-1258:dui X:1462-1491:ui X:1635-1641:ui X:1713-1733:ui X:1778-1826:dui
+n47 bg S:829-829:d S:847-859:ui RT:177-189:dui G:41-47:d G:841-874:dui G:911-974:dui G:1242-1256:dui G:1273-1312:dui DL:115-146:dui IT:127-133:dui I:354-365:dui I:848-851:dui IB:27-31:dui IB:119-123:dui X:59-61:dui X:549-565:dui X:886-893:dui P:189-192:dui P:457-464:dui T:395-404:dui TS:667-671:dui IH:101-112:dui IQ:47-55:dui
+n48 br S:829-829:d S:857-857:ui S:865-876:ui S:592-595:ui S:442-445:dui S:2669-2669:d S:2690-2703:ui S:2728-2738:ui SG:172-179:dui PL:6328-6334:dui D:76-81:dui F:411-431:dui FG:121-128:dui

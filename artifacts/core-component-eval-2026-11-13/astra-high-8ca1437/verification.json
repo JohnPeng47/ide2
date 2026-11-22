@@ -1,0 +1,16 @@
+{
+  "status": "passed",
+  "overviewRefs": [
+    "output/158a261e-afa2-4d05-aaa6-8b348ee66a6e/tree",
+    "inputs/158a261e-afa2-4d05-aaa6-8b348ee66a6e/tree"
+  ],
+  "sourceCommit": "8ca143700ca4d2c870f1101b8cd4601ab68abd41",
+  "contextHash": "206d36f8379bc52aa484c0043cf003a0e818438ad4df6fdaa3b47aaa59c167d0",
+  "checks": [
+    "exact prompt bytes",
+    "pinned checkout",
+    "storage preflight",
+    "output storage/reopen",
+    "overview output and input reads"
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "id": "child-4",
+  "name": "render",
+  "assignment": "Map nodes n58-n70 (render pipeline). Read numbered files, return partial JSON.",
+  "model": "gpt-6-sol",
+  "effort": "medium",
+  "status": "generating",
+  "queuedAt": "2026-11-19T03:47:37.226Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-19T03:47:37.235Z",
+  "sessionId": "01a1f1ea-c4ad-7e23-815e-472180573b7c",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-yjfyavfy-agent-repository-43a2Rb-checkout--/2026-11-19T03-47-37-261Z_01a1f1ea-c4ad-7e23-815e-472180573b7c.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase3-yjfyavfy/agent-repository-43a2Rb/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

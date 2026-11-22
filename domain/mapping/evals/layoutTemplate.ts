@@ -8,7 +8,7 @@ export const updateLayoutTemplateSchema = renameLayoutTemplateSchema.partial().e
 }).strict().refine(value => value.name !== undefined || value.descriptions !== undefined, 'Provide a name or diagram descriptions.');
 const endpoint = z.object({ slotId: z.string().regex(/^slot-[1-9][0-9]*$/), line: z.number().int().positive() }).strict();
 export const templateOutputSchema = z.object({ format: z.literal('template-slots-v1'), explanation: z.string().min(1).max(6000),
-  diagrams: z.array(z.object({ slotId: z.string().regex(/^slot-[1-9][0-9]*$/), ascii: z.string().min(1).max(20000) }).strict()).min(1).max(20),
+  diagrams: z.array(z.object({ slotId: z.string().regex(/^slot-[1-9][0-9]*$/), ascii: z.string().min(1) }).strict()).min(1).max(20),
   edges: z.array(z.object({ source: endpoint, target: endpoint, label: z.string().max(120) }).strict()).max(60).default([])
 }).strict();
 

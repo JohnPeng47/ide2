@@ -9,6 +9,14 @@ function fixture() {
   const create = (name = 'Baseline', derivation?: PromptDerivation) => service.save({ requestId: crypto.randomUUID(), name, workflow: 'alternatives', stages: { alternative: 'Read context.json. Generate ASCII trees.' }, ...(derivation ? { derivation } : {}) });
   return { service, create, records, store };
 }
+it('pins a diagram-history adaptation to the exact proposal version without permitting unrelated cross-workflow ancestry', async () => {
+  const f = fixture();
+  const parent = await f.service.save({ requestId: crypto.randomUUID(), name: 'Proposal rules', workflow: 'diagram-change-proposal', stages: { proposal: 'Choose patch or redraw.' } });
+  const derivation = { parent: { promptId: parent.id, version: 1 }, kind: 'variation' as const };
+  const history = await f.service.save({ requestId: crypto.randomUUID(), name: 'History', workflow: 'diagram-history', stages: { plan: 'Plan all batches.', execute: 'Execute serially.' }, derivation });
+  expect(history.versions[0].derivation).toEqual(derivation);
+  await expect(f.create('Unrelated', derivation)).rejects.toThrow('same workflow');
+});
 it('pins variation ancestry and content while parents are edited, renamed, and archived', async () => {
   const f = fixture(), baseline = await f.create();
   const derivation: PromptDerivation = { parent: { promptId: baseline.id, version: 1 }, kind: 'variation', dimension: { id: 'expression', name: 'Expression', value: 'Code' } };
@@ -77,4 +85,38 @@ it('persists a project snapshot and keeps its exact prompt versions after later 
  expect(await service.snapshot(id, 'Before edits')).toEqual(snapshot);
  const restarted = new EvalPromptService(f.store, { loadProject: async () => ({ id: 'project' }) }, undefined, store);
  expect((await restarted.listSnapshots())[0].prompts.find(p => p.id === source.id)?.versions).toHaveLength(1);
+});
+
+it('pins template references per stage and preserves exact expansions for forks, retries, and runs', async () => {
+  const { store } = fixture();
+  const id = 'prompt-snippets/canvas-style-guidance.txt', token = `{{template:${id}}}`;
+  let current = 'First guidance';
+  const service = new EvalPromptService(store, { loadProject: async () => ({ id: 'project' }) }, undefined, undefined, async key => {
+    if (key !== id) throw Object.assign(Error('missing'), { code: 'ENOENT' });
+    return current;
+  });
+  const bodies = { plan: `<task>${token}\n${token}</task>`, execute: token };
+  const input = { workflow: 'diagram-history', name: 'Template use', stages: bodies, requestId: crypto.randomUUID() };
+  const prompt = await service.save(input);
+  const snapshot = await service.resolve(prompt.id, 1, input.workflow);
+  expect(snapshot.templateSources).toEqual(bodies);
+  expect(snapshot.stages).toEqual({ plan: '<task>First guidance\nFirst guidance</task>', execute: 'First guidance' });
+  expect(snapshot.contentHash).toBe(promptContentHash(snapshot.stages));
+  current = 'Updated guidance';
+  expect(await service.resolve(prompt.id, 1, input.workflow)).toEqual(snapshot);
+  const fork = await service.fork(prompt.id, 1, crypto.randomUUID(), 'Exact fork');
+  expect(fork.versions[0].stages).toEqual(snapshot.stages);
+  expect(fork.versions[0].templateSources).toEqual(bodies);
+  const edit = await service.save({ ...input, requestId: crypto.randomUUID(), promptId: prompt.id, baseVersion: 1, stages: { ...bodies, execute: 'Use ' + token } });
+  expect(edit.versions[1].stages).toEqual({ plan: snapshot.stages.plan, execute: 'Use Updated guidance' });
+  const literal = await service.save({ ...input, requestId: crypto.randomUUID(), promptId: prompt.id, baseVersion: 2, stages: { ...bodies, execute: 'Use Updated guidance' } });
+  expect(literal.versions[2].templateSources).toEqual({ plan: bodies.plan });
+  expect(literal.versions[2].contentHash).toBe(edit.versions[1].contentHash);
+  for (const invalid of ['prompt-snippets/missing.txt', 'prompt-snippets/../outside.txt']) {
+    await expect(service.save({ ...input, requestId: crypto.randomUUID(), stages: { ...bodies, execute: `{{template:${invalid}}}` } })).rejects.toThrow(/prompt template/i);
+  }
+  expect((await service.save(input)).id).toBe(prompt.id);
+  const relaunch = await service.forkForAttempt(crypto.randomUUID(), 'diagram-history', snapshot, bodies);
+  expect(relaunch.versions[0].templateSources).toEqual(bodies);
+  expect(relaunch.versions[0].stages).toEqual(snapshot.stages);
 });

@@ -1,0 +1,19 @@
+{
+  "id": "child-6",
+  "name": "render",
+  "assignment": "Map n69-n82 only. Return partial JSON mappings per prompt.",
+  "model": "gpt-6-sol",
+  "effort": "medium",
+  "status": "generating",
+  "queuedAt": "2026-11-19T03:49:14.515Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-19T03:49:14.549Z",
+  "sessionId": "01a1f1ec-40bc-7b44-8555-6ccaa5e9c1e3",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-n9wevnax-agent-repository-qnhQ37-checkout--/2026-11-19T03-49-14-556Z_01a1f1ec-40bc-7b44-8555-6ccaa5e9c1e3.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase3-n9wevnax/agent-repository-qnhQ37/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

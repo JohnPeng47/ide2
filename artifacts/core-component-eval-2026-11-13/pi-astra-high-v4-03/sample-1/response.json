@@ -1,0 +1,58 @@
+{
+  "output": {
+    "ascii": "Pi coding-session core -- AgentSession coordinates live execution and a persistent conversation tree\n|\n|-- [M] Entry and composition -- packages/coding-agent/src/main.ts, core/sdk.ts\n|   |-- InteractiveMode / runPrintMode / runRpcMode -> shared AgentSessionRuntime\n|   |   `-- Presentation and transport surround the same session behavior\n|   |-- createAgentSessionServices() -> SettingsManager + ModelRuntime + DefaultResourceLoader\n|   |   `-- core/agent-session-services.ts: configuration, provider access, loaded resources\n|   `-- createAgentSession() -> new Agent(...) -> new AgentSession(...)\n|       |-- SessionManager.buildSessionContext() supplies restored messages and selections\n|       |-- SDK wires streamFn, convertToLlm, extension context hooks and queue modes\n|       `-- Returns session, extensionsResult and modelFallbackMessage to the host\n|\n|-- [O] AgentSession owns application-level coordination -- core/agent-session.ts\n|   |-- Public surface: prompt(), steer(), followUp(), subscribe(), compact(), navigateTree()\n|   |-- Retains agent, sessionManager, settingsManager and _modelRuntime\n|   |-- Private state: run/preflight flags, queued-message bookkeeping, retry/compaction controllers\n|   |   `-- Also retains tool registries, ExtensionRunner and pending custom/bash messages\n|   |\n|   |-- [C] prompt(text, options) -> _preparePrompt() -> _startRun()\n|   |   |-- Extension slash command may handle input without invoking a model\n|   |   |-- Input hooks -> skill/template expansion -> model/auth validation\n|   |   |-- Already running -> queue through steering or follow-up behavior\n|   |   `-- _prepareRun(): check compaction -> before_agent_start -> normalize images\n|   |       `-- Prompt options + active tools + pending messages -> starting AgentMessage[]\n|   |\n|   |-- [C] _startRun() -> agent.prompt(messages)\n|   |   |-- _handlePostAgentRun() can arrange recovery -> agent.continue()\n|   |   |-- _runBeforeSettleBoundary() can request another continuation\n|   |   `-- Finally flush pending messages -> _emitAgentSettled() -> resolve idle waiters\n|   |       `-- agent_end ends one loop; agent_settled ends session-level work\n|   |\n|   `-- [C] _handleAgentEvent() connects execution, observers and history\n|       |-- Update delivered-input queues -> extension events -> public subscribers\n|       |-- message_end -> appendMessage() or appendCustomMessageEntry()\n|       |   `-- _entryIdsByMessage associates live message objects with stored entry IDs\n|       `-- turn_end -> flush context-only custom messages after tool results\n|           `-- Avoid inserting unrelated context between a tool call and its result\n|\n|-- [M] Agent is the reusable execution engine -- packages/agent/src/agent.ts, agent-loop.ts\n|   |-- [O] AgentState: messages, model, thinkingLevel, tools, streamingMessage, pendingToolCalls\n|   |   |-- activeRun owns a promise and AbortController; only one run is active\n|   |   `-- processEvents() reduces state before awaiting subscribed listeners\n|   |\n|   |-- [C] Agent.prompt() / continue() -> runAgentLoop() / runAgentLoopContinue()\n|   |   `-- runLoop() alternates assistant responses and tool-result turns\n|   |       |-- prepareNextTurn / prepareRequest refresh context and request selection\n|   |       |-- streamAssistantResponse() -> message_start/update/end events\n|   |       |-- executeToolCalls() -> tool results -> next assistant response\n|   |       |-- Steering messages enter between turns; follow-ups enter when the loop would stop\n|   |       `-- finishTurn() may end or continue; otherwise no pending work -> agent_end\n|   |\n|   |-- [D] Request pipeline separates stored context from provider input\n|   |   |-- AgentSession._installAgentRequestProjection() supplies canonical session projection\n|   |   |-- transformContext -> convertToLlm -> normalizeContext -> streamFunction\n|   |   `-- SDK streamFn -> ModelRuntime.streamSimple() -- core/model-runtime.ts\n|   |       |-- Model selection + credentials + request options -> provider stream\n|   |       `-- Virtual selection may resolve to a different model for this request only\n|   |\n|   `-- [C] Tool execution -> validateToolArguments -> beforeToolCall -> execute -> afterToolCall\n|       |-- executeToolCallsParallel() or executeToolCallsSequential() selects scheduling\n|       |-- Truncated assistant output fails tool calls rather than executing partial arguments\n|       `-- ToolResultMessage feeds both the next model turn and session persistence\n|\n|-- [O] SessionManager owns durable history -- core/session-manager.ts\n|   |-- fileEntries[] + byId + leafId + labelsById represent a branching conversation\n|   |   |-- SessionEntry.id / parentId link each entry to its preceding history\n|   |   `-- Messages, model/thinking changes, summaries, context edits and custom data share the tree\n|   |-- appendMessage() -> _appendEntry() -> _persist()\n|   |   |-- Append beneath current leaf, update index, advance leaf\n|   |   |-- Persisted sessions use JSONL; inMemory() keeps the same model without disk writes\n|   |   `-- First conversation flushes buffered entries; later entries append to the file\n|   |\n|   |-- [D] buildSessionProjection() derives model-visible context, not the entire stored log\n|   |   |-- Current leaf -> ancestor path -> latest compaction + retained entries\n|   |   |-- Latest context_edit per target -> replacement content or omission\n|   |   `-- ProjectedSessionEntry retains sourceEntry alongside its projected messages\n|   |       `-- buildSessionContext() exposes messages, thinkingLevel and model for restoration\n|   |\n|   `-- [C] AgentSession.compact() / _runAutoCompaction() / navigateTree()\n|       |-- Context size + model limits + settings -> threshold compaction or overflow recovery\n|       |-- Summary generation -> appendCompaction(summary, firstKeptEntryId, ...)\n|       |   `-- Rebuild projected context while retaining older history in the session tree\n|       `-- branch() / branchWithSummary() change the active path without deleting other branches\n|\n|-- [M] Session capabilities and policy -- core/agent-session.ts, core/extensions/, core/tools/\n|   |-- DefaultResourceLoader supplies extensions, skills, templates and prompt resources\n|   |-- _buildRuntime() / _bindExtensionCore() connect ExtensionRunner to session operations\n|   |   |-- Extensions can send messages, append custom entries and change active tools/model\n|   |   `-- Hooks participate in input, context, tool calls, turn boundaries and provider requests\n|   |-- _toolRegistry + _toolDefinitions -> _applyToolLoadout() -> agent.state.tools\n|   |   |-- Built-ins: read, edit, write, bash, powershell, grep, find, ls\n|   |   |-- Custom and extension tools join the registry; allow/exclude rules constrain exposure\n|   |   `-- NestedToolCallRunner records calls made through ctx.executeTool() on parent results\n|   `-- [D] Executable tools and provider-visible declarations are distinct\n|       |-- context.tools retains implementations; system messages carry declaration changes\n|       `-- declareToolChanges() records toolsAdded/toolsRemoved for subsequent requests\n|\n`-- [O] AgentSessionRuntime owns replacement and teardown -- core/agent-session-runtime.ts\n    |-- Retains current _session, _services and createRuntime factory\n    |-- switchSession() / newSession() / fork() select or create another session history\n    |   |-- Extension before-switch/before-fork hooks can cancel the operation\n    |   `-- teardownCurrent() -> createRuntime() -> apply() -> rebindSession()\n    |       `-- Reconstruct session-scoped services and reconnect the host to the replacement\n    `-- teardownCurrent(): await session.abort() -> session_shutdown -> session.dispose()\n        |-- abort() cancels run/retry/compaction/summary work and awaits session idle\n        |-- Outgoing response and tool results settle before the session is replaced\n        `-- dispose() invalidates extension contexts, detaches listeners and cancels resources\n            `-- In-memory runtime lifetime ends; persisted SessionManager history remains"
+  },
+  "usage": {
+    "input": 32420,
+    "output": 3129,
+    "cacheRead": 110208,
+    "cacheWrite": 0,
+    "reasoning": 124,
+    "totalTokens": 145757
+  },
+  "execution": {
+    "runtime": "pi-agent-context",
+    "sessionId": "01a1dc24-0684-7001-bfe6-e941920776e3",
+    "contextHash": "642eff5f7c0caf04881c5a7a06cc6f80a6acefc263656940751d03a1c1360017",
+    "cacheKey": "eval-1202ebd2c1160a8445a923f26d6b494541a1b4950abc4754a3c38cb7c2b41d89",
+    "modelContextHash": "771e12545117ae67a056380680de1a4f1b362e9cb5245fcc69d9080b9aa5b304",
+    "repositories": [
+      {
+        "repository": "repo-1",
+        "repositoryPath": "/home/john/softwarez/pi",
+        "commit": "682c7b93ce3e0a52b579c2b65b4c06bb392e7180",
+        "exclusions": [
+          "**/*-LICENSE",
+          "**/*.md",
+          "**/*.mdx",
+          "**/*.spec.*",
+          "**/*.test.*",
+          "**/AGENTS.md",
+          "**/CODEX-LICENSE",
+          "**/LICENSE*",
+          "**/__fixtures__/**",
+          "**/__tests__/**",
+          "**/benchmarks/**",
+          "**/build/**",
+          "**/dist/**",
+          "**/docs/**",
+          "**/examples/**",
+          "**/fixtures/**",
+          "**/node_modules/**",
+          "**/scripts/**",
+          "**/test/**",
+          "**/tests/**",
+          ".github/**",
+          ".husky/**",
+          ".pi/**",
+          "flake.lock",
+          "nix/**",
+          "package-lock.json",
+          "scripts/**"
+        ],
+        "checkout": "/tmp/agent-repository-JDbeum/checkout",
+        "inspectionSource": "session-transcript"
+      }
+    ]
+  }
+}

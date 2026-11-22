@@ -1,0 +1,243 @@
+Ghostty core: Surface terminal session -- input, PTY execution, terminal state and rendering
+|
+|-- Surface.init(): create a session (src/Surface.zig:477)
+|   |-- Config.changeConditionalState(); DerivedConfig.init(); read runtime DPI and size
+|   |-- app.font_grid_set.ref(); initialize shared render device; Renderer.init()
+|   |-- Allocate renderer_state.mutex; initialize renderer.Thread and termio.Thread
+|   |-- Exec.init(); Termio.init(): configure command/environment, terminal grid and VT stream
+|   |   `-- renderer_state.terminal -> io.terminal; parsing and frame snapshots share its mutex
+|   |-- rt_app.performAction(.cell_size, .size_limit); call resize() below
+|   |-- [async spawn] renderer.Thread.threadMain() -> rendering loop below
+|   |-- [async spawn] termio.Thread.threadMain() -> IO control loop below
+|   `-- recomputeInitialSize(); report configured title; clear app.first
+|
+|-- Surface.keyCallback(): handle a key event (src/Surface.zig:2792)
+|   |-- Apply modifier remaps; prepare optional inspector recording
+|   |-- maybeHandleBinding(): resolve key tables, sequences and binding flags
+|   |   |-- Binding matched -> call performBindingAction() below; consumed events return
+|   |   `-- Not consumed -> continue terminal input processing
+|   |-- Check disable_keyboard; update mouse/modifier state; remember pressed_key
+|   |-- encodeKey(): use terminal keyboard modes to construct a write request
+|   |   |-- No encoded bytes -> return .ignored
+|   |   |-- Child already exited -> discard request; call close() below
+|   |   `-- Otherwise -> call queueIo() below with .write_small/.write_stable/.write_alloc
+|   `-- For non-modifier input: clear selection as configured; scroll viewport; queueRender()
+|       `-- [async wake] -> rendering loop below; deferred inspector recording runs on return
+|
+|-- Text and IME event entry points (src/Surface.zig:2669,3426)
+|   |-- On textCallback(text): call completeClipboardPaste(text, true) below
+|   `-- On preeditCallback(text): lock terminal state; clear selection/prior preedit
+|       |-- Decode UTF-8 into display-width-aware codepoints; install or clear preedit
+|       `-- Mark preedit dirty; queueRender() [async wake] -> rendering loop below
+|
+|-- Pointer event entry points: select, scroll or report to the application
+|   |-- On mouseButtonCallback(): update click/modifier state (src/Surface.zig:3918)
+|   |   `-- Evaluate button, capture mode and selection gesture
+|   |       |-- Application capture -> mouseReport(); call queueIo() below
+|   |       |-- Local selection -> selection_gesture.press/release(); setSelection()/setSelectionAndCopy()
+|   |       |-- Link or prompt click -> processLinks()/maybePromptClick(); open URL or send cursor movement
+|   |       `-- Paste gesture -> call startClipboardRequest() below
+|   |-- On cursorPosCallback()/mousePressureCallback() (src/Surface.zig:4614,4678)
+|   |   |-- Update position/link hover; report motion or extend/deep-press selection
+|   |   |-- Drag beyond viewport -> queueIo(.selection_scroll) [async] -> IO selection timer below
+|   |   `-- setSelection(); queueRender() [async wake] -> rendering loop below
+|   `-- On scrollCallback(): normalize wheel/pixel deltas; lock terminal state (src/Surface.zig:3584)
+|       `-- Choose scrolling behavior from active screen and mouse modes
+|           |-- Alternate screen + alternate-scroll, without reporting -> queue cursor-key writes
+|           |-- Mouse reporting -> mouseReport() for each wheel step; call queueIo() below
+|           `-- Otherwise -> Terminal.scrollViewport(); queueRender() [async wake]
+|
+|-- Surface.performBindingAction(): execute a resolved command (src/Surface.zig:4941)
+|   `-- Dispatch by action scope and tag
+|       |-- App/window/tab/split action -> App.performAction()/newWindow() or rt_app.performAction()
+|       |   `-- Runtime performs GUI changes; newly created terminal widgets enter Surface.init()
+|       |-- Text/CSI/ESC/cursor-key action -> encode bytes; call queueIo(); scroll to bottom
+|       |-- Reset/clear/scroll/prompt action -> mutate locked terminal state or queue IO control message
+|       |-- Font action -> call setFontSize() below
+|       |-- Copy/paste action -> copySelectionToClipboards() or call startClipboardRequest() below
+|       |-- Search action -> show search UI; lazily initialize search state and spawn search.Thread
+|       |   |-- [async mailbox] .change_needle/.select -> search loop below
+|       |   `-- Empty query/end_search -> stop and join search; notify runtime
+|       |-- Inspector action -> rt_app.performAction(.inspector) -> inspector entry points below
+|       `-- Close action -> call close() below or delegate window/tab closure to runtime
+|
+|-- Clipboard request/completion entry points (src/Surface.zig:6017,6167,6219)
+|   |-- On startClipboardRequest(): inspect paste-event mode and clipboard access policy
+|   |   |-- Denied OSC 52 read -> return .unsupported
+|   |   `-- Allowed -> rt_surface.clipboardRequest(); request text, MIME listing or protocol data
+|   |       `-- [runtime completion event] -> completeClipboardRequest() below
+|   |-- On completeClipboardRequest(): dispatch request kind
+|   |   |-- Ordinary paste -> call completeClipboardPaste() below
+|   |   |-- Paste-event listing -> terminal.paste.paste(); call queueIo() with encoded event
+|   |   |-- OSC 52/Kitty read -> authorize; encode protocol response; call queueIo()
+|   |   `-- OSC 52/Kitty write -> authorize; rt_surface.setClipboard(); send protocol status if needed
+|   |-- completeClipboardPaste(): snapshot terminal paste modes (src/Surface.zig:6264)
+|   |   |-- Unsafe and not confirmed -> return error.UnsafePaste; runtime may request confirmation
+|   |   `-- Allowed -> scrollToBottom(); input.paste.encode(); queueIo() for each nonempty segment
+|   `-- On denyClipboardRequest(): finish denial handling and release protocol request state
+|
+|-- Size/font entry points: reconcile pixels, cells and PTY dimensions
+|   |-- On sizeCallback(): ignore unchanged screen size; otherwise call resize() (src/Surface.zig:2600)
+|   |-- On contentScaleCallback(): update DPI-sensitive font/padding state (src/Surface.zig:3765)
+|   |   `-- Call setFontSize() below; recompute initial sizing
+|   |-- setFontSize(): acquire shared font grid; setCellSize() (src/Surface.zig:2510,2536)
+|   |   |-- setCellSize() -> call resize() below; report new cell size to runtime
+|   |   `-- [async mailbox] .font_grid -> renderer installs grid and releases old reference
+|   `-- resize(): save screen size; balance padding; calculate grid size (src/Surface.zig:2618)
+|       |-- call queueIo(.resize) [async] -> IO coalescing timer below
+|       `-- [async mailbox + wake] renderer .resize -> setScreenSize(); rendering loop below
+|
+|-- Surface.updateConfig(): reload session configuration (src/Surface.zig:1804)
+|   |-- Apply conditional state; derive replacement config
+|   |   |-- Derivation fails -> retain current config and return
+|   |   `-- Success -> replace config; restore mouse visibility if needed
+|   |-- endKeySequence(); deactivateAllKeyTables(); call setFontSize() above
+|   |   `-- Preserve manually adjusted font size; otherwise use new configured size
+|   |-- Derive independent renderer and Termio configs
+|   |-- [async mailbox] renderer .change_config; queueIo(.change_config) -> respective loops below
+|   `-- queueRender(); rt_app.performAction(.set_title/.config_change)
+|       `-- Termio.changeConfig() updates emulator policy/colors, not the running command or cwd
+|
+|-- Focus, visibility and display callbacks: adapt session activity
+|   |-- On focusCallback(): App.focusSurface(); ignore unchanged focus (src/Surface.zig:3466)
+|   |   |-- [async mailbox] renderer .focus
+|   |   |-- If losing focus -> synthesize releases by re-entering keyCallback()
+|   |   `-- queueRender(); showMouse(); update terminal focus; queueIo(.focused)
+|   |-- On occlusionCallback(): ignore unchanged visibility (src/Surface.zig:3437)
+|   |   |-- Update terminal visibility; queueIo(.visibility_report) if enabled
+|   |   `-- [async mailbox + wake] renderer .visible -> rendering loop below
+|   |-- On displayRealized()/displayUnrealized() (src/Surface.zig:2584)
+|   |   `-- Notify renderer; unrealize wakes render thread to release GPU resources
+|   |-- On refreshCallback(): queueRender() [async wake] -> rendering loop below (src/Surface.zig:3554)
+|   |-- On draw(): call Renderer.drawFrame(true) below for synchronous presentation (src/Surface.zig:925)
+|   `-- On reportPresentationHealth(): [async mailbox + wake] renderer .presentation_health (src/Surface.zig:961)
+|
+|-- Main-thread message dispatch: App.tick() (src/App.zig:164,273,532)
+|   |-- drainMailbox(): pop messages until empty; quit interrupts the drain
+|   |   `-- .surface_message -> surfaceMessage(): verify surface still exists
+|   |       `-- Surface.handleMessage(): dispatch message tag (src/Surface.zig:1017)
+|   |           |-- .change_config/.close -> re-enter updateConfig()/close()
+|   |           |-- Title, cwd, colors, bell, progress, scrollbar, health -> rt_app.performAction()
+|   |           |-- Clipboard request -> clipboard entry points above
+|   |           |-- .selection_scroll_tick -> selectionScrollTick(): update drag/viewport and redraw
+|   |           |-- .start_command/.stop_command -> measure duration; report command_finished
+|   |           |-- Search totals/selection -> report search UI state
+|   |           `-- .child_exited -> childExited() below
+|   `-- childExited(): mark child_exited; inspect runtime/exit policy (src/Surface.zig:1297)
+|       |-- Abnormally short run -> native error UI or childExitedAbnormally(); retain surface
+|       `-- Normal completion -> native exit UI or terminal message
+|           |-- wait_after_command -> retain surface; encoded key later re-enters close()
+|           `-- Otherwise -> call close() below
+|
+|-- IO control loop: termio.Thread.threadMain() (src/termio/Thread.zig:236)
+|   |-- Termio.threadEnter() -> Exec.threadEnter() (src/termio/Termio.zig:365; src/termio/Exec.zig:86)
+|   |   |-- Subprocess.start(): establish PTY and launch configured command
+|   |   |-- [async spawn] ReadThread -> PTY output loop below
+|   |   |-- Register process-exit watcher and termios polling timer
+|   |   `-- Queue configured initial input after backend startup
+|   |-- xev.Loop.run(.until_done): dispatch events until stopCallback() stops the loop
+|   |   |-- On mailbox wake -> drainMailbox(): pop until empty (src/termio/Thread.zig:289)
+|   |   |   |-- .write_* -> Termio.queueWrite() -> Exec.queueWrite() (src/termio/Exec.zig:403)
+|   |   |   |   |-- Exited process -> discard write
+|   |   |   |   `-- Otherwise -> chunk bytes, optionally expand CR to CRLF
+|   |   |   |       `-- [async stream write] write_stream.queueWrite(); ttyWrite() returns pooled buffer
+|   |   |   |-- .resize -> handleResize(): retain latest size; arm coalescing timer
+|   |   |   |-- .change_config/.clear_screen/.scroll_viewport/.jump_to_prompt -> corresponding Termio call
+|   |   |   |-- .focused/.visibility_report/.size_report -> encode enabled protocol reports; queueWrite()
+|   |   |   |-- .selection_scroll/.start_synchronized_output -> start or stop relevant timer
+|   |   |   `-- After draining any messages -> [async wake] renderer
+|   |   |-- On coalesceCallback() -> Termio.resize() (src/termio/Termio.zig:524)
+|   |   |   |-- Lock terminal; backend.resize() notifies PTY; Terminal.resize() reflows state
+|   |   |   |-- Emit in-band size report if enabled; unlock
+|   |   |   `-- [async mailbox + wake] renderer .resize
+|   |   |-- On syncResetCallback() -> resetSynchronizedOutput(); [async wake] renderer
+|   |   |-- On selectionScrollCallback() -> [async surface message] .selection_scroll_tick
+|   |   |-- On termiosTimer() -> inspect terminal-driver state; report password-input changes
+|   |   `-- On processExit() -> processExitCommon(): mark exited; [async surface message] .child_exited
+|   `-- On loop exit -> Termio.threadExit() -> Exec.threadExit() (src/termio/Exec.zig:196)
+|       `-- Stop/reap subprocess; signal reader quit pipe; join reader; release thread data
+|
+|-- queueIo(): common UI-to-IO hand-off (src/Surface.zig:899; src/termio/Termio.zig:433)
+|   `-- Inspect read-only state and message kind
+|       |-- Read-only + PTY write -> free message and return
+|       `-- Otherwise -> Termio.queueMessage(): mailbox.send(); mailbox.notify()
+|           `-- [async mailbox + wake] -> IO control loop above; payload ownership transfers
+|
+|-- PTY output loop: Exec.ReadThread (src/termio/Exec.zig:1412,1526,1778)
+|   |-- POSIX: set nonblocking FD; initialize bounded batch pipeline
+|   |   `-- [async spawn] gatherMainPosix(): poll/read PTY; publish batches; wait for free slots
+|   |       `-- EOF/error/quit -> mark pipeline done and wake parser
+|   |-- Consume batches in order until gather is done and ring is empty
+|   |   |-- Termio.processOutput(batch): lock renderer_state.mutex (src/termio/Termio.zig:702)
+|   |   |   `-- processOutputLocked()
+|   |   |       |-- queueRender() [async wake]; throttle cursor-blink reset messages
+|   |   |       |-- Parse output according to inspector state
+|   |   |       |   |-- Inspector enabled -> record and terminal_stream.next() for each byte
+|   |   |       |   `-- Otherwise -> terminal_stream.nextSlice() for bulk parsing
+|   |   |       |-- StreamHandler.vt()/vtPrintAscii() dispatch parsed actions (src/termio/stream_handler.zig:188)
+|   |   |       |   |-- Text/cursor/style/edit/mode actions -> Terminal methods mutate screens and scrollback
+|   |   |       |   |-- Protocol queries -> encode reply; enqueue IO message
+|   |   |       |   `-- GUI-facing actions -> [async surface message] title, clipboard, bell, cwd, etc.
+|   |   |       `-- If parser queued IO messages -> mailbox.notify() [async] -> IO control loop
+|   |   `-- Release batch slot; signal gatherer; renderer_state.yieldToDemand() between batches
+|   `-- Windows alternative: threadMainWindows() reads directly and calls the same processOutput()
+|
+|-- Rendering loop: renderer.Thread.threadMain() (src/renderer/Thread.zig:200)
+|   |-- Renderer.loopEnter()/threadEnter(); register wake, stop and draw-now handlers
+|   |-- Queue initial wake; start cursor timer; arm animation timer
+|   |-- xev.Loop.run(.until_done): dispatch events until stopCallback() stops loop
+|   |   |-- On wakeupCallback(): drainMailbox() until empty (src/renderer/Thread.zig:290,474)
+|   |   |   |-- Apply font/config/size/focus/visibility/search/health messages
+|   |   |   |-- Call renderCallback() below
+|   |   |   `-- compression.wake(): schedule eligible scrollback compression work
+|   |   |-- On cursor/animation timers -> update blink/animation scheduling; render or draw as needed
+|   |   `-- On drawNowCallback(), including display-link wakes -> Thread.drawFrame(true)
+|   |       `-- Re-enter Renderer.drawFrame(false) below; skip if invisible
+|   |-- renderCallback(): choose frame-update path (src/renderer/Thread.zig:537)
+|   |   |-- Display unrealized -> releaseGpuResources(); return
+|   |   |-- Invisible -> return without rebuilding cells
+|   |   `-- Visible -> Renderer.updateFrame() (src/renderer/generic.zig:1371)
+|   |       |-- lockDemand(); synchronized-output mode skips snapshot update
+|   |       |-- Otherwise: advance image animations; terminal_state.beginUpdate(); capture viewport/preedit
+|   |       |-- Unlock; terminal_state.endUpdate(); update links, search highlights and overlay
+|   |       |-- Lock draw state; rebuildCells(): shape/rasterize text into GPU cell data; update uniforms
+|   |       |-- Thread.drawFrame(false) -> Renderer.drawFrame(false), unless vsync owns drawing
+|   |       `-- armAnimationTimer(): [async timer] schedule next required frame/animation wake
+|   |-- Renderer.drawFrame(sync): serialize drawing with draw_mutex (src/renderer/generic.zig:1716)
+|   |   `-- drawFrameLocked(): graphics API bookkeeping; check size, realization and dirty state
+|   |       |-- Nothing drawable/changed -> return; possibly pause display link
+|   |       `-- Draw required -> acquire swap-chain frame; resize targets; upload cells/images/atlases
+|   |           |-- Draw background, layered images, cell backgrounds, text and overlay
+|   |           |-- Run optional post-processing shader passes; complete graphics frame
+|   |           `-- [async surface message] publish changed scrollbar state
+|   `-- On loop exit -> Renderer.threadExit()/loopExit()
+|
+|-- Search loop: terminal.search.Thread.threadMain() (src/terminal/search/Thread.zig:142)
+|   |-- Register mailbox/stop events; start refresh timer
+|   |-- Repeat until loop.stopped(): interleave search progress with xev events
+|   |   |-- No active search -> loop.run(.once), waiting for query/control events
+|   |   `-- Active search -> notify pending results; inspect completion
+|   |       |-- Complete -> loop.run(.once), waiting for changes
+|   |       `-- Incomplete -> TerminalSearch.tick(); if blocked, lock terminal and feedLocked()
+|   |           `-- loop.run(.no_wait): drain query/selection events without blocking progress
+|   |-- On refresh timer -> reconsider changed terminal/viewport search data
+|   |-- notify() -> Surface.searchCallback_() on search thread (src/Surface.zig:1496)
+|   |   |-- [async renderer mailbox + wake] viewport/selected highlights -> rendering loop above
+|   |   `-- [async surface message] result count/selected index -> main-thread dispatch above
+|   `-- On exit -> callback(.quit): clear renderer highlights and reported search totals
+|
+|-- Inspector entry points (src/Surface.zig:934,972)
+|   |-- On activateInspector(): allocate Inspector; attach under terminal mutex
+|   |   `-- [async mailbox] notify renderer and IO; key/PTY flows above begin recording
+|   `-- On deactivateInspector(): detach under mutex; notify workers; destroy Inspector
+|
+`-- Session closure: Surface.close()/deinit() (src/Surface.zig:883,829)
+    |-- close(): needsConfirmQuit(); rt_surface.close(confirm)
+    |   `-- Runtime decides confirmation/removal; eventual destruction invokes deinit()
+    `-- deinit(): dismantle the session in dependency-safe order
+        |-- Stop/join optional search worker
+        |-- [async stop] renderer thread; join
+        |-- [async stop] IO thread; join -> IO loop exit above stops child and reader
+        |-- Renderer.deinit(); renderer_thread.deinit(); io_thread.deinit()
+        |-- Release selection gesture; Termio.deinit(): backend, terminal, mailbox, stream and config
+        `-- Free inspector/keyboard/preedit state; dereference font grid; destroy mutex and surface config

@@ -1,0 +1,40 @@
+{
+  "modelCalls": 0,
+  "at": "2026-11-16T20:05:35.764Z",
+  "models": {
+    "gpt-6-astra": {
+      "provider": "openai-codex",
+      "model": "gpt-6-astra"
+    },
+    "gpt-6-sol": {
+      "provider": "openai-codex",
+      "model": "gpt-6-sol"
+    }
+  },
+  "checkouts": {
+    "ghostty": {
+      "commit": "ea8b12a8a9894b5259c441eadd8f6f0c65e215af",
+      "tools": [
+        "read",
+        "bash"
+      ]
+    },
+    "mapping": {
+      "commit": "8ca143700ca4d2c870f1101b8cd4601ab68abd41",
+      "tools": [
+        "read",
+        "bash"
+      ]
+    }
+  },
+  "checks": [
+    "six tree texts equal local artifacts",
+    "prompt v1 saved and equal to judge-prompt.txt",
+    "14 pair contexts pinned",
+    "40 runs queued and attached",
+    "both judge models resolve",
+    "both checkouts at pinned commits with read,bash",
+    "Markdown capture and reload in disposable storage",
+    "rescore on fixture"
+  ]
+}

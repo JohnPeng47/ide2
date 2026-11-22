@@ -1,0 +1,119 @@
+{
+  "output": {
+    "explanation": "The central tree retains all five conceptual branches while shrinking from 93 to 61 lines (34.4%) and from 7,319 to 4,674 characters (36.1%). Five peripheral trees expand binding selection, mapped evidence, corpus boundaries, definition sessions and inspection state. [M] denotes modular structure, [C] calls, [O] ownership and [D] data dependency; [B] and [R] identify shared binding and corpus dependencies. Edges attach to the corresponding central concept lines. Tree dimensions and edge anchors were checked; positions leave nonoverlapping gaps.\n\nEvidence comes only from the supplied point, seed and pinned source text. Binding detail follows diagramSource.ts; mapping identity and ordering follow codePanel.ts; access boundaries follow corpus.ts and projectSource.ts; lookup and lifetime detail follow projectLanguageService.ts; UI detail follows RepositoryFileExplorer.tsx and SourceCodeView.tsx. Added details include compatible binding replacement, hash-sensitive resource identity, keyboard navigation, LSP target normalization and the greater-than-240-row deferral threshold.\n\nThe seed's destination-selection description is narrowed: SourceCodeView selects only the first line of a multi-line destination, and restoration/activation guards affect when navigation runs. UTF-16 initialization accepts an omitted server encoding but rejects a different declared encoding. Session sharing is explicitly scoped to a service instance and canonical root. Returned definition targets undergo repository-path filtering, not the corpus provider's filesystem checks. Imported helper implementations and UI-to-service wiring are absent, so these trees do not infer their internal behavior or claim a verified end-to-end runtime trace.",
+    "diagrams": [
+      {
+        "id": "central",
+        "ascii": "Source Evidence and Navigation\n|-- [M] Repository binding: resolveDiagramSource [B]\n|   |-- Contract: project + optional representation/revision/content/source IDs + optional live diagram\n|   |-- [C] loadProject -> require matching project ID -> resolve diagram\n|   |   |-- Live diagram -> validate; require requested content ID to match\n|   |   |-- Saved representation -> validate revision -> select exactly one diagram\n|   |   `-- Source-only -> registered bindings + project.sources -> require one source\n|   |-- Requested representation is validated even when a live diagram is supplied\n|   |-- Requested sourceId must match the selected diagram's binding\n|   `-- Exposes source query + diagram + binding() + readText() + listFiles()\n|       `-- Reads/listings require explicit binding + injected CorpusAccess\n|-- [M] Mapped evidence: domain handlers independent of React and file I/O\n|   |-- Contract: handleNodeSelect, resolveSelectedNodes, buildSourceRangeDisplayModel\n|   |-- [D] Selected diagram nodes + diagram mappings -> PanelContent\n|   |   |-- Require sourceContext.contentHash == content.asciiSha256\n|   |   |-- Index entries with a mapped node, entity and range\n|   |   |   `-- Target = project/source + path + inclusive one-based lines + rangeSha256\n|   |   |-- [C] Sort nodes in diagram order -> resolveSelectedNodes -> resolveNodeResources\n|   |   `-- Deduplicate resources; retain origins, diagram/revision/hash and unmapped IDs\n|   `-- [D] Ordered mappings -> source display sections\n|       |-- Repository/file change or backward start line -> new file section\n|       |-- Overlapping range -> extend previous range and retain contributing items\n|       `-- Otherwise -> separate range; preserve diagram order\n|-- [M] Source access: ProjectSourceService -> [B] -> corpus providers [R]\n|   |-- files(project, directory, sourceId) -> resolved listFiles(directory)\n|   |-- source(project, path, sourceId) -> resolved readText(path)\n|   |   |-- Missing path or NUL-containing text -> error\n|   |   `-- [D] Text -> {path, startLine: 1, lines, sourceSha256, lspEnabled}\n|   `-- [M] Corpus boundary [R]: git-worktree or filesystem-documents\n|       |-- Public: listDirectory, readLines, readDocumentLines/Text/Bytes\n|       |-- Internal: canonical root + relative path; reject traversed symlinks\n|       |-- Directory listing -> omit .git; directories first, then name/path order\n|       `-- Range read -> validate inclusive one-based bounds; clip at document end\n|-- [M] Optional definition navigation: injected LanguageService\n|   |-- ProjectSourceService.definitions -> [B] -> language.definitions(binding.corpus, ...)\n|   |   `-- No language service -> lsp-disabled error\n|   |-- [D] Lookup needs corpus + path + position + displayed sourceSha256\n|   |   |-- Require supported TS/JS repository path and nonnegative integer position\n|   |   |-- [C] Read current text through [R] -> compute full-text SHA-256\n|   |   |   |-- Hash mismatch -> ask caller to reload; no lookup\n|   |   |   `-- Matching hash + position inside file -> use verified text\n|   |   `-- Filter and deduplicate returned locations -> {locations, outsideRoot}\n|   `-- [O] Each ProjectLanguageService owns sessions keyed by canonical root\n|       |-- Same instance and root share one live session; missing/dead session replaced\n|       |-- Session owns child process, RPC, serial request queue and idle timer\n|       `-- Timeouts, failures, service disposal, exit and signals trigger cleanup\n`-- [M] Source inspection UI: repository browser + read-only source viewer\n    |-- RepositoryFileExplorer consumes CodeRepoService; emits onOpen(path)\n    |   |-- [C] Expand directory -> load listing; select file -> invoke onOpen\n    |   |-- [O] Listing promises shared per service, keyed by project/source/directory\n    |   `-- Expansion/subscription state belongs to each directory instance\n    `-- SourceCodeView consumes preview + range + presentation; emits callbacks\n        |-- [D] Lines + path + theme -> tokens, with plain-text fallback\n        |   `-- Lines + highlights + annotations + compaction metadata -> rows\n        |-- Folded sections show a gap or supplied call-graph comments\n        |   `-- Reveal section or graph-node lines; navigation expands destination section\n        |-- [C] Ctrl/Meta-click or F12 -> DOM position -> onGoToDefinition(position)\n        |   `-- Optional callback; view itself does not perform definition lookup\n        |-- Navigation -> scroll; multi-line destination selects only its first line\n        `-- [O] View owns token/fold state; optional scrollState retains offsets\n            `-- Large unwrapped views can defer offscreen chunks of 80 rows",
+        "position": {
+          "column": 110,
+          "row": 26
+        }
+      },
+      {
+        "id": "binding",
+        "ascii": "Explicit repository selection\n|-- [C] resolveDiagramSource(store, ref, corpus?, liveDiagram?)\n|   |-- Load project; reject missing project or mismatched project ID\n|   |-- If representationId: load catalog before choosing live/saved branch\n|   |   `-- revisionId ?? currentRevisionId must belong to representation.revisionIds\n|   |-- Live: validateDiagram; check contentId if supplied\n|   |-- Saved: sceneFromRevision -> filter scene contents\n|   |   `-- With contentId: match ID; otherwise: require a source binding\n|   |       `-- Exactly one candidate required\n|   `-- Source-only: loadDiagramSourceBindings + project.sources\n|       |-- Filter by sourceId when supplied; group by sourceId\n|       |-- Same ID with different root, kind or repositoryIdentity -> reject\n|       |-- Later compatible binding replaces earlier binding\n|       `-- Exactly one distinct source -> synthetic source-query diagram\n`-- [M] Query surface separates selection from access\n    |-- Requested sourceId must equal selected binding.sourceId\n    |-- Return diagramSource query + diagram + access closures\n    |-- binding() rejects an absent repository binding\n    `-- readText/listFiles -> binding() -> require CorpusAccess -> provider\n        `-- Project identity alone does not establish a repository",
+        "position": {
+          "column": 0,
+          "row": 0
+        }
+      },
+      {
+        "id": "mapping",
+        "ascii": "Mapped evidence identity and ordering\n|-- [D] sourceRangeIndex consumes diagram + projectId\n|   |-- Reject stale diagram hash; skip entries missing node, entity or range\n|   |-- sourceId = entity.sourceId ?? binding.sourceId ?? empty string\n|   `-- rangeSha256 = SHA-256(originalLines joined with LF)\n|       `-- Hash describes stored range text; this module does not reread disk\n|-- [C] handleNodeSelect -> sort by line, then startColumn\n|   |-- resolveSelectedNodes -> resolveNodeResources\n|   |   `-- Matches carry selected/mapped nodes; helper also returns unmapped IDs\n|   `-- Deduplicate by sourceResourceIdentity\n|       |-- Identity: type + project + source + path + start/end + range hash\n|       |-- Identical coordinates with different hashes remain distinct\n|       `-- Append all origins; selectedNodeIds are deduplicated separately\n|-- [D] buildSourceRangeDisplayModel consumes ordered resolved mappings\n|   |-- Compare with last file and its last range\n|   |-- Different project/source/path OR earlier start -> new section\n|   |-- Otherwise start <= previous end -> extend end; append contributing item\n|   `-- Otherwise append a separate range, including immediately adjacent ranges\n`-- [M] mappedResourceHandlers registers source-range operations\n    |-- Exposes index, identity and buildDisplayModel\n    `-- Domain computes PanelContent; renderer wiring is outside supplied source",
+        "position": {
+          "column": 0,
+          "row": 28
+        }
+      },
+      {
+        "id": "corpus",
+        "ascii": "Corpus access boundary\n|-- [M] corpusProvider(binding) selects a provider by binding.kind\n|   `-- git-worktree and filesystem-documents use FilesystemCorpusProvider\n|-- [C] Canonicalize root with realpath; require matching kind and directory\n|   `-- Resolve relative path one segment at a time with lstat\n|       |-- Reject absolute paths, backslashes, NUL, empty segments, '.' and '..'\n|       |-- Empty whole path has zero segments and addresses the root\n|       |-- Reject missing segments and symbolic links below canonical root\n|       `-- Check resolved path stays within root; verify final target type\n|-- [D] listDirectory -> entries\n|   |-- Hide .git; symlink entries are classified as files\n|   |   `-- Listing a symlink does not make it readable through this provider\n|   `-- Sort directories first, then case-insensitive name, then path\n`-- [C] readDocumentBytes -> readFile\n    |-- readDocumentText -> UTF-8 decode; readDocumentLines -> split CRLF/LF\n    |-- readLines -> validate integer bounds, start >= 1, end >= start\n    |   `-- Slice from start - 1 through min(end, line count)\n    `-- [D] ProjectSourceService.source hashes full text before returning lines\n        `-- Full-text hash and mapped range hash cover different inputs",
+        "position": {
+          "column": 0,
+          "row": 57
+        }
+      },
+      {
+        "id": "lsp",
+        "ascii": "Definition lookup and session lifetime\n|-- [D] Freshness gate before session lookup\n|   |-- Validate repository path, TS/JS support and zero-based integer position\n|   |-- Read current text -> require full-text SHA-256 match\n|   `-- Require existing line; character may equal line.length\n|-- [O] ProjectLanguageService instance owns Map<canonical root, session>\n|   |-- Reuse live session or replace missing/dead entry\n|   `-- Private LanguageSession owns process, RPC, queue and timers\n|-- [C] Initialize -> require definition provider and UTF-16 compatibility\n|   |-- Advertise UTF-16; reject a different declared position encoding\n|   `-- workspace/applyEdit requests return applied: false\n|-- [C] Queued lookup -> await ready -> check dead/abort -> didOpen(verified text)\n|   |-- textDocument/definition uses cancellation token\n|   |-- Finally: remove abort listener, dispose token, didClose if alive\n|   |   `-- Outer finally schedules idle disposal\n|   `-- Rejected request is caught on queue tail so later work can run\n|-- [D] Normalize a single LSP result or array into locations\n|   |-- Prefer targetUri over uri and targetSelectionRange over range\n|   |-- Non-file URI or rejected repository-relative path -> outsideRoot++\n|   |-- Deduplicate by serialized path + range\n|   `-- Targets are not reread or realpath-checked here\n`-- [O] Disposal is idempotent\n    |-- Initialization or definition request exceeds 20 seconds -> reject + dispose\n    |-- Five-minute idle timer, RPC error or child error/exit -> dispose\n    |-- Remove from liveSessions; clear idle timer; dispose RPC\n    |-- SIGTERM child PID on Windows, process group elsewhere\n    |-- Service dispose -> dispose sessions, clear map, remove exit listener\n    `-- Process exit calls service dispose; SIGINT/SIGTERM dispose liveSessions",
+        "position": {
+          "column": 220,
+          "row": 0
+        }
+      },
+      {
+        "id": "ui",
+        "ascii": "Inspection interactions and retained state\n|-- [O] RepositoryFileExplorer listing cache\n|   |-- WeakMap keyed by CodeRepoService; map key = project/source/directory\n|   |-- Cache promises; beyond 256 entries evict oldest insertion\n|   |-- Failure evicts only if cached promise is still that failed request\n|   |-- Refresh clears project keys across source IDs; bumps local generation\n|   `-- Directory cleanup ignores late results; shared request continues\n|-- [C] Explorer keyboard navigation across visible file/directory buttons\n|   |-- Up/Down -> adjacent button; Home/End -> first/last\n|   |-- Right -> expand a collapsed directory\n|   `-- Left -> collapse expanded directory, otherwise focus parent button\n|-- [D] SourceCodeView builds rows from supplied preview and metadata\n|   |-- Only valid collapsed-comment sections fully inside preview are eligible\n|   |-- Plain presentation skips tokenization; missing tokens use original text\n|   |-- Annotations precede their line; highlightedRanges overrides default range\n|   `-- Supplied graph comments reveal graph-node lines clipped to preview\n|-- [O] Navigation and view state\n|   |-- Source/compaction/navigation changes reset graph-node expansion\n|   |   `-- Section expansion resets to sections containing navigation start\n|   |-- active=false skips scroll restoration and destination selection effects\n|   |-- New source identity -> prefer scrollState.read(), then initial offset\n|   |   `-- Restored offset returns before normal target scrolling\n|   |-- Otherwise scroll targetLine or range.startLine near top fifth of viewer\n|   |-- Selection uses navigation start line + 1\n|   |   `-- Multi-line range selects through end of its first line only\n|   |-- Tokenization replacement reapplies selection when active and no initial offset\n|   `-- Ignore obsolete token results and hidden-view zero scroll events\n`-- [O] SourceCodeContent defers rendering work when enabled\n    |-- Requires unwrapped view and more than 240 rendered rows\n    |-- Group rows in chunks of 80; retain DOM for native search/selection\n    |-- Measure width/height before setting contentVisibility=auto\n    `-- ResizeObserver remeasures on width changes; disconnect on cleanup",
+        "position": {
+          "column": 220,
+          "row": 38
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": {
+          "diagram": "central",
+          "line": 2
+        },
+        "target": {
+          "diagram": "binding",
+          "line": 1
+        },
+        "label": "Selection branches and exposed access"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 12
+        },
+        "target": {
+          "diagram": "mapping",
+          "line": 1
+        },
+        "label": "Evidence identity, provenance and display order"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 29
+        },
+        "target": {
+          "diagram": "corpus",
+          "line": 1
+        },
+        "label": "Provider boundaries and read semantics"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 34
+        },
+        "target": {
+          "diagram": "lsp",
+          "line": 1
+        },
+        "label": "Verified lookup, result filtering and owned sessions"
+      },
+      {
+        "source": {
+          "diagram": "central",
+          "line": 47
+        },
+        "target": {
+          "diagram": "ui",
+          "line": 1
+        },
+        "label": "Interaction, cache and view lifetimes"
+      }
+    ]
+  },
+  "usage": {
+    "input_tokens": 248384,
+    "cached_input_tokens": 220544,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 8500,
+    "reasoning_output_tokens": 598
+  }
+}

@@ -1,0 +1,12 @@
+[M] Template engine
+|-- Public contract
+|   |-- compile(text): Template
+|   `-- render(template, bindings): text
+|-- Internal machinery
+|   |-- parser -> syntax tree
+|   |-- compiler -> rendering instructions
+|   `-- interpreter
+|       `-- [D] instructions + bindings -> output text
+`-- Extension boundary
+    `-- registered formatters: value -> text
+        `-- interpreter calls them; parser stays private

@@ -1,0 +1,1 @@
+{"path": "domain/mapping/evals/evalLimits.ts", "text": "/** Long source-backed planning runs can exceed the old fifteen-minute budget. */\nexport const EVAL_GENERATION_TIMEOUT_MS = 60 * 60_000;\n"}

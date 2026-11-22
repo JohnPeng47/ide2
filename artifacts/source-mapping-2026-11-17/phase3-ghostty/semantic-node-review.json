@@ -1,0 +1,5787 @@
+{
+  "commit": "ea8b12a8a9894b5259c441eadd8f6f0c65e215af",
+  "comparison": "Phase 2 Sol/high single agent versus Phase 3 Sol/high with Sol/medium children",
+  "scope": "10 successful paired outputs. Two failed Sol attempts excluded. Selected source-reviewed claims across all four inputs; not an exhaustive review of every node.",
+  "method": "Read node labels, both sets of ranges, and actual pinned source. Implementation landmarks make judgments reproducible. Complete means these selected parts are present, not proof of the entire node. No aggregate semantic score: checks were selected after inspecting results. Direct-node and anywhere-in-output evidence are separate.",
+  "checks": [
+    {
+      "id": "mouse-behavior",
+      "cases": [
+        "core-1"
+      ],
+      "diagram": "d1",
+      "node": "n24",
+      "parts": [
+        {
+          "name": "scroll reporting",
+          "path": "src/Surface.zig",
+          "line": 3733,
+          "expectedText": "self.mouseReport",
+          "sourceLine": "                self.mouseReport(switch (y.direction()) {"
+        },
+        {
+          "name": "local viewport scrolling",
+          "path": "src/Surface.zig",
+          "line": 3756,
+          "expectedText": "scrollViewport",
+          "sourceLine": "            self.io.terminal.scrollViewport(.{ .delta = y.delta * -1 });"
+        },
+        {
+          "name": "button reporting",
+          "path": "src/Surface.zig",
+          "line": 4083,
+          "expectedText": "self.mouseReport",
+          "sourceLine": "            self.mouseReport("
+        },
+        {
+          "name": "motion reporting",
+          "path": "src/Surface.zig",
+          "line": 4796,
+          "expectedText": "self.mouseReport",
+          "sourceLine": "        self.mouseReport(button, .motion, self.mouse.mods, pos);"
+        },
+        {
+          "name": "drag selection",
+          "path": "src/Surface.zig",
+          "line": 4865,
+          "expectedText": "setSelection(drag_selection)",
+          "sourceLine": "        try self.setSelection(drag_selection);"
+        }
+      ],
+      "interpretation": "Old ranges only identify callback signatures. New ranges contain real reporting, local scrolling and drag selection behavior in all three repeats."
+    },
+    {
+      "id": "key-route",
+      "cases": [
+        "core-1"
+      ],
+      "diagram": "d1",
+      "node": "n20",
+      "parts": [
+        {
+          "name": "bindings first",
+          "path": "src/Surface.zig",
+          "line": 2837,
+          "expectedText": "maybeHandleBinding",
+          "sourceLine": "    if (try self.maybeHandleBinding("
+        },
+        {
+          "name": "encode unhandled key",
+          "path": "src/Surface.zig",
+          "line": 2940,
+          "expectedText": "self.encodeKey",
+          "sourceLine": "    if (try self.encodeKey("
+        },
+        {
+          "name": "enqueue bytes",
+          "path": "src/Surface.zig",
+          "line": 2953,
+          "expectedText": "self.queueIo",
+          "sourceLine": "        self.queueIo(switch (write_req) {"
+        }
+      ],
+      "interpretation": "The old ranges already established this basic route. New full bodies add useful handling details, but larger ranges do not create a new basic-route success."
+    },
+    {
+      "id": "input-callback-behavior",
+      "cases": [
+        "canvas-1",
+        "canvas-2"
+      ],
+      "diagram": "d1",
+      "node": "n16",
+      "parts": [
+        {
+          "name": "key binding",
+          "path": "src/Surface.zig",
+          "line": 2837,
+          "expectedText": "maybeHandleBinding",
+          "sourceLine": "    if (try self.maybeHandleBinding("
+        },
+        {
+          "name": "key encoding",
+          "path": "src/Surface.zig",
+          "line": 2940,
+          "expectedText": "self.encodeKey",
+          "sourceLine": "    if (try self.encodeKey("
+        },
+        {
+          "name": "text/paste dispatch",
+          "path": "src/Surface.zig",
+          "line": 3431,
+          "expectedText": "completeClipboardPaste",
+          "sourceLine": "    try self.completeClipboardPaste(text, true);"
+        },
+        {
+          "name": "mouse reporting",
+          "path": "src/Surface.zig",
+          "line": 4083,
+          "expectedText": "self.mouseReport",
+          "sourceLine": "            self.mouseReport("
+        }
+      ],
+      "interpretation": "Real key/mouse behavior is added, but canvas-1 repeat 2 and canvas-2 repeat 2 still truncate mouseButtonCallback before reporting/selection logic."
+    },
+    {
+      "id": "snapshot-under-lock",
+      "cases": [
+        "core-2"
+      ],
+      "diagram": "d1",
+      "node": "n73",
+      "parts": [
+        {
+          "name": "acquire lock",
+          "path": "src/renderer/generic.zig",
+          "line": 1420,
+          "expectedText": "state.lockDemand",
+          "sourceLine": "                state.lockDemand(global.io());"
+        },
+        {
+          "name": "take snapshot",
+          "path": "src/renderer/generic.zig",
+          "line": 1484,
+          "expectedText": "terminal_state.beginUpdate",
+          "sourceLine": "                try self.terminal_state.beginUpdate("
+        },
+        {
+          "name": "release lock",
+          "path": "src/renderer/generic.zig",
+          "line": 1421,
+          "expectedText": "state.unlockDemand",
+          "sourceLine": "                defer state.unlockDemand(global.io());"
+        }
+      ],
+      "interpretation": "Both new outputs add State lock/unlock internals but drop beginUpdate, which both matched old outputs attached to this node. This loses the relationship claimed by the label."
+    },
+    {
+      "id": "active-screen-switch",
+      "cases": [
+        "core-2"
+      ],
+      "diagram": "d1",
+      "node": "n60",
+      "parts": [
+        {
+          "name": "select owned screen",
+          "path": "src/terminal/ScreenSet.zig",
+          "line": 108,
+          "expectedText": "self.active = self.all.get(key)",
+          "sourceLine": "    self.active = self.all.get(key).?;"
+        }
+      ],
+      "interpretation": "Repeat 3 regresses from declaration plus assignment to declaration only. Repeat 2 was already incomplete."
+    },
+    {
+      "id": "font-refcount-implementation",
+      "cases": [
+        "canvas-1",
+        "canvas-2"
+      ],
+      "diagram": "d1",
+      "node": "n6",
+      "parts": [
+        {
+          "name": "increment",
+          "path": "src/font/SharedGridSet.zig",
+          "line": 115,
+          "expectedText": "ref += 1",
+          "sourceLine": "        gop.value_ptr.ref += 1;"
+        },
+        {
+          "name": "decrement",
+          "path": "src/font/SharedGridSet.zig",
+          "line": 422,
+          "expectedText": "ref -= 1",
+          "sourceLine": "        entry.value_ptr.ref -= 1;"
+        },
+        {
+          "name": "last-owner destruction",
+          "path": "src/font/SharedGridSet.zig",
+          "line": 428,
+          "expectedText": "grid.deinit",
+          "sourceLine": "    entry.value_ptr.grid.deinit(self.alloc);"
+        }
+      ],
+      "interpretation": "New mappings contain App fields and sometimes Surface ref calls, but none attach the reference-count implementation. This is a regression in three paired outputs, not an improvement in ownership coverage."
+    },
+    {
+      "id": "device-ownership",
+      "cases": [
+        "canvas-1",
+        "canvas-2"
+      ],
+      "diagram": "d1",
+      "node": "n7",
+      "parts": [
+        {
+          "name": "App retains device",
+          "path": "src/Surface.zig",
+          "line": 568,
+          "expectedText": "app.device = device",
+          "sourceLine": "        app.device = device;"
+        },
+        {
+          "name": "renderer borrows device",
+          "path": "src/Surface.zig",
+          "line": 581,
+          "expectedText": ".device = render_device",
+          "sourceLine": "            .device = render_device,"
+        }
+      ],
+      "interpretation": "One gain (canvas-1 repeat 3) and one loss (canvas-2 repeat 2); all other pairs preserve the same evidence."
+    },
+    {
+      "id": "resize-coalescing",
+      "cases": [
+        "canvas-1",
+        "canvas-2"
+      ],
+      "diagram": "d1",
+      "node": "n28",
+      "parts": [
+        {
+          "name": "retain latest resize",
+          "path": "src/termio/Thread.zig",
+          "line": 390,
+          "expectedText": "coalesce_data.resize = resize",
+          "sourceLine": "    self.coalesce_data.resize = resize;"
+        },
+        {
+          "name": "schedule timer",
+          "path": "src/termio/Thread.zig",
+          "line": 397,
+          "expectedText": "self.coalesce.reset",
+          "sourceLine": "    self.coalesce.reset("
+        },
+        {
+          "name": "apply coalesced size",
+          "path": "src/termio/Thread.zig",
+          "line": 445,
+          "expectedText": "cb.io.resize",
+          "sourceLine": "        cb.io.resize(&cb.data, v) catch |err| {"
+        }
+      ],
+      "interpretation": "Canvas-1 repeat 2 loses the timer scheduling implementation. Repeat 3 lacks the applying callback in both variants. Other pairs were already covered."
+    },
+    {
+      "id": "regular-text-shaping",
+      "cases": [
+        "canvas-1",
+        "canvas-2"
+      ],
+      "diagram": "d3",
+      "node": "n13",
+      "parts": [
+        {
+          "name": "normal text shaping",
+          "path": "src/renderer/generic.zig",
+          "line": 3299,
+          "expectedText": "self.font_shaper.shape(run)",
+          "sourceLine": "                            const new_cells = try self.font_shaper.shape(run);"
+        }
+      ],
+      "interpretation": "Normal text shaping remains attached in only canvas-1 repeat 1. Counting any shape call would hide that the added second hit is only IME preedit shaping."
+    },
+    {
+      "id": "preedit-shaping",
+      "cases": [
+        "canvas-1",
+        "canvas-2"
+      ],
+      "diagram": "d3",
+      "node": "n13",
+      "parts": [
+        {
+          "name": "IME preedit shaping",
+          "path": "src/renderer/generic.zig",
+          "line": 3030,
+          "expectedText": "self.font_shaper.shape(run)",
+          "sourceLine": "                            const new_cells = try self.font_shaper.shape(run);"
+        }
+      ],
+      "interpretation": "Canvas-1 repeat 2 adds a real preedit path, but it is not coverage of the normal text path or the complete renderer pipeline."
+    },
+    {
+      "id": "glyph-cache-atlas",
+      "cases": [
+        "canvas-1",
+        "canvas-2"
+      ],
+      "diagram": "d3",
+      "node": "n13",
+      "parts": [
+        {
+          "name": "glyph cache lookup",
+          "path": "src/font/SharedGrid.zig",
+          "line": 395,
+          "expectedText": "self.glyphs.get(key)",
+          "sourceLine": "        if (self.glyphs.get(key)) |v| return v;"
+        },
+        {
+          "name": "text/emoji atlas selection",
+          "path": "src/font/SharedGrid.zig",
+          "line": 409,
+          "expectedText": "const atlas: *font.Atlas",
+          "sourceLine": "    const atlas: *font.Atlas = switch (p) {"
+        }
+      ],
+      "interpretation": "Neither variant attaches these implementation details; broad renderer selections do not reach the font implementation."
+    },
+    {
+      "id": "spawn-paths",
+      "cases": [
+        "canvas-1"
+      ],
+      "diagram": "d4",
+      "node": "n8",
+      "parts": [
+        {
+          "name": "PTY creation",
+          "path": "src/termio/Exec.zig",
+          "line": 910,
+          "expectedText": "Pty.open",
+          "sourceLine": "        var pty = try Pty.open(.{"
+        },
+        {
+          "name": "normal command start",
+          "path": "src/termio/Exec.zig",
+          "line": 1063,
+          "expectedText": "cmd.start",
+          "sourceLine": "        cmd.start(alloc) catch |err| {"
+        },
+        {
+          "name": "Flatpak command spawn",
+          "path": "src/termio/Exec.zig",
+          "line": 1007,
+          "expectedText": "cmd.spawn",
+          "sourceLine": "            const pid = try cmd.spawn(alloc);"
+        }
+      ],
+      "interpretation": "The new outputs consistently include both command launch paths. Old repeat 1 reaches normal start; repeat 2 reaches Flatpak spawn; repeat 3 cuts off before either launch call."
+    },
+    {
+      "id": "pooled-write-lifetime",
+      "cases": [
+        "canvas-1"
+      ],
+      "diagram": "d4",
+      "node": "n10",
+      "parts": [
+        {
+          "name": "skip exited child",
+          "path": "src/termio/Exec.zig",
+          "line": 414,
+          "expectedText": "exec.exited",
+          "sourceLine": "    if (exec.exited) return;"
+        },
+        {
+          "name": "allocate pooled write",
+          "path": "src/termio/Exec.zig",
+          "line": 420,
+          "expectedText": "write_pool.create",
+          "sourceLine": "        const w = try exec.write_pool.create(alloc);"
+        },
+        {
+          "name": "copy into stable buffer",
+          "path": "src/termio/Exec.zig",
+          "line": 430,
+          "expectedText": "fastmem.copy",
+          "sourceLine": "                fastmem.copy(u8, buf, data[i..max]);"
+        },
+        {
+          "name": "schedule async write",
+          "path": "src/termio/Exec.zig",
+          "line": 459,
+          "expectedText": "write_stream.queueWrite",
+          "sourceLine": "        exec.write_stream.queueWrite("
+        },
+        {
+          "name": "recycle completed write",
+          "path": "src/termio/Exec.zig",
+          "line": 480,
+          "expectedText": "write_pool.destroy",
+          "sourceLine": "    w.td.write_pool.destroy(w);"
+        }
+      ],
+      "interpretation": "New outputs consistently connect the guard, allocation, buffer copy, scheduling and completion. Old excerpts each omit part of that lifecycle."
+    },
+    {
+      "id": "pty-gather-pipeline",
+      "cases": [
+        "canvas-1"
+      ],
+      "diagram": "d4",
+      "node": "n23",
+      "parts": [
+        {
+          "name": "read PTY",
+          "path": "src/termio/Exec.zig",
+          "line": 1576,
+          "expectedText": "posix.read",
+          "sourceLine": "                const n = posix.read("
+        },
+        {
+          "name": "publish batch",
+          "path": "src/termio/Exec.zig",
+          "line": 1700,
+          "expectedText": "pipeline.lens",
+          "sourceLine": "                pipeline.lens[pipeline.head] = total;"
+        },
+        {
+          "name": "wake parser",
+          "path": "src/termio/Exec.zig",
+          "line": 1704,
+          "expectedText": "batch_ready.signal",
+          "sourceLine": "                pipeline.batch_ready.signal(global.io());"
+        },
+        {
+          "name": "observe quit",
+          "path": "src/termio/Exec.zig",
+          "line": 1721,
+          "expectedText": "pollfds[1].revents",
+          "sourceLine": "            if (pollfds[1].revents & posix.POLL.IN != 0) {"
+        }
+      ],
+      "interpretation": "New outputs add the full gather lifecycle. Old repeat 1 omits quit handling; repeat 3 omits publication and quit handling."
+    },
+    {
+      "id": "compressed-page-restore",
+      "cases": [
+        "canvas-1"
+      ],
+      "diagram": "d5",
+      "node": "n22",
+      "parts": [
+        {
+          "name": "recommit retained memory",
+          "path": "src/terminal/PageList.zig",
+          "line": 270,
+          "expectedText": "terminal_mem.recommit",
+          "sourceLine": "        terminal_mem.recommit(compressed.page.memory);"
+        },
+        {
+          "name": "restore encoding",
+          "path": "src/terminal/PageList.zig",
+          "line": 273,
+          "expectedText": "compressed.restore",
+          "sourceLine": "            .preserve => compressed.restore() catch |err| {"
+        },
+        {
+          "name": "release encoded copy",
+          "path": "src/terminal/PageList.zig",
+          "line": 294,
+          "expectedText": "compressed.deinit",
+          "sourceLine": "        compressed.deinit();"
+        },
+        {
+          "name": "become resident",
+          "path": "src/terminal/PageList.zig",
+          "line": 297,
+          "expectedText": ".resident = restored",
+          "sourceLine": "        self.data = .{ .resident = restored };"
+        }
+      ],
+      "interpretation": "Repeats 2 and 3 progress from a descriptive union comment to actual retained-mapping restoration. Repeat 1 adds another file with documentation and fields, not restoration code."
+    },
+    {
+      "id": "selection-replacement",
+      "cases": [
+        "canvas-1"
+      ],
+      "diagram": "d5",
+      "node": "n12",
+      "parts": [
+        {
+          "name": "track untracked selection",
+          "path": "src/terminal/Screen.zig",
+          "line": 3070,
+          "expectedText": "sel.track(self)",
+          "sourceLine": "    const tracked_sel = if (sel.tracked()) sel else try sel.track(self);"
+        },
+        {
+          "name": "release replaced pins",
+          "path": "src/terminal/Screen.zig",
+          "line": 3085,
+          "expectedText": "untrackPin",
+          "sourceLine": "                    self.pages.untrackPin(old_bounds.start);"
+        },
+        {
+          "name": "install tracked selection",
+          "path": "src/terminal/Screen.zig",
+          "line": 3095,
+          "expectedText": "self.selection = tracked_sel",
+          "sourceLine": "    self.selection = tracked_sel;"
+        }
+      ],
+      "interpretation": "New mappings consistently include selection replacement and pin cleanup. Old repeat 2 already did; repeats 1 and 3 were incomplete at this node."
+    },
+    {
+      "id": "parse-dispatch",
+      "cases": [
+        "canvas-1",
+        "canvas-2"
+      ],
+      "diagram": "d2",
+      "node": "n23",
+      "parts": [
+        {
+          "name": "schedule render",
+          "path": "src/termio/Termio.zig",
+          "line": 716,
+          "expectedText": "handler.queueRender",
+          "sourceLine": "    self.terminal_stream.handler.queueRender() catch unreachable;"
+        },
+        {
+          "name": "parse input slice",
+          "path": "src/termio/Termio.zig",
+          "line": 753,
+          "expectedText": "terminal_stream.nextSlice",
+          "sourceLine": "        self.terminal_stream.nextSlice(buf);"
+        }
+      ],
+      "interpretation": "Four old outputs already show both calls. New canvas-1 repeat 3 repairs its missing parse call; other growth is mainly surrounding code."
+    },
+    {
+      "id": "resize-order",
+      "cases": [
+        "core-1"
+      ],
+      "diagram": "d1",
+      "node": "n75",
+      "parts": [
+        {
+          "name": "lock shared state",
+          "path": "src/termio/Termio.zig",
+          "line": 534,
+          "expectedText": "mutex.lockUncancelable",
+          "sourceLine": "        self.renderer_state.mutex.lockUncancelable(global.io());"
+        },
+        {
+          "name": "resize backend",
+          "path": "src/termio/Termio.zig",
+          "line": 540,
+          "expectedText": "backend.resize",
+          "sourceLine": "        try self.backend.resize(grid_size, size.terminal());"
+        },
+        {
+          "name": "resize terminal",
+          "path": "src/termio/Termio.zig",
+          "line": 543,
+          "expectedText": "terminal.resize",
+          "sourceLine": "        try self.terminal.resize("
+        }
+      ],
+      "interpretation": "Already correctly covered in all old outputs. New output adds essentially no meaningful coverage."
+    },
+    {
+      "id": "shutdown-order",
+      "cases": [
+        "canvas-1",
+        "canvas-2"
+      ],
+      "diagram": "d1",
+      "node": "n45",
+      "parts": [
+        {
+          "name": "stop search",
+          "path": "src/Surface.zig",
+          "line": 831,
+          "expectedText": "s.deinit",
+          "sourceLine": "    if (self.search) |*s| s.deinit();"
+        },
+        {
+          "name": "join renderer",
+          "path": "src/Surface.zig",
+          "line": 837,
+          "expectedText": "renderer_thr.join",
+          "sourceLine": "        self.renderer_thr.join();"
+        },
+        {
+          "name": "join IO",
+          "path": "src/Surface.zig",
+          "line": 844,
+          "expectedText": "io_thr.join",
+          "sourceLine": "        self.io_thr.join();"
+        }
+      ],
+      "interpretation": "All five pairs already map the same implementation; this is preserved coverage, not a delegation gain."
+    }
+  ],
+  "summary": [
+    {
+      "check": "mouse-behavior",
+      "pairs": 3,
+      "oldComplete": 0,
+      "newComplete": 3,
+      "pairsWithGains": 3,
+      "pairsWithLosses": 0,
+      "interpretation": "Old ranges only identify callback signatures. New ranges contain real reporting, local scrolling and drag selection behavior in all three repeats."
+    },
+    {
+      "check": "key-route",
+      "pairs": 3,
+      "oldComplete": 3,
+      "newComplete": 3,
+      "pairsWithGains": 0,
+      "pairsWithLosses": 0,
+      "interpretation": "The old ranges already established this basic route. New full bodies add useful handling details, but larger ranges do not create a new basic-route success."
+    },
+    {
+      "check": "input-callback-behavior",
+      "pairs": 5,
+      "oldComplete": 0,
+      "newComplete": 3,
+      "pairsWithGains": 5,
+      "pairsWithLosses": 0,
+      "interpretation": "Real key/mouse behavior is added, but canvas-1 repeat 2 and canvas-2 repeat 2 still truncate mouseButtonCallback before reporting/selection logic."
+    },
+    {
+      "check": "snapshot-under-lock",
+      "pairs": 2,
+      "oldComplete": 2,
+      "newComplete": 0,
+      "pairsWithGains": 0,
+      "pairsWithLosses": 2,
+      "interpretation": "Both new outputs add State lock/unlock internals but drop beginUpdate, which both matched old outputs attached to this node. This loses the relationship claimed by the label."
+    },
+    {
+      "check": "active-screen-switch",
+      "pairs": 2,
+      "oldComplete": 1,
+      "newComplete": 0,
+      "pairsWithGains": 0,
+      "pairsWithLosses": 1,
+      "interpretation": "Repeat 3 regresses from declaration plus assignment to declaration only. Repeat 2 was already incomplete."
+    },
+    {
+      "check": "font-refcount-implementation",
+      "pairs": 5,
+      "oldComplete": 3,
+      "newComplete": 0,
+      "pairsWithGains": 0,
+      "pairsWithLosses": 4,
+      "interpretation": "New mappings contain App fields and sometimes Surface ref calls, but none attach the reference-count implementation. This is a regression in three paired outputs, not an improvement in ownership coverage."
+    },
+    {
+      "check": "device-ownership",
+      "pairs": 5,
+      "oldComplete": 4,
+      "newComplete": 4,
+      "pairsWithGains": 1,
+      "pairsWithLosses": 1,
+      "interpretation": "One gain (canvas-1 repeat 3) and one loss (canvas-2 repeat 2); all other pairs preserve the same evidence."
+    },
+    {
+      "check": "resize-coalescing",
+      "pairs": 5,
+      "oldComplete": 4,
+      "newComplete": 3,
+      "pairsWithGains": 0,
+      "pairsWithLosses": 1,
+      "interpretation": "Canvas-1 repeat 2 loses the timer scheduling implementation. Repeat 3 lacks the applying callback in both variants. Other pairs were already covered."
+    },
+    {
+      "check": "regular-text-shaping",
+      "pairs": 5,
+      "oldComplete": 1,
+      "newComplete": 1,
+      "pairsWithGains": 0,
+      "pairsWithLosses": 0,
+      "interpretation": "Normal text shaping remains attached in only canvas-1 repeat 1. Counting any shape call would hide that the added second hit is only IME preedit shaping."
+    },
+    {
+      "check": "preedit-shaping",
+      "pairs": 5,
+      "oldComplete": 0,
+      "newComplete": 1,
+      "pairsWithGains": 1,
+      "pairsWithLosses": 0,
+      "interpretation": "Canvas-1 repeat 2 adds a real preedit path, but it is not coverage of the normal text path or the complete renderer pipeline."
+    },
+    {
+      "check": "glyph-cache-atlas",
+      "pairs": 5,
+      "oldComplete": 0,
+      "newComplete": 0,
+      "pairsWithGains": 0,
+      "pairsWithLosses": 0,
+      "interpretation": "Neither variant attaches these implementation details; broad renderer selections do not reach the font implementation."
+    },
+    {
+      "check": "spawn-paths",
+      "pairs": 3,
+      "oldComplete": 0,
+      "newComplete": 3,
+      "pairsWithGains": 3,
+      "pairsWithLosses": 0,
+      "interpretation": "The new outputs consistently include both command launch paths. Old repeat 1 reaches normal start; repeat 2 reaches Flatpak spawn; repeat 3 cuts off before either launch call."
+    },
+    {
+      "check": "pooled-write-lifetime",
+      "pairs": 3,
+      "oldComplete": 0,
+      "newComplete": 3,
+      "pairsWithGains": 3,
+      "pairsWithLosses": 0,
+      "interpretation": "New outputs consistently connect the guard, allocation, buffer copy, scheduling and completion. Old excerpts each omit part of that lifecycle."
+    },
+    {
+      "check": "pty-gather-pipeline",
+      "pairs": 3,
+      "oldComplete": 1,
+      "newComplete": 3,
+      "pairsWithGains": 2,
+      "pairsWithLosses": 0,
+      "interpretation": "New outputs add the full gather lifecycle. Old repeat 1 omits quit handling; repeat 3 omits publication and quit handling."
+    },
+    {
+      "check": "compressed-page-restore",
+      "pairs": 3,
+      "oldComplete": 0,
+      "newComplete": 2,
+      "pairsWithGains": 2,
+      "pairsWithLosses": 0,
+      "interpretation": "Repeats 2 and 3 progress from a descriptive union comment to actual retained-mapping restoration. Repeat 1 adds another file with documentation and fields, not restoration code."
+    },
+    {
+      "check": "selection-replacement",
+      "pairs": 3,
+      "oldComplete": 1,
+      "newComplete": 3,
+      "pairsWithGains": 2,
+      "pairsWithLosses": 0,
+      "interpretation": "New mappings consistently include selection replacement and pin cleanup. Old repeat 2 already did; repeats 1 and 3 were incomplete at this node."
+    },
+    {
+      "check": "parse-dispatch",
+      "pairs": 5,
+      "oldComplete": 4,
+      "newComplete": 5,
+      "pairsWithGains": 1,
+      "pairsWithLosses": 0,
+      "interpretation": "Four old outputs already show both calls. New canvas-1 repeat 3 repairs its missing parse call; other growth is mainly surrounding code."
+    },
+    {
+      "check": "resize-order",
+      "pairs": 3,
+      "oldComplete": 3,
+      "newComplete": 3,
+      "pairsWithGains": 0,
+      "pairsWithLosses": 0,
+      "interpretation": "Already correctly covered in all old outputs. New output adds essentially no meaningful coverage."
+    },
+    {
+      "check": "shutdown-order",
+      "pairs": 5,
+      "oldComplete": 5,
+      "newComplete": 5,
+      "pairsWithGains": 0,
+      "pairsWithLosses": 0,
+      "interpretation": "All five pairs already map the same implementation; this is preserved coverage, not a delegation gain."
+    }
+  ],
+  "details": [
+    {
+      "check": "mouse-behavior",
+      "case": "core-1",
+      "repeat": 1,
+      "node": "d1/n24",
+      "label": "mouseButtonCallback / cursorPosCallback / scrollCallback",
+      "old": {
+        "parts": {
+          "scroll reporting": false,
+          "local viewport scrolling": false,
+          "button reporting": false,
+          "motion reporting": false,
+          "drag selection": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "scroll reporting": true,
+          "local viewport scrolling": true,
+          "button reporting": true,
+          "motion reporting": false,
+          "drag selection": false
+        },
+        "ranges": [
+          {
+            "node": "n24",
+            "path": "src/Surface.zig",
+            "startLine": 3584,
+            "endLine": 3589
+          },
+          {
+            "node": "n24",
+            "path": "src/Surface.zig",
+            "startLine": 3918,
+            "endLine": 3923
+          },
+          {
+            "node": "n24",
+            "path": "src/Surface.zig",
+            "startLine": 4678,
+            "endLine": 4682
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-core-1-high-1/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "scroll reporting": true,
+          "local viewport scrolling": true,
+          "button reporting": true,
+          "motion reporting": true,
+          "drag selection": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "scroll reporting": true,
+          "local viewport scrolling": true,
+          "button reporting": true,
+          "motion reporting": true,
+          "drag selection": true
+        },
+        "ranges": [
+          {
+            "node": "n24",
+            "path": "src/Surface.zig",
+            "startLine": 3584,
+            "endLine": 3761
+          },
+          {
+            "node": "n24",
+            "path": "src/Surface.zig",
+            "startLine": 3915,
+            "endLine": 4297
+          },
+          {
+            "node": "n24",
+            "path": "src/Surface.zig",
+            "startLine": 4678,
+            "endLine": 4867
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-core-1-sol-high_sol-medium-1/mapping.json"
+      },
+      "gainedParts": [
+        "scroll reporting",
+        "local viewport scrolling",
+        "button reporting",
+        "motion reporting",
+        "drag selection"
+      ],
+      "lostParts": []
+    },
+    {
+      "check": "mouse-behavior",
+      "case": "core-1",
+      "repeat": 2,
+      "node": "d1/n24",
+      "label": "mouseButtonCallback / cursorPosCallback / scrollCallback",
+      "old": {
+        "parts": {
+          "scroll reporting": false,
+          "local viewport scrolling": false,
+          "button reporting": false,
+          "motion reporting": false,
+          "drag selection": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "scroll reporting": true,
+          "local viewport scrolling": true,
+          "button reporting": true,
+          "motion reporting": false,
+          "drag selection": false
+        },
+        "ranges": [
+          {
+            "node": "n24",
+            "path": "src/Surface.zig",
+            "startLine": 3584,
+            "endLine": 3589
+          },
+          {
+            "node": "n24",
+            "path": "src/Surface.zig",
+            "startLine": 3918,
+            "endLine": 3923
+          },
+          {
+            "node": "n24",
+            "path": "src/Surface.zig",
+            "startLine": 4678,
+            "endLine": 4682
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-core-1-high-2/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "scroll reporting": true,
+          "local viewport scrolling": true,
+          "button reporting": true,
+          "motion reporting": true,
+          "drag selection": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "scroll reporting": true,
+          "local viewport scrolling": true,
+          "button reporting": true,
+          "motion reporting": true,
+          "drag selection": true
+        },
+        "ranges": [
+          {
+            "node": "n24",
+            "path": "src/Surface.zig",
+            "startLine": 3584,
+            "endLine": 3761
+          },
+          {
+            "node": "n24",
+            "path": "src/Surface.zig",
+            "startLine": 3918,
+            "endLine": 4297
+          },
+          {
+            "node": "n24",
+            "path": "src/Surface.zig",
+            "startLine": 4678,
+            "endLine": 4867
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-core-1-sol-high_sol-medium-2/mapping.json"
+      },
+      "gainedParts": [
+        "scroll reporting",
+        "local viewport scrolling",
+        "button reporting",
+        "motion reporting",
+        "drag selection"
+      ],
+      "lostParts": []
+    },
+    {
+      "check": "mouse-behavior",
+      "case": "core-1",
+      "repeat": 3,
+      "node": "d1/n24",
+      "label": "mouseButtonCallback / cursorPosCallback / scrollCallback",
+      "old": {
+        "parts": {
+          "scroll reporting": false,
+          "local viewport scrolling": false,
+          "button reporting": false,
+          "motion reporting": false,
+          "drag selection": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "scroll reporting": true,
+          "local viewport scrolling": false,
+          "button reporting": true,
+          "motion reporting": true,
+          "drag selection": false
+        },
+        "ranges": [
+          {
+            "node": "n24",
+            "path": "src/Surface.zig",
+            "startLine": 3584,
+            "endLine": 3589
+          },
+          {
+            "node": "n24",
+            "path": "src/Surface.zig",
+            "startLine": 3918,
+            "endLine": 3923
+          },
+          {
+            "node": "n24",
+            "path": "src/Surface.zig",
+            "startLine": 4678,
+            "endLine": 4682
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-core-1-high-3/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "scroll reporting": true,
+          "local viewport scrolling": true,
+          "button reporting": true,
+          "motion reporting": true,
+          "drag selection": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "scroll reporting": true,
+          "local viewport scrolling": true,
+          "button reporting": true,
+          "motion reporting": true,
+          "drag selection": true
+        },
+        "ranges": [
+          {
+            "node": "n24",
+            "path": "src/Surface.zig",
+            "startLine": 3584,
+            "endLine": 3761
+          },
+          {
+            "node": "n24",
+            "path": "src/Surface.zig",
+            "startLine": 3918,
+            "endLine": 4297
+          },
+          {
+            "node": "n24",
+            "path": "src/Surface.zig",
+            "startLine": 4678,
+            "endLine": 4867
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-core-1-sol-high_sol-medium-3/mapping.json"
+      },
+      "gainedParts": [
+        "scroll reporting",
+        "local viewport scrolling",
+        "button reporting",
+        "motion reporting",
+        "drag selection"
+      ],
+      "lostParts": []
+    },
+    {
+      "check": "key-route",
+      "case": "core-1",
+      "repeat": 1,
+      "node": "d1/n20",
+      "label": "Surface.keyCallback -> binding handling or encodeKey (src/Surface.zig:2792)",
+      "old": {
+        "parts": {
+          "bindings first": true,
+          "encode unhandled key": true,
+          "enqueue bytes": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "bindings first": true,
+          "encode unhandled key": true,
+          "enqueue bytes": true
+        },
+        "ranges": [
+          {
+            "node": "n20",
+            "path": "src/Surface.zig",
+            "startLine": 2834,
+            "endLine": 2845
+          },
+          {
+            "node": "n20",
+            "path": "src/Surface.zig",
+            "startLine": 2938,
+            "endLine": 2957
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-core-1-high-1/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "bindings first": true,
+          "encode unhandled key": true,
+          "enqueue bytes": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "bindings first": true,
+          "encode unhandled key": true,
+          "enqueue bytes": true
+        },
+        "ranges": [
+          {
+            "node": "n20",
+            "path": "src/Surface.zig",
+            "startLine": 2792,
+            "endLine": 3180
+          },
+          {
+            "node": "n20",
+            "path": "src/Surface.zig",
+            "startLine": 3324,
+            "endLine": 3419
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-core-1-sol-high_sol-medium-1/mapping.json"
+      },
+      "gainedParts": [],
+      "lostParts": []
+    },
+    {
+      "check": "key-route",
+      "case": "core-1",
+      "repeat": 2,
+      "node": "d1/n20",
+      "label": "Surface.keyCallback -> binding handling or encodeKey (src/Surface.zig:2792)",
+      "old": {
+        "parts": {
+          "bindings first": true,
+          "encode unhandled key": true,
+          "enqueue bytes": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "bindings first": true,
+          "encode unhandled key": true,
+          "enqueue bytes": true
+        },
+        "ranges": [
+          {
+            "node": "n20",
+            "path": "src/Surface.zig",
+            "startLine": 2834,
+            "endLine": 2845
+          },
+          {
+            "node": "n20",
+            "path": "src/Surface.zig",
+            "startLine": 2938,
+            "endLine": 2957
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-core-1-high-2/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "bindings first": true,
+          "encode unhandled key": true,
+          "enqueue bytes": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "bindings first": true,
+          "encode unhandled key": true,
+          "enqueue bytes": true
+        },
+        "ranges": [
+          {
+            "node": "n20",
+            "path": "src/Surface.zig",
+            "startLine": 2792,
+            "endLine": 3419
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-core-1-sol-high_sol-medium-2/mapping.json"
+      },
+      "gainedParts": [],
+      "lostParts": []
+    },
+    {
+      "check": "key-route",
+      "case": "core-1",
+      "repeat": 3,
+      "node": "d1/n20",
+      "label": "Surface.keyCallback -> binding handling or encodeKey (src/Surface.zig:2792)",
+      "old": {
+        "parts": {
+          "bindings first": true,
+          "encode unhandled key": true,
+          "enqueue bytes": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "bindings first": true,
+          "encode unhandled key": true,
+          "enqueue bytes": true
+        },
+        "ranges": [
+          {
+            "node": "n20",
+            "path": "src/Surface.zig",
+            "startLine": 2834,
+            "endLine": 2840
+          },
+          {
+            "node": "n20",
+            "path": "src/Surface.zig",
+            "startLine": 2938,
+            "endLine": 2957
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-core-1-high-3/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "bindings first": true,
+          "encode unhandled key": true,
+          "enqueue bytes": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "bindings first": true,
+          "encode unhandled key": true,
+          "enqueue bytes": true
+        },
+        "ranges": [
+          {
+            "node": "n20",
+            "path": "src/Surface.zig",
+            "startLine": 2792,
+            "endLine": 2982
+          },
+          {
+            "node": "n20",
+            "path": "src/Surface.zig",
+            "startLine": 3324,
+            "endLine": 3419
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-core-1-sol-high_sol-medium-3/mapping.json"
+      },
+      "gainedParts": [],
+      "lostParts": []
+    },
+    {
+      "check": "input-callback-behavior",
+      "case": "canvas-1",
+      "repeat": 1,
+      "node": "d1/n16",
+      "label": "keyCallback / textCallback / mouseButtonCallback",
+      "old": {
+        "parts": {
+          "key binding": false,
+          "key encoding": false,
+          "text/paste dispatch": true,
+          "mouse reporting": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "key binding": true,
+          "key encoding": false,
+          "text/paste dispatch": true,
+          "mouse reporting": false
+        },
+        "ranges": [
+          {
+            "node": "n16",
+            "path": "src/Surface.zig",
+            "startLine": 2792,
+            "endLine": 2795
+          },
+          {
+            "node": "n16",
+            "path": "src/Surface.zig",
+            "startLine": 3421,
+            "endLine": 3431
+          },
+          {
+            "node": "n16",
+            "path": "src/Surface.zig",
+            "startLine": 3918,
+            "endLine": 3936
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-canvas-1-high-1/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "key binding": true,
+          "key encoding": true,
+          "text/paste dispatch": true,
+          "mouse reporting": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "key binding": true,
+          "key encoding": true,
+          "text/paste dispatch": true,
+          "mouse reporting": true
+        },
+        "ranges": [
+          {
+            "node": "n16",
+            "path": "src/Surface.zig",
+            "startLine": 2792,
+            "endLine": 2982
+          },
+          {
+            "node": "n16",
+            "path": "src/Surface.zig",
+            "startLine": 3421,
+            "endLine": 3432
+          },
+          {
+            "node": "n16",
+            "path": "src/Surface.zig",
+            "startLine": 3918,
+            "endLine": 4297
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-canvas-1-sol-high_sol-medium-1/mapping.json"
+      },
+      "gainedParts": [
+        "key binding",
+        "key encoding",
+        "mouse reporting"
+      ],
+      "lostParts": []
+    },
+    {
+      "check": "input-callback-behavior",
+      "case": "canvas-1",
+      "repeat": 2,
+      "node": "d1/n16",
+      "label": "keyCallback / textCallback / mouseButtonCallback",
+      "old": {
+        "parts": {
+          "key binding": false,
+          "key encoding": false,
+          "text/paste dispatch": true,
+          "mouse reporting": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "key binding": false,
+          "key encoding": false,
+          "text/paste dispatch": true,
+          "mouse reporting": false
+        },
+        "ranges": [
+          {
+            "node": "n16",
+            "path": "src/Surface.zig",
+            "startLine": 2792,
+            "endLine": 2795
+          },
+          {
+            "node": "n16",
+            "path": "src/Surface.zig",
+            "startLine": 3421,
+            "endLine": 3432
+          },
+          {
+            "node": "n16",
+            "path": "src/Surface.zig",
+            "startLine": 3918,
+            "endLine": 3936
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-canvas-1-high-2/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "key binding": true,
+          "key encoding": true,
+          "text/paste dispatch": true,
+          "mouse reporting": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "key binding": true,
+          "key encoding": true,
+          "text/paste dispatch": true,
+          "mouse reporting": false
+        },
+        "ranges": [
+          {
+            "node": "n16",
+            "path": "src/Surface.zig",
+            "startLine": 2792,
+            "endLine": 2982
+          },
+          {
+            "node": "n16",
+            "path": "src/Surface.zig",
+            "startLine": 3421,
+            "endLine": 3432
+          },
+          {
+            "node": "n16",
+            "path": "src/Surface.zig",
+            "startLine": 3918,
+            "endLine": 3965
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-canvas-1-sol-high_sol-medium-2/mapping.json"
+      },
+      "gainedParts": [
+        "key binding",
+        "key encoding"
+      ],
+      "lostParts": []
+    },
+    {
+      "check": "input-callback-behavior",
+      "case": "canvas-1",
+      "repeat": 3,
+      "node": "d1/n16",
+      "label": "keyCallback / textCallback / mouseButtonCallback",
+      "old": {
+        "parts": {
+          "key binding": false,
+          "key encoding": false,
+          "text/paste dispatch": true,
+          "mouse reporting": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "key binding": false,
+          "key encoding": false,
+          "text/paste dispatch": true,
+          "mouse reporting": false
+        },
+        "ranges": [
+          {
+            "node": "n16",
+            "path": "src/Surface.zig",
+            "startLine": 2792,
+            "endLine": 2795
+          },
+          {
+            "node": "n16",
+            "path": "src/Surface.zig",
+            "startLine": 3421,
+            "endLine": 3432
+          },
+          {
+            "node": "n16",
+            "path": "src/Surface.zig",
+            "startLine": 3918,
+            "endLine": 3923
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-canvas-1-high-3/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "key binding": true,
+          "key encoding": true,
+          "text/paste dispatch": true,
+          "mouse reporting": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "key binding": true,
+          "key encoding": true,
+          "text/paste dispatch": true,
+          "mouse reporting": true
+        },
+        "ranges": [
+          {
+            "node": "n16",
+            "path": "src/Surface.zig",
+            "startLine": 2792,
+            "endLine": 2982
+          },
+          {
+            "node": "n16",
+            "path": "src/Surface.zig",
+            "startLine": 3421,
+            "endLine": 3432
+          },
+          {
+            "node": "n16",
+            "path": "src/Surface.zig",
+            "startLine": 3918,
+            "endLine": 4297
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-canvas-1-sol-high_sol-medium-3/mapping.json"
+      },
+      "gainedParts": [
+        "key binding",
+        "key encoding",
+        "mouse reporting"
+      ],
+      "lostParts": []
+    },
+    {
+      "check": "input-callback-behavior",
+      "case": "canvas-2",
+      "repeat": 2,
+      "node": "d1/n16",
+      "label": "keyCallback / textCallback / mouseButtonCallback",
+      "old": {
+        "parts": {
+          "key binding": false,
+          "key encoding": false,
+          "text/paste dispatch": true,
+          "mouse reporting": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "key binding": false,
+          "key encoding": false,
+          "text/paste dispatch": true,
+          "mouse reporting": false
+        },
+        "ranges": [
+          {
+            "node": "n16",
+            "path": "src/Surface.zig",
+            "startLine": 2792,
+            "endLine": 2803
+          },
+          {
+            "node": "n16",
+            "path": "src/Surface.zig",
+            "startLine": 3426,
+            "endLine": 3432
+          },
+          {
+            "node": "n16",
+            "path": "src/Surface.zig",
+            "startLine": 3918,
+            "endLine": 3936
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-canvas-2-high-2/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "key binding": true,
+          "key encoding": true,
+          "text/paste dispatch": true,
+          "mouse reporting": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "key binding": true,
+          "key encoding": true,
+          "text/paste dispatch": true,
+          "mouse reporting": true
+        },
+        "ranges": [
+          {
+            "node": "n16",
+            "path": "src/Surface.zig",
+            "startLine": 2792,
+            "endLine": 3948
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-canvas-2-sol-high_sol-medium-2/mapping.json"
+      },
+      "gainedParts": [
+        "key binding",
+        "key encoding"
+      ],
+      "lostParts": []
+    },
+    {
+      "check": "input-callback-behavior",
+      "case": "canvas-2",
+      "repeat": 3,
+      "node": "d1/n16",
+      "label": "keyCallback / textCallback / mouseButtonCallback",
+      "old": {
+        "parts": {
+          "key binding": false,
+          "key encoding": false,
+          "text/paste dispatch": true,
+          "mouse reporting": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "key binding": false,
+          "key encoding": false,
+          "text/paste dispatch": true,
+          "mouse reporting": false
+        },
+        "ranges": [
+          {
+            "node": "n16",
+            "path": "src/Surface.zig",
+            "startLine": 2792,
+            "endLine": 2795
+          },
+          {
+            "node": "n16",
+            "path": "src/Surface.zig",
+            "startLine": 3426,
+            "endLine": 3432
+          },
+          {
+            "node": "n16",
+            "path": "src/Surface.zig",
+            "startLine": 3918,
+            "endLine": 3923
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-canvas-2-high-3/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "key binding": true,
+          "key encoding": true,
+          "text/paste dispatch": true,
+          "mouse reporting": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "key binding": true,
+          "key encoding": true,
+          "text/paste dispatch": true,
+          "mouse reporting": true
+        },
+        "ranges": [
+          {
+            "node": "n16",
+            "path": "src/Surface.zig",
+            "startLine": 2792,
+            "endLine": 2982
+          },
+          {
+            "node": "n16",
+            "path": "src/Surface.zig",
+            "startLine": 3421,
+            "endLine": 3432
+          },
+          {
+            "node": "n16",
+            "path": "src/Surface.zig",
+            "startLine": 3918,
+            "endLine": 4297
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-canvas-2-sol-high_sol-medium-3/mapping.json"
+      },
+      "gainedParts": [
+        "key binding",
+        "key encoding",
+        "mouse reporting"
+      ],
+      "lostParts": []
+    },
+    {
+      "check": "snapshot-under-lock",
+      "case": "core-2",
+      "repeat": 2,
+      "node": "d1/n73",
+      "label": "updateFrame() snapshots under State.lockDemand() / unlockDemand()",
+      "old": {
+        "parts": {
+          "acquire lock": true,
+          "take snapshot": true,
+          "release lock": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "acquire lock": true,
+          "take snapshot": true,
+          "release lock": true
+        },
+        "ranges": [
+          {
+            "node": "n73",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1408,
+            "endLine": 1426
+          },
+          {
+            "node": "n73",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1479,
+            "endLine": 1487
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-core-2-high-2/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "acquire lock": true,
+          "take snapshot": false,
+          "release lock": true
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "acquire lock": true,
+          "take snapshot": false,
+          "release lock": true
+        },
+        "ranges": [
+          {
+            "node": "n73",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1370,
+            "endLine": 1427
+          },
+          {
+            "node": "n73",
+            "path": "src/renderer/State.zig",
+            "startLine": 54,
+            "endLine": 80
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-core-2-sol-high_sol-medium-2/mapping.json"
+      },
+      "gainedParts": [],
+      "lostParts": [
+        "take snapshot"
+      ]
+    },
+    {
+      "check": "snapshot-under-lock",
+      "case": "core-2",
+      "repeat": 3,
+      "node": "d1/n73",
+      "label": "updateFrame() snapshots under State.lockDemand() / unlockDemand()",
+      "old": {
+        "parts": {
+          "acquire lock": true,
+          "take snapshot": true,
+          "release lock": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "acquire lock": true,
+          "take snapshot": true,
+          "release lock": true
+        },
+        "ranges": [
+          {
+            "node": "n73",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1408,
+            "endLine": 1427
+          },
+          {
+            "node": "n73",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1479,
+            "endLine": 1487
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-core-2-high-3/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "acquire lock": true,
+          "take snapshot": false,
+          "release lock": true
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "acquire lock": true,
+          "take snapshot": false,
+          "release lock": true
+        },
+        "ranges": [
+          {
+            "node": "n73",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1370,
+            "endLine": 1427
+          },
+          {
+            "node": "n73",
+            "path": "src/renderer/State.zig",
+            "startLine": 54,
+            "endLine": 80
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-core-2-sol-high_sol-medium-3/mapping.json"
+      },
+      "gainedParts": [],
+      "lostParts": [
+        "take snapshot"
+      ]
+    },
+    {
+      "check": "active-screen-switch",
+      "case": "core-2",
+      "repeat": 2,
+      "node": "d1/n60",
+      "label": "active: *Screen chooses the current screen",
+      "old": {
+        "parts": {
+          "select owned screen": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "select owned screen": false
+        },
+        "ranges": [
+          {
+            "node": "n60",
+            "path": "src/terminal/ScreenSet.zig",
+            "startLine": 23,
+            "endLine": 31
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-core-2-high-2/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "select owned screen": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "select owned screen": false
+        },
+        "ranges": [
+          {
+            "node": "n60",
+            "path": "src/terminal/ScreenSet.zig",
+            "startLine": 23,
+            "endLine": 31
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-core-2-sol-high_sol-medium-2/mapping.json"
+      },
+      "gainedParts": [],
+      "lostParts": []
+    },
+    {
+      "check": "active-screen-switch",
+      "case": "core-2",
+      "repeat": 3,
+      "node": "d1/n60",
+      "label": "active: *Screen chooses the current screen",
+      "old": {
+        "parts": {
+          "select owned screen": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "select owned screen": true
+        },
+        "ranges": [
+          {
+            "node": "n60",
+            "path": "src/terminal/ScreenSet.zig",
+            "startLine": 23,
+            "endLine": 31
+          },
+          {
+            "node": "n60",
+            "path": "src/terminal/ScreenSet.zig",
+            "startLine": 104,
+            "endLine": 109
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-core-2-high-3/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "select owned screen": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "select owned screen": false
+        },
+        "ranges": [
+          {
+            "node": "n60",
+            "path": "src/terminal/ScreenSet.zig",
+            "startLine": 23,
+            "endLine": 31
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-core-2-sol-high_sol-medium-3/mapping.json"
+      },
+      "gainedParts": [],
+      "lostParts": [
+        "select owned screen"
+      ]
+    },
+    {
+      "check": "font-refcount-implementation",
+      "case": "canvas-1",
+      "repeat": 1,
+      "node": "d1/n6",
+      "label": "font_grid_set: shared, reference-counted font grids",
+      "old": {
+        "parts": {
+          "increment": true,
+          "decrement": true,
+          "last-owner destruction": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "increment": true,
+          "decrement": true,
+          "last-owner destruction": true
+        },
+        "ranges": [
+          {
+            "node": "n6",
+            "path": "src/App.zig",
+            "startLine": 53,
+            "endLine": 55
+          },
+          {
+            "node": "n6",
+            "path": "src/font/SharedGridSet.zig",
+            "startLine": 88,
+            "endLine": 115
+          },
+          {
+            "node": "n6",
+            "path": "src/font/SharedGridSet.zig",
+            "startLine": 413,
+            "endLine": 430
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-canvas-1-high-1/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "increment": false,
+          "decrement": false,
+          "last-owner destruction": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "increment": false,
+          "decrement": false,
+          "last-owner destruction": false
+        },
+        "ranges": [
+          {
+            "node": "n6",
+            "path": "src/App.zig",
+            "startLine": 53,
+            "endLine": 55
+          },
+          {
+            "node": "n6",
+            "path": "src/Surface.zig",
+            "startLine": 528,
+            "endLine": 534
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-canvas-1-sol-high_sol-medium-1/mapping.json"
+      },
+      "gainedParts": [],
+      "lostParts": [
+        "increment",
+        "decrement",
+        "last-owner destruction"
+      ]
+    },
+    {
+      "check": "font-refcount-implementation",
+      "case": "canvas-1",
+      "repeat": 2,
+      "node": "d1/n6",
+      "label": "font_grid_set: shared, reference-counted font grids",
+      "old": {
+        "parts": {
+          "increment": true,
+          "decrement": false,
+          "last-owner destruction": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "increment": true,
+          "decrement": false,
+          "last-owner destruction": false
+        },
+        "ranges": [
+          {
+            "node": "n6",
+            "path": "src/App.zig",
+            "startLine": 53,
+            "endLine": 55
+          },
+          {
+            "node": "n6",
+            "path": "src/font/SharedGridSet.zig",
+            "startLine": 96,
+            "endLine": 127
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-canvas-1-high-2/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "increment": false,
+          "decrement": false,
+          "last-owner destruction": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "increment": false,
+          "decrement": false,
+          "last-owner destruction": false
+        },
+        "ranges": [
+          {
+            "node": "n6",
+            "path": "src/App.zig",
+            "startLine": 53,
+            "endLine": 55
+          },
+          {
+            "node": "n6",
+            "path": "src/Surface.zig",
+            "startLine": 528,
+            "endLine": 534
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-canvas-1-sol-high_sol-medium-2/mapping.json"
+      },
+      "gainedParts": [],
+      "lostParts": [
+        "increment"
+      ]
+    },
+    {
+      "check": "font-refcount-implementation",
+      "case": "canvas-1",
+      "repeat": 3,
+      "node": "d1/n6",
+      "label": "font_grid_set: shared, reference-counted font grids",
+      "old": {
+        "parts": {
+          "increment": false,
+          "decrement": false,
+          "last-owner destruction": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "increment": false,
+          "decrement": false,
+          "last-owner destruction": false
+        },
+        "ranges": [
+          {
+            "node": "n6",
+            "path": "src/App.zig",
+            "startLine": 53,
+            "endLine": 55
+          },
+          {
+            "node": "n6",
+            "path": "src/Surface.zig",
+            "startLine": 528,
+            "endLine": 534
+          },
+          {
+            "node": "n6",
+            "path": "src/Surface.zig",
+            "startLine": 870,
+            "endLine": 871
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-canvas-1-high-3/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "increment": false,
+          "decrement": false,
+          "last-owner destruction": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "increment": false,
+          "decrement": false,
+          "last-owner destruction": false
+        },
+        "ranges": [
+          {
+            "node": "n6",
+            "path": "src/App.zig",
+            "startLine": 53,
+            "endLine": 55
+          },
+          {
+            "node": "n6",
+            "path": "src/Surface.zig",
+            "startLine": 528,
+            "endLine": 534
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-canvas-1-sol-high_sol-medium-3/mapping.json"
+      },
+      "gainedParts": [],
+      "lostParts": []
+    },
+    {
+      "check": "font-refcount-implementation",
+      "case": "canvas-2",
+      "repeat": 2,
+      "node": "d1/n6",
+      "label": "font_grid_set: shared, reference-counted font grids",
+      "old": {
+        "parts": {
+          "increment": true,
+          "decrement": true,
+          "last-owner destruction": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "increment": true,
+          "decrement": true,
+          "last-owner destruction": true
+        },
+        "ranges": [
+          {
+            "node": "n6",
+            "path": "src/App.zig",
+            "startLine": 53,
+            "endLine": 55
+          },
+          {
+            "node": "n6",
+            "path": "src/font/SharedGridSet.zig",
+            "startLine": 96,
+            "endLine": 115
+          },
+          {
+            "node": "n6",
+            "path": "src/font/SharedGridSet.zig",
+            "startLine": 413,
+            "endLine": 430
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-canvas-2-high-2/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "increment": false,
+          "decrement": false,
+          "last-owner destruction": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "increment": false,
+          "decrement": false,
+          "last-owner destruction": false
+        },
+        "ranges": [
+          {
+            "node": "n6",
+            "path": "src/App.zig",
+            "startLine": 53,
+            "endLine": 55
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-canvas-2-sol-high_sol-medium-2/mapping.json"
+      },
+      "gainedParts": [],
+      "lostParts": [
+        "increment",
+        "decrement",
+        "last-owner destruction"
+      ]
+    },
+    {
+      "check": "font-refcount-implementation",
+      "case": "canvas-2",
+      "repeat": 3,
+      "node": "d1/n6",
+      "label": "font_grid_set: shared, reference-counted font grids",
+      "old": {
+        "parts": {
+          "increment": true,
+          "decrement": true,
+          "last-owner destruction": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "increment": true,
+          "decrement": true,
+          "last-owner destruction": true
+        },
+        "ranges": [
+          {
+            "node": "n6",
+            "path": "src/App.zig",
+            "startLine": 53,
+            "endLine": 55
+          },
+          {
+            "node": "n6",
+            "path": "src/font/SharedGridSet.zig",
+            "startLine": 96,
+            "endLine": 116
+          },
+          {
+            "node": "n6",
+            "path": "src/font/SharedGridSet.zig",
+            "startLine": 413,
+            "endLine": 430
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-canvas-2-high-3/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "increment": false,
+          "decrement": false,
+          "last-owner destruction": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "increment": false,
+          "decrement": false,
+          "last-owner destruction": false
+        },
+        "ranges": [
+          {
+            "node": "n6",
+            "path": "src/App.zig",
+            "startLine": 53,
+            "endLine": 55
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-canvas-2-sol-high_sol-medium-3/mapping.json"
+      },
+      "gainedParts": [],
+      "lostParts": [
+        "increment",
+        "decrement",
+        "last-owner destruction"
+      ]
+    },
+    {
+      "check": "device-ownership",
+      "case": "canvas-1",
+      "repeat": 1,
+      "node": "d1/n7",
+      "label": "device: optional app-owned GPU device, borrowed by renderers",
+      "old": {
+        "parts": {
+          "App retains device": true,
+          "renderer borrows device": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "App retains device": true,
+          "renderer borrows device": true
+        },
+        "ranges": [
+          {
+            "node": "n7",
+            "path": "src/App.zig",
+            "startLine": 57,
+            "endLine": 58
+          },
+          {
+            "node": "n7",
+            "path": "src/Surface.zig",
+            "startLine": 564,
+            "endLine": 587
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-canvas-1-high-1/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "App retains device": true,
+          "renderer borrows device": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "App retains device": true,
+          "renderer borrows device": true
+        },
+        "ranges": [
+          {
+            "node": "n7",
+            "path": "src/App.zig",
+            "startLine": 57,
+            "endLine": 58
+          },
+          {
+            "node": "n7",
+            "path": "src/Surface.zig",
+            "startLine": 564,
+            "endLine": 588
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-canvas-1-sol-high_sol-medium-1/mapping.json"
+      },
+      "gainedParts": [],
+      "lostParts": []
+    },
+    {
+      "check": "device-ownership",
+      "case": "canvas-1",
+      "repeat": 2,
+      "node": "d1/n7",
+      "label": "device: optional app-owned GPU device, borrowed by renderers",
+      "old": {
+        "parts": {
+          "App retains device": true,
+          "renderer borrows device": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "App retains device": true,
+          "renderer borrows device": true
+        },
+        "ranges": [
+          {
+            "node": "n7",
+            "path": "src/App.zig",
+            "startLine": 57,
+            "endLine": 58
+          },
+          {
+            "node": "n7",
+            "path": "src/Surface.zig",
+            "startLine": 564,
+            "endLine": 587
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-canvas-1-high-2/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "App retains device": true,
+          "renderer borrows device": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "App retains device": true,
+          "renderer borrows device": true
+        },
+        "ranges": [
+          {
+            "node": "n7",
+            "path": "src/App.zig",
+            "startLine": 57,
+            "endLine": 58
+          },
+          {
+            "node": "n7",
+            "path": "src/Surface.zig",
+            "startLine": 564,
+            "endLine": 588
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-canvas-1-sol-high_sol-medium-2/mapping.json"
+      },
+      "gainedParts": [],
+      "lostParts": []
+    },
+    {
+      "check": "device-ownership",
+      "case": "canvas-1",
+      "repeat": 3,
+      "node": "d1/n7",
+      "label": "device: optional app-owned GPU device, borrowed by renderers",
+      "old": {
+        "parts": {
+          "App retains device": false,
+          "renderer borrows device": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "App retains device": false,
+          "renderer borrows device": false
+        },
+        "ranges": [
+          {
+            "node": "n7",
+            "path": "src/App.zig",
+            "startLine": 57,
+            "endLine": 58
+          },
+          {
+            "node": "n7",
+            "path": "src/App.zig",
+            "startLine": 148,
+            "endLine": 150
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-canvas-1-high-3/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "App retains device": true,
+          "renderer borrows device": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "App retains device": true,
+          "renderer borrows device": true
+        },
+        "ranges": [
+          {
+            "node": "n7",
+            "path": "src/App.zig",
+            "startLine": 57,
+            "endLine": 58
+          },
+          {
+            "node": "n7",
+            "path": "src/Surface.zig",
+            "startLine": 564,
+            "endLine": 588
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-canvas-1-sol-high_sol-medium-3/mapping.json"
+      },
+      "gainedParts": [
+        "App retains device",
+        "renderer borrows device"
+      ],
+      "lostParts": []
+    },
+    {
+      "check": "device-ownership",
+      "case": "canvas-2",
+      "repeat": 2,
+      "node": "d1/n7",
+      "label": "device: optional app-owned GPU device, borrowed by renderers",
+      "old": {
+        "parts": {
+          "App retains device": true,
+          "renderer borrows device": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "App retains device": true,
+          "renderer borrows device": true
+        },
+        "ranges": [
+          {
+            "node": "n7",
+            "path": "src/App.zig",
+            "startLine": 57,
+            "endLine": 58
+          },
+          {
+            "node": "n7",
+            "path": "src/Surface.zig",
+            "startLine": 564,
+            "endLine": 588
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-canvas-2-high-2/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "App retains device": false,
+          "renderer borrows device": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "App retains device": true,
+          "renderer borrows device": true
+        },
+        "ranges": [
+          {
+            "node": "n7",
+            "path": "src/App.zig",
+            "startLine": 57,
+            "endLine": 58
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-canvas-2-sol-high_sol-medium-2/mapping.json"
+      },
+      "gainedParts": [],
+      "lostParts": [
+        "App retains device",
+        "renderer borrows device"
+      ]
+    },
+    {
+      "check": "device-ownership",
+      "case": "canvas-2",
+      "repeat": 3,
+      "node": "d1/n7",
+      "label": "device: optional app-owned GPU device, borrowed by renderers",
+      "old": {
+        "parts": {
+          "App retains device": true,
+          "renderer borrows device": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "App retains device": true,
+          "renderer borrows device": true
+        },
+        "ranges": [
+          {
+            "node": "n7",
+            "path": "src/App.zig",
+            "startLine": 57,
+            "endLine": 58
+          },
+          {
+            "node": "n7",
+            "path": "src/Surface.zig",
+            "startLine": 564,
+            "endLine": 570
+          },
+          {
+            "node": "n7",
+            "path": "src/Surface.zig",
+            "startLine": 580,
+            "endLine": 587
+          },
+          {
+            "node": "n7",
+            "path": "src/App.zig",
+            "startLine": 148,
+            "endLine": 150
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-canvas-2-high-3/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "App retains device": true,
+          "renderer borrows device": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "App retains device": true,
+          "renderer borrows device": true
+        },
+        "ranges": [
+          {
+            "node": "n7",
+            "path": "src/App.zig",
+            "startLine": 57,
+            "endLine": 58
+          },
+          {
+            "node": "n7",
+            "path": "src/Surface.zig",
+            "startLine": 564,
+            "endLine": 588
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-canvas-2-sol-high_sol-medium-3/mapping.json"
+      },
+      "gainedParts": [],
+      "lostParts": []
+    },
+    {
+      "check": "resize-coalescing",
+      "case": "canvas-1",
+      "repeat": 1,
+      "node": "d1/n28",
+      "label": "drainMailbox -> io.queueWrite; coalesces resize requests",
+      "old": {
+        "parts": {
+          "retain latest resize": true,
+          "schedule timer": true,
+          "apply coalesced size": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "retain latest resize": true,
+          "schedule timer": true,
+          "apply coalesced size": true
+        },
+        "ranges": [
+          {
+            "node": "n28",
+            "path": "src/termio/Thread.zig",
+            "startLine": 288,
+            "endLine": 326
+          },
+          {
+            "node": "n28",
+            "path": "src/termio/Thread.zig",
+            "startLine": 348,
+            "endLine": 366
+          },
+          {
+            "node": "n28",
+            "path": "src/termio/Thread.zig",
+            "startLine": 389,
+            "endLine": 405
+          },
+          {
+            "node": "n28",
+            "path": "src/termio/Thread.zig",
+            "startLine": 427,
+            "endLine": 448
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-canvas-1-high-1/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "retain latest resize": true,
+          "schedule timer": true,
+          "apply coalesced size": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "retain latest resize": true,
+          "schedule timer": true,
+          "apply coalesced size": true
+        },
+        "ranges": [
+          {
+            "node": "n28",
+            "path": "src/termio/Thread.zig",
+            "startLine": 288,
+            "endLine": 451
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-canvas-1-sol-high_sol-medium-1/mapping.json"
+      },
+      "gainedParts": [],
+      "lostParts": []
+    },
+    {
+      "check": "resize-coalescing",
+      "case": "canvas-1",
+      "repeat": 2,
+      "node": "d1/n28",
+      "label": "drainMailbox -> io.queueWrite; coalesces resize requests",
+      "old": {
+        "parts": {
+          "retain latest resize": true,
+          "schedule timer": true,
+          "apply coalesced size": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "retain latest resize": true,
+          "schedule timer": true,
+          "apply coalesced size": true
+        },
+        "ranges": [
+          {
+            "node": "n28",
+            "path": "src/termio/Thread.zig",
+            "startLine": 308,
+            "endLine": 367
+          },
+          {
+            "node": "n28",
+            "path": "src/termio/Thread.zig",
+            "startLine": 389,
+            "endLine": 405
+          },
+          {
+            "node": "n28",
+            "path": "src/termio/Thread.zig",
+            "startLine": 441,
+            "endLine": 448
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-canvas-1-high-2/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "retain latest resize": true,
+          "schedule timer": false,
+          "apply coalesced size": true
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "retain latest resize": true,
+          "schedule timer": true,
+          "apply coalesced size": true
+        },
+        "ranges": [
+          {
+            "node": "n28",
+            "path": "src/termio/Thread.zig",
+            "startLine": 288,
+            "endLine": 375
+          },
+          {
+            "node": "n28",
+            "path": "src/termio/Thread.zig",
+            "startLine": 389,
+            "endLine": 390
+          },
+          {
+            "node": "n28",
+            "path": "src/termio/Thread.zig",
+            "startLine": 441,
+            "endLine": 450
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-canvas-1-sol-high_sol-medium-2/mapping.json"
+      },
+      "gainedParts": [],
+      "lostParts": [
+        "schedule timer"
+      ]
+    },
+    {
+      "check": "resize-coalescing",
+      "case": "canvas-1",
+      "repeat": 3,
+      "node": "d1/n28",
+      "label": "drainMailbox -> io.queueWrite; coalesces resize requests",
+      "old": {
+        "parts": {
+          "retain latest resize": true,
+          "schedule timer": true,
+          "apply coalesced size": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "retain latest resize": true,
+          "schedule timer": true,
+          "apply coalesced size": false
+        },
+        "ranges": [
+          {
+            "node": "n28",
+            "path": "src/termio/Thread.zig",
+            "startLine": 281,
+            "endLine": 295
+          },
+          {
+            "node": "n28",
+            "path": "src/termio/Thread.zig",
+            "startLine": 308,
+            "endLine": 367
+          },
+          {
+            "node": "n28",
+            "path": "src/termio/Thread.zig",
+            "startLine": 389,
+            "endLine": 405
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-canvas-1-high-3/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "retain latest resize": true,
+          "schedule timer": true,
+          "apply coalesced size": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "retain latest resize": true,
+          "schedule timer": true,
+          "apply coalesced size": false
+        },
+        "ranges": [
+          {
+            "node": "n28",
+            "path": "src/termio/Thread.zig",
+            "startLine": 289,
+            "endLine": 405
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-canvas-1-sol-high_sol-medium-3/mapping.json"
+      },
+      "gainedParts": [],
+      "lostParts": []
+    },
+    {
+      "check": "resize-coalescing",
+      "case": "canvas-2",
+      "repeat": 2,
+      "node": "d1/n28",
+      "label": "drainMailbox -> io.queueWrite; coalesces resize requests",
+      "old": {
+        "parts": {
+          "retain latest resize": true,
+          "schedule timer": true,
+          "apply coalesced size": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "retain latest resize": true,
+          "schedule timer": true,
+          "apply coalesced size": true
+        },
+        "ranges": [
+          {
+            "node": "n28",
+            "path": "src/termio/Thread.zig",
+            "startLine": 289,
+            "endLine": 326
+          },
+          {
+            "node": "n28",
+            "path": "src/termio/Thread.zig",
+            "startLine": 348,
+            "endLine": 366
+          },
+          {
+            "node": "n28",
+            "path": "src/termio/Thread.zig",
+            "startLine": 389,
+            "endLine": 405
+          },
+          {
+            "node": "n28",
+            "path": "src/termio/Thread.zig",
+            "startLine": 441,
+            "endLine": 448
+          },
+          {
+            "node": "n28",
+            "path": "src/termio/Termio.zig",
+            "startLine": 456,
+            "endLine": 463
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-canvas-2-high-2/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "retain latest resize": true,
+          "schedule timer": true,
+          "apply coalesced size": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "retain latest resize": true,
+          "schedule timer": true,
+          "apply coalesced size": true
+        },
+        "ranges": [
+          {
+            "node": "n28",
+            "path": "src/termio/Thread.zig",
+            "startLine": 288,
+            "endLine": 451
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-canvas-2-sol-high_sol-medium-2/mapping.json"
+      },
+      "gainedParts": [],
+      "lostParts": []
+    },
+    {
+      "check": "resize-coalescing",
+      "case": "canvas-2",
+      "repeat": 3,
+      "node": "d1/n28",
+      "label": "drainMailbox -> io.queueWrite; coalesces resize requests",
+      "old": {
+        "parts": {
+          "retain latest resize": true,
+          "schedule timer": true,
+          "apply coalesced size": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "retain latest resize": true,
+          "schedule timer": true,
+          "apply coalesced size": true
+        },
+        "ranges": [
+          {
+            "node": "n28",
+            "path": "src/termio/Thread.zig",
+            "startLine": 308,
+            "endLine": 367
+          },
+          {
+            "node": "n28",
+            "path": "src/termio/Thread.zig",
+            "startLine": 389,
+            "endLine": 405
+          },
+          {
+            "node": "n28",
+            "path": "src/termio/Thread.zig",
+            "startLine": 441,
+            "endLine": 448
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-canvas-2-high-3/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "retain latest resize": true,
+          "schedule timer": true,
+          "apply coalesced size": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "retain latest resize": true,
+          "schedule timer": true,
+          "apply coalesced size": true
+        },
+        "ranges": [
+          {
+            "node": "n28",
+            "path": "src/termio/Thread.zig",
+            "startLine": 288,
+            "endLine": 375
+          },
+          {
+            "node": "n28",
+            "path": "src/termio/Thread.zig",
+            "startLine": 389,
+            "endLine": 451
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-canvas-2-sol-high_sol-medium-3/mapping.json"
+      },
+      "gainedParts": [],
+      "lostParts": []
+    },
+    {
+      "check": "regular-text-shaping",
+      "case": "canvas-1",
+      "repeat": 1,
+      "node": "d3/n13",
+      "label": "Snapshot + shaping + atlas -> cells, selection, cursor, images",
+      "old": {
+        "parts": {
+          "normal text shaping": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "normal text shaping": true
+        },
+        "ranges": [
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1479,
+            "endLine": 1487
+          },
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1564,
+            "endLine": 1567
+          },
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1645,
+            "endLine": 1665
+          },
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 3292,
+            "endLine": 3299
+          },
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 3491,
+            "endLine": 3529
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-canvas-1-high-1/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "normal text shaping": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "normal text shaping": true
+        },
+        "ranges": [
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1569,
+            "endLine": 1706
+          },
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 2623,
+            "endLine": 2695
+          },
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 3284,
+            "endLine": 3345
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-canvas-1-sol-high_sol-medium-1/mapping.json"
+      },
+      "gainedParts": [],
+      "lostParts": []
+    },
+    {
+      "check": "regular-text-shaping",
+      "case": "canvas-1",
+      "repeat": 2,
+      "node": "d3/n13",
+      "label": "Snapshot + shaping + atlas -> cells, selection, cursor, images",
+      "old": {
+        "parts": {
+          "normal text shaping": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "normal text shaping": false
+        },
+        "ranges": [
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1564,
+            "endLine": 1567
+          },
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1645,
+            "endLine": 1659
+          },
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 2630,
+            "endLine": 2653
+          },
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1889,
+            "endLine": 1904
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-canvas-1-high-2/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "normal text shaping": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "normal text shaping": false
+        },
+        "ranges": [
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1645,
+            "endLine": 1665
+          },
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 2973,
+            "endLine": 2989
+          },
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 3022,
+            "endLine": 3050
+          },
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 3391,
+            "endLine": 3405
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-canvas-1-sol-high_sol-medium-2/mapping.json"
+      },
+      "gainedParts": [],
+      "lostParts": []
+    },
+    {
+      "check": "regular-text-shaping",
+      "case": "canvas-1",
+      "repeat": 3,
+      "node": "d3/n13",
+      "label": "Snapshot + shaping + atlas -> cells, selection, cursor, images",
+      "old": {
+        "parts": {
+          "normal text shaping": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "normal text shaping": false
+        },
+        "ranges": [
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1564,
+            "endLine": 1595
+          },
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1595,
+            "endLine": 1650
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-canvas-1-high-3/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "normal text shaping": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "normal text shaping": true
+        },
+        "ranges": [
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1564,
+            "endLine": 1665
+          },
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1868,
+            "endLine": 1905
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-canvas-1-sol-high_sol-medium-3/mapping.json"
+      },
+      "gainedParts": [],
+      "lostParts": []
+    },
+    {
+      "check": "regular-text-shaping",
+      "case": "canvas-2",
+      "repeat": 2,
+      "node": "d3/n13",
+      "label": "Snapshot + shaping + atlas -> cells, selection, cursor, images",
+      "old": {
+        "parts": {
+          "normal text shaping": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "normal text shaping": false
+        },
+        "ranges": [
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1483,
+            "endLine": 1487
+          },
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1645,
+            "endLine": 1665
+          },
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1868,
+            "endLine": 1869
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-canvas-2-high-2/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "normal text shaping": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "normal text shaping": false
+        },
+        "ranges": [
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1564,
+            "endLine": 1709
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-canvas-2-sol-high_sol-medium-2/mapping.json"
+      },
+      "gainedParts": [],
+      "lostParts": []
+    },
+    {
+      "check": "regular-text-shaping",
+      "case": "canvas-2",
+      "repeat": 3,
+      "node": "d3/n13",
+      "label": "Snapshot + shaping + atlas -> cells, selection, cursor, images",
+      "old": {
+        "parts": {
+          "normal text shaping": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "normal text shaping": false
+        },
+        "ranges": [
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1564,
+            "endLine": 1575
+          },
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1645,
+            "endLine": 1665
+          },
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 2970,
+            "endLine": 2980
+          },
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 3385,
+            "endLine": 3403
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-canvas-2-high-3/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "normal text shaping": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "normal text shaping": false
+        },
+        "ranges": [
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1564,
+            "endLine": 1709
+          },
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 2630,
+            "endLine": 2685
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-canvas-2-sol-high_sol-medium-3/mapping.json"
+      },
+      "gainedParts": [],
+      "lostParts": []
+    },
+    {
+      "check": "preedit-shaping",
+      "case": "canvas-1",
+      "repeat": 1,
+      "node": "d3/n13",
+      "label": "Snapshot + shaping + atlas -> cells, selection, cursor, images",
+      "old": {
+        "parts": {
+          "IME preedit shaping": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "IME preedit shaping": false
+        },
+        "ranges": [
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1479,
+            "endLine": 1487
+          },
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1564,
+            "endLine": 1567
+          },
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1645,
+            "endLine": 1665
+          },
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 3292,
+            "endLine": 3299
+          },
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 3491,
+            "endLine": 3529
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-canvas-1-high-1/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "IME preedit shaping": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "IME preedit shaping": false
+        },
+        "ranges": [
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1569,
+            "endLine": 1706
+          },
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 2623,
+            "endLine": 2695
+          },
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 3284,
+            "endLine": 3345
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-canvas-1-sol-high_sol-medium-1/mapping.json"
+      },
+      "gainedParts": [],
+      "lostParts": []
+    },
+    {
+      "check": "preedit-shaping",
+      "case": "canvas-1",
+      "repeat": 2,
+      "node": "d3/n13",
+      "label": "Snapshot + shaping + atlas -> cells, selection, cursor, images",
+      "old": {
+        "parts": {
+          "IME preedit shaping": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "IME preedit shaping": false
+        },
+        "ranges": [
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1564,
+            "endLine": 1567
+          },
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1645,
+            "endLine": 1659
+          },
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 2630,
+            "endLine": 2653
+          },
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1889,
+            "endLine": 1904
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-canvas-1-high-2/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "IME preedit shaping": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "IME preedit shaping": true
+        },
+        "ranges": [
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1645,
+            "endLine": 1665
+          },
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 2973,
+            "endLine": 2989
+          },
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 3022,
+            "endLine": 3050
+          },
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 3391,
+            "endLine": 3405
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-canvas-1-sol-high_sol-medium-2/mapping.json"
+      },
+      "gainedParts": [
+        "IME preedit shaping"
+      ],
+      "lostParts": []
+    },
+    {
+      "check": "preedit-shaping",
+      "case": "canvas-1",
+      "repeat": 3,
+      "node": "d3/n13",
+      "label": "Snapshot + shaping + atlas -> cells, selection, cursor, images",
+      "old": {
+        "parts": {
+          "IME preedit shaping": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "IME preedit shaping": false
+        },
+        "ranges": [
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1564,
+            "endLine": 1595
+          },
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1595,
+            "endLine": 1650
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-canvas-1-high-3/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "IME preedit shaping": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "IME preedit shaping": true
+        },
+        "ranges": [
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1564,
+            "endLine": 1665
+          },
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1868,
+            "endLine": 1905
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-canvas-1-sol-high_sol-medium-3/mapping.json"
+      },
+      "gainedParts": [],
+      "lostParts": []
+    },
+    {
+      "check": "preedit-shaping",
+      "case": "canvas-2",
+      "repeat": 2,
+      "node": "d3/n13",
+      "label": "Snapshot + shaping + atlas -> cells, selection, cursor, images",
+      "old": {
+        "parts": {
+          "IME preedit shaping": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "IME preedit shaping": false
+        },
+        "ranges": [
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1483,
+            "endLine": 1487
+          },
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1645,
+            "endLine": 1665
+          },
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1868,
+            "endLine": 1869
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-canvas-2-high-2/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "IME preedit shaping": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "IME preedit shaping": false
+        },
+        "ranges": [
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1564,
+            "endLine": 1709
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-canvas-2-sol-high_sol-medium-2/mapping.json"
+      },
+      "gainedParts": [],
+      "lostParts": []
+    },
+    {
+      "check": "preedit-shaping",
+      "case": "canvas-2",
+      "repeat": 3,
+      "node": "d3/n13",
+      "label": "Snapshot + shaping + atlas -> cells, selection, cursor, images",
+      "old": {
+        "parts": {
+          "IME preedit shaping": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "IME preedit shaping": false
+        },
+        "ranges": [
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1564,
+            "endLine": 1575
+          },
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1645,
+            "endLine": 1665
+          },
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 2970,
+            "endLine": 2980
+          },
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 3385,
+            "endLine": 3403
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-canvas-2-high-3/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "IME preedit shaping": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "IME preedit shaping": false
+        },
+        "ranges": [
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1564,
+            "endLine": 1709
+          },
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 2630,
+            "endLine": 2685
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-canvas-2-sol-high_sol-medium-3/mapping.json"
+      },
+      "gainedParts": [],
+      "lostParts": []
+    },
+    {
+      "check": "glyph-cache-atlas",
+      "case": "canvas-1",
+      "repeat": 1,
+      "node": "d3/n13",
+      "label": "Snapshot + shaping + atlas -> cells, selection, cursor, images",
+      "old": {
+        "parts": {
+          "glyph cache lookup": false,
+          "text/emoji atlas selection": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "glyph cache lookup": false,
+          "text/emoji atlas selection": false
+        },
+        "ranges": [
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1479,
+            "endLine": 1487
+          },
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1564,
+            "endLine": 1567
+          },
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1645,
+            "endLine": 1665
+          },
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 3292,
+            "endLine": 3299
+          },
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 3491,
+            "endLine": 3529
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-canvas-1-high-1/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "glyph cache lookup": false,
+          "text/emoji atlas selection": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "glyph cache lookup": false,
+          "text/emoji atlas selection": false
+        },
+        "ranges": [
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1569,
+            "endLine": 1706
+          },
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 2623,
+            "endLine": 2695
+          },
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 3284,
+            "endLine": 3345
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-canvas-1-sol-high_sol-medium-1/mapping.json"
+      },
+      "gainedParts": [],
+      "lostParts": []
+    },
+    {
+      "check": "glyph-cache-atlas",
+      "case": "canvas-1",
+      "repeat": 2,
+      "node": "d3/n13",
+      "label": "Snapshot + shaping + atlas -> cells, selection, cursor, images",
+      "old": {
+        "parts": {
+          "glyph cache lookup": false,
+          "text/emoji atlas selection": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "glyph cache lookup": false,
+          "text/emoji atlas selection": false
+        },
+        "ranges": [
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1564,
+            "endLine": 1567
+          },
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1645,
+            "endLine": 1659
+          },
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 2630,
+            "endLine": 2653
+          },
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1889,
+            "endLine": 1904
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-canvas-1-high-2/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "glyph cache lookup": false,
+          "text/emoji atlas selection": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "glyph cache lookup": false,
+          "text/emoji atlas selection": false
+        },
+        "ranges": [
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1645,
+            "endLine": 1665
+          },
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 2973,
+            "endLine": 2989
+          },
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 3022,
+            "endLine": 3050
+          },
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 3391,
+            "endLine": 3405
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-canvas-1-sol-high_sol-medium-2/mapping.json"
+      },
+      "gainedParts": [],
+      "lostParts": []
+    },
+    {
+      "check": "glyph-cache-atlas",
+      "case": "canvas-1",
+      "repeat": 3,
+      "node": "d3/n13",
+      "label": "Snapshot + shaping + atlas -> cells, selection, cursor, images",
+      "old": {
+        "parts": {
+          "glyph cache lookup": false,
+          "text/emoji atlas selection": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "glyph cache lookup": false,
+          "text/emoji atlas selection": false
+        },
+        "ranges": [
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1564,
+            "endLine": 1595
+          },
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1595,
+            "endLine": 1650
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-canvas-1-high-3/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "glyph cache lookup": false,
+          "text/emoji atlas selection": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "glyph cache lookup": false,
+          "text/emoji atlas selection": false
+        },
+        "ranges": [
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1564,
+            "endLine": 1665
+          },
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1868,
+            "endLine": 1905
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-canvas-1-sol-high_sol-medium-3/mapping.json"
+      },
+      "gainedParts": [],
+      "lostParts": []
+    },
+    {
+      "check": "glyph-cache-atlas",
+      "case": "canvas-2",
+      "repeat": 2,
+      "node": "d3/n13",
+      "label": "Snapshot + shaping + atlas -> cells, selection, cursor, images",
+      "old": {
+        "parts": {
+          "glyph cache lookup": false,
+          "text/emoji atlas selection": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "glyph cache lookup": false,
+          "text/emoji atlas selection": false
+        },
+        "ranges": [
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1483,
+            "endLine": 1487
+          },
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1645,
+            "endLine": 1665
+          },
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1868,
+            "endLine": 1869
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-canvas-2-high-2/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "glyph cache lookup": false,
+          "text/emoji atlas selection": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "glyph cache lookup": false,
+          "text/emoji atlas selection": false
+        },
+        "ranges": [
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1564,
+            "endLine": 1709
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-canvas-2-sol-high_sol-medium-2/mapping.json"
+      },
+      "gainedParts": [],
+      "lostParts": []
+    },
+    {
+      "check": "glyph-cache-atlas",
+      "case": "canvas-2",
+      "repeat": 3,
+      "node": "d3/n13",
+      "label": "Snapshot + shaping + atlas -> cells, selection, cursor, images",
+      "old": {
+        "parts": {
+          "glyph cache lookup": false,
+          "text/emoji atlas selection": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "glyph cache lookup": false,
+          "text/emoji atlas selection": false
+        },
+        "ranges": [
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1564,
+            "endLine": 1575
+          },
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1645,
+            "endLine": 1665
+          },
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 2970,
+            "endLine": 2980
+          },
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 3385,
+            "endLine": 3403
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-canvas-2-high-3/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "glyph cache lookup": false,
+          "text/emoji atlas selection": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "glyph cache lookup": false,
+          "text/emoji atlas selection": false
+        },
+        "ranges": [
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 1564,
+            "endLine": 1709
+          },
+          {
+            "node": "n13",
+            "path": "src/renderer/generic.zig",
+            "startLine": 2630,
+            "endLine": 2685
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-canvas-2-sol-high_sol-medium-3/mapping.json"
+      },
+      "gainedParts": [],
+      "lostParts": []
+    },
+    {
+      "check": "spawn-paths",
+      "case": "canvas-1",
+      "repeat": 1,
+      "node": "d4/n8",
+      "label": "start() -> Pty.open + command launch",
+      "old": {
+        "parts": {
+          "PTY creation": true,
+          "normal command start": true,
+          "Flatpak command spawn": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "PTY creation": true,
+          "normal command start": true,
+          "Flatpak command spawn": false
+        },
+        "ranges": [
+          {
+            "node": "n8",
+            "path": "src/termio/Exec.zig",
+            "startLine": 897,
+            "endLine": 915
+          },
+          {
+            "node": "n8",
+            "path": "src/termio/Exec.zig",
+            "startLine": 1021,
+            "endLine": 1063
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-canvas-1-high-1/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "PTY creation": true,
+          "normal command start": true,
+          "Flatpak command spawn": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "PTY creation": true,
+          "normal command start": true,
+          "Flatpak command spawn": true
+        },
+        "ranges": [
+          {
+            "node": "n8",
+            "path": "src/termio/Exec.zig",
+            "startLine": 895,
+            "endLine": 1095
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-canvas-1-sol-high_sol-medium-1/mapping.json"
+      },
+      "gainedParts": [
+        "Flatpak command spawn"
+      ],
+      "lostParts": []
+    },
+    {
+      "check": "spawn-paths",
+      "case": "canvas-1",
+      "repeat": 2,
+      "node": "d4/n8",
+      "label": "start() -> Pty.open + command launch",
+      "old": {
+        "parts": {
+          "PTY creation": true,
+          "normal command start": false,
+          "Flatpak command spawn": true
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "PTY creation": true,
+          "normal command start": false,
+          "Flatpak command spawn": true
+        },
+        "ranges": [
+          {
+            "node": "n8",
+            "path": "src/termio/Exec.zig",
+            "startLine": 897,
+            "endLine": 915
+          },
+          {
+            "node": "n8",
+            "path": "src/termio/Exec.zig",
+            "startLine": 990,
+            "endLine": 1007
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-canvas-1-high-2/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "PTY creation": true,
+          "normal command start": true,
+          "Flatpak command spawn": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "PTY creation": true,
+          "normal command start": true,
+          "Flatpak command spawn": true
+        },
+        "ranges": [
+          {
+            "node": "n8",
+            "path": "src/termio/Exec.zig",
+            "startLine": 895,
+            "endLine": 1095
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-canvas-1-sol-high_sol-medium-2/mapping.json"
+      },
+      "gainedParts": [
+        "normal command start"
+      ],
+      "lostParts": []
+    },
+    {
+      "check": "spawn-paths",
+      "case": "canvas-1",
+      "repeat": 3,
+      "node": "d4/n8",
+      "label": "start() -> Pty.open + command launch",
+      "old": {
+        "parts": {
+          "PTY creation": true,
+          "normal command start": false,
+          "Flatpak command spawn": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "PTY creation": true,
+          "normal command start": false,
+          "Flatpak command spawn": false
+        },
+        "ranges": [
+          {
+            "node": "n8",
+            "path": "src/termio/Exec.zig",
+            "startLine": 897,
+            "endLine": 915
+          },
+          {
+            "node": "n8",
+            "path": "src/termio/Exec.zig",
+            "startLine": 943,
+            "endLine": 1005
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-canvas-1-high-3/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "PTY creation": true,
+          "normal command start": true,
+          "Flatpak command spawn": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "PTY creation": true,
+          "normal command start": true,
+          "Flatpak command spawn": true
+        },
+        "ranges": [
+          {
+            "node": "n8",
+            "path": "src/termio/Exec.zig",
+            "startLine": 895,
+            "endLine": 941
+          },
+          {
+            "node": "n8",
+            "path": "src/termio/Exec.zig",
+            "startLine": 990,
+            "endLine": 1095
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-canvas-1-sol-high_sol-medium-3/mapping.json"
+      },
+      "gainedParts": [
+        "normal command start",
+        "Flatpak command spawn"
+      ],
+      "lostParts": []
+    },
+    {
+      "check": "pooled-write-lifetime",
+      "case": "canvas-1",
+      "repeat": 1,
+      "node": "d4/n10",
+      "label": "queueWrite(td) -> pooled async writes; skip after child exit",
+      "old": {
+        "parts": {
+          "skip exited child": true,
+          "allocate pooled write": true,
+          "copy into stable buffer": false,
+          "schedule async write": true,
+          "recycle completed write": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "skip exited child": true,
+          "allocate pooled write": true,
+          "copy into stable buffer": false,
+          "schedule async write": true,
+          "recycle completed write": true
+        },
+        "ranges": [
+          {
+            "node": "n10",
+            "path": "src/termio/Exec.zig",
+            "startLine": 403,
+            "endLine": 420
+          },
+          {
+            "node": "n10",
+            "path": "src/termio/Exec.zig",
+            "startLine": 457,
+            "endLine": 467
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-canvas-1-high-1/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "skip exited child": true,
+          "allocate pooled write": true,
+          "copy into stable buffer": true,
+          "schedule async write": true,
+          "recycle completed write": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "skip exited child": true,
+          "allocate pooled write": true,
+          "copy into stable buffer": true,
+          "schedule async write": true,
+          "recycle completed write": true
+        },
+        "ranges": [
+          {
+            "node": "n10",
+            "path": "src/termio/Exec.zig",
+            "startLine": 403,
+            "endLine": 490
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-canvas-1-sol-high_sol-medium-1/mapping.json"
+      },
+      "gainedParts": [
+        "copy into stable buffer",
+        "recycle completed write"
+      ],
+      "lostParts": []
+    },
+    {
+      "check": "pooled-write-lifetime",
+      "case": "canvas-1",
+      "repeat": 2,
+      "node": "d4/n10",
+      "label": "queueWrite(td) -> pooled async writes; skip after child exit",
+      "old": {
+        "parts": {
+          "skip exited child": true,
+          "allocate pooled write": true,
+          "copy into stable buffer": true,
+          "schedule async write": true,
+          "recycle completed write": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "skip exited child": true,
+          "allocate pooled write": true,
+          "copy into stable buffer": true,
+          "schedule async write": true,
+          "recycle completed write": true
+        },
+        "ranges": [
+          {
+            "node": "n10",
+            "path": "src/termio/Exec.zig",
+            "startLine": 403,
+            "endLine": 467
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-canvas-1-high-2/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "skip exited child": true,
+          "allocate pooled write": true,
+          "copy into stable buffer": true,
+          "schedule async write": true,
+          "recycle completed write": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "skip exited child": true,
+          "allocate pooled write": true,
+          "copy into stable buffer": true,
+          "schedule async write": true,
+          "recycle completed write": true
+        },
+        "ranges": [
+          {
+            "node": "n10",
+            "path": "src/termio/Exec.zig",
+            "startLine": 403,
+            "endLine": 490
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-canvas-1-sol-high_sol-medium-2/mapping.json"
+      },
+      "gainedParts": [
+        "recycle completed write"
+      ],
+      "lostParts": []
+    },
+    {
+      "check": "pooled-write-lifetime",
+      "case": "canvas-1",
+      "repeat": 3,
+      "node": "d4/n10",
+      "label": "queueWrite(td) -> pooled async writes; skip after child exit",
+      "old": {
+        "parts": {
+          "skip exited child": true,
+          "allocate pooled write": true,
+          "copy into stable buffer": false,
+          "schedule async write": true,
+          "recycle completed write": true
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "skip exited child": true,
+          "allocate pooled write": true,
+          "copy into stable buffer": false,
+          "schedule async write": true,
+          "recycle completed write": true
+        },
+        "ranges": [
+          {
+            "node": "n10",
+            "path": "src/termio/Exec.zig",
+            "startLine": 403,
+            "endLine": 420
+          },
+          {
+            "node": "n10",
+            "path": "src/termio/Exec.zig",
+            "startLine": 459,
+            "endLine": 480
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-canvas-1-high-3/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "skip exited child": true,
+          "allocate pooled write": true,
+          "copy into stable buffer": true,
+          "schedule async write": true,
+          "recycle completed write": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "skip exited child": true,
+          "allocate pooled write": true,
+          "copy into stable buffer": true,
+          "schedule async write": true,
+          "recycle completed write": true
+        },
+        "ranges": [
+          {
+            "node": "n10",
+            "path": "src/termio/Exec.zig",
+            "startLine": 403,
+            "endLine": 508
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-canvas-1-sol-high_sol-medium-3/mapping.json"
+      },
+      "gainedParts": [
+        "copy into stable buffer"
+      ],
+      "lostParts": []
+    },
+    {
+      "check": "pty-gather-pipeline",
+      "case": "canvas-1",
+      "repeat": 1,
+      "node": "d4/n23",
+      "label": "io-gather -> read/poll PTY; fill pipeline; observe quit",
+      "old": {
+        "parts": {
+          "read PTY": true,
+          "publish batch": true,
+          "wake parser": true,
+          "observe quit": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "read PTY": true,
+          "publish batch": true,
+          "wake parser": true,
+          "observe quit": false
+        },
+        "ranges": [
+          {
+            "node": "n23",
+            "path": "src/termio/Exec.zig",
+            "startLine": 1522,
+            "endLine": 1562
+          },
+          {
+            "node": "n23",
+            "path": "src/termio/Exec.zig",
+            "startLine": 1570,
+            "endLine": 1578
+          },
+          {
+            "node": "n23",
+            "path": "src/termio/Exec.zig",
+            "startLine": 1696,
+            "endLine": 1705
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-canvas-1-high-1/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "read PTY": true,
+          "publish batch": true,
+          "wake parser": true,
+          "observe quit": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "read PTY": true,
+          "publish batch": true,
+          "wake parser": true,
+          "observe quit": true
+        },
+        "ranges": [
+          {
+            "node": "n23",
+            "path": "src/termio/Exec.zig",
+            "startLine": 1522,
+            "endLine": 1733
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-canvas-1-sol-high_sol-medium-1/mapping.json"
+      },
+      "gainedParts": [
+        "observe quit"
+      ],
+      "lostParts": []
+    },
+    {
+      "check": "pty-gather-pipeline",
+      "case": "canvas-1",
+      "repeat": 2,
+      "node": "d4/n23",
+      "label": "io-gather -> read/poll PTY; fill pipeline; observe quit",
+      "old": {
+        "parts": {
+          "read PTY": true,
+          "publish batch": true,
+          "wake parser": true,
+          "observe quit": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "read PTY": true,
+          "publish batch": true,
+          "wake parser": true,
+          "observe quit": true
+        },
+        "ranges": [
+          {
+            "node": "n23",
+            "path": "src/termio/Exec.zig",
+            "startLine": 1522,
+            "endLine": 1563
+          },
+          {
+            "node": "n23",
+            "path": "src/termio/Exec.zig",
+            "startLine": 1570,
+            "endLine": 1579
+          },
+          {
+            "node": "n23",
+            "path": "src/termio/Exec.zig",
+            "startLine": 1696,
+            "endLine": 1705
+          },
+          {
+            "node": "n23",
+            "path": "src/termio/Exec.zig",
+            "startLine": 1713,
+            "endLine": 1724
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-canvas-1-high-2/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "read PTY": true,
+          "publish batch": true,
+          "wake parser": true,
+          "observe quit": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "read PTY": true,
+          "publish batch": true,
+          "wake parser": true,
+          "observe quit": true
+        },
+        "ranges": [
+          {
+            "node": "n23",
+            "path": "src/termio/Exec.zig",
+            "startLine": 1522,
+            "endLine": 1733
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-canvas-1-sol-high_sol-medium-2/mapping.json"
+      },
+      "gainedParts": [],
+      "lostParts": []
+    },
+    {
+      "check": "pty-gather-pipeline",
+      "case": "canvas-1",
+      "repeat": 3,
+      "node": "d4/n23",
+      "label": "io-gather -> read/poll PTY; fill pipeline; observe quit",
+      "old": {
+        "parts": {
+          "read PTY": true,
+          "publish batch": false,
+          "wake parser": false,
+          "observe quit": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "read PTY": true,
+          "publish batch": false,
+          "wake parser": false,
+          "observe quit": false
+        },
+        "ranges": [
+          {
+            "node": "n23",
+            "path": "src/termio/Exec.zig",
+            "startLine": 1522,
+            "endLine": 1526
+          },
+          {
+            "node": "n23",
+            "path": "src/termio/Exec.zig",
+            "startLine": 1540,
+            "endLine": 1610
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-canvas-1-high-3/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "read PTY": true,
+          "publish batch": true,
+          "wake parser": true,
+          "observe quit": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "read PTY": true,
+          "publish batch": true,
+          "wake parser": true,
+          "observe quit": true
+        },
+        "ranges": [
+          {
+            "node": "n23",
+            "path": "src/termio/Exec.zig",
+            "startLine": 1522,
+            "endLine": 1733
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-canvas-1-sol-high_sol-medium-3/mapping.json"
+      },
+      "gainedParts": [
+        "publish batch",
+        "wake parser",
+        "observe quit"
+      ],
+      "lostParts": []
+    },
+    {
+      "check": "compressed-page-restore",
+      "case": "canvas-1",
+      "repeat": 1,
+      "node": "d5/n22",
+      "label": "Compressed: encoded copy; retains Page virtual mapping",
+      "old": {
+        "parts": {
+          "recommit retained memory": false,
+          "restore encoding": false,
+          "release encoded copy": false,
+          "become resident": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "recommit retained memory": false,
+          "restore encoding": false,
+          "release encoded copy": false,
+          "become resident": false
+        },
+        "ranges": [
+          {
+            "node": "n22",
+            "path": "src/terminal/PageList.zig",
+            "startLine": 79,
+            "endLine": 91
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-canvas-1-high-1/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "recommit retained memory": false,
+          "restore encoding": false,
+          "release encoded copy": false,
+          "become resident": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "recommit retained memory": false,
+          "restore encoding": false,
+          "release encoded copy": false,
+          "become resident": false
+        },
+        "ranges": [
+          {
+            "node": "n22",
+            "path": "src/terminal/PageList.zig",
+            "startLine": 79,
+            "endLine": 91
+          },
+          {
+            "node": "n22",
+            "path": "src/terminal/compress/Page.zig",
+            "startLine": 1,
+            "endLine": 57
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-canvas-1-sol-high_sol-medium-1/mapping.json"
+      },
+      "gainedParts": [],
+      "lostParts": []
+    },
+    {
+      "check": "compressed-page-restore",
+      "case": "canvas-1",
+      "repeat": 2,
+      "node": "d5/n22",
+      "label": "Compressed: encoded copy; retains Page virtual mapping",
+      "old": {
+        "parts": {
+          "recommit retained memory": false,
+          "restore encoding": false,
+          "release encoded copy": false,
+          "become resident": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "recommit retained memory": false,
+          "restore encoding": false,
+          "release encoded copy": false,
+          "become resident": false
+        },
+        "ranges": [
+          {
+            "node": "n22",
+            "path": "src/terminal/PageList.zig",
+            "startLine": 79,
+            "endLine": 91
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-canvas-1-high-2/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "recommit retained memory": true,
+          "restore encoding": true,
+          "release encoded copy": true,
+          "become resident": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "recommit retained memory": true,
+          "restore encoding": true,
+          "release encoded copy": true,
+          "become resident": true
+        },
+        "ranges": [
+          {
+            "node": "n22",
+            "path": "src/terminal/PageList.zig",
+            "startLine": 79,
+            "endLine": 91
+          },
+          {
+            "node": "n22",
+            "path": "src/terminal/PageList.zig",
+            "startLine": 256,
+            "endLine": 298
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-canvas-1-sol-high_sol-medium-2/mapping.json"
+      },
+      "gainedParts": [
+        "recommit retained memory",
+        "restore encoding",
+        "release encoded copy",
+        "become resident"
+      ],
+      "lostParts": []
+    },
+    {
+      "check": "compressed-page-restore",
+      "case": "canvas-1",
+      "repeat": 3,
+      "node": "d5/n22",
+      "label": "Compressed: encoded copy; retains Page virtual mapping",
+      "old": {
+        "parts": {
+          "recommit retained memory": false,
+          "restore encoding": false,
+          "release encoded copy": false,
+          "become resident": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "recommit retained memory": false,
+          "restore encoding": false,
+          "release encoded copy": false,
+          "become resident": false
+        },
+        "ranges": [
+          {
+            "node": "n22",
+            "path": "src/terminal/PageList.zig",
+            "startLine": 79,
+            "endLine": 91
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-canvas-1-high-3/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "recommit retained memory": true,
+          "restore encoding": true,
+          "release encoded copy": true,
+          "become resident": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "recommit retained memory": true,
+          "restore encoding": true,
+          "release encoded copy": true,
+          "become resident": true
+        },
+        "ranges": [
+          {
+            "node": "n22",
+            "path": "src/terminal/PageList.zig",
+            "startLine": 79,
+            "endLine": 91
+          },
+          {
+            "node": "n22",
+            "path": "src/terminal/PageList.zig",
+            "startLine": 256,
+            "endLine": 299
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-canvas-1-sol-high_sol-medium-3/mapping.json"
+      },
+      "gainedParts": [
+        "recommit retained memory",
+        "restore encoding",
+        "release encoded copy",
+        "become resident"
+      ],
+      "lostParts": []
+    },
+    {
+      "check": "selection-replacement",
+      "case": "canvas-1",
+      "repeat": 1,
+      "node": "d5/n12",
+      "label": "selection: tracked endpoints -> pages.tracked_pins",
+      "old": {
+        "parts": {
+          "track untracked selection": true,
+          "release replaced pins": false,
+          "install tracked selection": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "track untracked selection": true,
+          "release replaced pins": false,
+          "install tracked selection": false
+        },
+        "ranges": [
+          {
+            "node": "n12",
+            "path": "src/terminal/Screen.zig",
+            "startLine": 58,
+            "endLine": 62
+          },
+          {
+            "node": "n12",
+            "path": "src/terminal/Screen.zig",
+            "startLine": 3063,
+            "endLine": 3071
+          },
+          {
+            "node": "n12",
+            "path": "src/terminal/PageList.zig",
+            "startLine": 472,
+            "endLine": 473
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-canvas-1-high-1/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "track untracked selection": true,
+          "release replaced pins": true,
+          "install tracked selection": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "track untracked selection": true,
+          "release replaced pins": true,
+          "install tracked selection": true
+        },
+        "ranges": [
+          {
+            "node": "n12",
+            "path": "src/terminal/Screen.zig",
+            "startLine": 58,
+            "endLine": 62
+          },
+          {
+            "node": "n12",
+            "path": "src/terminal/Screen.zig",
+            "startLine": 3053,
+            "endLine": 3097
+          },
+          {
+            "node": "n12",
+            "path": "src/terminal/PageList.zig",
+            "startLine": 6309,
+            "endLine": 6334
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-canvas-1-sol-high_sol-medium-1/mapping.json"
+      },
+      "gainedParts": [
+        "release replaced pins",
+        "install tracked selection"
+      ],
+      "lostParts": []
+    },
+    {
+      "check": "selection-replacement",
+      "case": "canvas-1",
+      "repeat": 2,
+      "node": "d5/n12",
+      "label": "selection: tracked endpoints -> pages.tracked_pins",
+      "old": {
+        "parts": {
+          "track untracked selection": true,
+          "release replaced pins": true,
+          "install tracked selection": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "track untracked selection": true,
+          "release replaced pins": true,
+          "install tracked selection": true
+        },
+        "ranges": [
+          {
+            "node": "n12",
+            "path": "src/terminal/Screen.zig",
+            "startLine": 58,
+            "endLine": 62
+          },
+          {
+            "node": "n12",
+            "path": "src/terminal/Screen.zig",
+            "startLine": 3063,
+            "endLine": 3096
+          },
+          {
+            "node": "n12",
+            "path": "src/terminal/PageList.zig",
+            "startLine": 472,
+            "endLine": 473
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-canvas-1-high-2/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "track untracked selection": true,
+          "release replaced pins": true,
+          "install tracked selection": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "track untracked selection": true,
+          "release replaced pins": true,
+          "install tracked selection": true
+        },
+        "ranges": [
+          {
+            "node": "n12",
+            "path": "src/terminal/PageList.zig",
+            "startLine": 468,
+            "endLine": 473
+          },
+          {
+            "node": "n12",
+            "path": "src/terminal/Screen.zig",
+            "startLine": 58,
+            "endLine": 62
+          },
+          {
+            "node": "n12",
+            "path": "src/terminal/Screen.zig",
+            "startLine": 3053,
+            "endLine": 3097
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-canvas-1-sol-high_sol-medium-2/mapping.json"
+      },
+      "gainedParts": [],
+      "lostParts": []
+    },
+    {
+      "check": "selection-replacement",
+      "case": "canvas-1",
+      "repeat": 3,
+      "node": "d5/n12",
+      "label": "selection: tracked endpoints -> pages.tracked_pins",
+      "old": {
+        "parts": {
+          "track untracked selection": false,
+          "release replaced pins": false,
+          "install tracked selection": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "track untracked selection": false,
+          "release replaced pins": false,
+          "install tracked selection": false
+        },
+        "ranges": [
+          {
+            "node": "n12",
+            "path": "src/terminal/Screen.zig",
+            "startLine": 58,
+            "endLine": 62
+          },
+          {
+            "node": "n12",
+            "path": "src/terminal/PageList.zig",
+            "startLine": 472,
+            "endLine": 487
+          },
+          {
+            "node": "n12",
+            "path": "src/terminal/Screen.zig",
+            "startLine": 2450,
+            "endLine": 2485
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-canvas-1-high-3/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "track untracked selection": true,
+          "release replaced pins": true,
+          "install tracked selection": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "track untracked selection": true,
+          "release replaced pins": true,
+          "install tracked selection": true
+        },
+        "ranges": [
+          {
+            "node": "n12",
+            "path": "src/terminal/Screen.zig",
+            "startLine": 58,
+            "endLine": 62
+          },
+          {
+            "node": "n12",
+            "path": "src/terminal/Screen.zig",
+            "startLine": 3063,
+            "endLine": 3097
+          },
+          {
+            "node": "n12",
+            "path": "src/terminal/PageList.zig",
+            "startLine": 472,
+            "endLine": 487
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-canvas-1-sol-high_sol-medium-3/mapping.json"
+      },
+      "gainedParts": [
+        "track untracked selection",
+        "release replaced pins",
+        "install tracked selection"
+      ],
+      "lostParts": []
+    },
+    {
+      "check": "parse-dispatch",
+      "case": "canvas-1",
+      "repeat": 1,
+      "node": "d2/n23",
+      "label": "Schedule queueRender while locked, then terminal_stream.nextSlice",
+      "old": {
+        "parts": {
+          "schedule render": true,
+          "parse input slice": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "schedule render": true,
+          "parse input slice": true
+        },
+        "ranges": [
+          {
+            "node": "n23",
+            "path": "src/termio/Termio.zig",
+            "startLine": 713,
+            "endLine": 716
+          },
+          {
+            "node": "n23",
+            "path": "src/termio/Termio.zig",
+            "startLine": 750,
+            "endLine": 754
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-canvas-1-high-1/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "schedule render": true,
+          "parse input slice": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "schedule render": true,
+          "parse input slice": true
+        },
+        "ranges": [
+          {
+            "node": "n23",
+            "path": "src/termio/Termio.zig",
+            "startLine": 713,
+            "endLine": 760
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-canvas-1-sol-high_sol-medium-1/mapping.json"
+      },
+      "gainedParts": [],
+      "lostParts": []
+    },
+    {
+      "check": "parse-dispatch",
+      "case": "canvas-1",
+      "repeat": 2,
+      "node": "d2/n23",
+      "label": "Schedule queueRender while locked, then terminal_stream.nextSlice",
+      "old": {
+        "parts": {
+          "schedule render": true,
+          "parse input slice": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "schedule render": true,
+          "parse input slice": true
+        },
+        "ranges": [
+          {
+            "node": "n23",
+            "path": "src/termio/Termio.zig",
+            "startLine": 714,
+            "endLine": 716
+          },
+          {
+            "node": "n23",
+            "path": "src/termio/Termio.zig",
+            "startLine": 750,
+            "endLine": 754
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-canvas-1-high-2/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "schedule render": true,
+          "parse input slice": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "schedule render": true,
+          "parse input slice": true
+        },
+        "ranges": [
+          {
+            "node": "n23",
+            "path": "src/termio/Termio.zig",
+            "startLine": 713,
+            "endLine": 761
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-canvas-1-sol-high_sol-medium-2/mapping.json"
+      },
+      "gainedParts": [],
+      "lostParts": []
+    },
+    {
+      "check": "parse-dispatch",
+      "case": "canvas-1",
+      "repeat": 3,
+      "node": "d2/n23",
+      "label": "Schedule queueRender while locked, then terminal_stream.nextSlice",
+      "old": {
+        "parts": {
+          "schedule render": true,
+          "parse input slice": false
+        },
+        "allParts": false,
+        "anywhereParts": {
+          "schedule render": true,
+          "parse input slice": true
+        },
+        "ranges": [
+          {
+            "node": "n23",
+            "path": "src/termio/Termio.zig",
+            "startLine": 714,
+            "endLine": 716
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-canvas-1-high-3/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "schedule render": true,
+          "parse input slice": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "schedule render": true,
+          "parse input slice": true
+        },
+        "ranges": [
+          {
+            "node": "n23",
+            "path": "src/termio/Termio.zig",
+            "startLine": 713,
+            "endLine": 761
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-canvas-1-sol-high_sol-medium-3/mapping.json"
+      },
+      "gainedParts": [
+        "parse input slice"
+      ],
+      "lostParts": []
+    },
+    {
+      "check": "parse-dispatch",
+      "case": "canvas-2",
+      "repeat": 2,
+      "node": "d2/n23",
+      "label": "Schedule queueRender while locked, then terminal_stream.nextSlice",
+      "old": {
+        "parts": {
+          "schedule render": true,
+          "parse input slice": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "schedule render": true,
+          "parse input slice": true
+        },
+        "ranges": [
+          {
+            "node": "n23",
+            "path": "src/termio/Termio.zig",
+            "startLine": 713,
+            "endLine": 716
+          },
+          {
+            "node": "n23",
+            "path": "src/termio/Termio.zig",
+            "startLine": 740,
+            "endLine": 754
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-canvas-2-high-2/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "schedule render": true,
+          "parse input slice": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "schedule render": true,
+          "parse input slice": true
+        },
+        "ranges": [
+          {
+            "node": "n23",
+            "path": "src/termio/Termio.zig",
+            "startLine": 713,
+            "endLine": 762
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-canvas-2-sol-high_sol-medium-2/mapping.json"
+      },
+      "gainedParts": [],
+      "lostParts": []
+    },
+    {
+      "check": "parse-dispatch",
+      "case": "canvas-2",
+      "repeat": 3,
+      "node": "d2/n23",
+      "label": "Schedule queueRender while locked, then terminal_stream.nextSlice",
+      "old": {
+        "parts": {
+          "schedule render": true,
+          "parse input slice": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "schedule render": true,
+          "parse input slice": true
+        },
+        "ranges": [
+          {
+            "node": "n23",
+            "path": "src/termio/Termio.zig",
+            "startLine": 714,
+            "endLine": 716
+          },
+          {
+            "node": "n23",
+            "path": "src/termio/Termio.zig",
+            "startLine": 750,
+            "endLine": 754
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-canvas-2-high-3/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "schedule render": true,
+          "parse input slice": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "schedule render": true,
+          "parse input slice": true
+        },
+        "ranges": [
+          {
+            "node": "n23",
+            "path": "src/termio/Termio.zig",
+            "startLine": 713,
+            "endLine": 762
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-canvas-2-sol-high_sol-medium-3/mapping.json"
+      },
+      "gainedParts": [],
+      "lostParts": []
+    },
+    {
+      "check": "resize-order",
+      "case": "core-1",
+      "repeat": 1,
+      "node": "d1/n75",
+      "label": "Termio.resize locks shared state around backend.resize + Terminal.resize",
+      "old": {
+        "parts": {
+          "lock shared state": true,
+          "resize backend": true,
+          "resize terminal": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "lock shared state": true,
+          "resize backend": true,
+          "resize terminal": true
+        },
+        "ranges": [
+          {
+            "node": "n75",
+            "path": "src/termio/Termio.zig",
+            "startLine": 524,
+            "endLine": 563
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-core-1-high-1/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "lock shared state": true,
+          "resize backend": true,
+          "resize terminal": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "lock shared state": true,
+          "resize backend": true,
+          "resize terminal": true
+        },
+        "ranges": [
+          {
+            "node": "n75",
+            "path": "src/termio/Termio.zig",
+            "startLine": 524,
+            "endLine": 564
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-core-1-sol-high_sol-medium-1/mapping.json"
+      },
+      "gainedParts": [],
+      "lostParts": []
+    },
+    {
+      "check": "resize-order",
+      "case": "core-1",
+      "repeat": 2,
+      "node": "d1/n75",
+      "label": "Termio.resize locks shared state around backend.resize + Terminal.resize",
+      "old": {
+        "parts": {
+          "lock shared state": true,
+          "resize backend": true,
+          "resize terminal": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "lock shared state": true,
+          "resize backend": true,
+          "resize terminal": true
+        },
+        "ranges": [
+          {
+            "node": "n75",
+            "path": "src/termio/Termio.zig",
+            "startLine": 524,
+            "endLine": 563
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-core-1-high-2/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "lock shared state": true,
+          "resize backend": true,
+          "resize terminal": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "lock shared state": true,
+          "resize backend": true,
+          "resize terminal": true
+        },
+        "ranges": [
+          {
+            "node": "n75",
+            "path": "src/termio/Termio.zig",
+            "startLine": 524,
+            "endLine": 564
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-core-1-sol-high_sol-medium-2/mapping.json"
+      },
+      "gainedParts": [],
+      "lostParts": []
+    },
+    {
+      "check": "resize-order",
+      "case": "core-1",
+      "repeat": 3,
+      "node": "d1/n75",
+      "label": "Termio.resize locks shared state around backend.resize + Terminal.resize",
+      "old": {
+        "parts": {
+          "lock shared state": true,
+          "resize backend": true,
+          "resize terminal": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "lock shared state": true,
+          "resize backend": true,
+          "resize terminal": true
+        },
+        "ranges": [
+          {
+            "node": "n75",
+            "path": "src/termio/Termio.zig",
+            "startLine": 524,
+            "endLine": 564
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-core-1-high-3/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "lock shared state": true,
+          "resize backend": true,
+          "resize terminal": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "lock shared state": true,
+          "resize backend": true,
+          "resize terminal": true
+        },
+        "ranges": [
+          {
+            "node": "n75",
+            "path": "src/termio/Termio.zig",
+            "startLine": 524,
+            "endLine": 564
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-core-1-sol-high_sol-medium-3/mapping.json"
+      },
+      "gainedParts": [],
+      "lostParts": []
+    },
+    {
+      "check": "shutdown-order",
+      "case": "canvas-1",
+      "repeat": 1,
+      "node": "d1/n45",
+      "label": "Stop/join search, then renderer thread, then I/O thread",
+      "old": {
+        "parts": {
+          "stop search": true,
+          "join renderer": true,
+          "join IO": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "stop search": true,
+          "join renderer": true,
+          "join IO": true
+        },
+        "ranges": [
+          {
+            "node": "n45",
+            "path": "src/Surface.zig",
+            "startLine": 829,
+            "endLine": 845
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-canvas-1-high-1/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "stop search": true,
+          "join renderer": true,
+          "join IO": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "stop search": true,
+          "join renderer": true,
+          "join IO": true
+        },
+        "ranges": [
+          {
+            "node": "n45",
+            "path": "src/Surface.zig",
+            "startLine": 829,
+            "endLine": 845
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-canvas-1-sol-high_sol-medium-1/mapping.json"
+      },
+      "gainedParts": [],
+      "lostParts": []
+    },
+    {
+      "check": "shutdown-order",
+      "case": "canvas-1",
+      "repeat": 2,
+      "node": "d1/n45",
+      "label": "Stop/join search, then renderer thread, then I/O thread",
+      "old": {
+        "parts": {
+          "stop search": true,
+          "join renderer": true,
+          "join IO": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "stop search": true,
+          "join renderer": true,
+          "join IO": true
+        },
+        "ranges": [
+          {
+            "node": "n45",
+            "path": "src/Surface.zig",
+            "startLine": 829,
+            "endLine": 845
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-canvas-1-high-2/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "stop search": true,
+          "join renderer": true,
+          "join IO": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "stop search": true,
+          "join renderer": true,
+          "join IO": true
+        },
+        "ranges": [
+          {
+            "node": "n45",
+            "path": "src/Surface.zig",
+            "startLine": 829,
+            "endLine": 845
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-canvas-1-sol-high_sol-medium-2/mapping.json"
+      },
+      "gainedParts": [],
+      "lostParts": []
+    },
+    {
+      "check": "shutdown-order",
+      "case": "canvas-1",
+      "repeat": 3,
+      "node": "d1/n45",
+      "label": "Stop/join search, then renderer thread, then I/O thread",
+      "old": {
+        "parts": {
+          "stop search": true,
+          "join renderer": true,
+          "join IO": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "stop search": true,
+          "join renderer": true,
+          "join IO": true
+        },
+        "ranges": [
+          {
+            "node": "n45",
+            "path": "src/Surface.zig",
+            "startLine": 829,
+            "endLine": 845
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-canvas-1-high-3/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "stop search": true,
+          "join renderer": true,
+          "join IO": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "stop search": true,
+          "join renderer": true,
+          "join IO": true
+        },
+        "ranges": [
+          {
+            "node": "n45",
+            "path": "src/Surface.zig",
+            "startLine": 829,
+            "endLine": 845
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-canvas-1-sol-high_sol-medium-3/mapping.json"
+      },
+      "gainedParts": [],
+      "lostParts": []
+    },
+    {
+      "check": "shutdown-order",
+      "case": "canvas-2",
+      "repeat": 2,
+      "node": "d1/n45",
+      "label": "Stop/join search, then renderer thread, then I/O thread",
+      "old": {
+        "parts": {
+          "stop search": true,
+          "join renderer": true,
+          "join IO": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "stop search": true,
+          "join renderer": true,
+          "join IO": true
+        },
+        "ranges": [
+          {
+            "node": "n45",
+            "path": "src/Surface.zig",
+            "startLine": 829,
+            "endLine": 845
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-canvas-2-high-2/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "stop search": true,
+          "join renderer": true,
+          "join IO": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "stop search": true,
+          "join renderer": true,
+          "join IO": true
+        },
+        "ranges": [
+          {
+            "node": "n45",
+            "path": "src/Surface.zig",
+            "startLine": 829,
+            "endLine": 845
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-canvas-2-sol-high_sol-medium-2/mapping.json"
+      },
+      "gainedParts": [],
+      "lostParts": []
+    },
+    {
+      "check": "shutdown-order",
+      "case": "canvas-2",
+      "repeat": 3,
+      "node": "d1/n45",
+      "label": "Stop/join search, then renderer thread, then I/O thread",
+      "old": {
+        "parts": {
+          "stop search": true,
+          "join renderer": true,
+          "join IO": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "stop search": true,
+          "join renderer": true,
+          "join IO": true
+        },
+        "ranges": [
+          {
+            "node": "n45",
+            "path": "src/Surface.zig",
+            "startLine": 829,
+            "endLine": 845
+          },
+          {
+            "node": "n45",
+            "path": "src/Surface.zig",
+            "startLine": 210,
+            "endLine": 226
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase2-ghostty/jobs/ghostty-v3-canvas-2-high-3/mapping.json"
+      },
+      "new": {
+        "parts": {
+          "stop search": true,
+          "join renderer": true,
+          "join IO": true
+        },
+        "allParts": true,
+        "anywhereParts": {
+          "stop search": true,
+          "join renderer": true,
+          "join IO": true
+        },
+        "ranges": [
+          {
+            "node": "n45",
+            "path": "src/Surface.zig",
+            "startLine": 829,
+            "endLine": 845
+          }
+        ],
+        "mappingFile": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax/artifacts/source-mapping-2026-11-17/phase3-ghostty/jobs/ghostty-v3-canvas-2-sol-high_sol-medium-3/mapping.json"
+      },
+      "gainedParts": [],
+      "lostParts": []
+    }
+  ],
+  "reviewedNodePositions": 24,
+  "pairedNodeObservations": 63,
+  "verifiedAssemblyLosses": [
+    {
+      "key": "ghostty-v3-core-2-sol-high_sol-medium-2",
+      "evidence": {
+        "diagram": "d1",
+        "node": "n60",
+        "path": "src/terminal/ScreenSet.zig",
+        "childSuggested": [
+          [
+            23,
+            31
+          ],
+          [
+            104,
+            109
+          ]
+        ],
+        "finalSelected": [
+          [
+            23,
+            31
+          ]
+        ],
+        "omittedIntervals": [
+          [
+            104,
+            109
+          ]
+        ]
+      }
+    },
+    {
+      "key": "ghostty-v3-core-2-sol-high_sol-medium-3",
+      "evidence": {
+        "diagram": "d1",
+        "node": "n60",
+        "path": "src/terminal/ScreenSet.zig",
+        "childSuggested": [
+          [
+            23,
+            31
+          ],
+          [
+            104,
+            109
+          ]
+        ],
+        "finalSelected": [
+          [
+            23,
+            31
+          ]
+        ],
+        "omittedIntervals": [
+          [
+            104,
+            109
+          ]
+        ]
+      }
+    }
+  ],
+  "conclusion": "Meaningful improvements in named callbacks, I/O lifecycles and selected storage operations; preserved coverage on already well-mapped operations; regressions in snapshot, font lifetime and active-screen relationships. No uniform semantic improvement. Child discoveries can be lost in lead assembly. Prompt changes and delegation are confounded."
+}

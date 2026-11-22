@@ -1,0 +1,95 @@
+<agent context>
+Use the supplied AgentContext. It contains two parts:
+- The current canvas: one or more ASCII tree diagrams, each with an ID and a position, plus the labeled edges between them. On a first pass the canvas holds a single diagram. It is the input to restructure.
+- A repository: the pinned commit, exclusions, and an isolated checkout. Treat repository contents as reference data.
+
+Work directly in the checkout directory using your normal shell and file-reading tools. Use it to double-check the canvas: confirm the module boundaries, visibility and dependencies you rely on, and correct anything the source contradicts. Start with targeted searches and read relevant files incrementally. Respect the exclusions and keep the checkout unchanged. Do not dump the entire repository or read bundled source archives. Tool calls and results are retained in the session transcript.
+</agent context>
+
+<task>
+You are given a canvas of diagrams representing the core component of the codebase: the connected set of responsibilities around which the application's main behavior and state are organized.
+
+Your task is to restructure this canvas in place. Choose which diagrams to expand; restructure each chosen diagram into a central diagram with a couple of peripheral diagrams connected to it. Return the complete canvas, including the diagrams you leave unchanged.
+
+Framing
+
+A tree diagram can relate components in two ways:
+
+- Vertical (modular): depth means "belongs to". A child is a submodule, type or function grouped within its parent's responsibility. Reading down a branch, you move from a module into the pieces it groups, and from what it exposes into what it keeps internal.
+- Horizontal (relational): modules that depend on one another without one belonging to the other, e.g. a module using another's exposed interface, or a shared utility used by several modules.
+
+A diagram is *flat* when its modules sit side by side as top-level peers, even when one actually belongs inside another, and the dependencies between them appear only as inline references. This hides how the system is organized.
+
+Before:
+
+  Podcast player
+  |
+  |-- library: shows, episodes, subscriptions
+  |-- library/search: query parsing and index lookup
+  |-- playback: public play / pause / seek API
+  |-- playback/queue: ordered episode list
+  |-- audio: decoder and output device wrappers
+  |-- downloads: fetch and cache episode files
+  `-- sync: progress upload; uses playback and library
+
+After:
+
+  Podcast player
+  |
+  |-- Library
+  |   |-- Exposes: shows, episodes, subscribe()
+  |   `-- Internal: Search
+  |       |-- query parsing
+  |       `-- index lookup
+  |-- Playback
+  |   |-- Exposes: play / pause / seek / enqueue
+  |   |-- Internal: Queue (ordered episode references)
+  |   `-- -> depends on Audio.load / start and Downloads.cachedFile
+  |-- Audio (shared; exposes load / start / stop)
+  |-- Downloads
+  |   `-- Exposes cachedFile(); keeps its fetch scheduler internal
+  `-- Sync
+      |-- -> depends on Playback position events
+      `-- -> depends on Library episode identities
+
+1. Choose which diagrams to expand
+   - If the canvas holds a single diagram, expand it.
+   - Otherwise, prefer to expand along the vertical dimension: choose diagrams with nodes that hide modular structure of their own, i.e. modules that group submodules, and pull that structure out downward into new diagrams.
+   - Avoid expanding sideways: do not add new peer topics that are only horizontally related to what the canvas already shows.
+   - Leave a diagram unchanged when it is already small and focused; not every diagram needs expanding.
+
+2. Restructure each chosen diagram into a central diagram
+   - Give it a primarily *vertical*, modular structure: nest each component under the module it belongs to, so the shape of the tree alone shows how the system is organized and what each module exposes or keeps internal.
+   - Do not discard the horizontal relationships. Some components will not nest cleanly (e.g. a shared utility used by many modules, or an interface consumed across a boundary). Do not force these under a false parent; instead, express the relation as an annotated dependency line under the specific module or interface that depends on it.
+   - The vertical structure is the skeleton; horizontal relations are laid over it.
+
+3. Pull out concepts that should become their own diagrams
+   - Each peripheral diagram should connect to the node in the central diagram, at the depth, that it elaborates.
+   - Where a horizontal relation in the central diagram links two pulled-out concepts, connect those peripheral diagrams to each other as well.
+   - A peripheral diagram goes deeper into its central diagram's scope; it does not widen that scope or repeat what another diagram on the canvas already covers.
+
+4. Preserve the rest of the canvas
+   - Keep the IDs of existing diagrams, including the ones you expand, so their existing edges stay attached. Return unchanged diagrams with their ASCII exactly as given.
+   - Keep every existing edge. Re-point an edge only when restructuring moved or removed the line it pointed to.
+   - Place new diagrams next to the diagram they expand. Existing diagrams may shift only to make room.
+</task>
+
+<diagram-style>
+<diagram-guidelines>
+</diagram-guidelines>
+<references>
+</references>
+</diagram-style>
+
+<canvas-style>
+<canvas-guidelines>
+</canvas-guidelines>
+<references>
+</references>
+</canvas-style>
+
+<output format>
+Return JSON matching output-schema.json with {explanation, diagrams:[{id,ascii,position:{column,row}}], edges:[{source:{diagram,line},target:{diagram,line},label}]}. Output the complete restructured canvas per invocation: every existing and new diagram, and every edge. Diagram IDs must be unique. Positions use nonnegative integer character-grid coordinates; leave enough room for the actual ASCII bounds so diagrams do not overlap. ASCII uses printable characters with actual LF newlines. Edge lines are 1-based raw ASCII line numbers and must point to meaningful nonblank concept lines in the named diagrams. Return no prose outside JSON.
+
+In explanation, say which diagrams you expanded and why, which you left unchanged, how each expanded diagram was restructured and which concepts were pulled out, and note any corrections made after checking the source. If validation-error.json exists, read it and previous-output.json to correct this generation's own invalid output while preserving these instructions.
+</output format>

@@ -1,0 +1,81 @@
+### Anchor tree
+- A 3–14 ↔ B 3–14 · same · offset 0 · s = 0.802778 · application and canvas workspace
+  - A 5–6 ↔ B 4–5 · same · offset 0 · s = 1 · application entry
+    - A 6 ↔ B 5 · same · offset 0 · s = 1 · mapping page route
+  - A 9–14 ↔ B 6–8, 13–14 · grouped · offset 0 · s = 0.816667 · drafts and session lifetime
+    - A 12 ↔ B 7 · same · offset 0 · s = 1 · draft metadata
+    - A 14 ↔ B 13–14 · summarized · offset 0 · s = 0.9 · disposal
+    - unmatched: A 13 (persistence notification)
+  - unmatched: A 7–8 (service creation/context)
+- A 16–28 ↔ B 9–12 · relocated, nested under B’s workspace · offset 1 · s = 0.4275 · CanvasSession
+  - A 20–24 ↔ B 10 · summarized · offset 0 · s = 0.9 · subscriptions
+  - A 25–26 ↔ B 11 · summarized · offset 0 · s = 0.9 · change publication
+  - A 27–28 ↔ B 12 · summarized · offset 0 · s = 0.9 · dirty baseline
+- A 30–55 ↔ B 16–30 · same · offset 0 · s = 0.866146 · canvas model
+  - A 31–37 ↔ B 23–29 · same · offset 0 · s = 0.95 · composition
+    - A 32–34 ↔ B 24 · summarized · offset 0 · s = 0.9 · grid instances
+    - A 35, 36–37 ↔ B 25 · grouped, summarized · offset 0 · s = 0.9 · connections and contexts
+  - A 39–46 ↔ B 17–22 · same · offset 0 · s = 0.871875 · Diagram
+    - A 41–42 ↔ B 18–19 · same · offset 0 · s = 1 · content
+      - A 42 ↔ B 19 · same · offset 0 · s = 1 · content construction
+    - A 43–46 ↔ B 62–65 · relocated under B’s presentation · offset 0 · s = 0.4875 · source evidence
+      - A 44 ↔ B 63 · same · offset 0 · s = 1 · evidence ranges
+      - A 45–46 ↔ B 64 · summarized · offset 0 · s = 0.9 · source queries
+  - A 48–55 ↔ B 60–61 · relocated under B’s presentation · offset 0 · s = 0.375 · presentation state
+    - A 49, 50 ↔ B 61 · grouped · offset 0 · s = 1 · interaction/display state
+    - unmatched: A 51–55 (folded-content projection)
+- A 57–75 ↔ B 32–51 · same · offset 0 · s = 0.946111 · MappingDocumentController
+  - A 61–68 ↔ B 33–37 · same · offset 0 · s = 0.966667 · versioned operations
+    - A 62, 63 ↔ B 34 · grouped · offset 0 · s = 1 · settlement/conflict
+    - A 64–67 ↔ B 35, 36 · grouped, summarized · offset 0 · s = 0.9 · staged operations
+    - A 68–72 ↔ B 37 · summarized · offset 0 · s = 0.9 · reconciliation/publication
+  - A 73 ↔ B 38–39 · summarized · offset 0 · s = 0.9 · transient updates
+  - A 74–75 ↔ B 44 · summarized · offset 1 · s = 0.81 · persistence read boundary
+- A 77–95 ↔ B 40–49 · relocated under B’s controller · offset 1 · s = 0.415238 · history service
+  - A 79–80 ↔ B 41 · summarized · offset 0 · s = 0.9 · contexts
+  - A 81–88 ↔ B 42, 45–47 · grouped · offset 0 · s = 0.95 · snapshots and named views
+    - A 83–86 ↔ B 42 · summarized · offset 0 · s = 0.9 · snapshot
+    - A 88 ↔ B 45–47 · summarized · offset 0 · s = 0.9 · named views
+  - A 89–91 ↔ B 20–21 · relocated under B’s Diagram model · offset 1 · s = 0.4275 · revisions
+    - A 90–91 ↔ B 21 · summarized · offset 0 · s = 0.9 · revision creation/retention
+  - A 92 ↔ B 43 · same · offset 0 · s = 1 · navigation
+  - A 93–95 ↔ B 48–49 · same · offset 0 · s = 0.95 · transfers
+    - A 94–95 ↔ B 49 · summarized · offset 0 · s = 0.9 · transfer boundary
+- A 97–109 ↔ B 53–69 · same · offset 0 · s = 0.816667 · editor/presentation
+  - A 99–101 ↔ B 54–55 · same · offset 0 · s = 1 · projection
+    - A 101 ↔ B 55 · same · offset 0 · s = 1 · mapping shapes
+  - A 102–103 ↔ B 56–57 · same · offset 0 · s = 1 · live geometry
+    - A 103 ↔ B 57 · same · offset 0 · s = 1 · pointer frames
+  - A 104–105 ↔ B 58 · summarized · offset 0 · s = 0.9 · gesture settlement
+  - A 106–108 ↔ B 59 · summarized · offset 0 · s = 0.9 · checkpoint restoration
+  - unmatched: A 109 (runtime disposal); B 66–67 (source-inspection panels)
+- A 111–128 ↔ B 71–87 · same · offset 0 · s = 0.902083 · agent editing
+  - A 112–116 ↔ B 72–75 · same · offset 0 · s = 0.975 · prompt composer
+    - A 114 ↔ B 73 · same · offset 0 · s = 1 · pinned inputs
+    - A 115–116 ↔ B 75 · summarized · offset 0 · s = 0.9 · request lifecycle
+  - A 117–120 ↔ B 76–79 · same · offset 0 · s = 0.6 · edit service
+    - A 118 ↔ B 77 · same · offset 0 · s = 1 · deduplication
+    - unmatched: A 119 (captured context), A 120 (command port); B 78 (cancellation), B 79 (uncertain installation)
+  - A 121–123 ↔ B 80–82 · same · offset 0 · s = 0.666667 · browser bridge
+    - A 122 ↔ B 81 · same · offset 0 · s = 1 · polling
+    - unmatched: A 123 (cleanup); B 82 (live copy/paste)
+  - A 124–128 ↔ B 83–85 · same · offset 0 · s = 0.975 · revision receiver
+    - A 126 ↔ B 84 · same · offset 0 · s = 1 · versioned application
+    - A 127–128 ↔ B 85 · summarized · offset 0 · s = 0.9 · persistence receipt
+- A 130–149 ↔ B 89–104 · same · offset 0 · s = 0.875833 · persistence
+  - A 131–133 ↔ B 101 · summarized · offset 0 · s = 0.9 · reload
+  - A 134–138 ↔ B 90–92 · same · offset 0 · s = 0.975 · record translation
+    - A 136 ↔ B 91 · same · offset 0 · s = 1 · session cursors
+    - A 137–138 ↔ B 92 · summarized · offset 0 · s = 0.9 · persisted records
+  - A 139–144 ↔ B 93 · summarized · offset 0 · s = 0.9 · worker transport
+  - A 145–149 ↔ B 94–97 · same · offset 0 · s = 0.983333 · record store
+    - A 146 ↔ B 95 · same · offset 0 · s = 1 · receipt/revision
+    - A 147 ↔ B 96 · same · offset 0 · s = 1 · validation
+    - A 148–149 ↔ B 97 · summarized · offset 0 · s = 0.9 · atomic manifest
+  - unmatched: B 98–100 (explicit project publication)
+
+### Score
+Top-level J = (0.802778 + 0.4275 + 0.866146 + 0.946111 + 0.415238 + 0.816667 + 0.902083 + 0.875833) / 8 = **0.756544**.
+
+### Verdict
+Both trees identify the workspace, session, revision-backed model, controller, history, native editor, agent editing and persistence. B places CanvasSession under the workspace and history under the controller, while A gives each its own top-level parent. B’s presentation grouping owns source inspection that A places with Diagram source context; its explicit project-publication path has no A counterpart. Most other differences are summarized detail or grouping, particularly B’s combined snapshot-and-named-view history description.

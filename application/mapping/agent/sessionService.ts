@@ -1,3 +1,4 @@
+import { projectCanvas } from '../../../domain/mapping/projections/canvasProjection';
 import { getDiagramRevision } from '../../../domain/core/diagrams/diagramRevisionStore';
 import { presentationHighlights } from '../../../domain/core/presentation/diagramPresentation';
 import { createStoredDiagram, reviseStoredDiagram } from '../../../domain/core/diagrams/diagramRevisionStore';
@@ -7,7 +8,7 @@ import { reviewRevision, reviewRevisionIds } from '../../../domain/core/diagrams
 import { canvasMutationResult, type CanvasMutationResult } from '../../../domain/mapping/agent/mutationReceipt';
 import { ChatCanvasBindings } from './chatBindings';
 import { CanvasReadAliases } from './readAliases';
-import { currentCanvasRead } from '../../../domain/mapping/agent/currentCanvasRead';
+import { currentCanvasRead, type CanvasReadOptions } from '../../../domain/mapping/agent/currentCanvasRead';
 import { rebaseDiagramHighlights } from '../../../domain/core/diagrams/diagramHighlight';
 import { correspondingNodes } from '../../../domain/core/diagrams/diagramRevisionEditor';
 import { summarizeChangeSession } from '../../../domain/mapping/changes/diagramChangeSession';
@@ -217,6 +218,7 @@ export class AgentDiagrammingSessionService {
     if (name === 'diagram-search') return this.search(agentToolSchemas[name].parse(raw));
     if (name === 'canvas-view') {
       const input = agentToolSchemas[name].parse(raw), session = this.session(input.sessionId);
+      if (input.projectionType && (input.operation !== 'read' || !input.viewId)) throw Error('A saved view projection requires read and viewId');
       if (!['list', 'read'].includes(input.operation)) {
         if (readOnly) throw Error('READ_ONLY: CanvasView changes require Workspace access');
         if (input.expectedVersion === undefined) throw Error('expectedVersion is required for CanvasView changes');
@@ -439,8 +441,9 @@ export class AgentDiagrammingSessionService {
               }
               if (method === 'canvas.read') execute = async () => {
                 const session = this.session(sessionId, input.changeSessionId);
-                const read = input.changeSessionId ? currentCanvasRead(await this.snapshot(sessionId, input.changeSessionId), parsed as { level: 'small' | 'full'; nodeIds?: string[] })
+                const read = input.changeSessionId ? currentCanvasRead(await this.snapshot(sessionId, input.changeSessionId), parsed as CanvasReadOptions)
                   : await this.bridge.dispatch(session.canvasId, { method: 'read', documentId: session.documentId, payload: parsed }) as object;
+                if (parsed.projectionType) return read;
                 return this.aliases.project(read, this.binding(sessionId, input.changeSessionId));
               };
               else if (method === 'edges.list') execute = async () => {
@@ -587,6 +590,7 @@ export class AgentDiagrammingSessionService {
     return resolved;
   }
   private async search(input: ReturnType<(typeof agentToolSchemas)['diagram-search']['parse']>) {
+    if (input.projectionType && input.operation !== 'read') throw Error('projectionType requires a read');
     if (input.snapshot && (!input.changeSessionId || input.sessionId)) throw Error('snapshot requires changeSessionId without sessionId');
     if (input.changeSessionId && !input.sessionId) {
       const session = await this.changeService().get(input.changeSessionId);
@@ -596,6 +600,8 @@ export class AgentDiagrammingSessionService {
         if (docs.length !== 1) throw new Error('Specify representationId (or session document ID) for a session read');
         const doc = docs[0], state = doc[input.snapshot ?? 'proposed'];
         if (!state) throw Error('New canvas has no baseline');
+        if (input.projectionType) return { origin: 'change-session', documentId: doc.id, version: doc.version, snapshot: input.snapshot ?? 'proposed',
+          projectionType: input.projectionType, ...projectCanvas(state.document, input.projectionType, doc.history?.diagramRevisions, input.nodeId ? [input.nodeId] : undefined) };
         return { origin: 'change-session', changeSessionId: session.id, documentId: doc.id, name: doc.name, version: doc.version,
           snapshot: input.snapshot ?? 'proposed',
           nodes: this.projection.nodes(canvasDisplayNodes(state.document, state.canvas, doc.version)),
@@ -611,6 +617,12 @@ export class AgentDiagrammingSessionService {
         changeSession: { version: session.version, title: session.title, status: session.status, repositoryId: session.repositoryId, commits: session.commits, head: session.head, diffTree: summarizeChangeSession(session).diffTree, changes: session.changes, migrations: this.projection.migrations(session.migrations) } };
     }
     if (input.sessionId) {
+      if (input.projectionType) {
+        const session = this.session(input.sessionId, input.changeSessionId);
+        const options = { projectionType: input.projectionType, nodeIds: input.nodeId ? [input.nodeId] : undefined };
+        if (input.changeSessionId) return currentCanvasRead(await this.snapshot(input.sessionId, input.changeSessionId), options);
+        return this.bridge.dispatch(session.canvasId, { method: 'read', documentId: session.documentId, payload: options });
+      }
       const snapshot = await this.snapshot(input.sessionId, input.changeSessionId);
       const nodes = canvasDisplayNodes(snapshot.document, snapshot.canvas, snapshot.version, snapshot.cell, snapshot.endpointBounds).filter(node => node.layout === 'grid' && node.kind === 'diagram');
       if (input.operation === 'read') {
@@ -632,6 +644,8 @@ export class AgentDiagrammingSessionService {
       if (!representation.revisionIds.includes(revisionId)) throw new Error('Revision does not belong to representation');
       const revision = catalog.revisions[revisionId];
       const document = documentFromRevision(revision);
+      if (input.projectionType) return { origin: 'saved', representationId: representation.id, revisionId: revision.id, projectionType: input.projectionType,
+        ...projectCanvas(document, input.projectionType, revision.content?.kind === 'canvas-history' ? revision.content.history.diagramRevisions : undefined) };
       return { origin: 'saved', representation, revision: { id: revision.id, ascii: revision.ascii, revision: revision.revision, createdAt: revision.createdAt, representationKind: revision.representationKind }, nodes: this.projection.nodes(canvasDisplayNodes(document, initialCanvasState(), 0)) };
     }
     const hits: unknown[] = [];

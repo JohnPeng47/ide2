@@ -1,0 +1,84 @@
+### Anchor tree
+- A 3–11 ↔ B 3–14 · s = 0.948611 · Surface, runtime boundary, and App
+  - A 4–5 ↔ B 4–5 · s = 0.725 · Surface event boundary
+    - A 5 ↔ B 5, 22–23 · grouped, relocated, summarized · s = 0.45 · interaction state
+  - A 6–7 ↔ B 6–8 · s = 1 · platform runtime
+    - A 7 ↔ B 8 · s = 1 · delegated UI actions
+  - A 8–11 ↔ B 9–14 · s = 0.966667 · App coordination
+    - A 9 ↔ B 10 · s = 1 · surfaces and focus
+    - A 10 ↔ B 11–12 · summarized · s = 0.9 · shared resources
+    - A 11 ↔ B 13–14 · summarized · s = 0.9 · mailbox dispatch
+- A 13–20 ↔ B 16–25 · s = 0.929688 · session assembly
+  - A 14 ↔ B 17 · s = 1 · Termio
+  - A 15 ↔ B 18 · s = 1 · renderer
+  - A 16–17 ↔ B 19–21 · s = 0.95 · shared renderer state
+    - A 17 ↔ B 20–21 · summarized · s = 0.9 · referenced terminal and mutex
+  - A 18–20 ↔ B 43–49 · relocated · s = 0.4875 · I/O worker and Exec
+    - A 19–20 ↔ B 45–49 · s = 0.95 · subprocess and reader
+      - A 20 ↔ B 47–49 · summarized · s = 0.9 · PTY reader
+- A 22–34 ↔ B 27–40 · s = 0.974688 · input and writes
+  - A 23–26 ↔ B 28–32 · s = 0.9875 · keyboard
+    - A 24 ↔ B 29 · s = 1 · bindings
+    - A 25–26 ↔ B 30–32 · s = 0.95 · encoded keys
+      - A 26 ↔ B 31–32 · summarized · s = 0.9 · keyboard modes
+  - A 27–28 ↔ B 33–35 · s = 1 · mouse and selection
+    - A 28 ↔ B 34, 35 · grouped · s = 1 · reporting and local selection
+  - A 29–30 ↔ B 36 · offset 1, summarized · s = 0.81 · paste
+  - A 31–34 ↔ B 37–40 · s = 1 · queued writes
+    - A 32 ↔ B 38 · s = 1 · readonly
+    - A 33–34 ↔ B 39–40 · s = 1 · mailbox to Exec
+      - A 34 ↔ B 40 · s = 1 · PTY write
+- A 36–47 ↔ B 42–58 · s = 0.941389 · child output and parsing
+  - A 37–39 ↔ B 50–51 · offset 1 · s = 0.855 · locked output processing
+    - A 38–39 ↔ B 51 · summarized · s = 0.9 · parser feed
+  - A 40–42 ↔ B 52–54 · offset 2 · s = 0.81 · stream and VT handler
+    - A 41–42 ↔ B 53–54 · s = 1 · terminal operations
+      - A 42 ↔ B 54 · s = 1 · handler mutations
+  - A 43–47 ↔ B 55–58 · s = 0.983333 · effects beyond the grid
+    - A 44 ↔ B 56 · s = 1 · replies
+    - A 45 ↔ B 58 · s = 1 · renderer notices
+    - A 46–47 ↔ B 57 · summarized · s = 0.9 · surface effects
+- A 49–62 ↔ B 60–73 · s = 0.99974 · terminal model
+  - A 50–53 ↔ B 61–62, 72–73 · grouped · s = 1 · Terminal state
+    - A 51, 52, 53 ↔ B 73 · grouped · s = 1 · dimensions, modes, metadata
+  - A 54–62 ↔ B 63–71 · s = 0.998958 · screens and pages
+    - A 55 ↔ B 64 · s = 1 · primary and alternate
+    - A 56–62 ↔ B 65–71 · s = 0.995833 · active Screen
+      - A 57 ↔ B 66 · s = 1 · editing state
+      - A 58 ↔ B 67 · s = 1 · extended protocols
+      - A 59–62 ↔ B 68–71 · s = 0.975 · pages and pins
+        - A 60 ↔ B 70 · s = 1 · rows and cells
+        - A 61–62 ↔ B 71 · summarized · s = 0.9 · tracked pins
+- A 64–76 ↔ B 75–88 · s = 0.970833 · rendering
+  - A 65–66 ↔ B 76 · summarized · s = 0.9 · scheduling
+  - A 67–73 ↔ B 79–85 · s = 0.966667 · frame update
+    - A 68–70 ↔ B 80, 83 · grouped, summarized · s = 0.9 · snapshot and synchronization
+    - A 71–72 ↔ B 81–82 · s = 1 · viewport and highlights
+      - A 72 ↔ B 82 · s = 1 · frame cells
+    - A 73 ↔ B 84–85 · summarized · s = 0.9 · fonts and glyphs
+  - A 74 ↔ B 86–88 · summarized · s = 0.9 · drawFrame
+  - A 75–76 ↔ B 77–78 · s = 1 · graphics API
+    - A 76 ↔ B 78 · s = 1 · Metal or OpenGL
+- A 78–87 ↔ B 90–99 · s = 0.910417 · geometry and configuration
+  - A 79–80 ↔ B 91–92 · s = 1 · pixel-to-cell sizing
+    - A 80 ↔ B 92 · s = 1 · Size.grid
+  - A 81–83 ↔ B 93–97 · s = 0.975 · resize
+    - A 82–83 ↔ B 94–97 · s = 0.95 · Termio resize
+      - A 83 ↔ B 96 · offset 1 · s = 0.9 · consistent dimensions
+  - A 84–87 ↔ B 24–25, 98–99 · grouped, relocated · s = 0.4875 · derived configuration and propagation
+    - A 85 ↔ B 25 · s = 1 · owned configuration
+    - A 86–87 ↔ B 99 · summarized · s = 0.9 · worker configuration
+- A 89–97 ↔ B 101–109 · s = 0.747917 · shutdown
+  - A 91 ↔ B 102 · s = 1 · runtime close
+  - A 92–97 ↔ B 103–107 · s = 0.983333 · Surface deinit
+    - A 93–94 ↔ B 103–104 · s = 1 · stop workers
+      - A 94 ↔ B 104 · s = 1 · Exec.threadExit
+    - A 95, 96 ↔ B 105–106 · grouped, summarized · s = 0.9 · renderer and Termio order
+    - A 97 ↔ B 107 · s = 1 · owned allocations
+  - Unmatched: A 90 (child-exit hold or close); B 108–109 (App.deinit shared-resource teardown).
+
+### Score
+Top level: **J = (0.948611 + 0.929688 + 0.974688 + 0.941389 + 0.999740 + 0.970833 + 0.910417 + 0.747917) / 8 = 0.927878**. All eight top-level components anchor; the lower shutdown score reflects one unmatched child on each side.
+
+### Verdict
+The trees identify the same Surface boundary, session workers, input and output paths, terminal model, renderer, resize/configuration coordination, and teardown. Their internal breakdowns are especially close for the screen model and input. B nests parsing more deeply and places interaction and derived configuration under session assembly; A places Exec startup there while B places it under child output. Those are depth, grouping, and owner-location differences rather than missing top-level components. B’s mouse/paste parent and A’s combined geometry/configuration parent are implied by the other tree.

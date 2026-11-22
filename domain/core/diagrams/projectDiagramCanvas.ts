@@ -14,6 +14,7 @@ import type { ProjectRepresentationEvidenceRecord, ProjectRepresentationMappingR
 export type ProjectDiagramContent = { kind: "canvas-history"; history: CanvasHistoryRecord };
 export interface SaveProjectDiagramInput {
   canvasProjectId?: string;
+  agentContextId?: string;
   generated?: import('./generatedCanvas').GeneratedCanvas;
   type?: import('./canvasType').CanvasType;
   repositoryId?: string;

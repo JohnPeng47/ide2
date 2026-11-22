@@ -1,0 +1,18 @@
+{
+  "text": "Mapped all 20 nodes in **d3 (Renderer)**. The merge-ready JSON is at `/tmp/ghostty-d3.OwURDC8d/d3.json`. It includes 962 source ranges with scope and role records, covering both Metal and OpenGL through presentation to their runtime hosts.\n\n- **d3/n11:** The locked block copies mouse state and uses it for OSC 8 links. Regex link handling later reads `state.mouse` again after unlocking.\n- **d3/n19:** Embedded Metal supports synchronous main-thread drawing. GTK/OpenGL draws on the renderer thread and composites the exported frame on the main thread.\n\nThe checkout was unchanged. I checked node references, roles, file bounds, exclusions, and overlaps locally. `validate_source_mappings` was not available in this session.",
+  "usage": {
+    "input": 260253,
+    "output": 13773,
+    "cacheRead": 2916352,
+    "cacheWrite": 0,
+    "reasoning": 1418,
+    "totalTokens": 3190378
+  },
+  "cost": {
+    "input": 0.5205059999999998,
+    "output": 0.13773000000000002,
+    "cacheRead": 0.5832704000000001,
+    "cacheWrite": 0,
+    "total": 1.2415063999999998
+  }
+}

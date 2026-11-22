@@ -1,3 +1,5 @@
+import { readFile } from 'node:fs/promises';
+import { authoredStages, expandPromptStage, promptTemplateIds, validPromptTemplateId, type PromptTemplateSources } from '../../../domain/mapping/evals/promptTemplateIncludes';
 import { defaultPromptTemplateBase, legacyPromptTemplateBase, parsePromptSections } from '../../../domain/mapping/evals/promptTemplateBase';
 import type { PromptProjectSnapshot } from '../../../domain/mapping/evals/evalPrompt';
 import { randomUUID } from 'node:crypto';
@@ -23,7 +25,8 @@ export class EvalPromptService {
       const key = `${ref.promptId}:${ref.version}`;
       if (path.has(key)) throw new ApplicationError('invalid-input', 'Prompt lineage cannot contain a cycle.');
       const prompt = await this.read(ref.promptId), version = prompt.versions.find(v => v.version === ref.version);
-      if (prompt.workflow !== workflow || !version) throw new ApplicationError('invalid-input', 'Parent must be an existing version in the same workflow.');
+      const historyAdaptation = workflow === 'diagram-history' && prompt.workflow === 'diagram-change-proposal';
+      if ((!historyAdaptation && prompt.workflow !== workflow) || !version) throw new ApplicationError('invalid-input', 'Parent must be an existing version in the same workflow (diagram histories may derive from diagram-change proposals).');
       const next = new Set(path); next.add(key);
       for (const parent of version.parents?.length ? version.parents : version.derivation ? [version.derivation.parent] : []) await visit(parent, next);
     };
@@ -46,13 +49,37 @@ export class EvalPromptService {
       await this.store.save(next); return next;
     });
   }
+  async bindTemplates(bodies: Record<string, string>, parent?: PromptTemplateSources, attemptId?: string): Promise<PromptTemplateSources> {
+    const templateSources = Object.fromEntries(Object.entries(bodies).filter(([, body]) => promptTemplateIds(body).length));
+    if (!Object.keys(templateSources).length) return { stages: bodies };
+    // A retry can arrive after the fork was saved but before the run was persisted.
+    if (attemptId) parent = (await this.store.read(`attempt-${attemptId}`))?.versions[0] ?? parent;
+    const ids = new Set(Object.entries(templateSources).flatMap(([stage, body]) =>
+      parent?.templateSources?.[stage] === body ? [] : promptTemplateIds(body)));
+    const templates = new Map<string, string>();
+    for (const id of ids) {
+      if (!validPromptTemplateId(id)) throw new ApplicationError('invalid-input', `Invalid prompt template ID "${id}".`);
+      try { templates.set(id, await this.loadTemplate(id)); }
+      catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+        throw new ApplicationError('invalid-input', `Unknown prompt template "${id}".`);
+      }
+    }
+    try {
+      const stages = { ...bodies };
+      for (const [stage, body] of Object.entries(templateSources)) stages[stage] = expandPromptStage(stage, body, templates, parent);
+      return { stages, templateSources };
+    } catch (error) { throw new ApplicationError('invalid-input', (error as Error).message); }
+  }
   /** A separate, immutable prompt copy for a relaunch; deterministic identity makes retries safe. */
-  forkForAttempt(requestId: string, workflow: EvalWorkflowId, source: EvalRunPrompt, stages: Record<string, string>) {
+  forkForAttempt(requestId: string, workflow: EvalWorkflowId, source: EvalRunPrompt, bodies: Record<string, string>) {
     return this.serialize(async () => {
     const id = `attempt-${requestId}`, projectId = await this.projectId();
     const existing = await this.store.read(id);
+    const bound = await this.bindTemplates(bodies, existing?.versions[0] ?? source);
+    const { stages } = bound;
     if (existing) {
-      if (existing.projectId !== projectId || existing.workflow !== workflow || JSON.stringify(existing.versions[0].stages) !== JSON.stringify(stages)
+      if (promptContentHash(existing.versions[0].templateSources ?? {}) !== promptContentHash(bound.templateSources ?? {}) || existing.projectId !== projectId || existing.workflow !== workflow || promptContentHash(existing.versions[0].stages) !== promptContentHash(stages)
         || (existing.versions[0].derivation && JSON.stringify(existing.versions[0].derivation.parent) !== JSON.stringify({ promptId: source.promptId, version: source.version })))
         throw new ApplicationError('conflict', 'Relaunch request ID already used for a different prompt.');
       return existing;
@@ -64,7 +91,7 @@ export class EvalPromptService {
     if (issues.length) throw new ApplicationError('invalid-input', issues.map(i => i.message).join(' '));
     const now = new Date().toISOString();
     const fork: EvalPrompt = { schemaVersion: 1, id, projectId, workflow, name: `${source.name} · edited attempt`.slice(0, 120), createdAt: now, updatedAt: now,
-      versions: [{ version: 1, templateBase: source.templateBase ?? legacyPromptTemplateBase(stages), parents: source.version ? [{ promptId: source.promptId, version: source.version, relation: 'relaunch' }] : [], format: 'explicit-v1', createdAt: now, note: `Relaunched from ${source.promptId} v${source.version ?? 'unknown'}.`, contentHash: promptContentHash(stages), ...(derivation ? { derivation } : {}), stages }] };
+      versions: [{ version: 1, templateBase: source.templateBase ?? legacyPromptTemplateBase(stages), parents: source.version ? [{ promptId: source.promptId, version: source.version, relation: 'relaunch' }] : [], format: 'explicit-v1', createdAt: now, note: `Relaunched from ${source.promptId} v${source.version ?? 'unknown'}.`, contentHash: promptContentHash(stages), ...(derivation ? { derivation } : {}), ...bound }] };
     await this.store.save(fork); return fork;
     });
   }
@@ -73,7 +100,8 @@ export class EvalPromptService {
   private seeding?: Promise<void>;
   constructor(private store: EvalPromptStore, private projects: { loadProject(): Promise<{ id: string } | null> },
     readonly references?: Pick<EvalReferenceService, 'ids' | 'read'> & Partial<Pick<EvalReferenceService, 'create'>>,
-    private snapshots?: { save(value: PromptProjectSnapshot): Promise<void>; read(id: string): Promise<PromptProjectSnapshot | null>; list(): Promise<PromptProjectSnapshot[]> }) {}
+    private snapshots?: { save(value: PromptProjectSnapshot): Promise<void>; read(id: string): Promise<PromptProjectSnapshot | null>; list(): Promise<PromptProjectSnapshot[]> },
+    private loadTemplate = (id: string) => readFile(new URL('../../../public/' + id, import.meta.url), 'utf8')) {}
   private async projectId() {
     const project = await this.projects.loadProject();
     if (!project) throw new ApplicationError('invalid-input', 'Open a project first.');
@@ -131,25 +159,29 @@ export class EvalPromptService {
     const workflow = evalWorkflows[input.workflow];
     const source = input.promptId ? await this.read(input.promptId) : undefined;
     const templateBase = input.templateBase ?? (source ? latestVersion(source).templateBase ?? legacyPromptTemplateBase(latestVersion(source).stages) : defaultPromptTemplateBase);
-    const tagIssues = Object.values(input.stages).flatMap(text => parsePromptSections(text, templateBase).issues);
+    const existing = !source ? await this.store.read(input.requestId) : undefined;
+    const parentRef = input.derivation?.parent ?? input.parents?.[0];
+    const parent = parentRef ? (source?.id === parentRef.promptId ? source : await this.read(parentRef.promptId)).versions.find(v => v.version === parentRef.version)
+      : source?.versions.find(v => v.version === input.baseVersion);
+    const bound = await this.bindTemplates(input.stages, existing?.versions[0] ?? parent);
+    const tagIssues = Object.values(bound.stages).flatMap(text => parsePromptSections(text, templateBase).issues);
     if (tagIssues.length) throw new ApplicationError('invalid-input', tagIssues.map(i => i.message).join(' '));
     const parents = input.parents ?? (input.derivation ? [{ ...input.derivation.parent, relation: input.derivation.kind }] : source ? [{ promptId: source.id, version: input.baseVersion!, relation: 'revision' as const }] : []);
     if (parents.some(p => p.relation === 'merge') && parents.length < 2) throw new ApplicationError('invalid-input', 'A merge requires at least two parent versions.');
     for (const parent of parents) await this.validateDerivation({ parent, kind: parent.relation }, input.workflow, input.promptId ? { promptId: input.promptId, version: input.baseVersion! + 1 } : undefined);
-    if (promptHasErrors(validatePromptStages(workflow, input.stages, await this.references?.ids() ?? new Set()))) throw new ApplicationError('invalid-input', 'Fix the prompt errors before saving.');
-    const now = new Date().toISOString(), stages = Object.fromEntries(workflow.stages.map(stage => [stage.id, input.stages[stage.id]]));
+    if (promptHasErrors(validatePromptStages(workflow, bound.stages, await this.references?.ids() ?? new Set()))) throw new ApplicationError('invalid-input', 'Fix the prompt errors before saving.');
+    const now = new Date().toISOString(), stages = bound.stages;
     if (input.derivation) await this.validateDerivation(input.derivation, input.workflow);
     if (!input.promptId) {
-      const existing = await this.store.read(input.requestId);
       if (existing) {
         const first = existing.versions[0];
         if (existing.projectId !== await this.projectId() || existing.name !== input.name || existing.workflow !== input.workflow || promptContentHash(first.stages) !== promptContentHash(stages)
-          || JSON.stringify(first.parents) !== JSON.stringify(parents) || JSON.stringify(first.templateBase) !== JSON.stringify(templateBase)) throw new ApplicationError('conflict', 'Request ID already used for another prompt.');
+          || promptContentHash(first.templateSources ?? {}) !== promptContentHash(bound.templateSources ?? {}) || JSON.stringify(first.parents) !== JSON.stringify(parents) || JSON.stringify(first.templateBase) !== JSON.stringify(templateBase)) throw new ApplicationError('conflict', 'Request ID already used for another prompt.');
         return existing;
       }
       const prompt: EvalPrompt = { schemaVersion: 1, id: input.requestId, projectId: await this.projectId(), workflow: input.workflow, name: input.name,
         ...(input.description ? { description: input.description } : {}), createdAt: now, updatedAt: now,
-        versions: [{ version: 1, templateBase, parents, format: 'explicit-v1', createdAt: now, ...(input.note ? { note: input.note } : {}), contentHash: promptContentHash(stages), ...(input.derivation ? { derivation: input.derivation } : {}), stages }] };
+        versions: [{ version: 1, templateBase, parents, format: 'explicit-v1', createdAt: now, ...(input.note ? { note: input.note } : {}), contentHash: promptContentHash(stages), ...(input.derivation ? { derivation: input.derivation } : {}), ...bound }] };
       await this.store.save(prompt); return prompt;
     }
     const prompt = await this.read(input.promptId), latest = latestVersion(prompt);
@@ -157,16 +189,16 @@ export class EvalPromptService {
     if (latest.version !== input.baseVersion) throw new ApplicationError('conflict', `This prompt was saved as v${latest.version} since you opened it. Reload it before saving.`);
     const derivation: PromptDerivation = input.derivation ?? { parent: { promptId: prompt.id, version: latest.version }, kind: 'revision' };
     await this.validateDerivation(derivation, input.workflow, { promptId: prompt.id, version: latest.version + 1 });
-    const changed = promptContentHash(latest.stages) !== promptContentHash(stages) || JSON.stringify(latest.templateBase) !== JSON.stringify(templateBase) || !!input.parents;
+    const changed = promptContentHash(latest.templateSources ?? {}) !== promptContentHash(bound.templateSources ?? {}) || promptContentHash(latest.stages) !== promptContentHash(stages) || JSON.stringify(latest.templateBase) !== JSON.stringify(templateBase) || !!input.parents;
     const next: EvalPrompt = { ...prompt, name: input.name, updatedAt: now,
       ...(input.description !== undefined ? { description: input.description || undefined } : {}),
-      versions: changed ? [...prompt.versions, { version: latest.version + 1, templateBase, parents, format: 'explicit-v1' as const, createdAt: now, ...(input.note ? { note: input.note } : {}), contentHash: promptContentHash(stages), derivation, stages }] : prompt.versions };
+      versions: changed ? [...prompt.versions, { version: latest.version + 1, templateBase, parents, format: 'explicit-v1' as const, createdAt: now, ...(input.note ? { note: input.note } : {}), contentHash: promptContentHash(stages), derivation, ...bound }] : prompt.versions };
     await this.store.save(next); return next;
   }
   async fork(id: string, version: number, requestId: string, name: string) {
     const source = await this.read(id), pinned = source.versions.find(v => v.version === version);
     if (!pinned) throw new ApplicationError('invalid-input', 'Parent version not found.');
-    return this.save({ requestId, workflow: source.workflow, name, stages: pinned.stages,
+    return this.save({ requestId, workflow: source.workflow, name, stages: authoredStages(pinned),
       templateBase: pinned.templateBase ?? legacyPromptTemplateBase(pinned.stages),
       derivation: { parent: { promptId: id, version }, kind: 'fork' } });
   }
@@ -203,6 +235,6 @@ export class EvalPromptService {
       if (!reference) throw new ApplicationError('invalid-input', `${prompt.name} v${version} cites reference ${id}, which no longer exists.`);
       return [id, { name: reference.name, ascii: reference.ascii, ...(reference.comment ? { comment: reference.comment } : {}) }] as const;
     }))) : undefined;
-    return { promptId, version, name: prompt.name, stages: pinned.stages, templateBase: pinned.templateBase ?? legacyPromptTemplateBase(pinned.stages), parents: pinned.parents, contentHash: promptContentHash(pinned.stages), ...(pinned.derivation ? { derivation: pinned.derivation } : {}), ...(references ? { references } : {}) };
+    return { promptId, version, name: prompt.name, stages: pinned.stages, ...(pinned.templateSources && { templateSources: pinned.templateSources }), templateBase: pinned.templateBase ?? legacyPromptTemplateBase(pinned.stages), parents: pinned.parents, contentHash: promptContentHash(pinned.stages), ...(pinned.derivation ? { derivation: pinned.derivation } : {}), ...(references ? { references } : {}) };
   }
 }

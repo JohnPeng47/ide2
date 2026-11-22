@@ -1,0 +1,19 @@
+{
+  "id": "child-5",
+  "name": "terminal",
+  "assignment": "Map all d5 nodes only. Numbered ranges full named functions/declarations, return JSON partial.",
+  "model": "gpt-6-sol",
+  "effort": "medium",
+  "status": "generating",
+  "queuedAt": "2026-11-19T04:31:43.014Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-19T04:32:17.958Z",
+  "sessionId": "01a1f213-ac29-71c7-ad68-d2f5997dabe1",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase3-5t7gs81j-agent-repository-5t5idq-checkout--/2026-11-19T04-32-17-961Z_01a1f213-ac29-71c7-ad68-d2f5997dabe1.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase3-5t7gs81j/agent-repository-5t5idq/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

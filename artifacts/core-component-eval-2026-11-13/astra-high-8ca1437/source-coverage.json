@@ -1,0 +1,191 @@
+{
+  "commit": "8ca143700ca4d2c870f1101b8cd4601ab68abd41",
+  "metric": "Unique physical source lines returned in tool results, including blank lines/comments; repeated reads deduplicated. Listings and wc counts excluded.",
+  "sourceLinesSeen": 2809,
+  "sourceFilesSeen": 31,
+  "readCalls": 19,
+  "shellCalls": 7,
+  "denominators": {
+    "eligible_application_source": {
+      "files": 594,
+      "lines": 54363,
+      "seenLines": 2809,
+      "percent": 5.167117340838438
+    },
+    "production_application_source": {
+      "files": 594,
+      "lines": 54363,
+      "seenLines": 2809,
+      "percent": 5.167117340838438
+    },
+    "working_repository_including_tests_and_tools": {
+      "files": 1023,
+      "lines": 100015,
+      "seenLines": 2809,
+      "percent": 2.808578713193021
+    },
+    "all_tracked_source_extensions": {
+      "files": 1051,
+      "lines": 103157,
+      "seenLines": 2809,
+      "percent": 2.7230338222321318
+    }
+  },
+  "perFile": [
+    {
+      "path": "application/mapping/agent/diagramEditService.ts",
+      "totalLines": 293,
+      "seenLines": 130
+    },
+    {
+      "path": "domain/core/diagrams/canvasHistory.ts",
+      "totalLines": 632,
+      "seenLines": 157
+    },
+    {
+      "path": "domain/core/diagrams/canvasHistoryService.ts",
+      "totalLines": 97,
+      "seenLines": 97
+    },
+    {
+      "path": "domain/core/diagrams/diagram.ts",
+      "totalLines": 104,
+      "seenLines": 104
+    },
+    {
+      "path": "domain/core/diagrams/diagramContent.ts",
+      "totalLines": 76,
+      "seenLines": 76
+    },
+    {
+      "path": "domain/core/diagrams/diagramRevisionStore.ts",
+      "totalLines": 33,
+      "seenLines": 33
+    },
+    {
+      "path": "domain/core/diagrams/lineGrid.ts",
+      "totalLines": 209,
+      "seenLines": 100
+    },
+    {
+      "path": "domain/mapping/workspace/diagramViewState.ts",
+      "totalLines": 133,
+      "seenLines": 100
+    },
+    {
+      "path": "domain/mapping/workspace/mappingDocument.ts",
+      "totalLines": 16,
+      "seenLines": 16
+    },
+    {
+      "path": "domain/mapping/workspace/mappingDocumentController.ts",
+      "totalLines": 692,
+      "seenLines": 306
+    },
+    {
+      "path": "domain/mapping/workspace/mappingGrid.ts",
+      "totalLines": 55,
+      "seenLines": 55
+    },
+    {
+      "path": "domain/mapping/workspace/mappingWorkspace.ts",
+      "totalLines": 51,
+      "seenLines": 51
+    },
+    {
+      "path": "infrastructure/mapping/persistence/workspace/workspaceRecordStore.ts",
+      "totalLines": 205,
+      "seenLines": 150
+    },
+    {
+      "path": "src/app/App.tsx",
+      "totalLines": 12,
+      "seenLines": 12
+    },
+    {
+      "path": "src/app/services.ts",
+      "totalLines": 10,
+      "seenLines": 10
+    },
+    {
+      "path": "src/features/mapping/MappingPage.tsx",
+      "totalLines": 1307,
+      "seenLines": 266
+    },
+    {
+      "path": "src/features/mapping/agent/diagramRevisionReceiver.ts",
+      "totalLines": 42,
+      "seenLines": 42
+    },
+    {
+      "path": "src/features/mapping/agent/useAgentCanvasBridge.ts",
+      "totalLines": 85,
+      "seenLines": 85
+    },
+    {
+      "path": "src/features/mapping/code-panel/SessionCodePanel.tsx",
+      "totalLines": 13,
+      "seenLines": 13
+    },
+    {
+      "path": "src/features/mapping/prompt-composer/diagramEditClient.ts",
+      "totalLines": 48,
+      "seenLines": 48
+    },
+    {
+      "path": "src/features/mapping/prompt-composer/promptComposerCoordinator.ts",
+      "totalLines": 210,
+      "seenLines": 210
+    },
+    {
+      "path": "src/features/mapping/services/MappingServices.tsx",
+      "totalLines": 13,
+      "seenLines": 13
+    },
+    {
+      "path": "src/features/mapping/tldraw/MappingEditorRuntime.ts",
+      "totalLines": 207,
+      "seenLines": 207
+    },
+    {
+      "path": "src/features/mapping/workspace/canvasSession.ts",
+      "totalLines": 106,
+      "seenLines": 106
+    },
+    {
+      "path": "src/features/mapping/workspace/canvasWorkspace.ts",
+      "totalLines": 97,
+      "seenLines": 97
+    },
+    {
+      "path": "src/features/mapping/workspace/recordStorage.ts",
+      "totalLines": 103,
+      "seenLines": 103
+    },
+    {
+      "path": "src/features/mapping/workspace/workspacePersistence.ts",
+      "totalLines": 94,
+      "seenLines": 94
+    },
+    {
+      "path": "src/features/mapping/workspace/workspaceStorage.ts",
+      "totalLines": 69,
+      "seenLines": 69
+    },
+    {
+      "path": "src/features/mapping/workspace/workspaceStorage.worker.ts",
+      "totalLines": 55,
+      "seenLines": 55
+    },
+    {
+      "path": "src/server/app/bootstrap.ts",
+      "totalLines": 171,
+      "seenLines": 2
+    },
+    {
+      "path": "src/server/routes/mapping/routes.ts",
+      "totalLines": 109,
+      "seenLines": 2
+    }
+  ]
+}

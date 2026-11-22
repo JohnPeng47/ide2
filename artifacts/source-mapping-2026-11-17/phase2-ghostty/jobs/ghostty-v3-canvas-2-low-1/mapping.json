@@ -1,0 +1,32 @@
+{
+  "diagrams": [
+    {
+      "diagramId": "d1",
+      "mappings": [
+        {
+          "node": "n1",
+          "path": "src/App.zig",
+          "startLine": 22,
+          "endLine": 58
+        }
+      ]
+    },
+    {
+      "diagramId": "d2",
+      "mappings": []
+    },
+    {
+      "diagramId": "d3",
+      "mappings": []
+    },
+    {
+      "diagramId": "d4",
+      "mappings": []
+    },
+    {
+      "diagramId": "d5",
+      "mappings": []
+    }
+  ],
+  "notes": "Mapping incomplete: d1 n2–n48 and all nodes in d2–d5 remain unmapped."
+}

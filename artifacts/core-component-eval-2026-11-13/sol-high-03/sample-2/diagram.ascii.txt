@@ -1,0 +1,69 @@
+Mapping workspace -- editable project diagrams, their views, and local history
+|
+|-- [O] MappingWorkspacePage coordinates the opened project
+|   |-- loadProjectRepresentations('current') + WorkspaceStorage.load()
+|   |   `-- restore local documents, or open a settled catalog representation
+|   |-- CanvasWorkspace owns drafts[documentId] and controllers[documentId]
+|   |   |-- open() creates a CanvasSession from a saved revision
+|   |   |-- setDrafts() creates, replaces, or disposes sessions and subscriptions
+|   |   `-- copyDocument() forks a source controller's history into a new draft
+|   `-- activeId, transfers, search, explorer, and changeMode select workspace UI
+|
+|-- [O] CanvasSession owns one live MappingDocumentController
+|   |-- MappingGridDocument is the editable composition
+|   |   |-- scene: LineGridScene
+|   |   |   |-- root: GridBox -- nested containers and positioned diagram instances
+|   |   |   `-- contents[contentId]: Diagram -- ASCII, parsed content, revisions,
+|   |   |       sourceContext mappings/evidence, and optional jumps
+|   |   |-- edges: DiagramConnection[] -- anchored links between scene nodes
+|   |   `-- sections / jumps -- annotations and navigation on the composition
+|   |-- MappingCanvasState is the per-document view and interaction state
+|   |   |-- selection: SelectionState -- selected diagram or captured region
+|   |   |-- diagramViews -- collapsed content within diagram instances
+|   |   |-- display: DisplayState -- owned selection, projection, chat, and detail panes
+|   |   `-- controls.surfaces -- action and prompt state for selection focus
+|   `-- readable document / presentation / selection / controls / geometry / status
+|       `-- publish controller changes; no second editable document in React stores
+|
+|-- [C] MappingDocumentController is the shared mutation boundary
+|   |-- applyUpdate(expectedVersion, operations) checks the live version
+|   |   |-- diagram-create / insert / replace / patchDiagram / revision-apply
+|   |   |   `-- DiagramService.revise() supplies revised content and node correspondence
+|   |   |-- move / group / collapse / remove / delete-diagrams
+|   |   |   `-- layoutScene() resolves grid positions and collisions
+|   |   |-- edge-create / update / remove; setSourceMappings; setJumps
+|   |   `-- updateSnapshot() validates connections, rebases links and views,
+|   |       then publishes a completed document and canvas state
+|   |-- select(), updateCanvas(), commitDocument() handle UI interaction
+|   `-- nodes() derives display nodes from the current document and view
+|
+|-- [O] CanvasHistoryService owns editing checkpoints per controller context
+|   |-- CanvasHistory retains snapshots, diagramBindings, diagramRevisions,
+|   |   headId, past, and future; append() records committed edits
+|   |-- navigate() powers local undo/redo; exportContext() and
+|   |   persistenceChanges() expose history without making UI its owner
+|   `-- prepareTransfer() / prepareTransferNavigation() link two histories
+|       `-- MappingWorkspacePage persists both sides before installing a
+|           copy or move; workspace undo/redo reverses the whole transfer
+|
+|-- [C] MappingPocSelectionCanvas renders and drives the active session
+|   |-- DraggableDiagramCanvas + diagramSceneText / DiagramConnections
+|   |   `-- scene + diagramViews + display -> visible canvas and floating panes
+|   |-- selection -> diagramSource() mappings -> source/code projections
+|   |-- paste, drag, selection actions, and promptMappingPocSelection()
+|   |   `-- controller.commitDocument() or controller.applyUpdate()
+|   `-- DiagramSearchService and ChangeSessionPreview read document projections
+|
+`-- [O] Persistence and external command boundaries
+    |-- WorkspacePersistence listens to CanvasWorkspace commits
+    |   |-- writes per-document metadata, baseline, canvas view, viewport,
+    |   |   and incremental history records through RecordStorage
+    |   `-- WorkspaceStorage worker loads, batches, flushes, and restores records
+    |       `-- MappingWorkspaceService binds records to the current project
+    |-- saveMappingProjectDiagram() -> MappingDiagramService.save()
+    |   `-- project catalog records the settled representation/revision;
+    |       local savedScene and savedEdges become the new dirty baseline
+    `-- useAgentCanvasBridge registers the live canvas and receives commands
+        |-- context / snapshot read controller state
+        `-- apply / apply-diagram-revision enter the same controller boundary;
+            request receipts prevent duplicate application

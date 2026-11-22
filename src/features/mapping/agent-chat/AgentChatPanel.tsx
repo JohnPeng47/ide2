@@ -46,7 +46,7 @@ function PendingRequest({ request, onAnswer }: { request: ChatApproval; onAnswer
   </form>;
 }
 
-export function AgentChatPanel({ open, projectId, canvasTarget, onCopyDiagram, referenceCanvas, tabCommand, onHighlightReference }: { onHighlightReference?: OpenHighlightReference; tabCommand?: ChatTabCommand; open: boolean; projectId?: string; canvasTarget?: ChatCanvasTarget; onCopyDiagram?: (ascii: string) => void; referenceCanvas?: ChatReferenceCanvas }) {
+export function AgentChatPanel({ open, projectId, canvasTarget, agentContextId, onCopyDiagram, referenceCanvas, tabCommand, onHighlightReference }: { onHighlightReference?: OpenHighlightReference; tabCommand?: ChatTabCommand; open: boolean; projectId?: string; canvasTarget?: ChatCanvasTarget; agentContextId?: string; onCopyDiagram?: (ascii: string) => void; referenceCanvas?: ChatReferenceCanvas }) {
   const sidebar = useContext(WindowPanelSidebarContext);
   const [info, setInfo] = useState<ChatInfo>();
   const [zoom, setZoom] = useChatZoom();
@@ -101,10 +101,26 @@ export function AgentChatPanel({ open, projectId, canvasTarget, onCopyDiagram, r
     if (next.selected !== selected) activate(next.selected);
     setTabs(next);
   };
-  const promoteTab = (id: string) => {
-    tabSettings.current[id] = settings;
-    setTabs(current => ({ ids: current.ids.map(entry => entry === selected ? id : entry), selected: id }));
+  const openingTabs = useRef(new Map<string, Promise<ChatSession>>());
+  const openDraftSession = () => {
+    const pending = openingTabs.current.get(selected);
+    if (pending) return pending;
+    const opening = chatRequest<ChatSession>('/sessions', { ...settings, canvas: canvasTarget, agentContextId }).then(created => {
+      tabSettings.current[created.id] = settings;
+      setDrafts(current => ({ ...current, [created.id]: current[selected] ?? emptyDraft }));
+      setTabs(current => ({ ids: current.ids.map(tab => tab === selected ? created.id : tab),
+        selected: current.selected === selected ? created.id : current.selected }));
+      return created;
+    }).finally(() => openingTabs.current.delete(selected));
+    openingTabs.current.set(selected, opening);
+    return opening;
   };
+  useEffect(() => {
+    if (!open || !info || activeSessionId || !canvasTarget || !agentContextId) return;
+    let current = true;
+    void openDraftSession().catch(error => { if (current) setError(String(error)); });
+    return () => { current = false; };
+  }, [open, info, selected, canvasTarget?.workspaceInstanceId, canvasTarget?.documentId, agentContextId]);
   useEffect(() => {
     if (!open || !info || busy || !tabCommand || consumedCommand.current >= tabCommand.serial) return;
     consumedCommand.current = tabCommand.serial;
@@ -160,6 +176,13 @@ export function AgentChatPanel({ open, projectId, canvasTarget, onCopyDiagram, r
     setSessions(current => [{ id: session.id, title: session.title, cwd: session.cwd, updatedAt: session.updatedAt, status: session.status }, ...current.filter(item => item.id !== session.id)]);
   }, [session?.title, session?.status, session?.id]);
   useEffect(() => { stream.current?.setVisible(open); }, [open]);
+  useEffect(() => {
+    if (!open || !activeSessionId || !session || running || session.generation || session.background) return;
+    let current = true;
+    void chatRequest(`/sessions/${activeSessionId}/canvas-background`, { canvas: canvasTarget, agentContextId })
+      .catch(error => { if (current) setError(String(error)); });
+    return () => { current = false; };
+  }, [open, activeSessionId, session?.id, running, canvasTarget?.workspaceInstanceId, canvasTarget?.documentId, agentContextId]);
   const backgroundRunning = sessions.some(entry => entry.id !== activeSessionId && tabs.ids.includes(entry.id) && entry.status === 'running');
   useEffect(() => {
     if (!open || !backgroundRunning) return;
@@ -179,11 +202,11 @@ export function AgentChatPanel({ open, projectId, canvasTarget, onCopyDiagram, r
     setBusy(true); setError('');
     let id = activeSessionId;
     try {
-      if (!id) { const created = await chatRequest<ChatSession>('/sessions', settings); id = created.id; promoteTab(id); setSession(created); }
+      if (!id) { id = (await openDraftSession()).id; }
       // Preserve the exact request after a lost response; explicit new text gets a new identity.
-      const signature = JSON.stringify({ text, references, canvas: canvasTarget });
+      const signature = JSON.stringify({ text, references, agentContextId, canvas: canvasTarget });
       const request = pendingSend.current[id]?.signature === signature ? pendingSend.current[id]
-        : { id, signature, body: { ...settings, text, canvas: canvasTarget, ...(references.length ? { references: structuredClone(references) } : {}), requestId: crypto.randomUUID() } };
+        : { id, signature, body: { ...settings, text, agentContextId, canvas: canvasTarget, ...(references.length ? { references: structuredClone(references) } : {}), requestId: crypto.randomUUID() } };
       pendingSend.current[id] = request;
       await chatRequest(`/sessions/${id}/send`, request.body);
       delete pendingSend.current[id]; setDrafts(current => ({ ...current, [selected]: emptyDraft, [id]: emptyDraft }));
@@ -200,14 +223,12 @@ export function AgentChatPanel({ open, projectId, canvasTarget, onCopyDiagram, r
     let id = activeSessionId;
     try {
       if (!id) {
-        const created = await chatRequest<ChatSession>('/sessions', settings);
-        id = created.id; promoteTab(id); setSession(created);
-        setDrafts(current => ({ ...current, [id]: current[selected] ?? emptyDraft, [selected]: emptyDraft }));
+        id = (await openDraftSession()).id;
       }
       const previous = pendingRead.current[id];
       const request = previous?.id === id && previous.body.canvas.workspaceInstanceId === canvasTarget.workspaceInstanceId
-        && previous.body.canvas.documentId === canvasTarget.documentId ? previous
-        : { id, body: { ...settings, canvas: { ...canvasTarget }, requestId: crypto.randomUUID() } };
+        && previous.body.canvas.documentId === canvasTarget.documentId && previous.body.agentContextId === agentContextId ? previous
+        : { id, body: { ...settings, agentContextId, canvas: { ...canvasTarget }, requestId: crypto.randomUUID() } };
       pendingRead.current[id] = request;
       await chatRequest(`/sessions/${id}/read-canvas`, request.body);
       delete pendingRead.current[id];

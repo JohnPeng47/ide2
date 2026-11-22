@@ -4,7 +4,7 @@
   "name": "canvas-domain-model",
   "diagramSetIds": [],
   "createdAt": "2026-09-16T18:56:45.485425+00:00",
-  "updatedAt": "2026-11-06T02:58:56.692Z",
+  "updatedAt": "2026-11-20T20:57:20.005Z",
   "defaultDomainProfileId": "source-code",
   "repositories": [
     {
@@ -15,6 +15,56 @@
         "/home/john/.herdr/worktrees/new-diagram/worktree-perf-debug",
         "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax"
       ]
+    },
+    {
+      "id": "repo-0e96354b26ae0f2af33473cd",
+      "name": "Ghostty",
+      "identity": "/home/john/softwarez/ghostty/.git",
+      "checkoutRoots": [
+        "/home/john/softwarez/ghostty"
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "sourceId": "source-51c0bd96f1ef196477e73147",
+      "repositoryIdentity": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax",
+      "corpus": {
+        "kind": "git-worktree",
+        "root": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax",
+        "revision": "8ca143700ca4d2c870f1101b8cd4601ab68abd41"
+      },
+      "domainProfileId": "source-code"
+    },
+    {
+      "sourceId": "source-a3842cdcdbbf0500254297f0",
+      "repositoryIdentity": "/home/john/softwarez/pi",
+      "corpus": {
+        "kind": "git-worktree",
+        "root": "/home/john/softwarez/pi",
+        "revision": "682c7b93ce3e0a52b579c2b65b4c06bb392e7180"
+      },
+      "domainProfileId": "source-code"
+    },
+    {
+      "sourceId": "source-6a83f7733b1bf4b526a5b509",
+      "repositoryIdentity": "/home/john/softwarez/opencode",
+      "corpus": {
+        "kind": "git-worktree",
+        "root": "/home/john/softwarez/opencode",
+        "revision": "fe3552441192ccbea91d117668e7f3a9eb097baf"
+      },
+      "domainProfileId": "source-code"
+    },
+    {
+      "sourceId": "source-de78c045c9ee1b01396a4778",
+      "repositoryIdentity": "/home/john/softwarez/ghostty",
+      "corpus": {
+        "kind": "git-worktree",
+        "root": "/home/john/softwarez/ghostty",
+        "revision": "ea8b12a8a9894b5259c441eadd8f6f0c65e215af"
+      },
+      "domainProfileId": "source-code"
     }
   ]
 }

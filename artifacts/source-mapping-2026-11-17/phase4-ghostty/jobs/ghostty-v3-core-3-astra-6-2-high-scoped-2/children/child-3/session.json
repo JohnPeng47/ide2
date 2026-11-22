@@ -1,0 +1,19 @@
+{
+  "id": "child-3",
+  "name": "output",
+  "assignment": "Map n36-n51 child output branch; private /tmp/output. Return compact text scopes and path:start-end roles per node (indicate child coverage).",
+  "model": "gpt-6.2-astra",
+  "effort": "high",
+  "status": "generating",
+  "queuedAt": "2026-11-22T03:50:16.234Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-22T03:52:07.409Z",
+  "sessionId": "01a20161-f7f8-735f-bbfc-385a4c52082a",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-ea05rgun-agent-repository-SbUvQM-checkout--/2026-11-22T03-52-07-416Z_01a20161-f7f8-735f-bbfc-385a4c52082a.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase4-ea05rgun/agent-repository-SbUvQM/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

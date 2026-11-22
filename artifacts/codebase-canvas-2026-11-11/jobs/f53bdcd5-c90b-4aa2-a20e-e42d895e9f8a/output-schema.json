@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "plain": {
+      "type": "string",
+      "minLength": 1
+    },
+    "model": {
+      "type": "string",
+      "minLength": 1
+    },
+    "rationale": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "plain",
+    "model",
+    "rationale"
+  ],
+  "additionalProperties": false
+}

@@ -1,0 +1,19 @@
+{
+  "id": "child-5",
+  "name": "terminal",
+  "assignment": "Map n52-65 terminal state branch. Private /tmp/terminal. Return compact scope + path ranges with roles D,U,I per node; parent can reference child ranges.",
+  "model": "gpt-6.2-astra",
+  "effort": "high",
+  "status": "generating",
+  "queuedAt": "2026-11-22T03:05:57.870Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-22T03:10:02.314Z",
+  "sessionId": "01a2013b-7050-7117-998b-7bc4a920f992",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-7vmfpdh9-agent-repository-RuKCrG-checkout--/2026-11-22T03-10-02-320Z_01a2013b-7050-7117-998b-7bc4a920f992.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase4-7vmfpdh9/agent-repository-RuKCrG/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}

@@ -1,0 +1,1 @@
+{"path":"vitest.config.ts","text":"import { defineConfig } from \"vitest/config\";\n\nexport default defineConfig({\n  test: {\n    // Vendored repositories have their own runners and dependencies.\n    include: [\"{src,application,infrastructure,domain,packages,tests/architecture}/**/*.test.{ts,tsx}\"],\n    exclude: [\"**/node_modules/**\", \"**/dist/**\"]\n  }\n});\n"}

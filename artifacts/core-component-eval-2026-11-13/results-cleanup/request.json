@@ -1,0 +1,318 @@
+{
+  "requestId": "a44e258e-8a46-4eee-952d-bee7d421675d",
+  "experimentId": "08ccc7fa-8ea6-4cfa-b0b7-8819b7fcbf35",
+  "expectedRevision": 27,
+  "experiment": {
+    "name": "Core component discovery",
+    "description": "Core-component discovery across repositories with pinned source snapshots and prompts. Phase 1 retains the original Mapping baseline. Phase 2 groups completed Astra/high diagrams and source-coverage results by repository.",
+    "workflow": {
+      "id": "core-discovery",
+      "name": "Core component discovery",
+      "version": 4,
+      "stages": [
+        {
+          "id": "tree",
+          "name": "Core diagram",
+          "dependsOn": []
+        },
+        {
+          "id": "coverage",
+          "name": "Source coverage",
+          "dependsOn": [
+            "tree"
+          ]
+        }
+      ]
+    },
+    "phases": [
+      {
+        "id": "mapping",
+        "name": "Phase 1 \u00b7 Baseline",
+        "description": "Original Mapping discovery at 03f2168: one Astra/high and three Sol/high diagrams."
+      },
+      {
+        "id": "pi",
+        "name": "Phase 2 \u00b7 Repository discovery",
+        "description": "Completed Astra/high diagrams grouped by repository: Mapping, Pi and OpenCode. Source coverage reports summarize returned read/bash source, deduplicated within each run. Failed setup and formatting attempts have been deleted."
+      }
+    ],
+    "cases": [
+      {
+        "id": "source",
+        "name": "Mapping \u00b7 baseline",
+        "agentContextId": "saved-agent-context-7344b95b-5c8c-4f6e-86e5-4323ee2478e4",
+        "contentHash": "00b9ed11b05d12f61ea9897c890dca21baf63782b67254a23c6fb80d94ae0fc2"
+      },
+      {
+        "id": "source-8ca1437-rerun",
+        "name": "Mapping",
+        "agentContextId": "saved-agent-context-2ba25014-3a84-42e9-b5f8-1e10c32fa2cd",
+        "contentHash": "206d36f8379bc52aa484c0043cf003a0e818438ad4df6fdaa3b47aaa59c167d0"
+      },
+      {
+        "id": "pi-source",
+        "name": "Pi",
+        "agentContextId": "saved-agent-context-2b31f263-f81f-4df1-a146-8946dc709b5c",
+        "contentHash": "642eff5f7c0caf04881c5a7a06cc6f80a6acefc263656940751d03a1c1360017"
+      },
+      {
+        "id": "opencode-source",
+        "name": "OpenCode",
+        "agentContextId": "saved-agent-context-3d034491-1ea2-4157-acc5-98ead2c12d98",
+        "contentHash": "99e7bdfbe45e3d3f5b21dde5a7a01b1c4cf40207ff22928867821476b8010d29"
+      }
+    ],
+    "conditions": [
+      {
+        "id": "repository-browsing",
+        "name": "3+1 \u00b7 checkout directory",
+        "description": "Combined prompt v2 (0b3af2dd-ba89-4032-936a-40070a3e167e); normal shell/read tools in a pinned checkout. No reference diagram or analysis rankings. Output: one ASCII tree in JSON {ascii}, at most 20000 characters."
+      },
+      {
+        "id": "sol-high",
+        "name": "Sol/high \u00b7 checkout directory",
+        "description": "Three independent gpt-6-sol/high samples; exact same prompt v2, source commit, exclusions, and AgentContext as the Astra/high sample."
+      },
+      {
+        "id": "mapping-astra-high",
+        "name": "Mapping \u00b7 Astra/high",
+        "description": "Three completed native-codebase diagrams at 8ca1437: one prompt v2 output and two prompt v4 outputs. Pinned prompt versions remain available per output. The attached coverage report summarizes the two v4 runs."
+      },
+      {
+        "id": "pi-astra-high-v4",
+        "name": "Pi \u00b7 Astra/high v4",
+        "description": "Three independent Astra/high samples at Pi 682c7b9, prompt v4; all three passed canvas validation. Mean source exposure: 2,608 lines (0.71% of 368,377 eligible source lines). Three-run union: 4,247 lines (1.15%). Includes read and bash output. Coverage report is deterministic, not another generation."
+      },
+      {
+        "id": "opencode-astra-high-v4",
+        "name": "OpenCode \u00b7 Astra/high v4",
+        "description": "Three independent Astra/high samples at OpenCode fe35524, prompt v4; all three passed canvas validation. Mean source exposure: 4,013 lines (0.44% of 915,717 eligible source lines). Three-run union: 5,833 lines (0.64%). Includes read and bash output. Coverage report is deterministic, not another generation."
+      }
+    ],
+    "samples": [
+      {
+        "id": "d4ae9c0d-3f81-4138-b25a-6266f8a7f1f8",
+        "phaseId": "mapping",
+        "caseId": "source",
+        "conditionId": "repository-browsing",
+        "number": 1,
+        "attempt": 1,
+        "outputs": [
+          {
+            "stageId": "tree",
+            "runId": "22a83e6e-81ef-4161-a4b0-851062428f61",
+            "cellKey": "0b3af2dd-ba89-4032-936a-40070a3e167e:1:alternative"
+          }
+        ]
+      },
+      {
+        "id": "859eb44c-0634-483b-8163-3f8426bf8cf5",
+        "phaseId": "mapping",
+        "caseId": "source",
+        "conditionId": "sol-high",
+        "number": 1,
+        "attempt": 1,
+        "outputs": [
+          {
+            "stageId": "tree",
+            "runId": "e0da55e9-87bf-4567-85bc-22bb197073cf",
+            "cellKey": "0b3af2dd-ba89-4032-936a-40070a3e167e:1:alternative"
+          }
+        ]
+      },
+      {
+        "id": "c7d66451-c54a-4207-95a9-c6d52d48af5a",
+        "phaseId": "mapping",
+        "caseId": "source",
+        "conditionId": "sol-high",
+        "number": 2,
+        "attempt": 1,
+        "outputs": [
+          {
+            "stageId": "tree",
+            "runId": "d2663236-2eee-470b-841c-50ea8055ae1f",
+            "cellKey": "0b3af2dd-ba89-4032-936a-40070a3e167e:1:alternative"
+          }
+        ]
+      },
+      {
+        "id": "b29b0427-55c3-4000-a783-438eb364a0cf",
+        "phaseId": "mapping",
+        "caseId": "source",
+        "conditionId": "sol-high",
+        "number": 3,
+        "attempt": 1,
+        "outputs": [
+          {
+            "stageId": "tree",
+            "runId": "c70d3c75-a3c2-49fe-9ff8-ed36ba609fb8",
+            "cellKey": "0b3af2dd-ba89-4032-936a-40070a3e167e:1:alternative"
+          }
+        ]
+      },
+      {
+        "id": "158a261e-afa2-4d05-aaa6-8b348ee66a6e",
+        "phaseId": "pi",
+        "caseId": "source-8ca1437-rerun",
+        "conditionId": "mapping-astra-high",
+        "number": 1,
+        "attempt": 1,
+        "outputs": [
+          {
+            "stageId": "tree",
+            "runId": "df362edd-3c37-49aa-932d-84181ef9d0c2",
+            "cellKey": "0b3af2dd-ba89-4032-936a-40070a3e167e:1:alternative"
+          }
+        ]
+      },
+      {
+        "id": "6c3c72a7-0379-414d-ac76-f6197bde958f",
+        "phaseId": "pi",
+        "caseId": "pi-source",
+        "conditionId": "pi-astra-high-v4",
+        "number": 1,
+        "attempt": 2,
+        "relaunchedFrom": {
+          "sampleId": "cca240fa-314c-4034-9185-deb132719a43",
+          "stageId": "tree"
+        },
+        "outputs": [
+          {
+            "stageId": "tree",
+            "runId": "3f123c60-c475-4fbc-958f-c66dbb757de2",
+            "cellKey": "0b3af2dd-ba89-4032-936a-40070a3e167e:1:alternative"
+          },
+          {
+            "stageId": "coverage",
+            "runId": "3f123c60-c475-4fbc-958f-c66dbb757de2",
+            "cellKey": "source-coverage:1:analysis"
+          }
+        ]
+      },
+      {
+        "id": "724ad104-7c52-4848-a8ed-f14362c9ce73",
+        "phaseId": "pi",
+        "caseId": "pi-source",
+        "conditionId": "pi-astra-high-v4",
+        "number": 2,
+        "attempt": 2,
+        "relaunchedFrom": {
+          "sampleId": "e9f22385-f7f1-4a48-ae2a-d74d325ba568",
+          "stageId": "tree"
+        },
+        "outputs": [
+          {
+            "stageId": "tree",
+            "runId": "c5923f60-da9e-4740-ab82-74fad423bda1",
+            "cellKey": "0b3af2dd-ba89-4032-936a-40070a3e167e:1:alternative"
+          }
+        ]
+      },
+      {
+        "id": "4cd79b45-a595-4605-a9be-3d18ef23cf6e",
+        "phaseId": "pi",
+        "caseId": "pi-source",
+        "conditionId": "pi-astra-high-v4",
+        "number": 3,
+        "attempt": 2,
+        "relaunchedFrom": {
+          "sampleId": "f30b00ed-4b90-4a84-83e3-038b901b34be",
+          "stageId": "tree"
+        },
+        "outputs": [
+          {
+            "stageId": "tree",
+            "runId": "0fc465ae-961d-4c0a-a0c6-f60338bbe689",
+            "cellKey": "0b3af2dd-ba89-4032-936a-40070a3e167e:1:alternative"
+          }
+        ]
+      },
+      {
+        "id": "b9167bf8-112d-44e1-9e24-d256b6c26322",
+        "phaseId": "pi",
+        "caseId": "opencode-source",
+        "conditionId": "opencode-astra-high-v4",
+        "number": 1,
+        "attempt": 1,
+        "outputs": [
+          {
+            "stageId": "tree",
+            "runId": "450850af-6c9b-4950-a4d8-31f5724302e6",
+            "cellKey": "0b3af2dd-ba89-4032-936a-40070a3e167e:1:alternative"
+          },
+          {
+            "stageId": "coverage",
+            "runId": "450850af-6c9b-4950-a4d8-31f5724302e6",
+            "cellKey": "source-coverage:1:analysis"
+          }
+        ]
+      },
+      {
+        "id": "eeb1c152-6d8a-485e-b3ee-a0523b153844",
+        "phaseId": "pi",
+        "caseId": "opencode-source",
+        "conditionId": "opencode-astra-high-v4",
+        "number": 2,
+        "attempt": 1,
+        "outputs": [
+          {
+            "stageId": "tree",
+            "runId": "c896fde7-00ef-4b9f-a62f-7cfc94310a5b",
+            "cellKey": "0b3af2dd-ba89-4032-936a-40070a3e167e:1:alternative"
+          }
+        ]
+      },
+      {
+        "id": "64edfc44-d923-4848-b288-f14d8fd4aeca",
+        "phaseId": "pi",
+        "caseId": "opencode-source",
+        "conditionId": "opencode-astra-high-v4",
+        "number": 3,
+        "attempt": 1,
+        "outputs": [
+          {
+            "stageId": "tree",
+            "runId": "e5dfe7ec-d1a8-45b9-bf7c-04ea78edf8da",
+            "cellKey": "0b3af2dd-ba89-4032-936a-40070a3e167e:1:alternative"
+          }
+        ]
+      },
+      {
+        "id": "e3c0f2a7-a8de-4bfa-ac37-0c214cf7ed42",
+        "phaseId": "pi",
+        "caseId": "source-8ca1437-rerun",
+        "conditionId": "mapping-astra-high",
+        "number": 2,
+        "attempt": 1,
+        "outputs": [
+          {
+            "stageId": "tree",
+            "runId": "641693cf-fc8b-43c8-ab5d-bc9b08dd22c7",
+            "cellKey": "0b3af2dd-ba89-4032-936a-40070a3e167e:1:alternative"
+          },
+          {
+            "stageId": "coverage",
+            "runId": "641693cf-fc8b-43c8-ab5d-bc9b08dd22c7",
+            "cellKey": "source-coverage:1:analysis"
+          }
+        ]
+      },
+      {
+        "id": "9a4051bc-9123-424b-a47e-c300ca452210",
+        "phaseId": "pi",
+        "caseId": "source-8ca1437-rerun",
+        "conditionId": "mapping-astra-high",
+        "number": 3,
+        "attempt": 1,
+        "outputs": [
+          {
+            "stageId": "tree",
+            "runId": "c3aa93d2-4c2a-4e70-846c-61b571c3607d",
+            "cellKey": "0b3af2dd-ba89-4032-936a-40070a3e167e:1:alternative"
+          }
+        ]
+      }
+    ],
+    "comparisons": []
+  }
+}

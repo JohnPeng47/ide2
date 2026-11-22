@@ -1,0 +1,1865 @@
+{
+  "output": {
+    "score": 0.844340277778,
+    "anchors": {
+      "pairs": [
+        {
+          "label": "Application entry and live workspace ownership",
+          "a": [
+            [
+              3,
+              14
+            ],
+            [
+              16,
+              28
+            ]
+          ],
+          "b": [
+            [
+              3,
+              17
+            ]
+          ],
+          "grouped": true,
+          "relocated": false,
+          "offset": 0,
+          "inner": {
+            "pairs": [
+              {
+                "label": "Application entry and service injection",
+                "a": [
+                  [
+                    5,
+                    6
+                  ],
+                  [
+                    7,
+                    8
+                  ]
+                ],
+                "b": [
+                  [
+                    4,
+                    6
+                  ]
+                ],
+                "grouped": true,
+                "relocated": false,
+                "offset": 0,
+                "inner": {
+                  "pairs": [
+                    {
+                      "label": "Default application surface and injected services",
+                      "a": [
+                        [
+                          6,
+                          6
+                        ],
+                        [
+                          8,
+                          8
+                        ]
+                      ],
+                      "b": [
+                        [
+                          5,
+                          6
+                        ]
+                      ],
+                      "grouped": true,
+                      "relocated": false,
+                      "offset": 0,
+                      "inner": "leaves",
+                      "s": 1
+                    }
+                  ],
+                  "unmatchedA": [],
+                  "unmatchedB": [],
+                  "J": 1
+                },
+                "s": 1
+              },
+              {
+                "label": "CanvasWorkspace",
+                "a": [
+                  [
+                    9,
+                    14
+                  ]
+                ],
+                "b": [
+                  [
+                    7,
+                    11
+                  ]
+                ],
+                "grouped": false,
+                "relocated": false,
+                "offset": 0,
+                "inner": {
+                  "pairs": [
+                    {
+                      "label": "Session creation and replacement lifecycle",
+                      "a": [
+                        [
+                          11,
+                          11
+                        ],
+                        [
+                          14,
+                          14
+                        ]
+                      ],
+                      "b": [
+                        [
+                          9,
+                          9
+                        ]
+                      ],
+                      "grouped": true,
+                      "relocated": false,
+                      "offset": 0,
+                      "inner": "leaves",
+                      "s": 1
+                    },
+                    {
+                      "label": "Document-scoped persistence notifications",
+                      "a": [
+                        [
+                          13,
+                          13
+                        ]
+                      ],
+                      "b": [
+                        [
+                          10,
+                          11
+                        ]
+                      ],
+                      "grouped": false,
+                      "relocated": false,
+                      "offset": 0,
+                      "inner": "leaves",
+                      "s": 1
+                    }
+                  ],
+                  "unmatchedA": [],
+                  "unmatchedB": [],
+                  "J": 1
+                },
+                "s": 1
+              },
+              {
+                "label": "CanvasSession",
+                "a": [
+                  [
+                    16,
+                    28
+                  ]
+                ],
+                "b": [
+                  [
+                    12,
+                    17
+                  ]
+                ],
+                "grouped": false,
+                "relocated": false,
+                "offset": 1,
+                "inner": {
+                  "pairs": [
+                    {
+                      "label": "Session-owned cursor-copy state",
+                      "a": [
+                        [
+                          18,
+                          18
+                        ]
+                      ],
+                      "b": [
+                        [
+                          16,
+                          17
+                        ]
+                      ],
+                      "grouped": false,
+                      "relocated": false,
+                      "offset": 0,
+                      "inner": "leaves",
+                      "s": 1
+                    },
+                    {
+                      "label": "Separate observable stores",
+                      "a": [
+                        [
+                          20,
+                          24
+                        ]
+                      ],
+                      "b": [
+                        [
+                          13,
+                          13
+                        ]
+                      ],
+                      "grouped": false,
+                      "relocated": false,
+                      "offset": 0,
+                      "inner": "summarized",
+                      "s": 0.9
+                    },
+                    {
+                      "label": "Controller subscription and publication",
+                      "a": [
+                        [
+                          25,
+                          26
+                        ]
+                      ],
+                      "b": [
+                        [
+                          14,
+                          14
+                        ]
+                      ],
+                      "grouped": false,
+                      "relocated": false,
+                      "offset": 0,
+                      "inner": "summarized",
+                      "s": 0.9
+                    },
+                    {
+                      "label": "Dirty state and acknowledged baseline",
+                      "a": [
+                        [
+                          27,
+                          28
+                        ]
+                      ],
+                      "b": [
+                        [
+                          15,
+                          15
+                        ]
+                      ],
+                      "grouped": false,
+                      "relocated": false,
+                      "offset": 0,
+                      "inner": "summarized",
+                      "s": 0.9
+                    }
+                  ],
+                  "unmatchedA": [],
+                  "unmatchedB": [],
+                  "J": 0.925
+                },
+                "s": 0.86625
+              }
+            ],
+            "unmatchedA": [],
+            "unmatchedB": [],
+            "J": 0.955416666667
+          },
+          "s": 0.977708333333
+        },
+        {
+          "label": "Document, interaction and source models",
+          "a": [
+            [
+              30,
+              55
+            ]
+          ],
+          "b": [
+            [
+              65,
+              83
+            ]
+          ],
+          "grouped": false,
+          "relocated": false,
+          "offset": 0,
+          "inner": {
+            "pairs": [
+              {
+                "label": "MappingGridDocument composition",
+                "a": [
+                  [
+                    31,
+                    37
+                  ]
+                ],
+                "b": [
+                  [
+                    34,
+                    34
+                  ],
+                  [
+                    35,
+                    36
+                  ]
+                ],
+                "grouped": true,
+                "relocated": true,
+                "offset": 1,
+                "inner": "summarized",
+                "s": 0.405
+              },
+              {
+                "label": "Diagram content and source API",
+                "a": [
+                  [
+                    39,
+                    46
+                  ]
+                ],
+                "b": [
+                  [
+                    37,
+                    42
+                  ],
+                  [
+                    75,
+                    77
+                  ]
+                ],
+                "grouped": true,
+                "relocated": true,
+                "offset": 0,
+                "inner": {
+                  "pairs": [
+                    {
+                      "label": "Diagram and revision identity",
+                      "a": [
+                        [
+                          40,
+                          40
+                        ]
+                      ],
+                      "b": [
+                        [
+                          38,
+                          38
+                        ]
+                      ],
+                      "grouped": false,
+                      "relocated": false,
+                      "offset": 0,
+                      "inner": "leaves",
+                      "s": 1
+                    },
+                    {
+                      "label": "ASCII content and parsed structure",
+                      "a": [
+                        [
+                          41,
+                          42
+                        ]
+                      ],
+                      "b": [
+                        [
+                          39,
+                          39
+                        ]
+                      ],
+                      "grouped": false,
+                      "relocated": false,
+                      "offset": 0,
+                      "inner": "summarized",
+                      "s": 0.9
+                    },
+                    {
+                      "label": "Source context and evidence",
+                      "a": [
+                        [
+                          43,
+                          44
+                        ]
+                      ],
+                      "b": [
+                        [
+                          40,
+                          40
+                        ]
+                      ],
+                      "grouped": false,
+                      "relocated": false,
+                      "offset": 0,
+                      "inner": "summarized",
+                      "s": 0.9
+                    },
+                    {
+                      "label": "diagramSource read API",
+                      "a": [
+                        [
+                          45,
+                          46
+                        ]
+                      ],
+                      "b": [
+                        [
+                          75,
+                          77
+                        ]
+                      ],
+                      "grouped": false,
+                      "relocated": false,
+                      "offset": 1,
+                      "inner": {
+                        "pairs": [
+                          {
+                            "label": "Diagram-region to repository-evidence join",
+                            "a": [
+                              [
+                                46,
+                                46
+                              ]
+                            ],
+                            "b": [
+                              [
+                                76,
+                                77
+                              ]
+                            ],
+                            "grouped": false,
+                            "relocated": false,
+                            "offset": 0,
+                            "inner": "leaves",
+                            "s": 1
+                          }
+                        ],
+                        "unmatchedA": [],
+                        "unmatchedB": [],
+                        "J": 1
+                      },
+                      "s": 0.9
+                    }
+                  ],
+                  "unmatchedA": [],
+                  "unmatchedB": [],
+                  "J": 0.925
+                },
+                "s": 0.48125
+              },
+              {
+                "label": "MappingCanvasState",
+                "a": [
+                  [
+                    48,
+                    55
+                  ]
+                ],
+                "b": [
+                  [
+                    66,
+                    70
+                  ]
+                ],
+                "grouped": false,
+                "relocated": false,
+                "offset": 0,
+                "inner": {
+                  "pairs": [
+                    {
+                      "label": "Selection and controls",
+                      "a": [
+                        [
+                          49,
+                          49
+                        ]
+                      ],
+                      "b": [
+                        [
+                          67,
+                          67
+                        ],
+                        [
+                          68,
+                          68
+                        ]
+                      ],
+                      "grouped": true,
+                      "relocated": false,
+                      "offset": 0,
+                      "inner": "leaves",
+                      "s": 1
+                    },
+                    {
+                      "label": "Display and presentation state",
+                      "a": [
+                        [
+                          50,
+                          50
+                        ]
+                      ],
+                      "b": [
+                        [
+                          69,
+                          70
+                        ]
+                      ],
+                      "grouped": false,
+                      "relocated": false,
+                      "offset": 0,
+                      "inner": "leaves",
+                      "s": 1
+                    }
+                  ],
+                  "unmatchedA": [
+                    {
+                      "lines": [
+                        51,
+                        55
+                      ],
+                      "label": "Visible-scene projection and content folding"
+                    }
+                  ],
+                  "unmatchedB": [],
+                  "J": 0.666666666667
+                },
+                "s": 0.833333333333
+              }
+            ],
+            "unmatchedA": [],
+            "unmatchedB": [
+              {
+                "lines": [
+                  71,
+                  74
+                ],
+                "label": "Revision-pinned region selection"
+              },
+              {
+                "lines": [
+                  78,
+                  83
+                ],
+                "label": "Display ownership tree and source-pane exploration"
+              }
+            ],
+            "J": 0.343916666667
+          },
+          "s": 0.671958333333
+        },
+        {
+          "label": "MappingDocumentController",
+          "a": [
+            [
+              57,
+              75
+            ]
+          ],
+          "b": [
+            [
+              44,
+              63
+            ]
+          ],
+          "grouped": false,
+          "relocated": false,
+          "offset": 0,
+          "inner": {
+            "pairs": [
+              {
+                "label": "Command API and staged update pipeline",
+                "a": [
+                  [
+                    59,
+                    60
+                  ],
+                  [
+                    61,
+                    72
+                  ]
+                ],
+                "b": [
+                  [
+                    45,
+                    50
+                  ]
+                ],
+                "grouped": true,
+                "relocated": false,
+                "offset": 0,
+                "inner": {
+                  "pairs": [
+                    {
+                      "label": "Gesture settlement and version guard",
+                      "a": [
+                        [
+                          62,
+                          62
+                        ],
+                        [
+                          63,
+                          63
+                        ]
+                      ],
+                      "b": [
+                        [
+                          46,
+                          46
+                        ]
+                      ],
+                      "grouped": true,
+                      "relocated": false,
+                      "offset": 0,
+                      "inner": "leaves",
+                      "s": 1
+                    },
+                    {
+                      "label": "Cloned-state operation staging",
+                      "a": [
+                        [
+                          64,
+                          67
+                        ]
+                      ],
+                      "b": [
+                        [
+                          47,
+                          47
+                        ],
+                        [
+                          48,
+                          48
+                        ],
+                        [
+                          49,
+                          49
+                        ]
+                      ],
+                      "grouped": true,
+                      "relocated": false,
+                      "offset": 0,
+                      "inner": "summarized",
+                      "s": 0.9
+                    },
+                    {
+                      "label": "Snapshot reconciliation and history publication",
+                      "a": [
+                        [
+                          68,
+                          72
+                        ]
+                      ],
+                      "b": [
+                        [
+                          50,
+                          50
+                        ]
+                      ],
+                      "grouped": false,
+                      "relocated": false,
+                      "offset": 0,
+                      "inner": "summarized",
+                      "s": 0.9
+                    }
+                  ],
+                  "unmatchedA": [],
+                  "unmatchedB": [],
+                  "J": 0.933333333333
+                },
+                "s": 0.966666666667
+              },
+              {
+                "label": "Transient versus recorded canvas changes",
+                "a": [
+                  [
+                    73,
+                    73
+                  ]
+                ],
+                "b": [
+                  [
+                    51,
+                    52
+                  ]
+                ],
+                "grouped": false,
+                "relocated": false,
+                "offset": 0,
+                "inner": "summarized",
+                "s": 0.9
+              }
+            ],
+            "unmatchedA": [
+              {
+                "lines": [
+                  74,
+                  75
+                ],
+                "label": "Controller-derived read boundaries"
+              }
+            ],
+            "unmatchedB": [],
+            "J": 0.622222222222
+          },
+          "s": 0.811111111111
+        },
+        {
+          "label": "CanvasHistoryService and checkpoint archive",
+          "a": [
+            [
+              77,
+              95
+            ]
+          ],
+          "b": [
+            [
+              19,
+              42
+            ]
+          ],
+          "grouped": false,
+          "relocated": false,
+          "offset": 0,
+          "inner": {
+            "pairs": [
+              {
+                "label": "Editing contexts and history operations",
+                "a": [
+                  [
+                    79,
+                    80
+                  ],
+                  [
+                    92,
+                    92
+                  ]
+                ],
+                "b": [
+                  [
+                    20,
+                    23
+                  ]
+                ],
+                "grouped": true,
+                "relocated": false,
+                "offset": 0,
+                "inner": {
+                  "pairs": [
+                    {
+                      "label": "Isolated runtime context handles",
+                      "a": [
+                        [
+                          80,
+                          80
+                        ]
+                      ],
+                      "b": [
+                        [
+                          22,
+                          23
+                        ]
+                      ],
+                      "grouped": false,
+                      "relocated": false,
+                      "offset": 0,
+                      "inner": "leaves",
+                      "s": 1
+                    },
+                    {
+                      "label": "Shared history operations",
+                      "a": [
+                        [
+                          92,
+                          92
+                        ]
+                      ],
+                      "b": [
+                        [
+                          21,
+                          21
+                        ]
+                      ],
+                      "grouped": false,
+                      "relocated": false,
+                      "offset": 1,
+                      "inner": "leaves",
+                      "s": 0.9
+                    }
+                  ],
+                  "unmatchedA": [],
+                  "unmatchedB": [],
+                  "J": 0.95
+                },
+                "s": 0.975
+              },
+              {
+                "label": "CanvasHistoryRecord",
+                "a": [
+                  [
+                    81,
+                    88
+                  ]
+                ],
+                "b": [
+                  [
+                    24,
+                    32
+                  ]
+                ],
+                "grouped": false,
+                "relocated": false,
+                "offset": 0,
+                "inner": {
+                  "pairs": [
+                    {
+                      "label": "Checkpoint navigation",
+                      "a": [
+                        [
+                          82,
+                          82
+                        ]
+                      ],
+                      "b": [
+                        [
+                          25,
+                          25
+                        ]
+                      ],
+                      "grouped": false,
+                      "relocated": false,
+                      "offset": 0,
+                      "inner": "leaves",
+                      "s": 1
+                    },
+                    {
+                      "label": "StoredCanvasSnapshot",
+                      "a": [
+                        [
+                          83,
+                          86
+                        ]
+                      ],
+                      "b": [
+                        [
+                          26,
+                          29
+                        ]
+                      ],
+                      "grouped": false,
+                      "relocated": false,
+                      "offset": 0,
+                      "inner": {
+                        "pairs": [
+                          {
+                            "label": "Stored canvas composition",
+                            "a": [
+                              [
+                                84,
+                                84
+                              ]
+                            ],
+                            "b": [
+                              [
+                                27,
+                                27
+                              ]
+                            ],
+                            "grouped": false,
+                            "relocated": false,
+                            "offset": 0,
+                            "inner": "leaves",
+                            "s": 1
+                          },
+                          {
+                            "label": "Exact revision bindings",
+                            "a": [
+                              [
+                                85,
+                                85
+                              ]
+                            ],
+                            "b": [
+                              [
+                                28,
+                                28
+                              ]
+                            ],
+                            "grouped": false,
+                            "relocated": false,
+                            "offset": 0,
+                            "inner": "leaves",
+                            "s": 1
+                          },
+                          {
+                            "label": "View, node origins and transaction identity",
+                            "a": [
+                              [
+                                86,
+                                86
+                              ]
+                            ],
+                            "b": [
+                              [
+                                29,
+                                29
+                              ]
+                            ],
+                            "grouped": false,
+                            "relocated": false,
+                            "offset": 0,
+                            "inner": "leaves",
+                            "s": 1
+                          }
+                        ],
+                        "unmatchedA": [],
+                        "unmatchedB": [],
+                        "J": 1
+                      },
+                      "s": 1
+                    },
+                    {
+                      "label": "Retained diagram revisions",
+                      "a": [
+                        [
+                          87,
+                          87
+                        ]
+                      ],
+                      "b": [
+                        [
+                          30,
+                          30
+                        ]
+                      ],
+                      "grouped": false,
+                      "relocated": false,
+                      "offset": 0,
+                      "inner": "leaves",
+                      "s": 1
+                    },
+                    {
+                      "label": "Named canvas views outside ordinary undo",
+                      "a": [
+                        [
+                          88,
+                          88
+                        ]
+                      ],
+                      "b": [
+                        [
+                          31,
+                          32
+                        ]
+                      ],
+                      "grouped": false,
+                      "relocated": false,
+                      "offset": 0,
+                      "inner": "leaves",
+                      "s": 1
+                    }
+                  ],
+                  "unmatchedA": [],
+                  "unmatchedB": [],
+                  "J": 1
+                },
+                "s": 1
+              },
+              {
+                "label": "Checkpoint-to-document resolution",
+                "a": [
+                  [
+                    89,
+                    89
+                  ]
+                ],
+                "b": [
+                  [
+                    33,
+                    36
+                  ]
+                ],
+                "grouped": false,
+                "relocated": false,
+                "offset": 0,
+                "inner": "summarized",
+                "s": 0.9
+              },
+              {
+                "label": "Diagram revision store",
+                "a": [
+                  [
+                    90,
+                    91
+                  ]
+                ],
+                "b": [
+                  [
+                    41,
+                    42
+                  ]
+                ],
+                "grouped": false,
+                "relocated": true,
+                "offset": 1,
+                "inner": "summarized",
+                "s": 0.405
+              },
+              {
+                "label": "Transfer-linked history navigation",
+                "a": [
+                  [
+                    93,
+                    95
+                  ]
+                ],
+                "b": [
+                  [
+                    53,
+                    54
+                  ]
+                ],
+                "grouped": false,
+                "relocated": true,
+                "offset": 0,
+                "inner": {
+                  "pairs": [
+                    {
+                      "label": "Workspace-coordinated transfer undo",
+                      "a": [
+                        [
+                          94,
+                          95
+                        ]
+                      ],
+                      "b": [
+                        [
+                          54,
+                          54
+                        ]
+                      ],
+                      "grouped": false,
+                      "relocated": false,
+                      "offset": 0,
+                      "inner": "leaves",
+                      "s": 1
+                    }
+                  ],
+                  "unmatchedA": [],
+                  "unmatchedB": [],
+                  "J": 1
+                },
+                "s": 0.5
+              }
+            ],
+            "unmatchedA": [],
+            "unmatchedB": [],
+            "J": 0.756
+          },
+          "s": 0.878
+        },
+        {
+          "label": "MappingEditorCanvas and MappingEditorRuntime",
+          "a": [
+            [
+              97,
+              109
+            ]
+          ],
+          "b": [
+            [
+              56,
+              63
+            ]
+          ],
+          "grouped": false,
+          "relocated": false,
+          "offset": 1,
+          "inner": {
+            "pairs": [
+              {
+                "label": "Controller-to-native-shape projection",
+                "a": [
+                  [
+                    100,
+                    101
+                  ]
+                ],
+                "b": [
+                  [
+                    58,
+                    58
+                  ]
+                ],
+                "grouped": false,
+                "relocated": false,
+                "offset": 0,
+                "inner": "summarized",
+                "s": 0.9
+              },
+              {
+                "label": "Native live geometry and camera ownership",
+                "a": [
+                  [
+                    102,
+                    103
+                  ]
+                ],
+                "b": [
+                  [
+                    57,
+                    57
+                  ],
+                  [
+                    61,
+                    61
+                  ]
+                ],
+                "grouped": true,
+                "relocated": false,
+                "offset": 0,
+                "inner": "summarized",
+                "s": 0.9
+              },
+              {
+                "label": "Gesture settlement into semantic checkpoints",
+                "a": [
+                  [
+                    104,
+                    105
+                  ]
+                ],
+                "b": [
+                  [
+                    59,
+                    59
+                  ]
+                ],
+                "grouped": false,
+                "relocated": false,
+                "offset": 0,
+                "inner": "summarized",
+                "s": 0.9
+              },
+              {
+                "label": "Native checkpoint undo and redo",
+                "a": [
+                  [
+                    106,
+                    108
+                  ]
+                ],
+                "b": [
+                  [
+                    60,
+                    60
+                  ]
+                ],
+                "grouped": false,
+                "relocated": false,
+                "offset": 0,
+                "inner": "summarized",
+                "s": 0.9
+              },
+              {
+                "label": "Runtime disposal",
+                "a": [
+                  [
+                    109,
+                    109
+                  ]
+                ],
+                "b": [
+                  [
+                    62,
+                    63
+                  ]
+                ],
+                "grouped": false,
+                "relocated": false,
+                "offset": 0,
+                "inner": "leaves",
+                "s": 1
+              }
+            ],
+            "unmatchedA": [],
+            "unmatchedB": [],
+            "J": 0.92
+          },
+          "s": 0.864
+        },
+        {
+          "label": "Agent-assisted editing",
+          "a": [
+            [
+              111,
+              128
+            ]
+          ],
+          "b": [
+            [
+              85,
+              106
+            ]
+          ],
+          "grouped": false,
+          "relocated": false,
+          "offset": 0,
+          "inner": {
+            "pairs": [
+              {
+                "label": "PromptComposerCoordinator",
+                "a": [
+                  [
+                    112,
+                    116
+                  ]
+                ],
+                "b": [
+                  [
+                    86,
+                    89
+                  ]
+                ],
+                "grouped": false,
+                "relocated": false,
+                "offset": 0,
+                "inner": {
+                  "pairs": [
+                    {
+                      "label": "Captured version and base revision",
+                      "a": [
+                        [
+                          114,
+                          114
+                        ]
+                      ],
+                      "b": [
+                        [
+                          87,
+                          87
+                        ]
+                      ],
+                      "grouped": false,
+                      "relocated": false,
+                      "offset": 0,
+                      "inner": "leaves",
+                      "s": 1
+                    },
+                    {
+                      "label": "Pinned request submission and lifecycle",
+                      "a": [
+                        [
+                          115,
+                          116
+                        ]
+                      ],
+                      "b": [
+                        [
+                          88,
+                          89
+                        ]
+                      ],
+                      "grouped": false,
+                      "relocated": false,
+                      "offset": 0,
+                      "inner": "summarized",
+                      "s": 0.9
+                    }
+                  ],
+                  "unmatchedA": [],
+                  "unmatchedB": [],
+                  "J": 0.95
+                },
+                "s": 0.975
+              },
+              {
+                "label": "DiagramEditService",
+                "a": [
+                  [
+                    117,
+                    120
+                  ]
+                ],
+                "b": [
+                  [
+                    90,
+                    96
+                  ]
+                ],
+                "grouped": false,
+                "relocated": false,
+                "offset": 0,
+                "inner": {
+                  "pairs": [
+                    {
+                      "label": "Captured generation context",
+                      "a": [
+                        [
+                          119,
+                          119
+                        ]
+                      ],
+                      "b": [
+                        [
+                          91,
+                          92
+                        ]
+                      ],
+                      "grouped": false,
+                      "relocated": false,
+                      "offset": 0,
+                      "inner": "summarized",
+                      "s": 0.9
+                    }
+                  ],
+                  "unmatchedA": [
+                    {
+                      "lines": [
+                        120,
+                        120
+                      ],
+                      "label": "DiagramEditCanvasPort"
+                    }
+                  ],
+                  "unmatchedB": [
+                    {
+                      "lines": [
+                        93,
+                        93
+                      ],
+                      "label": "Service-side stale-target checks"
+                    },
+                    {
+                      "lines": [
+                        94,
+                        96
+                      ],
+                      "label": "Generation-run states and uncertain-application retry"
+                    }
+                  ],
+                  "J": 0.225
+                },
+                "s": 0.6125
+              },
+              {
+                "label": "Agent canvas command bridge",
+                "a": [
+                  [
+                    121,
+                    123
+                  ]
+                ],
+                "b": [
+                  [
+                    97,
+                    101
+                  ]
+                ],
+                "grouped": false,
+                "relocated": false,
+                "offset": 0,
+                "inner": {
+                  "pairs": [
+                    {
+                      "label": "Browser command handling",
+                      "a": [
+                        [
+                          122,
+                          122
+                        ]
+                      ],
+                      "b": [
+                        [
+                          98,
+                          98
+                        ]
+                      ],
+                      "grouped": false,
+                      "relocated": false,
+                      "offset": 0,
+                      "inner": "leaves",
+                      "s": 1
+                    },
+                    {
+                      "label": "Polling cleanup and canvas unregistration",
+                      "a": [
+                        [
+                          123,
+                          123
+                        ]
+                      ],
+                      "b": [
+                        [
+                          100,
+                          101
+                        ]
+                      ],
+                      "grouped": false,
+                      "relocated": false,
+                      "offset": 0,
+                      "inner": "leaves",
+                      "s": 1
+                    }
+                  ],
+                  "unmatchedA": [],
+                  "unmatchedB": [
+                    {
+                      "lines": [
+                        99,
+                        99
+                      ],
+                      "label": "Backend pending replies and uncertain timeout outcomes"
+                    }
+                  ],
+                  "J": 0.666666666667
+                },
+                "s": 0.833333333333
+              },
+              {
+                "label": "DiagramRevisionReceiver",
+                "a": [
+                  [
+                    124,
+                    128
+                  ]
+                ],
+                "b": [
+                  [
+                    102,
+                    106
+                  ]
+                ],
+                "grouped": false,
+                "relocated": false,
+                "offset": 0,
+                "inner": {
+                  "pairs": [
+                    {
+                      "label": "Versioned controller application",
+                      "a": [
+                        [
+                          126,
+                          126
+                        ]
+                      ],
+                      "b": [
+                        [
+                          103,
+                          103
+                        ]
+                      ],
+                      "grouped": false,
+                      "relocated": false,
+                      "offset": 0,
+                      "inner": "leaves",
+                      "s": 1
+                    },
+                    {
+                      "label": "Retained request receipts",
+                      "a": [
+                        [
+                          127,
+                          127
+                        ]
+                      ],
+                      "b": [
+                        [
+                          104,
+                          104
+                        ]
+                      ],
+                      "grouped": false,
+                      "relocated": false,
+                      "offset": 0,
+                      "inner": "leaves",
+                      "s": 1
+                    },
+                    {
+                      "label": "Persistence acknowledgement and safe retry",
+                      "a": [
+                        [
+                          128,
+                          128
+                        ]
+                      ],
+                      "b": [
+                        [
+                          105,
+                          106
+                        ]
+                      ],
+                      "grouped": false,
+                      "relocated": false,
+                      "offset": 0,
+                      "inner": "leaves",
+                      "s": 1
+                    }
+                  ],
+                  "unmatchedA": [],
+                  "unmatchedB": [],
+                  "J": 1
+                },
+                "s": 1
+              }
+            ],
+            "unmatchedA": [],
+            "unmatchedB": [],
+            "J": 0.855208333333
+          },
+          "s": 0.927604166667
+        },
+        {
+          "label": "Workspace persistence",
+          "a": [
+            [
+              130,
+              149
+            ]
+          ],
+          "b": [
+            [
+              108,
+              129
+            ]
+          ],
+          "grouped": false,
+          "relocated": false,
+          "offset": 0,
+          "inner": {
+            "pairs": [
+              {
+                "label": "WorkspacePersistence",
+                "a": [
+                  [
+                    134,
+                    138
+                  ]
+                ],
+                "b": [
+                  [
+                    109,
+                    113
+                  ]
+                ],
+                "grouped": false,
+                "relocated": false,
+                "offset": 0,
+                "inner": {
+                  "pairs": [
+                    {
+                      "label": "Per-session persistence cursors",
+                      "a": [
+                        [
+                          136,
+                          136
+                        ]
+                      ],
+                      "b": [
+                        [
+                          110,
+                          110
+                        ]
+                      ],
+                      "grouped": false,
+                      "relocated": false,
+                      "offset": 0,
+                      "inner": "leaves",
+                      "s": 1
+                    },
+                    {
+                      "label": "Record-batch composition",
+                      "a": [
+                        [
+                          137,
+                          138
+                        ]
+                      ],
+                      "b": [
+                        [
+                          111,
+                          111
+                        ]
+                      ],
+                      "grouped": false,
+                      "relocated": false,
+                      "offset": 0,
+                      "inner": "summarized",
+                      "s": 0.9
+                    }
+                  ],
+                  "unmatchedA": [],
+                  "unmatchedB": [
+                    {
+                      "lines": [
+                        112,
+                        113
+                      ],
+                      "label": "Record deletion and subscription disposal"
+                    }
+                  ],
+                  "J": 0.633333333333
+                },
+                "s": 0.816666666667
+              },
+              {
+                "label": "RecordStorage and WorkspaceStorage worker",
+                "a": [
+                  [
+                    139,
+                    144
+                  ]
+                ],
+                "b": [
+                  [
+                    114,
+                    118
+                  ]
+                ],
+                "grouped": false,
+                "relocated": false,
+                "offset": 0,
+                "inner": {
+                  "pairs": [
+                    {
+                      "label": "Coalesced batches and retry identity",
+                      "a": [
+                        [
+                          141,
+                          141
+                        ],
+                        [
+                          142,
+                          142
+                        ]
+                      ],
+                      "b": [
+                        [
+                          115,
+                          115
+                        ]
+                      ],
+                      "grouped": true,
+                      "relocated": false,
+                      "offset": 0,
+                      "inner": "leaves",
+                      "s": 1
+                    },
+                    {
+                      "label": "Flush acknowledgement and disposal boundary",
+                      "a": [
+                        [
+                          144,
+                          144
+                        ]
+                      ],
+                      "b": [
+                        [
+                          116,
+                          116
+                        ],
+                        [
+                          117,
+                          118
+                        ]
+                      ],
+                      "grouped": true,
+                      "relocated": false,
+                      "offset": 0,
+                      "inner": "leaves",
+                      "s": 1
+                    }
+                  ],
+                  "unmatchedA": [],
+                  "unmatchedB": [],
+                  "J": 1
+                },
+                "s": 1
+              },
+              {
+                "label": "WorkspaceRecordStore",
+                "a": [
+                  [
+                    145,
+                    149
+                  ]
+                ],
+                "b": [
+                  [
+                    119,
+                    123
+                  ]
+                ],
+                "grouped": false,
+                "relocated": false,
+                "offset": 0,
+                "inner": {
+                  "pairs": [
+                    {
+                      "label": "Serialized writes and revision receipts",
+                      "a": [
+                        [
+                          146,
+                          146
+                        ]
+                      ],
+                      "b": [
+                        [
+                          120,
+                          120
+                        ]
+                      ],
+                      "grouped": false,
+                      "relocated": false,
+                      "offset": 0,
+                      "inner": "leaves",
+                      "s": 1
+                    },
+                    {
+                      "label": "Immutable-record validation",
+                      "a": [
+                        [
+                          147,
+                          147
+                        ]
+                      ],
+                      "b": [
+                        [
+                          121,
+                          121
+                        ]
+                      ],
+                      "grouped": false,
+                      "relocated": false,
+                      "offset": 0,
+                      "inner": "leaves",
+                      "s": 1
+                    },
+                    {
+                      "label": "Content-addressed records and atomic manifest",
+                      "a": [
+                        [
+                          148,
+                          149
+                        ]
+                      ],
+                      "b": [
+                        [
+                          122,
+                          123
+                        ]
+                      ],
+                      "grouped": false,
+                      "relocated": false,
+                      "offset": 0,
+                      "inner": "summarized",
+                      "s": 0.9
+                    }
+                  ],
+                  "unmatchedA": [],
+                  "unmatchedB": [],
+                  "J": 0.966666666667
+                },
+                "s": 0.983333333333
+              }
+            ],
+            "unmatchedA": [
+              {
+                "lines": [
+                  131,
+                  133
+                ],
+                "label": "Startup loading and draft restoration"
+              }
+            ],
+            "unmatchedB": [
+              {
+                "lines": [
+                  124,
+                  129
+                ],
+                "label": "Explicit checkpoint publication and saved-baseline acknowledgement"
+              }
+            ],
+            "J": 0.56
+          },
+          "s": 0.78
+        }
+      ],
+      "unmatchedA": [],
+      "unmatchedB": [],
+      "J": 0.844340277778
+    },
+    "markdown": "## 1. Anchor tree\n\nSource annotations and call-flow explanations are not separate components. Facts folded into a matched parent's declaration—such as workspace metadata, controller ownership and session readability—are credited there. Offsets are relative to the enclosing match. Cross-listed subtrees are allocated once; their enclosing ranges still cover their complete original nodes.\n\n- A 3–14 + 16–28 ↔ B 3–17 · grouped · offset 0 · s = 0.977708 · application and live ownership\n  - A 5–6 + 7–8 ↔ B 4–6 · grouped · offset 0 · s = 1 · entry and injection\n    - A 6 + 8 ↔ B 5–6 · grouped · offset 0 · s = 1 · default surface and services\n  - A 9–14 ↔ B 7–11 · same · offset 0 · s = 1 · CanvasWorkspace\n    - A 11 + 14 ↔ B 9 · grouped · offset 0 · s = 1 · session lifecycle\n    - A 13 ↔ B 10–11 · same · offset 0 · s = 1 · persistence notifications\n  - A 16–28 ↔ B 12–17 · same · offset 1 · s = 0.86625 · CanvasSession\n    - A 18 ↔ B 16–17 · same · offset 0 · s = 1 · cursor-copy state\n    - A 20–24 ↔ B 13 · summarized · offset 0 · s = 0.9 · observable stores\n    - A 25–26 ↔ B 14 · summarized · offset 0 · s = 0.9 · controller subscription\n    - A 27–28 ↔ B 15 · summarized · offset 0 · s = 0.9 · dirty state and baseline\n- A 30–55 ↔ B 65–83 · same · offset 0 · s = 0.671958 · document, interaction and source models\n  - A 31–37 ↔ B 34 + 35–36 · grouped, summarized, relocated to history · offset 1 · s = 0.405 · MappingGridDocument\n  - A 39–46 ↔ B 37–42 + 75–77 · grouped, relocated partly to history · offset 0 · s = 0.48125 · Diagram and source API\n    - A 40 ↔ B 38 · same · offset 0 · s = 1 · identities\n    - A 41–42 ↔ B 39 · summarized · offset 0 · s = 0.9 · content\n    - A 43–44 ↔ B 40 · summarized · offset 0 · s = 0.9 · source context\n    - A 45–46 ↔ B 75–77 · same · offset 1 · s = 0.9 · diagramSource\n      - A 46 ↔ B 76–77 · same · offset 0 · s = 1 · evidence join\n  - A 48–55 ↔ B 66–70 · same · offset 0 · s = 0.833333 · MappingCanvasState\n    - A 49 ↔ B 67 + 68 · grouped · offset 0 · s = 1 · selection and controls\n    - A 50 ↔ B 69–70 · same · offset 0 · s = 1 · presentation state\n    - unmatched: A 51–55 (visible-scene projection and folding)\n  - unmatched: B 71–74 (revision-pinned region selection), B 78–83 (pane ownership and source exploration)\n- A 57–75 ↔ B 44–63 · same · offset 0 · s = 0.811111 · MappingDocumentController\n  - A 59–60 + 61–72 ↔ B 45–50 · grouped · offset 0 · s = 0.966667 · command API and update pipeline\n    - A 62 + 63 ↔ B 46 · grouped · offset 0 · s = 1 · settlement and version guard\n    - A 64–67 ↔ B 47 + 48 + 49 · grouped, summarized · offset 0 · s = 0.9 · operation staging\n    - A 68–72 ↔ B 50 · summarized · offset 0 · s = 0.9 · snapshot publication\n  - A 73 ↔ B 51–52 · summarized · offset 0 · s = 0.9 · transient changes\n  - unmatched: A 74–75 (derived read boundaries)\n- A 77–95 ↔ B 19–42 · same · offset 0 · s = 0.878 · history archive\n  - A 79–80 + 92 ↔ B 20–23 · grouped · offset 0 · s = 0.975 · contexts and operations\n    - A 80 ↔ B 22–23 · same · offset 0 · s = 1 · isolated handles\n    - A 92 ↔ B 21 · same · offset 1 · s = 0.9 · history operations\n  - A 81–88 ↔ B 24–32 · same · offset 0 · s = 1 · CanvasHistoryRecord\n    - A 82 ↔ B 25 · same · offset 0 · s = 1 · navigation\n    - A 83–86 ↔ B 26–29 · same · offset 0 · s = 1 · stored snapshots\n      - A 84 ↔ B 27 · same · offset 0 · s = 1 · composition\n      - A 85 ↔ B 28 · same · offset 0 · s = 1 · revision bindings\n      - A 86 ↔ B 29 · same · offset 0 · s = 1 · restoration metadata\n    - A 87 ↔ B 30 · same · offset 0 · s = 1 · retained revisions\n    - A 88 ↔ B 31–32 · same · offset 0 · s = 1 · named views\n  - A 89 ↔ B 33–36 · summarized · offset 0 · s = 0.9 · document resolution; composition children allocated above\n  - A 90–91 ↔ B 41–42 · summarized, relocated into B's Diagram model · offset 1 · s = 0.405 · revision store\n  - A 93–95 ↔ B 53–54 · relocated to controller · offset 0 · s = 0.5 · transfer history\n    - A 94–95 ↔ B 54 · same · offset 0 · s = 1 · coordinated undo\n- A 97–109 ↔ B 56–63 · same, nested under B's controller · offset 1 · s = 0.864 · editor runtime\n  - A 100–101 ↔ B 58 · summarized · offset 0 · s = 0.9 · native-shape projection\n  - A 102–103 ↔ B 57 + 61 · grouped, summarized · offset 0 · s = 0.9 · native geometry ownership\n  - A 104–105 ↔ B 59 · summarized · offset 0 · s = 0.9 · gesture settlement\n  - A 106–108 ↔ B 60 · summarized · offset 0 · s = 0.9 · checkpoint undo\n  - A 109 ↔ B 62–63 · same · offset 0 · s = 1 · disposal\n- A 111–128 ↔ B 85–106 · same · offset 0 · s = 0.927604 · agent editing\n  - A 112–116 ↔ B 86–89 · same · offset 0 · s = 0.975 · prompt coordinator\n    - A 114 ↔ B 87 · same · offset 0 · s = 1 · captured revisions\n    - A 115–116 ↔ B 88–89 · summarized · offset 0 · s = 0.9 · pinned requests\n  - A 117–120 ↔ B 90–96 · same · offset 0 · s = 0.6125 · DiagramEditService\n    - A 119 ↔ B 91–92 · summarized · offset 0 · s = 0.9 · generation context\n    - unmatched: A 120 (canvas port), B 93 (service-side stale checks), B 94–96 (run states and uncertain retry)\n  - A 121–123 ↔ B 97–101 · same · offset 0 · s = 0.833333 · canvas bridge\n    - A 122 ↔ B 98 · same · offset 0 · s = 1 · browser command handling\n    - A 123 ↔ B 100–101 · same · offset 0 · s = 1 · cleanup\n    - unmatched: B 99 (backend pending replies and timeouts)\n  - A 124–128 ↔ B 102–106 · same · offset 0 · s = 1 · revision receiver\n    - A 126 ↔ B 103 · same · offset 0 · s = 1 · versioned application\n    - A 127 ↔ B 104 · same · offset 0 · s = 1 · receipts\n    - A 128 ↔ B 105–106 · same · offset 0 · s = 1 · persistence acknowledgement\n- A 130–149 ↔ B 108–129 · same · offset 0 · s = 0.78 · persistence\n  - A 134–138 ↔ B 109–113 · same · offset 0 · s = 0.816667 · WorkspacePersistence\n    - A 136 ↔ B 110 · same · offset 0 · s = 1 · persistence cursors\n    - A 137–138 ↔ B 111 · summarized · offset 0 · s = 0.9 · record composition\n    - unmatched: B 112–113 (record deletion and subscription disposal)\n  - A 139–144 ↔ B 114–118 · same · offset 0 · s = 1 · storage worker\n    - A 141 + 142 ↔ B 115 · grouped · offset 0 · s = 1 · batching and retry identity\n    - A 144 ↔ B 116 + 117–118 · grouped · offset 0 · s = 1 · flush and disposal\n  - A 145–149 ↔ B 119–123 · same · offset 0 · s = 0.983333 · record store\n    - A 146 ↔ B 120 · same · offset 0 · s = 1 · write serialization\n    - A 147 ↔ B 121 · same · offset 0 · s = 1 · immutable-record validation\n    - A 148–149 ↔ B 122–123 · summarized · offset 0 · s = 0.9 · atomic manifest\n  - unmatched: A 131–133 (startup restoration), B 124–129 (explicit publication)\n\n## 2. Score\n\nEach pair uses s = 0.9^offset × (0.5 + 0.5 × inner), additionally multiplied by 0.5 for relocation. Summarized inner = 0.8; leaf inner = 1. The nested JSON supplies every sibling denominator through its pairs and unmatched lists.\n\nTop-level scores:\n\n| Anchor | Inner J | s |\n|---|---:|---:|\n| Live ownership | 0.955416667 | 0.977708333 |\n| Document/source models | 0.343916667 | 0.671958333 |\n| Controller | 0.622222222 | 0.811111111 |\n| History | 0.756 | 0.878 |\n| Editor runtime | 0.92 | 0.864 |\n| Agent editing | 0.855208333 | 0.927604167 |\n| Persistence | 0.56 | 0.78 |\n\nJ = (0.977708333333 + 0.671958333333 + 0.811111111111 + 0.878 + 0.864 + 0.927604166667 + 0.78) / (7 + 0 + 0) = 5.910381944444 / 7 = **0.844340277778**.\n\n## 3. Verdict\n\nThe trees identify substantially the same workspace, session, controller, history, editor, agent and persistence components. B groups entry/workspace/session under an explicit live-ownership parent and nests the editor beneath the controller. A keeps a unified semantic-model parent; B distributes its composition and Diagram pieces into history and its source API into exploration. Those are ownership/grouping differences, not missing components. A adds folding and startup-restoration detail; B adds region-selection, pane exploration, backend run states and explicit publication. The implied parents are live workspace ownership, the controller command pipeline, and Diagram content plus its source API."
+  },
+  "usage": {
+    "input": 11197,
+    "output": 16040,
+    "cacheRead": 48512,
+    "cacheWrite": 0,
+    "reasoning": 6008,
+    "totalTokens": 75749
+  },
+  "execution": {
+    "runtime": "pi-agent-context",
+    "sessionId": "01a1e5fd-8761-70a1-8320-f6ccb3cced53",
+    "contextHash": "363ae5b1e3383448d54c439e23cd77324b08f57c991c884f6072d73c6b73d65d",
+    "cacheKey": "eval-d36ea434d8eff34735200b1cc95356a57bf34fca15f84ae5ab6b6e4f5cfb03e1",
+    "modelContextHash": "1838e144618a18bd0c72af8f1d0fadefc8583ec84a6fab10f583d421e7f9620c",
+    "repositories": [
+      {
+        "repository": "repo-1",
+        "repositoryPath": "/home/john/.herdr/worktrees/new-diagram/claude-diagram-ai-modal-design-6xhqax",
+        "commit": "8ca143700ca4d2c870f1101b8cd4601ab68abd41",
+        "exclusions": [
+          "**/*.spec.*",
+          "**/*.test.*",
+          "**/__fixtures__/**",
+          "**/__tests__/**",
+          "**/fixtures/**",
+          ".diagrams-code/**",
+          ".diagrams-local/**",
+          ".diagrams-parent-architecture/**",
+          ".diagrams/**",
+          ".gitignore",
+          ".materialized-parent-manifests/**",
+          ".skills/**",
+          "A · Gutter glyphs (apply directly, cycle variants inline)@1x.png",
+          "AGENTS.md",
+          "COMPARE_PLAN.md",
+          "FORMAL.md",
+          "LLM_API.MD",
+          "OLD_AGENTS.md",
+          "PLAN.md",
+          "README.md",
+          "artifacts/**",
+          "benchmarks/**",
+          "corpus/**",
+          "deploy/**",
+          "diagram-plan-small-spine.md",
+          "diagram-plan-small.md",
+          "diagram-plan.md",
+          "docs/**",
+          "domain/core/diagrams/interpreter/README.md",
+          "examples/**",
+          "exports/**",
+          "infrastructure/mapping/agents/compaction/prompts/compaction/single-file-compact.md",
+          "infrastructure/mapping/agents/compaction/prompts/compaction/single-file-compact2.md",
+          "infrastructure/mapping/agents/compaction/prompts/compaction/single-file-prompt.md",
+          "infrastructure/mapping/agents/compaction/prompts/compaction/single-file-refinement-prompt.md",
+          "infrastructure/mapping/agents/compaction/prompts/system/CODEX-LICENSE",
+          "infrastructure/mapping/agents/compaction/prompts/system/codex.md",
+          "infrastructure/mapping/agents/diagram-edit/prompts/edit-diagram.md",
+          "investigations/**",
+          "mapping-initial-diagram.txt",
+          "package-lock.json",
+          "packages/ui-test-framework/README.md",
+          "projection-3d/**",
+          "projection-3d/.gitignore",
+          "scripts/**",
+          "src/server/features/mapping/compaction/prompts/compaction/single-file-compact2-herdr-w3A-pB.md",
+          "tests/**",
+          "tools/**",
+          "tools/diagram-parser/diagram_parser/.gitignore",
+          "vitest.config.ts"
+        ],
+        "checkout": "/tmp/agent-repository-Fsc3rY/checkout",
+        "inspectionSource": "session-transcript"
+      }
+    ]
+  }
+}

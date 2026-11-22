@@ -1,0 +1,19 @@
+{
+  "id": "child-5",
+  "name": "emulator",
+  "assignment": "Map n52–n65 terminal emulation. Use private scratch /tmp/ghostty-emulator if needed. Scope before ranges; compact machine-readable one line per node with scopes and path:start-end:roles, plus notes.",
+  "model": "gpt-6.2-sol",
+  "effort": "high",
+  "status": "generating",
+  "queuedAt": "2026-11-22T03:14:46.728Z",
+  "usage": {},
+  "cost": {},
+  "startedAt": "2026-11-22T03:24:20.933Z",
+  "sessionId": "01a20148-8a50-7971-a759-c1944815b400",
+  "transcript": "/home/john/.pi/agent/sessions/--home-john-.cache-mapping-phase4-2rop8tlu-agent-repository-a13C6i-checkout--/2026-11-22T03-24-20-944Z_01a20148-8a50-7971-a759-c1944815b400.jsonl",
+  "cwd": "/home/john/.cache/mapping-phase4-2rop8tlu/agent-repository-a13C6i/checkout",
+  "tools": [
+    "read",
+    "bash"
+  ]
+}
